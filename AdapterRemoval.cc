@@ -3,6 +3,11 @@
  * Copyright (C) 2011 by Stinus Lindgreen                                *
  * stinus@binf.ku.dk                                                     *
  *                                                                       *
+ * If you use the program, please cite the paper:                        *
+ * S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation *
+ * Sequencing Reads, BMC Research Notes, 5:337                           *
+ * http://www.biomedcentral.com/1756-0500/5/337/                         *
+ *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
  * it under the terms of the GNU General Public License as published by  *
  * the Free Software Foundation, either version 3 of the License, or     *
@@ -32,8 +37,8 @@
 
 using namespace std;
 
-string VERSION="AdapterRemoval ver. 1.5";
-string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--outputcollapsed file] [--outputcollapsedtruncated file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
+string VERSION="AdapterRemoval ver. 1.5.2";
+string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--outputcollapsed file] [--outputcollapsedtruncated file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page.\nIf nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).\n\nIf you use the program, please cite the paper:\nS. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation Sequencing Reads, BMC Research Notes, 5:337\nhttp://www.biomedcentral.com/1756-0500/5/337/\n";
 
 
 string FIVEPRIME="";
@@ -257,7 +262,7 @@ int trimqualities(string& sequence, string& qualities, string& stats){
 }
 
 void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
-  if(DEBUG) cerr<<"Collapse: \n"<<seq1<<"\t"<<qual1<<endl<<seq2<<"\t"<<qual2<<endl;
+  if(DEBUG) cerr<<"Collapse: \n"<<seq1<<"\t"<<qual1<<endl<<seq2<<"\t"<<qual2<<endl<<"Qual1\tPtrue1\tPerror1\tQual2\tPtrue2\tPerror2\n";
 
   char nucleotides[4]={'A','C','G','T'};
   double maxprob=0.9999;
@@ -268,22 +273,24 @@ void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
   for(size_t i=0;i<seq1.length();i++){
     vector<double> probs(4,0.0); 
     if(seq1[i] != 'N'){
-      Ptrue=errormatrix[int(qual1[i])-(qualitybase+1)][0];
-      Perror=errormatrix[int(qual1[i])-(qualitybase+1)][1];
+      Ptrue=errormatrix[int(qual1[i])-qualitybase][0];
+      Perror=errormatrix[int(qual1[i])-qualitybase][1];
       for(int j=0;j<4;j++){
 	if(seq1[i]==nucleotides[j]) probs[j]=Ptrue;
 	else probs[j]=Perror;
       }
     }
+    if(DEBUG) cerr<<qual1[i]<<"\t"<<Ptrue<<"\t"<<Perror<<"\t";
     probabilities.push_back(probs);
     if(seq2[i] != 'N'){
-      Ptrue=errormatrix[int(qual2[i])-(qualitybase+1)][0];
-      Perror=errormatrix[int(qual2[i])-(qualitybase+1)][1];
+      Ptrue=errormatrix[int(qual2[i])-qualitybase][0];
+      Perror=errormatrix[int(qual2[i])-qualitybase][1];
       for(int j=0;j<4;j++){
 	if(seq2[i]==nucleotides[j]) probabilities[i][j] += Ptrue;
 	else  probabilities[i][j] += Perror;
       }
     }
+    if(DEBUG) cerr<<qual2[i]<<"\t"<<Ptrue<<"\t"<<Perror<<endl;
   }
 
   // Find new consensus sequence
@@ -303,7 +310,6 @@ void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
 	int shuffle=rand()%2;
 	seq1[i]=(shuffle)?seq1[i]:seq2[i];
       }
-      qual1[i]=qual1[i];
     }
     else{
       for(int j=1;j<4;j++){
@@ -322,7 +328,8 @@ void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
       if( normprob >= maxprob)
 	qual1[i]=char(qualitybase+41);
       else
-	qual1[i]=char(-10*log10(1.0-normprob)+qualitybase+0.5);
+	qual1[i]=char(-10*log10(1.0-normprob)+qualitybase-0.5);
+      //	qual1[i]=char(-10*log10(1.0-normprob)+qualitybase+0.5);
     }
   }
   if(DEBUG) cerr<<"Collapse: \n"<<seq1<<"\t"<<qual1<<endl;
