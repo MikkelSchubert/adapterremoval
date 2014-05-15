@@ -13,14 +13,13 @@
 
 using namespace std;
 
-string VERSION="AdapterRemoval ver. 1.2";
+string VERSION="AdapterRemoval ver. 1.3";
 
 string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
 
 string FIVEPRIME="";
-string PCR1="AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT";
-string RCPCR2="AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG";
-//string RCPCR2="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG";
+string PCR1="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG";
+string PCR2="AATGATACGGCGACCACCGAGATCACACTCTTTCCCTACACGACGCTCTTCCGATCT";
 string shortmultiplex="AGACGTGTGCTCTTCCGATCT";
 string genericindex="CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTC";
 
@@ -116,9 +115,8 @@ size_t min(size_t a,size_t b){
 }
 
 inline string toupper(string s){
-  char c;
   string news="";
-  for(int i=0;i<s.length();i++){
+  for(size_t i=0;i<s.length();i++){
     if(int(s[i]) >= 65 && int(s[i]) <= 90) news=news+s[i];
     else news=news+char(int(s[i])-32);
   }
@@ -127,7 +125,7 @@ inline string toupper(string s){
 
 string reverse(string seq){
   string reverse="";
-  for(int i=0;i<seq.length();i++){
+  for(size_t i=0;i<seq.length();i++){
     reverse=seq[i]+reverse;
   }
   return reverse;
@@ -135,7 +133,7 @@ string reverse(string seq){
 
 string complement(string seq){
   string complement="";
-  for(int i=0;i<seq.length();i++){
+  for(size_t i=0;i<seq.length();i++){
     if(seq[i]=='A')
       complement=complement+"T";
     else if(seq[i]=='C')
@@ -237,7 +235,7 @@ void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
   vector<vector<double> > probabilities;
   
   // Calculate probability matrix based on the two reads and their qualities
-  for(int i=0;i<seq1.length();i++){
+  for(size_t i=0;i<seq1.length();i++){
     vector<double> probs(4,0.0); 
     if(seq1[i] != 'N'){
       Ptrue=errormatrix[int(qual1[i])-(qualitybase+1)][0];
@@ -259,7 +257,7 @@ void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
   }
 
   // Find new consensus sequence
-  for(int i=0;i<probabilities.size();i++){
+  for(size_t i=0;i<probabilities.size();i++){
     double largest=probabilities[i][0];
     char nuc='A';
 
@@ -307,9 +305,8 @@ void trim5primeend(string& read,string& qualities){
   int bestmm=mmthreshold+1;
   int bestshift=-1;
   for(int s=0;s<=shift;s++){
-    int matches=0;
     int mismatches=0;
-    for(int i=0;i<FIVEPRIME.length()-s;i++){
+    for(size_t i=0;i<FIVEPRIME.length()-s;i++){
       if(FIVEPRIME[i+s]!=read[i]) mismatches++;
     }
     if(mismatches<bestmm){
@@ -331,17 +328,17 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
   int diff;
   string seq1,seq2,qual1,qual2,stats1="",stats2="";
   if(usefile2){
-    seq1=PCR1+read1;
-    qual1=string(PCR1.length(),char(qualitybase+41))+qualities1; 
-    diff=(int)(read1.length()-PCR1.length());
+    seq1=PCR2+read1;
+    qual1=string(PCR2.length(),char(qualitybase+41))+qualities1; 
+    diff=(int)(read1.length()-PCR2.length());
     if(diff>0){
       seq1=string(diff,'N')+seq1;
       qual1=string(diff,char(qualitybase+41))+qual1;
     }
-    seq2=reverse_complement(read2)+RCPCR2;
-    qual2=reverse(qualities2)+string(RCPCR2.length(),char(qualitybase+41));
+    seq2=reverse_complement(read2)+PCR1;
+    qual2=reverse(qualities2)+string(PCR1.length(),char(qualitybase+41));
     // Pad the sequencese with Ns to get equal length
-    diff=(int)(read2.length()-RCPCR2.length());
+    diff=(int)(read2.length()-PCR1.length());
     if(diff>0){
       seq2=seq2+string(diff,'N');
       qual2=qual2+string(diff,char(qualitybase+41));
@@ -380,7 +377,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
   int mmmatrix[seq1.length()+1][seq2.length()+1];
   int nmatrix[seq1.length()+1][seq2.length()+1];
 
-  for(int i=0;i<=seq1.length();i++){
+  for(size_t i=0;i<=seq1.length();i++){
     matrix[i][0]=0.0;
     mmmatrix[i][0]=0;
     nmatrix[i][0]=0;
@@ -392,8 +389,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
   }
   
   // Calculate upper matrix
-  for(int j=1;j<=seq2.length();j++){
-    for(int i=max(1,j-shift);i<=seq1.length();i++){
+  for(size_t j=1;j<=seq2.length();j++){
+    for(size_t i=max(1,(int)j-shift);i<=seq1.length();i++){
       if(seq1[i-1] == 'N' || seq2[j-1]=='N'){
 	// Align to N - neutral
 	matrix[i][j]=matrix[i-1][j-1];
@@ -417,8 +414,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 
   if(DEBUG){
     cerr<<seq1<<"\n"<<qual1<<endl<<seq2<<endl<<qual2<<"\nScore matrix:\n";
-    for(int j=0;j<=seq2.length();j++){
-      for(int i=0;i<=seq1.length();i++){
+    for(size_t j=0;j<=seq2.length();j++){
+      for(size_t i=0;i<=seq1.length();i++){
 	if(i>=j-shift)
 	  cerr<<matrix[i][j]<<"\t";
 	else
@@ -427,8 +424,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
       cerr<<"\n";
     }
     cerr<<"\nMismatch matrix:\n";
-    for(int j=0;j<=seq2.length();j++){
-      for(int i=0;i<=seq1.length();i++){
+    for(size_t j=0;j<=seq2.length();j++){
+      for(size_t i=0;i<=seq1.length();i++){
 	if(i>=j-shift)
 	  cerr<<mmmatrix[i][j]<<"\t";
 	else
@@ -437,8 +434,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
       cerr<<"\n";
     }
     cerr<<"\nN matrix\n";
-    for(int j=0;j<=seq2.length();j++){
-      for(int i=0;i<=seq1.length();i++){
+    for(size_t j=0;j<=seq2.length();j++){
+      for(size_t i=0;i<=seq1.length();i++){
 	if(i>=j-shift)
 	  cerr<<nmatrix[i][j]<<"\t";
 	else
@@ -463,8 +460,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
   bool unaligned=true;
   int debugj=-1;
   int mmthreshold;
-  int numberofNs,numberofNs1,numberofNs2;
-  for(int j=1;j<=seq2.length();j++){
+  int numberofNs=0,numberofNs1=0,numberofNs2=0;
+  for(size_t j=1;j<=seq2.length();j++){
     if(j<6) mmthreshold=0;
     else if(j<10) mmthreshold=1;
     else mmthreshold=(int)(globalmm*(double)(j-nmatrix[seq1.length()][j]));
@@ -504,11 +501,11 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
     // Count number of Ns
     numberofNs1=0;
     numberofNs2=0;
-    for(int i=0;i<=read1.length();i++) if(read1[i]=='N') numberofNs1++;
-    if(usefile2) for(int i=0;i<=read2.length();i++) if(read2[i]=='N') numberofNs2++;
+    for(size_t i=0;i<=read1.length();i++) if(read1[i]=='N') numberofNs1++;
+    if(usefile2) for(size_t i=0;i<=read2.length();i++) if(read2[i]=='N') numberofNs2++;
 
     // Check length and number of Ns
-    if( (read1.length() >= minimumlength && numberofNs1 <= maxNsallowed) && ( read2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
+    if( (read1.length() >= (size_t) minimumlength && numberofNs1 <= maxNsallowed) && ( read2.length() >= (size_t) minimumlength && numberofNs2 <= maxNsallowed) ){
       noalignment++;
       if(printstats) truncatedstats<<id1<<stats1<<"\tUnaligned";
       output1<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl;
@@ -522,7 +519,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
       }
       if(printstats) truncatedstats<<endl;
     }
-    else if( (read1.length() >= minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() < minimumlength ||  numberofNs2 > maxNsallowed) ){
+    else if( (read1.length() >= (size_t) minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() < (size_t) minimumlength ||  numberofNs2 > maxNsallowed) ){
       keep1++;
       if(printstats) singletonstats<<id1<<stats1<<"\tUnaligned\n"<<flush;
       totalnumberofnucleotides += read1.length();
@@ -538,7 +535,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	output1<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl<<flush;
       }
     }
-    else if( (read1.length() < minimumlength || numberofNs1 > maxNsallowed) && (read2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
+    else if( (read1.length() < (size_t) minimumlength || numberofNs1 > maxNsallowed) && (read2.length() >= (size_t) minimumlength && numberofNs2 <= maxNsallowed) ){
       discard1++;
       replace(stats1.begin(),stats1.end(),'\t','_');
       discarded<<id1<<"_"<<stats1<<"_unaligned_tooshort_Ns:"<<numberofNs1<<endl<<read1<<"\n+\n"<<qualities1<<endl;
@@ -565,7 +562,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
     int genomiclength=0;
     int adapterlength=0;
     if(usefile2){
-      if(alignmentlength <= min(read1.length(),read2.length())){
+      if((size_t) alignmentlength <= min(read1.length(),read2.length())){
 	// We have only genomic overlap and no adapter
 	genomiclength=read1.length()+read2.length()-alignmentlength;
 	// The is the length of the combined read
@@ -645,12 +642,12 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
     // count number of Ns in trimmed reads
     numberofNs1=0;
     numberofNs2=0;
-    for(int i=0;i<=newseq1.length();i++) if(newseq1[i]=='N') numberofNs1++;
-    if(usefile2) for(int i=0;i<=newseq2.length();i++) if(newseq2[i]=='N') numberofNs2++;
+    for(size_t i=0;i<=newseq1.length();i++) if(newseq1[i]=='N') numberofNs1++;
+    if(usefile2) for(size_t i=0;i<=newseq2.length();i++) if(newseq2[i]=='N') numberofNs2++;
 
     //The two reads were aligned - but is the quality good enough?
     //    if( ( newseq1.length() >= minimumlength && numberofNs1 <= maxNsallowed ) && ( newseq2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
-    if( ( newseq1.length() >= minimumlength && numberofNs1 <= maxNsallowed ) && (collapse || ( newseq2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ) ){
+    if( ( newseq1.length() >= (size_t) minimumlength && numberofNs1 <= maxNsallowed ) && (collapse || ( newseq2.length() >= (size_t) minimumlength && numberofNs2 <= maxNsallowed) ) ){
       // Both reads are of adequate length
       if(num_of_mm <= mmthreshold && maxScore > 0){
 	// Lengths ok and the score plus number of mismatches are both ok
@@ -699,11 +696,11 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	// Count number of Ns
 	numberofNs1=0;
 	numberofNs2=0;
-	for(int i=0;i<=read1.length();i++) if(read1[i]=='N') numberofNs1++;
-	if(usefile2) for(int i=0;i<=read2.length();i++) if(read2[i]=='N') numberofNs2++;
+	for(size_t i=0;i<=read1.length();i++) if(read1[i]=='N') numberofNs1++;
+	if(usefile2) for(size_t i=0;i<=read2.length();i++) if(read2[i]=='N') numberofNs2++;
 
 	// Check length
-	if( (read1.length() >= minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
+	if( (read1.length() >= (size_t) minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() >= (size_t) minimumlength && numberofNs2 <= maxNsallowed) ){
 	  output1<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl;
 	  if(printstats) truncatedstats<<id1<<stats1<<"\tAlignmentFailed";
 	  totalnumberofnucleotides += read1.length();
@@ -718,7 +715,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	  }
 	  if(printstats) truncatedstats<<endl;
 	}
-	else if( (read1.length() >= minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() < minimumlength || numberofNs2 > maxNsallowed) ){
+	else if( (read1.length() >= (size_t) minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() < (size_t) minimumlength || numberofNs2 > maxNsallowed) ){
 	  keep1++;
 	  singleton<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl;
 	  totalnumberofnucleotides += read1.length();
@@ -731,7 +728,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	    discarded<<id2<<"_"<<stats2<<"_Ns:"<<numberofNs2<<endl<<read2<<"\n+\n"<<qualities2<<endl;
 	  }
 	}
-	else if( (read1.length() < minimumlength ||  numberofNs1 > maxNsallowed) && (read2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
+	else if( (read1.length() < (size_t) minimumlength ||  numberofNs1 > maxNsallowed) && (read2.length() >= (size_t) minimumlength && numberofNs2 <= maxNsallowed) ){
 	  discard1++;
 	  replace(stats1.begin(),stats1.end(),'\t','_');
 	  discarded<<id1<<"_"<<stats1<<"_Ns:"<<numberofNs1<<endl<<read1<<"\n+\n"<<qualities1<<endl;
@@ -763,7 +760,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
     }
     else{
       // One or both reads are too short
-      if(newseq1.length() < minimumlength || numberofNs1 > maxNsallowed){
+      if(newseq1.length() < (size_t) minimumlength || numberofNs1 > maxNsallowed){
 	// Discard read1
 	discard1++;
 	replace(stats1.begin(),stats1.end(),'\t','_');
@@ -778,7 +775,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	if(printstats) singletonstats<<id1<<stats1<<endl;
       }
       if(usefile2){
-	if(newseq2.length() < minimumlength || numberofNs2 > maxNsallowed){
+	if(newseq2.length() < (size_t) minimumlength || numberofNs2 > maxNsallowed){
 	  // Discard read2
 	  discard2++;
 	  replace(stats2.begin(),stats2.end(),'\t','_');
@@ -834,8 +831,7 @@ int main(int argc, char *argv[]){
   for(int i=1;i<argc;i++){
     if(string(argv[i]) == "--pcr1") {PCR1=toupper(string(argv[i+1]));i++;pcr1set=true;}
     else if(string(argv[i]) == "--5prime") {FIVEPRIME=toupper(string(argv[i+1]));i++;fiveprimeset=true;}
-    else if(string(argv[i]) == "--pcr2") {RCPCR2=reverse_complement(toupper(string(argv[i+1])));i++;pcr2set=true;}
-    else if(string(argv[i]) == "--rcpcr2") {RCPCR2=toupper(string(argv[i+1]));i++;pcr2set=true;}
+    else if(string(argv[i]) == "--pcr2") {PCR2=toupper(string(argv[i+1]));i++;pcr2set=true;}
     else if(string(argv[i]) == "--basename") {outfile=string(argv[i+1]);outfilegiven=true;i++;}
     else if(string(argv[i]) == "--mm") {globalmm=atof(argv[i+1]);i++;}
     else if(string(argv[i]) == "--trimns") {removeNs=true;}
@@ -920,7 +916,7 @@ int main(int argc, char *argv[]){
   // If two files they should have the same number of lines (4 per read pair).
 
   string read1,read2,temp1,temp2,id1,id2;
-  int pairs=0,matches=0,tooshort=0;
+  int pairs=0;
   
   istream *readfile1;
   istream *readfile2;
@@ -934,9 +930,8 @@ int main(int argc, char *argv[]){
   if(usefile2) 
     readfile2=new ifstream(file2);
   else{
-    // Use the same read in all alignments constructed from single end adapter and adaptor
+    // Use the same read in all alignments constructed from single end adapter
     id2="> Adapter";
-    if(!pcr1set) PCR1=reverse_complement(genericindex+shortmultiplex); // Use the concatenated adapters as read
     read2=PCR1;
     temp2=string(read2.length(),char(qualitybase+41)); // Create qualities
   }
@@ -946,7 +941,7 @@ int main(int argc, char *argv[]){
  if(usefile2){
    (*settings)<<"Paired end mode\n";
    (*settings)<<"PCR1: "<<PCR1<<((pcr1set)?" (supplied by user)\n":"\n");
-   (*settings)<<"Reverse complement of PCR2: "<<RCPCR2<<((pcr2set)?" (supplied by user)\n":"\n");
+   (*settings)<<"PCR2: "<<PCR2<<((pcr2set)?" (supplied by user)\n":"\n");
  }
  else{ 
    (*settings)<<"Single end mode\n";
