@@ -32,8 +32,8 @@
 
 using namespace std;
 
-string VERSION="AdapterRemoval ver. 1.4";
-string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--outputcollapsed file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
+string VERSION="AdapterRemoval ver. 1.5";
+string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--outputcollapsed file] [--outputcollapsedtruncated file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
 
 
 string FIVEPRIME="";
@@ -65,7 +65,8 @@ int shift=2; // Allow for slipping basepairs
 
 int sumofqualities=0;
 
-unsigned long int numberofcollapsedpairs=0;
+unsigned long int numberoffulllengthcollapsed=0;
+unsigned long int numberoftruncatedcollapsed=0;
 unsigned long int numberofseqswithadapter=0;
 unsigned long int totalnumberofnucleotides=0;
 unsigned long int totalnumberofgoodreads=0;
@@ -191,7 +192,7 @@ string reverse_complement(const string& seq){
   return reverse(complement(seq));
 }
 
-void trimNs(string& sequence,string& qualities,string& stats){
+int trimNs(string& sequence,string& qualities,string& stats){
   int length=0;
   int begin=sequence.find_first_not_of('N');
   int trimmed3=0;
@@ -206,8 +207,8 @@ void trimNs(string& sequence,string& qualities,string& stats){
     // All Ns
     begin=sequence.length();
     length=0;
-    trimmed5=sequence.length();
-    trimmed3=0;
+    trimmed5=0;
+    trimmed3=sequence.length();
   }
   if(DEBUG){
     cerr<<"Final start: "<<begin<<"\tLength: "<<length<<endl;
@@ -219,10 +220,12 @@ void trimNs(string& sequence,string& qualities,string& stats){
   if(DEBUG){
     cerr<<"After trimming: \n"<<sequence<<endl<<qualities<<endl;
   }
+  return trimmed3;
 }
 
-void trimqualities(string& sequence, string& qualities, string& stats){
+int trimqualities(string& sequence, string& qualities, string& stats){
   // Trim reads by removing low qualities as specified in string minqual.
+  // Returns number of positions trimmed in 3' end
   int length=0;
   int begin=qualities.find_first_not_of(minqual);
   int trimmed3=0;
@@ -237,8 +240,8 @@ void trimqualities(string& sequence, string& qualities, string& stats){
     // Whole sequence is of low quality
     begin=qualities.length();
     length=0;
-    trimmed5=qualities.length();
-    trimmed3=0;
+    trimmed5=0;
+    trimmed3=qualities.length();
   }
   if(DEBUG){
     cerr<<"Final start: "<<begin<<"\tLength: "<<length<<endl;
@@ -250,6 +253,7 @@ void trimqualities(string& sequence, string& qualities, string& stats){
   if(DEBUG){
     cerr<<"After trimming: \n"<<sequence<<endl<<qualities<<endl;
   }
+  return trimmed3;
 }
 
 void collapsealignment(string& seq1,string& seq2,string& qual1, string& qual2){
@@ -347,7 +351,7 @@ void trim5primeend(string& read,string& qualities){
 }
 
 // Performs the alignment of reads and primers. Reads and qualities are truncated and various statistics are calculated.
-void pairwisealignment(string read1,string read2,string qualities1,string qualities2,string id1,string id2,ostream& output1,ostream& output2,ostream& discarded, ostream& singleton, ostream& collapsed, ostream& singletonstats, ostream& truncatedstats){
+void pairwisealignment(string read1,string read2,string qualities1,string qualities2,string id1,string id2,ostream& output1,ostream& output2,ostream& discarded, ostream& singleton, ostream& collapsed, ostream& collapsedtruncated, ostream& singletonstats, ostream& truncatedstats){
   // Align read1 to reverse-complement read2
 
   // Concatenate PCR adapters and reads
@@ -654,14 +658,14 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	if(DEBUG) cerr<<"After collapse 2:\n"<<newseq1<<endl<<newqual1<<endl<<newseq2<<endl<<newqual2<<endl;
       }
     }
-
-   // Trim Ns and qualities if specified
+    int trimmed3=0;
+    // Trim Ns and qualities if specified
     if(removeNs){
-      trimNs(newseq1,newqual1,stats1);
+      trimmed3=trimNs(newseq1,newqual1,stats1);
       if(usefile2 && !collapse) trimNs(newseq2,newqual2,stats2);
     }
     if(trimquals){
-      trimqualities(newseq1,newqual1,stats1);
+      trimmed3 += trimqualities(newseq1,newqual1,stats1);
       if(usefile2 && !collapse) trimqualities(newseq2,newqual2,stats2);
     }
 
@@ -679,9 +683,15 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	// Lengths ok and the score plus number of mismatches are both ok
 	alignedok++;
 	if(collapse){
-	  numberofcollapsedpairs++;
 	  if(adapterlength>0) numberofseqswithadapter++;
-	  collapsed<<"@M_"<<id1.substr(1)<<endl<<newseq1<<"\n+\n"<<newqual1<<endl;
+	  if(trimmed3==0){
+	    collapsed<<"@M_"<<id1.substr(1)<<endl<<newseq1<<"\n+\n"<<newqual1<<endl;
+	    numberoffulllengthcollapsed++;
+	  }
+	  else{
+	    collapsedtruncated<<"@MT_"<<id1.substr(1)<<endl<<newseq1<<"\n+\n"<<newqual1<<endl;
+	    numberoftruncatedcollapsed++;
+	  }
 	  totalnumberofnucleotides += newseq1.length();
 	  totalnumberofgoodreads++;
 	  if(printstats) singletonstats<<id1<<"\t"<<id2<<stats1<<endl;
@@ -715,8 +725,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	  if(usefile2) trimNs(read2,qualities2,stats2);
 	}
 	if(trimquals){
-	  trimqualities(read1,qualities1,stats1);
-	  if(usefile2) trimqualities(read2,qualities2,stats2);
+	  trimmed3=trimqualities(read1,qualities1,stats1);
+	  if(usefile2) trimmed3=trimqualities(read2,qualities2,stats2);
 	}
 
 	// Count number of Ns
@@ -840,6 +850,7 @@ int main(int argc, char *argv[]){
   ostream *output2;
   ostream *singleton;
   ostream *collapsed;
+  ostream *collapsedtruncated;
   ostream *discarded;
   ostream *settings;
   ostream *truncatedstats;
@@ -849,6 +860,7 @@ int main(int argc, char *argv[]){
   bool output2set=false;
   bool singletonset=false;
   bool collapsedset=false;
+  bool collapsedtruncatedset=false;
   bool discardedset=false;
   bool settingsset=false;
   bool truncatedstatsset=false;
@@ -881,6 +893,7 @@ int main(int argc, char *argv[]){
     else if(string(argv[i]) == "--output2") {output2=new ofstream(argv[i+1],ofstream::out); output2set=true; i++;}
     else if(string(argv[i]) == "--singleton") {singleton=new ofstream(argv[i+1],ofstream::out); singletonset=true; i++;}
     else if(string(argv[i]) == "--outputcollapsed") {collapsed=new ofstream(argv[i+1],ofstream::out); collapsedset=true; i++;}
+    else if(string(argv[i]) == "--outputcollapsedtruncated") {collapsedtruncated=new ofstream(argv[i+1],ofstream::out); collapsedtruncatedset=true; i++;}
     else if(string(argv[i]) == "--outputstats") {truncatedstats=new ofstream(argv[i+1],ofstream::out); truncatedstatsset=true; i++;}
     else if(string(argv[i]) == "--singletonstats") {singletonstats=new ofstream(argv[i+1],ofstream::out); singletonstatsset=true; i++;}
     else if(string(argv[i]) == "--help" || string(argv[i]) == "--h" || string(argv[i]) == "-help" || string(argv[i]) == "-h")  {cout<<VERSION<<endl<<HELPTEXT<<endl; return 0;}
@@ -922,6 +935,7 @@ int main(int argc, char *argv[]){
     if(!output2set) output2=new ofstream((outfile+".pair2.truncated").c_str(),ofstream::out);
     if(!singletonset) singleton=new ofstream((outfile+".singleton.truncated").c_str(),ofstream::out);
     if(!collapsedset) collapsed=new ofstream((outfile+".collapsed").c_str(),ofstream::out);
+    if(!collapsedtruncatedset) collapsedtruncated=new ofstream((outfile+".collapsed.truncated").c_str(),ofstream::out);
     if(printstats){
       if(!singletonstatsset) singletonstats=new ofstream((outfile+".singleton.stats").c_str(),ofstream::out);
       if(!truncatedstatsset) truncatedstats=new ofstream((outfile+".pair.stats").c_str(),ofstream::out);
@@ -1010,7 +1024,7 @@ int main(int argc, char *argv[]){
 	lines++;
 	counter=0;
 	if(fiveprimeset) trim5primeend(read1,temp1);
-	pairwisealignment(read1,read2,temp1,temp2,id1,id2,*output1,*output2,*discarded,*singleton,*collapsed,*singletonstats,*truncatedstats);
+	pairwisealignment(read1,read2,temp1,temp2,id1,id2,*output1,*output2,*discarded,*singleton,*collapsed,*collapsedtruncated,*singletonstats,*truncatedstats);
       }
     }
   }
@@ -1029,7 +1043,10 @@ int main(int argc, char *argv[]){
   if(usefile2) (*settings)<<"Number of singleton mate 2 reads: "<<keep2<<endl;
 
   (*settings)<<"\nNumber of "<<((usefile2)?"read pairs":"reads")<<" with adapter: "<<numberofseqswithadapter<<endl;
-  if(collapse) (*settings)<<"Number of collapsed pairs: "<<numberofcollapsedpairs<<endl;
+  if(collapse){
+    (*settings)<<"Number of full-length collapsed pairs: "<<numberoffulllengthcollapsed<<endl;
+    (*settings)<<"Number of truncated collapsed pairs: "<<numberoftruncatedcollapsed<<endl;
+  }
   (*settings)<<"Number of retained reads: "<<totalnumberofgoodreads<<endl;
   (*settings)<<"Number of retained nucleotides: "<<totalnumberofnucleotides<<endl;		  
   (*settings)<<"Average read length of trimmed reads: "<<((totalnumberofgoodreads>0)?((double) totalnumberofnucleotides/totalnumberofgoodreads):0)<<endl;

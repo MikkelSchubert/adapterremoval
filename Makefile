@@ -4,7 +4,7 @@
 CC      = g++
 CFLAGS  = -O3
 PROG    = AdapterRemoval
-VER	= 1.4
+VER	= 1.5
 
 all: $(PROG) man
 

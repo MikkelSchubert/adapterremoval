@@ -1,6 +1,3 @@
---stats") {printstats=true;}
---outputstats") {truncatedstats=new ofstream(argv[i+1],ofstream::out); truncatedstatsset=true; i++;}
---singletonstats") {singletonstats=new ofstream(argv[i+1],ofstream::out); singletonstatsset=true; i++;}
 #!/usr/bin/perl -w
 
 =head1 NAME
@@ -13,7 +10,7 @@ B<AdapterRemoval> [--file|file1 filename] [--file2 filename] [--basename filenam
 [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version]
 [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num]
 [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence]
-[--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--outputcollapsed file] [--singletonstats file] [--discarded file] [--settings file]
+[--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--outputcollapsed file] [--outputcollapsedtruncated file] [--singletonstats file] [--discarded file] [--settings file]
 
 =head1 DESCRIPTION
 
@@ -107,6 +104,8 @@ If specified, the program will look for matches to the sequence in the 5 prime e
 
 =item B<--outputcollapsed> I<file>
 
+=item B<--outputcollapsedtruncated> I<file>
+
 =item B<--singletonstats> I<file>
 
 =item B<--discarded> I<file>
@@ -137,6 +136,8 @@ I<singleton> contains all reads where the other mate in a pair is discarded.
 
 I<outputcollapsed> Contains pairs that overlap and are collapsed into a single read (if I<--collapse> is used). The reads are renamed with an @M_ prefix.
 
+I<outputcollapsed> Contains pairs that overlap and are collapsed into a single read (if I<--collapse> is used) and have further been trimmed due to Ns and/or low quality nucleotides in the 3' end. The reads are renamed with an @MT_ prefix.
+
 I<singletonstats> (if I<--stats> is used) contains information on trimming etc. for each read in I<singleton> and I<outputcollapsed>.
 
 I<discarded> contains all reads that are discarded by the program, including information on trimming, genomic length etc.
@@ -166,7 +167,7 @@ This command would generate files I<experiment.pair1.truncated> and I<experiment
 
 The following command works as above, except that it now reads input files that are compressed using bzip2, and the truncated reads are compressed as well. The discarded reads are, well, discarded by redirecting them to /dev/null:
 
-AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --outputcollapsed >(bzip2 > experiment.collapsed.truncated.bz2) --discarded /dev/null
+AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --outputcollapsed >(bzip2 > experiment.collapsed.bz2) --outputcollapsedtruncated >(bzip2 > experiment.collapsed.truncated.bz2) --discarded /dev/null
 
 =head1 EXIT STATUS
 
