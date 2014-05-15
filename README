@@ -1,9 +1,0 @@
-Simply run:
-make
-make install (as root)
-
-Run the program:
-AdapterRemoval
-
-Read the manpage:
-man AdapterRemoval
