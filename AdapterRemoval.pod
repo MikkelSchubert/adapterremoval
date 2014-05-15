@@ -10,7 +10,7 @@ B<AdapterRemoval> [--file|file1 filename] [--file2 filename] [--basename filenam
 [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version]
 [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num]
 [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence]
-[--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--discarded file] [--settings file]
+[--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--outputcollapsed file] [--singletonstats file] [--discarded file] [--settings file]
 
 =head1 DESCRIPTION
 
@@ -76,7 +76,7 @@ Only in paired end mode. The minimum overlap between mate1 and mate2 before the 
 
 =item B<--qualitybase> I<base>
 
-The base of the quality score - either Phred+33 (i.e., Illumina 1.3+ and 1.5+) or Phred+64 (Illumina 1.8+). Default is Phred+33.
+The base of the quality score - either Phred+64 (i.e., Illumina 1.3+ and 1.5+) or Phred+33 (Illumina 1.8+). Default is Phred+33.
 
 =item B<--shift> I<num>
 
@@ -101,6 +101,8 @@ If specified, the program will look for matches to the sequence in the 5 prime e
 =item B<--outputstats> I<file>
 
 =item B<--singleton> I<file>
+
+=item B<--outputcollapsed> I<file>
 
 =item B<--singletonstats> I<file>
 
@@ -128,9 +130,11 @@ I<output2> contains trimmed mate2 reads.
 
 I<outputstats> (if I<--stats> is used) contains information on trimming etc. for each pair in output1/output2.
 
-I<singleton> contains all reads where the other mate in a pair is discarded, or pairs that overlap and are collapsed into a single read (if I<--collapse> is used).
+I<singleton> contains all reads where the other mate in a pair is discarded.
 
-I<singletonstats> (if I<--stats> is used) contains information on trimming etc. for each read in I<singleton>.
+I<outputcollapsed> Contains pairs that overlap and are collapsed into a single read (if I<--collapse> is used).
+
+I<singletonstats> (if I<--stats> is used) contains information on trimming etc. for each read in I<singleton> and I<outputcollapsed>.
 
 I<discarded> contains all reads that are discarded by the program, including information on trimming, genomic length etc.
 

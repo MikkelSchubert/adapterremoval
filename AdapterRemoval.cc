@@ -13,7 +13,7 @@
 
 using namespace std;
 
-string VERSION="AdapterRemoval ver. 1.1";
+string VERSION="AdapterRemoval ver. 1.2";
 
 string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
 
@@ -324,7 +324,7 @@ void trim5primeend(string& read,string& qualities){
 }
 
 // Performs the alignment of reads and primers. Reads and qualities are truncated and various statistics are calculated.
-void pairwisealignment(string read1,string read2,string qualities1,string qualities2,string id1,string id2,ostream& output1,ostream& output2,ostream& discarded, ostream& singleton, ostream& singletonstats, ostream& truncatedstats){
+void pairwisealignment(string read1,string read2,string qualities1,string qualities2,string id1,string id2,ostream& output1,ostream& output2,ostream& discarded, ostream& singleton, ostream& collapsed, ostream& singletonstats, ostream& truncatedstats){
   // Align read1 to reverse-complement read2
 
   // Concatenate PCR adapters and reads
@@ -524,15 +524,18 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
     }
     else if( (read1.length() >= minimumlength && numberofNs1 <= maxNsallowed) && (read2.length() < minimumlength ||  numberofNs2 > maxNsallowed) ){
       keep1++;
-      if(printstats) singletonstats<<id1<<stats1<<"\tUnaligned\n";
-      singleton<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl;
+      if(printstats) singletonstats<<id1<<stats1<<"\tUnaligned\n"<<flush;
       totalnumberofnucleotides += read1.length();
       totalnumberofgoodreads++;
-
+      // Keep read1. If we use only 1 file, output to output1. Otherwise, output to singleton
       if(usefile2){
 	discard2++;
+	singleton<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl<<flush;
 	replace(stats2.begin(),stats2.end(),'\t','_');
 	discarded<<id2<<"_"<<stats2<<"_unaligned_tooshort_Ns:"<<numberofNs2<<endl<<read2<<"\n+\n"<<qualities2<<endl;
+      }
+      else{
+	output1<<id1<<endl<<read1<<"\n+\n"<<qualities1<<endl<<flush;
       }
     }
     else if( (read1.length() < minimumlength || numberofNs1 > maxNsallowed) && (read2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
@@ -577,7 +580,6 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
       adapterlength=alignmentlength;
       genomiclength=max(0,(int)seq1.length()-alignmentlength);
     }
-
      
     if(DEBUG){
       cerr<<"Alignmentlength: "<<alignmentlength<<" Adapter length: "<<adapterlength<<" Genomic length: "<<genomiclength<<endl;
@@ -647,7 +649,8 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
     if(usefile2) for(int i=0;i<=newseq2.length();i++) if(newseq2[i]=='N') numberofNs2++;
 
     //The two reads were aligned - but is the quality good enough?
-    if( ( newseq1.length() >= minimumlength && numberofNs1 <= maxNsallowed ) && ( newseq2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
+    //    if( ( newseq1.length() >= minimumlength && numberofNs1 <= maxNsallowed ) && ( newseq2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ){
+    if( ( newseq1.length() >= minimumlength && numberofNs1 <= maxNsallowed ) && (collapse || ( newseq2.length() >= minimumlength && numberofNs2 <= maxNsallowed) ) ){
       // Both reads are of adequate length
       if(num_of_mm <= mmthreshold && maxScore > 0){
 	// Lengths ok and the score plus number of mismatches are both ok
@@ -655,7 +658,7 @@ void pairwisealignment(string read1,string read2,string qualities1,string qualit
 	if(collapse){
 	  numberofcollapsedpairs++;
 	  if(adapterlength>0) numberofseqswithadapter++;
-	  singleton<<"@COLLAPSE_"<<id1.substr(1)<<endl<<newseq1<<"\n+\n"<<newqual1<<endl;
+	  collapsed<<"@M_"<<id1.substr(1)<<endl<<newseq1<<"\n+\n"<<newqual1<<endl;
 	  totalnumberofnucleotides += newseq1.length();
 	  totalnumberofgoodreads++;
 	  if(printstats) singletonstats<<id1<<"\t"<<id2<<stats1<<endl;
@@ -813,6 +816,7 @@ int main(int argc, char *argv[]){
   ostream *output1;
   ostream *output2;
   ostream *singleton;
+  ostream *collapsed;
   ostream *discarded;
   ostream *settings;
   ostream *truncatedstats;
@@ -821,6 +825,7 @@ int main(int argc, char *argv[]){
   bool output1set=false;
   bool output2set=false;
   bool singletonset=false;
+  bool collapsedset=false;
   bool discardedset=false;
   bool settingsset=false;
   bool truncatedstatsset=false;
@@ -853,6 +858,7 @@ int main(int argc, char *argv[]){
     else if(string(argv[i]) == "--output1") {output1=new ofstream(argv[i+1],ofstream::out); output1set=true; i++;}
     else if(string(argv[i]) == "--output2") {output2=new ofstream(argv[i+1],ofstream::out); output2set=true; i++;}
     else if(string(argv[i]) == "--singleton") {singleton=new ofstream(argv[i+1],ofstream::out); singletonset=true; i++;}
+    else if(string(argv[i]) == "--outputcollapsed") {collapsed=new ofstream(argv[i+1],ofstream::out); collapsedset=true; i++;}
     else if(string(argv[i]) == "--outputstats") {truncatedstats=new ofstream(argv[i+1],ofstream::out); truncatedstatsset=true; i++;}
     else if(string(argv[i]) == "--singletonstats") {singletonstats=new ofstream(argv[i+1],ofstream::out); singletonstatsset=true; i++;}
     else if(string(argv[i]) == "--help" || string(argv[i]) == "--h" || string(argv[i]) == "-help" || string(argv[i]) == "-h")  {cout<<VERSION<<endl<<HELPTEXT<<endl; return 0;}
@@ -893,6 +899,7 @@ int main(int argc, char *argv[]){
     if(!output1set) output1=new ofstream((outfile+".pair1.truncated").c_str(),ofstream::out);
     if(!output2set) output2=new ofstream((outfile+".pair2.truncated").c_str(),ofstream::out);
     if(!singletonset) singleton=new ofstream((outfile+".singleton.truncated").c_str(),ofstream::out);
+    if(!collapsedset) collapsed=new ofstream((outfile+".collapsed").c_str(),ofstream::out);
     if(printstats){
       if(!singletonstatsset) singletonstats=new ofstream((outfile+".singleton.stats").c_str(),ofstream::out);
       if(!truncatedstatsset) truncatedstats=new ofstream((outfile+".pair.stats").c_str(),ofstream::out);
@@ -982,7 +989,7 @@ int main(int argc, char *argv[]){
 	lines++;
 	counter=0;
 	if(fiveprimeset) trim5primeend(read1,temp1);
-	pairwisealignment(read1,read2,temp1,temp2,id1,id2,*output1,*output2,*discarded,*singleton,*singletonstats,*truncatedstats);
+	pairwisealignment(read1,read2,temp1,temp2,id1,id2,*output1,*output2,*discarded,*singleton,*collapsed,*singletonstats,*truncatedstats);
       }
     }
   }
