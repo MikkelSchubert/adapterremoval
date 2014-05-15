@@ -4,12 +4,12 @@
 CC      = g++
 CFLAGS  = -O3
 PROG    = AdapterRemoval
-
+VER	= 1.4
 
 all: $(PROG) man
 
-$(PROG): $(PROG).cc
-	$(CC) $(PROG).cc $(CFLAGS) -o $(PROG)
+$(PROG): $(PROG)-$(VER).cc
+	$(CC) $(PROG)-$(VER).cc $(CFLAGS) -o $(PROG)
 
 man: 
 	pod2man $(PROG).pod > $(PROG).1

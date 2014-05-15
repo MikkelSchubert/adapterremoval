@@ -1,3 +1,22 @@
+/*************************************************************************\
+ * AdapterRemoval - cleaning next-generation sequencing reads            *
+ * Copyright (C) 2011 by Stinus Lindgreen                                *
+ * stinus@binf.ku.dk                                                     *
+ *                                                                       *
+ * This program is free software: you can redistribute it and/or modify  *
+ * it under the terms of the GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3 of the License, or     *
+ * (at your option) any later version.                                   *
+ *                                                                       *
+ * This program is distributed in the hope that it will be useful,       *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ * GNU General Public License for more details.                          *
+ *                                                                       *
+ * You should have received a copy of the GNU General Public License     *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+\*************************************************************************/
+
 #include <math.h>
 #include <sstream>
 #include <cctype>
@@ -13,13 +32,13 @@
 
 using namespace std;
 
-string VERSION="AdapterRemoval ver. 1.3";
+string VERSION="AdapterRemoval ver. 1.4";
+string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--outputcollapsed file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
 
-string HELPTEXT="This program searches for and removes remnant adapter sequences from your read data. The program can analyze both single end and paired end data. Usage:\nAdapterRemoval [--file|file1 filename] [--file2 filename] [--basename filename] [--trimns] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--5prime sequence] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--singletonstats file] [--discarded file] [--settings file]\n\nFor detailed explanation of the parameters, please refer to the man page. If nothing else, at least input your read data to the program (either stdin or from af fastq file).\nFor comments, suggestions and feedback please contact Stinus Lindgreen (stinus@binf.ku.dk).";
 
 string FIVEPRIME="";
 string PCR1="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG";
-string PCR2="AATGATACGGCGACCACCGAGATCACACTCTTTCCCTACACGACGCTCTTCCGATCT";
+string PCR2="AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT";
 string shortmultiplex="AGACGTGTGCTCTTCCGATCT";
 string genericindex="CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTC";
 
@@ -114,38 +133,45 @@ size_t min(size_t a,size_t b){
   else return b;
 }
 
-inline string toupper(string s){
-  string news="";
+inline string toupper(const string& s){
+  string news = s;
   for(size_t i=0;i<s.length();i++){
-    if(int(s[i]) >= 65 && int(s[i]) <= 90) news=news+s[i];
-    else news=news+char(int(s[i])-32);
+    if(s[i] >= 'a' && s[i] <= 'z'){
+      news[i] -= 32;
   }
+}
+
   return news;
-}
-
-string reverse(string seq){
-  string reverse="";
-  for(size_t i=0;i<seq.length();i++){
-    reverse=seq[i]+reverse;
   }
-  return reverse;
+
+inline string reverse(const string& seq){
+  return string(seq.rbegin(), seq.rend());
 }
 
-string complement(string seq){
-  string complement="";
+string complement(const string& seq){
+  string complement = seq;
   for(size_t i=0;i<seq.length();i++){
     if(seq[i]=='A')
-      complement=complement+"T";
+      complement[i]='T';
     else if(seq[i]=='C')
-      complement=complement+"G";
+      complement[i]='G';
     else if(seq[i]=='G')
-      complement=complement+"C";
+      complement[i]='C';
     else if(seq[i]=='T')
-      complement=complement+"A";
-    else // Ns etc. are just kept
-      complement=complement+seq[i];
+      complement[i]='A';
   }
   return complement;
+}
+
+inline string replace_dots(const string& s){
+  string news = s;
+  for(size_t i=0;i<news.length();i++){
+    if(news.at(i) == '.'){
+      news.at(i) = 'N';
+    }
+  }
+
+  return news;
 }
 
 double score(char n1,char n2,char q1, char q2){
@@ -161,7 +187,7 @@ double score(char n1,char n2,char q1, char q2){
   }
 }
 
-string reverse_complement(string seq){
+string reverse_complement(const string& seq){
   return reverse(complement(seq));
 }
 
@@ -993,17 +1019,19 @@ int main(int argc, char *argv[]){
     return 1;
   }
 
-  (*settings)<<"\nTotal number of read pairs: "<<lines<<endl;
-  (*settings)<<"Number of unaligned pairs: "<<noalignment<<endl;
-  (*settings)<<"Number of well aligned pairs: "<<alignedok<<endl;
+  (*settings)<<"\nTotal number of "<<((usefile2)?"read pairs: ":"reads: ")<<lines<<endl;
+  (*settings)<<"Number of unaligned "<<((usefile2)?"read pairs: ":"reads: ")<<noalignment<<endl;
+  (*settings)<<"Number of well aligned "<<((usefile2)?"pairs: ":"reads: ")<<alignedok<<endl;
   (*settings)<<"Number of inadequate alignments: "<<alignedcrappy<<endl;
   (*settings)<<"Number of discarded mate 1 reads: "<<discard1<<endl;
   (*settings)<<"Number of singleton mate 1 reads: "<<keep1<<endl;
-  (*settings)<<"Number of discarded mate 2 reads: "<<discard2<<endl;
-  (*settings)<<"Number of singleton mate 2 reads: "<<keep2<<endl;
+  if(usefile2) (*settings)<<"Number of discarded mate 2 reads: "<<discard2<<endl;
+  if(usefile2) (*settings)<<"Number of singleton mate 2 reads: "<<keep2<<endl;
 
   (*settings)<<"\nNumber of "<<((usefile2)?"read pairs":"reads")<<" with adapter: "<<numberofseqswithadapter<<endl;
   if(collapse) (*settings)<<"Number of collapsed pairs: "<<numberofcollapsedpairs<<endl;
-  (*settings)<<"Average read length of trimmed reads: "<<((totalnumberofgoodreads>0)?(totalnumberofnucleotides/totalnumberofgoodreads):0)<<endl;
+  (*settings)<<"Number of retained reads: "<<totalnumberofgoodreads<<endl;
+  (*settings)<<"Number of retained nucleotides: "<<totalnumberofnucleotides<<endl;		  
+  (*settings)<<"Average read length of trimmed reads: "<<((totalnumberofgoodreads>0)?((double) totalnumberofnucleotides/totalnumberofgoodreads):0)<<endl;
   return 0;
 }

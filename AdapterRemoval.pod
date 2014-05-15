@@ -1,3 +1,6 @@
+--stats") {printstats=true;}
+--outputstats") {truncatedstats=new ofstream(argv[i+1],ofstream::out); truncatedstatsset=true; i++;}
+--singletonstats") {singletonstats=new ofstream(argv[i+1],ofstream::out); singletonstatsset=true; i++;}
 #!/usr/bin/perl -w
 
 =head1 NAME
@@ -16,7 +19,9 @@ B<AdapterRemoval> [--file|file1 filename] [--file2 filename] [--basename filenam
 
 B<AdapterRemoval> reads either one fastq file (single end) or two fastq files (paired end). It removes the residual adapter sequence from the reads and optionally trims Ns from the reads, lowest qualities from the quality string, looks for adapter in the 5' end, and collapses overlapping reads into one read. Reads are discarded if the remaining genomic part is too short.
 
-Some additional info: The reads and adapters are transformed to upper case for comparison. The program tries to check for nonsensical combinations of parameters but please report strange behaviour, bugs and whatnots to stinus@binf.ku.dk
+Some additional info: The reads and adapters are transformed to upper case for comparison. It is assumed that the letter 'N' is used for an unknown nucleotide, but in case the program encounters a '.' in the sequence, they will be treated as (and translated into) Ns. The program tries to check for nonsensical combinations of parameters but please report strange behaviour, bugs and whatnots to stinus@binf.ku.dk
+
+If you use this program, please cite my paper: Stinus Lindgreen (2012): AdapterRemoval: easy cleaning of next-generation sequencing reads. BMC Res Notes, 5:337. doi: 10.1186/1756-0500-5-337.
 
 =head1 OPTIONS
 
@@ -32,7 +37,7 @@ Read fastq file I<filename> containing mate2 reads of a paired end run.
 
 =item B<--basename> I<filename>
 
-Dependent on the settings, the program will generate output files with names I<filename.pair1.truncated>, I<filename.pair2.truncated>, I<filename.pair.stats>, I<filename.singleton.truncated>, I<filename.singleton.stats>, I<filename.discarded> and I<filename.settings>. Default basename is I<your_output>.
+Dependent on the settings, the program will generate the following output files: In single end mode they will be called  I<filename.truncated>, I<filename.truncated.stats>, I<filename.discarded> and I<filename.settings>. Default basename is I<your_output> with single end truncated reads written to STDOUT. In paired end mode, the files are called:  I<filename.pair1.truncated>, I<filename.pair2.truncated>, I<filename.pair.stats>, I<filename.singleton.truncated>, I<filename.singleton.stats>, I<filename.discarded> and I<filename.settings>. Default basename is I<your_output>.
 
 =item B<--trimns>
 
@@ -84,11 +89,9 @@ To allow for missing bases in the 5' end of the read, the program can let the al
 
 =item B<--pcr1> I<sequence>
 
-Use I<sequence> when looking for adapter. In single end mode only pcr1 is used, The defaults are AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG for single end use and AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT for paired end use.
-
 =item B<--pcr2> I<sequence>
 
-Only in paired end mode. Use the reverse complement of I<sequence> when removing adapter. The default is AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG
+Specify the adapter sequences that you want to trim. The default sequences are PCR1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG and PCR2: AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT. The sequences you specify are used as-is without reverse-complementation. You have to make sure that the sequences you search for are correct. You always search for PCR1 in READ1 (whether single end or paired end), and you search for PCR2 in READ2. In single end mode, this corresponds to only specifying PCR1 and ignoring PCR2. In paired end mode, the construct PCR2-READ1 is aligned to READ2-PCR1. In single end mode, READ1 is aligned to PCR1. Please see my paper for details.
 
 =item B<--5prime> I<sequence>
 
@@ -132,7 +135,7 @@ I<outputstats> (if I<--stats> is used) contains information on trimming etc. for
 
 I<singleton> contains all reads where the other mate in a pair is discarded.
 
-I<outputcollapsed> Contains pairs that overlap and are collapsed into a single read (if I<--collapse> is used).
+I<outputcollapsed> Contains pairs that overlap and are collapsed into a single read (if I<--collapse> is used). The reads are renamed with an @M_ prefix.
 
 I<singletonstats> (if I<--stats> is used) contains information on trimming etc. for each read in I<singleton> and I<outputcollapsed>.
 
@@ -163,7 +166,7 @@ This command would generate files I<experiment.pair1.truncated> and I<experiment
 
 The following command works as above, except that it now reads input files that are compressed using bzip2, and the truncated reads are compressed as well. The discarded reads are, well, discarded by redirecting them to /dev/null:
 
-AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --discarded /dev/null
+AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --outputcollapsed >(bzip2 > experiment.collapsed.truncated.bz2) --discarded /dev/null
 
 =head1 EXIT STATUS
 
