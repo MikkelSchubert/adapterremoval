@@ -19,12 +19,17 @@ Major changes:
   * Significant improvements in performance, resulting in a ~5x increase in the
     rate of adapter trimming in basic version, and a ~20x increase in the rate
     of adapter trimming in the SSE enabled version (the default).
+  * Support for multiple adapter sequences as well as multiple barcode
+    sequences; AdapterRemoval will favor the highest scoring alignment,
+    favoring longer alignments over shorter alignments with the same score,
+    and favoring alignments with the fewest ambigous bases (N) involved if
+    the score and length is identical.
 
 Other improvements / bug-fixes:
   * Barcodes may now contain Ns.
   * Fixed underestimation of error-probabilities during sequence collapse.
-  * Fixed underestimation of error-probabilities of bases during collapsing,
-    if the two bases differed, but were assigned the same Phred score.
+  * Fixed (futher) underestimation of error-probabilities of bases during
+    collapsing, for conflicting base-calls with the same Phred score.
   * Fixed the maximum number of mismatches for alignments in the range of
     6 .. 9 bases always being 1, even if --mm was set to 0.
   * Fixed the maximum number of mismatches for alignments being calculated
@@ -35,4 +40,14 @@ Other improvements / bug-fixes:
   * Fixed well-aligned reads being discarded as due to the minimum-length
     requirement after trimming not being counted as well-aligned, resulting
     in the total number of alignments not matching the total number of reads.
-  * Fixed bug in shifts for PE reads, causing some alignments to be missed.
+  * Fixed bug in shifts for PE reads, which was causing some alignments to be
+    missed for adapter-only sequences.
+  * Improved input validation and sanity checks for command-line parameters.
+
+Features removed from v1.x:
+  * The use of --file1 and (optionally) --file2 is now required; reads will not
+    be read from STDIN, nor written to STDOUT by default. To approximate the
+    previous behavior, the following command may be used:
+    $ AdapterRemoval --file1 /dev/stdin --output1 /dev/stdout
+  * Per-read statistics of adapter / low-quality base trimming using --stats is
+    no longer supported.
