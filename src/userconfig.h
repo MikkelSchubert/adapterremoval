@@ -28,6 +28,9 @@
 #include <string>
 #include "argparse.h"
 #include "fastq.h"
+#include "alignment.h"
+#include "statistics.h"
+
 
 struct alignment_info;
 
@@ -54,7 +57,10 @@ public:
      * The function returns false on failure, or if --help / --version or no
      * arguments were supplied by the user.
      */
-	bool parse_args(int argc, char *argv[]);
+    bool parse_args(int argc, char *argv[]);
+
+
+    statistics create_stats() const;
 
 
     enum alignment_type
@@ -64,11 +70,10 @@ public:
         not_aligned
     };
 
-	alignment_type evaluate_alignment(const alignment_info& alignment) const;
+    alignment_type evaluate_alignment(const alignment_info& alignment) const;
 
-
-	/** Returns true if the read matches the quality criteria set by the user. **/
-	bool is_acceptable_read(const fastq& seq) const;
+    /** Returns true if the read matches the quality criteria set by the user. **/
+    bool is_acceptable_read(const fastq& seq) const;
 
 
     void open_with_default_filename(std::ofstream& stream,
@@ -79,13 +84,13 @@ public:
     void open_ifstream(std::ifstream& stream, const std::string& filename) const;
 
 
-    bool trim_barcode_if_enabled(fastq& read) const;
+    void trim_barcodes_if_enabled(fastq& read, statistics& stats) const;
 
 
     fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
 
 
-	//! Argument parser setup to parse the arguments expected by AR
+    //! Argument parser setup to parse the arguments expected by AR
     argparse::parser argparser;
 
     //! Prefix used for output files for which no filename was explicitly set
@@ -98,16 +103,14 @@ public:
     //! Set to true if both --input1 and --input2 are set.
     bool paired_ended_mode;
 
+    //! Pairs of adapters; may only contain the first value in SE enabled
+    fastq_pair_vec adapters;
 
     //! Set to true if a nucleotide barcode has been supplied by the user.
-    bool trim_barcode;
-    //! Nucleotide barcode to be trimmed from the 5' termini of mate 1 reads
-    std::string barcode;
-
-    //! Adapter sequence expected to be found at the 3' of mate 1 reads
-    std::string PCR1;
-    //! Adapter sequence expected to be found at the 3' of mate 2 reads
-    std::string PCR2;
+    bool trim_barcodes_mode;
+    //! Nucleotide barcodes to be trimmed from the 5' termini of mate 1 reads
+    //! Only the first value in the pair is defined.
+    fastq_pair_vec barcodes;
 
     //! The minimum length of trimmed reads (ie. genomic nts) to be retained
     unsigned min_genomic_length;
@@ -148,6 +151,13 @@ public:
     bool identify_adapters;
 
 private:
+    //! Sink for --pcr1, adapter sequence expected at 3' of mate 1 reads
+    std::string PCR1;
+    //! Sink for --pcr2, adapter sequence expected at 3' of mate 2 reads
+    std::string PCR2;
+    //! Sink for --5prime, barcode to be trimmed at 5' of mate 1 reads
+    std::string barcode;
+
     //! Sink for user-supplied quality score formats; use quality_input_fmt.
     std::string quality_input_base;
     //! Sink for user-supplied quality score formats; use quality_output_fmt.

@@ -56,10 +56,9 @@ userconfig::userconfig(const std::string& name,
     , input_file_1()
     , input_file_2()
     , paired_ended_mode(false)
-    , trim_barcode(false)
-    , barcode()
-    , PCR1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
-    , PCR2("AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT")
+    , adapters()
+    , trim_barcodes_mode(false)
+    , barcodes()
     , min_genomic_length(15)
     , min_alignment_length(11) // The minimum required genomic overlap before collapsing reads into one
     , mismatch_threshold(-1.0)
@@ -73,6 +72,9 @@ userconfig::userconfig(const std::string& name,
     , shift(2)
     , seed(static_cast<size_t>(time(NULL)))
     , identify_adapters(false)
+    , PCR1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
+    , PCR2("AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT")
+    , barcode()
     , quality_input_base("33")
     , quality_output_base("33")
 {
@@ -206,7 +208,7 @@ bool userconfig::parse_args(int argc, char *argv[])
     }
 
     paired_ended_mode = file_2_set;
-    trim_barcode = argparser.is_set("--5prime");
+    trim_barcodes_mode = argparser.is_set("--5prime");
 
     // Set mismatch threshold
     if (mismatch_threshold > 1) {
@@ -220,11 +222,26 @@ bool userconfig::parse_args(int argc, char *argv[])
         }
     }
 
+    adapters.push_back(fastq_pair(fastq("PCR1", PCR1, std::string(PCR1.length(), 'J')),
+                                  fastq("PCR2", PCR2, std::string(PCR2.length(), 'J'))));
+    barcodes.push_back(fastq_pair(fastq("Barcode", barcode, std::string(barcode.length(), 'J')), fastq()));
+
+
     // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
     srandom(seed);
 
     return true;
 }
+
+
+statistics userconfig::create_stats() const
+{
+    statistics stats;
+    stats.number_of_barcodes_trimmed.resize(barcodes.size());
+    stats.number_of_reads_with_adapter.resize(adapters.size());
+    return stats;
+}
+
 
 
 userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& alignment) const
@@ -306,13 +323,14 @@ void userconfig::open_ifstream(std::ifstream& stream, const std::string& filenam
 }
 
 
-bool userconfig::trim_barcode_if_enabled(fastq& read) const
+void userconfig::trim_barcodes_if_enabled(fastq& read, statistics& stats) const
 {
-    if (trim_barcode) {
-        return truncate_barcode(read, barcode, shift);
+    if (trim_barcodes_mode) {
+        const alignment_info alignment = trim_barcodes(read, barcodes, shift);
+        if (alignment.length) {
+            stats.number_of_barcodes_trimmed.at(alignment.adapter_id)++;
+        }
     }
-
-    return false;
 }
 
 
@@ -320,8 +338,9 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
 {
     fastq::ntrimmed trimmed;
     if (trim_ambiguous_bases || trim_by_quality) {
+        char quality_score = trim_by_quality ? low_quality_score : -1;
         trimmed = read.trim_low_quality_bases(trim_ambiguous_bases,
-                                              low_quality_score);
+                                              quality_score);
     }
 
     return trimmed;

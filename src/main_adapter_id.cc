@@ -11,10 +11,9 @@
 #include "main_adapter_id.h"
 #include "userconfig.h"
 #include "alignment.h"
-#include "statistics.h"
 
 
-const size_t KMER_LENGTH = 13;
+const size_t KMER_LENGTH = 12;
 const size_t N_KMERS = 2 << (2 * KMER_LENGTH);
 const size_t TOP_N_KMERS = 5;
 
@@ -127,7 +126,7 @@ void most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
 void print_consensus_adapter(const char_count_vec& counts,
                              const kmer_map& kmers,
                              const std::string& name,
-                             const std::string& expected,
+// FIXME                             const std::string& expected,
                              bool rjust = false)
 {
     const char* NTs = "ACGT";
@@ -153,12 +152,13 @@ void print_consensus_adapter(const char_count_vec& counts,
     }
 
     const std::string consensus = sequence.str();
-    std::cerr << name << ":     " << expected << "\n";
+    std::cerr << name << "\n"; // FIXME << ":     " << expected << "\n";
     std::cerr << "Consensus:  " << consensus << "\n";
     std::cerr << "            " << qualities.str() << "\n";
 
     std::cerr << "            ";
 
+#if 0
     for (size_t i = 0; i < std::min(consensus.length(), expected.length()); ++i) {
         if (consensus.at(i) != expected.at(i)) {
             std::cerr << "X";
@@ -166,9 +166,10 @@ void print_consensus_adapter(const char_count_vec& counts,
             std::cerr << "-";
         }
     }
+#endif
 
     std::cerr << "\n\n";
-    most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 9 : 8);
+    most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 9 : 9);
 }
 
 
@@ -204,8 +205,11 @@ int identify_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    const fastq empty_adapter("PCR1", "", "");
-    statistics stats;
+    const fastq empty_adapter("dummy", "", "");
+    fastq_pair_vec adapters;
+    adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
+
+    statistics stats = config.create_stats();
     fastq read1;
     fastq read2;
 
@@ -213,7 +217,6 @@ int identify_adapter_sequences(const userconfig& config)
     char_count_vec pcr2_counts;
     kmer_map pcr1_kmers(N_KMERS, 0);
     kmer_map pcr2_kmers(N_KMERS, 0);
-
 
     try {
         for (; ; ++stats.records) {
@@ -226,19 +229,17 @@ int identify_adapter_sequences(const userconfig& config)
                 break;
             }
 
-            if (config.trim_barcode_if_enabled(read1)) {
-                stats.number_of_barcodes_trimmed++;
-            }
+            config.trim_barcodes_if_enabled(read1, stats);
 
             // Reverse complement to match the orientation of read1
             read2.reverse_complement();
 
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, empty_adapter, empty_adapter, config.shift);
+            const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapters, config.shift, config.mismatch_threshold);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
             if (aln_type == userconfig::valid_alignment) {
                 stats.well_aligned_reads++;
                 if (extract_adapter_sequences(alignment, read1, read2)) {
-                    stats.number_of_reads_with_adapter++;
+                    stats.number_of_reads_with_adapter.at(0)++;
 
                     process_adapter(read1.sequence(), pcr1_counts, pcr1_kmers);
 
@@ -261,16 +262,16 @@ int identify_adapter_sequences(const userconfig& config)
 
     std::cout << "Processed " << stats.records << " read pairs ...\n"
               << "   Found " << stats.well_aligned_reads << " overlapping pairs ...\n"
-              << "   Of which " << stats.number_of_reads_with_adapter << " contained adapter sequence(s) ...\n"
+              << "   Of which " << stats.number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n"
               << std::endl;
 
-    std::string padding = std::string(std::max<int>(0, pcr1_counts.size() - config.PCR1.length()),  'N');
-    print_consensus_adapter(pcr1_counts, pcr1_kmers, "--pcr1", config.PCR1 + padding);
+//    std::string padding = std::string(std::max<int>(0, pcr1_counts.size() - config.PCR1.length()),  'N');
+    print_consensus_adapter(pcr1_counts, pcr1_kmers, "--pcr1");
     std::cerr << "\n";
 
     std::reverse(pcr2_counts.begin(), pcr2_counts.end());
-    padding = std::string(std::max<int>(0, pcr2_counts.size() - config.PCR2.length()),  'N');
-    print_consensus_adapter(pcr2_counts, pcr2_kmers, "--pcr2", padding + config.PCR2, true);
+//    padding = std::string(std::max<int>(0, pcr2_counts.size() - config.PCR2.length()),  'N');
+    print_consensus_adapter(pcr2_counts, pcr2_kmers, "--pcr2", true);
 
     return 0;
 }

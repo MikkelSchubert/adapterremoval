@@ -38,7 +38,6 @@
 
 #include "fastq.h"
 #include "alignment.h"
-#include "statistics.h"
 #include "userconfig.h"
 #include "main_adapter_id.h"
 
@@ -77,19 +76,25 @@ std::ostream& write_settings(const userconfig& config,
     settings << "Running " << NAME << " " << VERSION << " using the following options:\n";
     settings << "RNG seed: " << config.seed << "\n";
 
-    const bool pcr1set = config.argparser.is_set("--pcr1");
-    const bool pcr2set = config.argparser.is_set("--pcr2");
     if (config.paired_ended_mode) {
         settings << "Paired end mode\n";
-        settings << "PCR1: " << config.PCR1 << ((pcr1set) ? " (supplied by user)\n" : "\n");
-        settings << "PCR2: " << config.PCR2 << ((pcr2set) ? " (supplied by user)\n" : "\n");
     } else {
         settings << "Single end mode\n";
-        settings << "PCR1: " << config.PCR1 << ((pcr1set) ? " (supplied by user)\n" : "\n");
     }
 
-    if (config.trim_barcode) {
-        settings << "Trimming 5' end for " << config.barcode << "\n";
+    size_t adapter_id = 0;
+    for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, adapter_id++) {
+        settings << "PCR1[" << adapter_id << "]: " << it->first.sequence() << "\n";
+        if (config.paired_ended_mode) {
+            settings << "PCR2[" << adapter_id << "]: " << it->second.sequence() << "\n";
+        }
+    }
+
+    if (config.trim_barcodes_mode) {
+        adapter_id = 0;
+        for (fastq_pair_vec::const_iterator it = config.barcodes.begin(); it != config.barcodes.end(); ++it, adapter_id++) {
+            settings << "Mate 1 5' barcode[" << adapter_id << "]: " << it->first.sequence() << "\n";
+        }
     }
 
     settings << "Alignment shift value: " << config.shift << "\n";
@@ -115,10 +120,6 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
 
     settings << "\n";
     settings << "Total number of " << reads_type << stats.records << "\n";
-    if (config.trim_barcode) {
-        settings << "Number of reads with barcode: " << stats.number_of_barcodes_trimmed << "\n";
-    }
-
     settings << "Number of unaligned " << reads_type << stats.unaligned_reads << "\n";
     settings << "Number of well aligned " << reads_type << stats.well_aligned_reads << "\n";
     settings << "Number of inadequate alignments: " << stats.poorly_aligned_reads << "\n";
@@ -131,7 +132,17 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
     }
 
     settings << "\n";
-    settings << "Number of reads with adapter: " << stats.number_of_reads_with_adapter << "\n";
+    if (config.trim_barcodes_mode) {
+        for (size_t barcode_id = 0; barcode_id < stats.number_of_barcodes_trimmed.size(); ++barcode_id) {
+            const size_t count = stats.number_of_barcodes_trimmed.at(barcode_id);
+            settings << "Number of reads with barcode[" << barcode_id << "]: " << count << "\n";
+        }
+    }
+
+    for (size_t adapter_id = 0; adapter_id < stats.number_of_reads_with_adapter.size(); ++adapter_id) {
+        const size_t count = stats.number_of_reads_with_adapter.at(adapter_id);
+        settings << "Number of reads with adapters[" << adapter_id << "]: " << count << "\n";
+    }
 
     if (config.collapse) {
         settings << "Number of full-length collapsed pairs: " << stats.number_of_full_length_collapsed << "\n";
@@ -166,20 +177,16 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
         return false;
     }
 
-    const fastq adapter("Adapter", config.PCR1, std::string(config.PCR1.length(), 'J'));
-
     try {
         fastq read;
         for ( ; read.read(input, config.quality_input_fmt); ++stats.records) {
-            if (config.trim_barcode_if_enabled(read)) {
-                stats.number_of_barcodes_trimmed++;
-            }
+            config.trim_barcodes_if_enabled(read, stats);
 
-            const alignment_info alignment = align_single_ended_sequence(read, adapter, config.shift);
+            const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift, config.mismatch_threshold);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
             if (aln_type == userconfig::valid_alignment) {
                 truncate_single_ended_sequence(alignment, read);
-                stats.number_of_reads_with_adapter++;
+                stats.number_of_reads_with_adapter.at(alignment.adapter_id)++;
                 stats.well_aligned_reads++;
             } else if (aln_type == userconfig::poor_alignment) {
                 stats.poorly_aligned_reads++;
@@ -244,11 +251,8 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
         return false;
     }
 
-    const fastq adapter1("PCR1", config.PCR1, std::string(config.PCR1.length(), 'J'));
-    const fastq adapter2("PCR2", config.PCR2, std::string(config.PCR2.length(), 'J'));
     fastq read1;
     fastq read2;
-
     try {
         for (; ; ++stats.records) {
             const bool read_file_1_ok = read1.read(io_input_1, config.quality_input_fmt);
@@ -260,18 +264,17 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
                 break;
             }
 
-            if (config.trim_barcode_if_enabled(read1)) {
-                stats.number_of_barcodes_trimmed++;
-            }
+            config.trim_barcodes_if_enabled(read1, stats);
 
             // Reverse complement to match the orientation of read1
             read2.reverse_complement();
 
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapter1, adapter2, config.shift);
+            const alignment_info alignment = align_paired_ended_sequences(read1, read2, config.adapters, config.shift, config.mismatch_threshold);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
             if (aln_type == userconfig::valid_alignment) {
                 stats.well_aligned_reads++;
-                stats.number_of_reads_with_adapter += truncate_paired_ended_sequences(alignment, read1, read2);
+                const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
+                stats.number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
 
                 if (config.collapse) {
                     fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
@@ -372,7 +375,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        statistics stats;
+        statistics stats = config.create_stats();
         if (config.paired_ended_mode) {
             if (!process_paired_ended_reads(config, stats)) {
                 return 1;

@@ -26,16 +26,18 @@
 #define STATISTICS_H
 
 #include <cstdlib>
+#include <vector>
+
 
 struct statistics
 {
     statistics()
-      : number_of_barcodes_trimmed(0)
-      , number_of_full_length_collapsed(0)
+      : number_of_full_length_collapsed(0)
       , number_of_truncated_collapsed(0)
-      , number_of_reads_with_adapter(0)
       , total_number_of_nucleotides(0)
       , total_number_of_good_reads(0)
+      , number_of_reads_with_adapter()
+      , number_of_barcodes_trimmed()
       , unaligned_reads(0)
       , well_aligned_reads(0)
       , poorly_aligned_reads(0)
@@ -47,12 +49,13 @@ struct statistics
     {
     }
 
-    size_t number_of_barcodes_trimmed;
     size_t number_of_full_length_collapsed;
     size_t number_of_truncated_collapsed;
-    size_t number_of_reads_with_adapter;
     size_t total_number_of_nucleotides;
     size_t total_number_of_good_reads;
+
+    std::vector<size_t> number_of_reads_with_adapter;
+    std::vector<size_t> number_of_barcodes_trimmed;
 
     size_t unaligned_reads;
     size_t well_aligned_reads;
