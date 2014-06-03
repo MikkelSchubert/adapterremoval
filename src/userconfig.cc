@@ -126,7 +126,8 @@ userconfig::userconfig(const std::string& name,
         "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; only the first adapter "
         "in each pair is required / used in SE mode [current: none].");
     argparser["--mm"] = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
-        "Max error-rate when aligning reads and/or adapters; [default: 1/3 for single-ended, 1/10 for paired-ended].");
+        "Max error-rate when aligning reads and/or adapters "
+        "[default: 1/3 for single-ended; 1/10 for paired-ended; 0 when identifing adapters].");
     argparser["--maxns"] = new argparse::knob(&max_ambiguous_bases, "MAX",
         "Reads containing more ambiguous bases (N) than this number after trimming are discarded [current: %default].");
     argparser["--shift"] = new argparse::knob(&shift, "N",
@@ -272,7 +273,9 @@ bool userconfig::parse_args(int argc, char *argv[])
         mismatch_threshold = 1.0 / mismatch_threshold;
     } else if (mismatch_threshold < 0) {
         // Default values
-        if (paired_ended_mode) {
+        if (identify_adapters) {
+            mismatch_threshold = 0.0;
+        } else if (paired_ended_mode) {
             mismatch_threshold = 1.0 / 10.0;
         } else {
             mismatch_threshold = 1.0 / 3.0;
