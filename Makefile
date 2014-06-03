@@ -2,10 +2,8 @@
 # Makefile
 #
 CXX      := clang++
-CXXFLAGS := -O -g -pedantic -Wall -Wextra # -fsanitize=undefined 
-CXXFLAGS := ${CXXFLAGS} # -march=native
-# Uncomment to disable SSE optimizations
-#CXXFLAGS := ${CXXFLAGS} -DNO_SSE
+CXXFLAGS := -O -g -pedantic -Wall -Wextra # -fsanitize=undefined
+#CXXFLAGS := ${CXXFLAGS} -O3
 CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef
 
 PROG     := AdapterRemoval
@@ -47,7 +45,7 @@ $(BDIR)/%.o: src/%.cc
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
 	$(QUIET) mkdir -p $(BDIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) -c -o $@ $<
-	$(QUIET) $(CXX) -MM -MT $@ -MF $(@:.o=.deps) $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 # Executable
 build/$(PROG): $(OBJS)
@@ -100,7 +98,7 @@ $(TEST_DIR)/%.o: tests/%.cc
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -MM -MT $@ -MF $(@:.o=.deps) $<
+	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 $(TEST_DIR)/gtest%.o: gtest/src/gtest%.cc
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
