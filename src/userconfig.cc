@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <string>
 
 #include "userconfig.h"
 #include "fastq.h"
@@ -45,6 +46,25 @@ bool cleanup_and_validate_sequence(std::string& sequence,
     }
 
     return true;
+}
+
+
+fastq read_adapter_sequence(std::stringstream& instream)
+{
+    std::string adapter_seq;
+    instream >> adapter_seq;
+
+    if (instream.eof() && adapter_seq.empty()) {
+        throw fastq_error("Adapter table contains partial record");
+    } else if (instream.fail()) {
+        throw fastq_error("IO error reading adapter-table");
+    } else if (adapter_seq.empty()) {
+        throw fastq_error("Adapter table contains empty entries");
+    }
+
+    fastq::clean_sequence(adapter_seq);
+    return fastq("adapter", adapter_seq,
+                 std::string(adapter_seq.length(), 'I'));
 }
 
 
@@ -102,6 +122,9 @@ userconfig::userconfig(const std::string& name,
         "Adapter sequence expected to be found in mate 1 reads [current: %default].");
     argparser["--pcr2"] = new argparse::any(&PCR2, "SEQUENCE",
         "Adapter sequence expected to be found in reverse complemented mate 2 reads [current: %default].");
+    argparser["--pcr-list"] = new argparse::any(&PCR_list, "FILENAME",
+        "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; only the first adapter "
+        "in each pair is required / used in SE mode [current: none].");
     argparser["--mm"] = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
         "Max error-rate when aligning reads and/or adapters; [default: 1/3 for single-ended, 1/10 for paired-ended].");
     argparser["--maxns"] = new argparse::knob(&max_ambiguous_bases, "MAX",
@@ -115,7 +138,10 @@ userconfig::userconfig(const std::string& name,
     argparser["--qualitybase-output"] = new argparse::any(&quality_output_base, "BASE",
         "Quality base used to encode Phred scores in output; either 33, 64 [current: %default].");
     argparser["--5prime"] = new argparse::any(&barcode, "BARCODE",
-        "If set, the NT barcode is detected (max 1 mismatch) in and trimmed from mate 1 reads [current: %default].");
+        "If set, the NT barcode is detected (max 1 mismatch) in and trimmed from the 5' of mate 1 reads [current: %default].");
+    argparser["--5prime-list"] = new argparse::any(&barcode_list, "FILENAME",
+        "List of barcode sequences, used as if supplied to --5prime; is "
+        "parsed as SE adapters supplied to --pcr-list. [current: none].");
     argparser["--trimns"] = new argparse::flag(&trim_ambiguous_bases,
         "If set, trim ambiguous bases (N) at 5'/3' termini [current: %default]");
     argparser["--trimqualities"] = new argparse::flag(&trim_by_quality,
@@ -205,10 +231,41 @@ bool userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: --file2 specified, but --file1 is not specified\n" << std::endl;
         argparser.print_help();
         return false;
+    } else if ((argparser.is_set("--pcr1") || argparser.is_set("--pcr2"))
+               && argparser.is_set("--pcr-list")) {
+        std::cerr << "Error: Use either --pcr1 / --pcr2, or --pcr-list, not both!\n" << std::endl;
+        return false;
+    } else if (argparser.is_set("--5prime") && argparser.is_set("--5prime-list")) {
+        std::cerr << "Error: Use either --5prime or --5prime-list, not both!\n" << std::endl;
+        return false;
     }
 
     paired_ended_mode = file_2_set;
-    trim_barcodes_mode = argparser.is_set("--5prime");
+
+    if (argparser.is_set("--5prime")) {
+        trim_barcodes_mode = true;
+        barcodes.push_back(fastq_pair(fastq("Barcode", barcode, std::string(barcode.length(), 'J')), fastq()));
+    } else if (argparser.is_set("--5prime-list")) {
+        trim_barcodes_mode = true;
+        if (!read_adapters_sequences(barcode_list, barcodes, paired_ended_mode)) {
+            return false;
+        } else if (adapters.empty()) {
+            std::cerr << "Error: No barcode sequences found in table!" << std::endl;
+            return false;
+        }
+    }
+
+    if (argparser.is_set("--pcr-list")) {
+        if (!read_adapters_sequences(PCR_list, adapters, paired_ended_mode)) {
+            return false;
+        } else if (adapters.empty()) {
+            std::cerr << "Error: No adapter sequences found in table!" << std::endl;
+            return false;
+        }
+    } else {
+        adapters.push_back(fastq_pair(fastq("PCR1", PCR1, std::string(PCR1.length(), 'J')),
+                                      fastq("PCR2", PCR2, std::string(PCR2.length(), 'J'))));
+    }
 
     // Set mismatch threshold
     if (mismatch_threshold > 1) {
@@ -221,11 +278,6 @@ bool userconfig::parse_args(int argc, char *argv[])
             mismatch_threshold = 1.0 / 3.0;
         }
     }
-
-    adapters.push_back(fastq_pair(fastq("PCR1", PCR1, std::string(PCR1.length(), 'J')),
-                                  fastq("PCR2", PCR2, std::string(PCR2.length(), 'J'))));
-    barcodes.push_back(fastq_pair(fastq("Barcode", barcode, std::string(barcode.length(), 'J')), fastq()));
-
 
     // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
     srandom(seed);
@@ -344,4 +396,46 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
     }
 
     return trimmed;
+}
+
+
+bool userconfig::read_adapters_sequences(const std::string& filename,
+                                         fastq_pair_vec& adapters,
+                                         bool paired_ended)
+{
+    size_t line_num = 1;
+    std::ifstream adapter_file;
+    try {
+        open_ifstream(adapter_file, filename);
+
+        std::string line;
+        while (std::getline(adapter_file, line)) {
+            const size_t index = line.find_first_not_of(" \t");
+            if (index == std::string::npos || line.at(index) == '#') {
+                line_num++;
+                continue;
+            }
+
+            std::stringstream instream(line);
+
+            fastq adapter_5p = read_adapter_sequence(instream);
+            fastq adapter_3p;
+            if (paired_ended) {
+                adapter_3p = read_adapter_sequence(instream);
+            }
+
+            adapters.push_back(fastq_pair(adapter_5p, adapter_3p));
+            line_num++;
+        }
+    } catch (const std::ios_base::failure& error) {
+        std::cerr << "IO error reading adapter sequences (line " << line_num
+                  << "); aborting:\n    " << error.what() << std::endl;
+        return false;
+    } catch (const fastq_error& error) {
+        std::cerr << "Error parsing adapter sequences (line " << line_num
+                  << "); aborting:\n    " << error.what() << std::endl;
+        return false;
+    }
+
+    return true;
 }

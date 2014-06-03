@@ -151,12 +151,31 @@ public:
     bool identify_adapters;
 
 private:
+    /** Reads adapter sequences from a file.
+     *
+     * @param filename Path to text file containing adapter sequences
+     * @param adapters Adapters or adapter pairs are appended to this list.
+     * @param paired_ended For paired ended mode; expect pairs of sequences.
+     * @return True on success, false otherwise.
+     *
+     * PCR1 adapters are expected to be found in column 1, while PCR2 adapters
+     * are expected to be found in column 2 (if 'paried_ended' is true). These
+     * are expected to contain only the standard nucleotides (ACGTN).
+     **/
+    bool read_adapters_sequences(const std::string& filename,
+                                 fastq_pair_vec& adapters,
+                                 bool paired_ended = true);
+
     //! Sink for --pcr1, adapter sequence expected at 3' of mate 1 reads
     std::string PCR1;
     //! Sink for --pcr2, adapter sequence expected at 3' of mate 2 reads
     std::string PCR2;
+    //! Sink for --pcr-list; list of adapter sequences for --pcr1 and --pcr2
+    std::string PCR_list;
     //! Sink for --5prime, barcode to be trimmed at 5' of mate 1 reads
     std::string barcode;
+    //! Sink for --5prime-list; list of adapter sequences used for --5prime
+    std::string barcode_list;
 
     //! Sink for user-supplied quality score formats; use quality_input_fmt.
     std::string quality_input_base;
