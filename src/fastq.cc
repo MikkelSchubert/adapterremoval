@@ -32,17 +32,26 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Utility functions
 
+std::string calc_solexa_to_phred()
+{
+    const char scores[] = {
+    1,  1,  2,  2,  3, // -5 .. -1
+    3,  4,  4,  5,  5, //  0 ..  4
+    6,  7,  8,  9, 10, //  5 ..  9
+   10, 11, 12, 13, 14, // 10 .. 14
+   15, 16, 17, 18, 19, // 15 .. 19
+   20, 21, 22, 23, 24, // 20 .. 24
+   25, 26, 27, 28, 29, // 25 .. 29
+   30, 31, 32, 33, 34, // 30 .. 34
+   35, 36, 37, 38, 39, // 35 .. 39
+   40, 41, '\0'};      // 40 .. 41
+
+   return std::string(scores);
+}
+
+
 //! The corresponding Phred score for each solexa score
-const char g_solexa_to_phred[] = { 1,  1,  2,  2,  3, // -5 .. -1
-                                   3,  4,  4,  5,  5, //  0 ..  4
-                                   6,  7,  8,  9, 10, //  5 ..  9
-                                  10, 11, 12, 13, 14, // 10 .. 14
-                                  15, 16, 17, 18, 19, // 15 .. 19
-                                  20, 21, 22, 23, 24, // 20 .. 24
-                                  25, 26, 27, 28, 29, // 25 .. 29
-                                  30, 31, 32, 33, 34, // 30 .. 34
-                                  35, 36, 37, 38, 39, // 35 .. 39
-                                  40, 41};            // 40 .. 41
+const std::string g_solexa_to_phred = calc_solexa_to_phred();
 
 
 inline void convert_qualities(std::string& qualities, quality_format base)
@@ -56,7 +65,7 @@ inline void convert_qualities(std::string& qualities, quality_format base)
                 throw fastq_error("invalid solexa quality score");
             }
 
-            quality = g_solexa_to_phred[quality - MIN_SOLEXA_SCORE];
+            quality = g_solexa_to_phred.at(quality - MIN_SOLEXA_SCORE);
         } else if (base == phred_64) {
             quality -= PHRED_OFFSET_64;
         } else {
