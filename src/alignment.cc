@@ -212,7 +212,7 @@ std::vector<phred_scores> calculate_phred_score()
                 const double ptrue = Ptrue.at(i) + Ptrue.at(j);
                 const double perror = Perror.at(i) + Perror.at(j);
                 const double normconstant = 1.0 + 3.0 * std::exp(perror - ptrue);
-                scores.identical_nts = p_to_phred_33(1.0 - 1.0 / normconstant);
+                scores.identical_nts = fastq::p_to_phred_33(1.0 - 1.0 / normconstant);
             }
 
             {   // When two nucleotides differ
@@ -220,7 +220,7 @@ std::vector<phred_scores> calculate_phred_score()
                 const double perror_one = Perror.at(i) + Ptrue.at(j);
                 const double perror_both = Perror.at(i) + Perror.at(j);
                 const double normconstant = 1.0 + 2.0 * std::exp(perror_both - ptrue) + std::exp(perror_one - ptrue);
-                scores.different_nts = p_to_phred_33(1.0 - 1.0 / normconstant);
+                scores.different_nts = fastq::p_to_phred_33(1.0 - 1.0 / normconstant);
             }
         }
     }
@@ -305,15 +305,6 @@ string_pair collapse_sequence(const std::string& sequence1,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
-
-
-char p_to_phred_33(double p)
-{
-    const int raw_score = static_cast<int>(-10.0 * std::log10(p));
-    const char phred_score = static_cast<char>(std::min<int>(MAX_PHRED_SCORE, raw_score));
-    return phred_score + PHRED_OFFSET_33;
-}
-
 
 
 alignment_info::alignment_info()

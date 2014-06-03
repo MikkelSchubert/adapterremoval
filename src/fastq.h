@@ -164,6 +164,9 @@ public:
      **/
     static void clean_sequence(std::string& sequence);
 
+    /** Converts an error-probability to a Phred+33 encoded quality score. **/
+    static char p_to_phred_33(double p);
+
 
 private:
     /** Initializes record; used by constructor and read function. **/

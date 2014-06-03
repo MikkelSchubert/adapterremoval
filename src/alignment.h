@@ -32,12 +32,6 @@ typedef std::pair<fastq, fastq> fastq_pair;
 typedef std::vector<fastq_pair> fastq_pair_vec;
 
 
-#pragma message("TODO: Move to fastq")
-/** Converts an error-probability to a Phred+33 encoded quality score. **/
-char p_to_phred_33(double p);
-
-
-
 /**
  * Summarizes an alignment.
  *

@@ -23,6 +23,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>
+#include <cmath>
 #include <istream>
 #include <stdexcept>
 
@@ -316,6 +317,14 @@ void fastq::clean_sequence(std::string& sequence)
                 throw fastq_error("invalid character in FASTQ sequence");
         }
     }
+}
+
+
+char fastq::p_to_phred_33(double p)
+{
+    const int raw_score = static_cast<int>(-10.0 * std::log10(p));
+    const char phred_score = static_cast<char>(std::min<int>(MAX_PHRED_SCORE, raw_score));
+    return phred_score + PHRED_OFFSET_33;
 }
 
 

@@ -148,7 +148,7 @@ void print_consensus_adapter(const char_count_vec& counts,
         }
 
         sequence << best_nt;
-        qualities << p_to_phred_33(1.0 - best_count / static_cast<double>(total));
+        qualities << fastq::p_to_phred_33(1.0 - best_count / static_cast<double>(total));
     }
 
     const std::string consensus = sequence.str();
