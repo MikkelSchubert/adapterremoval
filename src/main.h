@@ -22,28 +22,23 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iostream>
+#ifndef MAIN_H
+#define MAIN_H
 
-#include "main.h"
-#include "userconfig.h"
-#include "main_adapter_id.h"
-#include "main_adapter_rm.h"
+#include <string>
 
+const std::string NAME = "AdapterRemoval";
+const std::string VERSION = "ver. 2.0.0-pre1";
+const std::string HELPTEXT = \
+    "This program searches for and removes remnant adapter sequences from "
+    "your read data.  The program can analyze both single end and paired end "
+    "data.  For detailed explanation of the parameters, please refer to the "
+    "man page.  For comments, suggestions  and feedback please contact Stinus\n"
+    "Lindgreen (stinus@binf.ku.dk) and Mikkel Schubert (MikkelSch@gmail.com).\n"
+    "\n"
+    "If you use the program, please cite the paper:\n"
+    "    S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next "
+    "Generation Sequencing Reads, BMC Research Notes, 5:337\n"
+    "    http://www.biomedcentral.com/1756-0500/5/337/\n";
 
-int main(int argc, char *argv[])
-{
-    std::ios_base::sync_with_stdio(false);
-
-    userconfig config(NAME, VERSION, HELPTEXT);
-    if (!config.parse_args(argc, argv)) {
-        return 1;
-    }
-
-    if (config.identify_adapters) {
-        return identify_adapter_sequences(config);
-    } else {
-        return remove_adapter_sequences(config);
-    }
-
-    return 1;
-}
+#endif

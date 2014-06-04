@@ -22,28 +22,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iostream>
+#ifndef MAIN_ADAPTER_RM
+#define MAIN_ADAPTER_RM
 
-#include "main.h"
-#include "userconfig.h"
-#include "main_adapter_id.h"
-#include "main_adapter_rm.h"
+class userconfig;
+
+int remove_adapter_sequences(const userconfig& config);
 
 
-int main(int argc, char *argv[])
-{
-    std::ios_base::sync_with_stdio(false);
-
-    userconfig config(NAME, VERSION, HELPTEXT);
-    if (!config.parse_args(argc, argv)) {
-        return 1;
-    }
-
-    if (config.identify_adapters) {
-        return identify_adapter_sequences(config);
-    } else {
-        return remove_adapter_sequences(config);
-    }
-
-    return 1;
-}
+#endif
