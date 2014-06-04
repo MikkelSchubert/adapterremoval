@@ -208,6 +208,19 @@ TEST(alignment_se, completely_overlapping_sequences_with_1_mismatch)
 }
 
 
+TEST(alignment_se, completely_overlapping_sequences_with_1_mismatch__mismatch_rate)
+{
+    const fastq record("Rec", "GGCGGAGTAA", "!!!!!!!!!!");
+    const fastq_pair_vec adapters = create_adapter_vec(fastq("Rec", "GGCGTAGTAA", "!!!!!!!!!!"));
+    const alignment_info expected = new_aln(8, 0, 10, 1);
+    ASSERT_EQ(alignment_info(), align_single_ended_sequence(record, adapters, 0, 0.00));
+    ASSERT_EQ(alignment_info(), align_single_ended_sequence(record, adapters, 0, 0.09));
+    ASSERT_EQ(expected,  align_single_ended_sequence(record, adapters, 0, 0.10));
+    ASSERT_EQ(expected,  align_single_ended_sequence(record, adapters, 0, 0.11));
+    ASSERT_EQ(expected,  align_single_ended_sequence(record, adapters, 0, 1.00));
+}
+
+
 TEST(alignment_se, completely_overlapping_sequences_with_1_mismatch_and_1_n)
 {
     const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
@@ -510,6 +523,22 @@ TEST(alignment_pe, completely_overlapping_sequences)
     ASSERT_EQ(expected, result);
     ASSERT_TRUNCATED_PE_IS_UNCHANGED(result, record1, record2);
 }
+
+
+TEST(alignment_pe, completely_overlapping_sequences_with_1_mismatch__mismatch_rate)
+{
+    const fastq record1("Rec", "ACGTAGTATT", "!!!!!!!!!!");
+    const fastq record2("Rec", "ACGCAGTATT", "!!!!!!!!!!");
+    const fastq_pair_vec adapters = create_adapter_vec(fastq("PCR1", "CGCTGA", "!!!!!!"),
+                                                       fastq("PCR2", "TGTAC",  "!!!!!"));
+    const alignment_info expected = new_aln(8, 0, 10, 1);
+    ASSERT_EQ(alignment_info(), align_paired_ended_sequences(record1, record2, adapters, 0, 0.00));
+    ASSERT_EQ(alignment_info(), align_paired_ended_sequences(record1, record2, adapters, 0, 0.09));
+    ASSERT_EQ(expected, align_paired_ended_sequences(record1, record2, adapters, 0, 0.10));
+    ASSERT_EQ(expected, align_paired_ended_sequences(record1, record2, adapters, 0, 0.11));
+    ASSERT_EQ(expected, align_paired_ended_sequences(record1, record2, adapters, 0, 1.00));
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -25,6 +25,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <vector>
 #include <stdexcept>
@@ -80,7 +81,7 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
                           const char* seq_1_ptr, const char* seq_2_ptr,
                           size_t max_mismatches)
 {
-    for (int remaining_bases = current.length; remaining_bases;) {
+    for (int remaining_bases = current.length; remaining_bases && current.n_mismatches <= max_mismatches;) {
 #if defined(__SSE__) && defined(__SSE2__)
         if (remaining_bases >= 16) {
             const __m128i s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
@@ -99,7 +100,7 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
             seq_1_ptr += 16;
             seq_2_ptr += 16;
             remaining_bases -= 16;
-        } else for (; remaining_bases; )
+        } else
 #endif
         {
             const char nt_1 = *seq_1_ptr++;
@@ -113,20 +114,10 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
 
             remaining_bases -= 1;
         }
-
-        if (current.n_mismatches > max_mismatches) {
-            return false;
-        }
-
-        // Matches count for 1, Ns for 0, and mismatches for -1
-        current.score = current.length - current.n_ambiguous - (current.n_mismatches * 2);
-
-        // Terminate early if the remaining alignments cannot possibly
-        // offer an alignment that would be accepted (see 'is_better_than').
-        if (current.score + remaining_bases < best.score) {
-            return false;
-        }
     }
+
+    // Matches count for 1, Ns for 0, and mismatches for -1
+    current.score = current.length - current.n_ambiguous - (current.n_mismatches * 2);
 
     return current.is_better_than(best);
 }
@@ -145,19 +136,22 @@ alignment_info pairwise_align_sequences(const std::string& seq1,
     for (int offset = start_offset; offset <= end_offset; ++offset) {
         const size_t initial_seq1_offset = std::max<int>(0,  offset);
         const size_t initial_seq2_offset = std::max<int>(0, -offset);
+        const size_t length = std::min(seq1.length() - initial_seq1_offset,
+                                       seq2.length() - initial_seq2_offset);
 
-        alignment_info current;
-        current.offset = offset;
-        current.length = std::min(seq1.length() - initial_seq1_offset,
-                                  seq2.length() - initial_seq2_offset);
+        if (static_cast<int>(length) >= best.score) {
+            alignment_info current;
+            current.offset = offset;
+            current.length = length;
 
-        if (static_cast<int>(current.length) >= best.score) {
             const size_t max_mismatches = static_cast<size_t>(max_mismatch_rate * current.length);
             const char* seq_1_ptr = seq1.data() + initial_seq1_offset;
             const char* seq_2_ptr = seq2.data() + initial_seq2_offset;
 
             if (compare_subsequences(best, current, seq_1_ptr, seq_2_ptr, max_mismatches)) {
-                best = current;
+                if (current.n_mismatches <= max_mismatches) {
+                    best = current;
+                }
             }
         }
     }
