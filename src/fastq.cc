@@ -222,39 +222,26 @@ bool fastq::read(std::istream& instream, quality_format encoding)
         throw fastq_error("FASTQ header did not start with '@'  ");
     }
 
-    std::getline(instream, m_header);
-    if (instream.eof()) {
-        // partial header read before EOF
-        throw fastq_error("EOF while reading FASTQ header");
-    } else if (instream.fail()) {
+    if (!std::getline(instream, m_header)) {
         throw fastq_error("IO error while reading FASTQ header");
     } else if (m_header.empty()) {
         throw fastq_error("FASTQ header is empty");
     }
 
-    std::getline(instream, m_sequence);
-    if (instream.eof()) {
-        throw fastq_error("partial FASTQ record; eof encountered instead of sequence");
-    } else if (instream.fail()) {
+    if (!std::getline(instream, m_sequence)) {
         throw fastq_error("IO error reading FASTQ sequence");
     } else if (m_sequence.empty()) {
         throw fastq_error("sequence is empty");
     }
 
     std::string separator;
-    getline(instream, separator);
-    if (instream.eof()) {
-        throw fastq_error("partial FASTQ record; eof encountered instead of separator");
-    } else if (instream.fail()) {
+    if (!std::getline(instream, separator)) {
         throw fastq_error("IO error reading FASTQ separator");
     } else if (separator.empty() || separator.at(0) != '+') {
         throw fastq_error("partial FASTQ record; expected separator (+) not found");
     }
 
-    std::getline(instream, m_qualities);
-    if (instream.eof() && m_qualities.empty()) {
-        throw fastq_error("partial FASTQ record; eof encountered instead of qualities");
-    } else if (instream.fail()) {
+    if (!std::getline(instream, m_qualities)) {
         throw fastq_error("IO error reading FASTQ qualities");
     } else if (m_qualities.empty()) {
         throw fastq_error("sequence is empty");
@@ -267,21 +254,23 @@ bool fastq::read(std::istream& instream, quality_format encoding)
 
 bool fastq::write(std::ostream& outstream, quality_format encoding) const
 {
-    std::string qualities = m_qualities;
-    if (encoding == phred_64) {
+    outstream
+        << '@' << m_header << '\n'
+        << m_sequence << '\n'
+        << "+\n";
+
+    if (encoding == phred_33) {
+        outstream << m_qualities << '\n';
+    } else if (encoding == phred_64) {
+        std::string qualities = m_qualities;
         for (std::string::iterator it = qualities.begin(); it != qualities.end(); ++it) {
             // Phred+64 is limite to scores in the range 64 + (0 .. 40)
             *it = std::min<char>(64 + 40, *it + 31);
         }
+        outstream << qualities << '\n';
     } else if (encoding == solexa) {
         throw std::invalid_argument("writing solexa scores not supported");
     }
-
-    outstream
-        << "@" << m_header << "\n"
-        << m_sequence << "\n"
-        << "+\n"
-        << qualities << "\n";
 
     return !outstream.fail();
 }
