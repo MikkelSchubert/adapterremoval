@@ -687,7 +687,7 @@ TEST(collapsing, partial_overlap)
 
 TEST(collapsing, complete_overlap_both_directions)
 {
-    fastq record1("Rec1", "ATATTATAA", "JJJJJJJJJ");
+    fastq record1("Rec1",  "ATATTATAA", "JJJJJJJJJ");
     fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
     const alignment_info alignment = new_aln(0, -1);
     ASSERT_EQ(2, truncate_paired_ended_sequences(alignment, record1, record2));
@@ -711,7 +711,7 @@ TEST(collapsing, complete_overlap_mate_1)
 
 TEST(collapsing, complete_overlap_mate_2)
 {
-    fastq record1("Rec1", "ATATTATA", "JJJJJJJJ");
+    fastq record1("Rec1",  "ATATTATA", "JJJJJJJJ");
     fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
     const alignment_info alignment = new_aln(0, -1);
     ASSERT_EQ(1, truncate_paired_ended_sequences(alignment, record1, record2));
@@ -728,6 +728,18 @@ TEST(collapsing, unequal_sequence_length__mate_1_shorter)
     const alignment_info alignment = new_aln(0, 3);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    ASSERT_EQ(collapsed_expected, collapsed_result);
+}
+
+
+TEST(collapsing, unequal_sequence_length__mate_1_shorter__mate_2_extends_past)
+{
+    fastq record1("Rec1", "ATA", "012");
+    fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
+    const alignment_info alignment = new_aln(0, -2);
+    ASSERT_EQ(1, truncate_paired_ended_sequences(alignment, record1, record2));
+    const fastq collapsed_expected = fastq("Rec1", "ATANACGT", "012DEFGH");
     const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
@@ -814,6 +826,15 @@ TEST(collapsing, consensus_bases__different_nucleotides__same_quality_2)
     const fastq collapsed_expected = fastq("Rec1", "T", "#");
     const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
     ASSERT_EQ(collapsed_expected, collapsed_result);
+}
+
+
+TEST(collapsing, offset_past_the_end)
+{
+    const fastq record1("Rec1", "G", "1");
+    const fastq record2("Rec2", "T", "1");
+    const alignment_info alignment = new_aln(0, 2);
+    ASSERT_THROW(collapse_paired_ended_sequences(alignment, record1, record2), std::invalid_argument);
 }
 
 

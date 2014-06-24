@@ -81,45 +81,46 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
                           const char* seq_1_ptr, const char* seq_2_ptr,
                           size_t max_mismatches)
 {
-    for (int remaining_bases = current.length; remaining_bases && current.n_mismatches <= max_mismatches;) {
+    int remaining_bases = current.length;
+
 #if defined(__SSE__) && defined(__SSE2__)
-        if (remaining_bases >= 16) {
-            const __m128i s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
-            const __m128i s2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
+    while (remaining_bases >= 16 && current.n_mismatches <= max_mismatches) {
+        const __m128i s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
+        const __m128i s2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
 
-            // Sets 0xFF for every byte where one or both nts is N
-            const __m128i ns_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, N_MASK_128),
-                                                 _mm_cmpeq_epi8(s2, N_MASK_128));
+        // Sets 0xFF for every byte where one or both nts is N
+        const __m128i ns_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, N_MASK_128),
+                                             _mm_cmpeq_epi8(s2, N_MASK_128));
 
-            // Sets 0xFF for every byte where bytes differ, but neither is N
-            const __m128i mm_mask = ~_mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
+        // Sets 0xFF for every byte where bytes differ, but neither is N
+        const __m128i mm_mask = ~_mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
-            current.n_ambiguous += COUNT_BITS_128(_mm_and_si128(ns_mask, BIT_MASK_128));
-            current.n_mismatches += COUNT_BITS_128(_mm_and_si128(mm_mask, BIT_MASK_128));
+        current.n_ambiguous += COUNT_BITS_128(_mm_and_si128(ns_mask, BIT_MASK_128));
+        current.n_mismatches += COUNT_BITS_128(_mm_and_si128(mm_mask, BIT_MASK_128));
 
-            seq_1_ptr += 16;
-            seq_2_ptr += 16;
-            remaining_bases -= 16;
-        } else
+        seq_1_ptr += 16;
+        seq_2_ptr += 16;
+        remaining_bases -= 16;
+    }
 #endif
-        {
-            const char nt_1 = *seq_1_ptr++;
-            const char nt_2 = *seq_2_ptr++;
 
-            if (nt_1 == 'N' || nt_2 == 'N') {
-                current.n_ambiguous++;
-            } else if (nt_1 != nt_2) {
-                current.n_mismatches++;
-            }
+    while (remaining_bases && current.n_mismatches <= max_mismatches) {
+        const char nt_1 = *seq_1_ptr++;
+        const char nt_2 = *seq_2_ptr++;
 
-            remaining_bases -= 1;
+        if (nt_1 == 'N' || nt_2 == 'N') {
+            current.n_ambiguous++;
+        } else if (nt_1 != nt_2) {
+            current.n_mismatches++;
         }
+
+        remaining_bases -= 1;
     }
 
     // Matches count for 1, Ns for 0, and mismatches for -1
     current.score = current.length - current.n_ambiguous - (current.n_mismatches * 2);
 
-    return current.is_better_than(best);
+    return current.n_mismatches <= max_mismatches && current.is_better_than(best);
 }
 
 
@@ -149,9 +150,7 @@ alignment_info pairwise_align_sequences(const std::string& seq1,
             const char* seq_2_ptr = seq2.data() + initial_seq2_offset;
 
             if (compare_subsequences(best, current, seq_1_ptr, seq_2_ptr, max_mismatches)) {
-                if (current.n_mismatches <= max_mismatches) {
-                    best = current;
-                }
+                best = current;
             }
         }
     }
@@ -465,37 +464,30 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                       const fastq& read1,
                                       const fastq& read2)
 {
-    if (alignment.offset > 0) {
-        // Offset to the first base overlapping read 2
-        const size_t read_1_offset = static_cast<size_t>(alignment.offset);
-        const std::string read_1_seq = read1.sequence().substr(0, read_1_offset);
-        const std::string read_1_qual = read1.qualities().substr(0, read_1_offset);
-
-        // Offset to the last base overlapping read 1
-        const size_t read_2_offset = static_cast<size_t>(static_cast<int>(read1.length()) - alignment.offset);
-        const std::string read_2_qual = read2.qualities().substr(read_2_offset);
-        const std::string read_2_seq = read2.sequence().substr(read_2_offset);
-
-        // Collapse only the overlapping parts
-        string_pair collapsed = collapse_sequence(read1.sequence().substr(read_1_offset),
-                                                  read2.sequence().substr(0, read_2_offset),
-                                                  read1.qualities().substr(read_1_offset),
-                                                  read2.qualities().substr(0, read_2_offset));
-
-        return fastq(read1.header(),
-                     read_1_seq + collapsed.first + read_2_seq,
-                     read_1_qual + collapsed.second + read_2_qual);
-    } else {
-        // Following trimming of offset < 0, read1.length() == read2.length()
-        string_pair collapsed = collapse_sequence(read1.sequence(),
-                                                  read2.sequence(),
-                                                  read1.qualities(),
-                                                  read2.qualities());
-
-        return fastq(read1.header(),
-                     collapsed.first,
-                     collapsed.second);
+    if (alignment.offset > static_cast<int>(read1.length())) {
+        // Gap between the two reads is not allowed
+        throw std::invalid_argument("invalid offset");
     }
+
+    // Offset to the first base overlapping read 2
+    const size_t read_1_offset = static_cast<size_t>(std::max(0, alignment.offset));
+    const std::string read_1_seq = read1.sequence().substr(0, read_1_offset);
+    const std::string read_1_qual = read1.qualities().substr(0, read_1_offset);
+
+    // Offset to the last base overlapping read 1
+    const size_t read_2_offset = static_cast<int>(read1.length()) - std::max(0, alignment.offset);
+    const std::string read_2_seq = read2.sequence().substr(read_2_offset);
+    const std::string read_2_qual = read2.qualities().substr(read_2_offset);
+
+    // Collapse only the overlapping parts
+    string_pair collapsed = collapse_sequence(read1.sequence().substr(read_1_offset),
+                                              read2.sequence().substr(0, read_2_offset),
+                                              read1.qualities().substr(read_1_offset),
+                                              read2.qualities().substr(0, read_2_offset));
+
+    return fastq(read1.header(),
+                 read_1_seq + collapsed.first + read_2_seq,
+                 read_1_qual + collapsed.second + read_2_qual);
 }
 
 
