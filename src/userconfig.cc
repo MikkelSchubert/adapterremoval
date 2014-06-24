@@ -28,6 +28,7 @@
 #include <cstring>
 #include <cerrno>
 #include <string>
+#include <stdexcept>
 
 #include "userconfig.h"
 #include "fastq.h"
@@ -155,7 +156,10 @@ userconfig::userconfig(const std::string& name,
     argparser["--minalignmentlength"] = new argparse::knob(&min_alignment_length, "LENGTH",
         "If --collapse is set, reads must overlap at least this number of bases to be collapsed [current: %default].");
     argparser["--collapse"] = new argparse::flag(&collapse,
-        "If set, paired ended reads which overlapp at least --minalignmentlength bases are combined into a single consensus read [current: %default].");
+        "If set, paired ended reads which overlapp at least --minalignmentlength "
+        "bases are combined into a single consensus read; for single-ended reads, "
+        "full inserts are identified by requiring --minalignmentlength overlap with "
+        "the adapter sequence [current: %default].");
 
     argparser.add_seperator();
     argparser["--identify-adapters"] = new argparse::flag(&identify_adapters,
@@ -219,25 +223,25 @@ bool userconfig::parse_args(int argc, char *argv[])
     const bool file_1_set = argparser.is_set("--file1");
     const bool file_2_set = argparser.is_set("--file2");
 
-    if (collapse && !file_2_set) {
-        std::cerr << "You tried to collapse a single file. Collapse has been reset to false." << std::endl;
-        collapse = false;
-    } else if (!(file_1_set || file_2_set)) {
+    if (!(file_1_set || file_2_set)) {
         std::cerr << "Error: No input files (--file1 / --file2) specified.\n"
-                  << "Please specify at least one input file using --file1 FILENAME.\n"
+                  << "Please specify at least one input file using --file1 FILENAME."
                   << std::endl;
-        argparser.print_help();
         return false;
-    } else if (file_2_set && !file_2_set) {
-        std::cerr << "Error: --file2 specified, but --file1 is not specified\n" << std::endl;
-        argparser.print_help();
+    } else if (file_2_set && !file_1_set) {
+        std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
         return false;
     } else if ((argparser.is_set("--pcr1") || argparser.is_set("--pcr2"))
                && argparser.is_set("--pcr-list")) {
-        std::cerr << "Error: Use either --pcr1 / --pcr2, or --pcr-list, not both!\n" << std::endl;
+        std::cerr << "Error: Use either --pcr1 / --pcr2, or --pcr-list, not both!" << std::endl;
         return false;
     } else if (argparser.is_set("--5prime") && argparser.is_set("--5prime-list")) {
-        std::cerr << "Error: Use either --5prime or --5prime-list, not both!\n" << std::endl;
+        std::cerr << "Error: Use either --5prime or --5prime-list, not both!" << std::endl;
+        return false;
+    } else if (identify_adapters && !(file_1_set && file_2_set)) {
+        std::cerr << "Error: Both input files (--file1 / --file2) must be "
+                  << "specified when using --identify-adapters."
+                  << std::endl;
         return false;
     }
 
@@ -319,20 +323,27 @@ userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& 
     // If too many mismatches
     if (alignment.n_mismatches > mm_threshold) {
         return not_aligned;
-    } else if (collapse || identify_adapters) {
-        if (n_aligned < static_cast<size_t>(min_alignment_length)) {
-            // If the aligned part is too short to collapse the reads,
-            // treat them as unaligned. This is also done when attempting to
-            // identify adapter sequences, to avoid very short overlaps
-            // expected due between the ends of the sequences
-            return not_aligned;
-        }
     } else if (alignment.score <= 0) {
         // Very poor alignment, will not be considered
         return poor_alignment;
     }
 
     return valid_alignment;
+}
+
+
+bool userconfig::is_alignment_collapsible(const alignment_info& alignment) const
+{
+    if (alignment.length < alignment.n_ambiguous) {
+        throw std::invalid_argument("#ambiguous bases > read length");
+    }
+
+    const size_t n_aligned = alignment.length - alignment.n_ambiguous;
+    if (n_aligned < min_alignment_length) {
+        return false;
+    }
+
+    return collapse || identify_adapters;
 }
 
 

@@ -24,6 +24,11 @@ Major changes:
     favoring longer alignments over shorter alignments with the same score,
     and favoring alignments with the fewest ambigous bases (N) involved if
     the score and length is identical.
+  * If --collapse is set in single-ended mode, "collapsed" reads will be
+    identified using the same criteria as for paired-ended mode, i.e. requiring
+    that at least --minalignmentlen bases overlap, and written to .collapsed
+    and .collapsed.truncated. This allows for the identification of reads
+    that are complete inserts.
 
 Other improvements / bug-fixes:
   * Barcodes may now contain Ns.

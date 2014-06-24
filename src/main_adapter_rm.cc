@@ -140,17 +140,55 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
 }
 
 
+void process_collapsed_read(const userconfig& config, statistics& stats,
+                            fastq& collapsed_read,
+                            std::ofstream& io_discarded,
+                            std::ofstream& io_collapsed,
+                            std::ofstream& io_collapsed_truncated)
+{
+    const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
+
+    // If trimmed, the external coordinates are no longer reliable
+    // for determining the size of the original template.
+    const bool was_trimmed = trimmed.first || trimmed.second;
+    if (was_trimmed) {
+        collapsed_read.add_prefix_to_header("MT_");
+        stats.number_of_truncated_collapsed++;
+    } else {
+        collapsed_read.add_prefix_to_header("M_");
+        stats.number_of_full_length_collapsed++;
+    }
+
+    if (config.is_acceptable_read(collapsed_read)) {
+        stats.total_number_of_nucleotides += collapsed_read.length();
+        stats.total_number_of_good_reads++;
+        collapsed_read.write((was_trimmed ? io_collapsed_truncated : io_collapsed), config.quality_output_fmt);
+    } else {
+        stats.discard1++;
+        stats.discard2++;
+        collapsed_read.write(io_discarded, config.quality_output_fmt);
+    }
+}
+
+
 bool process_single_ended_reads(const userconfig& config, statistics& stats)
 {
-    std::ifstream input;
-    std::ofstream output;
-    std::ofstream discarded;
+    std::ifstream io_input;
+    std::ofstream io_output;
+    std::ofstream io_discarded;
+    std::ofstream io_collapsed;
+    std::ofstream io_collapsed_truncated;
 
     try {
-        config.open_ifstream(input, config.input_file_1);
+        config.open_ifstream(io_input, config.input_file_1);
 
-        config.open_with_default_filename(discarded, "--discarded", ".discarded");
-        config.open_with_default_filename(output, "--output1", ".truncated");
+        config.open_with_default_filename(io_discarded, "--discarded", ".discarded");
+        config.open_with_default_filename(io_output, "--output1", ".truncated");
+
+        if (config.collapse) {
+            config.open_with_default_filename(io_collapsed, "--outputcollapsed", ".collapsed");
+            config.open_with_default_filename(io_collapsed_truncated, "--outputcollapsedtruncated", ".collapsed.truncated");
+        }
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
         return false;
@@ -158,15 +196,21 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
 
     try {
         fastq read;
-        for ( ; read.read(input, config.quality_input_fmt); ++stats.records) {
+        for ( ; read.read(io_input, config.quality_input_fmt); ++stats.records) {
             config.trim_barcodes_if_enabled(read, stats);
 
             const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift, config.mismatch_threshold);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
+
             if (aln_type == userconfig::valid_alignment) {
                 truncate_single_ended_sequence(alignment, read);
                 stats.number_of_reads_with_adapter.at(alignment.adapter_id)++;
                 stats.well_aligned_reads++;
+
+                if (config.is_alignment_collapsible(alignment)) {
+                    process_collapsed_read(config, stats, read, io_discarded, io_collapsed, io_collapsed_truncated);
+                    continue;
+                }
             } else if (aln_type == userconfig::poor_alignment) {
                 stats.poorly_aligned_reads++;
             } else {
@@ -179,11 +223,11 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
                 stats.total_number_of_good_reads++;
                 stats.total_number_of_nucleotides += read.length();
 
-                read.write(output, config.quality_output_fmt);
+                read.write(io_output, config.quality_output_fmt);
             } else {
                 stats.discard1++;
 
-                read.write(discarded, config.quality_output_fmt);
+                read.write(io_discarded, config.quality_output_fmt);
             }
         }
     } catch (const fastq_error& error) {
@@ -255,32 +299,9 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
                 const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
                 stats.number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
 
-                if (config.collapse) {
+                if (config.is_alignment_collapsible(alignment)) {
                     fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
-                    const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
-
-                    // If trimmed, the external coordinates are no longer reliable
-                    // for determining the size of the original template.
-                    const bool was_trimed = trimmed.first || trimmed.second;
-                    if (was_trimed) {
-                        collapsed_read.add_prefix_to_header("MT_");
-                        stats.number_of_truncated_collapsed++;
-                    } else {
-                        collapsed_read.add_prefix_to_header("M_");
-                        stats.number_of_full_length_collapsed++;
-                    }
-
-                    if (config.is_acceptable_read(collapsed_read)) {
-                        stats.total_number_of_nucleotides += collapsed_read.length();
-                        stats.total_number_of_good_reads++;
-                        collapsed_read.write((was_trimed ? io_collapsed_truncated : io_collapsed), config.quality_output_fmt);
-                    } else {
-                        stats.discard1++;
-                        stats.discard2++;
-                        collapsed_read.write(io_discarded, config.quality_output_fmt);
-                    }
-
-                    // The original (uncollapsed) reads are not retained
+                    process_collapsed_read(config, stats, collapsed_read, io_discarded, io_collapsed, io_collapsed_truncated);
                     continue;
                 }
             } else if (aln_type == userconfig::poor_alignment) {
