@@ -29,10 +29,21 @@
 #include <cerrno>
 #include <string>
 #include <stdexcept>
+#include <sys/time.h>
 
 #include "userconfig.h"
 #include "fastq.h"
 #include "alignment.h"
+
+
+
+size_t get_seed()
+{
+    struct timeval timestamp;
+    gettimeofday(&timestamp, NULL);
+
+    return (timestamp.tv_sec << 20) | timestamp.tv_usec;
+}
 
 
 bool cleanup_and_validate_sequence(std::string& sequence,
@@ -91,7 +102,7 @@ userconfig::userconfig(const std::string& name,
     , max_ambiguous_bases(1000)
     , collapse(false)
     , shift(2)
-    , seed(static_cast<size_t>(time(NULL)))
+    , seed(get_seed())
     , identify_adapters(false)
     , PCR1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , PCR2("AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT")
@@ -277,9 +288,7 @@ bool userconfig::parse_args(int argc, char *argv[])
         mismatch_threshold = 1.0 / mismatch_threshold;
     } else if (mismatch_threshold < 0) {
         // Default values
-        if (identify_adapters) {
-            mismatch_threshold = 0.0;
-        } else if (paired_ended_mode) {
+        if (paired_ended_mode || identify_adapters) {
             mismatch_threshold = 1.0 / 10.0;
         } else {
             mismatch_threshold = 1.0 / 3.0;

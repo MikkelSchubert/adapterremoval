@@ -11,11 +11,11 @@ previous versions of AdapterRemoval, and adding a few new features:
 Major changes:
   * Strict validation of input FASTQ records, to ensure that records are well
     formed, that quality scores fall within the expected range given the
-    specified format/offset, and more
+    specified format/offset, and more.
   * Limited support for Solexa quality scores; these are converted to and
     saved as Phred+33 or Phred+64 encoded scores.
   * Improved handling of asymetric read-pairs, in which the length of the
-    mate1 read differs from the length of the mate2 read.
+    mate 1 read differs from the length of the mate 2 read.
   * Significant improvements in performance, resulting in a ~5x increase in the
     rate of adapter trimming in basic version, and a ~20x increase in the rate
     of adapter trimming in the SSE enabled version (the default).
@@ -29,6 +29,9 @@ Major changes:
     that at least --minalignmentlen bases overlap, and written to .collapsed
     and .collapsed.truncated. This allows for the identification of reads
     that are complete inserts.
+  * Added the ability to identify adapter sequences for paired-ended reads, by
+    identifying reads which extends past the ends of the template sequence, and
+    extracting the adapters from these.
 
 Other improvements / bug-fixes:
   * Barcodes may now contain Ns.
@@ -42,12 +45,17 @@ Other improvements / bug-fixes:
     thereby inflating the number of mismatches allowed for poor alignments.
   * Replaced use of lower bits of rand() calls with random(), as the former
     generates low entropy bits in that range on some (non-Linux) platforms.
-  * Fixed well-aligned reads being discarded as due to the minimum-length
+  * Fixed well-aligned reads being discarded due to the minimum-length
     requirement after trimming not being counted as well-aligned, resulting
     in the total number of alignments not matching the total number of reads.
   * Fixed bug in shifts for PE reads, which was causing some alignments to be
-    missed for adapter-only sequences.
+    missed for adapter-only (i.e. no insert sequence) sequences.
   * Improved input validation and sanity checks for command-line parameters.
+  * It is now possible to explicitly specify the RNG seed, to allow individual
+    runs to be reproduced; the seed is also written to the .settings file.
+  * Seed is now initialized using a mix of seconds and microseconds, instead of
+    the current time in seconds, to reduce the risk of multiple instances
+    spawed within a short timespan from using the same seed.
 
 Features removed from v1.x:
   * The use of --file1 and (optionally) --file2 is now required; reads will not
