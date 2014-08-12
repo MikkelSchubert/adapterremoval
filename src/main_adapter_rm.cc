@@ -287,6 +287,9 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
                 break;
             }
 
+            // Throws if read-names or mate numbering does not match
+            fastq::validate_paired_reads(read1, read2);
+
             config.trim_barcodes_if_enabled(read1, stats);
 
             // Reverse complement to match the orientation of read1
@@ -357,7 +360,8 @@ int remove_adapter_sequences(const userconfig& config)
     try {
         config.open_with_default_filename(settings, "--settings", ".settings");
     } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
+        std::cerr << "IO error opening settings file; aborting:\n    "
+                  << error.what() << std::endl;
         return 1;
     }
 

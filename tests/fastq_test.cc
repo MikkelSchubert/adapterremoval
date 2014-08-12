@@ -584,3 +584,67 @@ TEST(fastq, reject_non_nucleotides_2)
     std::string sequence = "ACGTAC1GN";
     ASSERT_THROW(fastq::clean_sequence(sequence), fastq_error);
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Validating pairs
+
+TEST(fastq, validate_paired_reads__throws_if_order_is_wrong)
+{
+    const fastq mate1 = fastq("Mate/1", "ACGT", "!!#$");
+    const fastq mate2 = fastq("Mate/2", "GCTAA", "$!@#$");
+    fastq::validate_paired_reads(mate1, mate2);
+    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__throws_if_mate_is_empty)
+{
+    const fastq mate1 = fastq("Mate", "", "");
+    const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
+    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate1), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__throws_if_only_mate_1_is_numbered)
+{
+   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
+   const fastq mate1 = fastq("Mate", "ACGT", "!!#$");
+   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+   ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__throws_if_only_mate_2_is_numbered)
+{
+   const fastq mate2 = fastq("Mate", "GCTAA", "$!@#$");
+   const fastq mate1 = fastq("Mate/2", "ACGT", "!!#$");
+   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+   ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__throws_if_mate_is_misnumbered)
+{
+   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
+   const fastq mate1 = fastq("Mate/3", "ACGT", "!!#$");
+   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__throws_if_same_mate_numbers)
+{
+   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
+   const fastq mate1 = fastq("Mate/1", "ACGT", "!!#$");
+   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__throws_if_name_differs)
+{
+   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
+   const fastq mate1 = fastq("WrongName/2", "ACGT", "!!#$");
+   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+}

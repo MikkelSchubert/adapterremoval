@@ -84,6 +84,44 @@ inline void convert_qualities(std::string& qualities, quality_format base)
 }
 
 
+struct mate_info
+{
+    mate_info()
+      : name()
+      , mate(unknown)
+    {}
+
+    std::string name;
+    enum { unknown, mate1, mate2 } mate;
+};
+
+
+inline mate_info get_mate_information(const fastq& read)
+{
+    mate_info info;
+    const std::string& header = read.header();
+
+    size_t pos = header.find_first_of(' ');
+    if (pos == std::string::npos) {
+        pos = header.length();
+    }
+
+    if (pos >= 2) {
+        const std::string substr = header.substr(0, pos);
+        if (substr.substr(pos - 2) == "/1") {
+            info.mate = mate_info::mate1;
+            pos -= 2;
+        } else if (substr.substr(pos - 2) == "/2") {
+            info.mate = mate_info::mate2;
+            pos -= 2;
+        }
+    }
+
+    info.name = header.substr(0, pos);
+    return info;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // fastq_error
 
@@ -314,6 +352,33 @@ char fastq::p_to_phred_33(double p)
     const int raw_score = static_cast<int>(-10.0 * std::log10(p));
     const char phred_score = static_cast<char>(std::min<int>(MAX_PHRED_SCORE, raw_score));
     return phred_score + PHRED_OFFSET_33;
+}
+
+
+void fastq::validate_paired_reads(const fastq& mate1, const fastq& mate2)
+{
+    if (mate1.length() == 0 || mate2.length() == 0) {
+        throw fastq_error("Pair contains empty reads");
+    }
+
+    const mate_info info1 = get_mate_information(mate1);
+    const mate_info info2 = get_mate_information(mate2);
+
+    if (info1.name != info2.name) {
+        std::string message = "Pair contains reads with mismatching names: '";
+        message += info1.name;
+        message += "' and '";
+        message += info2.name;
+        message += "'";
+
+        throw fastq_error(message);
+    }
+
+    if (info1.mate != mate_info::unknown || info2.mate != mate_info::unknown) {
+        if (info1.mate != mate_info::mate1 || info2.mate != mate_info::mate2) {
+            throw fastq_error("Inconsistent mate numbering");
+        }
+    }
 }
 
 
