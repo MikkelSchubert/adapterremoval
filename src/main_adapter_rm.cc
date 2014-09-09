@@ -142,9 +142,9 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
 
 void process_collapsed_read(const userconfig& config, statistics& stats,
                             fastq& collapsed_read,
-                            std::ofstream& io_discarded,
-                            std::ofstream& io_collapsed,
-                            std::ofstream& io_collapsed_truncated)
+                            std::ostream& io_discarded,
+                            std::ostream& io_collapsed,
+                            std::ostream& io_collapsed_truncated)
 {
     const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
 
@@ -173,21 +173,21 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
 
 bool process_single_ended_reads(const userconfig& config, statistics& stats)
 {
-    std::ifstream io_input;
-    std::ofstream io_output;
-    std::ofstream io_discarded;
-    std::ofstream io_collapsed;
-    std::ofstream io_collapsed_truncated;
+    std::auto_ptr<std::istream> io_input;
+    std::auto_ptr<std::ostream> io_output;
+    std::auto_ptr<std::ostream> io_discarded;
+    std::auto_ptr<std::ostream> io_collapsed;
+    std::auto_ptr<std::ostream> io_collapsed_truncated;
 
     try {
-        config.open_ifstream(io_input, config.input_file_1);
+        io_input = config.open_ifstream(config.input_file_1);
 
-        config.open_with_default_filename(io_discarded, "--discarded", ".discarded");
-        config.open_with_default_filename(io_output, "--output1", ".truncated");
+        io_discarded = config.open_with_default_filename("--discarded", ".discarded");
+        io_output = config.open_with_default_filename("--output1", ".truncated");
 
         if (config.collapse) {
-            config.open_with_default_filename(io_collapsed, "--outputcollapsed", ".collapsed");
-            config.open_with_default_filename(io_collapsed_truncated, "--outputcollapsedtruncated", ".collapsed.truncated");
+            io_collapsed = config.open_with_default_filename("--outputcollapsed", ".collapsed");
+            io_collapsed_truncated = config.open_with_default_filename("--outputcollapsedtruncated", ".collapsed.truncated");
         }
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
@@ -196,7 +196,7 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
 
     try {
         fastq read;
-        for ( ; read.read(io_input, config.quality_input_fmt); ++stats.records) {
+        for ( ; read.read(*io_input, config.quality_input_fmt); ++stats.records) {
             config.trim_barcodes_if_enabled(read, stats);
 
             const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift, config.mismatch_threshold);
@@ -208,7 +208,7 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
                 stats.well_aligned_reads++;
 
                 if (config.is_alignment_collapsible(alignment)) {
-                    process_collapsed_read(config, stats, read, io_discarded, io_collapsed, io_collapsed_truncated);
+                    process_collapsed_read(config, stats, read, *io_discarded, *io_collapsed, *io_collapsed_truncated);
                     continue;
                 }
             } else if (aln_type == userconfig::poor_alignment) {
@@ -223,11 +223,11 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
                 stats.total_number_of_good_reads++;
                 stats.total_number_of_nucleotides += read.length();
 
-                read.write(io_output, config.quality_output_fmt);
+                read.write(*io_output, config.quality_output_fmt);
             } else {
                 stats.discard1++;
 
-                read.write(io_discarded, config.quality_output_fmt);
+                read.write(*io_discarded, config.quality_output_fmt);
             }
         }
     } catch (const fastq_error& error) {
@@ -244,30 +244,30 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
 
 bool process_paired_ended_reads(const userconfig& config, statistics& stats)
 {
-    std::ifstream io_input_1;
-    std::ifstream io_input_2;
+    std::auto_ptr<std::istream> io_input_1;
+    std::auto_ptr<std::istream> io_input_2;
 
-    std::ofstream io_output_1;
-    std::ofstream io_output_2;
-    std::ofstream io_singleton;
-    std::ofstream io_collapsed;
-    std::ofstream io_collapsed_truncated;
-    std::ofstream io_discarded;
+    std::auto_ptr<std::ostream> io_output_1;
+    std::auto_ptr<std::ostream> io_output_2;
+    std::auto_ptr<std::ostream> io_singleton;
+    std::auto_ptr<std::ostream> io_collapsed;
+    std::auto_ptr<std::ostream> io_collapsed_truncated;
+    std::auto_ptr<std::ostream> io_discarded;
 
     try {
-        config.open_ifstream(io_input_1, config.input_file_1);
-        config.open_ifstream(io_input_2, config.input_file_2);
+        io_input_1 = config.open_ifstream(config.input_file_1);
+        io_input_2 = config.open_ifstream(config.input_file_2);
 
-        config.open_with_default_filename(io_discarded, "--discarded", ".discarded");
+        io_discarded = config.open_with_default_filename("--discarded", ".discarded");
 
-        config.open_with_default_filename(io_output_1, "--output1", ".pair1.truncated");
-        config.open_with_default_filename(io_output_2, "--output2", ".pair2.truncated");
+        io_output_1 = config.open_with_default_filename("--output1", ".pair1.truncated");
+        io_output_2 = config.open_with_default_filename("--output2", ".pair2.truncated");
 
-        config.open_with_default_filename(io_singleton, "--singleton", ".singleton.truncated");
+        io_singleton = config.open_with_default_filename("--singleton", ".singleton.truncated");
 
         if (config.collapse) {
-            config.open_with_default_filename(io_collapsed, "--outputcollapsed", ".collapsed");
-            config.open_with_default_filename(io_collapsed_truncated, "--outputcollapsedtruncated", ".collapsed.truncated");
+            io_collapsed = config.open_with_default_filename("--outputcollapsed", ".collapsed");
+            io_collapsed_truncated = config.open_with_default_filename("--outputcollapsedtruncated", ".collapsed.truncated");
         }
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
@@ -278,8 +278,8 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
     fastq read2;
     try {
         for (; ; ++stats.records) {
-            const bool read_file_1_ok = read1.read(io_input_1, config.quality_input_fmt);
-            const bool read_file_2_ok = read2.read(io_input_2, config.quality_input_fmt);
+            const bool read_file_1_ok = read1.read(*io_input_1, config.quality_input_fmt);
+            const bool read_file_2_ok = read2.read(*io_input_2, config.quality_input_fmt);
 
             if (read_file_1_ok != read_file_2_ok) {
                 throw fastq_error("files contain unequal number of records");
@@ -304,7 +304,7 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
 
                 if (config.is_alignment_collapsible(alignment)) {
                     fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
-                    process_collapsed_read(config, stats, collapsed_read, io_discarded, io_collapsed, io_collapsed_truncated);
+                    process_collapsed_read(config, stats, collapsed_read, *io_discarded, *io_collapsed, *io_collapsed_truncated);
                     continue;
                 }
             } else if (aln_type == userconfig::poor_alignment) {
@@ -329,16 +329,16 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
             stats.total_number_of_good_reads += read_2_acceptable;
 
             if (read_1_acceptable && read_2_acceptable) {
-                read1.write(io_output_1, config.quality_output_fmt);
-                read2.write(io_output_2, config.quality_output_fmt);
+                read1.write(*io_output_1, config.quality_output_fmt);
+                read2.write(*io_output_2, config.quality_output_fmt);
             } else {
                 // Keep one or none of the reads ...
                 stats.keep1 += read_1_acceptable;
                 stats.keep2 += read_2_acceptable;
                 stats.discard1 += !read_1_acceptable;
                 stats.discard2 += !read_2_acceptable;
-                read1.write((read_1_acceptable ? io_singleton : io_discarded), config.quality_output_fmt);
-                read2.write((read_2_acceptable ? io_singleton : io_discarded), config.quality_output_fmt);
+                read1.write((read_1_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
+                read2.write((read_2_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
             }
         }
     } catch (const fastq_error& error) {
@@ -356,16 +356,18 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
 
 int remove_adapter_sequences(const userconfig& config)
 {
-    std::ofstream settings;
+    std::auto_ptr<std::ostream> settings;
     try {
-        config.open_with_default_filename(settings, "--settings", ".settings");
+        settings = config.open_with_default_filename("--settings",
+                                                     ".settings",
+                                                     false);
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening settings file; aborting:\n    "
                   << error.what() << std::endl;
         return 1;
     }
 
-    if (!write_settings(config, settings)) {
+    if (!write_settings(config, *settings)) {
         std::cerr << "Error writing settings file; aborting!" << std::endl;
         return 1;
     }
@@ -379,7 +381,7 @@ int remove_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    if (!write_statistics(config, settings, stats)) {
+    if (!write_statistics(config, *settings, stats)) {
         std::cerr << "Error writing statistics to settings file!" << std::endl;
         return 1;
     }

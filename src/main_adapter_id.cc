@@ -194,12 +194,12 @@ void process_adapter(const std::string& sequence, char_count_vec& counts, kmer_m
 
 int identify_adapter_sequences(const userconfig& config)
 {
-    std::ifstream io_input_1;
-    std::ifstream io_input_2;
+    std::auto_ptr<std::istream> io_input_1;
+    std::auto_ptr<std::istream> io_input_2;
 
     try {
-        config.open_ifstream(io_input_1, config.input_file_1);
-        config.open_ifstream(io_input_2, config.input_file_2);
+        io_input_1 = config.open_ifstream(config.input_file_1);
+        io_input_2 = config.open_ifstream(config.input_file_2);
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
         return 1;
@@ -220,8 +220,8 @@ int identify_adapter_sequences(const userconfig& config)
 
     try {
         for (; ; ++stats.records) {
-            const bool read_file_1_ok = read1.read(io_input_1, config.quality_input_fmt);
-            const bool read_file_2_ok = read2.read(io_input_2, config.quality_input_fmt);
+            const bool read_file_1_ok = read1.read(*io_input_1, config.quality_input_fmt);
+            const bool read_file_2_ok = read2.read(*io_input_2, config.quality_input_fmt);
 
             if (read_file_1_ok != read_file_2_ok) {
                 throw fastq_error("files contain unequal number of records");

@@ -26,10 +26,13 @@
 #define CONFIG_H
 
 #include <string>
+#include <memory>
+
 #include "argparse.h"
 #include "fastq.h"
 #include "alignment.h"
 #include "statistics.h"
+
 
 
 struct alignment_info;
@@ -79,12 +82,13 @@ public:
     bool is_acceptable_read(const fastq& seq) const;
 
 
-    void open_with_default_filename(std::ofstream& stream,
-                                    const std::string& key,
-                                    const std::string& postfix) const;
+    std::auto_ptr<std::ostream> open_with_default_filename(
+                                        const std::string& key,
+                                        const std::string& postfix,
+                                        bool gzipped = true) const;
 
 
-    void open_ifstream(std::ifstream& stream, const std::string& filename) const;
+    std::auto_ptr<std::istream> open_ifstream(const std::string& filename) const;
 
 
     void trim_barcodes_if_enabled(fastq& read, statistics& stats) const;
@@ -184,6 +188,11 @@ private:
     std::string quality_input_base;
     //! Sink for user-supplied quality score formats; use quality_output_fmt.
     std::string quality_output_base;
+
+    //! GZip compression enabled / disabled
+    bool gzip;
+    //! GZip compression level used for output reads
+    unsigned int gzip_level;
 };
 
 

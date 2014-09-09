@@ -34,6 +34,7 @@
 #include "userconfig.h"
 #include "fastq.h"
 #include "alignment.h"
+#include "gzstream.h"
 
 
 
@@ -109,6 +110,8 @@ userconfig::userconfig(const std::string& name,
     , barcode()
     , quality_input_base("33")
     , quality_output_base("33")
+    , gzip(false)
+    , gzip_level(6)
 {
     argparser["--file1"] = new argparse::any(&input_file_1, "FILE",
         "Input file containing mate 1 reads or single-ended reads [REQUIRED].");
@@ -177,7 +180,10 @@ userconfig::userconfig(const std::string& name,
         "Attempt to identify the adapter pair of PE reads, by searching for overlapping reads [current: %default].");
     argparser["--seed"] = new argparse::knob(&seed, "SEED",
         "Sets the RNG seed used when choosing between bases with equal Phred scores when collapsing [current: %default].");
-#warning FIXME: argparser["--debug"] = new argparse::flag(&DEBUG);
+
+    argparser.add_seperator();
+    argparser["--gzip"] = new argparse::flag(&gzip, "Enable gzip compression [current: %default]");
+    argparser["--gzip-level"] = new argparse::knob(&gzip_level, "LEVEL", "Compression level, 0 - 9 [current: %default]");
 }
 
 
@@ -295,6 +301,13 @@ bool userconfig::parse_args(int argc, char *argv[])
         }
     }
 
+    if (gzip_level > 9) {
+        std::cerr << "--gzip-level must be in the range 0 to 9, not "
+                  << gzip_level << std::endl;
+        return false;
+
+    }
+
     // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
     srandom(seed);
 
@@ -363,38 +376,56 @@ bool userconfig::is_acceptable_read(const fastq& seq) const
 }
 
 
-void userconfig::open_with_default_filename(std::ofstream& stream,
+std::auto_ptr<std::ostream> userconfig::open_with_default_filename(
                                             const std::string& key,
-                                            const std::string& postfix) const
+                                            const std::string& postfix,
+                                            bool gzipped) const
 {
     std::string filename = basename + postfix;
     if (argparser.is_set(key)) {
         filename = argparser.at(key)->to_str();
+    } else if (gzipped && gzip && gzip_level) {
+        filename += ".gz";
     }
 
-    try {
-        stream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        stream.open(filename.c_str(), std::ofstream::out);
-    } catch (const std::ofstream::failure&) {
+    bool is_open = false;
+    std::auto_ptr<std::ostream> stream;
+    if (gzipped && gzip && gzip_level) {
+        std::auto_ptr<gzip::ogzstream> ptr(new gzip::ogzstream(filename.c_str(),
+                                           std::ofstream::out,
+                                           gzip_level));
+        is_open = ptr->is_open();
+        stream = ptr;
+    } else {
+        std::auto_ptr<std::ofstream> ptr(new std::ofstream(filename.c_str(),
+                                                           std::ofstream::out));
+        is_open = ptr->is_open();
+        stream = ptr;
+    }
+
+    if (!is_open) {
         std::string message = std::string("Failed to open file '") + filename + "': ";
         throw std::ofstream::failure(message + std::strerror(errno));
     }
+
+    stream->exceptions(std::ofstream::failbit | std::ofstream::badbit);
+    return stream;
 }
 
 
-void userconfig::open_ifstream(std::ifstream& stream, const std::string& filename) const
+std::auto_ptr<std::istream> userconfig::open_ifstream(const std::string& filename) const
 {
-    try {
-        // failbit is not set, since we expect to try reading past EOF
-        stream.exceptions(std::ifstream::badbit);
-        stream.open(filename.c_str(), std::ifstream::in);
-        if (!stream.is_open()) {
-            throw std::ifstream::failure("failed to open file");
-        }
-    } catch (const std::ifstream::failure&) {
+    std::auto_ptr<gzip::igzstream> ptr(new gzip::igzstream(filename.c_str(),
+                                       std::ifstream::in));
+    if (!ptr->is_open()) {
         std::string message = std::string("Failed to open file '") + filename + "': ";
         throw std::ifstream::failure(message + std::strerror(errno));
     }
+
+    ptr->exceptions(std::ifstream::badbit);
+    std::auto_ptr<std::istream> result(ptr.release());
+
+    return result;
 }
 
 
@@ -427,12 +458,12 @@ bool userconfig::read_adapters_sequences(const std::string& filename,
                                          bool paired_ended)
 {
     size_t line_num = 1;
-    std::ifstream adapter_file;
+    std::auto_ptr<std::istream> adapter_file;
     try {
-        open_ifstream(adapter_file, filename);
+        adapter_file = open_ifstream(filename);
 
         std::string line;
-        while (std::getline(adapter_file, line)) {
+        while (std::getline(*adapter_file, line)) {
             const size_t index = line.find_first_not_of(" \t");
             if (index == std::string::npos || line.at(index) == '#') {
                 line_num++;

@@ -32,6 +32,10 @@ Major changes:
   * Added the ability to identify adapter sequences for paired-ended reads, by
     identifying reads which extends past the ends of the template sequence, and
     extracting the adapters from these.
+  * Added support for reading / writing gzipped compressed FASTQ files; if
+    enabled (using the --gzip flag), the ".gz" extension is added to filenames,
+    unless the filenames are explicitly specified by the user.
+
 
 Other improvements / bug-fixes:
   * Barcodes may now contain Ns.
