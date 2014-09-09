@@ -24,7 +24,7 @@ inline size_t ACGT_TO_IDX(char nt)
 }
 
 
-size_t kmer_to_size_t(const std::string& kmer)
+inline size_t kmer_to_size_t(const std::string& kmer)
 {
     size_t index = 0;
     for (size_t i = 0; i < kmer.length(); ++i) {
@@ -74,16 +74,13 @@ typedef std::priority_queue<kmer_count, std::vector<kmer_count>, cmp_kmer_count>
 typedef std::vector<kmer_count> kmer_vector;
 
 
-void most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
+void print_most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
 {
     size_t total = 0;
     kmer_queue queue;
     for (size_t i = 0; i < kmers.size(); ++i) {
         kmer_count value(i, kmers.at(i));
         total += value.second;
-
-        #warning remove
-//        if (value.second) std::cout << size_t_to_kmer(i) << " " << value.second << "\n";
 
         if (queue.size() >= TOP_N_KMERS) {
             if (queue.top().second < value.second) {
@@ -101,8 +98,13 @@ void most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
         queue.pop();
     }
 
-    std::cerr.precision(2);
-    std::cerr << std::fixed;
+
+    std::cout.precision(2);
+    std::cout << std::fixed;
+    std::cout << std::string(rjust - 4, ' ')
+              << "Top 5 most common " << KMER_LENGTH << "-bp "
+              << (reverse ? 3 : 5) << "'-kmers:\n";
+
     std::reverse(top_n_kmers.begin(), top_n_kmers.end());
     for (size_t i = 0; i < top_n_kmers.size(); ++i) {
         const kmer_count& count = top_n_kmers.at(i);
@@ -111,14 +113,12 @@ void most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
             std::reverse(kmer_s.begin(), kmer_s.end());
         }
 
-        std::cerr << std::string(rjust, ' ');
-        std::cerr << i + 1<< ": " << kmer_s
+        std::cout << std::string(rjust, ' ');
+        std::cout << i + 1<< ": " << kmer_s
                   << " = " << std::right << std::setw(5) << (100.0 * count.second) / total
                   << "% (" << count.second << ")"
                   << "\n";
     }
-
-    std::cerr.flush();
 }
 
 
@@ -126,7 +126,6 @@ void most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
 void print_consensus_adapter(const char_count_vec& counts,
                              const kmer_map& kmers,
                              const std::string& name,
-// FIXME                             const std::string& expected,
                              bool rjust = false)
 {
     const char* NTs = "ACGT";
@@ -136,6 +135,8 @@ void print_consensus_adapter(const char_count_vec& counts,
     for(char_count_vec::const_iterator it = counts.begin(); it != counts.end(); ++it) {
         char best_nt = 'N';
         size_t best_count = 0;
+        // Always assume one non-consensus observation; this is more reasonable
+        // than allowing an error-rate of 0, especially for few observations.
         size_t total = 1;
         for (size_t nt_i = 0; nt_i < 4; ++nt_i) {
             const size_t cur_count = it->counts.at(ACGT_TO_IDX(NTs[nt_i]));
@@ -152,24 +153,11 @@ void print_consensus_adapter(const char_count_vec& counts,
     }
 
     const std::string consensus = sequence.str();
-    std::cerr << name << "\n"; // FIXME << ":     " << expected << "\n";
-    std::cerr << "Consensus:  " << consensus << "\n";
-    std::cerr << "            " << qualities.str() << "\n";
+    std::cerr << name << "\n"
+              << "  Consensus:  " << consensus << "\n"
+              << "              " << qualities.str() << "\n\n";
 
-    std::cerr << "            ";
-
-#if 0
-    for (size_t i = 0; i < std::min(consensus.length(), expected.length()); ++i) {
-        if (consensus.at(i) != expected.at(i)) {
-            std::cerr << "X";
-        } else {
-            std::cerr << "-";
-        }
-    }
-#endif
-
-    std::cerr << "\n\n";
-    most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 9 : 9);
+    print_most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 11 : 11);
 }
 
 
@@ -229,6 +217,9 @@ int identify_adapter_sequences(const userconfig& config)
                 break;
             }
 
+            // Throws if read-names or mate numbering does not match
+            fastq::validate_paired_reads(read1, read2);
+
             config.trim_barcodes_if_enabled(read1, stats);
 
             // Reverse complement to match the orientation of read1
@@ -269,12 +260,11 @@ int identify_adapter_sequences(const userconfig& config)
               << "   Of which " << stats.number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n"
               << std::endl;
 
-//    std::string padding = std::string(std::max<int>(0, pcr1_counts.size() - config.PCR1.length()),  'N');
     print_consensus_adapter(pcr1_counts, pcr1_kmers, "--pcr1");
-    std::cerr << "\n";
+    std::cout << "\n\n";
 
+    // Print the adapter in a form usable as argument for --pcr2
     std::reverse(pcr2_counts.begin(), pcr2_counts.end());
-//    padding = std::string(std::max<int>(0, pcr2_counts.size() - config.PCR2.length()),  'N');
     print_consensus_adapter(pcr2_counts, pcr2_kmers, "--pcr2", true);
 
     return 0;
