@@ -184,6 +184,7 @@ userconfig::userconfig(const std::string& name,
     argparser.add_seperator();
     argparser["--gzip"] = new argparse::flag(&gzip, "Enable gzip compression [current: %default]");
     argparser["--gzip-level"] = new argparse::knob(&gzip_level, "LEVEL", "Compression level, 0 - 9 [current: %default]");
+    argparser["--quiet"] = new argparse::flag(&quiet, "Only print errors to STDERR [current: %default]");
 }
 
 
@@ -302,7 +303,7 @@ bool userconfig::parse_args(int argc, char *argv[])
     }
 
     if (gzip_level > 9) {
-        std::cerr << "--gzip-level must be in the range 0 to 9, not "
+        std::cerr << "Error: --gzip-level must be in the range 0 to 9, not "
                   << gzip_level << std::endl;
         return false;
 

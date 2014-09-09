@@ -60,6 +60,8 @@ Other improvements / bug-fixes:
   * Seed is now initialized using a mix of seconds and microseconds, instead of
     the current time in seconds, to reduce the risk of multiple instances
     spawed within a short timespan from using the same seed.
+  * An (optional) progress report is printed during usage, incidating the
+    run-time and number of reads processed.
 
 Features removed from v1.x:
   * The use of --file1 and (optionally) --file2 is now required; reads will not

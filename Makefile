@@ -13,6 +13,7 @@ OBJS     := $(BDIR)/main.o \
 			$(BDIR)/argparse.o \
             $(BDIR)/alignment.o $(BDIR)/fastq.o \
             $(BDIR)/userconfig.o \
+            $(BDIR)/timer.o \
             $(BDIR)/gzstream.o
 DFILES   := $(OBJS:.o=.deps)
 

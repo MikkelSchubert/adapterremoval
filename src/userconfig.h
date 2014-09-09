@@ -157,6 +157,9 @@ public:
     //! If true, the program attempts to identify the adapter pair of PE reads
     bool identify_adapters;
 
+    //! If true, only error messages are printed to STDERR
+    bool quiet;
+
 private:
     /** Reads adapter sequences from a file.
      *

@@ -35,6 +35,7 @@
 #include "fastq.h"
 #include "alignment.h"
 #include "userconfig.h"
+#include "timer.h"
 
 
 std::string describe_phred_format(quality_format fmt)
@@ -196,7 +197,9 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
 
     try {
         fastq read;
+        timer progress("reads", config.quiet);
         for ( ; read.read(*io_input, config.quality_input_fmt); ++stats.records) {
+            progress.increment();
             config.trim_barcodes_if_enabled(read, stats);
 
             const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift, config.mismatch_threshold);
@@ -230,6 +233,8 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
                 read.write(*io_discarded, config.quality_output_fmt);
             }
         }
+
+        progress.finalize();
     } catch (const fastq_error& error) {
         std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << error.what() << std::endl;
         return false;
@@ -277,6 +282,7 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
     fastq read1;
     fastq read2;
     try {
+        timer progress("pairs", config.quiet);
         for (; ; ++stats.records) {
             const bool read_file_1_ok = read1.read(*io_input_1, config.quality_input_fmt);
             const bool read_file_2_ok = read2.read(*io_input_2, config.quality_input_fmt);
@@ -286,6 +292,8 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
             } else if (!read_file_1_ok) {
                 break;
             }
+
+            progress.increment();
 
             // Throws if read-names or mate numbering does not match
             fastq::validate_paired_reads(read1, read2);
@@ -341,6 +349,8 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
                 read2.write((read_2_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
             }
         }
+
+        progress.finalize();
     } catch (const fastq_error& error) {
         std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << error.what() << std::endl;
         return false;

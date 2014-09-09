@@ -11,6 +11,7 @@
 #include "main_adapter_id.h"
 #include "userconfig.h"
 #include "alignment.h"
+#include "timer.h"
 
 
 const size_t KMER_LENGTH = 12;
@@ -207,6 +208,7 @@ int identify_adapter_sequences(const userconfig& config)
     kmer_map pcr2_kmers(N_KMERS, 0);
 
     try {
+        timer progress("pairs", config.quiet);
         for (; ; ++stats.records) {
             const bool read_file_1_ok = read1.read(*io_input_1, config.quality_input_fmt);
             const bool read_file_2_ok = read2.read(*io_input_2, config.quality_input_fmt);
@@ -216,6 +218,8 @@ int identify_adapter_sequences(const userconfig& config)
             } else if (!read_file_1_ok) {
                 break;
             }
+
+            progress.increment();
 
             // Throws if read-names or mate numbering does not match
             fastq::validate_paired_reads(read1, read2);
@@ -247,6 +251,8 @@ int identify_adapter_sequences(const userconfig& config)
                 stats.unaligned_reads++;
             }
         }
+
+        progress.finalize();
     } catch (const fastq_error& error) {
         std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << error.what() << std::endl;
         return 1;
@@ -255,8 +261,7 @@ int identify_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    std::cout << "Processed " << stats.records << " read pairs ...\n"
-              << "   Found " << stats.well_aligned_reads << " overlapping pairs ...\n"
+    std::cout << "   Found " << stats.well_aligned_reads << " overlapping pairs ...\n"
               << "   Of which " << stats.number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n"
               << std::endl;
 
