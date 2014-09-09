@@ -1,8 +1,8 @@
 #
 # Makefile
 #
-CXX      := clang++
-CXXFLAGS := -O -g -pedantic -Wall -Wextra # -fsanitize=undefined
+CXX      := g++
+CXXFLAGS := -O -g -pedantic -Wall -Wextra
 CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef
 
 PROG     := AdapterRemoval
@@ -12,7 +12,8 @@ OBJS     := $(BDIR)/main.o \
 			$(BDIR)/main_adapter_rm.o \
 			$(BDIR)/argparse.o \
             $(BDIR)/alignment.o $(BDIR)/fastq.o \
-            $(BDIR)/userconfig.o
+            $(BDIR)/userconfig.o \
+            $(BDIR)/gzstream.o
 DFILES   := $(OBJS:.o=.deps)
 
 # Comment out this line to display individual commands
@@ -50,7 +51,7 @@ $(BDIR)/%.o: src/%.cc
 # Executable
 build/$(PROG): $(OBJS)
 	@echo $(COLOR_GREEN)"Linking executable '$@'"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) $^ -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) $^ -lz -o $@
 
 build/%.1: %.pod
 	@echo $(COLOR_GREEN)"Constructing man-page '$@' from '$<'"$(COLOR_END)
