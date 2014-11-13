@@ -243,6 +243,13 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
         return false;
     }
 
+    io_output->flush();
+    io_discarded->flush();
+    if (config.collapse) {
+        io_collapsed->flush();
+        io_collapsed_truncated->flush();
+    }
+
     return true;
 }
 
@@ -359,6 +366,15 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
         return false;
     }
 
+    io_output_1->flush();
+    io_output_2->flush();
+    io_singleton->flush();
+    io_discarded->flush();
+    if (config.collapse) {
+        io_collapsed->flush();
+        io_collapsed_truncated->flush();
+    }
+
     return true;
 }
 
@@ -395,6 +411,8 @@ int remove_adapter_sequences(const userconfig& config)
         std::cerr << "Error writing statistics to settings file!" << std::endl;
         return 1;
     }
+
+    settings->flush();
 
     return 0;
 }
