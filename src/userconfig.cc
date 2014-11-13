@@ -93,7 +93,7 @@ userconfig::userconfig(const std::string& name,
     , trim_barcodes_mode(false)
     , barcodes()
     , min_genomic_length(15)
-    , min_alignment_length(11) // The minimum required genomic overlap before collapsing reads into one
+    , min_alignment_length(11)
     , mismatch_threshold(-1.0)
     , quality_input_fmt(phred_33)
     , quality_output_fmt(phred_33)
@@ -114,77 +114,109 @@ userconfig::userconfig(const std::string& name,
     , gzip_level(6)
 {
     argparser["--file1"] = new argparse::any(&input_file_1, "FILE",
-        "Input file containing mate 1 reads or single-ended reads [REQUIRED].");
+        "Input file containing mate 1 reads or single-ended reads "
+        "[REQUIRED].");
     argparser["--file2"] = new argparse::any(&input_file_2, "FILE",
         "Input file containing mate 2 reads [OPTIONAL].");
 
     // Output files
     argparser.add_seperator();
     argparser["--basename"] = new argparse::any(&basename, "BASENAME",
-        "Default prefix for all output files for which no filename was explicitly set [current: %default].");
-    argparser["--settings"] = new argparse::any(NULL, "FILE", "BASENAME.settings");
+        "Default prefix for all output files for which no filename was "
+        "explicitly set [current: %default].");
+    argparser["--settings"] =
+        new argparse::any(NULL, "FILE", "BASENAME.settings");
     argparser["--output1"] = new argparse::any(NULL, "FILE",
         "BASENAME.pair1.truncated (PE) or BASENAME.truncated (SE)");
     argparser["--output2"] = new argparse::any(NULL, "FILE",
         "BASENAME.pair2.truncated (only used in PE mode).");
-    argparser["--singleton"] = new argparse::any(NULL, "FILE", "BASENAME.singleton.truncated");
-    argparser["--outputcollapsed"] = new argparse::any(NULL, "FILE", "BASENAME.collapsed");
-    argparser["--outputcollapsedtruncated"] = new argparse::any(NULL, "FILE", "BASENAME.collapsed.truncated");
-    argparser["--discarded"] = new argparse::any(NULL, "FILE", "BASENAME.discarded");
+    argparser["--singleton"] =
+        new argparse::any(NULL, "FILE", "BASENAME.singleton.truncated");
+    argparser["--outputcollapsed"] =
+        new argparse::any(NULL, "FILE", "BASENAME.collapsed");
+    argparser["--outputcollapsedtruncated"] =
+        new argparse::any(NULL, "FILE", "BASENAME.collapsed.truncated");
+    argparser["--discarded"] =
+        new argparse::any(NULL, "FILE", "BASENAME.discarded");
 
     argparser.add_seperator();
     argparser["--pcr1"] = new argparse::any(&PCR1, "SEQUENCE",
-        "Adapter sequence expected to be found in mate 1 reads [current: %default].");
+        "Adapter sequence expected to be found in mate 1 reads "
+        "[current: %default].");
     argparser["--pcr2"] = new argparse::any(&PCR2, "SEQUENCE",
-        "Adapter sequence expected to be found in reverse complemented mate 2 reads [current: %default].");
+        "Adapter sequence expected to be found in reverse complemented mate 2 "
+        "reads [current: %default].");
     argparser["--pcr-list"] = new argparse::any(&PCR_list, "FILENAME",
-        "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; only the first adapter "
-        "in each pair is required / used in SE mode [current: none].");
-    argparser["--mm"] = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
-        "Max error-rate when aligning reads and/or adapters "
-        "[default: 1/3 for single-ended; 1/10 for paired-ended; 0 when identifing adapters].");
+        "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; only "
+        "the first adapter in each pair is required / used in SE mode "
+        "[current: none].");
+    argparser["--mm"]
+        = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
+            "Max error-rate when aligning reads and/or adapters "
+            "[default: 1/3 for single-ended; 1/10 for paired-ended; 0 when "
+            "identifing adapters].");
     argparser["--maxns"] = new argparse::knob(&max_ambiguous_bases, "MAX",
-        "Reads containing more ambiguous bases (N) than this number after trimming are discarded [current: %default].");
+        "Reads containing more ambiguous bases (N) than this number after "
+        "trimming are discarded [current: %default].");
     argparser["--shift"] = new argparse::knob(&shift, "N",
-        "Consider alignments where up to N nucleotides are missing from the 5' termini [current: %default].");
+        "Consider alignments where up to N nucleotides are missing from the "
+        "5' termini [current: %default].");
 
     argparser.add_seperator();
     argparser["--qualitybase"] = new argparse::any(&quality_input_base, "BASE",
-        "Quality base used to encode Phred scores in input; either 33, 64, or solexa [current: %default].");
-    argparser["--qualitybase-output"] = new argparse::any(&quality_output_base, "BASE",
-        "Quality base used to encode Phred scores in output; either 33, 64 [current: %default].");
+        "Quality base used to encode Phred scores in input; either 33, 64, or "
+        "solexa [current: %default].");
+    argparser["--qualitybase-output"] =
+        new argparse::any(&quality_output_base, "BASE",
+            "Quality base used to encode Phred scores in output; either 33, "
+            "64 [current: %default].");
     argparser["--5prime"] = new argparse::any(&barcode, "BARCODE",
-        "If set, the NT barcode is detected (max 1 mismatch) in and trimmed from the 5' of mate 1 reads [current: %default].");
+        "If set, the NT barcode is detected (max 1 mismatch) in and trimmed "
+        "from the 5' of mate 1 reads [current: %default].");
     argparser["--5prime-list"] = new argparse::any(&barcode_list, "FILENAME",
         "List of barcode sequences, used as if supplied to --5prime; is "
         "parsed as SE adapters supplied to --pcr-list. [current: none].");
     argparser["--trimns"] = new argparse::flag(&trim_ambiguous_bases,
-        "If set, trim ambiguous bases (N) at 5'/3' termini [current: %default]");
+        "If set, trim ambiguous bases (N) at 5'/3' termini "
+        "[current: %default]");
     argparser["--trimqualities"] = new argparse::flag(&trim_by_quality,
-        "If set, trim bases at 5'/3' termini with quality scores <= to --minquality value [current: %default]");
+        "If set, trim bases at 5'/3' termini with quality scores <= to "
+        "--minquality value [current: %default]");
     argparser["--minquality"] = new argparse::knob(&low_quality_score, "PHRED",
-        "Inclusive minimum; see --trimqualities for details [current: %default]");
-    argparser["--minlength"] = new argparse::knob(&min_genomic_length, "LENGTH",
-        "Reads shorter than this length are written to BASENAME.discarded following trimming [current: %default].");
-
-    argparser["--minalignmentlength"] = new argparse::knob(&min_alignment_length, "LENGTH",
-        "If --collapse is set, reads must overlap at least this number of bases to be collapsed [current: %default].");
+        "Inclusive minimum; see --trimqualities for details "
+        "[current: %default]");
+    argparser["--minlength"] =
+        new argparse::knob(&min_genomic_length, "LENGTH",
+            "Reads shorter than this length are written to BASENAME.discarded "
+            "following trimming [current: %default].");
     argparser["--collapse"] = new argparse::flag(&collapse,
-        "If set, paired ended reads which overlapp at least --minalignmentlength "
-        "bases are combined into a single consensus read; for single-ended reads, "
-        "full inserts are identified by requiring --minalignmentlength overlap with "
-        "the adapter sequence [current: %default].");
+        "If set, paired ended reads which overlapp at least "
+        "--minalignmentlength bases are combined into a single consensus "
+        "read; for single-ended reads, full inserts are identified by "
+        "requiring --minalignmentlength overlap with the adapter sequence "
+        "[current: %default].");
+    argparser["--minalignmentlength"] =
+        new argparse::knob(&min_alignment_length, "LENGTH",
+            "If --collapse is set, paired reads must overlap at least this "
+            "number of bases to be collapsed, and single-ended reads must "
+            "overlap at least this number of bases with the adapter to be "
+            "considered complete template molecules [current: %default].");
 
     argparser.add_seperator();
     argparser["--identify-adapters"] = new argparse::flag(&identify_adapters,
-        "Attempt to identify the adapter pair of PE reads, by searching for overlapping reads [current: %default].");
+        "Attempt to identify the adapter pair of PE reads, by searching for "
+        "overlapping reads [current: %default].");
     argparser["--seed"] = new argparse::knob(&seed, "SEED",
-        "Sets the RNG seed used when choosing between bases with equal Phred scores when collapsing [current: %default].");
+        "Sets the RNG seed used when choosing between bases with equal Phred "
+        "scores when collapsing [current: %default].");
 
     argparser.add_seperator();
-    argparser["--gzip"] = new argparse::flag(&gzip, "Enable gzip compression [current: %default]");
-    argparser["--gzip-level"] = new argparse::knob(&gzip_level, "LEVEL", "Compression level, 0 - 9 [current: %default]");
-    argparser["--quiet"] = new argparse::flag(&quiet, "Only print errors to STDERR [current: %default]");
+    argparser["--gzip"] = new argparse::flag(&gzip,
+        "Enable gzip compression [current: %default]");
+    argparser["--gzip-level"] = new argparse::knob(&gzip_level, "LEVEL",
+        "Compression level, 0 - 9 [current: %default]");
+    argparser["--quiet"] = new argparse::flag(&quiet,
+        "Only print errors to STDERR [current: %default]");
 }
 
 
@@ -330,12 +362,15 @@ userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& 
 {
     if (!alignment.length) {
         return not_aligned;
+    } else if (alignment.score <= 0) {
+        // Very poor alignment, will not be considered
+        return poor_alignment;
     }
 
     // Only pairs of called bases are considered part of the alignment
     const size_t n_aligned = static_cast<size_t>(alignment.length - alignment.n_ambiguous);
-
     size_t mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
+
     if (n_aligned < 6) {
         mm_threshold = 0;
     } else if (n_aligned < 10) {
@@ -343,12 +378,8 @@ userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& 
         mm_threshold = std::min<size_t>(1, mm_threshold);
     }
 
-    // If too many mismatches
     if (alignment.n_mismatches > mm_threshold) {
         return not_aligned;
-    } else if (alignment.score <= 0) {
-        // Very poor alignment, will not be considered
-        return poor_alignment;
     }
 
     return valid_alignment;
