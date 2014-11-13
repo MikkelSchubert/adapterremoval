@@ -208,19 +208,6 @@ TEST(alignment_se, completely_overlapping_sequences_with_1_mismatch)
 }
 
 
-TEST(alignment_se, completely_overlapping_sequences_with_1_mismatch__mismatch_rate)
-{
-    const fastq record("Rec", "GGCGGAGTAA", "!!!!!!!!!!");
-    const fastq_pair_vec adapters = create_adapter_vec(fastq("Rec", "GGCGTAGTAA", "!!!!!!!!!!"));
-    const alignment_info expected = new_aln(8, 0, 10, 1);
-    ASSERT_EQ(alignment_info(), align_single_ended_sequence(record, adapters, 0, 0.00));
-    ASSERT_EQ(alignment_info(), align_single_ended_sequence(record, adapters, 0, 0.09));
-    ASSERT_EQ(expected,  align_single_ended_sequence(record, adapters, 0, 0.10));
-    ASSERT_EQ(expected,  align_single_ended_sequence(record, adapters, 0, 0.11));
-    ASSERT_EQ(expected,  align_single_ended_sequence(record, adapters, 0, 1.00));
-}
-
-
 TEST(alignment_se, completely_overlapping_sequences_with_1_mismatch_and_1_n)
 {
     const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
@@ -393,6 +380,29 @@ TEST(alignment_se, sequences_extend_past_mate)
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Empty sequence or adapter
+
+TEST(alignment_se, empty_sequence)
+{
+    const fastq record;
+    const fastq_pair_vec adapters = create_adapter_vec(fastq("Adp", "CCGAACGTAGTATA", "!!!!!!!!!!!!!!"));
+    const alignment_info expected;
+    const alignment_info result = align_single_ended_sequence(record, adapters, 0);
+    ASSERT_EQ(expected, result);
+}
+
+
+TEST(alignment_se, empty_adapter)
+{
+    const fastq record("Rec", "ACGTAGTATATAGT", "!!!!!!!!!!!!!!");
+    const fastq_pair_vec adapters = create_adapter_vec(fastq());
+    const alignment_info expected;
+    const alignment_info result = align_single_ended_sequence(record, adapters, 0);
+    ASSERT_EQ(expected, result);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Misc
 
 TEST(alignment_se, shift_is_lower_than_possible)
@@ -525,22 +535,6 @@ TEST(alignment_pe, completely_overlapping_sequences)
 }
 
 
-TEST(alignment_pe, completely_overlapping_sequences_with_1_mismatch__mismatch_rate)
-{
-    const fastq record1("Rec", "ACGTAGTATT", "!!!!!!!!!!");
-    const fastq record2("Rec", "ACGCAGTATT", "!!!!!!!!!!");
-    const fastq_pair_vec adapters = create_adapter_vec(fastq("PCR1", "CGCTGA", "!!!!!!"),
-                                                       fastq("PCR2", "TGTAC",  "!!!!!"));
-    const alignment_info expected = new_aln(8, 0, 10, 1);
-    ASSERT_EQ(alignment_info(), align_paired_ended_sequences(record1, record2, adapters, 0, 0.00));
-    ASSERT_EQ(alignment_info(), align_paired_ended_sequences(record1, record2, adapters, 0, 0.09));
-    ASSERT_EQ(expected, align_paired_ended_sequences(record1, record2, adapters, 0, 0.10));
-    ASSERT_EQ(expected, align_paired_ended_sequences(record1, record2, adapters, 0, 0.11));
-    ASSERT_EQ(expected, align_paired_ended_sequences(record1, record2, adapters, 0, 1.00));
-}
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Cases 4 and 5 PE: Sequence A completely contains sequence B (and vice versa)
 //         AAAAAAAAAAA  AAAA
@@ -667,6 +661,22 @@ TEST(alignment_pe, only_adadapter_sequence__missing_base__shift)
     //   aagatgccttCCGACC
     //      ATGCCTcccgacccgt
     ASSERT_EQ(new_aln(11, -7, 13, 1), align_paired_ended_sequences(record1, record2, adapters, 1));
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(alignment_pe, empty_mate_1)
+{
+    const fastq record1("Rec", "ACGTAGTAA", "!!!!!!!!!");
+    const fastq record2("Rec", "AGTAAGGT",  "!!!!!!!!");
+    const fastq_pair_vec adapters = create_adapter_vec(fastq("PCR1", "CGCTGA", "!!!!!!"),
+                                                       fastq("PCR2", "TGTAC",  "!!!!!"));
+    const alignment_info expected = new_aln(5, 4, 5);
+    const alignment_info result = align_paired_ended_sequences(record1, record2, adapters, 0);
+    ASSERT_EQ(expected, result);
+    ASSERT_TRUNCATED_PE_IS_UNCHANGED(result, record1, record2);
+
 }
 
 
@@ -988,6 +998,30 @@ TEST(extract_adapter_sequences, empty_sequences)
 }
 
 
+TEST(extract_adapter_sequences, empty_sequence_1)
+{
+    const fastq expected_1 = fastq("read1", "", "");
+    const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
+    fastq read1 = expected_1;
+    fastq read2 = fastq("read2", "GGGGCC", "!!!!!!");
+    extract_adapter_sequences(alignment_info(), read1, read2);
+    ASSERT_EQ(fastq("read1", "", ""), read1);
+    ASSERT_EQ(fastq("read2", "", ""), read2);
+}
+
+
+TEST(extract_adapter_sequences, empty_sequence_2)
+{
+    const fastq expected_1 = fastq("read1", "AATTTT", "!!!!!!");
+    const fastq expected_2 = fastq("read2", "", "");
+    fastq read1 = fastq("read1", "", "");
+    fastq read2 = expected_2;
+    extract_adapter_sequences(alignment_info(), read1, read2);
+    ASSERT_EQ(fastq("read1", "", ""), read1);
+    ASSERT_EQ(fastq("read2", "", ""), read2);
+}
+
+
 TEST(extract_adapter_sequences, case_1_no_alignment)
 {
     const fastq expected_1 = fastq("read1", "AATTTT", "!!!!!!");
@@ -1085,7 +1119,6 @@ TEST(extract_adapter_sequences, case_8_reads_extends_past_each_pther)
 }
 
 
-
 #pragma message("TODO: Empty sequences")
 #pragma message("TODO: Test PE with multiple adapters")
 
@@ -1098,8 +1131,7 @@ TEST(extract_adapter_sequences, case_8_reads_extends_past_each_pther)
 
 // The function is not exposed, so a declaration is required
 bool compare_subsequences(const alignment_info& best, alignment_info& current,
-                          const char* seq_1_ptr, const char* seq_2_ptr,
-                          size_t max_mismatches = 1024);
+                          const char* seq_1_ptr, const char* seq_2_ptr);
 
 
 /** Naive reimplementation of alignment calculation. **/

@@ -136,16 +136,13 @@ alignment_info trim_barcodes(fastq& read, const fastq_pair_vec& barcodes, int sh
  * @param adapters A set of adapter pairs; only the first adapters are used.
  * @param shift Allow up to this number of missing bases at the 5' end of the
  *              read, when aligning the adapter.
- * @param max_mismatch_rate Determines the maximum number of mismatches in a
- *                          valid alignment, depending on the alignment length.
  * @return The best alignment, or a length 0 alignment if not aligned.
  *
  * The best alignment is selected using alignment_info::is_better_than.
  */
 alignment_info align_single_ended_sequence(const fastq& read,
                                            const fastq_pair_vec& adapters,
-                                           int max_shift,
-                                           double max_mismatch_rate = 1.0);
+                                           int max_shift);
 
 
 /**
@@ -156,8 +153,6 @@ alignment_info align_single_ended_sequence(const fastq& read,
  * @param adapters A set of adapter pairs; both in each pair adapters are used.
  * @param shift Allow up to this number of missing bases at the 5' end of both
  *              mate reads.
- * @param max_mismatch_rate Determines the maximum number of mismatches in a
- *                          valid alignment, depending on the alignment length.
  * @return The best alignment, or a length 0 alignment if not aligned.
  *
  * The alignment is carried out following the concatenation of pcr2 and read1,
@@ -172,8 +167,7 @@ alignment_info align_single_ended_sequence(const fastq& read,
 alignment_info align_paired_ended_sequences(const fastq& read1,
                                             const fastq& read2,
                                             const fastq_pair_vec& adapters,
-                                            int max_shift,
-                                            double max_mismatch_rate = 1.0);
+                                            int max_shift);
 
 
 /**

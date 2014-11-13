@@ -70,7 +70,6 @@ inline size_t COUNT_BITS_128(__m128i value)
  * @param current The current alignment to be evaluated (counts are assumed to be zero'd!)
  * @param seq_1_ptr Pointer to the first base in the first sequence in the alignment.
  * @param seq_2_ptr Pointer to the first base in the second sequence in the alignment.
- * @param max_mismatches The maximum number of mismatches to be accepted.
  * @return True if the current alignment is at least as good as the best alignment, false otherwise.
  *
  * If the function returns false, the current alignment cannot be assumed to
@@ -78,13 +77,12 @@ inline size_t COUNT_BITS_128(__m128i value)
  * and scores are not reliable. The function assumes uppercase nucleotides.
  */
 bool compare_subsequences(const alignment_info& best, alignment_info& current,
-                          const char* seq_1_ptr, const char* seq_2_ptr,
-                          size_t max_mismatches)
+                          const char* seq_1_ptr, const char* seq_2_ptr)
 {
     int remaining_bases = current.length;
 
 #if defined(__SSE__) && defined(__SSE2__)
-    while (remaining_bases >= 16 && current.n_mismatches <= max_mismatches) {
+    while (remaining_bases >= 16) {
         const __m128i s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
         const __m128i s2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
 
@@ -104,7 +102,7 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
     }
 #endif
 
-    while (remaining_bases && current.n_mismatches <= max_mismatches) {
+    for (; remaining_bases; --remaining_bases) {
         const char nt_1 = *seq_1_ptr++;
         const char nt_2 = *seq_2_ptr++;
 
@@ -113,22 +111,19 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
         } else if (nt_1 != nt_2) {
             current.n_mismatches++;
         }
-
-        remaining_bases -= 1;
     }
 
     // Matches count for 1, Ns for 0, and mismatches for -1
     current.score = current.length - current.n_ambiguous - (current.n_mismatches * 2);
 
-    return current.n_mismatches <= max_mismatches && current.is_better_than(best);
+    return current.is_better_than(best);
 }
 
 
 alignment_info pairwise_align_sequences(const std::string& seq1,
                                         const std::string& seq2,
                                         int min_offset = std::numeric_limits<int>::min(),
-                                        int max_offset = std::numeric_limits<int>::max(),
-                                        double max_mismatch_rate = 1.0)
+                                        int max_offset = std::numeric_limits<int>::max())
 {
     const int start_offset = std::max<int>(min_offset, -static_cast<int>(seq2.length()) + 1);
     const int end_offset = std::min<int>(max_offset, static_cast<int>(seq1.length()) - 1);
@@ -145,11 +140,10 @@ alignment_info pairwise_align_sequences(const std::string& seq1,
             current.offset = offset;
             current.length = length;
 
-            const size_t max_mismatches = static_cast<size_t>(max_mismatch_rate * current.length);
             const char* seq_1_ptr = seq1.data() + initial_seq1_offset;
             const char* seq_2_ptr = seq2.data() + initial_seq2_offset;
 
-            if (compare_subsequences(best, current, seq_1_ptr, seq_2_ptr, max_mismatches)) {
+            if (compare_subsequences(best, current, seq_1_ptr, seq_2_ptr)) {
                 best = current;
             }
         }
@@ -362,8 +356,7 @@ alignment_info trim_barcodes(fastq& read, const fastq_pair_vec& barcodes, int ma
 
 alignment_info align_single_ended_sequence(const fastq& read,
                                            const fastq_pair_vec& adapters,
-                                           int max_shift,
-                                           double max_mismatch_rate)
+                                           int max_shift)
 {
     size_t adapter_id = 0;
     alignment_info best_alignment;
@@ -372,8 +365,7 @@ alignment_info align_single_ended_sequence(const fastq& read,
         const alignment_info alignment = pairwise_align_sequences(read.sequence(),
                                                                   adapter.sequence(),
                                                                   -max_shift,
-                                                                  std::numeric_limits<int>::max(),
-                                                                  max_mismatch_rate);
+                                                                  std::numeric_limits<int>::max());
 
         if (alignment.is_better_than(best_alignment)) {
             best_alignment = alignment;
@@ -388,8 +380,7 @@ alignment_info align_single_ended_sequence(const fastq& read,
 alignment_info align_paired_ended_sequences(const fastq& read1,
                                             const fastq& read2,
                                             const fastq_pair_vec& adapters,
-                                            int max_shift,
-                                            double max_mismatch_rate)
+                                            int max_shift)
 {
     size_t adapter_id = 0;
     alignment_info best_alignment;
@@ -407,8 +398,7 @@ alignment_info align_paired_ended_sequences(const fastq& read1,
         alignment_info alignment = pairwise_align_sequences(sequence1,
                                                             sequence2,
                                                             min_offset,
-                                                            std::numeric_limits<int>::max(),
-                                                            max_mismatch_rate);
+                                                            std::numeric_limits<int>::max());
 
         if (alignment.is_better_than(best_alignment)) {
             best_alignment = alignment;

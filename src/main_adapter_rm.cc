@@ -202,7 +202,7 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
             progress.increment();
             config.trim_barcodes_if_enabled(read, stats);
 
-            const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift, config.mismatch_threshold);
+            const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
 
             if (aln_type == userconfig::valid_alignment) {
@@ -303,7 +303,7 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
             // Reverse complement to match the orientation of read1
             read2.reverse_complement();
 
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, config.adapters, config.shift, config.mismatch_threshold);
+            const alignment_info alignment = align_paired_ended_sequences(read1, read2, config.adapters, config.shift);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
             if (aln_type == userconfig::valid_alignment) {
                 stats.well_aligned_reads++;

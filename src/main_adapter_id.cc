@@ -229,7 +229,7 @@ int identify_adapter_sequences(const userconfig& config)
             // Reverse complement to match the orientation of read1
             read2.reverse_complement();
 
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapters, config.shift, config.mismatch_threshold);
+            const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapters, config.shift);
             const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
             if (aln_type == userconfig::valid_alignment) {
                 stats.well_aligned_reads++;
