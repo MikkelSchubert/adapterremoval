@@ -68,7 +68,11 @@ gzstreambuf* gzstreambuf::open(const char* name, int open_mode, int level)
         return NULL;
     }
 
-#if (ZLIB_VER_MAJOR >= 1 || ZLIB_VER_MINOR >= 2 || ZLIB_VER_REVISION >= 4)
+#if ((ZLIB_VER_MAJOR > 1) \
+     || (ZLIB_VER_MAJOR == 1 \
+         && ((ZLIB_VER_MINOR > 2) \
+             || (ZLIB_VER_MINOR == 2 \
+                 && ZLIB_VER_REVISION >= 4))))
     if (gzbuffer(file, 256 * 1024)) {
         return NULL;
     }
