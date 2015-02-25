@@ -154,11 +154,10 @@ void print_consensus_adapter(const char_count_vec& counts,
     }
 
     const std::string consensus = sequence.str();
-    std::cerr << name << "\n"
-              << "  Consensus:  " << consensus << "\n"
-              << "              " << qualities.str() << "\n\n";
+    std::cout << "  " << name << ":  " << consensus << "\n"
+              << "           " << qualities.str() << "\n\n";
 
-    print_most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 11 : 11);
+    print_most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 8 : 8);
 }
 
 
