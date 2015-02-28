@@ -121,6 +121,8 @@ public:
 
     //! The minimum length of trimmed reads (ie. genomic nts) to be retained
     unsigned min_genomic_length;
+    //! The maximum length of trimmed reads (ie. genomic nts) to be retained
+    unsigned max_genomic_length;
     //! The minimum required genomic overlap before collapsing reads into one.
     unsigned min_alignment_length;
     //! Rate of mismatches determining the threshold for a an acceptable
