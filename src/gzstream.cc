@@ -88,7 +88,7 @@ gzstreambuf * gzstreambuf::close()
     if (is_open()) {
         sync();
         opened = 0;
-        if (gzclose( file) == Z_OK) {
+        if (gzclose(file) == Z_OK) {
             return this;
         }
     }
@@ -134,7 +134,7 @@ int gzstreambuf::flush_buffer()
 {
     // Separate the writing of the buffer from overflow() and
     // sync() operation.
-    int w = pptr() - pbase();
+    const int w = pptr() - pbase();
     if (gzwrite(file, pbase(), w) != w) {
         return EOF;
     }
