@@ -30,15 +30,15 @@
 const std::string NAME = "AdapterRemoval";
 const std::string VERSION = "ver. 2.0.0-pre1";
 const std::string HELPTEXT = \
-    "This program searches for and removes remnant adapter sequences from "
-    "your read data.  The program can analyze both single end and paired end "
-    "data.  For detailed explanation of the parameters, please refer to the "
+    "This program searches for and removes remnant adapter sequences from\n"
+    "your read data.  The program can analyze both single end and paired end\n"
+    "data.  For detailed explanation of the parameters, please refer to the\n"
     "man page.  For comments, suggestions  and feedback please contact Stinus\n"
     "Lindgreen (stinus@binf.ku.dk) and Mikkel Schubert (MikkelSch@gmail.com).\n"
     "\n"
     "If you use the program, please cite the paper:\n"
-    "    S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next "
-    "Generation Sequencing Reads, BMC Research Notes, 5:337\n"
-    "    http://www.biomedcentral.com/1756-0500/5/337/\n";
+    "    S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next\n"
+    "    Generation Sequencing Reads, BMC Research Notes, 5:337,\n"
+    "    URL: http://www.biomedcentral.com/1756-0500/5/337/\n";
 
 #endif
