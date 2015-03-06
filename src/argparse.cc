@@ -181,16 +181,18 @@ void parser::print_help() const
         size_t current_len = it->length();
 
         if (!metavar.empty()) {
-            current_len += 1 + metavar.length();
+            current_len += metavar.length();
         }
 
-        ljust = std::max<size_t>(ljust, current_len);
+        // For simplicity, we always include the space for the metavar
+        ljust = std::max<size_t>(ljust, current_len + 1);
     }
 
-    std::cerr << "Usage:\n"
-              // the indentation + ljust + double spacing
-              << std::left << std::setw(4 + ljust + 4) << m_name
-              << "Description:\n";
+    // indentation + ljust + 4 space before description
+    ljust = 2 + ljust + 4;
+
+    std::cerr << m_name << "\n"
+              << std::left << std::setw(ljust) << "Usage:" << "Description:\n";
 
     for (StringVecConstIter it = m_keys.begin(); it != m_keys.end(); ++it) {
         if (it->empty()) {
@@ -199,23 +201,53 @@ void parser::print_help() const
         }
 
         const consumer_ptr ptr = m_parsers.at(*it);
+        if (ptr->help() == "HIDDEN") {
+            continue;
+        }
+
         const std::string metavar = get_metavar_str(ptr, *it);
-        std::cerr << "    " << *it << " "
-                  << std::left << std::setw(ljust - it->length() - 1)
-                  << metavar;
+        std::cerr << std::left << std::setw(ljust)
+                  << ("  " + *it + " " + metavar);
 
         std::string value = ptr->help();
         if (!value.empty()) {
-            const size_t index = value.find("%default");
+            // Replace "%default" with string representation of current value.
+            size_t index = value.find("%default");
             if (index != std::string::npos) {
                 const std::string default_value = ptr->to_str();
                 value.replace(index, 8, default_value);
             }
 
-            std::cerr << "    " << value << "";
+            index = 0;
+            size_t current_width = 0;
+            size_t current_ljust = ljust;
+            while (index < value.length()) {
+                const size_t endpos = value.find(' ', index);
+                const std::string substr = value.substr(index, endpos - index);
+
+                if (current_width) {
+                    if (current_ljust + current_width + 1 + substr.length() > 80) {
+                        // Add another 2 characters of indentation
+                        current_ljust = ljust + 2;
+                        std::cerr << "\n" << std::left
+                                  << std::setw(current_ljust)
+                                  << "" << substr;
+                        current_width = substr.length();
+                    } else {
+                        std::cerr << " " << substr;
+                        current_width += substr.length() + 1;
+                    }
+                } else {
+                    std::cerr << substr;
+                    current_width += substr.length();
+                }
+
+                index += substr.length() + 1;
+            } while (index < value.length());
+
+            std::cerr << "\n";
         }
 
-        std::cerr << "\n";
     }
 
     std::cerr.flush();
