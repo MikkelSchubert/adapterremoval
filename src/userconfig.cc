@@ -85,7 +85,7 @@ userconfig::userconfig(const std::string& name,
                              const std::string& version,
                              const std::string& help)
     : argparser(name, version, help)
-    , basename("output")
+    , basename("your_output")
     , input_file_1()
     , input_file_2()
     , paired_ended_mode(false)
