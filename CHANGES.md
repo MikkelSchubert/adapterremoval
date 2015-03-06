@@ -77,3 +77,86 @@ Other improvements / bug-fixes:
     spawed within a short timespan from using the same seed.
   * An (optional) progress report is printed during usage, incidating the
     run-time and number of reads processed.
+
+
+Version 1.5.4 - 2014-04-23
+==========================
+  * Fixed bug in which collapsed reads would not be considered truncated if
+    bases were trimmed from the 5' end.
+  * Fixed bug in which the quality bases used for mate 2 during collapsing of
+    overlapping read pairs made use of quality scores with a wrong orientation.
+  * Reduced the amount of IO operations during trimming.
+
+
+Version 1.5.2 - 2013-10-22
+==========================
+Two changes to the program:
+  * I have added a reference to the paper to both the man page and the help
+     text.
+  * I fixed a minor bug in the collapse code where two very low quality bases
+    might give rise to a third low quality base being called. For example, a C
+    with quality " and a T with quality ! would result in an A with quality #.
+    This has been fixed so that the the result is now C with quality ".
+
+
+Version 1.5.0 - 2013-04-29
+==========================
+Small update: Due to user feedback, the program now outputs collapsed pairs in
+two files: One contains full-length collapsed pairs constituting the full
+insert, the other contains collapsed pairs that have been truncated due to low
+qualities or Ns in the reads.
+
+
+Version 1.4.0 - 2013-03-24
+==========================
+I have made some fixes to the program:
+  * The program can now handle the use of '.' instead of 'N' to encode
+    undefined nucleotides.
+  * There was a typo in the adapter sequence used for PCR2!
+  * Some minor changes to output etc.
+
+
+Version 1.3.0 - 2013-02-10
+==========================
+I have updated AdapterRemoval and released version 1.3. These changes are based
+on feedback from users of the program that had some very specific and well-
+founded suggestions. Some of these changes are minor, others will have more
+dramatic effects on the use of the program so please read these notes
+carefully:
+
+Minor changes:
+  * I fixed an occasional segmentation fault.
+  * Collapsed reads are now names "@M_...".
+  * Collapsed reads are put in a separate file with extension ".collapsed".
+
+Important changes:
+  * The sequences PCR1 and PCR2 are now used as-is without reverse-
+    complementation. You have to make sure that the sequences you search for
+    are correct.
+  * The default PCR1 and PCR2 sequences are now:
+    PCR1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+    PCR2: AATGATACGGCGACCACCGAGATCACACTCTTTCCCTACACGACGCTCTTCCGATCT
+  * I have changed the way PCR1 and PCR2 are used to make the program
+    consistent. Now, you always search for the sequence PCR1 in READ1 (whether
+    single end or paired end), and you search for PCR2 in READ2. In single end
+    mode, this corresponds to having an empty READ2 and ignore PCR2 as
+    illustrated below:
+
+      * For paired end data, PCR2-READ1 aligned to READ2-PCR1.
+      * For single end data, READ1 aligned to PCR1.
+
+As always, please contact me with any questions or comments.
+
+Stinus
+
+
+Version 1.1.0 - 2012-05-01
+==========================
+  * It is now possible to look for adapter in the 5' end of reads using the
+    --5prime parameter.
+  * Updated trimming of qualities.
+  * Added option for discarding reads with too many gaps using --maxns max.
+  * The programs handles lower vs upper case issues by translating all
+    sequences to upper case.
+  * The program now checks for inconsistent parameters.
+  * Fixed some typographical issues with output.
