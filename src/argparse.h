@@ -116,6 +116,9 @@ public:
     /** Add a blank line between the previous and the next command. */
     void add_seperator();
 
+    /** Create alias for key with name alias. */
+    void create_alias(const std::string& key, const std::string& alias);
+
     /** Helper function; prints the program name and version string. */
     void print_version() const;
     /** Helper functions; prints the full set of help-text. */

@@ -62,12 +62,12 @@ parser::parser(const std::string& name,
 {
 	// Built-in arguments (aliases are not shown!)
     (*this)["--help"] = new flag(NULL, "Display this message.");
-	m_parsers["-help"] = m_parsers["--help"];
-	m_parsers["--h"] = m_parsers["--help"];
-	m_parsers["-h"] = m_parsers["--help"];
+    create_alias("--help", "-help");
+    create_alias("--help", "-h");
 
 	(*this)["--version"] = new flag(NULL, "Print the version string.");
-	m_parsers["-v"] = m_parsers["--version"];
+    create_alias("--version", "-version");
+    create_alias("--version", "-v");
 
     add_seperator();
 }
@@ -159,6 +159,17 @@ void parser::add_seperator()
 }
 
 
+void parser::create_alias(const std::string& key, const std::string& alias)
+{
+    if (m_parsers.find(alias) != m_parsers.end()) {
+        throw std::invalid_argument("Attemping to overwrite existing command-"
+                                    "line argument with new alias.");
+    }
+
+    m_parsers[alias] = m_parsers.at(key);
+}
+
+
 void parser::print_version() const
 {
     std::cerr << m_name << " " << m_version << std::endl;
@@ -191,8 +202,8 @@ void parser::print_help() const
     // indentation + ljust + 4 space before description
     ljust = 2 + ljust + 4;
 
-    std::cerr << m_name << "\n"
-              << std::left << std::setw(ljust) << "Usage:" << "Description:\n";
+    std::cerr << std::left << std::setw(ljust)
+              << "Arguments:" << "Description:\n";
 
     for (StringVecConstIter it = m_keys.begin(); it != m_keys.end(); ++it) {
         if (it->empty()) {
