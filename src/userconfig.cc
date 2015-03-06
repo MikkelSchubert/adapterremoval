@@ -106,8 +106,8 @@ userconfig::userconfig(const std::string& name,
     , shift(2)
     , seed(get_seed())
     , identify_adapters(false)
-    , PCR1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
-    , PCR2("AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT")
+    , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
+    , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , barcode()
     , quality_input_base("33")
     , quality_output_base("33")
@@ -148,16 +148,23 @@ userconfig::userconfig(const std::string& name,
         new argparse::any(NULL, "FILE", "BASENAME.discarded");
 
     argparser.add_seperator();
-    argparser["--pcr1"] =
-        new argparse::any(&PCR1, "SEQUENCE",
+    // Backwards compatibility with AdapterRemoval v1; not recommended due to
+    // schematicts that differ from most other adapter trimming programs,
+    // namely requiring that the --pcr2 sequence is that which is observed in
+    // the reverse complement of mate 2, rather than in the raw reads.
+    argparser["--pcr1"] = new argparse::any(&adapter_1, "SEQUENCE", "HIDDEN");
+    argparser["--pcr2"] = new argparse::any(&adapter_2, "SEQUENCE", "HIDDEN");
+
+    argparser["--adapter1"] =
+        new argparse::any(&adapter_1, "SEQUENCE",
             "Adapter sequence expected to be found in mate 1 reads "
             "[current: %default].");
-    argparser["--pcr2"] =
-        new argparse::any(&PCR2, "SEQUENCE",
-            "Adapter sequence expected to be found in reverse complemented "
-            "mate 2 reads [current: %default].");
-    argparser["--pcr-list"] =
-        new argparse::any(&PCR_list, "FILENAME",
+    argparser["--adapter2"] =
+        new argparse::any(&adapter_2, "SEQUENCE",
+            "Adapter sequence expected to be found in mate 2 reads "
+            "[current: %default].");
+    argparser["--adapter-list"] =
+        new argparse::any(&adapter_list, "FILENAME",
             "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; "
             "only the first adapter in each pair is required / used in SE "
             "mode [current: none].");
@@ -248,7 +255,7 @@ userconfig::userconfig(const std::string& name,
             "Compression level, 0 - 9 [current: %default]");
     argparser["--quiet"] =
         new argparse::flag(&quiet,
-            "Only print errors to STDERR [current: %default]");
+            "Only print warnings / errors to STDERR [current: %default]");
 }
 
 
@@ -293,11 +300,7 @@ bool userconfig::parse_args(int argc, char *argv[])
         return false;
     }
 
-    if (!cleanup_and_validate_sequence(PCR1, "--pcr1")) {
-        return false;
-    } else if (!cleanup_and_validate_sequence(PCR2, "--pcr2")) {
-        return false;
-    } else if (!cleanup_and_validate_sequence(barcode, "--5prime")) {
+    if (!cleanup_and_validate_sequence(barcode, "--5prime")) {
         return false;
     }
 
@@ -313,10 +316,6 @@ bool userconfig::parse_args(int argc, char *argv[])
     } else if (file_2_set && !file_1_set) {
         std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
         return false;
-    } else if ((argparser.is_set("--pcr1") || argparser.is_set("--pcr2"))
-               && argparser.is_set("--pcr-list")) {
-        std::cerr << "Error: Use either --pcr1 / --pcr2, or --pcr-list, not both!" << std::endl;
-        return false;
     } else if (argparser.is_set("--5prime") && argparser.is_set("--5prime-list")) {
         std::cerr << "Error: Use either --5prime or --5prime-list, not both!" << std::endl;
         return false;
@@ -329,29 +328,9 @@ bool userconfig::parse_args(int argc, char *argv[])
 
     paired_ended_mode = file_2_set;
 
-    if (argparser.is_set("--5prime")) {
-        trim_barcodes_mode = true;
-        barcodes.push_back(fastq_pair(fastq("Barcode", barcode, std::string(barcode.length(), 'J')), fastq()));
-    } else if (argparser.is_set("--5prime-list")) {
-        trim_barcodes_mode = true;
-        if (!read_adapters_sequences(barcode_list, barcodes, paired_ended_mode)) {
-            return false;
-        } else if (adapters.empty()) {
-            std::cerr << "Error: No barcode sequences found in table!" << std::endl;
-            return false;
-        }
-    }
-
-    if (argparser.is_set("--pcr-list")) {
-        if (!read_adapters_sequences(PCR_list, adapters, paired_ended_mode)) {
-            return false;
-        } else if (adapters.empty()) {
-            std::cerr << "Error: No adapter sequences found in table!" << std::endl;
-            return false;
-        }
-    } else {
-        adapters.push_back(fastq_pair(fastq("PCR1", PCR1, std::string(PCR1.length(), 'J')),
-                                      fastq("PCR2", PCR2, std::string(PCR2.length(), 'J'))));
+    // (Optionally) read adapters from file and validate
+    if (!setup_adapter_sequences()) {
+        return false;
     }
 
     // Set mismatch threshold
@@ -518,9 +497,74 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
 }
 
 
+bool userconfig::setup_adapter_sequences()
+{
+    const bool pcr_is_set
+        = argparser.is_set("--pcr1") || argparser.is_set("--pcr2");
+    const bool adapters_is_set
+        = argparser.is_set("--adapter1") || argparser.is_set("--adapter2");
+    const bool adapter_list_is_set = argparser.is_set("--adapter-list");
+
+    if (pcr_is_set) {
+        std::cerr << "WARNING: Command-line options --pcr1 and --pcr2 are deprecated.\n"
+                  << "         Using --adapter1 and --adapter2 is recommended.\n"
+                  << "         Please see documentation for more information.\n"
+                  << std::endl;
+    }
+
+    if (pcr_is_set && (adapters_is_set || adapter_list_is_set)) {
+        std::cerr << "ERROR: "
+                  << "Either use --pcr1 and --pcr2, or use --adapter1 and "
+                  << "--adapter2 / --adapter-list, not both!\n\n"
+                  << std::endl;
+
+        return false;
+    } else if (adapters_is_set && adapter_list_is_set) {
+        std::cerr << "ERROR: "
+                  << "Use either --adapter1 and --adapter2, or "
+                  << "--adapter-list, not both!"
+                  << std::endl;
+
+        return false;
+    }
+
+    if (adapter_list_is_set) {
+        if (!read_adapters_sequences(adapter_list, adapters, paired_ended_mode)) {
+            return false;
+        } else if (adapters.empty()) {
+            std::cerr << "Error: No adapter sequences found in table!" << std::endl;
+            return false;
+        }
+    } else {
+        const char* label_1 = pcr_is_set ? "--pcr1" : "--adapter1";
+        const char* label_2 = pcr_is_set ? "--pcr2" : "--adapter2";
+
+        if (!cleanup_and_validate_sequence(adapter_1, label_1)) {
+            return false;
+        } else if (!cleanup_and_validate_sequence(adapter_2, label_2)) {
+            return false;
+        }
+
+        fastq adapter1 = fastq("PCR1", adapter_1, std::string(adapter_1.length(), 'J'));
+        fastq adapter2 = fastq("PCR2", adapter_2, std::string(adapter_2.length(), 'J'));
+        if (!pcr_is_set) {
+            // --pcr2 is expected to already be reverse completed; whereas
+            // --adapter2 should correspond to the sequences observed directly
+            // in the .fastq files.
+            adapter2.reverse_complement();
+        }
+
+        adapters.push_back(fastq_pair(adapter1, adapter2));
+    }
+
+    return true;
+
+}
+
+
 bool userconfig::read_adapters_sequences(const std::string& filename,
                                          fastq_pair_vec& adapters,
-                                         bool paired_ended)
+                                         bool paired_ended) const
 {
     size_t line_num = 1;
     std::auto_ptr<std::istream> adapter_file;
@@ -541,6 +585,7 @@ bool userconfig::read_adapters_sequences(const std::string& filename,
             fastq adapter_3p;
             if (paired_ended) {
                 adapter_3p = read_adapter_sequence(instream);
+                adapter_3p.reverse_complement();
             }
 
             adapters.push_back(fastq_pair(adapter_5p, adapter_3p));

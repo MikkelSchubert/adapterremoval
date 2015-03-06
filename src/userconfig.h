@@ -163,6 +163,15 @@ public:
     bool quiet;
 
 private:
+    /** Sets up adapter sequences based on user settings.
+     *
+     * @param adapters list to which the resulting adapter sequences are saved,
+     *                 with --adapter2 reverse complemented, but --pcr2 left as
+     *                 is (matching previous behavior).
+     * @return True on success, false otherwise.
+     */
+     bool setup_adapter_sequences();
+
     /** Reads adapter sequences from a file.
      *
      * @param filename Path to text file containing adapter sequences
@@ -176,14 +185,14 @@ private:
      **/
     bool read_adapters_sequences(const std::string& filename,
                                  fastq_pair_vec& adapters,
-                                 bool paired_ended = true);
+                                 bool paired_ended = true) const;
 
-    //! Sink for --pcr1, adapter sequence expected at 3' of mate 1 reads
-    std::string PCR1;
-    //! Sink for --pcr2, adapter sequence expected at 3' of mate 2 reads
-    std::string PCR2;
-    //! Sink for --pcr-list; list of adapter sequences for --pcr1 and --pcr2
-    std::string PCR_list;
+    //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
+    std::string adapter_1;
+    //! Sink for --adapter2, adapter sequence expected at 3' of mate 2 reads
+    std::string adapter_2;
+    //! Sink for --adapter-list; list of adapter #1 and #2 sequences
+    std::string adapter_list;
     //! Sink for --5prime, barcode to be trimmed at 5' of mate 1 reads
     std::string barcode;
     //! Sink for --5prime-list; list of adapter sequences used for --5prime

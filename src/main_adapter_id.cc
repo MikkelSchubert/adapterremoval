@@ -75,7 +75,7 @@ typedef std::priority_queue<kmer_count, std::vector<kmer_count>, cmp_kmer_count>
 typedef std::vector<kmer_count> kmer_vector;
 
 
-void print_most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
+void print_most_common_kmers(const kmer_map& kmers)
 {
     size_t total = 0;
     kmer_queue queue;
@@ -99,22 +99,16 @@ void print_most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
         queue.pop();
     }
 
-
     std::cout.precision(2);
     std::cout << std::fixed;
-    std::cout << std::string(rjust - 4, ' ')
-              << "Top 5 most common " << KMER_LENGTH << "-bp "
-              << (reverse ? 3 : 5) << "'-kmers:\n";
+    std::cout << "    Top 5 most common " << KMER_LENGTH << "-bp 5'-kmers:\n";
 
     std::reverse(top_n_kmers.begin(), top_n_kmers.end());
     for (size_t i = 0; i < top_n_kmers.size(); ++i) {
         const kmer_count& count = top_n_kmers.at(i);
         std::string kmer_s = size_t_to_kmer(count.first);
-        if (reverse) {
-            std::reverse(kmer_s.begin(), kmer_s.end());
-        }
 
-        std::cout << std::string(rjust, ' ');
+        std::cout << std::string(12, ' ');
         std::cout << i + 1<< ": " << kmer_s
                   << " = " << std::right << std::setw(5) << (100.0 * count.second) / total
                   << "% (" << count.second << ")"
@@ -123,11 +117,9 @@ void print_most_common_kmers(const kmer_map& kmers, bool reverse, size_t rjust)
 }
 
 
-
 void print_consensus_adapter(const char_count_vec& counts,
                              const kmer_map& kmers,
-                             const std::string& name,
-                             bool rjust = false)
+                             const std::string& name)
 {
     const char* NTs = "ACGT";
     std::stringstream sequence;
@@ -155,9 +147,9 @@ void print_consensus_adapter(const char_count_vec& counts,
 
     const std::string consensus = sequence.str();
     std::cout << "  " << name << ":  " << consensus << "\n"
-              << "           " << qualities.str() << "\n\n";
+              << "               " << qualities.str() << "\n\n";
 
-    print_most_common_kmers(kmers, rjust, rjust ? consensus.size() - KMER_LENGTH + 8 : 8);
+    print_most_common_kmers(kmers);
 }
 
 
@@ -206,6 +198,8 @@ int identify_adapter_sequences(const userconfig& config)
     kmer_map pcr1_kmers(N_KMERS, 0);
     kmer_map pcr2_kmers(N_KMERS, 0);
 
+    std::cout << "Attemping to identify adapter sequences ..." << std::endl;
+
     try {
         timer progress("pairs", config.quiet);
         for (; ; ++stats.records) {
@@ -241,8 +235,8 @@ int identify_adapter_sequences(const userconfig& config)
 
                     process_adapter(read1.sequence(), pcr1_counts, pcr1_kmers);
 
-                    const std::string seq2 = std::string(read2.sequence().rbegin(), read2.sequence().rend());
-                    process_adapter(seq2, pcr2_counts, pcr2_kmers);
+                    read2.reverse_complement();
+                    process_adapter(read2.sequence(), pcr2_counts, pcr2_kmers);
                 }
             } else if (aln_type == userconfig::poor_alignment) {
                 stats.poorly_aligned_reads++;
@@ -261,15 +255,13 @@ int identify_adapter_sequences(const userconfig& config)
     }
 
     std::cout << "   Found " << stats.well_aligned_reads << " overlapping pairs ...\n"
-              << "   Of which " << stats.number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n"
+              << "   Of which " << stats.number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n\n"
+              << "Printing adapter sequences, including poly-A tails:"
               << std::endl;
 
-    print_consensus_adapter(pcr1_counts, pcr1_kmers, "--pcr1");
+    print_consensus_adapter(pcr1_counts, pcr1_kmers, "--adapter1");
     std::cout << "\n\n";
-
-    // Print the adapter in a form usable as argument for --pcr2
-    std::reverse(pcr2_counts.begin(), pcr2_counts.end());
-    print_consensus_adapter(pcr2_counts, pcr2_kmers, "--pcr2", true);
+    print_consensus_adapter(pcr2_counts, pcr2_kmers, "--adapter2");
 
     return 0;
 }

@@ -64,9 +64,12 @@ std::ostream& write_settings(const userconfig& config,
 
     size_t adapter_id = 0;
     for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, adapter_id++) {
-        settings << "PCR1[" << adapter_id << "]: " << it->first.sequence() << "\n";
+        settings << "Adapter1[" << adapter_id << "]: " << it->first.sequence() << "\n";
         if (config.paired_ended_mode) {
-            settings << "PCR2[" << adapter_id << "]: " << it->second.sequence() << "\n";
+            fastq adapter = it->second;
+            adapter.reverse_complement();
+
+            settings << "Adapter2[" << adapter_id << "]: " << adapter.sequence() << "\n";
         }
     }
 
@@ -85,6 +88,7 @@ std::ostream& write_settings(const userconfig& config,
 
     settings << "Trimming Phred scores <= " << config.low_quality_score << ": " << (config.trim_by_quality ? "yes" : "no") << "\n";
     settings << "Minimum genomic length: " << config.min_genomic_length << "\n";
+    settings << "Maximum genomic length: " << config.max_genomic_length << "\n";
     settings << "Collapse overlapping reads: " << ((config.collapse) ? "Yes" : "No") << "\n";
     settings << "Minimum overlap (in case of collapse): " << config.min_alignment_length << "\n";
 
