@@ -8,6 +8,19 @@ Version 2.0.0 of AdapterRemoval is a near complete rewrite, with the goal of
 improved safety, increased speed, fixing a number of minor issues with
 previous versions of AdapterRemoval, and adding a few new features:
 
+Compatibility changes:
+  * Command-line arguments --pcr1 and --pcr2 have been deprecated in favor of
+    --adapter1 and --adapter2. While --pcr1 and --adapter1 are equivalent,
+    --adapter2 expects the adapter sequence which may be observed in raw
+    mate 2 reads, unlike --pcr2 which expected the sequence which could be
+    observed in the reverse complement of mate 2 reads (cf. the README).
+  * The use of --file1 and (optionally) --file2 is now required; reads will not
+    be read from STDIN, nor written to STDOUT by default. To approximate the
+    previous behavior, the following command may be used:
+    $ AdapterRemoval --file1 /dev/stdin --output1 /dev/stdout
+  * Per-read statistics of adapter / low-quality base trimming using --stats is
+    no longer supported.
+
 Major changes:
   * Strict validation of input FASTQ records, to ensure that records are well
     formed, that quality scores fall within the expected range given the
@@ -35,6 +48,8 @@ Major changes:
   * Added support for reading / writing gzipped compressed FASTQ files; if
     enabled (using the --gzip flag), the ".gz" extension is added to filenames,
     unless the filenames are explicitly specified by the user.
+  * Length distributions are now calculated per read-type post-trimming
+    (mate 1, mate 2, collapsed, etc.) and written to the .settings file.
 
 
 Other improvements / bug-fixes:
@@ -62,11 +77,3 @@ Other improvements / bug-fixes:
     spawed within a short timespan from using the same seed.
   * An (optional) progress report is printed during usage, incidating the
     run-time and number of reads processed.
-
-Features removed from v1.x:
-  * The use of --file1 and (optionally) --file2 is now required; reads will not
-    be read from STDIN, nor written to STDOUT by default. To approximate the
-    previous behavior, the following command may be used:
-    $ AdapterRemoval --file1 /dev/stdin --output1 /dev/stdout
-  * Per-read statistics of adapter / low-quality base trimming using --stats is
-    no longer supported.
