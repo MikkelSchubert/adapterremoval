@@ -66,6 +66,26 @@ struct statistics
     size_t discard2;
 
     size_t records;
+
+    enum read_type {
+        rt_mate_1 = 0,
+        rt_mate_2,
+        rt_singleton,
+        rt_collapsed,
+        rt_collapsed_truncated,
+        rt_discarded
+    };
+
+    void inc_length_count(read_type type, size_t length) {
+        if (length >= read_lengths.size()) {
+            const size_t nfields = static_cast<size_t>(rt_discarded) + 1;
+            read_lengths.resize(length + 1, std::vector<size_t>(nfields));
+        }
+
+        ++read_lengths.at(length).at(static_cast<size_t>(type));
+    }
+
+    std::vector<std::vector<size_t> > read_lengths;
 };
 
 #endif
