@@ -6,16 +6,19 @@ AdapterRemoval - Remove adapters from sequences in either single end or paired e
 
 =head1 SYNOPSIS
 
-B<AdapterRemoval> --file1 filename [--file2 filename] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--stats] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--pcr1 sequence] [--pcr2 sequence] [--pcr-list filename] [--5prime sequence] [--5prime-list filename] [--output1 file] [--output2 file] [--outputstats file] [--singleton file] [--outputcollapsed file] [--outputcollapsedtruncated file] [--discarded file] [--settings file] [--seed seed] [--gzip] [--gzip-level level] [--version] [--help]
+B<AdapterRemoval> --file1 filename [--file2 filename] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--5prime sequence] [--5prime-list filename] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--version] [--help]
 
 
 =head1 DESCRIPTION
 
 B<AdapterRemoval> reads either one FASTQ file (single ended mode) or two FASTQ files (paired ended mode). It removes the residual adapter sequence from the reads and optionally trims Ns from the reads, and low qualities bases using the quality string, looks for specific sequences at the 5' end, and collapses overlapping paired ended mates into one read. Reads are discarded if the remaining genomic part is too short, or if the read contains more than an (user specified) amount of amigious nucleotides ('N').
 
-Some additional info: The reads and adapters are transformed to upper case for comparison. It is assumed that the letter 'N' is used for an unknown nucleotide, but in case the program encounters a '.' in the sequence, they will be treated as (and translated into) Ns. The program tries to check for nonsensical combinations of parameters but please report strange behaviour, bugs and whatnots to stinus@binf.ku.dk
+Alternatively, B<AdapterRemoval> may attempt to reconstruct a consensus adapter sequences from paired-ended data, in order to allow the identification of the adapter sequences originally used, and thereby ensure proper trimming of these reads.
 
-If you use this program, please cite my paper: Stinus Lindgreen (2012): AdapterRemoval: easy cleaning of next-generation sequencing reads. BMC Res Notes, 5:337. doi: 10.1186/1756-0500-5-337.
+The reads and adapters are transformed to upper case for comparison. It is assumed that the letter 'N' is used for an unknown nucleotide, but in case the program encounters a '.' in the sequence, they will be treated as (and translated into) Ns. The program tries to check for invalid input and / or nonsensical combinations of parameters but please report strange behaviour, bugs and whatnots to MSchubert@snm.ku.dk
+
+If you use this program, please cite the paper:
+Stinus Lindgreen (2012): AdapterRemoval: easy cleaning of next-generation sequencing reads. BMC Res Notes, 5:337. doi: 10.1186/1756-0500-5-337.
 
 =head1 OPTIONS
 
@@ -35,7 +38,7 @@ Determines the default filename for output files, unless overridden using the sp
 
 =item B<--identify-adapters>
 
-For paired ended reads only. In this mode, AdapterRemoval will to reconstruct the adapter sequences used for a set of paired ended reads, by locating fully overlapping read-pairs, and generating a consensus sequence from the bases identified as adapter sequence. The minimum overlap is controlled by I<minalignmentlength>. The I<pcr1> and I<pcr2> options are not used in this mode.
+For paired ended reads only. In this mode, AdapterRemoval will to reconstruct the adapter sequences used for a set of paired ended reads, by locating fully overlapping read-pairs, and generating a consensus sequence from the bases identified as adapter sequence. The minimum overlap is controlled by I<minalignmentlength>. The --adapter* command-line options are not used in this mode.
 
 =item B<--trimns>
 
@@ -81,15 +84,38 @@ The base of the quality score for reads written by AdapterRemoval - either '64' 
 
 To allow for missing bases in the 5' end of the read, the program can let the alignment slip I<num> bases in the 5' end. This corresponds to starting the alignment maximum I<num> nucleotides in read2 (for paired end) or the adapter (for single end). The default shift valule is 2.
 
-=item B<--pcr1> I<sequence>
+=item B<--adapter1> I<sequence>
 
-=item B<--pcr2> I<sequence>
+=item B<--adapter2> I<sequence>
 
-Specify the adapter sequences that you want to trim. The default sequences are PCR1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG and PCR2: AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT. The sequences you specify are used as-is without reverse-complementation. You have to make sure that the sequences you search for are correct. You always search for PCR1 in READ1 (whether single end or paired end), and you search for PCR2 in READ2. In single end mode, this corresponds to only specifying PCR1 and ignoring PCR2. In paired end mode, the construct PCR2-READ1 is aligned to READ2-PCR1. In single end mode, READ1 is aligned to PCR1. Please see my paper for details.
+Specify the adapter sequences that you wish to trim. The Adapter #2 sequence is only used when trimming paired-ended data.
 
-=item B<--pcr-list> I<filename>
+The Adapter #1 and Adapter #2 sequences are expected to be found in the mate 1 and the mate 2 reads respectively, while ignoring any difference in case and treating Ns as wildcards. The default sequences are
 
-Read one or more PCR sequences from a file. The first two columns (seperated by whitespace) of each line in the file are expected to correspond to values passed to --pcr1 and --pcr2. In single ended mode, only column one is required. Lines starting with '#' are ignored. When multiple pcr sequences are specified, AdapterRemoval will try each and select the best aligning adapters for each read processed.
+Adapter #1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+
+Adapter #2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+
+Assuming these were the adapters used to generate our data, we should therefore see these in the FASTQ files:
+
+$ grep -i "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
+B<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>AAAAAAAAACAAGAAT
+CTGGAGTTCB<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>AAAAAAA
+GGB<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>CAAATTGAAAACAC
+...
+
+$ grep -i "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT" file2.fq
+CB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAAAAGAAAAACATCTTG
+GAACTCCAGB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAAAAATAGA
+GAACTB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAACATAAGACCTA
+...
+
+Note that --adapter1 and --adapter2 replaces the --pcr[12] options of B<AdapterRemoval> v1.x, for which the --pcr2 sequence was expected to be reverse complemented compared --adaper2. Using the --pcr[12] options is not recommended!
+
+
+=item B<--adapter-list> I<filename>
+
+Read one or more PCR sequences from a file. The first two columns (seperated by whitespace) of each line in the file are expected to correspond to values passed to --adapter1 and --adapter2. In single ended mode, only column one is required. Lines starting with '#' are ignored. When multiple pcr sequences are specified, AdapterRemoval will try each and select the best aligning adapters for each read processed.
 
 =item B<--5prime> I<sequence>
 
@@ -165,9 +191,9 @@ Output the summary of available command-line options, including default values a
 
 The following command removes adapters from the file I<experiment.fq.bz2> that has been compressed using gzip, trims both Ns and low qualities from the reads, uses quality base 33 (default), saves the discarded reads in file I<experiment.discarded>, and puts the trimmed reads into a gzipped file (written to I<stdout> per default in single end mode):
 
-$ AdapterRemoval --file1 experiment.fq.gz --basename test --trimns --trimqualities --gzip
+$ AdapterRemoval --file1 experiment.fq.gz --basename my_trimmed_reads --trimns --trimqualities --gzip
 
-Since --gzip and --basename is specified, the trimmed FASTQ reads are written to 'test.truncated.gz', the dicarded FASTQ reads are written to 'test.discarded.gz', and the settings are written to 'test.settings'.
+Since --gzip and --basename is specified, the trimmed FASTQ reads are written to 'my_trimmed_reads.truncated.gz', the dicarded FASTQ reads are written to 'my_trimmed_reads.discarded.gz', and the settings are written to 'my_trimmed_reads.settings'.
 
 
 =head1 EXAMPLE: Paired end experiment.
@@ -184,13 +210,28 @@ The following command works as above, except that it now reads input files that 
 
 $ AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --settings experiment.settings --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --outputcollapsed >(bzip2 > experiment.collapsed.bz2) --outputcollapsedtruncated >(bzip2 > experiment.collapsed.truncated.bz2) --discarded /dev/null
 
+
+=head1 EXAMPLE: Identifying adapter sequences from paired-ended reads
+
+If we did not know the adapter sequences for the I<experiment.*.fq.gz> files, AdapterRemoval may be used to generate a consensus adapter sequence based on fragments identified as belonging to the adapters based on pairwise alignments of the reads.
+
+In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not nessesary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the barcode CGATGA:
+
+$ ~/research/tools/adapterremoval-dev/build/AdapterRemoval --identify-adapters --file1 experiment.pair1.fq.gz --file2 experiment.pair2.fq.gz
+
+  --adapter1:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAAAAAAAAAAAAAAAA
+               198869978866576755455565456233334623333521,3221231412017313/063//000//,+)(%$$####""""""
+
+  --adapter2:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+               565636646434252342412564143213,30322303132042/1122101301432333321/+*'%%$$######""""""""
+
 =head1 EXIT STATUS
 
 0 if everything worked as planned. 1 otherwise.
 
 =head1 REPORTING BUGS
 
-Report bugs to Stinus Lindgreen <stinus@binf.ku.dk>.
+Report bugs to Mikkel Schubert <MSchubert@snm.ku.dk>.
 
 Your bugreport should always include:
 
@@ -214,12 +255,14 @@ A complete example that others can run that shows the problem.
 Copyright (C) 2011 Stinus Lindgreen <stinus@binf.ku.dk>.
 
 Parts of the manual was written by Ole Tange <tange@binf.ku.dk>.
+
 Parts of the manual was written by Mikkel Schubert <MSchubert@snm.ku.dk>.
 
 
 =head1 LICENSE
 
 Copyright (C) 2011 Stinus Lindgreen <stinus@binf.ku.dk>.
+
 Copyright (C) 2014 Mikkel Schubert <MSchubert@snm.ku.dk>.
 
 This program is free software; you can redistribute it and/or modify

@@ -55,6 +55,11 @@ private:
 
     int flush_buffer();
 
+    //! Not implemented
+    gzstreambuf(const gzstreambuf&);
+    //! Not implemented
+    gzstreambuf& operator=(const gzstreambuf&);
+
 public:
     gzstreambuf();
     bool is_open() const;
@@ -114,7 +119,9 @@ public:
 // Implementations
 
 inline gzstreambuf::gzstreambuf()
-  : opened(false)
+  : file()
+  , opened(false)
+  , mode()
 {
     setp( buffer, buffer + (bufferSize-1));
     setg( buffer + 4,     // beginning of putback area
@@ -137,6 +144,7 @@ inline gzstreambuf::~gzstreambuf()
 
 
 inline gzstreambase::gzstreambase()
+  : buf()
 {
     init(&buf);
 }

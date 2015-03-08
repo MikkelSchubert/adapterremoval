@@ -183,6 +183,7 @@ int gzstreambuf::sync()
 // --------------------------------------
 
 gzstreambase::gzstreambase(const char* name, int mode, int level)
+  : buf()
 {
     init(&buf);
     open(name, mode, level);

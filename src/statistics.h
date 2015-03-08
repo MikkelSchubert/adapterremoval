@@ -46,6 +46,7 @@ struct statistics
       , keep2(0)
       , discard2(0)
       , records(0)
+      , read_lengths()
     {
     }
 

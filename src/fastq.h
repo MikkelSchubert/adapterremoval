@@ -30,8 +30,8 @@
 #include <ostream>
 
 
-const char MIN_PHRED_SCORE =  0;
-const char MAX_PHRED_SCORE = 41;
+const int MIN_PHRED_SCORE =  0;
+const int MAX_PHRED_SCORE = 41;
 const int MIN_SOLEXA_SCORE = -5;
 const int MAX_SOLEXA_SCORE = 41;
 

@@ -191,6 +191,11 @@ protected:
     bool m_value_set;
 
 private:
+    //! Not implemented
+    consumer_base(const consumer_base&);
+    //! Not implemented
+    consumer_base& operator=(const consumer_base&);
+
     //! Stores the metavar assosiated with the consumer
     std::string m_metavar;
     //! Stores the optional description of default behavior.
@@ -223,6 +228,11 @@ public:
     virtual std::string to_str() const;
 
 private:
+    //! Not implemented
+    flag(const flag&);
+    //! Not implemented
+    flag& operator=(const flag&);
+
     //! Optional pointer to storage for boolean value; if NULL, m_value is used.
     bool* m_ptr;
 };
@@ -247,6 +257,11 @@ public:
     virtual std::string to_str() const;
 
 private:
+    //! Not implemented
+    any(const any&);
+    //! Not implemented
+    any& operator=(const any&);
+
     //! Optional pointer to storage for string value; if NULL, m_value is used.
     std::string* m_ptr;
     //! Value sink used if a pointer to a sink is not provided.
@@ -258,7 +273,7 @@ private:
  * Consumer for unsigned integer values.
  *
  * Signed values are rejected. On 32 bit systems, the range of values is
- * limited to 0 .. 2^31 - 1, on 64 bit systems the range is 0 .. 2^32 - 1.
+ * limited to 0 .. 2^31 - 1, on 64 bit systems the range is 0 .. 2^64 - 1.
  */
 class knob : public consumer_base
 {
@@ -275,6 +290,11 @@ public:
     virtual std::string to_str() const;
 
 private:
+    //! Not implemented
+    knob(const knob&);
+    //! Not implemented
+    knob& operator=(const knob&);
+
     //! Pointer to storage for unsigned value (required).
     unsigned* m_ptr;
 };
@@ -299,6 +319,11 @@ public:
     virtual std::string to_str() const;
 
 private:
+    //! Not implemented
+    floaty_knob(const floaty_knob&);
+    //! Not implemented
+    floaty_knob& operator=(const floaty_knob&);
+
     //! Pointer to storage for unsigned value (required).
     double* m_ptr;
 };

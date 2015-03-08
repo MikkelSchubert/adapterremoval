@@ -82,8 +82,8 @@ fastq read_adapter_sequence(std::stringstream& instream)
 
 
 userconfig::userconfig(const std::string& name,
-                             const std::string& version,
-                             const std::string& help)
+                       const std::string& version,
+                       const std::string& help)
     : argparser(name, version, help)
     , basename("your_output")
     , input_file_1()
@@ -106,9 +106,12 @@ userconfig::userconfig(const std::string& name,
     , shift(2)
     , seed(get_seed())
     , identify_adapters(false)
+    , quiet(false)
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
+    , adapter_list()
     , barcode()
+    , barcode_list()
     , quality_input_base("33")
     , quality_output_base("33")
     , gzip(false)
@@ -130,22 +133,41 @@ userconfig::userconfig(const std::string& name,
         new argparse::any(&basename, "BASENAME",
             "Default prefix for all output files for which no filename was "
             "explicitly set [current: %default].");
+
     argparser["--settings"] =
-        new argparse::any(NULL, "FILE", "BASENAME.settings");
+        new argparse::any(NULL, "FILE",
+            "Output file containing information on the parameters used in the "
+            "run as well as overall statistics on the reads after trimming "
+            "[default: BASENAME.settings]");
     argparser["--output1"] =
         new argparse::any(NULL, "FILE",
-            "BASENAME.pair1.truncated (PE) or BASENAME.truncated (SE)");
+            "Output file containing trimmed mate1 reads [default: "
+            "BASENAME.pair1.truncated (PE) or BASENAME.truncated (SE)]");
     argparser["--output2"] =
         new argparse::any(NULL, "FILE",
-            "BASENAME.pair2.truncated (only used in PE mode).");
+            "Output file containing trimmed mate 2 reads [default: "
+            "BASENAME.pair2.truncated (only used in PE mode)]");
     argparser["--singleton"] =
-        new argparse::any(NULL, "FILE", "BASENAME.singleton.truncated");
+        new argparse::any(NULL, "FILE",
+            "Output file to which containing paired reads for which the mate "
+            "has been discarded [default: BASENAME.singleton.truncated]");
     argparser["--outputcollapsed"] =
-        new argparse::any(NULL, "FILE", "BASENAME.collapsed");
+        new argparse::any(NULL, "FILE",
+            "If --collapsed is set, contains overlapping mate-pairs which "
+            "have been merged into a single read (PE mode) or reads for which "
+            "the adapter was identified by a minimum overlap, indicating that "
+            "the entire template molecule is present. This does not include "
+            "which have subsequently been trimmed due to low-quality or "
+            "ambiguous nucleotides [default: BASENAME.collapsed]");
     argparser["--outputcollapsedtruncated"] =
-        new argparse::any(NULL, "FILE", "BASENAME.collapsed.truncated");
+        new argparse::any(NULL, "FILE",
+            "Collapsed reads (see --outputcollapsed) which were trimmed due "
+            "the presence of low-quality or ambiguous nucleotides"
+            "[default: BASENAME.collapsed.truncated]");
     argparser["--discarded"] =
-        new argparse::any(NULL, "FILE", "BASENAME.discarded");
+        new argparse::any(NULL, "FILE",
+            "Contains reads discarded due to the --minlength, --maxlength or "
+            "--maxns options [default: BASENAME.discarded]");
 
     argparser.add_seperator();
     // Backwards compatibility with AdapterRemoval v1; not recommended due to
@@ -200,8 +222,9 @@ userconfig::userconfig(const std::string& name,
             "trimmed from the 5' of mate 1 reads [current: %default].");
     argparser["--5prime-list"] =
         new argparse::any(&barcode_list, "FILENAME",
-            "List of barcode sequences, used as if supplied to --5prime; is "
-            "parsed as SE adapters supplied to --pcr-list. [current: none].");
+            "List of barcode sequences, with one barcode per line. The best "
+            "barcode is selected using the criteria of --5prime, and trimmed "
+            "from the 5' end of mate 1 reads [current: %default].");
     argparser["--trimns"] =
         new argparse::flag(&trim_ambiguous_bases,
             "If set, trim ambiguous bases (N) at 5'/3' termini "
@@ -216,15 +239,15 @@ userconfig::userconfig(const std::string& name,
             "[current: %default]");
     argparser["--minlength"] =
         new argparse::knob(&min_genomic_length, "LENGTH",
-            "Reads shorter than this length are written to BASENAME.discarded "
+            "Reads shorter than this length are discarded "
             "following trimming [current: %default].");
     argparser["--maxlength"] =
         new argparse::knob(&max_genomic_length, "LENGTH",
-            "Reads longer than this length are written to BASENAME.discarded "
+            "Reads longer than this length are discarded "
             "following trimming [current: %default].");
     argparser["--collapse"] =
         new argparse::flag(&collapse,
-            "If set, paired ended reads which overlapp at least "
+            "If set, paired ended reads which overlap at least "
             "--minalignmentlength bases are combined into a single consensus "
             "read; for single-ended reads, full inserts are identified by "
             "requiring --minalignmentlength overlap with the adapter sequence "

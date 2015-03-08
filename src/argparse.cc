@@ -55,7 +55,8 @@ std::string toupper(const std::string& str)
 parser::parser(const std::string& name,
                const std::string& version,
                const std::string& help)
-	: m_parsers()
+	: m_keys()
+    , m_parsers()
     , m_name(name)
 	, m_version(version)
 	, m_help(help)
