@@ -29,12 +29,28 @@
 #include <limits>
 #include <set>
 
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 #include "argparse.h"
 
 namespace argparse
 {
 
 typedef std::set<consumer_ptr> consumer_set;
+
+
+/** Returns the number of columns available in the terminal. */
+size_t get_terminal_columns()
+{
+    struct winsize params;
+    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params)) {
+        // Default to 80 columns if the parameters could not be retrieved.
+        return 80;
+    }
+
+    return std::min<size_t>(120, std::max<size_t>(80, params.ws_col));
+}
 
 
 std::string toupper(const std::string& str)
@@ -206,6 +222,7 @@ void parser::print_help() const
     std::cerr << std::left << std::setw(ljust)
               << "Arguments:" << "Description:\n";
 
+    const size_t max_columns = get_terminal_columns() - 2;
     for (StringVecConstIter it = m_keys.begin(); it != m_keys.end(); ++it) {
         if (it->empty()) {
             std::cerr << "\n";
@@ -238,7 +255,7 @@ void parser::print_help() const
                 const std::string substr = value.substr(index, endpos - index);
 
                 if (current_width) {
-                    if (current_ljust + current_width + 1 + substr.length() > 80) {
+                    if (current_ljust + current_width + 1 + substr.length() > max_columns) {
                         // Add another 2 characters of indentation
                         current_ljust = ljust + 2;
                         std::cerr << "\n" << std::left
