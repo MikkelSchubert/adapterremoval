@@ -98,17 +98,17 @@ Adapter #2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 
 Assuming these were the adapters used to generate our data, we should therefore see these in the FASTQ files:
 
-$ grep -i "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
-B<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>AAAAAAAAACAAGAAT
-CTGGAGTTCB<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>AAAAAAA
-GGB<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>CAAATTGAAAACAC
-...
+  $ grep -i "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
+  B<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>AAAAAAAAACAAGAAT
+  CTGGAGTTCB<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>AAAAAAA
+  GGB<AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTG>CAAATTGAAAACAC
+  ...
 
-$ grep -i "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT" file2.fq
-CB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAAAAGAAAAACATCTTG
-GAACTCCAGB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAAAAATAGA
-GAACTB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAACATAAGACCTA
-...
+  $ grep -i "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT" file2.fq
+  CB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAAAAGAAAAACATCTTG
+  GAACTCCAGB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAAAAATAGA
+  GAACTB<AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT>CAAAAACATAAGACCTA
+  ...
 
 Note that --adapter1 and --adapter2 replaces the --pcr[12] options of B<AdapterRemoval> v1.x, for which the --pcr2 sequence was expected to be reverse complemented compared --adaper2. Using the --pcr[12] options is not recommended!
 
@@ -191,7 +191,7 @@ Output the summary of available command-line options, including default values a
 
 The following command removes adapters from the file I<experiment.fq.bz2> that has been compressed using gzip, trims both Ns and low qualities from the reads, uses quality base 33 (default), saves the discarded reads in file I<experiment.discarded>, and puts the trimmed reads into a gzipped file (written to I<stdout> per default in single end mode):
 
-$ AdapterRemoval --file1 experiment.fq.gz --basename my_trimmed_reads --trimns --trimqualities --gzip
+  $ AdapterRemoval --file1 experiment.fq.gz --basename my_trimmed_reads --trimns --trimqualities --gzip
 
 Since --gzip and --basename is specified, the trimmed FASTQ reads are written to 'my_trimmed_reads.truncated.gz', the dicarded FASTQ reads are written to 'my_trimmed_reads.discarded.gz', and the settings are written to 'my_trimmed_reads.settings'.
 
@@ -200,7 +200,7 @@ Since --gzip and --basename is specified, the trimmed FASTQ reads are written to
 
 The following command removes adapters from a paired end experiment where the reads are kept in files I<experiment.pair1.fq.gz> and I<experiment.pair2.fq.gz>. The reads are trimmed for both Ns and low qualities, overlapping reads (at least 11 nucleotides per default) are collapsed, and the qualities use base 64. Output files use basename I<experiment>:
 
-$ AdapterRemoval --file1 experiment.pair1.fq.gz --file2 experiment.pair2.fq.gz --trimns --trimqualities --collapse --qualitybase 64 --basename experiment
+  $ AdapterRemoval --file1 experiment.pair1.fq.gz --file2 experiment.pair2.fq.gz --trimns --trimqualities --collapse --qualitybase 64 --basename experiment
 
 This command would generate files I<experiment.pair1.truncated> and I<experiment.pair2.truncated> containing the trimmed reads in pairs, I<experiment.singleton.truncated> containing collapsed read pairs and reads where one mate is discarded, and I<experiment.discarded> containing the reads that did not pass the tests.
 
@@ -208,7 +208,7 @@ This command would generate files I<experiment.pair1.truncated> and I<experiment
 
 The following command works as above, except that it now reads input files that are compressed using bzip2, and the truncated reads are compressed as well. The discarded reads are, well, discarded by redirecting them to /dev/null:
 
-$ AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --settings experiment.settings --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --outputcollapsed >(bzip2 > experiment.collapsed.bz2) --outputcollapsedtruncated >(bzip2 > experiment.collapsed.truncated.bz2) --discarded /dev/null
+  $ AdapterRemoval --file1 <(bzcat experiment.pair1.fq.bz2) --file2 <(bzcat experiment.pair2.fq.bz2) --trimns --trimqualities --collapse --settings experiment.settings --qualitybase 64 --output1 >(bzip2 > experiment.pair1.truncated.bz2) --output2 >(bzip2 > experiment.pair2.truncated.bz2) --singleton >(bzip2 > experiment.singleton.truncated.bz2) --outputcollapsed >(bzip2 > experiment.collapsed.bz2) --outputcollapsedtruncated >(bzip2 > experiment.collapsed.truncated.bz2) --discarded /dev/null
 
 
 =head1 EXAMPLE: Identifying adapter sequences from paired-ended reads
@@ -217,13 +217,35 @@ If we did not know the adapter sequences for the I<experiment.*.fq.gz> files, Ad
 
 In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not nessesary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the barcode CGATGA:
 
-$ ~/research/tools/adapterremoval-dev/build/AdapterRemoval --identify-adapters --file1 experiment.pair1.fq.gz --file2 experiment.pair2.fq.gz
+  $ ~/research/tools/adapterremoval-dev/build/AdapterRemoval --identify-adapters --file1 experiment.pair1.fq.gz --file2 experiment.pair2.fq.gz
 
-  --adapter1:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAAAAAAAAAAAAAAAA
-               198869978866576755455565456233334623333521,3221231412017313/063//000//,+)(%$$####""""""
+  Attemping to identify adapter sequences ...
+  Processed last 1,000,000 pairs in 14.3s; 30,000,000 pairs in 7:25.4s ...
+  Processed a total of 30,036,785 pairs in 7:25.9s ...
+     Found 26793756 overlapping pairs ...
+     Of which 22919286 contained adapter sequence(s) ...
 
-  --adapter2:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-               565636646434252342412564143213,30322303132042/1122101301432333321/+*'%%$$######""""""""
+  Printing adapter sequences, including poly-A tails:
+    --adapter1:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCACTAGATGATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAAAAAAAAAAAAAAAA
+                 298869977756474655355455455233234343323221,333234241212731301730/000//++)'%$####"""""""
+
+      Top 5 most common 12-bp 5'-kmers:
+              1: AGATCGGAAGAG = 94.29% (20347167)
+              2: GGATCGGAAGAG =  1.15% (248190)
+              3: CGATCGGAAGAG =  0.46% (100082)
+              4: AGATTGGAAGAG =  0.26% (55780)
+              5: AGATCGGAAGCG =  0.21% (45037)
+
+
+    --adapter2:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                 565636656434251341412554143213,30322303132032/11221/1201432333321.+*'%%$$######""""""""
+
+      Top 5 most common 12-bp 5'-kmers:
+              1: AGATCGGAAGAG = 94.35% (20280766)
+              2: AGATCGGAAGGG =  0.22% (47155)
+              3: AGATCGGAAAAG =  0.21% (44616)
+              4: AGATAGGAAGAG =  0.20% (43593)
+              5: AGATCGGGAGAG =  0.17% (37479)
 
 =head1 EXIT STATUS
 

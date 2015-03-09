@@ -14,29 +14,36 @@ If you use the program, please cite the paper:
 Installation
 ============
 
+Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed. Please refer to your operating system documentation for installation instructions.
+
+
 Download and unpack the newest release from GitHub:
 
-$ wget https://github.com/MikkelSchubert/adapterremoval/archive/v2.0.0.tar.gz
-$ tar xvzf tar xvzf adapterremoval-2.0.0.tar.gz
-$ cd adapterremoval-2.0.0
+    $ wget https://github.com/MikkelSchubert/adapterremoval/archive/v2.0.0.tar.gz
+    $ tar xvzf tar xvzf adapterremoval-2.0.0.tar.gz
+    $ cd adapterremoval-2.0.0
 
 or
 
-$ git clone https://github.com/MikkelSchubert/adapterremoval.git
-$ cd adapterremoval
+    $ git clone https://github.com/MikkelSchubert/adapterremoval.git
+    $ cd adapterremoval
 
 To compile, run
 
-$ make
+    $ make
 
 The resulting binary and man page is located in the "build" folder.
 
 To install, run
 
-$ sudo make install
+    $ sudo make install
 
 
 Usage
 =====
 
-For program usage, please the the manual page. If AdapterRemoval has been installed, this may be accessed using the command "man AdapterRemoval". If AdapterRemoval has not been installed, the manual page may be read using the command "man build/AdapterRemoval.1" in the source folder once "make" has been run.
+For program usage, please refer to the manual page.
+
+If AdapterRemoval has been installed, this may be accessed using the command "man AdapterRemoval". If AdapterRemoval has not been installed, the manual page may be read using the command "man build/AdapterRemoval.1" in the source folder once "make" has been run. Alternatively, the manual may be read on GitHub:
+
+https://github.com/MikkelSchubert/adapterremoval/blob/master/AdapterRemoval.pod
