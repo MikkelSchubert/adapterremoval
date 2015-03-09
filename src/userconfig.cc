@@ -282,13 +282,16 @@ userconfig::userconfig(const std::string& name,
 }
 
 
-bool userconfig::parse_args(int argc, char *argv[])
+argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 {
     if (argc <= 1) {
         argparser.print_help();
-        return false;
-    } else if (!argparser.parse_args(argc, argv)) {
-        return false;
+        return argparse::pr_error;
+    }
+
+    const argparse::parse_result result = argparser.parse_args(argc, argv);
+    if (result != argparse::pr_ok) {
+        return result;
     }
 
     if (quality_input_base == "33") {
@@ -301,7 +304,7 @@ bool userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: Invalid value for --qualitybase: '"
                   << quality_input_base << "'\n"
                   << "   expected values 33, 64, or solexa." << std::endl;
-        return false;
+        return argparse::pr_error;
     }
 
     if (quality_output_base == "33") {
@@ -312,7 +315,7 @@ bool userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: Invalid value for --qualitybase-out: '"
                   << quality_output_base << "'\n"
                   << "   expected values 33 or 64." << std::endl;
-        return false;
+        return argparse::pr_error;
     }
 
     if (low_quality_score > MAX_PHRED_SCORE) {
@@ -320,11 +323,11 @@ bool userconfig::parse_args(int argc, char *argv[])
                   << low_quality_score << "\n"
                   << "   must be in the range 0 .. " << MAX_PHRED_SCORE
                   << std::endl;
-        return false;
+        return argparse::pr_error;
     }
 
     if (!cleanup_and_validate_sequence(barcode, "--5prime")) {
-        return false;
+        return argparse::pr_error;
     }
 
     // Check for invalid combinations of settings
@@ -335,25 +338,25 @@ bool userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: No input files (--file1 / --file2) specified.\n"
                   << "Please specify at least one input file using --file1 FILENAME."
                   << std::endl;
-        return false;
+        return argparse::pr_error;
     } else if (file_2_set && !file_1_set) {
         std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
-        return false;
+        return argparse::pr_error;
     } else if (argparser.is_set("--5prime") && argparser.is_set("--5prime-list")) {
         std::cerr << "Error: Use either --5prime or --5prime-list, not both!" << std::endl;
-        return false;
+        return argparse::pr_error;
     } else if (identify_adapters && !(file_1_set && file_2_set)) {
         std::cerr << "Error: Both input files (--file1 / --file2) must be "
                   << "specified when using --identify-adapters."
                   << std::endl;
-        return false;
+        return argparse::pr_error;
     }
 
     paired_ended_mode = file_2_set;
 
     // (Optionally) read adapters from file and validate
     if (!setup_adapter_sequences()) {
-        return false;
+        return argparse::pr_error;
     }
 
     // Set mismatch threshold
@@ -371,14 +374,14 @@ bool userconfig::parse_args(int argc, char *argv[])
     if (gzip_level > 9) {
         std::cerr << "Error: --gzip-level must be in the range 0 to 9, not "
                   << gzip_level << std::endl;
-        return false;
+        return argparse::pr_error;
 
     }
 
     // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
     srandom(seed);
 
-    return true;
+    return argparse::pr_ok;
 }
 
 

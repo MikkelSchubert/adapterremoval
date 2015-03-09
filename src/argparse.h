@@ -39,6 +39,17 @@ typedef consumer_base* consumer_ptr;
 typedef std::map<std::string, consumer_ptr> consumer_map;
 
 
+//! Parse results for command-line arguments
+enum parse_result {
+    //! Terminate now (e.g. --version or --help used)
+    pr_exit,
+    //! Error occured parsing arguments / invalid combination of args
+    pr_error,
+    //! No errors parsing commandline arguments
+    pr_ok
+};
+
+
 /**
  * Simple type-safe parsing of command-line options.
  *
@@ -85,14 +96,8 @@ public:
     /** Deletes all (unique) parsers assigned to the set. */
     ~parser();
 
-    /**
-     * Parses a set of command-line options as passed to main(argc, argv).
-     *
-     * Returns true if parsing was succesful, false otherwise. Note that
-     * false is also returned if --help or --version is supplied, as this
-     * is not considered a "successful" run of the program.
-     */
-    bool parse_args(int argc, char* argv[]);
+    /** Parses a set of command-line options as passed to main(argc, argv). */
+    parse_result parse_args(int argc, char* argv[]);
 
     /** Returns true if the option with the given key has been set. */
     bool is_set(const std::string& key) const;

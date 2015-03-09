@@ -35,8 +35,12 @@ int main(int argc, char *argv[])
     std::ios_base::sync_with_stdio(false);
 
     userconfig config(NAME, VERSION, HELPTEXT);
-    if (!config.parse_args(argc, argv)) {
+    const argparse::parse_result result = config.parse_args(argc, argv);
+    if (result == argparse::pr_error) {
         return 1;
+    } else if (result == argparse::pr_exit) {
+        // --version, --help, or simular used.
+        return 0;
     }
 
     if (config.identify_adapters) {

@@ -54,14 +54,8 @@ public:
            	   const std::string& version,
            	   const std::string& help);
 
-    /**
-     * Parses a set of commandline arguments.
-     *
-     * The function returns false on failure, or if --help / --version or no
-     * arguments were supplied by the user.
-     */
-    bool parse_args(int argc, char *argv[]);
-
+    /** Parses a set of commandline arguments. */
+    argparse::parse_result parse_args(int argc, char *argv[]);
 
     statistics create_stats() const;
 

@@ -122,7 +122,7 @@ const consumer_ptr& parser::at(const std::string& key) const
 }
 
 
-bool parser::parse_args(int argc, char* argv[])
+parse_result parser::parse_args(int argc, char* argv[])
 {
     const StringVec argvec(argv + 1, argv + argc);
     StringVecConstIter it = argvec.begin();
@@ -140,7 +140,7 @@ bool parser::parse_args(int argc, char* argv[])
                               << "; aborting ..." << std::endl;
                 }
 
-                return false;
+                return pr_error;
             }
 
             it += static_cast<consumer_map::iterator::difference_type>(consumed);
@@ -148,19 +148,19 @@ bool parser::parse_args(int argc, char* argv[])
             std::cerr << "ERROR: Unknown argument: '" << *it << "'; aborting ..."
                       << std::endl;
 
-            return false;
+            return pr_error;
         }
     }
 
     if (is_set("--help")) {
         print_help();
-        return false;
+        return pr_exit;
     } else if (is_set("--version")) {
         print_version();
-        return false;
+        return pr_exit;
     }
 
-    return true;
+    return pr_ok;
 }
 
 
