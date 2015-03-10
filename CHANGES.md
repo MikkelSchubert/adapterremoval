@@ -2,7 +2,7 @@
 Changelog
 =========
 
-Version 2.0.0 - 2014-..-..
+Version 2.0.0 - 2014-03-10
 ==========================
 Version 2.0.0 of AdapterRemoval is a near complete rewrite, with the goal of
 improved safety, increased speed, fixing a number of minor issues with

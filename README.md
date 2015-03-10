@@ -59,7 +59,7 @@ Default adapter #1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTG
 
 Default adapter #2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 
-Assuming these were the adapters used to generate our data, we should therefore see these in the FASTQ files followed by a low-quality A-tail, when ignoring any difference in case and treating Ns as wildcards:
+Assuming these were the adapters used to generate our data, we should therefore see these in the FASTQ files (typically followed by a low-quality A-tail), when ignoring any difference in case and treating Ns as wildcards:
 
     $ grep -i "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
     AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAACAAGAAT
