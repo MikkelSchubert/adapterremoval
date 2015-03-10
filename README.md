@@ -19,8 +19,8 @@ Note that AdapterRemoval requires that the zlib library and headers (www.zlib.ne
 
 Download and unpack the newest release from GitHub:
 
-    $ wget https://github.com/MikkelSchubert/adapterremoval/archive/v2.0.0.tar.gz
-    $ tar xvzf tar xvzf adapterremoval-2.0.0.tar.gz
+    $ wget -O adapterremoval-2.0.0.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.0.0.tar.gz
+    $ tar xvzf adapterremoval-2.0.0.tar.gz
     $ cd adapterremoval-2.0.0
 
 or
