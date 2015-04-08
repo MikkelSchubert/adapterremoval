@@ -19,6 +19,7 @@ DFILES   := $(OBJS:.o=.deps)
 # Comment out this line to display individual commands
 QUIET := @
 # Comment out these lines to disable color output
+COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
@@ -71,7 +72,7 @@ TEST_OBJS := $(TEST_DIR)/fastq_test.o $(BDIR)/fastq.o \
 	$(TEST_DIR)/argparse_test.o $(BDIR)/argparse.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-GTEST_DIR := gtest
+GTEST_DIR := gtest-1.7.0
 GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
 GTEST_LIB :=$(TEST_DIR)/libgtest.a
 
@@ -101,10 +102,14 @@ $(TEST_DIR)/%.o: tests/%.cc
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
-$(TEST_DIR)/gtest%.o: gtest/src/gtest%.cc
+$(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -pthread -c $< -o $@
+
+$(GTEST_DIR)/src/gtest%.cc:
+	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder."$(COLOR_END)
+	@exit 1
 
 # Automatic header dependencies for tests
 -include $(TEST_DEPS)
