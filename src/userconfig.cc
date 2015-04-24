@@ -96,8 +96,8 @@ userconfig::userconfig(const std::string& name,
     , max_genomic_length(std::numeric_limits<unsigned>::max())
     , min_alignment_length(11)
     , mismatch_threshold(-1.0)
-    , quality_input_fmt(phred_33)
-    , quality_output_fmt(phred_33)
+    , quality_input_fmt(fastq::phred_33)
+    , quality_output_fmt(fastq::phred_33)
     , trim_by_quality(false)
     , low_quality_score(2)
     , trim_ambiguous_bases(false)
@@ -113,7 +113,7 @@ userconfig::userconfig(const std::string& name,
     , barcode()
     , barcode_list()
     , quality_input_base("33")
-    , quality_output_base("33")
+    , quality_output_base("NA")
     , gzip(false)
     , gzip_level(6)
 {
@@ -215,7 +215,9 @@ userconfig::userconfig(const std::string& name,
     argparser["--qualitybase-output"] =
         new argparse::any(&quality_output_base, "BASE",
             "Quality base used to encode Phred scores in output; either 33, "
-            "64 [current: %default].");
+            "64. By default, reads in Phred+33 format will be written as "
+            "Phred+33, while Phred+64 / Solexa reads will be written as "
+            "Phred+64.");
     argparser["--5prime"] =
         new argparse::any(&barcode, "BARCODE",
             "If set, the NT barcode is detected (max 1 mismatch) in and "
@@ -294,23 +296,34 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return result;
     }
 
-    if (quality_input_base == "33") {
-        quality_input_fmt = phred_33;
-    } else if (quality_input_base == "64") {
-        quality_input_fmt = phred_64;
-    } else if (quality_input_base == "solexa") {
-        quality_input_fmt = solexa;
-    } else {
-        std::cerr << "Error: Invalid value for --qualitybase: '"
-                  << quality_input_base << "'\n"
-                  << "   expected values 33, 64, or solexa." << std::endl;
-        return argparse::pr_error;
+    if (argparser.is_set("--qualitybase")) {
+        if (quality_input_base == "33") {
+            quality_input_fmt = fastq::phred_33;
+        } else if (quality_input_base == "64") {
+            quality_input_fmt = fastq::phred_64;
+        } else if (quality_input_base == "solexa") {
+            quality_input_fmt = fastq::solexa;
+        } else {
+            std::cerr << "Error: Invalid value for --qualitybase: '"
+                      << quality_input_base << "'\n"
+                      << "   expected values 33, 64, or solexa." << std::endl;
+            return argparse::pr_error;
+        }
+    } else if (identify_adapters) {
+        // By default quality scores are ignored when inferring adapter sequences
+        quality_input_fmt = fastq::ignored;
     }
 
     if (quality_output_base == "33") {
-        quality_output_fmt = phred_33;
+        quality_output_fmt = fastq::phred_33;
     } else if (quality_output_base == "64") {
-        quality_output_fmt = phred_64;
+        quality_output_fmt = fastq::phred_64;
+    } else if (quality_output_base == "NA") {
+        if (quality_input_fmt == fastq::phred_33) {
+            quality_output_fmt = fastq::phred_33;
+        } else {
+            quality_output_fmt = fastq::phred_64;
+        }
     } else {
         std::cerr << "Error: Invalid value for --qualitybase-out: '"
                   << quality_output_base << "'\n"

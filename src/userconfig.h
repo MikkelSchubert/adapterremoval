@@ -125,9 +125,9 @@ public:
     double mismatch_threshold;
 
     //! Quality format expected in input files.
-    quality_format quality_input_fmt;
+    fastq::quality_format quality_input_fmt;
     //! Quality format to write FASTQ records in; either phred_33 and phred_64.
-    quality_format quality_output_fmt;
+    fastq::quality_format quality_output_fmt;
 
     //! If true, read termini are trimmed for low-quality bases.
     bool trim_by_quality;

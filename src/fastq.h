@@ -39,14 +39,6 @@ const int PHRED_OFFSET_33 = 33;
 const int PHRED_OFFSET_64 = 64;
 
 
-enum quality_format
-{
-    phred_33,
-    phred_64,
-    solexa
-};
-
-
 class fastq_error : public std::exception
 {
 public:
@@ -66,6 +58,19 @@ private:
 class fastq
 {
 public:
+    enum quality_format
+    {
+        //! Phred scores with offset = 33
+        phred_33 = 0,
+        //! Phred scores with offset = 64
+        phred_64,
+        //! Solexa scores (offset = 64); lossily converted to Phred
+        solexa,
+        //! Quality scores are ignored (set to 0)
+        ignored
+    };
+
+
     /** Constructs a dummy FASTQ record for which all fields are empty. **/
     fastq();
 

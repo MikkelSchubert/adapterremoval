@@ -39,12 +39,12 @@
 #include "timer.h"
 
 
-std::string describe_phred_format(quality_format fmt)
+std::string describe_phred_format(const fastq::quality_format fmt)
 {
     switch (fmt) {
-        case phred_33: return "Phred+33";
-        case phred_64: return "Phred+64";
-        case solexa: return "Solexa";
+        case fastq::phred_33: return "Phred+33";
+        case fastq::phred_64: return "Phred+64";
+        case fastq::solexa: return "Solexa";
         default: throw std::invalid_argument("invalid quality score format");
     }
 

@@ -80,7 +80,7 @@ TEST(fastq, constructor_simple_record_phred_33_encoded)
 
 TEST(fastq, constructor_simple_record_phred_64_encoded)
 {
-    const fastq record("record_2", "ACGAGTCA", "@VaeWcfh", phred_64);
+    const fastq record("record_2", "ACGAGTCA", "@VaeWcfh", fastq::phred_64);
     ASSERT_EQ("record_2", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ(std::string("!7BF8DGI", 8), record.qualities());
@@ -89,7 +89,7 @@ TEST(fastq, constructor_simple_record_phred_64_encoded)
 
 TEST(fastq, constructor_simple_record_phred_solexa_encoded)
 {
-    const fastq record("record_3", "AAACGAGTCA", ";h>S\\TCDUJ", solexa);
+    const fastq record("record_3", "AAACGAGTCA", ";h>S\\TCDUJ", fastq::solexa);
     ASSERT_EQ("record_3", record.header());
     ASSERT_EQ("AAACGAGTCA", record.sequence());
     ASSERT_EQ("\"I#4=5&&6+", record.qualities());
@@ -112,31 +112,40 @@ TEST(fastq, constructor_simple_record_dots_to_n)
 
 TEST(fastq, constructor_score_boundries_phred_33)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", phred_33));
-    ASSERT_THROW(fastq("Rec", "CAT", " !\"", phred_33), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", fastq::phred_33));
+    ASSERT_THROW(fastq("Rec", "CAT", " !\"", fastq::phred_33), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "IJJ", phred_33));
-    ASSERT_THROW(fastq("Rec", "CAT", "IJK", phred_33), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "IJJ", fastq::phred_33));
+    ASSERT_THROW(fastq("Rec", "CAT", "IJK", fastq::phred_33), fastq_error);
 }
 
 
 TEST(fastq, constructor_score_boundries_phred_64)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "@@A", phred_64));
-    ASSERT_THROW(fastq("Rec", "CAT", "?@A", phred_64), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "@@A", fastq::phred_64));
+    ASSERT_THROW(fastq("Rec", "CAT", "?@A", fastq::phred_64), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghi", phred_64));
-    ASSERT_THROW(fastq("Rec", "CAT", "ghj", phred_64), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghf", fastq::phred_64));
+    ASSERT_THROW(fastq("Rec", "CAT", "ghi", fastq::phred_64), fastq_error);
 }
 
 
 TEST(fastq, constructor_score_boundries_solexa)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", ";;<", solexa));
-    ASSERT_THROW(fastq("Rec", "CAT", ":;<", solexa), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", ";;<", fastq::solexa));
+    ASSERT_THROW(fastq("Rec", "CAT", ":;<", fastq::solexa), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghi", solexa));
-    ASSERT_THROW(fastq("Rec", "CAT", "ghj", solexa), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghf", fastq::solexa));
+    ASSERT_THROW(fastq("Rec", "CAT", "ghi", fastq::solexa), fastq_error);
+}
+
+TEST(fastq, constructor_score_boundries_ignored)
+{
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", fastq::ignored));
+    ASSERT_THROW(fastq("Rec", "CAT", " !\"", fastq::ignored), fastq_error);
+
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghf", fastq::ignored));
+    ASSERT_THROW(fastq("Rec", "CAT", "ghi", fastq::ignored), fastq_error);
 }
 
 
@@ -390,7 +399,7 @@ TEST(fastq, simple_fastq_record)
     const char* str = "@record_1\nACGAGTCA\n+\n!7BF8DGI\n";
     std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_TRUE(record.read(instream, phred_33));
+    ASSERT_TRUE(record.read(instream, fastq::phred_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
@@ -402,7 +411,7 @@ TEST(fastq, simple_fastq_record__no_header)
     const char* str = "@\nACGAGTCA\n+\n!7BF8DGI\n";
     std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_THROW(record.read(instream, phred_33), fastq_error);
+    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
 }
 
 
@@ -411,7 +420,7 @@ TEST(fastq, simple_fastq_record__no_sequence)
     const char* str = "@record_1\n\n+\n!7BF8DGI\n";
     std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_THROW(record.read(instream, phred_33), fastq_error);
+    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
 }
 
 
@@ -420,7 +429,7 @@ TEST(fastq, simple_fastq_record__no_qualities)
     const char* str = "@record_1\nACGAGTCA\n+\n\n";
     std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_THROW(record.read(instream, phred_33), fastq_error);
+    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
 }
 
 
@@ -429,7 +438,7 @@ TEST(fastq, simple_fastq_record__no_qualities_or_sequence)
     const char* str = "@record_1\n\n+\n\n";
     std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_THROW(record.read(instream, phred_33), fastq_error);
+    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
 }
 
 
@@ -438,7 +447,7 @@ TEST(fastq, simple_fastq_record__no_trailing_newline)
     const char* str = "@record_1\nACGAGTCA\n+\n!7BF8DGI";
     std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_TRUE(record.read(instream, phred_33));
+    ASSERT_TRUE(record.read(instream, fastq::phred_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
@@ -540,7 +549,7 @@ TEST(fastq, Writing_to_stream_phred_64_explicit)
 {
     std::stringstream outstream;
     const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-    record.write(outstream, phred_64);
+    record.write(outstream, fastq::phred_64);
     ASSERT_EQ("@record_1\nACGTACGATA\n+\n@CBCIUWbfh\n", outstream.str());
 }
 

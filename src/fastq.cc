@@ -55,32 +55,95 @@ std::string calc_solexa_to_phred()
 const std::string g_solexa_to_phred = calc_solexa_to_phred();
 
 
-inline void convert_qualities(std::string& qualities, quality_format base)
+char process_scores_phred_33(char quality)
 {
-    for (std::string::iterator it = qualities.begin(); it != qualities.end(); ++it) {
-        int quality = *it;
-        if (base == solexa) {
-            // Only his range of values are mapped to Phred scores (see above)
-            quality -= PHRED_OFFSET_64;
-            if (quality < MIN_SOLEXA_SCORE || quality > MAX_SOLEXA_SCORE) {
-                throw fastq_error("invalid solexa quality score");
-            }
-
-            quality = g_solexa_to_phred.at(quality - MIN_SOLEXA_SCORE);
-        } else if (base == phred_64) {
-            quality -= PHRED_OFFSET_64;
-        } else {
-            quality -= PHRED_OFFSET_33;
-        }
-
-        if (quality < MIN_PHRED_SCORE) {
-            throw fastq_error("phred score less than 0; are these solexa scores?");
-        } else if (quality > MAX_PHRED_SCORE) {
-            throw fastq_error("phred score greater than the maximum allowed score");
-        }
-
-        *it = static_cast<char>(PHRED_OFFSET_33 + quality);
+    if (quality < '!') { // Neither solexa nor Phred+33
+        throw fastq_error("ASCII value of Phred score is less than 33 = '!'; "
+                          "input is corrupt or not FASTQ format!");
+    } else if (quality > 'J') {
+        throw fastq_error("Phred+33 score is greater than 41 (ASCII = 'J'); "
+                          "This is not a valid Phred score for FASTQ reads.");
     }
+
+    return quality;
+}
+
+
+char process_scores_phred_64(char quality)
+{
+    // The scores from '@' (0) to 'h' (40) are expected for Phred+64 reads
+    // As an older format, scores outside of this range is not expected
+    if (quality < '@') {
+        throw fastq_error("Phred+64 score is less than 0 (ASCII = '@'); "
+                          "Are these FASTQ reads actually in Phred+33 format?");
+    } else if (quality > 'h') {
+        throw fastq_error("Phred+64 score is greater than 40 (ASCII = 'h'); "
+                          "This is not a valid Phred score for FASTQ reads.");
+    }
+
+    return (quality - '@') + PHRED_OFFSET_33;
+}
+
+
+char process_scores_solexa(char quality)
+{
+    // The scores from ';' (-5) to 'h' (40) are expected for Solexa reads
+    // As an older format, scores outside of this range is not expected
+    if (quality < ';') { // TODO: -5, maybe Phred+33
+        throw fastq_error("Solexa score is less than -5 (ASCII = ';'); "
+                          "Is this actually Phred+33 data?");
+    } else if (quality > 'h') {
+        throw fastq_error("Solexa score is greater than 40 (ASCII = 'h'); "
+                      "This is not a valid Solexa score for FASTQ reads.");
+    }
+
+    return g_solexa_to_phred.at(quality - ';') + PHRED_OFFSET_33;
+}
+
+
+char process_scores_ignored(char quality)
+{
+    if (quality < '!') { // Neither solexa nor Phred+33
+        throw fastq_error("ASCII value of Phred score is less than 33 = '!'; "
+                          "input is corrupt or not FASTQ format!");
+    } else if (quality > 'h') {
+        throw fastq_error("Quality score is greater than 'h' (ASCII); "
+                          "This is not a valid quality score for FASTQ reads.");
+    }
+
+    return 0;
+}
+
+
+
+inline void convert_qualities(std::string& qualities, const fastq::quality_format base)
+{
+    char (*func)(char) = NULL;
+    switch (base) {
+        case fastq::phred_33:
+            func = &process_scores_phred_33;
+            break;
+
+        case fastq::phred_64:
+            func = &process_scores_phred_64;
+            break;
+
+        case fastq::solexa:
+            func = &process_scores_solexa;
+            break;
+
+        case fastq::ignored:
+            func = &process_scores_ignored;
+            break;
+
+        default:
+            throw std::logic_error("Unhandled FASTQ quality score format in 'convert_qualities'");
+    }
+
+    std::transform(qualities.begin(),
+                   qualities.end(),
+                   qualities.begin(),
+                   func);
 }
 
 
@@ -306,8 +369,8 @@ bool fastq::write(std::ostream& outstream, quality_format encoding) const
             *it = std::min<char>(64 + 40, *it + 31);
         }
         outstream << qualities << '\n';
-    } else if (encoding == solexa) {
-        throw std::invalid_argument("writing solexa scores not supported");
+    } else {
+        throw std::invalid_argument("writing solexa / ignored scores not supported");
     }
 
     return !outstream.fail();
