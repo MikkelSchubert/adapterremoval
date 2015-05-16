@@ -264,10 +264,10 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
 
         progress.finalize();
     } catch (const fastq_error& error) {
-        std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << error.what() << std::endl;
+        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << error.what() << std::endl;
         return false;
     } catch (const std::ios_base::failure&) {
-        std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << std::strerror(errno) << std::endl;
+        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << std::strerror(errno) << std::endl;
         return false;
     }
 
@@ -395,10 +395,10 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
 
         progress.finalize();
     } catch (const fastq_error& error) {
-        std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << error.what() << std::endl;
+        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << error.what() << std::endl;
         return false;
     } catch (const std::ios_base::failure&) {
-        std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << std::strerror(errno) << std::endl;
+        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << std::strerror(errno) << std::endl;
         return false;
     }
 
