@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 2.0.X
+==========================
+
+* Display currently specified --adapter1 / adapter2 sequences for comparison
+  when attempting to infer adapter sequences. Only the first pair is used.
+
+
 Version 2.0.0 - 2014-03-10
 ==========================
 Version 2.0.0 of AdapterRemoval is a near complete rewrite, with the goal of
