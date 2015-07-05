@@ -156,7 +156,16 @@ public:
     //! If true, only error messages are printed to STDERR
     bool quiet;
 
+    //! The maximum number of threads used by the program
+    unsigned max_threads;
+
 private:
+    //! Not implemented
+    userconfig(const userconfig&);
+    //! Not implemented
+    userconfig& operator=(const userconfig&);
+
+
     /** Sets up adapter sequences based on user settings.
      *
      * @param adapters list to which the resulting adapter sequences are saved,

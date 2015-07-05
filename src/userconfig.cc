@@ -107,6 +107,7 @@ userconfig::userconfig(const std::string& name,
     , seed(get_seed())
     , identify_adapters(false)
     , quiet(false)
+    , max_threads(1)
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , adapter_list()
@@ -281,6 +282,10 @@ userconfig::userconfig(const std::string& name,
     argparser["--quiet"] =
         new argparse::flag(&quiet,
             "Only print warnings / errors to STDERR [current: %default]");
+
+    argparser["--threads"] =
+        new argparse::knob(&max_threads,
+            "Maximum number of threads [current: %default]");
 }
 
 
@@ -389,6 +394,11 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << gzip_level << std::endl;
         return argparse::pr_error;
 
+    }
+
+    if (!max_threads) {
+        std::cerr << "Error: --threads must be at least 1!" << std::endl;
+        return argparse::pr_error;
     }
 
     // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
