@@ -95,28 +95,25 @@ timer::timer(const std::string& what, bool muted)
   : m_what(what)
   , m_counter(0)
   , m_first_time(get_current_time())
-  , m_last_time(get_current_time())
   , m_muted(muted)
 {
 }
 
 
-void timer::increment()
+void timer::increment(size_t inc)
 {
-    m_counter++;
+    m_counter += inc;
     if (!m_muted && (m_counter % REPORT_EVERY == 0)) {
-        static const std::string s_processed = thousands_sep(REPORT_EVERY);
-        const double last_time = m_last_time;
-        m_last_time = get_current_time();
+        const double last_time = get_current_time();
+        const double rate = (last_time - m_first_time) / (m_counter / REPORT_EVERY);
 
         std::stringstream stream;
-        stream << "\rProcessed last " << s_processed << " " << m_what
-               << " in " << format_time(m_last_time - last_time) << "; "
-               << thousands_sep(m_counter) << " " << m_what << " in "
-               << format_time(m_last_time - m_first_time) << " ...";
-        const std::string line = stream.str();
+        stream << "\rProcessed " << thousands_sep(m_counter) << " " << m_what
+               << " in " << format_time(last_time - m_first_time) << "; "
+               << format_time(rate) << " per " << thousands_sep(REPORT_EVERY)
+               << " " << m_what << " ...";
 
-        std::cerr << line;
+        std::cerr << stream.str();
         std::cerr.flush();
     }
 }

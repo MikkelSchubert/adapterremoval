@@ -53,7 +53,7 @@ public:
     timer(const std::string& what, bool muted = false);
 
     /** Increment the progress, and (possibly) print a status report. */
-    void increment();
+    void increment(size_t inc = 1);
 
     /** Print final summary based on the number of increments. */
     void finalize() const;
@@ -65,8 +65,6 @@ private:
     size_t m_counter;
     //! Starting time (in seconds) of the timer.
     double m_first_time;
-    //! Last time (in seconds) that a report was given.
-    double m_last_time;
     //! If true, no output is produced by calling 'increment' or 'finalize'.
     bool m_muted;
 };
