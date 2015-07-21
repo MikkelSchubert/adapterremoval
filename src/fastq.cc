@@ -322,8 +322,8 @@ bool fastq::read(std::istream& instream, quality_format encoding)
         }
     }
 
-    string_list_citer it = lines.cbegin();
-    return read(it, lines.cend(), encoding);
+    string_list_citer it = lines.begin();
+    return read(it, lines.end(), encoding);
 }
 
 
