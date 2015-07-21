@@ -133,7 +133,7 @@ private:
     std::string get_metavar_str(const consumer_ptr, const std::string&) const;
 
     //! Vector of keys (command-line options), tracking the order of addition.
-    StringVec m_keys;
+    string_vec m_keys;
     //! Map of keys (command-line args) to parser pointers; multiple
     //! keys may be assosiated with the same pointer.
     consumer_map m_parsers;
@@ -177,7 +177,7 @@ public:
      *           argument, if any remain to be consumed.
      *   end - Iterator past-the-end of the list of command-line arguments.
      */
-    virtual size_t consume(StringVecConstIter start, const StringVecConstIter& end) = 0;
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end) = 0;
 
     /** Returns true if the consumer has consumed a value. **/
     virtual bool is_set() const;
@@ -227,7 +227,7 @@ public:
     flag(bool* sink = NULL, const std::string& help = "");
 
     /** See consumer_base::consume */
-    virtual size_t consume(StringVecConstIter start, const StringVecConstIter& end);
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
 
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
@@ -256,7 +256,7 @@ public:
     any(std::string* sink = NULL, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
-    virtual size_t consume(StringVecConstIter start, const StringVecConstIter& end);
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
 
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
@@ -289,7 +289,7 @@ public:
     knob(unsigned* sink, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
-    virtual size_t consume(StringVecConstIter start, const StringVecConstIter& end);
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
 
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
@@ -318,7 +318,7 @@ public:
     floaty_knob(double* sink, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
-    virtual size_t consume(StringVecConstIter start, const StringVecConstIter& end);
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
 
     /** See consumer_base::to_str */
     virtual std::string to_str() const;

@@ -124,8 +124,8 @@ const consumer_ptr& parser::at(const std::string& key) const
 
 parse_result parser::parse_args(int argc, char* argv[])
 {
-    const StringVec argvec(argv + 1, argv + argc);
-    StringVecConstIter it = argvec.begin();
+    const string_vec argvec(argv + 1, argv + argc);
+    string_vec_citer it = argvec.begin();
     while (it != argvec.end()) {
         consumer_map::iterator parser = m_parsers.find(*it);
         if (parser != m_parsers.end()) {
@@ -199,7 +199,7 @@ void parser::print_help() const
     std::cerr <<"\n" << m_help << "\n\n";
 
     size_t ljust = 0;
-    for (StringVecConstIter it = m_keys.begin(); it != m_keys.end(); ++it) {
+    for (string_vec_citer it = m_keys.begin(); it != m_keys.end(); ++it) {
         if (it->empty()) {
             continue;
         }
@@ -223,7 +223,7 @@ void parser::print_help() const
               << "Arguments:" << "Description:\n";
 
     const size_t max_columns = get_terminal_columns() - 2;
-    for (StringVecConstIter it = m_keys.begin(); it != m_keys.end(); ++it) {
+    for (string_vec_citer it = m_keys.begin(); it != m_keys.end(); ++it) {
         if (it->empty()) {
             std::cerr << "\n";
             continue;
@@ -344,7 +344,7 @@ flag::flag(bool* value, const std::string& help)
 }
 
 
-size_t flag::consume(StringVecConstIter, const StringVecConstIter&)
+size_t flag::consume(string_vec_citer, const string_vec_citer&)
 {
 	if (m_ptr) {
 	    *m_ptr = true;
@@ -371,7 +371,7 @@ any::any(std::string* value, const std::string& metavar, const std::string& help
 }
 
 
-size_t any::consume(StringVecConstIter start, const StringVecConstIter& end)
+size_t any::consume(string_vec_citer start, const string_vec_citer& end)
 {
     if (start != end) {
         m_value_set = true;
@@ -410,7 +410,7 @@ knob::knob(unsigned* value, const std::string& metavar, const std::string& help)
 }
 
 
-size_t knob::consume(StringVecConstIter start, const StringVecConstIter& end)
+size_t knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
     if (start != end) {
         std::stringstream stream(*start);
@@ -451,7 +451,7 @@ floaty_knob::floaty_knob(double* value, const std::string& metavar, const std::s
 }
 
 
-size_t floaty_knob::consume(StringVecConstIter start, const StringVecConstIter& end)
+size_t floaty_knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
     if (start != end) {
         std::stringstream stream(*start);

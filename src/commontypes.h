@@ -28,8 +28,8 @@
 #include <string>
 #include <vector>
 
-typedef std::vector<std::string> StringVec;
-typedef StringVec::const_iterator StringVecConstIter;
+typedef std::vector<std::string> string_vec;
+typedef string_vec::const_iterator string_vec_citer;
 
 
 enum read_type {
