@@ -408,11 +408,11 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 }
 
 
-statistics userconfig::create_stats() const
+std::auto_ptr<statistics> userconfig::create_stats() const
 {
-    statistics stats;
-    stats.number_of_barcodes_trimmed.resize(barcodes.size());
-    stats.number_of_reads_with_adapter.resize(adapters.size());
+    std::auto_ptr<statistics> stats(new statistics());
+    stats->number_of_barcodes_trimmed.resize(barcodes.size());
+    stats->number_of_reads_with_adapter.resize(adapters.size());
     return stats;
 }
 

@@ -430,16 +430,16 @@ int remove_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    statistics stats = config.create_stats();
+    std::auto_ptr<statistics> stats = config.create_stats();
     if (config.paired_ended_mode) {
-        if (!process_paired_ended_reads(config, stats)) {
+        if (!process_paired_ended_reads(config, *stats)) {
             return 1;
         }
-    } else if (!process_single_ended_reads(config, stats)) {
+    } else if (!process_single_ended_reads(config, *stats)) {
         return 1;
     }
 
-    if (!write_statistics(config, *settings, stats)) {
+    if (!write_statistics(config, *settings, *stats)) {
         std::cerr << "Error writing statistics to settings file!" << std::endl;
         return 1;
     }

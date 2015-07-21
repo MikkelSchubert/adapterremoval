@@ -57,7 +57,7 @@ public:
     /** Parses a set of commandline arguments. */
     argparse::parse_result parse_args(int argc, char *argv[]);
 
-    statistics create_stats() const;
+    std::auto_ptr<statistics> create_stats() const;
 
 
     enum alignment_type

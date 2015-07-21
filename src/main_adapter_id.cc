@@ -189,7 +189,8 @@ int identify_adapter_sequences(const userconfig& config)
     fastq_pair_vec adapters;
     adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
 
-    statistics stats = config.create_stats();
+    std::auto_ptr<statistics> stats_ptr = config.create_stats();
+    statistics& stats = *stats_ptr;
     fastq read1;
     fastq read2;
 
