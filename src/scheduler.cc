@@ -219,6 +219,12 @@ bool scheduler::run(int nthreads)
     m_errors = !run_wrapper(this) || m_errors;
     m_errors = !join_threads() || m_errors;
 
+    if (!m_errors) {
+        for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
+            (*it)->ptr->finalize();
+        }
+    }
+
     return !m_errors;
 }
 
@@ -244,6 +250,7 @@ void* scheduler::run_wrapper(void* ptr)
 
     return reinterpret_cast<void*>(false);
 }
+
 
 void* scheduler::do_run()
 {

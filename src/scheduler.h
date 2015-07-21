@@ -138,6 +138,7 @@ public:
     /** Destructor; does nothing in base class. **/
     virtual ~analytical_step();
 
+
     /**
      * Function called by pipeline to generate / process / consume data chunks.
      *
@@ -155,6 +156,13 @@ public:
      * all remaining chunks have been consumed.
      */
     virtual analytical_chunk* process(analytical_chunk* chunk) = 0;
+
+    /**
+     * Called once the pipeline has been run to completion; this function is
+     * called on nodes in the same order as the pipeline.
+     */
+    virtual void finalize();
+
 
     /** Returns the expected ordering (ordered / unordered) for input data. **/
     ordering get_ordering() const;
@@ -211,7 +219,7 @@ private:
     //! Lock set when the scheduler is running
     mutex m_running;
     //! Set to indicate if errors have occured
-    bool m_errors;
+    volatile bool m_errors;
     //! Condition used to signal the (potential) availability of work
     conditional m_condition;
     //! Counter used for sequential processing of data
@@ -290,6 +298,11 @@ T* statistics_sink<T>::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'analytical_step'
 
+inline void analytical_step::finalize()
+{
+}
+
+
 inline analytical_step::ordering analytical_step::get_ordering() const
 {
     return m_step_order;
@@ -300,6 +313,5 @@ inline bool analytical_step::file_io() const
 {
     return m_file_io;
 }
-
 
 #endif
