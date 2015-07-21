@@ -61,8 +61,10 @@ public:
 private:
     //! Description of what is being processed.
     std::string m_what;
-    //! Number of items processed (total)
+    //! Current number of items processed; reset with every status update.
     size_t m_counter;
+    //! Total number of items processed
+    size_t m_total;
     //! Starting time (in seconds) of the timer.
     double m_first_time;
     //! If true, no output is produced by calling 'increment' or 'finalize'.

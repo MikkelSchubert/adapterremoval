@@ -94,6 +94,7 @@ std::string format_time(double seconds)
 timer::timer(const std::string& what, bool muted)
   : m_what(what)
   , m_counter(0)
+  , m_total(0)
   , m_first_time(get_current_time())
   , m_muted(muted)
 {
@@ -103,12 +104,15 @@ timer::timer(const std::string& what, bool muted)
 void timer::increment(size_t inc)
 {
     m_counter += inc;
-    if (!m_muted && (m_counter % REPORT_EVERY == 0)) {
+    if (!m_muted && m_counter >= REPORT_EVERY) {
+        m_total += m_counter;
+        m_counter = 0;
+
         const double last_time = get_current_time();
-        const double rate = (last_time - m_first_time) / (m_counter / REPORT_EVERY);
+        const double rate = (last_time - m_first_time) / (m_total / REPORT_EVERY);
 
         std::stringstream stream;
-        stream << "\rProcessed " << thousands_sep(m_counter) << " " << m_what
+        stream << "\rProcessed " << thousands_sep(m_total) << " " << m_what
                << " in " << format_time(last_time - m_first_time) << "; "
                << format_time(rate) << " per " << thousands_sep(REPORT_EVERY)
                << " " << m_what << " ...";
@@ -123,11 +127,12 @@ void timer::finalize() const
 {
     if (!m_muted) {
         const double current_time = get_current_time();
-        if (m_counter >= REPORT_EVERY) {
+        const size_t total = m_total + m_counter;
+        if (total >= REPORT_EVERY) {
             std::cerr << "\n";
         }
 
-        std::cerr << "Processed a total of " << thousands_sep(m_counter) << " "
+        std::cerr << "Processed a total of " << thousands_sep(total) << " "
                   << m_what << " in " << format_time(current_time - m_first_time)
                   << " ..." << std::endl;
     }
