@@ -23,7 +23,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <limits>
-#include <sstream>
 #include <stdexcept>
 #include <gtest/gtest.h>
 
@@ -394,136 +393,254 @@ TEST(fastq, add_prefix_to_header__header)
 ///////////////////////////////////////////////////////////////////////////////
 // Reading from stream
 
-TEST(fastq, simple_fastq_record)
+TEST(fastq, simple_fastq_record_1)
 {
-    const char* str = "@record_1\nACGAGTCA\n+\n!7BF8DGI\n";
-    std::stringstream instream(str, std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record_1");
+    lines.push_back("ACGAGTCA");
+    lines.push_back("+");
+    lines.push_back("!7BF8DGI");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_TRUE(record.read(instream, fastq::phred_33));
+    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
+    ASSERT_EQ(it, lines.end());
+}
+
+TEST(fastq, simple_fastq_record_2)
+{
+    string_list lines;
+    lines.push_back("@record_1");
+    lines.push_back("ACGAGTCA");
+    lines.push_back("+");
+    lines.push_back("!7BF8DGI");
+    lines.push_back("@record_2");
+    lines.push_back("GTCAGGAT");
+    lines.push_back("+");
+    lines.push_back("D7BIG!F8");
+    string_list_citer it = lines.begin();
+
+    fastq record;
+    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_EQ("record_1", record.header());
+    ASSERT_EQ("ACGAGTCA", record.sequence());
+    ASSERT_EQ("!7BF8DGI", record.qualities());
+    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_EQ("record_2", record.header());
+    ASSERT_EQ("GTCAGGAT", record.sequence());
+    ASSERT_EQ("D7BIG!F8", record.qualities());
+    ASSERT_EQ(it, lines.end());
+    ASSERT_FALSE(record.read(it, lines.end(), fastq::phred_33));
+}
+
+
+TEST(fastq, simple_fastq_record__with_extra_header_1)
+{
+    string_list lines;
+    lines.push_back("@record_1 Extra header here");
+    lines.push_back("ACGAGTCA");
+    lines.push_back("+");
+    lines.push_back("!7BF8DGI");
+    string_list_citer it = lines.begin();
+
+    fastq record;
+    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_EQ("record_1 Extra header here", record.header());
+    ASSERT_EQ("ACGAGTCA", record.sequence());
+    ASSERT_EQ("!7BF8DGI", record.qualities());
+    ASSERT_EQ(it, lines.end());
+    ASSERT_FALSE(record.read(it, lines.end(), fastq::phred_33));
+}
+
+
+TEST(fastq, simple_fastq_record__with_extra_header_2)
+{
+    string_list lines;
+    lines.push_back("@record_1");
+    lines.push_back("ACGAGTCA");
+    lines.push_back("+Extra header here");
+    lines.push_back("!7BF8DGI");
+    string_list_citer it = lines.begin();
+
+    fastq record;
+    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_EQ("record_1", record.header());
+    ASSERT_EQ("ACGAGTCA", record.sequence());
+    ASSERT_EQ("!7BF8DGI", record.qualities());
+    ASSERT_EQ(it, lines.end());
+    ASSERT_FALSE(record.read(it, lines.end(), fastq::phred_33));
 }
 
 
 TEST(fastq, simple_fastq_record__no_header)
 {
-    const char* str = "@\nACGAGTCA\n+\n!7BF8DGI\n";
-    std::stringstream instream(str, std::ios_base::in);
+    string_list lines;
+    lines.push_back("@");
+    lines.push_back("ACGAGTCA");
+    lines.push_back("+");
+    lines.push_back("!7BF8DGI");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
 }
 
 
 TEST(fastq, simple_fastq_record__no_sequence)
 {
-    const char* str = "@record_1\n\n+\n!7BF8DGI\n";
-    std::stringstream instream(str, std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record_1");
+    lines.push_back("");
+    lines.push_back("+");
+    lines.push_back("!7BF8DGI");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
 }
 
 
 TEST(fastq, simple_fastq_record__no_qualities)
 {
-    const char* str = "@record_1\nACGAGTCA\n+\n\n";
-    std::stringstream instream(str, std::ios_base::in);
+    string_list lines;
+    lines.push_back("@");
+    lines.push_back("ACGAGTCA");
+    lines.push_back("+");
+    lines.push_back("");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
 }
 
 
 TEST(fastq, simple_fastq_record__no_qualities_or_sequence)
 {
-    const char* str = "@record_1\n\n+\n\n";
-    std::stringstream instream(str, std::ios_base::in);
-    fastq record;
-    ASSERT_THROW(record.read(instream, fastq::phred_33), fastq_error);
-}
+    string_list lines;
+    lines.push_back("@");
+    lines.push_back("");
+    lines.push_back("+");
+    lines.push_back("");
+    string_list_citer it = lines.begin();
 
-
-TEST(fastq, simple_fastq_record__no_trailing_newline)
-{
-    const char* str = "@record_1\nACGAGTCA\n+\n!7BF8DGI";
-    std::stringstream instream(str, std::ios_base::in);
     fastq record;
-    ASSERT_TRUE(record.read(instream, fastq::phred_33));
-    ASSERT_EQ("record_1", record.header());
-    ASSERT_EQ("ACGAGTCA", record.sequence());
-    ASSERT_EQ("!7BF8DGI", record.qualities());
+    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
 }
 
 
 TEST(fastq, eof_when_starting_to_read_record)
 {
-    std::stringstream instream("", std::ios_base::in);
+    string_list lines;
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_FALSE(record.read(instream));
+    ASSERT_FALSE(record.read(it, lines.end()));
+    ASSERT_EQ(it, lines.end());
 }
 
 
-TEST(fastq, eof_after_header_1)
+TEST(fastq, eof_after_header)
 {
-    std::stringstream instream("@record", std::ios_base::in);
-    fastq record;
-    ASSERT_THROW(record.read(instream), fastq_error);
-}
+    string_list lines;
+    lines.push_back("@record");
+    string_list_citer it = lines.begin();
 
-
-TEST(fastq, eof_after_header_2)
-{
-    std::stringstream instream("@record\n", std::ios_base::in);
     fastq record;
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
 
 
 TEST(fastq, eof_after_sequence_1)
 {
-    std::stringstream instream("@record\nACGTA", std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record");
+    lines.push_back("ACGTA");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
+
 
 TEST(fastq, eof_after_sequence_2)
 {
-    std::stringstream instream("@record\nACGTA\n", std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record");
+    lines.push_back("ACGTA");
+    lines.push_back("");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
 
 
 TEST(fastq, eof_after_sep_1)
 {
-    std::stringstream instream("@record\nACGTA\n+", std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record");
+    lines.push_back("ACGTA");
+    lines.push_back("+");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
+
 
 TEST(fastq, eof_after_sep_2)
 {
-    std::stringstream instream("@record\nACGTA\n+\n", std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record");
+    lines.push_back("ACGTA");
+    lines.push_back("+");
+    lines.push_back("");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
 
 
 TEST(fastq, eof_after_qualities_following_previous_read_1)
 {
-    std::stringstream instream("@record_1\nACGTA\n+\n!!!!!\n@record_2\nACGTA\n+\n", std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record_1");
+    lines.push_back("ACGTA");
+    lines.push_back("+");
+    lines.push_back("!!!!!");
+    lines.push_back("@record_2");
+    lines.push_back("ACGTA");
+    lines.push_back("+");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_NO_THROW(record.read(instream));
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_NO_THROW(record.read(it, lines.end()));
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
 
 
 TEST(fastq, eof_after_qualities_following_previous_read_2)
 {
-    std::stringstream instream("@record_1\nACGTA\n+\n!!!!!\n@record_2\nACGTA\n+", std::ios_base::in);
+    string_list lines;
+    lines.push_back("@record_1");
+    lines.push_back("ACGTA");
+    lines.push_back("+");
+    lines.push_back("!!!!!");
+    lines.push_back("@record_2");
+    lines.push_back("ACGTA");
+    lines.push_back("+");
+    lines.push_back("");
+    string_list_citer it = lines.begin();
+
     fastq record;
-    ASSERT_NO_THROW(record.read(instream));
-    ASSERT_THROW(record.read(instream), fastq_error);
+    ASSERT_NO_THROW(record.read(it, lines.end()));
+    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
 }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
