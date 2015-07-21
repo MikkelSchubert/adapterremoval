@@ -28,6 +28,9 @@
 #include <cstdlib>
 #include <vector>
 
+#include "vecutils.h"
+
+
 
 struct statistics
 {
@@ -77,6 +80,30 @@ struct statistics
     }
 
     std::vector<std::vector<size_t> > read_lengths;
+
+    /** Combine statistics objects, e.g. those used by different threads. */
+    statistics& operator+=(const statistics& other) {
+        number_of_full_length_collapsed += other.number_of_full_length_collapsed;
+        number_of_truncated_collapsed += other.number_of_truncated_collapsed;
+        total_number_of_nucleotides += other.total_number_of_nucleotides;
+        total_number_of_good_reads += other.total_number_of_good_reads;
+
+        unaligned_reads += other.unaligned_reads;
+        well_aligned_reads += other.well_aligned_reads;
+        poorly_aligned_reads += other.poorly_aligned_reads;
+        keep1 += other.keep1;
+        discard1 += other.discard1;
+        keep2 += other.keep2;
+        discard2 += other.discard2;
+
+        records += other.records;
+
+        merge_vectors(number_of_reads_with_adapter, other.number_of_reads_with_adapter);
+        merge_vectors(number_of_barcodes_trimmed, other.number_of_barcodes_trimmed);
+        merge_sub_vectors(read_lengths, other.read_lengths);
+
+        return *this;
+    }
 };
 
 #endif
