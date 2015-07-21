@@ -238,6 +238,8 @@ private:
 
 template <typename T>
 statistics_sink<T>::statistics_sink()
+  : m_sinks_lock()
+  , m_sinks()
 {
 }
 
