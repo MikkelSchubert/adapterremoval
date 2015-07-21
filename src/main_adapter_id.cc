@@ -119,7 +119,8 @@ void print_most_common_kmers(const kmer_map& kmers)
 
 void print_consensus_adapter(const char_count_vec& counts,
                              const kmer_map& kmers,
-                             const std::string& name)
+                             const std::string& name,
+                             const std::string& ref)
 {
     const char* NTs = "ACGT";
     std::stringstream sequence;
@@ -145,9 +146,21 @@ void print_consensus_adapter(const char_count_vec& counts,
         qualities << fastq::p_to_phred_33(1.0 - best_count / static_cast<double>(total));
     }
 
+    std::stringstream identity;
     const std::string consensus = sequence.str();
-    std::cout << "  " << name << ":  " << consensus << "\n"
-              << "               " << qualities.str() << "\n\n";
+
+    for (size_t i = 0, size = std::min(consensus.size(), ref.size()); i < size; ++i) {
+        if (ref.at(i) == 'N' || consensus.at(i) == 'N') {
+            identity << '*';
+        } else {
+            identity << (ref.at(i) == consensus.at(i) ? '|' : ' ');
+        }
+    }
+
+    std::cout << "  " << name << ":  " << ref << "\n"
+              << "               " << identity.str() << "\n"
+              << "   Consensus:  " << consensus << "\n"
+              << "     Quality:  " << qualities.str() << "\n\n";
 
     print_most_common_kmers(kmers);
 }
@@ -260,9 +273,15 @@ int identify_adapter_sequences(const userconfig& config)
               << "Printing adapter sequences, including poly-A tails:"
               << std::endl;
 
-    print_consensus_adapter(pcr1_counts, pcr1_kmers, "--adapter1");
+    // Get adapters matching --adapter* usage
+    fastq_pair user_adapters = config.adapters.front();
+    user_adapters.second.reverse_complement();
+
+    print_consensus_adapter(pcr1_counts, pcr1_kmers,
+                            "--adapter1", user_adapters.first.sequence());
     std::cout << "\n\n";
-    print_consensus_adapter(pcr2_counts, pcr2_kmers, "--adapter2");
+    print_consensus_adapter(pcr2_counts, pcr2_kmers,
+                            "--adapter2", user_adapters.second.sequence());
 
     return 0;
 }
