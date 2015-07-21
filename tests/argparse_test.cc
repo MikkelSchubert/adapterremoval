@@ -54,7 +54,7 @@ TEST(flag, help)
 
 TEST(flag, consumes_zero_arguments)
 {
-	StringVec arguments;
+	string_vec arguments;
 	arguments.push_back("--foo");
 	consumer_autoptr ptr(new argparse::flag());
 	ASSERT_FALSE(ptr->is_set());
@@ -65,7 +65,7 @@ TEST(flag, consumes_zero_arguments)
 
 TEST(flag, consume_past_the_end)
 {
-	const StringVec arguments;
+	const string_vec arguments;
 	consumer_autoptr ptr(new argparse::flag());
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(0, ptr->consume(arguments.begin(), arguments.end()));
@@ -78,7 +78,7 @@ TEST(flag, consume__with_sink__true)
 	bool sink = true;
 	consumer_autoptr ptr(new argparse::flag(&sink));
 	ASSERT_EQ("on", ptr->to_str());
-	const StringVec arguments;
+	const string_vec arguments;
 	ASSERT_EQ(0, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
 	ASSERT_TRUE(sink);
@@ -91,7 +91,7 @@ TEST(flag, consume__with_sink__false)
 	bool sink = false;
 	consumer_autoptr ptr(new argparse::flag(&sink));
 	ASSERT_EQ("off", ptr->to_str());
-	const StringVec arguments;
+	const string_vec arguments;
 	ASSERT_EQ(0, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
 	ASSERT_TRUE(sink);
@@ -125,7 +125,7 @@ TEST(any, args_set)
 
 TEST(any, consumes_one_argument)
 {
-	StringVec arguments;
+	string_vec arguments;
 	arguments.push_back("foo");
 	arguments.push_back("bar");
 	consumer_autoptr ptr(new argparse::any());
@@ -138,7 +138,7 @@ TEST(any, consumes_one_argument)
 
 TEST(any, consume_past_the_end)
 {
-	const StringVec arguments;
+	const string_vec arguments;
 	consumer_autoptr ptr(new argparse::any());
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(static_cast<size_t>(-1), ptr->consume(arguments.begin(), arguments.end()));
@@ -152,7 +152,7 @@ TEST(any, consume__with_sink__empty)
 	std::string sink;
 	consumer_autoptr ptr(new argparse::any(&sink));
 	ASSERT_EQ("", ptr->to_str());
-	StringVec arguments;
+	string_vec arguments;
 	arguments.push_back("foo");
 	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
@@ -166,7 +166,7 @@ TEST(any, consume__with_sink__preset)
 	std::string sink = "kitchensink";
 	consumer_autoptr ptr(new argparse::any(&sink));
 	ASSERT_EQ("kitchensink", ptr->to_str());
-	StringVec arguments;
+	string_vec arguments;
 	arguments.push_back("foo");
 	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
@@ -212,7 +212,7 @@ TEST(knob, args_set)
 TEST(knob, consumes_one_argument)
 {
 	unsigned sink = 0;
-	StringVec arguments;
+	string_vec arguments;
 	arguments.push_back("47");
 	arguments.push_back("bar");
 	consumer_autoptr ptr(new argparse::knob(&sink));
@@ -227,7 +227,7 @@ TEST(knob, consumes_one_argument)
 TEST(knob, consume_past_the_end)
 {
 	unsigned sink = 13;
-	const StringVec arguments;
+	const string_vec arguments;
 	consumer_autoptr ptr(new argparse::knob(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(static_cast<size_t>(-1), ptr->consume(arguments.begin(), arguments.end()));
@@ -240,7 +240,7 @@ TEST(knob, consume_past_the_end)
 TEST(knob, reject_negative_values)
 {
 	unsigned sink = 13;
-	StringVec arguments;
+	string_vec arguments;
 	consumer_autoptr ptr(new argparse::knob(&sink));
 	arguments.push_back("-47");
 	ASSERT_FALSE(ptr->is_set());
@@ -254,7 +254,7 @@ TEST(knob, reject_negative_values)
 TEST(knob, accept_zero)
 {
 	unsigned sink = 13;
-	StringVec arguments;
+	string_vec arguments;
 	consumer_autoptr ptr(new argparse::knob(&sink));
 	arguments.push_back("0");
 	ASSERT_FALSE(ptr->is_set());
@@ -268,7 +268,7 @@ TEST(knob, accept_zero)
 TEST(knob, upper_bound)
 {
 	unsigned sink = 13;
-	StringVec arguments;
+	string_vec arguments;
 	consumer_autoptr ptr(new argparse::knob(&sink));
 	arguments.push_back("2147483647");
 	ASSERT_FALSE(ptr->is_set());
@@ -316,7 +316,7 @@ TEST(floaty_knob, args_set)
 TEST(floaty_knob, consumes_one_argument)
 {
 	double sink = 47.0;
-	StringVec arguments;
+	string_vec arguments;
 	arguments.push_back("-19.84");
 	arguments.push_back("bar");
 	consumer_autoptr ptr(new argparse::floaty_knob(&sink));
@@ -331,7 +331,7 @@ TEST(floaty_knob, consumes_one_argument)
 TEST(floaty_knob, consume_past_the_end)
 {
 	double sink = 13;
-	const StringVec arguments;
+	const string_vec arguments;
 	consumer_autoptr ptr(new argparse::floaty_knob(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(static_cast<size_t>(-1), ptr->consume(arguments.begin(), arguments.end()));
