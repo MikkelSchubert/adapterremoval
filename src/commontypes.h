@@ -31,6 +31,9 @@
 typedef std::vector<std::string> string_vec;
 typedef string_vec::const_iterator string_vec_citer;
 
+typedef std::vector<std::string> string_list;
+typedef string_list::const_iterator string_list_citer;
+
 
 enum read_type {
     rt_mate_1 = 0,

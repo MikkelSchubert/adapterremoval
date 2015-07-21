@@ -25,9 +25,12 @@
 #ifndef FASTQ_H
 #define FASTQ_H
 
-#include <string>
 #include <limits>
+#include <string>
+#include <vector>
 #include <ostream>
+
+#include "commontypes.h"
 
 
 const int MIN_PHRED_SCORE =  0;
@@ -140,8 +143,19 @@ public:
     void add_prefix_to_header(const std::string& prefix);
 
 
+    /**
+     * Reads a FASTQ record from the stream.
+     *
+     * If a malformed or invalid FASTQ record is encountered, the fastq_error
+     * exception is raised. Note that 'this' record is only valid if read
+     * returned true. Unlike the constructor, this function does not accept
+     * empty headers, or sequences / qualities, as this typically indicates
+     * a problem with the source file.
+     */
+    bool read(std::istream& instream, quality_format encoding = phred_33);
+
 	/**
-	 * Reads a FASTQ record from the stream.
+	 * Reads a FASTQ record from a list of lines (without newlines).
      *
 	 * If a malformed or invalid FASTQ record is encountered, the fastq_error
      * exception is raised. Note that 'this' record is only valid if read
@@ -149,7 +163,8 @@ public:
      * empty headers, or sequences / qualities, as this typically indicates
      * a problem with the source file.
 	 */
-	bool read(std::istream& instream, quality_format encoding = phred_33);
+    bool read(string_list_citer& begin, const string_list_citer& end, quality_format encoding = phred_33);
+
 
     /**
      * Writes a FASTQ record to the stream, using the specified encoding.
@@ -158,7 +173,16 @@ public:
      * quality bases are truncated to 0 .. 40, while phred_33 supports quality
      * scores in the range 0 .. 41.
      */
-	bool write(std::ostream& outstream, quality_format encoding = phred_33) const;
+    bool write(std::ostream& outstream, quality_format encoding = phred_33) const;
+
+    /**
+     * Converts a FASTQ record to a string ending with a newline.
+     *
+     * Only the phred_33 and phred_64 encodings are supported. For phred_64,
+     * quality bases are truncated to 0 .. 40, while phred_33 supports quality
+     * scores in the range 0 .. 41.
+     */
+    std::string to_str(quality_format encoding = phred_33) const;
 
 
     /**

@@ -313,39 +313,63 @@ void fastq::add_prefix_to_header(const std::string& prefix)
 
 bool fastq::read(std::istream& instream, quality_format encoding)
 {
-    char at_header = -1;
-    instream >> at_header;
-    if (instream.eof()) {
+    string_list lines;
+    for (size_t i = 0; i < 4 && instream; ++i) {
+        lines.push_back(std::string());
+        if (!std::getline(instream, lines.back())) {
+            lines.pop_back();
+            break;
+        }
+    }
+
+    string_list_citer it = lines.cbegin();
+    return read(it, lines.cend(), encoding);
+}
+
+
+bool fastq::read(string_list_citer& it, const string_list_citer& end, quality_format encoding)
+{
+    if (it == end) {
         return false;
-    } else if (instream.fail()) {
-        throw fastq_error("IO error while reading FASTQ header");
-    } else if (at_header != '@') {
-        throw fastq_error("FASTQ header did not start with '@'  ");
+    } else {
+        const std::string& header_line = *it;
+        if (header_line.empty() || header_line.at(0) != '@') {
+            throw fastq_error("FASTQ header did not start with '@'  ");
+        }
+
+        m_header = it->substr(1);
+        if (m_header.empty()) {
+            throw fastq_error("FASTQ header is empty");
+        }
+
+        ++it;
     }
 
-    if (!std::getline(instream, m_header)) {
-        throw fastq_error("IO error while reading FASTQ header");
-    } else if (m_header.empty()) {
-        throw fastq_error("FASTQ header is empty");
+    if (it == end) {
+        throw fastq_error("partial FASTQ record; cut off after header");
+    } else {
+        m_sequence = *it++;
+        if (m_sequence.empty()) {
+            throw fastq_error("sequence is empty");
+        }
     }
 
-    if (!std::getline(instream, m_sequence)) {
-        throw fastq_error("IO error reading FASTQ sequence");
-    } else if (m_sequence.empty()) {
-        throw fastq_error("sequence is empty");
+    if (it == end) {
+        throw fastq_error("partial FASTQ record; cut off after sequence");
+    } else {
+        const std::string& separator = *it++;
+        if (separator.empty() || separator.at(0) != '+') {
+            throw fastq_error("FASTQ record lacks seperator character (+)");
+        }
     }
 
-    std::string separator;
-    if (!std::getline(instream, separator)) {
-        throw fastq_error("IO error reading FASTQ separator");
-    } else if (separator.empty() || separator.at(0) != '+') {
-        throw fastq_error("partial FASTQ record; expected separator (+) not found");
-    }
-
-    if (!std::getline(instream, m_qualities)) {
-        throw fastq_error("IO error reading FASTQ qualities");
-    } else if (m_qualities.empty()) {
-        throw fastq_error("sequence is empty");
+    if (it == end) {
+        throw fastq_error("partial FASTQ record; cut off after separator");
+    } else {
+        m_qualities = *it++;
+        if (m_sequence.empty()) {
+            throw fastq_error("sequence is empty");
+        }
     }
 
     process_record(encoding);
@@ -355,26 +379,40 @@ bool fastq::read(std::istream& instream, quality_format encoding)
 
 bool fastq::write(std::ostream& outstream, quality_format encoding) const
 {
-    outstream
-        << '@' << m_header << '\n'
-        << m_sequence << '\n'
-        << "+\n";
+    outstream << to_str(encoding);
+
+    return !outstream.fail();
+}
+
+
+std::string fastq::to_str(quality_format encoding) const
+{
+    std::string result;
+    // Size of header, sequence, qualities, 4 new-lines, @ and +
+    result.reserve(m_header.size() + m_sequence.size() * 2 + 6);
+
+    result.push_back('@');
+    result += m_header;
+    result.push_back('\n');
+    result += m_sequence;
+    result += "\n+\n";
 
     if (encoding == phred_33) {
-        outstream << m_qualities << '\n';
+        result += m_qualities;
     } else if (encoding == phred_64) {
-        std::string qualities = m_qualities;
-        for (std::string::iterator it = qualities.begin(); it != qualities.end(); ++it) {
+        for (std::string::const_iterator it = m_qualities.begin(); it != m_qualities.end(); ++it) {
             // Phred+64 is limite to scores in the range 64 + (0 .. 40)
-            *it = std::min<char>(64 + 40, *it + 31);
+            result.push_back(std::min<char>(64 + 40, *it + 31));
         }
-        outstream << qualities << '\n';
     } else {
         throw std::invalid_argument("writing solexa / ignored scores not supported");
     }
 
-    return !outstream.fail();
+    result.push_back('\n');
+
+    return result;
 }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
