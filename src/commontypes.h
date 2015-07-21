@@ -31,4 +31,17 @@
 typedef std::vector<std::string> StringVec;
 typedef StringVec::const_iterator StringVecConstIter;
 
+
+enum read_type {
+    rt_mate_1 = 0,
+    rt_mate_2,
+    rt_singleton,
+    rt_collapsed,
+    rt_collapsed_truncated,
+    rt_discarded,
+    //! End value; not to be used as an argument.
+    rt_max
+};
+
+
 #endif

@@ -147,12 +147,12 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
         const size_t total = std::accumulate(lengths.begin(), lengths.end(), 0);
 
         settings << prefix << length
-                 << '\t' << lengths.at(statistics::rt_mate_1)
-                 << '\t' << lengths.at(statistics::rt_mate_2)
-                 << '\t' << lengths.at(statistics::rt_singleton)
-                 << '\t' << lengths.at(statistics::rt_collapsed)
-                 << '\t' << lengths.at(statistics::rt_collapsed_truncated)
-                 << '\t' << lengths.at(statistics::rt_discarded)
+                 << '\t' << lengths.at(rt_mate_1)
+                 << '\t' << lengths.at(rt_mate_2)
+                 << '\t' << lengths.at(rt_singleton)
+                 << '\t' << lengths.at(rt_collapsed)
+                 << '\t' << lengths.at(rt_collapsed_truncated)
+                 << '\t' << lengths.at(rt_discarded)
                  << '\t' << total << '\n';
     }
 
@@ -184,14 +184,13 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
     if (config.is_acceptable_read(collapsed_read)) {
         stats.total_number_of_nucleotides += collapsed_read.length();
         stats.total_number_of_good_reads++;
-        stats.inc_length_count(was_trimmed ? statistics::rt_collapsed_truncated : statistics::rt_collapsed,
-                               collapsed_read.length());
+        stats.inc_length_count(was_trimmed ? rt_collapsed_truncated : rt_collapsed, collapsed_read.length());
 
         collapsed_read.write((was_trimmed ? io_collapsed_truncated : io_collapsed), config.quality_output_fmt);
     } else {
         stats.discard1++;
         stats.discard2++;
-        stats.inc_length_count(statistics::rt_discarded, collapsed_read.length());
+        stats.inc_length_count(rt_discarded, collapsed_read.length());
         collapsed_read.write(io_discarded, config.quality_output_fmt);
     }
 }
@@ -252,11 +251,10 @@ bool process_single_ended_reads(const userconfig& config, statistics& stats)
                 stats.total_number_of_nucleotides += read.length();
 
                 read.write(*io_output, config.quality_output_fmt);
-                stats.inc_length_count(statistics::rt_mate_1, read.length());
+                stats.inc_length_count(rt_mate_1, read.length());
             } else {
                 stats.discard1++;
-                stats.inc_length_count(statistics::rt_discarded,
-                                       read.length());
+                stats.inc_length_count(rt_discarded, read.length());
 
                 read.write(*io_discarded, config.quality_output_fmt);
             }
@@ -375,18 +373,16 @@ bool process_paired_ended_reads(const userconfig& config, statistics& stats)
                 read1.write(*io_output_1, config.quality_output_fmt);
                 read2.write(*io_output_2, config.quality_output_fmt);
 
-                stats.inc_length_count(statistics::rt_mate_1, read1.length());
-                stats.inc_length_count(statistics::rt_mate_2, read2.length());
+                stats.inc_length_count(rt_mate_1, read1.length());
+                stats.inc_length_count(rt_mate_2, read2.length());
             } else {
                 // Keep one or none of the reads ...
                 stats.keep1 += read_1_acceptable;
                 stats.keep2 += read_2_acceptable;
                 stats.discard1 += !read_1_acceptable;
                 stats.discard2 += !read_2_acceptable;
-                stats.inc_length_count(read_1_acceptable ? statistics::rt_mate_1 : statistics::rt_discarded,
-                                       read1.length());
-                stats.inc_length_count(read_2_acceptable ? statistics::rt_mate_2 : statistics::rt_discarded,
-                                       read2.length());
+                stats.inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read1.length());
+                stats.inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
 
                 read1.write((read_1_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
                 read2.write((read_2_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
