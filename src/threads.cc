@@ -202,7 +202,7 @@ void conditional::signal()
 
     ++m_count;
 
-    switch (pthread_cond_broadcast(&m_cond)) {
+    switch (pthread_cond_signal(&m_cond)) {
         case 0:
             break;
 
