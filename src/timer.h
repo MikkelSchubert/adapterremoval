@@ -26,6 +26,7 @@
 #define TIMER_H
 
 #include <string>
+#include <deque>
 
 
 /**
@@ -59,16 +60,22 @@ public:
     void finalize() const;
 
 private:
+    typedef std::pair<double, size_t> time_count_pair;
+    typedef std::deque<time_count_pair> time_count_deque;
+
+    /** Print summary based on current rate; finalize to end with newline. */
+    void do_print(size_t rate, double current_time, bool finalize = false) const;
+
     //! Description of what is being processed.
     std::string m_what;
-    //! Current number of items processed; reset with every status update.
-    size_t m_counter;
     //! Total number of items processed
     size_t m_total;
     //! Starting time (in seconds) of the timer.
     double m_first_time;
     //! If true, no output is produced by calling 'increment' or 'finalize'.
     bool m_muted;
+    //! Counts for last N updates, for calculating running mean rate.
+    time_count_deque m_counts;
 };
 
 

@@ -32,7 +32,10 @@
 #include "timer.h"
 
 
+//! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
+//! Number of blocks to store for calculating mean rate
+const size_t AVG_BLOCKS = 10;
 
 
 double get_current_time()
@@ -42,7 +45,6 @@ double get_current_time()
 
     return timestamp.tv_sec + timestamp.tv_usec / 1e6;
 }
-
 
 
 std::string thousands_sep(size_t number)
@@ -93,32 +95,36 @@ std::string format_time(double seconds)
 
 timer::timer(const std::string& what, bool muted)
   : m_what(what)
-  , m_counter(0)
   , m_total(0)
   , m_first_time(get_current_time())
   , m_muted(muted)
+  , m_counts()
 {
+    m_counts.push_back(time_count_pair(get_current_time(), 0));
 }
 
 
 void timer::increment(size_t inc)
 {
-    m_counter += inc;
-    if (!m_muted && m_counter >= REPORT_EVERY) {
-        m_total += m_counter;
-        m_counter = 0;
+    m_total += inc;
+    m_counts.back().second += inc;
 
-        const double last_time = get_current_time();
-        const double rate = (last_time - m_first_time) / (m_total / REPORT_EVERY);
+    if (!m_muted && m_counts.back().second >= REPORT_EVERY) {
+        const double current_time = get_current_time();
+        // Number of seconds since oldest block was created
+        const double seconds = current_time - m_counts.front().first;
 
-        std::stringstream stream;
-        stream << "\rProcessed " << thousands_sep(m_total) << " " << m_what
-               << " in " << format_time(last_time - m_first_time) << "; "
-               << format_time(rate) << " per " << thousands_sep(REPORT_EVERY)
-               << " " << m_what << " ...";
+        size_t current_total = 0;
+        for (time_count_deque::iterator it = m_counts.begin(); it != m_counts.end(); ++it) {
+            current_total += it->second;
+        }
 
-        std::cerr << stream.str();
-        std::cerr.flush();
+        do_print(static_cast<size_t>(current_total / seconds), current_time);
+
+        m_counts.push_back(time_count_pair(current_time, 0));
+        while (m_counts.size() > AVG_BLOCKS) {
+            m_counts.pop_front();
+        }
     }
 }
 
@@ -127,13 +133,33 @@ void timer::finalize() const
 {
     if (!m_muted) {
         const double current_time = get_current_time();
-        const size_t total = m_total + m_counter;
-        if (total >= REPORT_EVERY) {
-            std::cerr << "\n";
-        }
+        const double seconds = current_time - m_first_time;
 
-        std::cerr << "Processed a total of " << thousands_sep(total) << " "
-                  << m_what << " in " << format_time(current_time - m_first_time)
-                  << " ..." << std::endl;
+        do_print(static_cast<size_t>(m_total / seconds), current_time, true);
+    }
+}
+
+
+void timer::do_print(size_t rate, double current_time, bool finalize) const
+{
+    if (finalize) {
+        std::cerr << "\rProcessed a total of ";
+    } else {
+        std::cerr << "\rProcessed ";
+    }
+
+    if (rate > 10000) {
+        rate = (rate / 1000) * 1000;
+    }
+
+    std::cerr << thousands_sep(m_total) << " " << m_what << " in "
+              << format_time(current_time - m_first_time) << "; "
+              << thousands_sep(rate) << " " << m_what << " per second ";
+
+    if (finalize) {
+        std::cerr << "on average ..." << std::endl;
+    } else {
+        std::cerr << "...";
+        std::cerr.flush();
     }
 }
