@@ -10,10 +10,15 @@ OBJS     := $(BDIR)/main.o \
 			$(BDIR)/main_adapter_id.o \
 			$(BDIR)/main_adapter_rm.o \
 			$(BDIR)/argparse.o \
-            $(BDIR)/alignment.o $(BDIR)/fastq.o \
+            $(BDIR)/alignment.o \
+            $(BDIR)/fastq.o \
+            $(BDIR)/fastq_io.o \
             $(BDIR)/userconfig.o \
             $(BDIR)/timer.o \
-            $(BDIR)/gzstream.o
+            $(BDIR)/gzstream.o \
+            $(BDIR)/scheduler.o \
+            $(BDIR)/threads.o
+
 DFILES   := $(OBJS:.o=.deps)
 
 # Comment out this line to display individual commands
@@ -28,6 +33,7 @@ COLOR_END := "\033[0m"
 .PHONY: all install clean test clean_tests
 
 all: build/$(PROG) build/$(PROG).1
+# build/$(PROG).1
 
 
 # Clean
@@ -52,7 +58,7 @@ $(BDIR)/%.o: src/%.cc
 # Executable
 build/$(PROG): $(OBJS)
 	@echo $(COLOR_GREEN)"Linking executable '$@'"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) $^ -lz -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) $^ -lz -lpthread -o $@
 
 build/%.1: %.pod
 	@echo $(COLOR_GREEN)"Constructing man-page '$@' from '$<'"$(COLOR_END)
