@@ -31,7 +31,7 @@
 #include "vecutils.h"
 
 
-
+/** Object used to collect summary statistics for trimming and other tasks. */
 struct statistics
 {
     statistics()
@@ -53,24 +53,38 @@ struct statistics
     {
     }
 
+    //! Number of collapsed reads which (likely) represent full inserts
     size_t number_of_full_length_collapsed;
+    //! Number of collapsed reads which were truncated due to low-quality bases
     size_t number_of_truncated_collapsed;
+    //! Total number of nucleotides left after trimming, collapsing, filtering
     size_t total_number_of_nucleotides;
+    //! Total number of reads left after trimming, collapsing, filtering
     size_t total_number_of_good_reads;
 
+    //! Number of reads / pairs with adapters trimmed
     std::vector<size_t> number_of_reads_with_adapter;
+    //! Number of times each barcode were trimmed from reads
     std::vector<size_t> number_of_barcodes_trimmed;
 
+    //! Number of unaligned reads; not enough bases, too many mismatches, etc.
     size_t unaligned_reads;
+    //! Number of alignments with enough aligned bases, not too many mismatches
     size_t well_aligned_reads;
+    //! Number of alignments with a zero or lower score
     size_t poorly_aligned_reads;
+    //! Number of retained mate 1 reads
     size_t keep1;
+    //! Number of discarded mate 1 reads
     size_t discard1;
+    //! Number of retained mate 2 reads
     size_t keep2;
+    //! Number of discarded mate 2 reads
     size_t discard2;
-
+    //! Total number of reads / pairs processed
     size_t records;
 
+    /** Increment the number of reads with of a given type / length. */
     void inc_length_count(read_type type, size_t length) {
         if (length >= read_lengths.size()) {
             read_lengths.resize(length + 1, std::vector<size_t>(rt_max));
@@ -79,6 +93,7 @@ struct statistics
         ++read_lengths.at(length).at(static_cast<size_t>(type));
     }
 
+    //! Per read-type length distributions of reads
     std::vector<std::vector<size_t> > read_lengths;
 
     /** Combine statistics objects, e.g. those used by different threads. */
