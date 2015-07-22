@@ -270,12 +270,36 @@ TEST(knob, upper_bound)
 	unsigned sink = 13;
 	string_vec arguments;
 	consumer_autoptr ptr(new argparse::knob(&sink));
-	arguments.push_back("2147483647");
+	arguments.push_back("4294967295");
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
-	ASSERT_EQ(2147483647, sink);
-	ASSERT_EQ("2147483647", ptr->to_str());
+	ASSERT_EQ(4294967295, sink);
+	ASSERT_EQ("4294967295", ptr->to_str());
+}
+
+
+TEST(knob, past_upper_bound)
+{
+    unsigned sink = 13;
+    string_vec arguments;
+    consumer_autoptr ptr(new argparse::knob(&sink));
+    arguments.push_back("4294967296");
+    ASSERT_FALSE(ptr->is_set());
+    ASSERT_EQ(-1, ptr->consume(arguments.begin(), arguments.end()));
+    ASSERT_FALSE(ptr->is_set());
+}
+
+
+TEST(knob, trailing_garbage)
+{
+    unsigned sink = 13;
+    string_vec arguments;
+    consumer_autoptr ptr(new argparse::knob(&sink));
+    arguments.push_back("7913w");
+    ASSERT_FALSE(ptr->is_set());
+    ASSERT_EQ(-1, ptr->consume(arguments.begin(), arguments.end()));
+    ASSERT_FALSE(ptr->is_set());
 }
 
 
@@ -340,6 +364,17 @@ TEST(floaty_knob, consume_past_the_end)
 	ASSERT_EQ("13", ptr->to_str());
 }
 
+
+TEST(floaty_knob, trailing_garbage)
+{
+    double sink = 47.0;
+    string_vec arguments;
+    arguments.push_back("-19.84wat");
+    consumer_autoptr ptr(new argparse::floaty_knob(&sink));
+    ASSERT_FALSE(ptr->is_set());
+    ASSERT_EQ(-1, ptr->consume(arguments.begin(), arguments.end()));
+    ASSERT_FALSE(ptr->is_set());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // parser

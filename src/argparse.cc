@@ -453,20 +453,26 @@ size_t knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
     if (start != end) {
         std::stringstream stream(*start);
-        signed long temp = 0;
+        int64_t temp = 0;
 
-        stream >> temp;
-        if (!stream.fail()) {
-            if (temp >= 0 && temp <= std::numeric_limits<unsigned>::max()) {
-                *m_ptr = static_cast<unsigned>(temp);
-                m_value_set = true;
-                return 1;
-            }
+        if (!(stream >> temp)) {
+            return static_cast<size_t>(-1);
+        }
+
+        // Failing on trailing, non-numerical values
+        std::string trailing;
+        if (stream >> trailing) {
+            return static_cast<size_t>(-1);
+        }
+
+        if (temp >= 0 && temp <= std::numeric_limits<unsigned>::max()) {
+            *m_ptr = static_cast<unsigned>(temp);
+            m_value_set = true;
+            return 1;
         }
     }
 
     return static_cast<size_t>(-1);
-
 }
 
 
@@ -494,11 +500,18 @@ size_t floaty_knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
     if (start != end) {
         std::stringstream stream(*start);
-        stream >> *m_ptr;
-        if (!stream.fail()) {
-            m_value_set = true;
-            return 1;
+        if (!(stream >> *m_ptr)) {
+            return static_cast<size_t>(-1);
         }
+
+        // Failing on trailing, non-numerical values
+        std::string trailing;
+        if (stream >> trailing) {
+            return static_cast<size_t>(-1);
+        }
+
+        m_value_set = true;
+        return 1;
     }
 
     return static_cast<size_t>(-1);
