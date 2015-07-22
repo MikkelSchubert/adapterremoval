@@ -57,16 +57,21 @@ public:
     /** Parses a set of commandline arguments. */
     argparse::parse_result parse_args(int argc, char *argv[]);
 
+    /** Returns new statistics object, initialized using usersettings. */
     std::auto_ptr<statistics> create_stats() const;
 
 
     enum alignment_type
     {
+        //! Valid alignment according to user settings
         valid_alignment,
+        //! Alignment with negative score
         poor_alignment,
+        //! Read not aligned; too many mismatches, not enough bases, etc.
         not_aligned
     };
 
+    /** Characterize an alignment based on user settings. */
     alignment_type evaluate_alignment(const alignment_info& alignment) const;
 
     /** Returns true if the alignment is sufficient for collapsing. */
@@ -85,9 +90,10 @@ public:
     std::auto_ptr<std::istream> open_ifstream(const std::string& filename) const;
 
 
+    /** Attempts to trim barcodes from a read, if this is enabled. */
     void trim_barcodes_if_enabled(fastq& read, statistics& stats) const;
 
-
+    /** Trims a read if enabled, returning the #bases removed from each end. */
     fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
 
 
