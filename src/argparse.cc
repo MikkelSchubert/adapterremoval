@@ -127,8 +127,8 @@ parse_result parser::parse_args(int argc, char* argv[])
     const string_vec argvec(argv + 1, argv + argc);
     string_vec_citer it = argvec.begin();
     while (it != argvec.end()) {
-        consumer_map::iterator parser = m_parsers.find(*it);
-        if (parser != m_parsers.end()) {
+        consumer_map::iterator parser = m_parsers.end();
+        if (find_argument(parser, *it)) {
             const size_t consumed = parser->second->consume(++it, argvec.end());
 
             if (consumed == static_cast<size_t>(-1)) {
@@ -145,9 +145,6 @@ parse_result parser::parse_args(int argc, char* argv[])
 
             it += static_cast<consumer_map::iterator::difference_type>(consumed);
         } else {
-            std::cerr << "ERROR: Unknown argument: '" << *it << "'; aborting ..."
-                      << std::endl;
-
             return pr_error;
         }
     }
@@ -198,8 +195,14 @@ void parser::print_help() const
     print_version();
     std::cerr <<"\n" << m_help << "\n\n";
 
+    print_arguments(m_keys);
+}
+
+
+void parser::print_arguments(const string_vec& keys) const
+{
     size_t ljust = 0;
-    for (string_vec_citer it = m_keys.begin(); it != m_keys.end(); ++it) {
+    for (string_vec_citer it = keys.begin(); it != keys.end(); ++it) {
         if (it->empty()) {
             continue;
         }
@@ -220,10 +223,10 @@ void parser::print_help() const
     ljust = 2 + ljust + 4;
 
     std::cerr << std::left << std::setw(ljust)
-              << "Arguments:" << "Description:\n";
+                  << "Arguments:" << "Description:\n";
 
     const size_t max_columns = get_terminal_columns() - 2;
-    for (string_vec_citer it = m_keys.begin(); it != m_keys.end(); ++it) {
+    for (string_vec_citer it = keys.begin(); it != keys.end(); ++it) {
         if (it->empty()) {
             std::cerr << "\n";
             continue;
@@ -276,10 +279,46 @@ void parser::print_help() const
 
             std::cerr << "\n";
         }
-
     }
 
-    std::cerr.flush();
+    std::cerr << std::endl;
+}
+
+
+
+bool parser::find_argument(consumer_map::iterator& it, const std::string& str)
+{
+    it = m_parsers.find(str);
+    if (it != m_parsers.end()) {
+        return true;
+    }
+
+    // Locate partial arguments by finding arguments with 'str' as prefix
+    if (str != "-" && str != "--") {
+        string_vec matches;
+        consumer_map::iterator cit = m_parsers.begin();
+        for (; cit != m_parsers.end(); ++cit) {
+            if (cit->first.substr(0, str.size()) == str) {
+                matches.push_back(cit->first);
+            }
+        }
+
+        if (matches.size() == 1) {
+            it = m_parsers.find(matches.front());
+            return true;
+        } else if (matches.size() > 1) {
+            std::cerr << "ERROR: Ambiguous argument '" << str << "'; "
+                      << "Candidate arguments are\n\n";
+
+            print_arguments(matches);
+
+            return false;
+        }
+    }
+
+    std::cerr << "ERROR: Unknown argument: '" << str << "'" << std::endl;
+
+    return false;
 }
 
 

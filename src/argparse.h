@@ -130,6 +130,25 @@ public:
     void print_help() const;
 
 private:
+    /** Pretty-print the listed arguments. */
+    void print_arguments(const string_vec& keys) const;
+
+    /**
+     * Attempt to find argument by similarity.
+     *
+     * @param it If a match is found, is set to iterator of matching parser,
+                 otherwise it is set to m_parsers.end().
+     * @param str String containing expected argument.
+     * @return True if a match is found, false otherwise.
+     *
+     * If an exact match or a single partial match is found, 'it' is set and
+     * true is returned; otherwise it is set to m_parsers.end() and false is
+     * returned. In the case of multiple partial matches, the help string for
+     * each candidate is printed.
+     */
+    bool find_argument(consumer_map::iterator& it, const std::string& str);
+
+    /** Generate metavar from argument, namely uppercase without dashes. */
     std::string get_metavar_str(const consumer_ptr, const std::string&) const;
 
     //! Vector of keys (command-line options), tracking the order of addition.
@@ -157,8 +176,8 @@ public:
      * Base constructor; sets various values used when printing --help.
      *
      *  metavar - Used to represent the input value; if empty,
-                  argparse::parser will use the current key assosiated with
-                  the parser to generate a metavar.
+     *            argparse::parser will use the current key assosiated with
+     *            the parser to generate a metavar.
      *  help    - Help string; the value %default is replaced with the default
      *            value.
      */
