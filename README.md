@@ -14,7 +14,7 @@ If you use the program, please cite the paper:
 Installation
 ============
 
-Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed. Please refer to your operating system documentation for installation instructions.
+Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed, and that the pthread library and headers are installed. Please refer to your operating system documentation for installation instructions.
 
 
 Download and unpack the newest release from GitHub:
