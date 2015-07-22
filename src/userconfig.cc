@@ -284,7 +284,7 @@ userconfig::userconfig(const std::string& name,
             "Only print warnings / errors to STDERR [current: %default]");
 
     argparser["--threads"] =
-        new argparse::knob(&max_threads,
+        new argparse::knob(&max_threads, "THREADS",
             "Maximum number of threads [current: %default]");
 }
 
