@@ -62,7 +62,8 @@ char process_scores_phred_33(char quality)
                           "input is corrupt or not FASTQ format!");
     } else if (quality > 'J') {
         throw fastq_error("Phred+33 score is greater than 41 (ASCII = 'J'); "
-                          "This is not a valid Phred score for FASTQ reads.");
+                          "Are these FASTQ reads actually in Phred+64 format?\n"
+                          "If so, use the option \"--qualitybase 64\"");
     }
 
     return quality;
@@ -74,11 +75,19 @@ char process_scores_phred_64(char quality)
     // The scores from '@' (0) to 'h' (40) are expected for Phred+64 reads
     // As an older format, scores outside of this range is not expected
     if (quality < '@') {
-        throw fastq_error("Phred+64 score is less than 0 (ASCII = '@'); "
-                          "Are these FASTQ reads actually in Phred+33 format?");
+        if (quality < ';') {
+            throw fastq_error("Phred+64 score is less than 0 (ASCII = '@');\n"
+                              "Are these FASTQ reads actually in Phred+33 format?\n"
+                              "If so, use the option \"--qualitybase 33\"");
+        } else {
+            // Value not less than -5, which is the lowest Solexa score
+            throw fastq_error("Phred+64 score is less than 0 (ASCII = '@');\n"
+                              "Are these FASTQ reads actually in Solexa format?\n"
+                              "If so, use the option \"--qualitybase solexa\"");
+        }
     } else if (quality > 'h') {
         throw fastq_error("Phred+64 score is greater than 40 (ASCII = 'h'); "
-                          "This is not a valid Phred score for FASTQ reads.");
+                          "input is corrupt or not FASTQ format!");
     }
 
     return (quality - '@') + PHRED_OFFSET_33;
@@ -94,7 +103,7 @@ char process_scores_solexa(char quality)
                           "Is this actually Phred+33 data?");
     } else if (quality > 'h') {
         throw fastq_error("Solexa score is greater than 40 (ASCII = 'h'); "
-                      "This is not a valid Solexa score for FASTQ reads.");
+                          "This is not a valid Solexa score for FASTQ reads.");
     }
 
     return g_solexa_to_phred.at(quality - ';') + PHRED_OFFSET_33;
