@@ -30,6 +30,7 @@
 #include <sys/time.h>
 
 #include "timer.h"
+#include "threads.h"
 
 
 //! Print progress report every N items
@@ -142,6 +143,8 @@ void timer::finalize() const
 
 void timer::do_print(size_t rate, double current_time, bool finalize) const
 {
+    print_locker lock;
+
     if (finalize) {
         std::cerr << "\rProcessed a total of ";
     } else {

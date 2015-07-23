@@ -177,7 +177,6 @@ analytical_chunk* write_paired_fastq::process(analytical_chunk* chunk)
     write_lines(m_output, lines.at(m_type));
 
     if (m_progress) {
-        print_locker lock;
         m_timer.increment(file_chunk->mates.at(0).size() / 4);
     }
 
@@ -210,7 +209,6 @@ void write_paired_fastq::finalize()
     }
 
     if (m_progress) {
-        print_locker lock;
         m_timer.finalize();
     }
 }
