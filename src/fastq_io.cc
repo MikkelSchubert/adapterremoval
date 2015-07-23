@@ -42,7 +42,7 @@ fastq_file_chunk::fastq_file_chunk(size_t offset_)
   , mates(2)
   , output(rt_max)
 {
-    typedef std::vector<string_list>::iterator iter;
+    typedef std::vector<string_vec>::iterator iter;
 
     for (iter it = mates.begin(); it != mates.end(); ++it) {
         it->reserve(CHUNK_SIZE);
@@ -86,7 +86,7 @@ analytical_chunk* read_paired_fastq::process(analytical_chunk* chunk)
         return NULL;
     }
 
-    string_list& lines = file_chunk->mates.at(m_type);
+    string_vec& lines = file_chunk->mates.at(m_type);
     if (lines.size() != CHUNK_SIZE) {
         lines.resize(CHUNK_SIZE);
     }
@@ -172,7 +172,7 @@ write_paired_fastq::~write_paired_fastq()
 analytical_chunk* write_paired_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
-    std::vector<string_list>& lines = file_chunk->output;
+    std::vector<string_vec>& lines = file_chunk->output;
 
     write_lines(m_output, lines.at(m_type));
 
@@ -185,7 +185,7 @@ analytical_chunk* write_paired_fastq::process(analytical_chunk* chunk)
 }
 
 
-void write_paired_fastq::write_lines(std::auto_ptr<std::ostream>& file, string_list& lines)
+void write_paired_fastq::write_lines(std::auto_ptr<std::ostream>& file, string_vec& lines)
 {
     if (lines.empty()) {
         return;
@@ -195,7 +195,7 @@ void write_paired_fastq::write_lines(std::auto_ptr<std::ostream>& file, string_l
 
     std::ostream& stream = *file;
 
-    for (string_list::iterator it = lines.begin(); it != lines.end(); ++it) {
+    for (string_vec::iterator it = lines.begin(); it != lines.end(); ++it) {
         stream << *it;
     }
 

@@ -163,7 +163,7 @@ public:
      * empty headers, or sequences / qualities, as this typically indicates
      * a problem with the source file.
 	 */
-    bool read(string_list_citer& begin, const string_list_citer& end, quality_format encoding = phred_33);
+    bool read(string_vec_citer& begin, const string_vec_citer& end, quality_format encoding = phred_33);
 
 
     /**

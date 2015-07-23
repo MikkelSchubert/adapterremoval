@@ -49,9 +49,9 @@ public:
     size_t offset;
 
     //! Lines read from the mate 1 and mate 2 files
-    std::vector<string_list> mates;
+    std::vector<string_vec> mates;
     //! Lines to write to output files.
-    std::vector<string_list> output;
+    std::vector<string_vec> output;
 };
 
 
@@ -126,7 +126,7 @@ public:
 
 private:
     /** Writes the given lines to file, as is; no new-lines are added. */
-	static void write_lines(std::auto_ptr<std::ostream>& file, string_list& lines);
+	static void write_lines(std::auto_ptr<std::ostream>& file, string_vec& lines);
 
     const read_type m_type;
     //! When true, progress reports are printed using the 'm_timer' object.
