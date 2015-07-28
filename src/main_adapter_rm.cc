@@ -64,7 +64,7 @@ std::ostream& write_settings(const userconfig& config,
     }
 
     size_t adapter_id = 0;
-    for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, adapter_id++) {
+    for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, ++adapter_id) {
         settings << "Adapter1[" << adapter_id << "]: " << it->first.sequence() << "\n";
         if (config.paired_ended_mode) {
             fastq adapter = it->second;
@@ -74,11 +74,9 @@ std::ostream& write_settings(const userconfig& config,
         }
     }
 
-    if (config.trim_barcodes_mode) {
-        adapter_id = 0;
-        for (fastq_pair_vec::const_iterator it = config.barcodes.begin(); it != config.barcodes.end(); ++it, adapter_id++) {
-            settings << "Mate 1 5' barcode[" << adapter_id << "]: " << it->first.sequence() << "\n";
-        }
+    adapter_id = 0;
+    for (fastq_pair_vec::const_iterator it = config.barcodes.begin(); it != config.barcodes.end(); ++it, ++adapter_id) {
+        settings << "Mate 1 5' barcode[" << adapter_id << "]: " << it->first.sequence() << "\n";
     }
 
     settings << "Alignment shift value: " << config.shift << "\n";
@@ -117,11 +115,9 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
     }
 
     settings << "\n";
-    if (config.trim_barcodes_mode) {
-        for (size_t barcode_id = 0; barcode_id < stats.number_of_barcodes_trimmed.size(); ++barcode_id) {
-            const size_t count = stats.number_of_barcodes_trimmed.at(barcode_id);
-            settings << "Number of reads with barcode[" << barcode_id << "]: " << count << "\n";
-        }
+    for (size_t barcode_id = 0; barcode_id < stats.number_of_barcodes_trimmed.size(); ++barcode_id) {
+        const size_t count = stats.number_of_barcodes_trimmed.at(barcode_id);
+        settings << "Number of reads with barcode[" << barcode_id << "]: " << count << "\n";
     }
 
     for (size_t adapter_id = 0; adapter_id < stats.number_of_reads_with_adapter.size(); ++adapter_id) {

@@ -90,7 +90,6 @@ userconfig::userconfig(const std::string& name,
     , input_file_2()
     , paired_ended_mode(false)
     , adapters()
-    , trim_barcodes_mode(false)
     , barcodes()
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
@@ -344,7 +343,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return argparse::pr_error;
     }
 
-    if (!cleanup_and_validate_sequence(barcode, "--5prime")) {
+    if (!setup_barcode_sequences()) {
         return argparse::pr_error;
     }
 
@@ -359,9 +358,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return argparse::pr_error;
     } else if (file_2_set && !file_1_set) {
         std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
-        return argparse::pr_error;
-    } else if (argparser.is_set("--5prime") && argparser.is_set("--5prime-list")) {
-        std::cerr << "Error: Use either --5prime or --5prime-list, not both!" << std::endl;
         return argparse::pr_error;
     } else if (identify_adapters && !(file_1_set && file_2_set)) {
         std::cerr << "Error: Both input files (--file1 / --file2) must be "
@@ -524,7 +520,7 @@ std::auto_ptr<std::istream> userconfig::open_ifstream(const std::string& filenam
 
 void userconfig::trim_barcodes_if_enabled(fastq& read, statistics& stats) const
 {
-    if (trim_barcodes_mode) {
+    if (!barcodes.empty()) {
         const alignment_info alignment = trim_barcodes(read, barcodes, shift);
         if (alignment.length) {
             stats.number_of_barcodes_trimmed.at(alignment.adapter_id)++;
@@ -543,6 +539,35 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
     }
 
     return trimmed;
+}
+
+
+bool userconfig::setup_barcode_sequences()
+{
+    const bool barcode_is_set = argparser.is_set("--5prime");
+    const bool barcode_list_is_set = argparser.is_set("--5prime-list");
+
+    if (barcode_is_set && barcode_list_is_set) {
+        std::cerr << "Error: Use either --5prime or --5prime-list, not both!" << std::endl;
+        return argparse::pr_error;
+    } else if (barcode_list_is_set) {
+        if (!read_adapter_sequences(barcode_list, barcodes, "barcode", false)) {
+            return false;
+        } else if (barcodes.empty()) {
+            std::cerr << "Error: No barcodes sequences found in table!" << std::endl;
+            return false;
+        }
+    } else if (barcode_is_set) {
+        if (!cleanup_and_validate_sequence(barcode, "--5prime")) {
+            return false;
+        }
+
+        fastq barcode_fq = fastq("PCR1", barcode, std::string(barcode.length(), 'J'));
+
+        barcodes.push_back(fastq_pair(barcode_fq, fastq("DUMMMY", "", "")));
+    }
+
+    return true;
 }
 
 
@@ -578,7 +603,7 @@ bool userconfig::setup_adapter_sequences()
     }
 
     if (adapter_list_is_set) {
-        if (!read_adapters_sequences(adapter_list, adapters, paired_ended_mode)) {
+        if (!read_adapter_sequences(adapter_list, adapters, "adapter", paired_ended_mode)) {
             return false;
         } else if (adapters.empty()) {
             std::cerr << "Error: No adapter sequences found in table!" << std::endl;
@@ -611,8 +636,9 @@ bool userconfig::setup_adapter_sequences()
 }
 
 
-bool userconfig::read_adapters_sequences(const std::string& filename,
+bool userconfig::read_adapter_sequences(const std::string& filename,
                                          fastq_pair_vec& adapters,
+                                         const std::string& name,
                                          bool paired_ended) const
 {
     size_t line_num = 1;
@@ -641,11 +667,11 @@ bool userconfig::read_adapters_sequences(const std::string& filename,
             line_num++;
         }
     } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error reading adapter sequences (line " << line_num
+        std::cerr << "IO error reading " << name << " sequences (line " << line_num
                   << "); aborting:\n    " << error.what() << std::endl;
         return false;
     } catch (const fastq_error& error) {
-        std::cerr << "Error parsing adapter sequences (line " << line_num
+        std::cerr << "Error parsing " << name << " sequences (line " << line_num
                   << "); aborting:\n    " << error.what() << std::endl;
         return false;
     }
