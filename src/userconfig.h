@@ -107,8 +107,6 @@ public:
     //! Pairs of adapters; may only contain the first value in SE enabled
     fastq_pair_vec adapters;
 
-    //! Set to true if a nucleotide barcode has been supplied by the user.
-    bool trim_barcodes_mode;
     //! Nucleotide barcodes to be trimmed from the 5' termini of mate 1 reads
     //! Only the first value in the pair is defined.
     fastq_pair_vec barcodes;
@@ -159,17 +157,22 @@ public:
 private:
     /** Sets up adapter sequences based on user settings.
      *
-     * @param adapters list to which the resulting adapter sequences are saved,
-     *                 with --adapter2 reverse complemented, but --pcr2 left as
-     *                 is (matching previous behavior).
      * @return True on success, false otherwise.
      */
-     bool setup_adapter_sequences();
+    bool setup_adapter_sequences();
+
+    /** Sets up barcode (5prime) sequences based on user settings.
+     *
+     * @return True on success, false otherwise.
+     */
+    bool setup_barcode_sequences();
+
 
     /** Reads adapter sequences from a file.
      *
      * @param filename Path to text file containing adapter sequences
      * @param adapters Adapters or adapter pairs are appended to this list.
+     * @param name Name of sequence type being read.
      * @param paired_ended For paired ended mode; expect pairs of sequences.
      * @return True on success, false otherwise.
      *
@@ -177,9 +180,10 @@ private:
      * are expected to be found in column 2 (if 'paried_ended' is true). These
      * are expected to contain only the standard nucleotides (ACGTN).
      **/
-    bool read_adapters_sequences(const std::string& filename,
-                                 fastq_pair_vec& adapters,
-                                 bool paired_ended = true) const;
+    bool read_adapter_sequences(const std::string& filename,
+                                fastq_pair_vec& adapters,
+                                const std::string& name,
+                                bool paired_ended = true) const;
 
     //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
     std::string adapter_1;
