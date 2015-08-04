@@ -24,30 +24,48 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <cerrno>
-#include <cstring>
 #include <vector>
 #include <queue>
 #include <iomanip>
-
+#include <list>
+#include <stdexcept>
 
 #include "main_adapter_id.h"
 #include "userconfig.h"
 #include "alignment.h"
+#include "scheduler.h"
 #include "timer.h"
+#include "fastq_io.h"
 
 
-const size_t KMER_LENGTH = 12;
+///////////////////////////////////////////////////////////////////////////////
+// KMer related functions and constants
+
+//! Length of kmers to collect to find common kmers
+const size_t KMER_LENGTH = 9;
+//! Size of vector needed for kmer counts
 const size_t N_KMERS = 2 << (2 * KMER_LENGTH);
+//! The N most common kmers to print
 const size_t TOP_N_KMERS = 5;
 
 
+/**
+ * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
+ * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
+ * only) will result in hash collisions.
+ */
 inline size_t ACGT_TO_IDX(char nt)
 {
     return (nt >> 1) & 0x3;
 }
 
 
+/**
+ * Hashing function for string consiting of the chars "ACGT" (uppercase only).
+ * Will return a unique number in the range 0 to 4^N - 1 for a given nucleotide
+ * sequence. Passing characters other than "ACGT" (uppercase only) will result
+ * in hash collisions.
+ */
 inline size_t kmer_to_size_t(const std::string& kmer)
 {
     size_t index = 0;
@@ -59,7 +77,8 @@ inline size_t kmer_to_size_t(const std::string& kmer)
 }
 
 
-std::string size_t_to_kmer(size_t kmer)
+/** Translates a hash generated using kmer_to_size_t into a NT sequence. */
+inline std::string size_t_to_kmer(size_t kmer)
 {
     std::string kmer_s(KMER_LENGTH, 'N');
     for (size_t i = 1; i <= KMER_LENGTH; ++i) {
@@ -71,42 +90,60 @@ std::string size_t_to_kmer(size_t kmer)
 }
 
 
-struct char_counts
+/** Simple structure for counting the frequency of A, C, G, and Ts. */
+struct nt_counts
 {
-    char_counts()
+    nt_counts()
       : counts(4, 0)
     {
     }
 
+    /** Increment count of a nucleotide A, C, G, or T (uppercase only). */
+    void increment(char nt) {
+        ++counts.at(ACGT_TO_IDX(nt));
+    }
+
+    /** Merge count objects. */
+    nt_counts& operator+=(const nt_counts& other) {
+        merge_vectors(counts, other.counts);
+        return *this;
+    }
+
+    //! Fixed sized vector (4)
     std::vector<size_t> counts;
 };
 
 
-typedef std::vector<char_counts> char_count_vec;
+typedef std::vector<nt_counts> nt_count_vec;
 typedef std::vector<unsigned> kmer_map;
-typedef std::pair<size_t, unsigned> kmer_count;
+typedef std::pair<size_t, unsigned> nt_count;
 
-struct cmp_kmer_count
+
+/** Functor for sorting kmers by frequency. */
+struct cmp_nt_count
 {
-    bool operator()(const kmer_count& a, const kmer_count& b) const
+    bool operator()(const nt_count& a, const nt_count& b) const
     {
         return (a.second > b.second);
     }
 };
 
-typedef std::priority_queue<kmer_count, std::vector<kmer_count>, cmp_kmer_count> kmer_queue;
-typedef std::vector<kmer_count> kmer_vector;
+
+typedef std::priority_queue<nt_count, std::vector<nt_count>, cmp_nt_count> kmer_queue;
+typedef std::vector<nt_count> kmer_vector;
 
 
-void print_most_common_kmers(const kmer_map& kmers)
+/** Prints the N top kmers in a kmer_map, including sequence and frequency. */
+void print_most_common_kmers(const kmer_map& kmers, size_t print_n = TOP_N_KMERS)
 {
     size_t total = 0;
     kmer_queue queue;
     for (size_t i = 0; i < kmers.size(); ++i) {
-        kmer_count value(i, kmers.at(i));
+        nt_count value(i, kmers.at(i));
         total += value.second;
 
-        if (queue.size() >= TOP_N_KMERS) {
+        if (queue.size() >= print_n) {
+            // The top value will be the currently lowest value in the queue
             if (queue.top().second < value.second) {
                 queue.pop();
                 queue.push(value);
@@ -128,7 +165,7 @@ void print_most_common_kmers(const kmer_map& kmers)
 
     std::reverse(top_n_kmers.begin(), top_n_kmers.end());
     for (size_t i = 0; i < top_n_kmers.size(); ++i) {
-        const kmer_count& count = top_n_kmers.at(i);
+        const nt_count& count = top_n_kmers.at(i);
         std::string kmer_s = size_t_to_kmer(count.first);
 
         std::cout << std::string(12, ' ');
@@ -140,38 +177,20 @@ void print_most_common_kmers(const kmer_map& kmers)
 }
 
 
-void print_consensus_adapter(const char_count_vec& counts,
-                             const kmer_map& kmers,
-                             const std::string& name,
-                             const std::string& ref)
+///////////////////////////////////////////////////////////////////////////////
+// Consensus adapter related functions and constants
+
+/**
+ * Build represention of identity between an adapter and a consensus sequence.
+ *
+ * The resulting string represents N with wildcards ('*'), matching bases with
+ * pipes ('|') and mismatches with spaces (' '). Only overlapping bases are
+ * compared.
+ */
+std::string compare_consensus_with_ref(const std::string& ref,
+                                       const std::string& consensus)
 {
-    const char* NTs = "ACGT";
-    std::stringstream sequence;
-    std::stringstream qualities;
-
-    for(char_count_vec::const_iterator it = counts.begin(); it != counts.end(); ++it) {
-        char best_nt = 'N';
-        size_t best_count = 0;
-        // Always assume one non-consensus observation; this is more reasonable
-        // than allowing an error-rate of 0, especially for few observations.
-        size_t total = 1;
-        for (size_t nt_i = 0; nt_i < 4; ++nt_i) {
-            const size_t cur_count = it->counts.at(ACGT_TO_IDX(NTs[nt_i]));
-            total += cur_count;
-
-            if (cur_count > best_count) {
-                best_nt = NTs[nt_i];
-                best_count = cur_count;
-            }
-        }
-
-        sequence << best_nt;
-        qualities << fastq::p_to_phred_33(1.0 - best_count / static_cast<double>(total));
-    }
-
     std::stringstream identity;
-    const std::string consensus = sequence.str();
-
     for (size_t i = 0, size = std::min(consensus.size(), ref.size()); i < size; ++i) {
         if (ref.at(i) == 'N' || consensus.at(i) == 'N') {
             identity << '*';
@@ -180,131 +199,311 @@ void print_consensus_adapter(const char_count_vec& counts,
         }
     }
 
+    return identity.str();
+}
+
+
+/**
+ * Takes a nt_counts object, and returns a pair containing the majority nt and
+ * the Phred encoded quality score of the consensus, defined as the proportion
+ * of the bases which match the majority nucleotide (p = m / (N + 1)). If no
+ * majority nucleotide can be found, 'N' is returned instead.
+ */
+std::pair<char, char> get_consensus_nt(const nt_counts& nts)
+{
+    const char* NTs = "ACGT";
+
+    // Always assume one non-consensus observation; this is more reasonable
+    // than allowing an error-rate of 0, especially for few observations.
+    size_t total_count = 1;
+
+    char best_nt = 'N';
+    size_t best_count = 0;
+    for (size_t nt_i = 0; nt_i < 4; ++nt_i) {
+        const size_t cur_count = nts.counts.at(ACGT_TO_IDX(NTs[nt_i]));
+        total_count += cur_count;
+
+        if (cur_count > best_count) {
+            best_nt = NTs[nt_i];
+            best_count = cur_count;
+        } else if (cur_count == best_count) {
+            best_nt = 'N';
+        }
+    }
+
+    const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
+    const char phred = fastq::p_to_phred_33(pvalue);
+
+    return std::pair<char, char>(best_nt, phred);
+}
+
+
+/**
+ * Prints description of consensus adapter sequence.
+ *
+ * @param counts Observed nucleotide frequencies.
+ * @param kmers Observed kmer frequencies.
+ * @param name Argument name for adapter (--adapter1 / adapter2)
+ * @param ref Default sequence for the inferred adapter
+ */
+void print_consensus_adapter(const nt_count_vec& counts,
+                             const kmer_map& kmers,
+                             const std::string& name,
+                             const std::string& ref)
+{
+    std::stringstream sequence;
+    std::stringstream qualities;
+
+    for(nt_count_vec::const_iterator it = counts.begin(); it != counts.end(); ++it) {
+        const std::pair<char, char> consensus = get_consensus_nt(*it);
+
+        sequence << consensus.first;
+        qualities << consensus.second;
+    }
+
+    const std::string consensus = sequence.str();
+    const std::string identity = compare_consensus_with_ref(ref, consensus);
+
     std::cout << "  " << name << ":  " << ref << "\n"
-              << "               " << identity.str() << "\n"
+              << "               " << identity << "\n"
               << "   Consensus:  " << consensus << "\n"
-              << "     Quality:  " << qualities.str() << "\n\n";
+              << "               " << qualities.str() << "\n\n";
 
     print_most_common_kmers(kmers);
 }
 
 
-void process_adapter(const std::string& sequence, char_count_vec& counts, kmer_map& kmers)
+///////////////////////////////////////////////////////////////////////////////
+//
+
+
+/** Struct for collecting adapter fragments, kmer frequencies, and read stats. */
+struct adapter_stats
 {
-    if (counts.size() < sequence.length()) {
-        counts.resize(sequence.length());
+public:
+    adapter_stats(const userconfig& config)
+      : pcr1_counts()
+      , pcr2_counts()
+      , pcr1_kmers(N_KMERS, 0)
+      , pcr2_kmers(N_KMERS, 0)
+      , stats(config.create_stats())
+    {
     }
 
-    for (size_t i = 0; i < std::min(counts.size(), sequence.length()); ++i) {
-        counts.at(i).counts.at(ACGT_TO_IDX(sequence.at(i)))++;
+    /** Merge overall statistics, consensus, and k-mer counts. */
+    adapter_stats& operator+=(const adapter_stats& other)
+    {
+        *stats += *other.stats;
+
+        merge_vectors(pcr1_counts, other.pcr1_counts);
+        merge_vectors(pcr2_counts, other.pcr2_counts);
+        merge_vectors(pcr1_kmers, other.pcr1_kmers);
+        merge_vectors(pcr2_kmers, other.pcr2_kmers);
+
+        return *this;
     }
 
-    if (sequence.length() >= KMER_LENGTH) {
-        const std::string kmer = sequence.substr(0, KMER_LENGTH);
-        if (!std::count(kmer.begin(), kmer.end(), 'N')) {
-            kmers.at(kmer_to_size_t(kmer)) += 1;
+    //! Nucleotide frequencies of putative adapter 1 fragments
+    nt_count_vec pcr1_counts;
+    //! Nucleotide frequencies of putative adapter 2 fragments
+    nt_count_vec pcr2_counts;
+    //! 5' KMer frequencies of putative adapter 1 fragments
+    kmer_map pcr1_kmers;
+    //! 5' KMer frequencies of putative adapter 2 fragments
+    kmer_map pcr2_kmers;
+    //! Statistics object for (number of) processed reads
+    std::auto_ptr<statistics> stats;
+
+private:
+    //! Not implemented
+    adapter_stats(const adapter_stats&);
+    //! Not implemented
+    adapter_stats& operator=(const adapter_stats&);
+};
+
+
+/** Class for building (and merging) adapter_stats objects on demand. */
+class adapter_sink : public statistics_sink<adapter_stats>
+{
+public:
+    adapter_sink(const userconfig& config)
+      : m_config(config)
+    {
+    }
+
+protected:
+    virtual adapter_stats* new_sink() const {
+        return new adapter_stats(m_config);
+    }
+
+private:
+    //! Not implemented
+    adapter_sink(const adapter_sink&);
+    //! Not implemented
+    adapter_sink& operator=(const adapter_sink&);
+
+    const userconfig& m_config;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Threaded adapter identification step
+
+class adapter_identification : public analytical_step
+{
+public:
+    adapter_identification(const userconfig& config)
+      : analytical_step(analytical_step::unordered)
+      , m_config(config)
+      , m_timer("reads", config.quiet)
+      , m_sinks(config)
+    {
+    }
+
+    chunk_list process(analytical_chunk* chunk)
+    {
+        if (!chunk) {
+            throw std::invalid_argument("sink recieved NULL chunk");
+        }
+
+        const fastq empty_adapter("dummy", "", "");
+        fastq_pair_vec adapters;
+        adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
+
+        std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
+        if (file_chunk->mates.at(0).size() != file_chunk->mates.at(1).size()) {
+            throw fastq_error("input files contain unequal line numbers!");
+        }
+
+        std::auto_ptr<adapter_stats> sink(m_sinks.get_sink());
+        statistics& stats = *sink->stats;
+
+        string_vec_citer file_1_it = file_chunk->mates.at(0).begin();
+        const string_vec_citer file_1_end = file_chunk->mates.at(0).end();
+        string_vec_citer file_2_it = file_chunk->mates.at(1).begin();
+        const string_vec_citer file_2_end = file_chunk->mates.at(1).end();
+
+        size_t n_record = file_chunk->offset;
+        try {
+            fastq read1, read2;
+            while (read1.read(file_1_it, file_1_end, m_config.quality_input_fmt) &&
+                   read2.read(file_2_it, file_2_end, m_config.quality_input_fmt)) {
+                process_reads(adapters, stats, *sink, read1, read2);
+                n_record += 4;
+            }
+        } catch (const fastq_error& error) {
+            print_locker lock;
+            std::cerr << "Error reading FASTQ record at line " << n_record << "; aborting:\n"
+                      << "    " << error.what() << std::endl;
+            throw thread_abort();
+        }
+
+        m_sinks.return_sink(sink.release());
+        m_timer.increment(file_chunk->mates.at(0).size() / 2);
+
+        return chunk_list();
+    }
+
+    /** Prints summary of inferred consensus sequences. */
+    void finalize()
+    {
+        m_timer.finalize();
+
+        std::auto_ptr<adapter_stats> sink(m_sinks.finalize());
+
+        std::cout << "   Found " << sink->stats->well_aligned_reads << " overlapping pairs ...\n"
+                  << "   Of which " << sink->stats->number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n\n"
+                  << "Printing adapter sequences, including poly-A tails:"
+                  << std::endl;
+
+        print_consensus_adapter(sink->pcr1_counts, sink->pcr1_kmers, "--adapter1", m_config.adapters.front().first.sequence());
+        std::cout << "\n\n";
+
+        fastq adapter2 = m_config.adapters.front().second;
+        adapter2.reverse_complement();
+        print_consensus_adapter(sink->pcr2_counts, sink->pcr2_kmers, "--adapter2", adapter2.sequence());
+    }
+
+private:
+    void process_reads(const fastq_pair_vec& adapters,
+                       statistics& stats,
+                       adapter_stats& sink,
+                       fastq& read1,
+                       fastq& read2)
+    {
+        // Throws if read-names or mate numbering does not match
+        fastq::validate_paired_reads(read1, read2);
+
+        m_config.trim_barcodes_if_enabled(read1, stats);
+
+        // Reverse complement to match the orientation of read1
+        read2.reverse_complement();
+
+        const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapters, m_config.shift);
+        const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
+        if (aln_type == userconfig::valid_alignment) {
+            stats.well_aligned_reads++;
+            if (m_config.is_alignment_collapsible(alignment)) {
+                if (extract_adapter_sequences(alignment, read1, read2)) {
+                    stats.number_of_reads_with_adapter.at(0)++;
+
+                    process_adapter(read1.sequence(), sink.pcr1_counts, sink.pcr1_kmers);
+
+                    read2.reverse_complement();
+                    process_adapter(read2.sequence(), sink.pcr2_counts, sink.pcr2_kmers);
+                }
+            }
+        } else if (aln_type == userconfig::poor_alignment) {
+            stats.poorly_aligned_reads++;
+        } else {
+            stats.unaligned_reads++;
         }
     }
-}
+
+
+    void process_adapter(const std::string& sequence, nt_count_vec& counts, kmer_map& kmers)
+    {
+        if (counts.size() < sequence.length()) {
+            counts.resize(sequence.length());
+        }
+
+        for (size_t i = 0; i < std::min(counts.size(), sequence.length()); ++i) {
+            counts.at(i).increment(sequence.at(i));
+        }
+
+        if (sequence.length() >= KMER_LENGTH) {
+            const std::string kmer = sequence.substr(0, KMER_LENGTH);
+            if (!std::count(kmer.begin(), kmer.end(), 'N')) {
+                kmers.at(kmer_to_size_t(kmer)) += 1;
+            }
+        }
+    }
+
+    const userconfig& m_config;
+
+    timer m_timer;
+    adapter_sink m_sinks;
+};
 
 
 int identify_adapter_sequences(const userconfig& config)
 {
-    std::auto_ptr<std::istream> io_input_1;
-    std::auto_ptr<std::istream> io_input_2;
+    std::cout << "Attemping to identify adapter sequences ..." << std::endl;
 
+    scheduler sch;
     try {
-        io_input_1 = config.open_ifstream(config.input_file_1);
-        io_input_2 = config.open_ifstream(config.input_file_2);
+        sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_read_mate_2));
+        sch.add_step(ai_read_mate_2, new read_paired_fastq(config, rt_mate_2, ai_identify_adapters));
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
         return 1;
     }
 
-    const fastq empty_adapter("dummy", "", "");
-    fastq_pair_vec adapters;
-    adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
+    sch.add_step(ai_identify_adapters, new adapter_identification(config));
 
-    std::auto_ptr<statistics> stats_ptr = config.create_stats();
-    statistics& stats = *stats_ptr;
-    fastq read1;
-    fastq read2;
-
-    char_count_vec pcr1_counts;
-    char_count_vec pcr2_counts;
-    kmer_map pcr1_kmers(N_KMERS, 0);
-    kmer_map pcr2_kmers(N_KMERS, 0);
-
-    std::cout << "Attemping to identify adapter sequences ..." << std::endl;
-
-    try {
-        timer progress("pairs", config.quiet);
-        for (; ; ++stats.records) {
-            const bool read_file_1_ok = read1.read(*io_input_1, config.quality_input_fmt);
-            const bool read_file_2_ok = read2.read(*io_input_2, config.quality_input_fmt);
-
-            if (read_file_1_ok != read_file_2_ok) {
-                throw fastq_error("files contain unequal number of records");
-            } else if (!read_file_1_ok) {
-                break;
-            }
-
-            progress.increment();
-
-            // Throws if read-names or mate numbering does not match
-            fastq::validate_paired_reads(read1, read2);
-
-            config.trim_barcodes_if_enabled(read1, stats);
-
-            // Reverse complement to match the orientation of read1
-            read2.reverse_complement();
-
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapters, config.shift);
-            const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
-            if (aln_type == userconfig::valid_alignment) {
-                stats.well_aligned_reads++;
-                if (!config.is_alignment_collapsible(alignment)) {
-                    continue;
-                }
-
-                if (extract_adapter_sequences(alignment, read1, read2)) {
-                    stats.number_of_reads_with_adapter.at(0)++;
-
-                    process_adapter(read1.sequence(), pcr1_counts, pcr1_kmers);
-
-                    read2.reverse_complement();
-                    process_adapter(read2.sequence(), pcr2_counts, pcr2_kmers);
-                }
-            } else if (aln_type == userconfig::poor_alignment) {
-                stats.poorly_aligned_reads++;
-            } else {
-                stats.unaligned_reads++;
-            }
-        }
-
-        progress.finalize();
-    } catch (const fastq_error& error) {
-        std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << error.what() << std::endl;
-        return 1;
-    } catch (const std::ios_base::failure&) {
-        std::cerr << "Error reading FASTQ record (" << stats.records << "); aborting:\n    " << std::strerror(errno) << std::endl;
+    if (!sch.run(config.max_threads)) {
         return 1;
     }
-
-    std::cout << "   Found " << stats.well_aligned_reads << " overlapping pairs ...\n"
-              << "   Of which " << stats.number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n\n"
-              << "Printing adapter sequences, including poly-A tails:"
-              << std::endl;
-
-    // Get adapters matching --adapter* usage
-    fastq_pair user_adapters = config.adapters.front();
-    user_adapters.second.reverse_complement();
-
-    print_consensus_adapter(pcr1_counts, pcr1_kmers,
-                            "--adapter1", user_adapters.first.sequence());
-    std::cout << "\n\n";
-    print_consensus_adapter(pcr2_counts, pcr2_kmers,
-                            "--adapter2", user_adapters.second.sequence());
 
     return 0;
 }

@@ -87,9 +87,6 @@ public:
                                         bool gzipped = true) const;
 
 
-    std::auto_ptr<std::istream> open_ifstream(const std::string& filename) const;
-
-
     /** Attempts to trim barcodes from a read, if this is enabled. */
     void trim_barcodes_if_enabled(fastq& read, statistics& stats) const;
 

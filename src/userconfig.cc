@@ -34,8 +34,7 @@
 #include "userconfig.h"
 #include "fastq.h"
 #include "alignment.h"
-#include "gzstream.h"
-
+#include "linereader.h"
 
 
 size_t get_seed()
@@ -477,44 +476,16 @@ std::auto_ptr<std::ostream> userconfig::open_with_default_filename(
         filename += ".gz";
     }
 
-    bool is_open = false;
-    std::auto_ptr<std::ostream> stream;
-    if (gzipped && gzip && gzip_level) {
-        std::auto_ptr<gzip::ogzstream> ptr(new gzip::ogzstream(filename.c_str(),
-                                           std::ofstream::out,
-                                           gzip_level));
-        is_open = ptr->is_open();
-        stream = ptr;
-    } else {
-        std::auto_ptr<std::ofstream> ptr(new std::ofstream(filename.c_str(),
+    std::auto_ptr<std::ofstream> stream(new std::ofstream(filename.c_str(),
                                                            std::ofstream::out));
-        is_open = ptr->is_open();
-        stream = ptr;
-    }
 
-    if (!is_open) {
+    if (!stream->is_open()) {
         std::string message = std::string("Failed to open file '") + filename + "': ";
         throw std::ofstream::failure(message + std::strerror(errno));
     }
 
     stream->exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    return stream;
-}
-
-
-std::auto_ptr<std::istream> userconfig::open_ifstream(const std::string& filename) const
-{
-    std::auto_ptr<gzip::igzstream> ptr(new gzip::igzstream(filename.c_str(),
-                                       std::ifstream::in));
-    if (!ptr->is_open()) {
-        std::string message = std::string("Failed to open file '") + filename + "': ";
-        throw std::ifstream::failure(message + std::strerror(errno));
-    }
-
-    ptr->exceptions(std::ifstream::badbit);
-    std::auto_ptr<std::istream> result(ptr.release());
-
-    return result;
+    return std::auto_ptr<std::ostream>(stream);
 }
 
 
@@ -642,12 +613,11 @@ bool userconfig::read_adapter_sequences(const std::string& filename,
                                          bool paired_ended) const
 {
     size_t line_num = 1;
-    std::auto_ptr<std::istream> adapter_file;
     try {
-        adapter_file = open_ifstream(filename);
+        line_reader adapter_file(filename);
 
         std::string line;
-        while (std::getline(*adapter_file, line)) {
+        while (adapter_file.getline(line)) {
             const size_t index = line.find_first_not_of(" \t");
             if (index == std::string::npos || line.at(index) == '#') {
                 line_num++;

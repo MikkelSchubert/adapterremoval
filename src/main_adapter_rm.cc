@@ -34,9 +34,28 @@
 #include "main.h"
 #include "main_adapter_rm.h"
 #include "fastq.h"
+#include "fastq_io.h"
 #include "alignment.h"
 #include "userconfig.h"
-#include "timer.h"
+
+
+typedef std::auto_ptr<fastq_output_chunk> output_chunk_ptr;
+
+
+void add_chunk(chunk_list& chunks, size_t target, std::auto_ptr<fastq_output_chunk> chunk)
+{
+    try {
+        if (chunk.get()) {
+            chunks.push_back(chunk_pair(target, chunk.release()));
+        }
+    } catch (...) {
+        for (chunk_list::iterator it = chunks.begin(); it != chunks.end(); ++it) {
+            delete it->second;
+        }
+
+        throw;
+    }
+}
 
 
 std::string describe_phred_format(const fastq::quality_format fmt)
@@ -160,9 +179,9 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
 
 void process_collapsed_read(const userconfig& config, statistics& stats,
                             fastq& collapsed_read,
-                            std::ostream& io_discarded,
-                            std::ostream& io_collapsed,
-                            std::ostream& io_collapsed_truncated)
+                            string_vec& out_collapsed,
+                            string_vec& out_collapsed_truncated,
+                            string_vec& out_discarded)
 {
     const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
 
@@ -180,236 +199,297 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
     if (config.is_acceptable_read(collapsed_read)) {
         stats.total_number_of_nucleotides += collapsed_read.length();
         stats.total_number_of_good_reads++;
-        stats.inc_length_count(was_trimmed ? rt_collapsed_truncated : rt_collapsed, collapsed_read.length());
+        stats.inc_length_count(was_trimmed ? rt_collapsed_truncated : rt_collapsed,
+                               collapsed_read.length());
 
-        collapsed_read.write((was_trimmed ? io_collapsed_truncated : io_collapsed), config.quality_output_fmt);
+        const std::string& line = collapsed_read.to_str(config.quality_output_fmt);
+        if (was_trimmed) {
+            out_collapsed_truncated.push_back(line);
+        } else {
+            out_collapsed.push_back(line);
+        }
     } else {
         stats.discard1++;
         stats.discard2++;
         stats.inc_length_count(rt_discarded, collapsed_read.length());
-        collapsed_read.write(io_discarded, config.quality_output_fmt);
+        out_discarded.push_back(collapsed_read.to_str(config.quality_output_fmt));
     }
 }
 
 
-bool process_single_ended_reads(const userconfig& config, statistics& stats)
+
+class reads_processor : public analytical_step
 {
-    std::auto_ptr<std::istream> io_input;
-    std::auto_ptr<std::ostream> io_output;
-    std::auto_ptr<std::ostream> io_discarded;
-    std::auto_ptr<std::ostream> io_collapsed;
-    std::auto_ptr<std::ostream> io_collapsed_truncated;
+public:
+    reads_processor(const userconfig& config)
+      : analytical_step(analytical_step::unordered)
+      , m_config(config)
+      , m_stats(config)
+    {
 
-    try {
-        io_input = config.open_ifstream(config.input_file_1);
-
-        io_discarded = config.open_with_default_filename("--discarded", ".discarded");
-        io_output = config.open_with_default_filename("--output1", ".truncated");
-
-        if (config.collapse) {
-            io_collapsed = config.open_with_default_filename("--outputcollapsed", ".collapsed");
-            io_collapsed_truncated = config.open_with_default_filename("--outputcollapsedtruncated", ".collapsed.truncated");
-        }
-    } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
-        return false;
     }
 
-    try {
-        fastq read;
-        timer progress("reads", config.quiet);
-        for ( ; read.read(*io_input, config.quality_input_fmt); ++stats.records) {
-            progress.increment();
-            config.trim_barcodes_if_enabled(read, stats);
+    statistics* get_final_statistics() {
+        return m_stats.finalize();
+    }
 
-            const alignment_info alignment = align_single_ended_sequence(read, config.adapters, config.shift);
-            const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
-
-            if (aln_type == userconfig::valid_alignment) {
-                truncate_single_ended_sequence(alignment, read);
-                stats.number_of_reads_with_adapter.at(alignment.adapter_id)++;
-                stats.well_aligned_reads++;
-
-                if (config.is_alignment_collapsible(alignment)) {
-                    process_collapsed_read(config, stats, read, *io_discarded, *io_collapsed, *io_collapsed_truncated);
-                    continue;
-                }
-            } else if (aln_type == userconfig::poor_alignment) {
-                stats.poorly_aligned_reads++;
-            } else {
-                stats.unaligned_reads++;
-            }
-
-            config.trim_sequence_by_quality_if_enabled(read);
-            if (config.is_acceptable_read(read)) {
-                stats.keep1++;
-                stats.total_number_of_good_reads++;
-                stats.total_number_of_nucleotides += read.length();
-
-                read.write(*io_output, config.quality_output_fmt);
-                stats.inc_length_count(rt_mate_1, read.length());
-            } else {
-                stats.discard1++;
-                stats.inc_length_count(rt_discarded, read.length());
-
-                read.write(*io_discarded, config.quality_output_fmt);
-            }
+protected:
+    class stats_sink : public statistics_sink<statistics>
+    {
+    public:
+        stats_sink(const userconfig& config)
+          : m_config(config)
+        {
         }
 
-        progress.finalize();
-    } catch (const fastq_error& error) {
-        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << error.what() << std::endl;
-        return false;
-    } catch (const std::ios_base::failure&) {
-        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << std::strerror(errno) << std::endl;
-        return false;
-    }
+    protected:
+        virtual statistics* new_sink() const {
+            return m_config.create_stats().release();
+        }
 
-    io_output->flush();
-    io_discarded->flush();
-    if (config.collapse) {
-        io_collapsed->flush();
-        io_collapsed_truncated->flush();
-    }
+        const userconfig& m_config;
+    };
 
-    return true;
-}
+    const userconfig& m_config;
+    stats_sink m_stats;
+};
 
 
-bool process_paired_ended_reads(const userconfig& config, statistics& stats)
+
+class se_reads_processor : public reads_processor
 {
-    std::auto_ptr<std::istream> io_input_1;
-    std::auto_ptr<std::istream> io_input_2;
-
-    std::auto_ptr<std::ostream> io_output_1;
-    std::auto_ptr<std::ostream> io_output_2;
-    std::auto_ptr<std::ostream> io_singleton;
-    std::auto_ptr<std::ostream> io_collapsed;
-    std::auto_ptr<std::ostream> io_collapsed_truncated;
-    std::auto_ptr<std::ostream> io_discarded;
-
-    try {
-        io_input_1 = config.open_ifstream(config.input_file_1);
-        io_input_2 = config.open_ifstream(config.input_file_2);
-
-        io_discarded = config.open_with_default_filename("--discarded", ".discarded");
-
-        io_output_1 = config.open_with_default_filename("--output1", ".pair1.truncated");
-        io_output_2 = config.open_with_default_filename("--output2", ".pair2.truncated");
-
-        io_singleton = config.open_with_default_filename("--singleton", ".singleton.truncated");
-
-        if (config.collapse) {
-            io_collapsed = config.open_with_default_filename("--outputcollapsed", ".collapsed");
-            io_collapsed_truncated = config.open_with_default_filename("--outputcollapsedtruncated", ".collapsed.truncated");
-        }
-    } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
-        return false;
+public:
+    se_reads_processor(const userconfig& config)
+      : reads_processor(config)
+    {
     }
 
-    fastq read1;
-    fastq read2;
-    try {
-        timer progress("pairs", config.quiet);
-        for (; ; ++stats.records) {
-            const bool read_file_1_ok = read1.read(*io_input_1, config.quality_input_fmt);
-            const bool read_file_2_ok = read2.read(*io_input_2, config.quality_input_fmt);
+    chunk_list process(analytical_chunk* chunk)
+    {
+        std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
+        string_vec_citer file_1_it = file_chunk->mates.at(rt_mate_1).begin();
+        const string_vec_citer file_1_end = file_chunk->mates.at(rt_mate_1).end();
 
-            if (read_file_1_ok != read_file_2_ok) {
-                throw fastq_error("files contain unequal number of records");
-            } else if (!read_file_1_ok) {
-                break;
-            }
+        std::auto_ptr<statistics> stats(m_stats.get_sink());
 
-            progress.increment();
+        output_chunk_ptr out_mate_1(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_collapsed;
+        output_chunk_ptr out_collapsed_truncated;
+        output_chunk_ptr out_discarded(new fastq_output_chunk(file_chunk->eof));
 
-            // Throws if read-names or mate numbering does not match
-            fastq::validate_paired_reads(read1, read2);
+        if (m_config.collapse) {
+            out_collapsed.reset(new fastq_output_chunk(file_chunk->eof));
+            out_collapsed_truncated.reset(new fastq_output_chunk(file_chunk->eof));
+        }
 
-            config.trim_barcodes_if_enabled(read1, stats);
+        try {
+            for (fastq read; read.read(file_1_it, file_1_end, m_config.quality_input_fmt); file_chunk->offset += 4) {
+                m_config.trim_barcodes_if_enabled(read, *stats);
 
-            // Reverse complement to match the orientation of read1
-            read2.reverse_complement();
+                const alignment_info alignment = align_single_ended_sequence(read, m_config.adapters, m_config.shift);
+                const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
 
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, config.adapters, config.shift);
-            const userconfig::alignment_type aln_type = config.evaluate_alignment(alignment);
-            if (aln_type == userconfig::valid_alignment) {
-                stats.well_aligned_reads++;
-                const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
-                stats.number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
+                if (aln_type == userconfig::valid_alignment) {
+                    truncate_single_ended_sequence(alignment, read);
+                    stats->number_of_reads_with_adapter.at(alignment.adapter_id)++;
+                    stats->well_aligned_reads++;
 
-                if (config.is_alignment_collapsible(alignment)) {
-                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
-                    process_collapsed_read(config, stats, collapsed_read, *io_discarded, *io_collapsed, *io_collapsed_truncated);
-                    continue;
+                    if (m_config.is_alignment_collapsible(alignment)) {
+                        process_collapsed_read(m_config, *stats, read,
+                                               out_collapsed->reads,
+                                               out_collapsed_truncated->reads,
+                                               out_discarded->reads);
+                        continue;
+                    }
+                } else if (aln_type == userconfig::poor_alignment) {
+                    stats->poorly_aligned_reads++;
+                } else {
+                    stats->unaligned_reads++;
                 }
-            } else if (aln_type == userconfig::poor_alignment) {
-                stats.poorly_aligned_reads++;
-            } else {
-                stats.unaligned_reads++;
+
+                m_config.trim_sequence_by_quality_if_enabled(read);
+                if (m_config.is_acceptable_read(read)) {
+                    stats->keep1++;
+                    stats->total_number_of_good_reads++;
+                    stats->total_number_of_nucleotides += read.length();
+
+                    out_mate_1->reads.push_back(read.to_str(m_config.quality_output_fmt));
+                    stats->inc_length_count(rt_mate_1, read.length());
+                } else {
+                    stats->discard1++;
+                    stats->inc_length_count(rt_discarded, read.length());
+
+                    out_discarded->reads.push_back(read.to_str(m_config.quality_output_fmt));
+                }
             }
-
-            // Reads were not aligned or collapsing is not enabled
-            // Undo reverse complementation (post truncation of adapters)
-            read2.reverse_complement();
-
-            // Are the reads good enough? Not too many Ns?
-            config.trim_sequence_by_quality_if_enabled(read1);
-            config.trim_sequence_by_quality_if_enabled(read2);
-            const bool read_1_acceptable = config.is_acceptable_read(read1);
-            const bool read_2_acceptable = config.is_acceptable_read(read2);
-
-            stats.total_number_of_nucleotides += read_1_acceptable ? read1.length() : 0u;
-            stats.total_number_of_nucleotides += read_1_acceptable ? read2.length() : 0u;
-            stats.total_number_of_good_reads += read_1_acceptable;
-            stats.total_number_of_good_reads += read_2_acceptable;
-
-            if (read_1_acceptable && read_2_acceptable) {
-                read1.write(*io_output_1, config.quality_output_fmt);
-                read2.write(*io_output_2, config.quality_output_fmt);
-
-                stats.inc_length_count(rt_mate_1, read1.length());
-                stats.inc_length_count(rt_mate_2, read2.length());
-            } else {
-                // Keep one or none of the reads ...
-                stats.keep1 += read_1_acceptable;
-                stats.keep2 += read_2_acceptable;
-                stats.discard1 += !read_1_acceptable;
-                stats.discard2 += !read_2_acceptable;
-                stats.inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read1.length());
-                stats.inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
-
-                read1.write((read_1_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
-                read2.write((read_2_acceptable ? *io_singleton : *io_discarded), config.quality_output_fmt);
-            }
+        } catch (const fastq_error& error) {
+            print_locker lock;
+            std::cerr << "Error reading FASTQ record at line " << file_chunk->offset << "; aborting:\n    " << error.what() << std::endl;
+            throw thread_abort();
         }
 
-        progress.finalize();
-    } catch (const fastq_error& error) {
-        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << error.what() << std::endl;
-        return false;
-    } catch (const std::ios_base::failure&) {
-        std::cerr << "Error reading FASTQ record at line " << (stats.records * 4 + 1) << "; aborting:\n    " << std::strerror(errno) << std::endl;
-        return false;
+        stats->records += file_chunk->mates.at(rt_mate_1).size() / 4;
+        m_stats.return_sink(stats.release());
+
+        chunk_list chunks;
+        add_chunk(chunks, m_config.gzip ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
+        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
+        add_chunk(chunks, m_config.gzip ? ai_zip_discarded : ai_write_discarded, out_discarded);
+
+        return chunks;
+    }
+};
+
+
+class pe_reads_processor : public reads_processor
+{
+public:
+    pe_reads_processor(const userconfig& config)
+      : reads_processor(config)
+    {
     }
 
-    io_output_1->flush();
-    io_output_2->flush();
-    io_singleton->flush();
-    io_discarded->flush();
-    if (config.collapse) {
-        io_collapsed->flush();
-        io_collapsed_truncated->flush();
+    chunk_list process(analytical_chunk* chunk)
+    {
+        std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
+
+        string_vec_citer file_1_it = file_chunk->mates.at(rt_mate_1).begin();
+        const string_vec_citer file_1_end = file_chunk->mates.at(rt_mate_1).end();
+        string_vec_citer file_2_it = file_chunk->mates.at(rt_mate_2).begin();
+        const string_vec_citer file_2_end = file_chunk->mates.at(rt_mate_2).end();
+
+        std::auto_ptr<statistics> stats(m_stats.get_sink());
+
+        output_chunk_ptr out_mate_1(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_mate_2(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_singleton(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_collapsed;
+        output_chunk_ptr out_collapsed_truncated;
+        output_chunk_ptr out_discarded(new fastq_output_chunk(file_chunk->eof));
+
+        if (m_config.collapse) {
+            out_collapsed.reset(new fastq_output_chunk(file_chunk->eof));
+            out_collapsed_truncated.reset(new fastq_output_chunk(file_chunk->eof));
+        }
+
+        fastq read1;
+        fastq read2;
+        try {
+            for (; ; file_chunk->offset += 4) {
+                const bool read_file_1_ok = read1.read(file_1_it, file_1_end, m_config.quality_input_fmt);
+                const bool read_file_2_ok = read2.read(file_2_it, file_2_end, m_config.quality_input_fmt);
+
+                if (read_file_1_ok != read_file_2_ok) {
+                    throw fastq_error("files contain unequal number of records");
+                } else if (!read_file_1_ok) {
+                    break;
+                }
+
+                // Throws if read-names or mate numbering does not match
+                fastq::validate_paired_reads(read1, read2);
+
+                m_config.trim_barcodes_if_enabled(read1, *stats);
+
+                // Reverse complement to match the orientation of read1
+                read2.reverse_complement();
+
+                const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_config.adapters, m_config.shift);
+                const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
+                if (aln_type == userconfig::valid_alignment) {
+                    stats->well_aligned_reads++;
+                    const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
+                    stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
+
+                    if (m_config.is_alignment_collapsible(alignment)) {
+                        fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
+                        process_collapsed_read(m_config, *stats, collapsed_read,
+                                               out_collapsed->reads,
+                                               out_collapsed_truncated->reads,
+                                               out_discarded->reads);
+                        continue;
+                    }
+                } else if (aln_type == userconfig::poor_alignment) {
+                    stats->poorly_aligned_reads++;
+                } else {
+                    stats->unaligned_reads++;
+                }
+
+                // Reads were not aligned or collapsing is not enabled
+                // Undo reverse complementation (post truncation of adapters)
+                read2.reverse_complement();
+
+                // Are the reads good enough? Not too many Ns?
+                m_config.trim_sequence_by_quality_if_enabled(read1);
+                m_config.trim_sequence_by_quality_if_enabled(read2);
+                const bool read_1_acceptable = m_config.is_acceptable_read(read1);
+                const bool read_2_acceptable = m_config.is_acceptable_read(read2);
+
+                stats->total_number_of_nucleotides += read_1_acceptable ? read1.length() : 0u;
+                stats->total_number_of_nucleotides += read_1_acceptable ? read2.length() : 0u;
+                stats->total_number_of_good_reads += read_1_acceptable;
+                stats->total_number_of_good_reads += read_2_acceptable;
+
+                if (read_1_acceptable && read_2_acceptable) {
+                    out_mate_1->reads.push_back(read1.to_str(m_config.quality_output_fmt));
+                    out_mate_2->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+
+                    stats->inc_length_count(rt_mate_1, read1.length());
+                    stats->inc_length_count(rt_mate_2, read2.length());
+                } else {
+                    // Keep one or none of the reads ...
+                    stats->keep1 += read_1_acceptable;
+                    stats->keep2 += read_2_acceptable;
+                    stats->discard1 += !read_1_acceptable;
+                    stats->discard2 += !read_2_acceptable;
+                    stats->inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read1.length());
+                    stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
+
+                    if (read_1_acceptable) {
+                        out_mate_1->reads.push_back(read1.to_str(m_config.quality_output_fmt));
+                    } else {
+                        out_singleton->reads.push_back(read1.to_str(m_config.quality_output_fmt));
+                    }
+
+                    if (read_2_acceptable) {
+                        out_mate_2->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+                    } else {
+                        out_singleton->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+                    }
+                }
+            }
+        } catch (const fastq_error& error) {
+            print_locker lock;
+            std::cerr << "Error reading FASTQ record at line " << file_chunk->offset << "; aborting:\n    " << error.what() << std::endl;
+            throw thread_abort();
+        }
+
+        stats->records += file_chunk->mates.at(rt_mate_1).size() / 4;
+        m_stats.return_sink(stats.release());
+
+        chunk_list chunks;
+        add_chunk(chunks, m_config.gzip ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, m_config.gzip ? ai_zip_mate_2 : ai_write_mate_2, out_mate_2);
+        add_chunk(chunks, m_config.gzip ? ai_zip_singleton : ai_write_singleton, out_singleton);
+        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
+        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
+        add_chunk(chunks, m_config.gzip ? ai_zip_discarded : ai_write_discarded, out_discarded);
+
+        return chunks;
     }
-
-    return true;
-}
-
+};
 
 
 int remove_adapter_sequences(const userconfig& config)
 {
+    if (!config.quiet) {
+        if (config.paired_ended_mode) {
+            std::cerr << "Trimming pair ended reads ..." << std::endl;
+        } else {
+            std::cerr << "Trimming single ended reads ..." << std::endl;
+        }
+    }
+
     std::auto_ptr<std::ostream> settings;
     try {
         settings = config.open_with_default_filename("--settings",
@@ -426,15 +506,48 @@ int remove_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    std::auto_ptr<statistics> stats = config.create_stats();
-    if (config.paired_ended_mode) {
-        if (!process_paired_ended_reads(config, *stats)) {
-            return 1;
+    scheduler sch;
+    reads_processor* processor = NULL;
+    try {
+        if (config.paired_ended_mode) {
+            sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_read_mate_2));
+            sch.add_step(ai_read_mate_2, new read_paired_fastq(config, rt_mate_2, ai_trim_pe));
+            sch.add_step(ai_trim_pe, processor = new pe_reads_processor(config));
+            sch.add_step(ai_write_mate_1, new write_paired_fastq(config, rt_mate_1));
+            sch.add_step(ai_write_mate_2, new write_paired_fastq(config, rt_mate_2));
+            sch.add_step(ai_write_singleton, new write_paired_fastq(config, rt_singleton));
+        } else {
+            sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_trim_se));
+            sch.add_step(ai_trim_se, processor = new se_reads_processor(config));
+            sch.add_step(ai_write_mate_1, new write_paired_fastq(config, rt_mate_1));
         }
-    } else if (!process_single_ended_reads(config, *stats)) {
+
+        if (config.collapse) {
+            sch.add_step(ai_write_collapsed, new write_paired_fastq(config, rt_collapsed));
+            sch.add_step(ai_write_collapsed_truncated, new write_paired_fastq(config, rt_collapsed_truncated));
+        }
+
+        if (config.gzip) {
+            sch.add_step(ai_zip_mate_1, new gzip_paired_fastq(config, ai_write_mate_1));
+            sch.add_step(ai_zip_mate_2, new gzip_paired_fastq(config, ai_write_mate_2));
+            sch.add_step(ai_zip_singleton, new gzip_paired_fastq(config, ai_write_singleton));
+            sch.add_step(ai_zip_collapsed, new gzip_paired_fastq(config, ai_write_collapsed));
+            sch.add_step(ai_zip_collapsed_truncated, new gzip_paired_fastq(config, ai_write_collapsed_truncated));
+            sch.add_step(ai_zip_discarded, new gzip_paired_fastq(config, ai_write_discarded));
+        }
+
+        // Progress reporting enabled for final writer
+        sch.add_step(ai_write_discarded, new write_paired_fastq(config, rt_discarded));
+    } catch (const std::ios_base::failure& error) {
+        std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
         return 1;
     }
 
+    if (!sch.run(config.max_threads)) {
+        return 1;
+    }
+
+    std::auto_ptr<statistics> stats(processor->get_final_statistics());
     if (!write_statistics(config, *settings, *stats)) {
         std::cerr << "Error writing statistics to settings file!" << std::endl;
         return 1;
