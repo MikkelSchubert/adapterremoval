@@ -16,6 +16,7 @@ OBJS     := $(BDIR)/main.o \
             $(BDIR)/userconfig.o \
             $(BDIR)/timer.o \
             $(BDIR)/gzstream.o \
+            $(BDIR)/linereader.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/threads.o
 
