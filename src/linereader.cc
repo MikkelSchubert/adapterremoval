@@ -34,19 +34,8 @@ const size_t BUF_SIZE = 4 * 1024;
 // Implementations for 'io_error'
 
 io_error::io_error(const std::string& message)
-  : m_message(message)
+  : std::ios_base::failure(message)
 {
-}
-
-
-io_error::~io_error() throw()
-{
-}
-
-
-const char* io_error::what() const throw()
-{
-    return m_message.c_str();
 }
 
 

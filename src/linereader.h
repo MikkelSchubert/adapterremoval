@@ -29,16 +29,10 @@
 
 
 /** Represents errors during basic IO. */
-class io_error : public std::exception
+class io_error : public std::ios_base::failure
 {
 public:
     io_error(const std::string& message);
-    virtual ~io_error() throw();
-
-    virtual const char* what() const throw();
-
-private:
-    const std::string m_message;
 };
 
 
