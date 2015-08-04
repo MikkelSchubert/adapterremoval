@@ -285,3 +285,37 @@ print_locker::print_locker()
 print_locker::~print_locker()
 {
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+// atomic_counter
+
+atomic_counter::atomic_counter(size_t init)
+  : m_lock()
+  , m_count(init)
+{
+}
+
+
+size_t atomic_counter::current() const
+{
+    mutex_locker locker(m_lock);
+
+    return m_count;
+}
+
+
+size_t atomic_counter::increment()
+{
+    mutex_locker locker(m_lock);
+
+    return ++m_count;
+}
+
+
+size_t atomic_counter::decrement()
+{
+    mutex_locker locker(m_lock);
+
+    return --m_count;
+}

@@ -149,4 +149,30 @@ private:
 };
 
 
+/**
+ * Basic atomic counter.
+ */
+class atomic_counter
+{
+public:
+    /** Initialize counter to the given value. */
+    atomic_counter(size_t init = 0);
+
+    /** Returns the current value (which may have changed already). */
+    size_t current() const;
+
+    /** Increment the current value. */
+    size_t increment();
+
+    /** Decrement the current value. */
+    size_t decrement();
+
+private:
+    //! Mutex used to control access to the counter/
+    mutable mutex m_lock;
+    //! Raw counter value; access controlled using m_lock;
+    size_t m_count;
+};
+
+
 #endif
