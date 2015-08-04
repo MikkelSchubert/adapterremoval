@@ -52,4 +52,40 @@ enum read_type
 };
 
 
+/** Unique IDs for analytical steps. */
+enum analyses_id
+{
+    //! Step for reading of mate 1 reads
+    ai_read_mate_1 = 0,
+    //! Step for reading of mate 2 reads
+    ai_read_mate_2,
+
+    //! Step for reading adapter identification
+    ai_identify_adapters,
+    //! Step for trimming of PE reads
+    ai_trim_pe,
+    //! Step for trimming of SE reads
+    ai_trim_se,
+
+    //! Steps for (optional) compression of trimmed reads
+    ai_zip_mate_1,
+    ai_zip_mate_2,
+    ai_zip_singleton,
+    ai_zip_collapsed,
+    ai_zip_collapsed_truncated,
+    ai_zip_discarded, // 10
+
+    //! Steps for writing of trimmed reads
+    ai_write_mate_1,
+    ai_write_mate_2,
+    ai_write_singleton,
+    ai_write_collapsed,
+    ai_write_collapsed_truncated,
+    ai_write_discarded,
+
+    //! End value; not to be used as an argument.
+    ai_max
+};
+
+
 #endif
