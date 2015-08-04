@@ -213,7 +213,7 @@ public:
     void add_step(size_t step_id, analytical_step* step);
 
     /** Runs the pipeline with n threads; return false on error. */
-    bool run(int nthreads);
+    bool run(int nthreads, unsigned seed);
 
 private:
     typedef std::list<scheduler_step*> runables;
@@ -231,7 +231,7 @@ private:
     void* do_run();
 
     /** Initializes n threads, returning false if any errors occured. */
-    bool initialize_threads(int nthreads);
+    bool initialize_threads(int nthreads, unsigned seed);
     /** Sends a number of signals corresponding to the number of threads. */
     void signal_threads();
     /** Joins all threads, returning false if any errors occured. */

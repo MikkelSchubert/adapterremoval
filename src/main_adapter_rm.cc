@@ -543,7 +543,7 @@ int remove_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    if (!sch.run(config.max_threads)) {
+    if (!sch.run(config.max_threads, config.seed)) {
         return 1;
     }
 

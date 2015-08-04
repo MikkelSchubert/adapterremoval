@@ -24,7 +24,6 @@
 \*************************************************************************/
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
 #include <cstring>
 #include <cerrno>
 #include <string>
@@ -395,9 +394,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: --threads must be at least 1!" << std::endl;
         return argparse::pr_error;
     }
-
-    // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
-    srandom(seed);
 
     return argparse::pr_ok;
 }

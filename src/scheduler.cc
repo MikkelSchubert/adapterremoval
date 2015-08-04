@@ -28,6 +28,7 @@
 #include <queue>
 #include <stdexcept>
 #include <unistd.h>
+#include <cstdlib>
 
 #include "scheduler.h"
 
@@ -205,6 +206,22 @@ private:
 };
 
 
+/** Simple structure used to pass parameters to threads. */
+struct thread_info
+{
+    thread_info(unsigned seed_, scheduler* sch_)
+      : seed(seed_)
+      , sch(sch_)
+    {
+    }
+
+    //! Per thread seed
+    unsigned seed;
+    //! Pointer to current scheduler
+    scheduler* sch;
+};
+
+
 scheduler::scheduler()
   : m_steps()
   , m_running()
@@ -249,7 +266,7 @@ void scheduler::add_step(size_t step_id, analytical_step* step)
 
 
 
-bool scheduler::run(int nthreads)
+bool scheduler::run(int nthreads, unsigned seed)
 {
     if (m_steps.empty()) {
         throw std::invalid_argument("pipeline must contain at least one step");
@@ -273,12 +290,13 @@ bool scheduler::run(int nthreads)
     queue_analytical_step(m_steps.front(), 0);
 
     m_io_active = false;
-    m_errors = !initialize_threads(nthreads - 1);
+    m_errors = !initialize_threads(nthreads - 1, seed + 1);
 
     // Signal for threads to start, or terminate in case of errors
     signal_threads();
 
-    m_errors = !run_wrapper(this) || m_errors;
+    thread_info* info = new thread_info(seed, this);
+    m_errors = !run_wrapper(info) || m_errors;
     m_errors = !join_threads() || m_errors;
 
     if (!m_errors) {
@@ -305,7 +323,11 @@ bool scheduler::run(int nthreads)
 
 void* scheduler::run_wrapper(void* ptr)
 {
-    scheduler* sch = reinterpret_cast<scheduler*>(ptr);
+    std::auto_ptr<thread_info> info(reinterpret_cast<thread_info*>(ptr));
+    scheduler* sch = info->sch;
+
+    // Set seed for RNG; rand is used in collapse_paired_ended_sequences()
+    srandom(info->seed);
 
     try {
         return sch->do_run();
@@ -449,7 +471,7 @@ void scheduler::queue_analytical_step(scheduler_step* step, size_t current)
 }
 
 
-bool scheduler::initialize_threads(int nthreads)
+bool scheduler::initialize_threads(int nthreads, unsigned seed)
 {
     if (!m_threads.empty()) {
         throw std::invalid_argument("scheduler::initialize_threads: threads must be empty");
@@ -460,7 +482,9 @@ bool scheduler::initialize_threads(int nthreads)
     try {
         for (int i = 0; i < nthreads; ++i) {
             m_threads.push_back(pthread_t());
-            switch (pthread_create(&m_threads.back(), NULL, &run_wrapper, this)) {
+            // Each thread is assigned a unique seed, based on the (user) seed
+            thread_info* info = new thread_info(seed + i, this);
+            switch (pthread_create(&m_threads.back(), NULL, &run_wrapper, info)) {
                 case 0:
                     break;
 

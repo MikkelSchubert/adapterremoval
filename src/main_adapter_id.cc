@@ -501,7 +501,7 @@ int identify_adapter_sequences(const userconfig& config)
 
     sch.add_step(ai_identify_adapters, new adapter_identification(config));
 
-    if (!sch.run(config.max_threads)) {
+    if (!sch.run(config.max_threads, config.seed)) {
         return 1;
     }
 
