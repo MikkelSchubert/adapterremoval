@@ -152,6 +152,151 @@ std::string read_paired_fastq::get_filename(const userconfig& config, read_type 
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Utility function used by both gzip and bzip compression steps
+
+/**
+ * Writes a set of lines into a buffer, and returns the size of the buffer and
+ * the buffer itself as a pair. */
+std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
+{
+    size_t buffer_size = 0;
+    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
+        buffer_size += it->size();
+    }
+
+    unsigned char* input_buffer = new unsigned char[buffer_size];
+    unsigned char* input_buffer_ptr = input_buffer;
+    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
+        std::memcpy(input_buffer_ptr, it->data(), it->size());
+        input_buffer_ptr += it->size();
+    }
+
+    return std::pair<size_t, unsigned char*>(buffer_size, input_buffer);
+}
+
+
+#ifdef AR_BZIP2_SUPPORT
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'gzip_paired_fastq'
+
+
+bzip2_paired_fastq::bzip2_paired_fastq(const userconfig& config, size_t next_step)
+  : analytical_step(analytical_step::ordered, false)
+  , m_next_step(next_step)
+  , m_stream()
+{
+    m_stream.bzalloc = NULL;
+    m_stream.bzfree = NULL;
+    m_stream.opaque = NULL;
+
+    const int errorcode = BZ2_bzCompressInit(/* strm          = */ &m_stream,
+                                             /* blockSize100k = */ config.bzip2_level,
+                                             /* verbosity     = */ 0,
+                                             /* workFactor    = */ 0);
+
+    switch (errorcode) {
+        case BZ_OK:
+            break;
+
+        case BZ_MEM_ERROR:
+            throw thread_error("bzip2_paired_fastq: not enough memory");
+
+        case BZ_CONFIG_ERROR:
+            throw thread_error("bzip2_paired_fastq: miscompiled bzip2 library");
+
+        case BZ_PARAM_ERROR:
+            throw thread_error("bzip2_paired_fastq: invalid parameters");
+
+        default:
+            throw thread_error("bzip2_paired_fastq: unknown error");
+    }
+}
+
+
+bzip2_paired_fastq::~bzip2_paired_fastq()
+{
+    const int errorcode = BZ2_bzCompressEnd(&m_stream);
+    if (errorcode != BZ_OK) {
+        print_locker lock;
+        switch (errorcode) {
+            case BZ_PARAM_ERROR:
+                std::cerr << "bzip2_paired_fastq::~bzip2_paired_fastq: parameter error" << std::endl;
+                break;
+
+            default:
+                std::cerr << "Unknown error in bzip2_paired_fastq::~bzip2_paired_fastq: " << errorcode << std::endl;
+                break;
+        }
+
+        std::exit(1);
+    }
+}
+
+
+chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
+{
+    std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+    buffer_vec& buffers = file_chunk->buffers;
+
+    if (file_chunk->reads.empty() && !file_chunk->eof) {
+        // The empty chunk must still be forwarded, to ensure that tracking of
+        // ordered chunks does not break.
+        chunk_list chunks;
+        chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+        return chunks;
+    }
+
+    std::pair<size_t, unsigned char*> input_buffer;
+    std::pair<size_t, unsigned char*> output_buffer;
+    try {
+        input_buffer = build_input_buffer(file_chunk->reads);
+
+        m_stream.avail_in = input_buffer.first;
+        m_stream.next_in = reinterpret_cast<char*>(input_buffer.second);
+
+        do {
+            output_buffer.first = GZIP_CHUNK;
+            output_buffer.second = new unsigned char[GZIP_CHUNK];
+
+            m_stream.avail_out = output_buffer.first;
+            m_stream.next_out = reinterpret_cast<char*>(output_buffer.second);
+
+            switch (BZ2_bzCompress(&m_stream, file_chunk->eof ? BZ_FINISH : BZ_RUN)) {
+                case BZ_RUN_OK:
+                case BZ_FINISH_OK:
+                case BZ_STREAM_END:
+                    break;
+
+                case BZ_SEQUENCE_ERROR:
+                    throw thread_error("gzip_paired_fastq::process: sequence error");
+
+                default:
+                    throw thread_error("gzip_paired_fastq::process: unknown error");
+            }
+
+            output_buffer.first = GZIP_CHUNK - m_stream.avail_out;
+            // A buffer must be sent, even if #bytes == 0.
+            buffers.push_back(output_buffer);
+            output_buffer.second = NULL;
+        } while (m_stream.avail_out == 0);
+
+        delete[] input_buffer.second;
+    } catch (...) {
+        delete[] input_buffer.second;
+        delete[] output_buffer.second;
+        throw;
+    }
+
+    chunk_list chunks;
+    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+    return chunks;
+}
+
+#endif
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_paired_fastq'
 
 gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
@@ -210,27 +355,6 @@ gzip_paired_fastq::~gzip_paired_fastq()
 
         std::exit(1);
     }
-}
-
-
-/**
- * Writes a set of lines into a buffer, and returns the size of the buffer and
- * the buffer itself as a pair. */
-std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
-{
-    size_t buffer_size = 0;
-    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
-        buffer_size += it->size();
-    }
-
-    unsigned char* input_buffer = new unsigned char[buffer_size];
-    unsigned char* input_buffer_ptr = input_buffer;
-    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
-        std::memcpy(input_buffer_ptr, it->data(), it->size());
-        input_buffer_ptr += it->size();
-    }
-
-    return std::pair<size_t, unsigned char*>(buffer_size, input_buffer);
 }
 
 

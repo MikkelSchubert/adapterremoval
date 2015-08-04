@@ -84,7 +84,7 @@ public:
     std::auto_ptr<std::ostream> open_with_default_filename(
                                         const std::string& key,
                                         const std::string& postfix,
-                                        bool gzipped = true) const;
+                                        bool compressed = true) const;
 
 
     /** Attempts to trim barcodes from a read, if this is enabled. */
@@ -164,6 +164,11 @@ public:
     bool gzip;
     //! GZip compression level used for output reads
     unsigned int gzip_level;
+
+    //! BZip2 compression enabled / disabled
+    bool bzip2;
+    //! BZip2 compression level used for output reads
+    unsigned int bzip2_level;
 
 private:
     //! Not implemented

@@ -332,10 +332,11 @@ public:
         m_stats.return_sink(stats.release());
 
         chunk_list chunks;
-        add_chunk(chunks, m_config.gzip ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
-        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
-        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
-        add_chunk(chunks, m_config.gzip ? ai_zip_discarded : ai_write_discarded, out_discarded);
+        const bool compress = m_config.gzip || m_config.bzip2;
+        add_chunk(chunks, compress ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, compress ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
+        add_chunk(chunks, compress ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
+        add_chunk(chunks, compress ? ai_zip_discarded : ai_write_discarded, out_discarded);
 
         return chunks;
     }
@@ -468,12 +469,13 @@ public:
         m_stats.return_sink(stats.release());
 
         chunk_list chunks;
-        add_chunk(chunks, m_config.gzip ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
-        add_chunk(chunks, m_config.gzip ? ai_zip_mate_2 : ai_write_mate_2, out_mate_2);
-        add_chunk(chunks, m_config.gzip ? ai_zip_singleton : ai_write_singleton, out_singleton);
-        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
-        add_chunk(chunks, m_config.gzip ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
-        add_chunk(chunks, m_config.gzip ? ai_zip_discarded : ai_write_discarded, out_discarded);
+        const bool compress = m_config.gzip || m_config.bzip2;
+        add_chunk(chunks, compress ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, compress ? ai_zip_mate_2 : ai_write_mate_2, out_mate_2);
+        add_chunk(chunks, compress ? ai_zip_singleton : ai_write_singleton, out_singleton);
+        add_chunk(chunks, compress ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
+        add_chunk(chunks, compress ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
+        add_chunk(chunks, compress ? ai_zip_discarded : ai_write_discarded, out_discarded);
 
         return chunks;
     }
@@ -534,6 +536,15 @@ int remove_adapter_sequences(const userconfig& config)
             sch.add_step(ai_zip_collapsed, new gzip_paired_fastq(config, ai_write_collapsed));
             sch.add_step(ai_zip_collapsed_truncated, new gzip_paired_fastq(config, ai_write_collapsed_truncated));
             sch.add_step(ai_zip_discarded, new gzip_paired_fastq(config, ai_write_discarded));
+#ifdef AR_BZIP2_SUPPORT
+        } else if (config.bzip2) {
+            sch.add_step(ai_zip_mate_1, new bzip2_paired_fastq(config, ai_write_mate_1));
+            sch.add_step(ai_zip_mate_2, new bzip2_paired_fastq(config, ai_write_mate_2));
+            sch.add_step(ai_zip_singleton, new bzip2_paired_fastq(config, ai_write_singleton));
+            sch.add_step(ai_zip_collapsed, new bzip2_paired_fastq(config, ai_write_collapsed));
+            sch.add_step(ai_zip_collapsed_truncated, new bzip2_paired_fastq(config, ai_write_collapsed_truncated));
+            sch.add_step(ai_zip_discarded, new bzip2_paired_fastq(config, ai_write_discarded));
+#endif
         }
 
         // Progress reporting enabled for final writer

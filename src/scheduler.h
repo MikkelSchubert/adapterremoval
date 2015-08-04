@@ -218,7 +218,6 @@ public:
 private:
     typedef std::list<scheduler_step*> runables;
     typedef std::vector<scheduler_step*> pipeline;
-    typedef std::vector<pthread_t> thread_vector;
 
     //! Not implemented
     scheduler(const scheduler&);
@@ -253,8 +252,12 @@ private:
 
     //! Counter used for sequential processing of data
     size_t m_chunk_counter;
+
+#ifdef AR_PTHREAD_SUPPORT
+    typedef std::vector<pthread_t> thread_vector;
     //! List of current threads, excluding the main thread
     thread_vector m_threads;
+#endif
 
     //! Lock used to control access to chunks
     mutex m_queue_lock;

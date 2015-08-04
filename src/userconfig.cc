@@ -107,6 +107,8 @@ userconfig::userconfig(const std::string& name,
     , max_threads(1)
     , gzip(false)
     , gzip_level(6)
+    , bzip2(false)
+    , bzip2_level(9)
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , adapter_list()
@@ -276,13 +278,23 @@ userconfig::userconfig(const std::string& name,
     argparser["--gzip-level"] =
         new argparse::knob(&gzip_level, "LEVEL",
             "Compression level, 0 - 9 [current: %default]");
+#ifdef AR_BZIP2_SUPPORT
+    argparser["--bzip2"] =
+        new argparse::flag(&bzip2,
+            "Enable bzip2 compression [current: %default]");
+    argparser["--bzip2-level"] =
+        new argparse::knob(&bzip2_level, "LEVEL",
+            "Compression level, 0 - 9 [current: %default]");
+#endif
     argparser["--quiet"] =
         new argparse::flag(&quiet,
             "Only print warnings / errors to STDERR [current: %default]");
 
+#ifdef AR_PTHREAD_SUPPORT
     argparser["--threads"] =
         new argparse::knob(&max_threads, "THREADS",
             "Maximum number of threads [current: %default]");
+#endif
 }
 
 
@@ -390,6 +402,18 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 
     }
 
+#ifdef AR_BZIP2_SUPPORT
+    if (bzip2_level < 1 || bzip2_level > 9) {
+        std::cerr << "Error: --bzip2-level must be in the range 1 to 9, not "
+                  << bzip2_level << std::endl;
+        return argparse::pr_error;
+    } else if (bzip2 && gzip) {
+        std::cerr << "Error: Cannot enable --gzip and --bzip2 at the same time!"
+                  << std::endl;
+        return argparse::pr_error;
+    }
+#endif
+
     if (!max_threads) {
         std::cerr << "Error: --threads must be at least 1!" << std::endl;
         return argparse::pr_error;
@@ -463,13 +487,15 @@ bool userconfig::is_acceptable_read(const fastq& seq) const
 std::auto_ptr<std::ostream> userconfig::open_with_default_filename(
                                             const std::string& key,
                                             const std::string& postfix,
-                                            bool gzipped) const
+                                            bool compressed) const
 {
     std::string filename = basename + postfix;
     if (argparser.is_set(key)) {
         filename = argparser.at(key)->to_str();
-    } else if (gzipped && gzip && gzip_level) {
+    } else if (compressed && gzip && gzip_level) {
         filename += ".gz";
+    } else if (compressed && bzip2) {
+        filename += ".bz2";
     }
 
     std::auto_ptr<std::ofstream> stream(new std::ofstream(filename.c_str(),

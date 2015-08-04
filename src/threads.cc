@@ -29,8 +29,6 @@
 #include <stdexcept>
 #include <unistd.h>
 
-// #include <mach/mach_time.h>
-
 #include "threads.h"
 
 #include <ctime>
@@ -60,6 +58,7 @@ const char* thread_error::what() const throw()
 // mutex
 
 mutex::mutex()
+#ifdef AR_PTHREAD_SUPPORT
     : m_mutex()
 {
     switch (pthread_mutex_init(&m_mutex, NULL)) {
@@ -90,10 +89,15 @@ mutex::mutex()
             throw thread_error("Unknown error in mutex::mutex");
     }
 }
+#else
+{
+}
+#endif
 
 
 mutex::~mutex()
 {
+#ifdef AR_PTHREAD_SUPPORT
     const int error = pthread_mutex_destroy(&m_mutex);
     if (error) {
         print_locker lock;
@@ -114,6 +118,7 @@ mutex::~mutex()
 
         std::exit(1);
     }
+#endif
 }
 
 
@@ -121,6 +126,7 @@ mutex::~mutex()
 // conditional
 
 conditional::conditional()
+#ifdef AR_PTHREAD_SUPPORT
   : m_mutex()
   , m_cond()
   , m_count(0)
@@ -145,10 +151,15 @@ conditional::conditional()
             throw thread_error("Unknown error in conditional::conditional");
     }
 }
+#else
+{
+}
+#endif
 
 
 conditional::~conditional()
 {
+#ifdef AR_PTHREAD_SUPPORT
     const int error = pthread_cond_destroy(&m_cond);
     if (error) {
         print_locker lock;
@@ -169,11 +180,13 @@ conditional::~conditional()
 
         std::exit(1);
     }
+#endif
 }
 
 
 void conditional::wait()
 {
+#ifdef AR_PTHREAD_SUPPORT
     mutex_locker lock(m_mutex);
 
     while (!m_count) {
@@ -193,11 +206,13 @@ void conditional::wait()
     }
 
     --m_count;
+#endif
 }
 
 
 void conditional::signal()
 {
+#ifdef AR_PTHREAD_SUPPORT
     mutex_locker lock(m_mutex);
 
     ++m_count;
@@ -212,6 +227,7 @@ void conditional::signal()
         default:
             throw thread_error("Unknown error in conditional::signal");
     }
+#endif
 }
 
 
@@ -219,6 +235,7 @@ void conditional::signal()
 // mutex_locker
 
 mutex_locker::mutex_locker(mutex& to_lock)
+#ifdef AR_PTHREAD_SUPPORT
   : m_mutex(to_lock.m_mutex)
 {
     switch (pthread_mutex_lock(&m_mutex)) {
@@ -238,10 +255,16 @@ mutex_locker::mutex_locker(mutex& to_lock)
             throw thread_error("Unknown error in mutex::lock");
     }
 }
+#else
+{
+    (void)to_lock;
+}
+#endif
 
 
 mutex_locker::~mutex_locker()
 {
+#ifdef AR_PTHREAD_SUPPORT
     const int error = pthread_mutex_unlock(&m_mutex);
     if (error) {
         print_locker lock;
@@ -266,6 +289,7 @@ mutex_locker::~mutex_locker()
 
         std::exit(1);
     }
+#endif
 }
 
 

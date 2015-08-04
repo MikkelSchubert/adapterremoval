@@ -1,11 +1,70 @@
+###############################################################################
+# Makefile options: Edit / comment / uncomment to change build behavior
 #
-# Makefile
-#
+
+# Default compilation flags
 CXXFLAGS := -O3 -ansi -pedantic -Wall -Wextra
-CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef -Weffc++
+CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
+	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
+	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=5 \
+	-Wswitch-default -Wundef -Weffc++
+
+## Optional features; comment out or set to value other than 'yes' to disable
+
+# Enable reading writing of bzip2 compressed using libz2.
+ENABLE_BZIP2_SUPPORT := yes
+
+# Enable multi-threading support using pthreads.
+ENABLE_PTHREAD_SUPPORT := yes
+
+# Hide individual commands during build; only shows summaries instead.
+ENABLE_QUIET_BUILD := yes
+
+# Use of colored output during build
+ENABLE_COLOR_BUILD := yes
+
+
+###############################################################################
+# Makefile internals. Normally you do not need to touch these.
+
+# Libraries required by AdapterRemoval
+LIBRARIES := -lz
+
+# Build directory; modified depending on build options
+BDIR     := build/main
+
+
+ifeq ($(strip ${ENABLE_QUIET_BUILD}),yes)
+QUIET := @
+endif
+
+ifeq ($(strip ${ENABLE_COLOR_BUILD}),yes)
+COLOR_YELLOW := "\033[0;33m"
+COLOR_GREEN := "\033[0;32m"
+COLOR_CYAN := "\033[0;36m"
+COLOR_END := "\033[0m"
+endif
+
+ifeq ($(strip ${ENABLE_BZIP2_SUPPORT}),yes)
+$(info Building AdapterRemoval with bzip2 support: yes)
+CXXFLAGS := ${CXXFLAGS} -DAR_BZIP2_SUPPORT
+LIBRARIES := ${LIBRARIES} -lbz2
+BDIR := ${BDIR}_bz2
+else
+$(info Building AdapterRemoval with bzip2 support: no)
+endif
+
+ifeq ($(strip ${ENABLE_PTHREAD_SUPPORT}),yes)
+$(info Building AdapterRemoval with pthreads support: yes)
+CXXFLAGS := ${CXXFLAGS} -DAR_PTHREAD_SUPPORT
+LIBRARIES := ${LIBRARIES} -lpthread
+BDIR := ${BDIR}_pthreads
+else
+$(info Building AdapterRemoval with pthreads support: no)
+endif
+
 
 PROG     := AdapterRemoval
-BDIR     := build/main
 OBJS     := $(BDIR)/main.o \
 			$(BDIR)/main_adapter_id.o \
 			$(BDIR)/main_adapter_rm.o \
@@ -21,20 +80,10 @@ OBJS     := $(BDIR)/main.o \
 
 DFILES   := $(OBJS:.o=.deps)
 
-# Comment out this line to display individual commands
-QUIET := @
-# Comment out these lines to disable color output
-COLOR_YELLOW := "\033[0;33m"
-COLOR_GREEN := "\033[0;32m"
-COLOR_CYAN := "\033[0;36m"
-COLOR_END := "\033[0m"
-
 
 .PHONY: all install clean test clean_tests
 
 all: build/$(PROG) build/$(PROG).1
-# build/$(PROG).1
-
 
 # Clean
 clean: clean_tests
@@ -58,7 +107,7 @@ $(BDIR)/%.o: src/%.cc
 # Executable
 build/$(PROG): $(OBJS)
 	@echo $(COLOR_GREEN)"Linking executable '$@'"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) $^ -lz -lpthread -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) $^ ${LIBRARIES} -o $@
 
 build/%.1: %.pod
 	@echo $(COLOR_GREEN)"Constructing man-page '$@' from '$<'"$(COLOR_END)

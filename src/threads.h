@@ -26,7 +26,9 @@
 
 #include <string>
 
+#ifdef AR_PTHREAD_SUPPORT
 #include <pthread.h>
+#endif
 
 
 /**
@@ -72,7 +74,9 @@ private:
     friend class mutex_locker;
     friend class conditional;
 
+#ifdef AR_PTHREAD_SUPPORT
     pthread_mutex_t m_mutex;
+#endif
 };
 
 
@@ -95,6 +99,8 @@ public:
     /** Signal a waiting thread, or queue signal if no threads are waiting. */
     void signal();
 
+
+#ifdef AR_PTHREAD_SUPPORT
 private:
     //! Mutex assosiated with conditional; not exposed.
     mutex m_mutex;
@@ -102,6 +108,7 @@ private:
     pthread_cond_t m_cond;
     //! Number of queued signals.
     volatile unsigned m_count;
+#endif
 };
 
 
@@ -121,7 +128,9 @@ private:
     //! Not implemented
     mutex_locker& operator=(const mutex_locker&);
 
+#ifdef AR_PTHREAD_SUPPORT
     pthread_mutex_t& m_mutex;
+#endif
 };
 
 

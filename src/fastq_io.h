@@ -29,6 +29,11 @@
 
 #include <zlib.h>
 
+#ifdef AR_BZIP2_SUPPORT
+#include <bzlib.h>
+#endif
+
+
 #include "commontypes.h"
 #include "fastq.h"
 #include "scheduler.h"
@@ -125,6 +130,33 @@ private:
     //! The analytical step following this step
     const size_t m_next_step;
 };
+
+
+#ifdef AR_BZIP2_SUPPORT
+/**
+ * BZip2 compression step; takes any lines in the input chunk, compresses them,
+ * and adds them to the buffer list of the chunk, before forwarding it. */
+class bzip2_paired_fastq : public analytical_step
+{
+public:
+    /** Constructor; 'next_step' sets the destination of compressed chunks. */
+    bzip2_paired_fastq(const userconfig& config, size_t next_step);
+
+    /** Destructor; frees BZip2 stream. */
+    virtual ~bzip2_paired_fastq();
+
+    /** Compresses input lines, saving compressed chunks to chunk->buffers. */
+    virtual chunk_list process(analytical_chunk* chunk);
+
+private:
+    //! The analytical step following this step
+    const size_t m_next_step;
+
+    //! BZip2 stream object
+    bz_stream m_stream;
+};
+
+#endif
 
 
 /**

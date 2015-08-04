@@ -228,7 +228,9 @@ scheduler::scheduler()
   , m_errors(false)
   , m_condition()
   , m_chunk_counter(0)
+#ifdef AR_PTHREAD_SUPPORT
   , m_threads()
+#endif
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
@@ -473,6 +475,7 @@ void scheduler::queue_analytical_step(scheduler_step* step, size_t current)
 
 bool scheduler::initialize_threads(int nthreads, unsigned seed)
 {
+#ifdef AR_PTHREAD_SUPPORT
     if (!m_threads.empty()) {
         throw std::invalid_argument("scheduler::initialize_threads: threads must be empty");
     } else if (nthreads < 0) {
@@ -508,23 +511,30 @@ bool scheduler::initialize_threads(int nthreads, unsigned seed)
         m_threads.pop_back();
         return false;
     }
-
+#else
+    (void)nthreads;
+    (void)seed;
+#endif
     return true;
 }
 
 
 void scheduler::signal_threads()
 {
+#ifdef AR_PTHREAD_SUPPORT
     // Signal the main and all other threads
     for (size_t i = 0; i < m_threads.size() + 1; ++i) {
         m_condition.signal();
     }
+#endif
 }
 
 
 bool scheduler::join_threads()
 {
     bool join_result = true;
+
+#ifdef AR_PTHREAD_SUPPORT
     for (thread_vector::iterator it = m_threads.begin(); it != m_threads.end(); ++it) {
         void* run_result = NULL;
         const int join_error = pthread_join(*it, &run_result);
@@ -555,6 +565,7 @@ bool scheduler::join_threads()
     }
 
     m_threads.clear();
+#endif
 
     return join_result;
 }
