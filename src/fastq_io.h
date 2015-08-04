@@ -139,7 +139,7 @@ public:
     /** Destructor; frees GZip stream. */
     virtual ~gzip_paired_fastq();
 
-    /** 
+    /** Compresses input lines, saving compressed chunks to chunk->buffers. */
     virtual chunk_list process(analytical_chunk* chunk);
 
 private:
