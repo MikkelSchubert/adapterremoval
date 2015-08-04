@@ -27,17 +27,23 @@
 #include <vector>
 #include <memory>
 
+#include <zlib.h>
+
 #include "commontypes.h"
 #include "fastq.h"
 #include "scheduler.h"
 #include "timer.h"
+#include "linereader.h"
 
 
 class userconfig;
 
+typedef std::pair<size_t, unsigned char*> buffer_pair;
+typedef std::vector<buffer_pair> buffer_vec;
+
 
 /**
- * Container object for raw and trimmed, collapsed, etc. reads.
+ * Container object for raw reads.
  */
 class fastq_file_chunk : public analytical_chunk
 {
@@ -45,13 +51,37 @@ public:
     /** Create chunk representing lines starting at line offset (1-based). */
     fastq_file_chunk(size_t offset_);
 
+    //! Indicates that EOF has been reached.
+    bool eof;
+
     //! The line-number offset from which the lines start
     size_t offset;
 
     //! Lines read from the mate 1 and mate 2 files
     std::vector<string_vec> mates;
-    //! Lines to write to output files.
-    std::vector<string_vec> output;
+};
+
+
+/**
+ * Container object for processed reads.
+ */
+class fastq_output_chunk : public analytical_chunk
+{
+public:
+    /** Constructor; does nothing. */
+    fastq_output_chunk(bool eof);
+
+    /** Destructor; frees buffers. */
+    ~fastq_output_chunk();
+
+    //! Indicates that EOF has been reached.
+    bool eof;
+
+    //! Lines read from the mate 1 and mate 2 files
+    string_vec reads;
+
+    //! Buffers of compressed lines
+    buffer_vec buffers;
 };
 
 
@@ -78,18 +108,46 @@ public:
      *
      * Opens the input file corresponding to the specified mate.
      */
-    read_paired_fastq(const userconfig& config, read_type mate);
+    read_paired_fastq(const userconfig& config, read_type mate, size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
-    virtual analytical_chunk* process(analytical_chunk* chunk);
+    virtual chunk_list process(analytical_chunk* chunk);
 
 private:
+    static std::string get_filename(const userconfig& config, read_type mate);
+
     //! Current line in the input file (1-based)
     size_t m_line_offset;
     //! Pointer to iostream opened using userconfig::open_ifstream
-    std::auto_ptr<std::istream> m_io_input;
+    line_reader m_io_input;
     //! Read type; either rt_mate_1 or rt_mate_2.
     const read_type m_type;
+    //! The analytical step following this step
+    const size_t m_next_step;
+};
+
+
+/**
+ * GZip compression step; takes any lines in the input chunk, compresses them,
+ * and adds them to the buffer list of the chunk, before forwarding it. */
+class gzip_paired_fastq : public analytical_step
+{
+public:
+    /** Constructor; 'next_step' sets the destination of compressed chunks. */
+    gzip_paired_fastq(const userconfig& config, size_t next_step);
+
+    /** Destructor; frees GZip stream. */
+    virtual ~gzip_paired_fastq();
+
+    /** 
+    virtual chunk_list process(analytical_chunk* chunk);
+
+private:
+    //! The analytical step following this step
+    const size_t m_next_step;
+
+    //! GZip stream object
+    z_stream m_stream;
 };
 
 
@@ -108,33 +166,32 @@ public:
      *
      * @param config User settings.
      * @param read_type The type of reads to write.
-     * @param progress Print progress reports using a 'timer' object.
      *
      * Based on the read-type specified, and SE / PE mode, the corresponding
      * output file is opened
      */
-    write_paired_fastq(const userconfig& config, read_type type, bool progress = false);
+    write_paired_fastq(const userconfig& config, read_type type);
 
     /** Destructor; closes output file. */
     ~write_paired_fastq();
 
     /** Writes the reads of the type specified in the constructor. */
-    virtual analytical_chunk* process(analytical_chunk* chunk);
+    virtual chunk_list process(analytical_chunk* chunk);
 
     /** Flushes the output file and prints progress report (if enabled). */
     virtual void finalize();
 
 private:
-    /** Writes the given lines to file, as is; no new-lines are added. */
-	static void write_lines(std::auto_ptr<std::ostream>& file, string_vec& lines);
-
+    //! The read type written by this instance.
     const read_type m_type;
-    //! When true, progress reports are printed using the 'm_timer' object.
-    const bool m_progress;
     //! Pointer to output file opened using userconfig::open_with_default_filename.
     std::auto_ptr<std::ostream> m_output;
-    //! Timer for optional progress reporting; only used if 'progress' is set.
-    timer m_timer;
+
+    //! Specifies if progress reports are to be printed
+    bool m_progress;
+    //! FIXME
+    bool m_pair_ended;
 };
+
 
 #endif

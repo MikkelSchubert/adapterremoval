@@ -32,48 +32,62 @@
 
 //! Number of lines to read for each data-chunk
 const size_t CHUNK_SIZE = 4 * 1000;
+//! Size of compressed chunks used to transport compressed data
+const size_t GZIP_CHUNK = 10240;
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_file_chunk'
 
 fastq_file_chunk::fastq_file_chunk(size_t offset_)
-  : offset(offset_)
+  : eof(false)
+  , offset(offset_)
   , mates(2)
-  , output(rt_max)
 {
     typedef std::vector<string_vec>::iterator iter;
-
     for (iter it = mates.begin(); it != mates.end(); ++it) {
-        it->reserve(CHUNK_SIZE);
-    }
-
-    for (iter it = output.begin(); it != output.end(); ++it) {
         it->reserve(CHUNK_SIZE);
     }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'read_paired_fastq'
+// Implementations for 'fastq_output_chunk'
 
-read_paired_fastq::read_paired_fastq(const userconfig& config, read_type mate)
-  : analytical_step(analytical_step::ordered, true)
-  , m_line_offset(1)
-  , m_io_input()
-  , m_type(mate)
+fastq_output_chunk::fastq_output_chunk(bool eof_)
+  : eof(eof_)
+  , reads()
 {
-    if (m_type == rt_mate_1) {
-        m_io_input = config.open_ifstream(config.input_file_1);
-    } else if (m_type == rt_mate_2) {
-        m_io_input = config.open_ifstream(config.input_file_2);
-    } else {
-        throw std::invalid_argument("mate must be rt_mate_1 or rt_mate_2");
-    }
+    reads.reserve(CHUNK_SIZE);
 }
 
 
-analytical_chunk* read_paired_fastq::process(analytical_chunk* chunk)
+fastq_output_chunk::~fastq_output_chunk()
+{
+    for (buffer_vec::iterator it = buffers.begin(); it != buffers.end(); ++it) {
+        delete[] it->second;
+    }
+
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'read_paired_fastq'
+
+read_paired_fastq::read_paired_fastq(const userconfig& config,
+                                     read_type mate,
+                                     size_t next_step)
+  : analytical_step(analytical_step::ordered, true)
+  , m_line_offset(1)
+  , m_io_input(get_filename(config, mate))
+  , m_type(mate)
+  , m_next_step(next_step)
+{
+}
+
+
+chunk_list read_paired_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_file_chunk> file_chunk;
     if (chunk) {
@@ -82,8 +96,8 @@ analytical_chunk* read_paired_fastq::process(analytical_chunk* chunk)
         file_chunk.reset(new fastq_file_chunk(m_line_offset));
     }
 
-    if (!m_io_input.get()) {
-        return NULL;
+    if (!m_io_input.is_open()) {
+        return chunk_list();
     }
 
     string_vec& lines = file_chunk->mates.at(m_type);
@@ -94,7 +108,7 @@ analytical_chunk* read_paired_fastq::process(analytical_chunk* chunk)
     string_vec::iterator it = lines.begin();
     try {
         for (; it != lines.end(); ++it) {
-            if (!std::getline(*m_io_input, *it)) {
+            if (!m_io_input.getline(*it)) {
                 lines.resize(it - lines.begin());
                 break;
             }
@@ -110,23 +124,194 @@ analytical_chunk* read_paired_fastq::process(analytical_chunk* chunk)
     }
 
     if (lines.empty()) {
-        // Close the file, but still return a chunk to catch unbalanced files,
-        // and to allow downstream nodes to flush (if needed)
-        m_io_input.reset();
+        // EOF is detected by failure to read any lines, not line_reader::eof,
+        // so that unbalanced files can be caught in all cases.
+        m_io_input.close();
+        file_chunk->eof = true;
     }
 
     m_line_offset += lines.size();
 
-    return file_chunk.release();
+    chunk_list chunks;
+    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+
+    return chunks;
 }
 
 
-write_paired_fastq::write_paired_fastq(const userconfig& config, read_type type, bool progress)
+std::string read_paired_fastq::get_filename(const userconfig& config, read_type mate)
+{
+    if (mate == rt_mate_1) {
+        return config.input_file_1;
+    } else if (mate == rt_mate_2) {
+        return config.input_file_2;
+    } else {
+        throw std::invalid_argument("mate must be rt_mate_1 or rt_mate_2");
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'gzip_paired_fastq'
+
+gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
+  : analytical_step(analytical_step::ordered, false)
+  , m_next_step(next_step)
+  , m_stream()
+{
+    m_stream.zalloc = Z_NULL;
+    m_stream.zfree = Z_NULL;
+    m_stream.opaque = Z_NULL;
+
+    const int errorcode = deflateInit2(/* strm       = */ &m_stream,
+                                       /* level      = */ config.gzip_level,
+                                       /* method     = */ Z_DEFLATED,
+                                       /* windowBits = */ 15 + 16,
+                                       /* memLevel   = */ 9,
+                                       /* strategy   = */ Z_DEFAULT_STRATEGY);
+
+    switch (errorcode) {
+        case Z_OK:
+            break;
+
+        case Z_MEM_ERROR:
+            throw thread_error("gzip_paired_fastq: not enough memory");
+
+        case Z_STREAM_ERROR:
+            throw thread_error("gzip_paired_fastq: invalid parameters");
+
+        case Z_VERSION_ERROR:
+            throw thread_error("gzip_paired_fastq: incompatible zlib version");
+
+        default:
+            throw thread_error("gzip_paired_fastq: unknown error");
+    }
+}
+
+
+gzip_paired_fastq::~gzip_paired_fastq()
+{
+    const int errorcode = deflateEnd(&m_stream);
+    if (errorcode != Z_OK) {
+        print_locker lock;
+        switch (errorcode) {
+            case Z_STREAM_ERROR:
+                std::cerr << "gzip_paired_fastq::~gzip_paired_fastq: stream error" << std::endl;
+                break;
+
+            case Z_DATA_ERROR:
+                std::cerr << "gzip_paired_fastq::~gzip_paired_fastq: data error" << std::endl;
+                break;
+
+            default:
+                std::cerr << "Unknown error in gzip_paired_fastq::~gzip_paired_fastq: " << errorcode << std::endl;
+                break;
+        }
+
+        std::exit(1);
+    }
+}
+
+
+/**
+ * Writes a set of lines into a buffer, and returns the size of the buffer and
+ * the buffer itself as a pair. */
+std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
+{
+    size_t buffer_size = 0;
+    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
+        buffer_size += it->size();
+    }
+
+    unsigned char* input_buffer = new unsigned char[buffer_size];
+    unsigned char* input_buffer_ptr = input_buffer;
+    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
+        std::memcpy(input_buffer_ptr, it->data(), it->size());
+        input_buffer_ptr += it->size();
+    }
+
+    return std::pair<size_t, unsigned char*>(buffer_size, input_buffer);
+}
+
+
+chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
+{
+    std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+    buffer_vec& buffers = file_chunk->buffers;
+
+    if (file_chunk->reads.empty() && !file_chunk->eof) {
+        // The empty chunk must still be forwarded, to ensure that tracking of
+        // ordered chunks does not break.
+        chunk_list chunks;
+        chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+        return chunks;
+    }
+
+    std::pair<size_t, unsigned char*> input_buffer;
+    std::pair<size_t, unsigned char*> output_buffer;
+    try {
+        input_buffer = build_input_buffer(file_chunk->reads);
+
+        m_stream.avail_in = input_buffer.first;
+        m_stream.next_in = input_buffer.second;
+
+        do {
+            output_buffer.first = GZIP_CHUNK;
+            output_buffer.second = new unsigned char[GZIP_CHUNK];
+
+            m_stream.avail_out = output_buffer.first;
+            m_stream.next_out = output_buffer.second;
+
+            switch (deflate(&m_stream, file_chunk->eof ? Z_FINISH : Z_NO_FLUSH)) {
+                case Z_OK:
+                case Z_STREAM_END:
+                case Z_BUF_ERROR: /* End of out / in buffer reached. */
+                    break;
+
+                case Z_STREAM_ERROR:
+                    throw thread_error("gzip_paired_fastq::process: stream error");
+
+                default:
+                    throw thread_error("gzip_paired_fastq::process: unknown error");
+            }
+
+            output_buffer.first = GZIP_CHUNK - m_stream.avail_out;
+            // A buffer must be sent, even if #bytes == 0.
+            buffers.push_back(output_buffer);
+            output_buffer.second = NULL;
+        } while (m_stream.avail_out == 0);
+
+        delete[] input_buffer.second;
+    } catch (...) {
+        delete[] input_buffer.second;
+        delete[] output_buffer.second;
+        throw;
+    }
+
+    chunk_list chunks;
+    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+    return chunks;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'write_paired_fastq'
+
+//! Mutex used to control access to s_timer and s_finalized;
+static mutex s_timer_lock;
+//! Timer used to track trimming progress; accessed by all instances
+static timer s_timer = timer("reads", false);
+//! Indicates if 'timer::finalize' has been called.
+static bool s_finalized = false;
+
+
+write_paired_fastq::write_paired_fastq(const userconfig& config,
+                                       read_type type)
   : analytical_step(analytical_step::ordered, true)
   , m_type(type)
-  , m_progress(progress)
   , m_output()
-  , m_timer("pairs", config.quiet)
+  , m_progress(!config.quiet)
+  , m_pair_ended(config.paired_ended_mode)
 {
     switch (m_type) {
         case rt_mate_1:
@@ -169,46 +354,46 @@ write_paired_fastq::~write_paired_fastq()
 }
 
 
-analytical_chunk* write_paired_fastq::process(analytical_chunk* chunk)
+chunk_list write_paired_fastq::process(analytical_chunk* chunk)
 {
-    std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
-    std::vector<string_vec>& lines = file_chunk->output;
+    std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+    const string_vec& lines = file_chunk->reads;
 
-    write_lines(m_output, lines.at(m_type));
+    if (file_chunk->buffers.empty()) {
+        for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
+            *m_output << *it;
+        }
+    } else {
+        buffer_vec& buffers = file_chunk->buffers;
+        for (buffer_vec::iterator it = buffers.begin(); it != buffers.end(); ++it) {
+            m_output->write(reinterpret_cast<char*>(it->second), it->first);
+        }
+    }
+
+    if (file_chunk->eof) {
+        m_output->flush();
+    }
 
     if (m_progress) {
-        m_timer.increment(file_chunk->mates.at(0).size() / 4);
+        size_t record_count = lines.size();
+        if (m_pair_ended && (m_type == rt_collapsed || m_type == rt_collapsed_truncated)) {
+            record_count *= 2;
+        }
+
+        mutex_locker lock(s_timer_lock);
+        s_timer.increment(record_count);
     }
 
-    return file_chunk.release();
-}
-
-
-void write_paired_fastq::write_lines(std::auto_ptr<std::ostream>& file, string_vec& lines)
-{
-    if (lines.empty()) {
-        return;
-    } else if (!file.get()) {
-        throw std::logic_error("write_paired_fastq::write_lines: attempted to write to closed FASTQ file");
-    }
-
-    std::ostream& stream = *file;
-
-    for (string_vec::iterator it = lines.begin(); it != lines.end(); ++it) {
-        stream << *it;
-    }
-
-    lines.clear();
+    return chunk_list();
 }
 
 
 void write_paired_fastq::finalize()
 {
-    if (m_output.get()) {
-        m_output->flush();
-    }
-
-    if (m_progress) {
-        m_timer.finalize();
+    mutex_locker lock(s_timer_lock);
+    if (m_progress && !s_finalized) {
+        s_timer.finalize();
+        s_finalized = true;
     }
 }
+
