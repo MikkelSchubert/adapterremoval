@@ -107,6 +107,8 @@ userconfig::userconfig(const std::string& name,
     , identify_adapters(false)
     , quiet(false)
     , max_threads(1)
+    , gzip(false)
+    , gzip_level(6)
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , adapter_list()
@@ -114,8 +116,6 @@ userconfig::userconfig(const std::string& name,
     , barcode_list()
     , quality_input_base("33")
     , quality_output_base("NA")
-    , gzip(false)
-    , gzip_level(6)
 {
     argparser["--file1"] =
         new argparse::any(&input_file_1, "FILE",

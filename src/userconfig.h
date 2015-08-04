@@ -163,6 +163,11 @@ public:
     //! The maximum number of threads used by the program
     unsigned max_threads;
 
+    //! GZip compression enabled / disabled
+    bool gzip;
+    //! GZip compression level used for output reads
+    unsigned int gzip_level;
+
 private:
     //! Not implemented
     userconfig(const userconfig&);
@@ -215,11 +220,6 @@ private:
     std::string quality_input_base;
     //! Sink for user-supplied quality score formats; use quality_output_fmt.
     std::string quality_output_base;
-
-    //! GZip compression enabled / disabled
-    bool gzip;
-    //! GZip compression level used for output reads
-    unsigned int gzip_level;
 };
 
 
