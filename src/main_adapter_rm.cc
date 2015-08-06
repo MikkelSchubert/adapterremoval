@@ -529,6 +529,7 @@ int remove_adapter_sequences(const userconfig& config)
             sch.add_step(ai_write_collapsed_truncated, new write_paired_fastq(config, rt_collapsed_truncated));
         }
 
+#ifdef AR_GZIP_SUPPORT
         if (config.gzip) {
             sch.add_step(ai_zip_mate_1, new gzip_paired_fastq(config, ai_write_mate_1));
             sch.add_step(ai_zip_mate_2, new gzip_paired_fastq(config, ai_write_mate_2));
@@ -536,16 +537,19 @@ int remove_adapter_sequences(const userconfig& config)
             sch.add_step(ai_zip_collapsed, new gzip_paired_fastq(config, ai_write_collapsed));
             sch.add_step(ai_zip_collapsed_truncated, new gzip_paired_fastq(config, ai_write_collapsed_truncated));
             sch.add_step(ai_zip_discarded, new gzip_paired_fastq(config, ai_write_discarded));
+        }
+#endif
+
 #ifdef AR_BZIP2_SUPPORT
-        } else if (config.bzip2) {
+        if (config.bzip2) {
             sch.add_step(ai_zip_mate_1, new bzip2_paired_fastq(config, ai_write_mate_1));
             sch.add_step(ai_zip_mate_2, new bzip2_paired_fastq(config, ai_write_mate_2));
             sch.add_step(ai_zip_singleton, new bzip2_paired_fastq(config, ai_write_singleton));
             sch.add_step(ai_zip_collapsed, new bzip2_paired_fastq(config, ai_write_collapsed));
             sch.add_step(ai_zip_collapsed_truncated, new bzip2_paired_fastq(config, ai_write_collapsed_truncated));
             sch.add_step(ai_zip_discarded, new bzip2_paired_fastq(config, ai_write_discarded));
-#endif
         }
+#endif
 
         // Progress reporting enabled for final writer
         sch.add_step(ai_write_discarded, new write_paired_fastq(config, rt_discarded));

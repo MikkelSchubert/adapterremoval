@@ -159,6 +159,7 @@ private:
 #endif
 
 
+#ifdef AR_GZIP_SUPPORT
 /**
  * GZip compression step; takes any lines in the input chunk, compresses them,
  * and adds them to the buffer list of the chunk, before forwarding it. */
@@ -181,6 +182,7 @@ private:
     //! GZip stream object
     z_stream m_stream;
 };
+#endif
 
 
 /**

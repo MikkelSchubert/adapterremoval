@@ -11,7 +11,10 @@ CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
-# Enable reading writing of bzip2 compressed using libz2.
+# Enable reading writing of gzip compressed files using libz.
+ENABLE_GZIP_SUPPORT := yes
+
+# Enable reading writing of bzip2 compressed files using libbz2.
 ENABLE_BZIP2_SUPPORT := yes
 
 # Enable multi-threading support using pthreads.
@@ -28,7 +31,7 @@ ENABLE_COLOR_BUILD := yes
 # Makefile internals. Normally you do not need to touch these.
 
 # Libraries required by AdapterRemoval
-LIBRARIES := -lz
+LIBRARIES :=
 
 # Build directory; modified depending on build options
 BDIR     := build/main
@@ -43,6 +46,15 @@ COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
+endif
+
+ifeq ($(strip ${ENABLE_GZIP_SUPPORT}),yes)
+$(info Building AdapterRemoval with gzip support: yes)
+CXXFLAGS := ${CXXFLAGS} -DAR_GZIP_SUPPORT
+LIBRARIES := ${LIBRARIES} -lz
+BDIR := ${BDIR}_gz
+else
+$(info Building AdapterRemoval with gzip support: no)
 endif
 
 ifeq ($(strip ${ENABLE_BZIP2_SUPPORT}),yes)

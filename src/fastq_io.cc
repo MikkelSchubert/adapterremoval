@@ -32,8 +32,11 @@
 
 //! Number of lines to read for each data-chunk
 const size_t CHUNK_SIZE = 4 * 1000;
+
+#ifdef AR_GZIP_SUPPORT
 //! Size of compressed chunks used to transport compressed data
 const size_t GZIP_CHUNK = 10240;
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,6 +299,8 @@ chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
 #endif
 
 
+#ifdef AR_GZIP_SUPPORT
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_paired_fastq'
 
@@ -416,6 +421,8 @@ chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
     chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
     return chunks;
 }
+
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////
