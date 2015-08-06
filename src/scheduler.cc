@@ -307,17 +307,16 @@ bool scheduler::run(int nthreads, unsigned seed)
                 (*it)->ptr->finalize();
             }
         }
-    }
 
-    for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
-        if (*it && !(*it)->queue.empty()) {
-            print_locker lock;
-            std::cerr << "ERROR: Not all parts run for step " << it - m_steps.begin()
-                      << "; " << (*it)->queue.size() << " left ..." << std::endl;
-            m_errors = true;
+        for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
+            if (*it && !(*it)->queue.empty()) {
+                print_locker lock;
+                std::cerr << "ERROR: Not all parts run for step " << it - m_steps.begin()
+                          << "; " << (*it)->queue.size() << " left ..." << std::endl;
+                m_errors = true;
+            }
         }
     }
-
 
     return !m_errors;
 }
