@@ -255,17 +255,19 @@ chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
             m_stream.avail_out = output_buffer.first;
             m_stream.next_out = reinterpret_cast<char*>(output_buffer.second);
 
-            switch (BZ2_bzCompress(&m_stream, file_chunk->eof ? BZ_FINISH : BZ_RUN)) {
-                case BZ_RUN_OK:
-                case BZ_FINISH_OK:
-                case BZ_STREAM_END:
-                    break;
+            if (m_stream.avail_in || file_chunk->eof) {
+                switch (BZ2_bzCompress(&m_stream, file_chunk->eof ? BZ_FINISH : BZ_RUN)) {
+                    case BZ_RUN_OK:
+                    case BZ_FINISH_OK:
+                    case BZ_STREAM_END:
+                        break;
 
-                case BZ_SEQUENCE_ERROR:
-                    throw thread_error("gzip_paired_fastq::process: sequence error");
+                    case BZ_SEQUENCE_ERROR:
+                        throw thread_error("bzip2_paired_fastq::process: sequence error");
 
-                default:
-                    throw thread_error("gzip_paired_fastq::process: unknown error");
+                    default:
+                        throw thread_error("bzip2_paired_fastq::process: unknown error");
+                }
             }
 
             output_buffer.first = GZIP_CHUNK - m_stream.avail_out;
