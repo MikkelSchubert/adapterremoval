@@ -128,9 +128,6 @@ userconfig::userconfig(const std::string& name,
     argparser.add_seperator();
     argparser["--basename"] =
         new argparse::any(&basename, "BASENAME",
-            "Prefix for all output files [current: %default].");
-    argparser["--basename"] =
-        new argparse::any(&basename, "BASENAME",
             "Default prefix for all output files for which no filename was "
             "explicitly set [current: %default].");
 
