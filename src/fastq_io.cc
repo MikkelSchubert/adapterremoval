@@ -109,21 +109,11 @@ chunk_list read_paired_fastq::process(analytical_chunk* chunk)
     }
 
     string_vec::iterator it = lines.begin();
-    try {
-        for (; it != lines.end(); ++it) {
-            if (!m_io_input.getline(*it)) {
-                lines.resize(it - lines.begin());
-                break;
-            }
+    for (; it != lines.end(); ++it) {
+        if (!m_io_input.getline(*it)) {
+            lines.resize(it - lines.begin());
+            break;
         }
-    } catch (const std::ios_base::failure&) {
-        const size_t offset = m_line_offset + (it - lines.begin());
-
-        std::cerr << "Error reading FASTQ file at line "
-                  << offset << "); aborting:\n"
-                  << "    " << std::strerror(errno)
-                  << std::endl;
-        throw;
     }
 
     if (lines.empty()) {
