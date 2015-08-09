@@ -120,7 +120,7 @@ char process_scores_ignored(char quality)
                           "This is not a valid quality score for FASTQ reads.");
     }
 
-    return 0;
+    return PHRED_OFFSET_33;
 }
 
 
