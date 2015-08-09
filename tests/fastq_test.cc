@@ -395,12 +395,12 @@ TEST(fastq, add_prefix_to_header__header)
 
 TEST(fastq, simple_fastq_record_1)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1");
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
@@ -412,7 +412,7 @@ TEST(fastq, simple_fastq_record_1)
 
 TEST(fastq, simple_fastq_record_2)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1");
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
@@ -421,7 +421,7 @@ TEST(fastq, simple_fastq_record_2)
     lines.push_back("GTCAGGAT");
     lines.push_back("+");
     lines.push_back("D7BIG!F8");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
@@ -439,12 +439,12 @@ TEST(fastq, simple_fastq_record_2)
 
 TEST(fastq, simple_fastq_record__with_extra_header_1)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1 Extra header here");
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
@@ -458,12 +458,12 @@ TEST(fastq, simple_fastq_record__with_extra_header_1)
 
 TEST(fastq, simple_fastq_record__with_extra_header_2)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1");
     lines.push_back("ACGAGTCA");
     lines.push_back("+Extra header here");
     lines.push_back("!7BF8DGI");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
@@ -477,12 +477,12 @@ TEST(fastq, simple_fastq_record__with_extra_header_2)
 
 TEST(fastq, simple_fastq_record__no_header)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@");
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
@@ -491,12 +491,12 @@ TEST(fastq, simple_fastq_record__no_header)
 
 TEST(fastq, simple_fastq_record__no_sequence)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1");
     lines.push_back("");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
@@ -505,12 +505,12 @@ TEST(fastq, simple_fastq_record__no_sequence)
 
 TEST(fastq, simple_fastq_record__no_qualities)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@");
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
@@ -519,12 +519,12 @@ TEST(fastq, simple_fastq_record__no_qualities)
 
 TEST(fastq, simple_fastq_record__no_qualities_or_sequence)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@");
     lines.push_back("");
     lines.push_back("+");
     lines.push_back("");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
@@ -533,8 +533,8 @@ TEST(fastq, simple_fastq_record__no_qualities_or_sequence)
 
 TEST(fastq, eof_when_starting_to_read_record)
 {
-    string_list lines;
-    string_list_citer it = lines.begin();
+    string_vec lines;
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_FALSE(record.read(it, lines.end()));
@@ -544,9 +544,9 @@ TEST(fastq, eof_when_starting_to_read_record)
 
 TEST(fastq, eof_after_header)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end()), fastq_error);
@@ -555,10 +555,10 @@ TEST(fastq, eof_after_header)
 
 TEST(fastq, eof_after_sequence_1)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record");
     lines.push_back("ACGTA");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end()), fastq_error);
@@ -567,11 +567,11 @@ TEST(fastq, eof_after_sequence_1)
 
 TEST(fastq, eof_after_sequence_2)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record");
     lines.push_back("ACGTA");
     lines.push_back("");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end()), fastq_error);
@@ -580,11 +580,11 @@ TEST(fastq, eof_after_sequence_2)
 
 TEST(fastq, eof_after_sep_1)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record");
     lines.push_back("ACGTA");
     lines.push_back("+");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end()), fastq_error);
@@ -593,12 +593,12 @@ TEST(fastq, eof_after_sep_1)
 
 TEST(fastq, eof_after_sep_2)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record");
     lines.push_back("ACGTA");
     lines.push_back("+");
     lines.push_back("");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_THROW(record.read(it, lines.end()), fastq_error);
@@ -607,7 +607,7 @@ TEST(fastq, eof_after_sep_2)
 
 TEST(fastq, eof_after_qualities_following_previous_read_1)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1");
     lines.push_back("ACGTA");
     lines.push_back("+");
@@ -615,7 +615,7 @@ TEST(fastq, eof_after_qualities_following_previous_read_1)
     lines.push_back("@record_2");
     lines.push_back("ACGTA");
     lines.push_back("+");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_NO_THROW(record.read(it, lines.end()));
@@ -625,7 +625,7 @@ TEST(fastq, eof_after_qualities_following_previous_read_1)
 
 TEST(fastq, eof_after_qualities_following_previous_read_2)
 {
-    string_list lines;
+    string_vec lines;
     lines.push_back("@record_1");
     lines.push_back("ACGTA");
     lines.push_back("+");
@@ -634,7 +634,7 @@ TEST(fastq, eof_after_qualities_following_previous_read_2)
     lines.push_back("ACGTA");
     lines.push_back("+");
     lines.push_back("");
-    string_list_citer it = lines.begin();
+    string_vec_citer it = lines.begin();
 
     fastq record;
     ASSERT_NO_THROW(record.read(it, lines.end()));
