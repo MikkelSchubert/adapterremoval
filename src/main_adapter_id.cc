@@ -36,6 +36,7 @@
 #include "scheduler.h"
 #include "timer.h"
 #include "fastq_io.h"
+#include "strutils.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -267,7 +268,7 @@ void print_consensus_adapter(const nt_count_vec& counts,
     std::cout << "  " << name << ":  " << ref << "\n"
               << "               " << identity << "\n"
               << "   Consensus:  " << consensus << "\n"
-              << "               " << qualities.str() << "\n\n";
+              << "     Quality:  " << qualities.str() << "\n\n";
 
     print_most_common_kmers(kmers);
 }
@@ -394,7 +395,7 @@ public:
         } catch (const fastq_error& error) {
             print_locker lock;
             std::cerr << "Error reading FASTQ record at line " << n_record << "; aborting:\n"
-                      << "    " << error.what() << std::endl;
+                      << cli_formatter::fmt(error.what()) << std::endl;
             throw thread_abort();
         }
 
@@ -495,7 +496,8 @@ int identify_adapter_sequences(const userconfig& config)
         sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_read_mate_2));
         sch.add_step(ai_read_mate_2, new read_paired_fastq(config, rt_mate_2, ai_identify_adapters));
     } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
+        std::cerr << "IO error opening file; aborting:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
         return 1;
     }
 

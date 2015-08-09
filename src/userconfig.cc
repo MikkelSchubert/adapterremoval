@@ -186,7 +186,7 @@ userconfig::userconfig(const std::string& name,
         new argparse::any(&adapter_list, "FILENAME",
             "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; "
             "only the first adapter in each pair is required / used in SE "
-            "mode [current: none].");
+            "mode [current: %default].");
 
     argparser.add_seperator();
     argparser["--mm"]

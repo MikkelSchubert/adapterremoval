@@ -88,7 +88,8 @@ OBJS     := $(BDIR)/main.o \
             $(BDIR)/timer.o \
             $(BDIR)/linereader.o \
             $(BDIR)/scheduler.o \
-            $(BDIR)/threads.o
+            $(BDIR)/threads.o \
+            $(BDIR)/strutils.o
 
 DFILES   := $(OBJS:.o=.deps)
 
@@ -136,7 +137,8 @@ build/%.1: %.pod
 TEST_DIR := build/tests
 TEST_OBJS := $(TEST_DIR)/fastq_test.o $(BDIR)/fastq.o \
 	$(TEST_DIR)/alignment_test.o $(BDIR)/alignment.o \
-	$(TEST_DIR)/argparse_test.o $(BDIR)/argparse.o
+	$(TEST_DIR)/argparse_test.o $(BDIR)/argparse.o \
+	$(TEST_DIR)/strutils_test.o $(BDIR)/strutils.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
 GTEST_DIR := gtest-1.7.0

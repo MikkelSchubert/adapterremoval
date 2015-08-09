@@ -32,6 +32,7 @@
 #include <numeric>
 
 #include "main.h"
+#include "strutils.h"
 #include "main_adapter_rm.h"
 #include "fastq.h"
 #include "fastq_io.h"
@@ -70,7 +71,7 @@ std::string describe_phred_format(const fastq::quality_format fmt)
 }
 
 
-std::ostream& write_settings(const userconfig& config,
+void write_settings(const userconfig& config,
                              std::ostream& settings)
 {
     settings << "Running " << NAME << " " << VERSION << " using the following options:\n";
@@ -111,12 +112,10 @@ std::ostream& write_settings(const userconfig& config,
     settings << "Minimum overlap (in case of collapse): " << config.min_alignment_length << "\n";
 
     settings.flush();
-
-    return settings;
 }
 
 
-std::ostream& write_statistics(const userconfig& config, std::ostream& settings, const statistics& stats)
+void write_statistics(const userconfig& config, std::ostream& settings, const statistics& stats)
 {
     const std::string reads_type = (config.paired_ended_mode ? "read pairs: " : "reads: ");
 
@@ -172,8 +171,6 @@ std::ostream& write_statistics(const userconfig& config, std::ostream& settings,
     }
 
     settings.flush();
-
-    return settings;
 }
 
 
@@ -324,7 +321,9 @@ public:
             }
         } catch (const fastq_error& error) {
             print_locker lock;
-            std::cerr << "Error reading FASTQ record at line " << file_chunk->offset << "; aborting:\n    " << error.what() << std::endl;
+            std::cerr << "Error reading FASTQ record at line " << file_chunk->offset << "; aborting:\n"
+                      << cli_formatter::fmt(error.what()) << std::endl;
+
             throw thread_abort();
         }
 
@@ -461,7 +460,9 @@ public:
             }
         } catch (const fastq_error& error) {
             print_locker lock;
-            std::cerr << "Error reading FASTQ record at line " << file_chunk->offset << "; aborting:\n    " << error.what() << std::endl;
+            std::cerr << "Error reading FASTQ record at line "
+                      << file_chunk->offset << "; aborting:\n"
+                      << cli_formatter::fmt(error.what()) << std::endl;
             throw thread_abort();
         }
 
@@ -497,14 +498,11 @@ int remove_adapter_sequences(const userconfig& config)
         settings = config.open_with_default_filename("--settings",
                                                      ".settings",
                                                      false);
-    } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error opening settings file; aborting:\n    "
-                  << error.what() << std::endl;
-        return 1;
-    }
 
-    if (!write_settings(config, *settings)) {
-        std::cerr << "Error writing settings file; aborting!" << std::endl;
+        write_settings(config, *settings);
+    } catch (const std::ios_base::failure& error) {
+        std::cerr << "IO error writing settings file; aborting:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
         return 1;
     }
 
@@ -554,7 +552,8 @@ int remove_adapter_sequences(const userconfig& config)
         // Progress reporting enabled for final writer
         sch.add_step(ai_write_discarded, new write_paired_fastq(config, rt_discarded));
     } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error opening file; aborting:\n    " << error.what() << std::endl;
+        std::cerr << "IO error opening file; aborting:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
         return 1;
     }
 
@@ -563,8 +562,12 @@ int remove_adapter_sequences(const userconfig& config)
     }
 
     std::auto_ptr<statistics> stats(processor->get_final_statistics());
-    if (!write_statistics(config, *settings, *stats)) {
-        std::cerr << "Error writing statistics to settings file!" << std::endl;
+
+    try {
+        write_statistics(config, *settings, *stats);
+    } catch (const std::ios_base::failure& error) {
+        std::cerr << "Error writing statistics to settings file:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
         return 1;
     }
 

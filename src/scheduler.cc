@@ -31,6 +31,7 @@
 #include <cstdlib>
 
 #include "scheduler.h"
+#include "strutils.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -336,7 +337,8 @@ void* scheduler::run_wrapper(void* ptr)
         // Error messaging is assumed to have been done by thrower
     } catch (const std::exception& error) {
         print_locker lock;
-        std::cerr << "Error in thread:\n  " << error.what() << std::endl;
+        std::cerr << "Error in thread:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
     } catch (...) {
         print_locker lock;
         std::cerr << "Unhandled exception in thread" << std::endl;
@@ -505,7 +507,8 @@ bool scheduler::initialize_threads(int nthreads, unsigned seed)
         }
     } catch (const thread_error& error) {
         print_locker lock;
-        std::cerr << "ERROR: " << error.what() << std::endl;
+        std::cerr << "Error creating threads:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
 
         m_threads.pop_back();
         return false;

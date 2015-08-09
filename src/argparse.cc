@@ -25,7 +25,6 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
-#include <iomanip>
 #include <limits>
 #include <set>
 
@@ -33,6 +32,7 @@
 #include <unistd.h>
 
 #include "argparse.h"
+#include "strutils.h"
 
 namespace argparse
 {
@@ -201,7 +201,7 @@ void parser::print_help() const
 
 void parser::print_arguments(const string_vec& keys) const
 {
-    size_t ljust = 0;
+    size_t indentation = 0;
     for (string_vec_citer it = keys.begin(); it != keys.end(); ++it) {
         if (it->empty()) {
             continue;
@@ -216,16 +216,21 @@ void parser::print_arguments(const string_vec& keys) const
         }
 
         // For simplicity, we always include the space for the metavar
-        ljust = std::max<size_t>(ljust, current_len + 1);
+        indentation = std::max<size_t>(indentation, current_len + 1);
     }
 
-    // indentation + ljust + 4 space before description
-    ljust = 2 + ljust + 4;
+    // indentation + 4 space before description
+    indentation = 2 + indentation + 4;
 
-    std::cerr << std::left << std::setw(ljust)
+    std::cerr << std::left << std::setw(indentation)
                   << "Arguments:" << "Description:\n";
 
-    const size_t max_columns = get_terminal_columns() - 2;
+    cli_formatter fmt;
+    fmt.set_ljust(2);  // Indent subsequent lines two spaces
+    fmt.set_indent(indentation);
+    fmt.set_indent_first_line(false);
+    fmt.set_column_width(get_terminal_columns() - indentation - 3);
+
     for (string_vec_citer it = keys.begin(); it != keys.end(); ++it) {
         if (it->empty()) {
             std::cerr << "\n";
@@ -238,7 +243,7 @@ void parser::print_arguments(const string_vec& keys) const
         }
 
         const std::string metavar = get_metavar_str(ptr, *it);
-        std::cerr << std::left << std::setw(ljust)
+        std::cerr << std::left << std::setw(indentation)
                   << ("  " + *it + " " + metavar);
 
         std::string value = ptr->help();
@@ -250,34 +255,8 @@ void parser::print_arguments(const string_vec& keys) const
                 value.replace(index, 8, default_value);
             }
 
-            index = 0;
-            size_t current_width = 0;
-            size_t current_ljust = ljust;
-            while (index < value.length()) {
-                const size_t endpos = value.find(' ', index);
-                const std::string substr = value.substr(index, endpos - index);
-
-                if (current_width) {
-                    if (current_ljust + current_width + 1 + substr.length() > max_columns) {
-                        // Add another 2 characters of indentation
-                        current_ljust = ljust + 2;
-                        std::cerr << "\n" << std::left
-                                  << std::setw(current_ljust)
-                                  << "" << substr;
-                        current_width = substr.length();
-                    } else {
-                        std::cerr << " " << substr;
-                        current_width += substr.length() + 1;
-                    }
-                } else {
-                    std::cerr << substr;
-                    current_width += substr.length();
-                }
-
-                index += substr.length() + 1;
-            } while (index < value.length());
-
-            std::cerr << "\n";
+            // Format into columns and indent lines (except the first line)
+            std::cerr << fmt.format(value) << "\n";
         }
     }
 
@@ -429,11 +408,12 @@ size_t any::consume(string_vec_citer start, const string_vec_citer& end)
 
 std::string any::to_str() const
 {
-    if (m_ptr) {
-        return *m_ptr;
+    const std::string& result = m_ptr ? *m_ptr : m_sink;
+    if (result.empty()) {
+        return "<not set>";
+    } else {
+        return result;
     }
-
-    return m_sink;
 }
 
 

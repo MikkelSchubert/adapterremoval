@@ -108,7 +108,7 @@ TEST(any, defaults)
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ("", ptr->metavar());
 	ASSERT_EQ("", ptr->help());
-	ASSERT_EQ("", ptr->to_str());
+	ASSERT_EQ("<not set>", ptr->to_str());
 }
 
 
@@ -143,7 +143,7 @@ TEST(any, consume_past_the_end)
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(static_cast<size_t>(-1), ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_FALSE(ptr->is_set());
-	ASSERT_EQ("", ptr->to_str());
+	ASSERT_EQ("<not set>", ptr->to_str());
 }
 
 
@@ -151,7 +151,7 @@ TEST(any, consume__with_sink__empty)
 {
 	std::string sink;
 	consumer_autoptr ptr(new argparse::any(&sink));
-	ASSERT_EQ("", ptr->to_str());
+	ASSERT_EQ("<not set>", ptr->to_str());
 	string_vec arguments;
 	arguments.push_back("foo");
 	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
