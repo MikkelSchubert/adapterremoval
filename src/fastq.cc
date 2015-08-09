@@ -24,8 +24,8 @@
 \*************************************************************************/
 #include <algorithm>
 #include <cmath>
-#include <istream>
 #include <stdexcept>
+#include <limits>
 
 #include "fastq.h"
 
@@ -320,22 +320,6 @@ void fastq::add_prefix_to_header(const std::string& prefix)
 }
 
 
-bool fastq::read(std::istream& instream, quality_format encoding)
-{
-    string_vec lines;
-    for (size_t i = 0; i < 4 && instream; ++i) {
-        lines.push_back(std::string());
-        if (!std::getline(instream, lines.back())) {
-            lines.pop_back();
-            break;
-        }
-    }
-
-    string_vec_citer it = lines.begin();
-    return read(it, lines.end(), encoding);
-}
-
-
 bool fastq::read(string_vec_citer& it, const string_vec_citer& end, quality_format encoding)
 {
     if (it == end) {
@@ -383,14 +367,6 @@ bool fastq::read(string_vec_citer& it, const string_vec_citer& end, quality_form
 
     process_record(encoding);
     return true;
-}
-
-
-bool fastq::write(std::ostream& outstream, quality_format encoding) const
-{
-    outstream << to_str(encoding);
-
-    return !outstream.fail();
 }
 
 

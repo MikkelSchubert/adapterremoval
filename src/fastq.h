@@ -25,10 +25,7 @@
 #ifndef FASTQ_H
 #define FASTQ_H
 
-#include <limits>
 #include <string>
-#include <vector>
-#include <ostream>
 
 #include "commontypes.h"
 
@@ -37,6 +34,9 @@ const int MIN_PHRED_SCORE =  0;
 const int MAX_PHRED_SCORE = 41;
 const int MIN_SOLEXA_SCORE = -5;
 const int MAX_SOLEXA_SCORE = 41;
+
+// Maximum Phred score allowed by the BAM format
+const int MAX_EXTENDED_PHRED_SCORE = '~' - '!';
 
 const int PHRED_OFFSET_33 = 33;
 const int PHRED_OFFSET_64 = 64;
@@ -143,17 +143,6 @@ public:
     void add_prefix_to_header(const std::string& prefix);
 
 
-    /**
-     * Reads a FASTQ record from the stream.
-     *
-     * If a malformed or invalid FASTQ record is encountered, the fastq_error
-     * exception is raised. Note that 'this' record is only valid if read
-     * returned true. Unlike the constructor, this function does not accept
-     * empty headers, or sequences / qualities, as this typically indicates
-     * a problem with the source file.
-     */
-    bool read(std::istream& instream, quality_format encoding = phred_33);
-
 	/**
 	 * Reads a FASTQ record from a list of lines (without newlines).
      *
@@ -164,16 +153,6 @@ public:
      * a problem with the source file.
 	 */
     bool read(string_vec_citer& begin, const string_vec_citer& end, quality_format encoding = phred_33);
-
-
-    /**
-     * Writes a FASTQ record to the stream, using the specified encoding.
-     *
-     * Only the phred_33 and phred_64 encodings are supported. For phred_64,
-     * quality bases are truncated to 0 .. 40, while phred_33 supports quality
-     * scores in the range 0 .. 41.
-     */
-    bool write(std::ostream& outstream, quality_format encoding = phred_33) const;
 
     /**
      * Converts a FASTQ record to a string ending with a newline.

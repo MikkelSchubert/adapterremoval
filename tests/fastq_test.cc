@@ -29,21 +29,6 @@
 #include "fastq.h"
 
 
-
-inline std::istream& operator>>(std::istream& stream, fastq& record)
-{
-    record.read(stream);
-    return stream;
-}
-
-
-inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
-{
-    record.write(stream);
-    return stream;
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Default constructor
 
@@ -648,26 +633,20 @@ TEST(fastq, eof_after_qualities_following_previous_read_2)
 
 TEST(fastq, Writing_to_stream_phred_33)
 {
-    std::stringstream outstream;
     const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-    outstream << record;
-    ASSERT_EQ("@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n", outstream.str());
+    ASSERT_EQ("@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n", record.to_str());
 }
 
 TEST(fastq, Writing_to_stream_phred_33_explicit)
 {
-    std::stringstream outstream;
     const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-    record.write(outstream);
-    ASSERT_EQ("@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n", outstream.str());
+    ASSERT_EQ("@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n", record.to_str());
 }
 
 TEST(fastq, Writing_to_stream_phred_64_explicit)
 {
-    std::stringstream outstream;
     const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-    record.write(outstream, fastq::phred_64);
-    ASSERT_EQ("@record_1\nACGTACGATA\n+\n@CBCIUWbfh\n", outstream.str());
+    ASSERT_EQ("@record_1\nACGTACGATA\n+\n@CBCIUWbfh\n", record.to_str(fastq::phred_64));
 }
 
 
