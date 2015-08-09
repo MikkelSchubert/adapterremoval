@@ -29,6 +29,7 @@
 #include <string>
 #include <stdexcept>
 #include <sys/time.h>
+#include <limits>
 
 #include "userconfig.h"
 #include "fastq.h"
