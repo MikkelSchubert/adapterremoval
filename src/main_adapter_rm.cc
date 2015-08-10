@@ -446,15 +446,15 @@ public:
                     stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
 
                     if (read_1_acceptable) {
-                        out_mate_1->reads.push_back(read1.to_str(m_config.quality_output_fmt));
-                    } else {
                         out_singleton->reads.push_back(read1.to_str(m_config.quality_output_fmt));
+                    } else {
+                        out_discarded->reads.push_back(read1.to_str(m_config.quality_output_fmt));
                     }
 
                     if (read_2_acceptable) {
-                        out_mate_2->reads.push_back(read2.to_str(m_config.quality_output_fmt));
-                    } else {
                         out_singleton->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+                    } else {
+                        out_discarded->reads.push_back(read2.to_str(m_config.quality_output_fmt));
                     }
                 }
             }
