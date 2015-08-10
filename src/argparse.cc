@@ -53,21 +53,6 @@ size_t get_terminal_columns()
 }
 
 
-std::string toupper(const std::string& str)
-{
-    std::string news = str;
-    for(size_t i = 0; i < news.length(); ++i) {
-        const char current = news.at(i);
-        if (current >= 'a' && current <= 'z') {
-            news.at(i) -= 32;
-        }
-
-    }
-
-    return news;
-}
-
-
 parser::parser(const std::string& name,
                const std::string& version,
                const std::string& help)

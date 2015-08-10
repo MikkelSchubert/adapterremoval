@@ -33,6 +33,10 @@ const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
 
+/** Uppercases letters in the range a-z */
+std::string toupper(const std::string& str);
+
+
 /** Split text by newlines and add fixed identation following newlines. */
 std::string indent_lines(const std::string& lines, size_t identation = DEFAULT_INDENTATION);
 

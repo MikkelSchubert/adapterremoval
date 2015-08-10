@@ -24,6 +24,21 @@
 #include "strutils.h"
 
 
+std::string toupper(const std::string& str)
+{
+    std::string news = str;
+    for(size_t i = 0; i < news.length(); ++i) {
+        const char current = news.at(i);
+        if (current >= 'a' && current <= 'z') {
+            news.at(i) -= 32;
+        }
+
+    }
+
+    return news;
+}
+
+
 std::string indent_lines(const std::string& lines, size_t n_indent)
 {
     std::string line;
