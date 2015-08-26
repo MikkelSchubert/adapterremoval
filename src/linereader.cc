@@ -22,6 +22,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
@@ -30,9 +31,8 @@
 #include "linereader.h"
 #include "threads.h"
 
-// FIXME
 //! Size of compressed and uncompressed buffers.
-const size_t BUF_SIZE = 4 * 1024;
+const size_t BUF_SIZE = BUFSIZ;
 
 
 ///////////////////////////////////////////////////////////////////////////////
