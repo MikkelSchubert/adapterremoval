@@ -94,7 +94,7 @@ consumer_ptr& parser::operator[](const std::string& key)
     if (key.empty()) {
         throw std::invalid_argument("empty key");
     } else if (m_parsers.find(key) == m_parsers.end()) {
-        m_keys.push_back(key);
+        m_keys.push_back(key_pair(true, key));
     }
 
 	return m_parsers[key];
@@ -154,7 +154,14 @@ bool parser::is_set(const std::string& key) const
 
 void parser::add_seperator()
 {
-    m_keys.push_back(std::string());
+    m_keys.push_back(key_pair(false, std::string()));
+}
+
+
+void parser::add_header(const std::string& header)
+{
+    add_seperator();
+    m_keys.push_back(key_pair(false, header));
 }
 
 
@@ -184,24 +191,24 @@ void parser::print_help() const
 }
 
 
-void parser::print_arguments(const string_vec& keys) const
+void parser::print_arguments(const key_pair_vec& keys) const
 {
+    typedef key_pair_vec::const_iterator key_pair_citer;
+
     size_t indentation = 0;
-    for (string_vec_citer it = keys.begin(); it != keys.end(); ++it) {
-        if (it->empty()) {
-            continue;
+    for (key_pair_citer it = keys.begin(); it != keys.end(); ++it) {
+        if (it->first) {
+            const consumer_ptr ptr = m_parsers.at(it->second);
+            const std::string metavar = get_metavar_str(ptr, it->second);
+            size_t current_len = it->second.length();
+
+            if (!metavar.empty()) {
+                current_len += metavar.length();
+            }
+
+            // For simplicity, we always include the space for the metavar
+            indentation = std::max<size_t>(indentation, current_len + 1);
         }
-
-        const consumer_ptr ptr = m_parsers.at(*it);
-        const std::string metavar = get_metavar_str(ptr, *it);
-        size_t current_len = it->length();
-
-        if (!metavar.empty()) {
-            current_len += metavar.length();
-        }
-
-        // For simplicity, we always include the space for the metavar
-        indentation = std::max<size_t>(indentation, current_len + 1);
     }
 
     // indentation + 4 space before description
@@ -216,20 +223,20 @@ void parser::print_arguments(const string_vec& keys) const
     fmt.set_indent_first_line(false);
     fmt.set_column_width(get_terminal_columns() - indentation - 3);
 
-    for (string_vec_citer it = keys.begin(); it != keys.end(); ++it) {
-        if (it->empty()) {
-            std::cerr << "\n";
+    for (key_pair_citer it = keys.begin(); it != keys.end(); ++it) {
+        if (!it->first) {
+            std::cerr << it->second << "\n";
             continue;
         }
 
-        const consumer_ptr ptr = m_parsers.at(*it);
+        const consumer_ptr ptr = m_parsers.at(it->second);
         if (ptr->help() == "HIDDEN") {
             continue;
         }
 
-        const std::string metavar = get_metavar_str(ptr, *it);
+        const std::string metavar = get_metavar_str(ptr, it->second);
         std::cerr << std::left << std::setw(indentation)
-                  << ("  " + *it + " " + metavar);
+                  << ("  " + it->second + " " + metavar);
 
         std::string value = ptr->help();
         if (!value.empty()) {
@@ -259,16 +266,16 @@ bool parser::find_argument(consumer_map::iterator& it, const std::string& str)
 
     // Locate partial arguments by finding arguments with 'str' as prefix
     if (str != "-" && str != "--") {
-        string_vec matches;
+        key_pair_vec matches;
         consumer_map::iterator cit = m_parsers.begin();
         for (; cit != m_parsers.end(); ++cit) {
             if (cit->first.substr(0, str.size()) == str) {
-                matches.push_back(cit->first);
+                matches.push_back(key_pair(true, cit->first));
             }
         }
 
         if (matches.size() == 1) {
-            it = m_parsers.find(matches.front());
+            it = m_parsers.find(matches.front().second);
             return true;
         } else if (matches.size() > 1) {
             std::cerr << "ERROR: Ambiguous argument '" << str << "'; "

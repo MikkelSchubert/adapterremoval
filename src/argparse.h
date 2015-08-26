@@ -121,8 +121,13 @@ public:
     /** Add a blank line between the previous and the next command. */
     void add_seperator();
 
+    /** Add a blank line and a header between the previous and next command. */
+    void add_header(const std::string& header);
+
+
     /** Create alias for key with name alias. */
     void create_alias(const std::string& key, const std::string& alias);
+
 
     /** Helper function; prints the program name and version string. */
     void print_version() const;
@@ -130,8 +135,11 @@ public:
     void print_help() const;
 
 private:
+    typedef std::pair<bool, std::string> key_pair;
+    typedef std::vector<key_pair> key_pair_vec;
+
     /** Pretty-print the listed arguments. */
-    void print_arguments(const string_vec& keys) const;
+    void print_arguments(const key_pair_vec& keys) const;
 
     /**
      * Attempt to find argument by similarity.
@@ -152,7 +160,7 @@ private:
     std::string get_metavar_str(const consumer_ptr, const std::string&) const;
 
     //! Vector of keys (command-line options), tracking the order of addition.
-    string_vec m_keys;
+    key_pair_vec m_keys;
     //! Map of keys (command-line args) to parser pointers; multiple
     //! keys may be assosiated with the same pointer.
     consumer_map m_parsers;
