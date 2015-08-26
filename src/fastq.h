@@ -72,6 +72,9 @@ public:
     /** Returns the Phred+33 encoded scores (0 .. 41) for each base. **/
     const std::string& qualities() const;
 
+    /** Returns the name (excluding the @ and other fields) of the header. **/
+    std::string name() const;
+
     /** Returns the length of the sequence. */
     size_t length() const;
 
@@ -160,6 +163,17 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 inline const std::string& fastq::header() const
 {
+    return m_header;
+}
+
+
+inline std::string fastq::name() const
+{
+    const size_t pos = m_header.find_first_of(' ');
+    if (pos != std::string::npos) {
+        return m_header.substr(0, pos);
+    }
+
     return m_header;
 }
 

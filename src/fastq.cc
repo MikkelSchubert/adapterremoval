@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <sstream>
 
 #include "fastq.h"
 
@@ -35,6 +36,17 @@ struct mate_info
       : name()
       , mate(unknown)
     {}
+
+    std::string desc() const
+    {
+        switch (mate) {
+            case unknown: return "unknown";
+            case mate1: return "mate 1";
+            case mate2: return "mate 2";
+            default:
+                throw std::invalid_argument("Invalid mate in mate_info::desc");
+        }
+    }
 
     std::string name;
     enum { unknown, mate1, mate2 } mate;
@@ -298,18 +310,21 @@ void fastq::validate_paired_reads(const fastq& mate1, const fastq& mate2)
     const mate_info info2 = get_mate_information(mate2);
 
     if (info1.name != info2.name) {
-        std::string message = "Pair contains reads with mismatching names: '";
-        message += info1.name;
-        message += "' and '";
-        message += info2.name;
-        message += "'";
+        std::stringstream error;
+        error << "Pair contains reads with mismatching names: '"
+              << info1.name << "' and '" << info2.name;
 
-        throw fastq_error(message);
+        throw fastq_error(error.str());
     }
 
     if (info1.mate != mate_info::unknown || info2.mate != mate_info::unknown) {
         if (info1.mate != mate_info::mate1 || info2.mate != mate_info::mate2) {
-            throw fastq_error("Inconsistent mate numbering");
+            std::stringstream error;
+            error << "Inconsistent mate numbering; please verify data:\n"
+                  << "\nRead 1 identified as " << info1.desc() << ": " << mate1.name()
+                  << "\nRead 2 identified as " << info2.desc() << ": " << mate2.name();
+
+            throw fastq_error(error.str());
         }
     }
 }
