@@ -33,9 +33,9 @@
 //! Number of lines to read for each data-chunk
 const size_t CHUNK_SIZE = 4 * 1000;
 
-#ifdef AR_GZIP_SUPPORT
+#if defined(AR_GZIP_SUPPORT) || defined(AR_BZIP2_SUPPORT)
 //! Size of compressed chunks used to transport compressed data
-const size_t GZIP_CHUNK = 10240;
+const size_t COMPRESSED_CHUNK = 40 * 1024;
 #endif
 
 
@@ -104,14 +104,11 @@ chunk_list read_paired_fastq::process(analytical_chunk* chunk)
     }
 
     string_vec& lines = file_chunk->mates.at(m_type);
-    if (lines.size() != CHUNK_SIZE) {
-        lines.resize(CHUNK_SIZE);
-    }
+    lines.resize(CHUNK_SIZE);
 
-    string_vec::iterator it = lines.begin();
-    for (; it != lines.end(); ++it) {
-        if (!m_io_input.getline(*it)) {
-            lines.resize(it - lines.begin());
+    for (size_t i = 0; i < CHUNK_SIZE; ++i) {
+        if (!m_io_input.getline(lines.at(i))) {
+            lines.resize(i);
             break;
         }
     }
@@ -249,8 +246,8 @@ chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
         m_stream.next_in = reinterpret_cast<char*>(input_buffer.second);
 
         do {
-            output_buffer.first = GZIP_CHUNK;
-            output_buffer.second = new unsigned char[GZIP_CHUNK];
+            output_buffer.first = COMPRESSED_CHUNK;
+            output_buffer.second = new unsigned char[COMPRESSED_CHUNK];
 
             m_stream.avail_out = output_buffer.first;
             m_stream.next_out = reinterpret_cast<char*>(output_buffer.second);
@@ -270,7 +267,7 @@ chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
                 }
             }
 
-            output_buffer.first = GZIP_CHUNK - m_stream.avail_out;
+            output_buffer.first = COMPRESSED_CHUNK - m_stream.avail_out;
             // A buffer must be sent, even if #bytes == 0.
             buffers.push_back(output_buffer);
             output_buffer.second = NULL;
@@ -377,8 +374,8 @@ chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
         m_stream.next_in = input_buffer.second;
 
         do {
-            output_buffer.first = GZIP_CHUNK;
-            output_buffer.second = new unsigned char[GZIP_CHUNK];
+            output_buffer.first = COMPRESSED_CHUNK;
+            output_buffer.second = new unsigned char[COMPRESSED_CHUNK];
 
             m_stream.avail_out = output_buffer.first;
             m_stream.next_out = output_buffer.second;
@@ -396,7 +393,7 @@ chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
                     throw thread_error("gzip_paired_fastq::process: unknown error");
             }
 
-            output_buffer.first = GZIP_CHUNK - m_stream.avail_out;
+            output_buffer.first = COMPRESSED_CHUNK - m_stream.avail_out;
             // A buffer must be sent, even if #bytes == 0.
             buffers.push_back(output_buffer);
             output_buffer.second = NULL;
@@ -489,7 +486,9 @@ chunk_list write_paired_fastq::process(analytical_chunk* chunk)
     } else {
         buffer_vec& buffers = file_chunk->buffers;
         for (buffer_vec::iterator it = buffers.begin(); it != buffers.end(); ++it) {
-            m_output->write(reinterpret_cast<char*>(it->second), it->first);
+            if (it->first) {
+                m_output->write(reinterpret_cast<char*>(it->second), it->first);
+            }
         }
     }
 
