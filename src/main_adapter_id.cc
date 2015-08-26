@@ -387,8 +387,8 @@ public:
         size_t n_record = file_chunk->offset;
         try {
             fastq read1, read2;
-            while (read1.read(file_1_it, file_1_end, m_config.quality_input_fmt) &&
-                   read2.read(file_2_it, file_2_end, m_config.quality_input_fmt)) {
+            while (read1.read(file_1_it, file_1_end, *m_config.quality_input_fmt) &&
+                   read2.read(file_2_it, file_2_end, *m_config.quality_input_fmt)) {
                 process_reads(adapters, stats, *sink, read1, read2);
                 n_record += 4;
             }

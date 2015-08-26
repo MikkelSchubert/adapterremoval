@@ -25,135 +25,8 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
-#include <limits>
 
 #include "fastq.h"
-
-
-///////////////////////////////////////////////////////////////////////////////
-// Utility functions
-
-std::string calc_solexa_to_phred()
-{
-    const char scores[] = {
-    1,  1,  2,  2,  3, // -5 .. -1
-    3,  4,  4,  5,  5, //  0 ..  4
-    6,  7,  8,  9, 10, //  5 ..  9
-   10, 11, 12, 13, 14, // 10 .. 14
-   15, 16, 17, 18, 19, // 15 .. 19
-   20, 21, 22, 23, 24, // 20 .. 24
-   25, 26, 27, 28, 29, // 25 .. 29
-   30, 31, 32, 33, 34, // 30 .. 34
-   35, 36, 37, 38, 39, // 35 .. 39
-   40, 41, '\0'};      // 40 .. 41
-
-   return std::string(scores);
-}
-
-
-//! The corresponding Phred score for each solexa score
-const std::string g_solexa_to_phred = calc_solexa_to_phred();
-
-
-char process_scores_phred_33(char quality)
-{
-    if (quality < '!') { // Neither solexa nor Phred+33
-        throw fastq_error("ASCII value of Phred score is less than 33 = '!'; "
-                          "input is corrupt or not FASTQ format!");
-    } else if (quality > 'J') {
-        throw fastq_error("Phred+33 score is greater than 41 (ASCII = 'J'); "
-                          "Are these FASTQ reads actually in Phred+64 format?\n"
-                          "If so, use the option \"--qualitybase 64\"");
-    }
-
-    return quality;
-}
-
-
-char process_scores_phred_64(char quality)
-{
-    // The scores from '@' (0) to 'h' (40) are expected for Phred+64 reads
-    // As an older format, scores outside of this range is not expected
-    if (quality < '@') {
-        if (quality < ';') {
-            throw fastq_error("Phred+64 score is less than 0 (ASCII = '@');\n"
-                              "Are these FASTQ reads actually in Phred+33 format?\n"
-                              "If so, use the option \"--qualitybase 33\"");
-        } else {
-            // Value not less than -5, which is the lowest Solexa score
-            throw fastq_error("Phred+64 score is less than 0 (ASCII = '@');\n"
-                              "Are these FASTQ reads actually in Solexa format?\n"
-                              "If so, use the option \"--qualitybase solexa\"");
-        }
-    } else if (quality > 'h') {
-        throw fastq_error("Phred+64 score is greater than 40 (ASCII = 'h'); "
-                          "input is corrupt or not FASTQ format!");
-    }
-
-    return (quality - '@') + PHRED_OFFSET_33;
-}
-
-
-char process_scores_solexa(char quality)
-{
-    // The scores from ';' (-5) to 'h' (40) are expected for Solexa reads
-    // As an older format, scores outside of this range is not expected
-    if (quality < ';') { // TODO: -5, maybe Phred+33
-        throw fastq_error("Solexa score is less than -5 (ASCII = ';'); "
-                          "Is this actually Phred+33 data?");
-    } else if (quality > 'h') {
-        throw fastq_error("Solexa score is greater than 40 (ASCII = 'h'); "
-                          "This is not a valid Solexa score for FASTQ reads.");
-    }
-
-    return g_solexa_to_phred.at(quality - ';') + PHRED_OFFSET_33;
-}
-
-
-char process_scores_ignored(char quality)
-{
-    if (quality < '!') { // Neither solexa nor Phred+33
-        throw fastq_error("ASCII value of Phred score is less than 33 = '!'; "
-                          "input is corrupt or not FASTQ format!");
-    } else if (quality > 'h') {
-        throw fastq_error("Quality score is greater than 'h' (ASCII); "
-                          "This is not a valid quality score for FASTQ reads.");
-    }
-
-    return PHRED_OFFSET_33;
-}
-
-
-
-inline void convert_qualities(std::string& qualities, const fastq::quality_format base)
-{
-    char (*func)(char) = NULL;
-    switch (base) {
-        case fastq::phred_33:
-            func = &process_scores_phred_33;
-            break;
-
-        case fastq::phred_64:
-            func = &process_scores_phred_64;
-            break;
-
-        case fastq::solexa:
-            func = &process_scores_solexa;
-            break;
-
-        case fastq::ignored:
-            func = &process_scores_ignored;
-            break;
-
-        default:
-            throw std::logic_error("Unhandled FASTQ quality score format in 'convert_qualities'");
-    }
-
-    std::transform(qualities.begin(),
-                   qualities.end(),
-                   qualities.begin(),
-                   func);
-}
 
 
 struct mate_info
@@ -195,27 +68,6 @@ inline mate_info get_mate_information(const fastq& read)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// fastq_error
-
-fastq_error::fastq_error(const std::string& message)
-    : std::exception()
-    , m_message(message)
-{
-}
-
-
-fastq_error::~fastq_error() throw()
-{
-}
-
-
-const char* fastq_error::what() const throw()
-{
-    return m_message.c_str();
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 // fastq
 
 fastq::fastq()
@@ -228,7 +80,7 @@ fastq::fastq()
 fastq::fastq(const std::string& header,
              const std::string& sequence,
              const std::string& qualities,
-             quality_format encoding)
+             const fastq_encoding& encoding)
     : m_header(header)
     , m_sequence(sequence)
     , m_qualities(qualities)
@@ -320,7 +172,7 @@ void fastq::add_prefix_to_header(const std::string& prefix)
 }
 
 
-bool fastq::read(string_vec_citer& it, const string_vec_citer& end, quality_format encoding)
+bool fastq::read(string_vec_citer& it, const string_vec_citer& end, const fastq_encoding& encoding)
 {
     if (it == end) {
         return false;
@@ -370,30 +222,25 @@ bool fastq::read(string_vec_citer& it, const string_vec_citer& end, quality_form
 }
 
 
-std::string fastq::to_str(quality_format encoding) const
+std::string fastq::to_str(const fastq_encoding& encoding) const
 {
     std::string result;
-    // Size of header, sequence, qualities, 4 new-lines, @ and +
+    // Size of header, sequence, qualities, 4 new-lines, '@' and '+'
     result.reserve(m_header.size() + m_sequence.size() * 2 + 6);
 
     result.push_back('@');
-    result += m_header;
+    result.append(m_header);
     result.push_back('\n');
-    result += m_sequence;
-    result += "\n+\n";
-
-    if (encoding == phred_33) {
-        result += m_qualities;
-    } else if (encoding == phred_64) {
-        for (std::string::const_iterator it = m_qualities.begin(); it != m_qualities.end(); ++it) {
-            // Phred+64 is limite to scores in the range 64 + (0 .. 40)
-            result.push_back(std::min<char>(64 + 40, *it + 31));
-        }
-    } else {
-        throw std::invalid_argument("writing solexa / ignored scores not supported");
-    }
-
+    result.append(m_sequence);
+    result.append("\n+\n", 3);
+    result.append(m_qualities);
     result.push_back('\n');
+
+    // Encode quality-scores in place
+    size_t quality_start = m_header.size() + m_sequence.size() + 5;
+    size_t quality_end = quality_start + m_sequence.size();
+    encoding.encode_string(result.begin() + quality_start,
+                           result.begin() + quality_end);
 
     return result;
 }
@@ -427,7 +274,8 @@ void fastq::clean_sequence(std::string& sequence)
                 break;
 
             default:
-                throw fastq_error("invalid character in FASTQ sequence");
+                throw fastq_error("invalid character in FASTQ sequence; "
+                                  "only A, C, G, T and N are expected!");
         }
     }
 }
@@ -436,8 +284,7 @@ void fastq::clean_sequence(std::string& sequence)
 char fastq::p_to_phred_33(double p)
 {
     const int raw_score = static_cast<int>(-10.0 * std::log10(p));
-    const char phred_score = static_cast<char>(std::min<int>(MAX_PHRED_SCORE, raw_score));
-    return phred_score + PHRED_OFFSET_33;
+    return std::min<int>('~', raw_score + PHRED_OFFSET_33);
 }
 
 
@@ -471,12 +318,12 @@ void fastq::validate_paired_reads(const fastq& mate1, const fastq& mate2)
 ///////////////////////////////////////////////////////////////////////////////
 // Private helper functions
 
-void fastq::process_record(quality_format encoding)
+void fastq::process_record(const fastq_encoding& encoding)
 {
     if (m_qualities.length() != m_sequence.length()) {
         throw fastq_error("invalid FASTQ record; sequence/quality length does not match");
     }
 
     clean_sequence(m_sequence);
-    convert_qualities(m_qualities, encoding);
+    encoding.decode_string(m_qualities.begin(), m_qualities.end());
 }

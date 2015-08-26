@@ -487,7 +487,8 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
 
     return fastq(read1.header(),
                  read_1_seq + collapsed.first + read_2_seq,
-                 read_1_qual + collapsed.second + read_2_qual);
+                 read_1_qual + collapsed.second + read_2_qual,
+                 FASTQ_ENCODING_SAM);
 }
 
 

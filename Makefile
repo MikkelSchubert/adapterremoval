@@ -84,6 +84,7 @@ OBJS     := $(BDIR)/main.o \
             $(BDIR)/alignment.o \
             $(BDIR)/fastq.o \
             $(BDIR)/fastq_io.o \
+            $(BDIR)/fastq_enc.o \
             $(BDIR)/userconfig.o \
             $(BDIR)/timer.o \
             $(BDIR)/linereader.o \
@@ -135,7 +136,7 @@ build/%.1: %.pod
 # Unit testing
 #
 TEST_DIR := build/tests
-TEST_OBJS := $(TEST_DIR)/fastq_test.o $(BDIR)/fastq.o \
+TEST_OBJS := $(TEST_DIR)/fastq_test.o $(BDIR)/fastq.o $(BDIR)/fastq_enc.o \
 	$(TEST_DIR)/alignment_test.o $(BDIR)/alignment.o \
 	$(TEST_DIR)/argparse_test.o $(BDIR)/argparse.o \
 	$(TEST_DIR)/strutils_test.o $(BDIR)/strutils.o

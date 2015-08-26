@@ -35,6 +35,7 @@
 #include "fastq.h"
 #include "alignment.h"
 #include "linereader.h"
+#include "strutils.h"
 
 
 size_t get_seed()
@@ -80,6 +81,29 @@ fastq read_adapter_sequence(std::stringstream& instream)
 }
 
 
+std::auto_ptr<fastq_encoding> select_encoding(const std::string& name,
+                                              const std::string& value,
+                                              size_t quality_max = MAX_PHRED_SCORE_DEFAULT)
+{
+    std::auto_ptr<fastq_encoding> ptr;
+
+    const std::string uppercase_value = toupper(value);
+    if (uppercase_value == "33") {
+        ptr.reset(new fastq_encoding(PHRED_OFFSET_33, quality_max));
+    } else if (uppercase_value == "64") {
+        ptr.reset(new fastq_encoding(PHRED_OFFSET_64, quality_max));
+    } else if (uppercase_value == "SOLEXA") {
+        ptr.reset(new fastq_encoding_solexa(quality_max));
+    } else {
+        std::cerr << "Error: Invalid value for " << name << ": '"
+                  << value << "'\n" << "   expected values 33, 64, or solexa."
+                  << std::endl;
+    }
+
+    return ptr;
+}
+
+
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
@@ -94,8 +118,8 @@ userconfig::userconfig(const std::string& name,
     , max_genomic_length(std::numeric_limits<unsigned>::max())
     , min_alignment_length(11)
     , mismatch_threshold(-1.0)
-    , quality_input_fmt(fastq::phred_33)
-    , quality_output_fmt(fastq::phred_33)
+    , quality_input_fmt()
+    , quality_output_fmt()
     , trim_by_quality(false)
     , low_quality_score(2)
     , trim_ambiguous_bases(false)
@@ -116,7 +140,8 @@ userconfig::userconfig(const std::string& name,
     , barcode()
     , barcode_list()
     , quality_input_base("33")
-    , quality_output_base("NA")
+    , quality_output_base("33")
+    , quality_max(MAX_PHRED_SCORE_DEFAULT)
 {
     argparser["--file1"] =
         new argparse::any(&input_file_1, "FILE",
@@ -213,9 +238,17 @@ userconfig::userconfig(const std::string& name,
     argparser["--qualitybase-output"] =
         new argparse::any(&quality_output_base, "BASE",
             "Quality base used to encode Phred scores in output; either 33, "
-            "64. By default, reads in Phred+33 format will be written as "
-            "Phred+33, while Phred+64 / Solexa reads will be written as "
-            "Phred+64.");
+            "64. By default, reads will be written in the same format as the "
+            "that specified using --qualitybase.");
+    argparser["--qualitymax"] =
+        new argparse::knob(&quality_max, "BASE",
+            "Specifies the maximum Phred score expected in input files, and "
+            "used when writing output. ASCII encoded values are limited to "
+            "the characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning "
+            "that possible scores are 0 - 93 with offset 33, and 0 - 62 "
+            "for offset 64 and Solexa scores [default: %default].");
+
+    argparser.add_seperator();
     argparser["--5prime"] =
         new argparse::any(&barcode, "BARCODE",
             "If set, the NT barcode is detected (max 1 mismatch) in and "
@@ -308,40 +341,33 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return result;
     }
 
-    if (argparser.is_set("--qualitybase")) {
-        if (quality_input_base == "33") {
-            quality_input_fmt = fastq::phred_33;
-        } else if (quality_input_base == "64") {
-            quality_input_fmt = fastq::phred_64;
-        } else if (quality_input_base == "solexa") {
-            quality_input_fmt = fastq::solexa;
-        } else {
-            std::cerr << "Error: Invalid value for --qualitybase: '"
-                      << quality_input_base << "'\n"
-                      << "   expected values 33, 64, or solexa." << std::endl;
-            return argparse::pr_error;
-        }
-    } else if (identify_adapters) {
-        // By default quality scores are ignored when inferring adapter sequences
-        quality_input_fmt = fastq::ignored;
-    }
 
-    if (quality_output_base == "33") {
-        quality_output_fmt = fastq::phred_33;
-    } else if (quality_output_base == "64") {
-        quality_output_fmt = fastq::phred_64;
-    } else if (quality_output_base == "NA") {
-        if (quality_input_fmt == fastq::phred_33) {
-            quality_output_fmt = fastq::phred_33;
-        } else {
-            quality_output_fmt = fastq::phred_64;
-        }
-    } else {
-        std::cerr << "Error: Invalid value for --qualitybase-out: '"
-                  << quality_output_base << "'\n"
-                  << "   expected values 33 or 64." << std::endl;
+    quality_input_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
+    if (!quality_input_fmt.get()) {
         return argparse::pr_error;
     }
+
+
+    if (argparser.is_set("--qualitybase-output")) {
+        quality_output_fmt = select_encoding("--qualitybase-out", quality_output_base, quality_max);
+        if (!quality_output_fmt.get()) {
+            return argparse::pr_error;
+        }
+    } else {
+        quality_output_fmt = select_encoding("--qualitybase-out", quality_input_base, quality_max);
+        if (!quality_output_fmt.get()) {
+            return argparse::pr_error;
+        }
+    }
+
+    // Previous settings are overwritten; this ensures that bad arguments are still caught
+    if (identify_adapters) {
+        // By default quality scores are ignored when inferring adapter
+        // sequences. However, arguments are still checked above.
+        quality_input_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
+        quality_output_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
+    }
+
 
     if (low_quality_score > MAX_PHRED_SCORE) {
         std::cerr << "Error: Invalid value for --minquality: "

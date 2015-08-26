@@ -59,18 +59,6 @@ void add_chunk(chunk_list& chunks, size_t target, std::auto_ptr<fastq_output_chu
 }
 
 
-std::string describe_phred_format(const fastq::quality_format fmt)
-{
-    switch (fmt) {
-        case fastq::phred_33: return "Phred+33";
-        case fastq::phred_64: return "Phred+64";
-        case fastq::solexa: return "Solexa";
-        default: throw std::invalid_argument("invalid quality score format");
-    }
-
-}
-
-
 void write_settings(const userconfig& config,
                              std::ostream& settings)
 {
@@ -101,8 +89,10 @@ void write_settings(const userconfig& config,
 
     settings << "Alignment shift value: " << config.shift << "\n";
     settings << "Global mismatch threshold: " << config.mismatch_threshold << "\n";
-    settings << "Quality format (input): " << describe_phred_format(config.quality_input_fmt) << "\n";
-    settings << "Quality format (output): " << describe_phred_format(config.quality_output_fmt) << "\n";
+    settings << "Quality format (input): " << config.quality_input_fmt->name() << "\n";
+    settings << "Quality score max (input): " << config.quality_input_fmt->max_score() << "\n";
+    settings << "Quality format (output): " << config.quality_output_fmt->name() << "\n";
+    settings << "Quality score max (output): " << config.quality_output_fmt->max_score() << "\n";
     settings << "Trimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No") << "\n";
 
     settings << "Trimming Phred scores <= " << config.low_quality_score << ": " << (config.trim_by_quality ? "yes" : "no") << "\n";
@@ -199,7 +189,7 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
         stats.inc_length_count(was_trimmed ? rt_collapsed_truncated : rt_collapsed,
                                collapsed_read.length());
 
-        const std::string& line = collapsed_read.to_str(config.quality_output_fmt);
+        const std::string& line = collapsed_read.to_str(*config.quality_output_fmt);
         if (was_trimmed) {
             out_collapsed_truncated.push_back(line);
         } else {
@@ -209,7 +199,7 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
         stats.discard1++;
         stats.discard2++;
         stats.inc_length_count(rt_discarded, collapsed_read.length());
-        out_discarded.push_back(collapsed_read.to_str(config.quality_output_fmt));
+        out_discarded.push_back(collapsed_read.to_str(*config.quality_output_fmt));
     }
 }
 
@@ -280,7 +270,7 @@ public:
         }
 
         try {
-            for (fastq read; read.read(file_1_it, file_1_end, m_config.quality_input_fmt); file_chunk->offset += 4) {
+            for (fastq read; read.read(file_1_it, file_1_end, *m_config.quality_input_fmt); file_chunk->offset += 4) {
                 m_config.trim_barcodes_if_enabled(read, *stats);
 
                 const alignment_info alignment = align_single_ended_sequence(read, m_config.adapters, m_config.shift);
@@ -310,13 +300,13 @@ public:
                     stats->total_number_of_good_reads++;
                     stats->total_number_of_nucleotides += read.length();
 
-                    out_mate_1->reads.push_back(read.to_str(m_config.quality_output_fmt));
+                    out_mate_1->reads.push_back(read.to_str(*m_config.quality_output_fmt));
                     stats->inc_length_count(rt_mate_1, read.length());
                 } else {
                     stats->discard1++;
                     stats->inc_length_count(rt_discarded, read.length());
 
-                    out_discarded->reads.push_back(read.to_str(m_config.quality_output_fmt));
+                    out_discarded->reads.push_back(read.to_str(*m_config.quality_output_fmt));
                 }
             }
         } catch (const fastq_error& error) {
@@ -377,8 +367,8 @@ public:
         fastq read2;
         try {
             for (; ; file_chunk->offset += 4) {
-                const bool read_file_1_ok = read1.read(file_1_it, file_1_end, m_config.quality_input_fmt);
-                const bool read_file_2_ok = read2.read(file_2_it, file_2_end, m_config.quality_input_fmt);
+                const bool read_file_1_ok = read1.read(file_1_it, file_1_end, *m_config.quality_input_fmt);
+                const bool read_file_2_ok = read2.read(file_2_it, file_2_end, *m_config.quality_input_fmt);
 
                 if (read_file_1_ok != read_file_2_ok) {
                     throw fastq_error("files contain unequal number of records");
@@ -431,8 +421,8 @@ public:
                 stats->total_number_of_good_reads += read_2_acceptable;
 
                 if (read_1_acceptable && read_2_acceptable) {
-                    out_mate_1->reads.push_back(read1.to_str(m_config.quality_output_fmt));
-                    out_mate_2->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+                    out_mate_1->reads.push_back(read1.to_str(*m_config.quality_output_fmt));
+                    out_mate_2->reads.push_back(read2.to_str(*m_config.quality_output_fmt));
 
                     stats->inc_length_count(rt_mate_1, read1.length());
                     stats->inc_length_count(rt_mate_2, read2.length());
@@ -446,15 +436,15 @@ public:
                     stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
 
                     if (read_1_acceptable) {
-                        out_singleton->reads.push_back(read1.to_str(m_config.quality_output_fmt));
+                        out_singleton->reads.push_back(read1.to_str(*m_config.quality_output_fmt));
                     } else {
-                        out_discarded->reads.push_back(read1.to_str(m_config.quality_output_fmt));
+                        out_discarded->reads.push_back(read1.to_str(*m_config.quality_output_fmt));
                     }
 
                     if (read_2_acceptable) {
-                        out_singleton->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+                        out_singleton->reads.push_back(read2.to_str(*m_config.quality_output_fmt));
                     } else {
-                        out_discarded->reads.push_back(read2.to_str(m_config.quality_output_fmt));
+                        out_discarded->reads.push_back(read2.to_str(*m_config.quality_output_fmt));
                     }
                 }
             }

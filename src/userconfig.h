@@ -126,9 +126,9 @@ public:
     double mismatch_threshold;
 
     //! Quality format expected in input files.
-    fastq::quality_format quality_input_fmt;
-    //! Quality format to write FASTQ records in; either phred_33 and phred_64.
-    fastq::quality_format quality_output_fmt;
+    std::auto_ptr<fastq_encoding> quality_input_fmt;
+    //! Quality format to use when writing FASTQ records.
+    std::auto_ptr<fastq_encoding> quality_output_fmt;
 
     //! If true, read termini are trimmed for low-quality bases.
     bool trim_by_quality;
@@ -222,6 +222,8 @@ private:
     std::string quality_input_base;
     //! Sink for user-supplied quality score formats; use quality_output_fmt.
     std::string quality_output_base;
+    //! Sink for maximum quality score for input / output
+    unsigned quality_max;
 };
 
 

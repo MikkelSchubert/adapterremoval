@@ -28,31 +28,7 @@
 #include <string>
 
 #include "commontypes.h"
-
-
-const int MIN_PHRED_SCORE =  0;
-const int MAX_PHRED_SCORE = 41;
-const int MIN_SOLEXA_SCORE = -5;
-const int MAX_SOLEXA_SCORE = 41;
-
-// Maximum Phred score allowed by the BAM format
-const int MAX_EXTENDED_PHRED_SCORE = '~' - '!';
-
-const int PHRED_OFFSET_33 = 33;
-const int PHRED_OFFSET_64 = 64;
-
-
-class fastq_error : public std::exception
-{
-public:
-    fastq_error(const std::string& message);
-    ~fastq_error() throw();
-
-    virtual const char* what() const throw();
-
-private:
-    std::string m_message;
-};
+#include "fastq_enc.h"
 
 
 /**
@@ -61,19 +37,6 @@ private:
 class fastq
 {
 public:
-    enum quality_format
-    {
-        //! Phred scores with offset = 33
-        phred_33 = 0,
-        //! Phred scores with offset = 64
-        phred_64,
-        //! Solexa scores (offset = 64); lossily converted to Phred
-        solexa,
-        //! Quality scores are ignored (set to 0)
-        ignored
-    };
-
-
     /** Constructs a dummy FASTQ record for which all fields are empty. **/
     fastq();
 
@@ -95,7 +58,7 @@ public:
     fastq(const std::string& header,
           const std::string& sequence,
           const std::string& qualities,
-          quality_format encoding = phred_33);
+          const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
 
     /** Returns true IFF all fields are identical. **/
@@ -152,7 +115,8 @@ public:
      * empty headers, or sequences / qualities, as this typically indicates
      * a problem with the source file.
 	 */
-    bool read(string_vec_citer& begin, const string_vec_citer& end, quality_format encoding = phred_33);
+    bool read(string_vec_citer& begin, const string_vec_citer& end,
+              const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
     /**
      * Converts a FASTQ record to a string ending with a newline.
@@ -161,7 +125,7 @@ public:
      * quality bases are truncated to 0 .. 40, while phred_33 supports quality
      * scores in the range 0 .. 41.
      */
-    std::string to_str(quality_format encoding = phred_33) const;
+    std::string to_str(const fastq_encoding& encoding = FASTQ_ENCODING_33) const;
 
 
     /**
@@ -180,7 +144,7 @@ public:
 
 private:
     /** Initializes record; used by constructor and read function. **/
-    void process_record(quality_format encoding);
+    void process_record(const fastq_encoding& encoding);
 
     //! Header excluding the @ sigil, but (possibly) including meta-info
 	std::string m_header;

@@ -29,6 +29,17 @@
 #include "fastq.h"
 
 
+inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
+{
+    stream << "'@" << record.header() << "\\n"
+           << record.sequence() << "\\n+\\n"
+           << record.qualities() << "\\n'";
+
+    return stream;
+}
+
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default constructor
 
@@ -64,7 +75,7 @@ TEST(fastq, constructor_simple_record_phred_33_encoded)
 
 TEST(fastq, constructor_simple_record_phred_64_encoded)
 {
-    const fastq record("record_2", "ACGAGTCA", "@VaeWcfh", fastq::phred_64);
+    const fastq record("record_2", "ACGAGTCA", "@VaeWcfh", FASTQ_ENCODING_64);
     ASSERT_EQ("record_2", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ(std::string("!7BF8DGI", 8), record.qualities());
@@ -73,7 +84,7 @@ TEST(fastq, constructor_simple_record_phred_64_encoded)
 
 TEST(fastq, constructor_simple_record_phred_solexa_encoded)
 {
-    const fastq record("record_3", "AAACGAGTCA", ";h>S\\TCDUJ", fastq::solexa);
+    const fastq record("record_3", "AAACGAGTCA", ";h>S\\TCDUJ", FASTQ_ENCODING_SOLEXA);
     ASSERT_EQ("record_3", record.header());
     ASSERT_EQ("AAACGAGTCA", record.sequence());
     ASSERT_EQ("\"I#4=5&&6+", record.qualities());
@@ -96,40 +107,40 @@ TEST(fastq, constructor_simple_record_dots_to_n)
 
 TEST(fastq, constructor_score_boundries_phred_33)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", fastq::phred_33));
-    ASSERT_THROW(fastq("Rec", "CAT", " !\"", fastq::phred_33), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_33));
+    ASSERT_THROW(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_33), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "IJJ", fastq::phred_33));
-    ASSERT_THROW(fastq("Rec", "CAT", "IJK", fastq::phred_33), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "IJJ", FASTQ_ENCODING_33));
+    ASSERT_THROW(fastq("Rec", "CAT", "IJK", FASTQ_ENCODING_33), fastq_error);
 }
 
 
 TEST(fastq, constructor_score_boundries_phred_64)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "@@A", fastq::phred_64));
-    ASSERT_THROW(fastq("Rec", "CAT", "?@A", fastq::phred_64), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "@@A", FASTQ_ENCODING_64));
+    ASSERT_THROW(fastq("Rec", "CAT", "?@A", FASTQ_ENCODING_64), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghf", fastq::phred_64));
-    ASSERT_THROW(fastq("Rec", "CAT", "ghi", fastq::phred_64), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghi", FASTQ_ENCODING_64));
+    ASSERT_THROW(fastq("Rec", "CAT", "ghj", FASTQ_ENCODING_64), fastq_error);
 }
 
 
 TEST(fastq, constructor_score_boundries_solexa)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", ";;<", fastq::solexa));
-    ASSERT_THROW(fastq("Rec", "CAT", ":;<", fastq::solexa), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", ";;<", FASTQ_ENCODING_SOLEXA));
+    ASSERT_THROW(fastq("Rec", "CAT", ":;<", FASTQ_ENCODING_SOLEXA), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghf", fastq::solexa));
-    ASSERT_THROW(fastq("Rec", "CAT", "ghi", fastq::solexa), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghi", FASTQ_ENCODING_SOLEXA));
+    ASSERT_THROW(fastq("Rec", "CAT", "ghj", FASTQ_ENCODING_SOLEXA), fastq_error);
 }
 
 TEST(fastq, constructor_score_boundries_ignored)
 {
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", fastq::ignored));
-    ASSERT_THROW(fastq("Rec", "CAT", " !\"", fastq::ignored), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
+    ASSERT_THROW(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM), fastq_error);
 
-    ASSERT_NO_THROW(fastq("Rec", "CAT", "ghf", fastq::ignored));
-    ASSERT_THROW(fastq("Rec", "CAT", "ghi", fastq::ignored), fastq_error);
+    ASSERT_NO_THROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_SAM));
+    ASSERT_THROW(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM), fastq_error);
 }
 
 
@@ -388,7 +399,7 @@ TEST(fastq, simple_fastq_record_1)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
@@ -409,16 +420,16 @@ TEST(fastq, simple_fastq_record_2)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
-    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
     ASSERT_EQ("record_2", record.header());
     ASSERT_EQ("GTCAGGAT", record.sequence());
     ASSERT_EQ("D7BIG!F8", record.qualities());
     ASSERT_EQ(it, lines.end());
-    ASSERT_FALSE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_FALSE(record.read(it, lines.end(), FASTQ_ENCODING_33));
 }
 
 
@@ -432,12 +443,12 @@ TEST(fastq, simple_fastq_record__with_extra_header_1)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
     ASSERT_EQ("record_1 Extra header here", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
     ASSERT_EQ(it, lines.end());
-    ASSERT_FALSE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_FALSE(record.read(it, lines.end(), FASTQ_ENCODING_33));
 }
 
 
@@ -451,12 +462,12 @@ TEST(fastq, simple_fastq_record__with_extra_header_2)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
     ASSERT_EQ(it, lines.end());
-    ASSERT_FALSE(record.read(it, lines.end(), fastq::phred_33));
+    ASSERT_FALSE(record.read(it, lines.end(), FASTQ_ENCODING_33));
 }
 
 
@@ -470,7 +481,7 @@ TEST(fastq, simple_fastq_record__no_header)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -484,7 +495,7 @@ TEST(fastq, simple_fastq_record__no_sequence)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -498,7 +509,7 @@ TEST(fastq, simple_fastq_record__no_qualities)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -512,7 +523,7 @@ TEST(fastq, simple_fastq_record__no_qualities_or_sequence)
     string_vec_citer it = lines.begin();
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), fastq::phred_33), fastq_error);
+    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -646,7 +657,7 @@ TEST(fastq, Writing_to_stream_phred_33_explicit)
 TEST(fastq, Writing_to_stream_phred_64_explicit)
 {
     const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-    ASSERT_EQ("@record_1\nACGTACGATA\n+\n@CBCIUWbfh\n", record.to_str(fastq::phred_64));
+    ASSERT_EQ("@record_1\nACGTACGATA\n+\n@CBCIUWbfi\n", record.to_str(FASTQ_ENCODING_64));
 }
 
 
