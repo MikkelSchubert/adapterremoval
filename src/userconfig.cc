@@ -113,7 +113,6 @@ userconfig::userconfig(const std::string& name,
     , input_file_2()
     , paired_ended_mode(false)
     , adapters()
-    , barcodes()
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
     , min_alignment_length(11)
@@ -137,8 +136,6 @@ userconfig::userconfig(const std::string& name,
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , adapter_list()
-    , barcode()
-    , barcode_list()
     , quality_input_base("33")
     , quality_output_base("33")
     , quality_max(MAX_PHRED_SCORE_DEFAULT)
@@ -249,15 +246,6 @@ userconfig::userconfig(const std::string& name,
             "for offset 64 and Solexa scores [default: %default].");
 
     argparser.add_seperator();
-    argparser["--5prime"] =
-        new argparse::any(&barcode, "BARCODE",
-            "If set, the NT barcode is detected (max 1 mismatch) in and "
-            "trimmed from the 5' of mate 1 reads [current: %default].");
-    argparser["--5prime-list"] =
-        new argparse::any(&barcode_list, "FILENAME",
-            "List of barcode sequences, with one barcode per line. The best "
-            "barcode is selected using the criteria of --5prime, and trimmed "
-            "from the 5' end of mate 1 reads [current: %default].");
     argparser["--trimns"] =
         new argparse::flag(&trim_ambiguous_bases,
             "If set, trim ambiguous bases (N) at 5'/3' termini "
@@ -377,10 +365,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return argparse::pr_error;
     }
 
-    if (!setup_barcode_sequences()) {
-        return argparse::pr_error;
-    }
-
     // Check for invalid combinations of settings
     const bool file_1_set = argparser.is_set("--file1");
     const bool file_2_set = argparser.is_set("--file2");
@@ -450,7 +434,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 std::auto_ptr<statistics> userconfig::create_stats() const
 {
     std::auto_ptr<statistics> stats(new statistics());
-    stats->number_of_barcodes_trimmed.resize(barcodes.size());
     stats->number_of_reads_with_adapter.resize(adapters.size());
     return stats;
 }
@@ -535,17 +518,6 @@ std::auto_ptr<std::ostream> userconfig::open_with_default_filename(
 }
 
 
-void userconfig::trim_barcodes_if_enabled(fastq& read, statistics& stats) const
-{
-    if (!barcodes.empty()) {
-        const alignment_info alignment = trim_barcodes(read, barcodes, shift);
-        if (alignment.length) {
-            stats.number_of_barcodes_trimmed.at(alignment.adapter_id)++;
-        }
-    }
-}
-
-
 fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) const
 {
     fastq::ntrimmed trimmed;
@@ -556,35 +528,6 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
     }
 
     return trimmed;
-}
-
-
-bool userconfig::setup_barcode_sequences()
-{
-    const bool barcode_is_set = argparser.is_set("--5prime");
-    const bool barcode_list_is_set = argparser.is_set("--5prime-list");
-
-    if (barcode_is_set && barcode_list_is_set) {
-        std::cerr << "Error: Use either --5prime or --5prime-list, not both!" << std::endl;
-        return argparse::pr_error;
-    } else if (barcode_list_is_set) {
-        if (!read_adapter_sequences(barcode_list, barcodes, "barcode", false)) {
-            return false;
-        } else if (barcodes.empty()) {
-            std::cerr << "Error: No barcodes sequences found in table!" << std::endl;
-            return false;
-        }
-    } else if (barcode_is_set) {
-        if (!cleanup_and_validate_sequence(barcode, "--5prime")) {
-            return false;
-        }
-
-        fastq barcode_fq = fastq("PCR1", barcode, std::string(barcode.length(), 'J'));
-
-        barcodes.push_back(fastq_pair(barcode_fq, fastq("DUMMMY", "", "")));
-    }
-
-    return true;
 }
 
 

@@ -114,21 +114,6 @@ struct alignment_info
 };
 
 
-
-/**
- * Trims the best matching 5' barcode from the read.
- *
- * @param read A read potentially containing a 5' barcode sequence
- * @param barcodes A list of zero or more barcode sequences.
- * @param shift Allow up to this number of missing bases at the 5' end of the
- *              read, when aligning the barcode.
- * @return The best alignment, or a length 0 alignment if not aligned.
- *
- * The best alignment is selected using alignment_info::is_better_than.
- */
-alignment_info trim_barcodes(fastq& read, const fastq_pair_vec& barcodes, int shift);
-
-
 /**
  * Attempts to align adapters sequences against a SE read.
  *

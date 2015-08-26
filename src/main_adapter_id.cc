@@ -435,8 +435,6 @@ private:
         // Throws if read-names or mate numbering does not match
         fastq::validate_paired_reads(read1, read2);
 
-        m_config.trim_barcodes_if_enabled(read1, stats);
-
         // Reverse complement to match the orientation of read1
         read2.reverse_complement();
 

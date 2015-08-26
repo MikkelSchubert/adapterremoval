@@ -40,7 +40,6 @@ struct statistics
       , total_number_of_nucleotides(0)
       , total_number_of_good_reads(0)
       , number_of_reads_with_adapter()
-      , number_of_barcodes_trimmed()
       , unaligned_reads(0)
       , well_aligned_reads(0)
       , poorly_aligned_reads(0)
@@ -64,8 +63,6 @@ struct statistics
 
     //! Number of reads / pairs with adapters trimmed
     std::vector<size_t> number_of_reads_with_adapter;
-    //! Number of times each barcode were trimmed from reads
-    std::vector<size_t> number_of_barcodes_trimmed;
 
     //! Number of unaligned reads; not enough bases, too many mismatches, etc.
     size_t unaligned_reads;
@@ -114,7 +111,6 @@ struct statistics
         records += other.records;
 
         merge_vectors(number_of_reads_with_adapter, other.number_of_reads_with_adapter);
-        merge_vectors(number_of_barcodes_trimmed, other.number_of_barcodes_trimmed);
         merge_sub_vectors(read_lengths, other.read_lengths);
 
         return *this;

@@ -328,40 +328,6 @@ bool alignment_info::is_better_than(const alignment_info& other) const
 }
 
 
-alignment_info trim_barcodes(fastq& read, const fastq_pair_vec& barcodes, int max_shift)
-{
-    if (read.sequence().empty()) {
-        return alignment_info();
-    }
-
-    int barcode_id = 0;
-    alignment_info best_alignment;
-    for (fastq_pair_vec::const_iterator it = barcodes.begin(); it != barcodes.end(); ++it, ++barcode_id) {
-        const std::string& barcode = it->first.sequence();
-        const alignment_info alignment = pairwise_align_sequences(best_alignment,
-                                                                  read.sequence(),
-                                                                  barcode,
-                                                                  -max_shift,
-                                                                  0);
-
-        if (alignment.n_mismatches <= 1) {
-            if (alignment.is_better_than(best_alignment)) {
-                best_alignment = alignment;
-                best_alignment.adapter_id = barcode_id;
-            }
-        }
-    }
-
-    if (best_alignment.score > 0) {
-        const std::string& barcode = barcodes.at(best_alignment.adapter_id).first.sequence();
-        read.truncate(static_cast<size_t>(barcode.length() + best_alignment.offset));
-        return best_alignment;
-    }
-
-    return alignment_info();
-}
-
-
 alignment_info align_single_ended_sequence(const fastq& read,
                                            const fastq_pair_vec& adapters,
                                            int max_shift)

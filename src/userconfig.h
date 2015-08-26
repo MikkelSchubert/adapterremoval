@@ -87,9 +87,6 @@ public:
                                         bool compressed = true) const;
 
 
-    /** Attempts to trim barcodes from a read, if this is enabled. */
-    void trim_barcodes_if_enabled(fastq& read, statistics& stats) const;
-
     /** Trims a read if enabled, returning the #bases removed from each end. */
     fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
 
@@ -109,10 +106,6 @@ public:
 
     //! Pairs of adapters; may only contain the first value in SE enabled
     fastq_pair_vec adapters;
-
-    //! Nucleotide barcodes to be trimmed from the 5' termini of mate 1 reads
-    //! Only the first value in the pair is defined.
-    fastq_pair_vec barcodes;
 
     //! The minimum length of trimmed reads (ie. genomic nts) to be retained
     unsigned min_genomic_length;
@@ -183,12 +176,6 @@ private:
      */
     bool setup_adapter_sequences();
 
-    /** Sets up barcode (5prime) sequences based on user settings.
-     *
-     * @return True on success, false otherwise.
-     */
-    bool setup_barcode_sequences();
-
 
     /** Reads adapter sequences from a file.
      *
@@ -213,10 +200,6 @@ private:
     std::string adapter_2;
     //! Sink for --adapter-list; list of adapter #1 and #2 sequences
     std::string adapter_list;
-    //! Sink for --5prime, barcode to be trimmed at 5' of mate 1 reads
-    std::string barcode;
-    //! Sink for --5prime-list; list of adapter sequences used for --5prime
-    std::string barcode_list;
 
     //! Sink for user-supplied quality score formats; use quality_input_fmt.
     std::string quality_input_base;

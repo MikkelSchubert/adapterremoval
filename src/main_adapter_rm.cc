@@ -59,104 +59,105 @@ void add_chunk(chunk_list& chunks, size_t target, std::auto_ptr<fastq_output_chu
 }
 
 
-void write_settings(const userconfig& config,
+void write_trimming_settings(const userconfig& config,
+                             const statistics& stats,
                              std::ostream& settings)
 {
-    settings << "Running " << NAME << " " << VERSION << " using the following options:\n";
-    settings << "RNG seed: " << config.seed << "\n";
+    settings << "Running " << NAME << " " << VERSION << " using the following options:"
+             << "\nRNG seed: " << config.seed;
 
     if (config.paired_ended_mode) {
-        settings << "Paired end mode\n";
+        settings << "\nPaired end mode\n";
     } else {
-        settings << "Single end mode\n";
+        settings << "\nSingle end mode\n";
     }
 
     size_t adapter_id = 0;
     for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, ++adapter_id) {
-        settings << "Adapter1[" << adapter_id << "]: " << it->first.sequence() << "\n";
+        settings << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence() << "\n";
         if (config.paired_ended_mode) {
             fastq adapter = it->second;
             adapter.reverse_complement();
 
-            settings << "Adapter2[" << adapter_id << "]: " << adapter.sequence() << "\n";
+            settings << "\nAdapter2[" << adapter_id << "]: " << adapter.sequence() << "\n";
         }
     }
 
-    adapter_id = 0;
-    for (fastq_pair_vec::const_iterator it = config.barcodes.begin(); it != config.barcodes.end(); ++it, ++adapter_id) {
-        settings << "Mate 1 5' barcode[" << adapter_id << "]: " << it->first.sequence() << "\n";
-    }
+    settings << "\nAlignment shift value: " << config.shift
+             << "\nGlobal mismatch threshold: " << config.mismatch_threshold
+             << "\nQuality format (input): " << config.quality_input_fmt->name()
+             << "\nQuality score max (input): " << config.quality_input_fmt->max_score()
+             << "\nQuality format (output): " << config.quality_output_fmt->name()
+             << "\nQuality score max (output): " << config.quality_output_fmt->max_score()
+             << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
+             << "\nTrimming Phred scores <= " << config.low_quality_score
+             << ": " << (config.trim_by_quality ? "yes" : "no")
+             << "\nMinimum genomic length: " << config.min_genomic_length
+             << "\nMaximum genomic length: " << config.max_genomic_length
+             << "\nCollapse overlapping reads: " << ((config.collapse) ? "Yes" : "No")
+             << "\nMinimum overlap (in case of collapse): " << config.min_alignment_length;
 
-    settings << "Alignment shift value: " << config.shift << "\n";
-    settings << "Global mismatch threshold: " << config.mismatch_threshold << "\n";
-    settings << "Quality format (input): " << config.quality_input_fmt->name() << "\n";
-    settings << "Quality score max (input): " << config.quality_input_fmt->max_score() << "\n";
-    settings << "Quality format (output): " << config.quality_output_fmt->name() << "\n";
-    settings << "Quality score max (output): " << config.quality_output_fmt->max_score() << "\n";
-    settings << "Trimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No") << "\n";
-
-    settings << "Trimming Phred scores <= " << config.low_quality_score << ": " << (config.trim_by_quality ? "yes" : "no") << "\n";
-    settings << "Minimum genomic length: " << config.min_genomic_length << "\n";
-    settings << "Maximum genomic length: " << config.max_genomic_length << "\n";
-    settings << "Collapse overlapping reads: " << ((config.collapse) ? "Yes" : "No") << "\n";
-    settings << "Minimum overlap (in case of collapse): " << config.min_alignment_length << "\n";
-
-    settings.flush();
-}
-
-
-void write_statistics(const userconfig& config, std::ostream& settings, const statistics& stats)
-{
     const std::string reads_type = (config.paired_ended_mode ? "read pairs: " : "reads: ");
 
-    settings << "\n";
-    settings << "Total number of " << reads_type << stats.records << "\n";
-    settings << "Number of unaligned " << reads_type << stats.unaligned_reads << "\n";
-    settings << "Number of well aligned " << reads_type << stats.well_aligned_reads << "\n";
-    settings << "Number of inadequate alignments: " << stats.poorly_aligned_reads << "\n";
-    settings << "Number of discarded mate 1 reads: " << stats.discard1 << "\n";
-    settings << "Number of singleton mate 1 reads: " << stats.keep1 << "\n";
+    settings << "\n\nTotal number of " << reads_type << stats.records
+             << "\nNumber of unaligned " << reads_type << stats.unaligned_reads
+             << "\nNumber of well aligned " << reads_type << stats.well_aligned_reads
+             << "\nNumber of inadequate alignments: " << stats.poorly_aligned_reads
+             << "\nNumber of discarded mate 1 reads: " << stats.discard1
+             << "\nNumber of singleton mate 1 reads: " << stats.keep1;
 
     if (config.paired_ended_mode) {
-        settings << "Number of discarded mate 2 reads: " << stats.discard2 << "\n";
-        settings << "Number of singleton mate 2 reads: " << stats.keep2 << "\n";
-    }
-
-    settings << "\n";
-    for (size_t barcode_id = 0; barcode_id < stats.number_of_barcodes_trimmed.size(); ++barcode_id) {
-        const size_t count = stats.number_of_barcodes_trimmed.at(barcode_id);
-        settings << "Number of reads with barcode[" << barcode_id << "]: " << count << "\n";
+        settings << "\nNumber of discarded mate 2 reads: " << stats.discard2
+                 << "\nNumber of singleton mate 2 reads: " << stats.keep2;
     }
 
     for (size_t adapter_id = 0; adapter_id < stats.number_of_reads_with_adapter.size(); ++adapter_id) {
         const size_t count = stats.number_of_reads_with_adapter.at(adapter_id);
-        settings << "Number of reads with adapters[" << adapter_id << "]: " << count << "\n";
+        settings << "\nNumber of reads with adapters[" << adapter_id << "]: " << count;
     }
 
     if (config.collapse) {
-        settings << "Number of full-length collapsed pairs: " << stats.number_of_full_length_collapsed << "\n";
-        settings << "Number of truncated collapsed pairs: " << stats.number_of_truncated_collapsed << "\n";
+        settings << "\nNumber of full-length collapsed pairs: " << stats.number_of_full_length_collapsed
+                 << "\nNumber of truncated collapsed pairs: " << stats.number_of_truncated_collapsed;
     }
 
-    settings << "Number of retained reads: " << stats.total_number_of_good_reads << "\n";
-    settings << "Number of retained nucleotides: " << stats.total_number_of_nucleotides << "\n";
-    settings << "Average read length of trimmed reads: "
+    settings << "\nNumber of retained reads: " << stats.total_number_of_good_reads
+             << "\nNumber of retained nucleotides: " << stats.total_number_of_nucleotides
+             << "\nAverage read length of trimmed reads: "
              << (stats.total_number_of_good_reads ? ( static_cast<double>(stats.total_number_of_nucleotides) / stats.total_number_of_good_reads) : 0)
              << "\n\n";
 
     const std::string prefix = "Length distribution: ";
-    settings << prefix << "Length\tMate1\tMate2\tSingleton\tCollapsed\tCollapsedTruncated\tDiscarded\tAll\n";
+
+    settings << prefix << "Length\tMate1\t";
+    if (config.paired_ended_mode) {
+        settings << "Mate2\tSingleton\t";
+    }
+
+    if (config.collapse) {
+        settings << "Collapsed\tCollapsedTruncated\t";
+    }
+
+    settings << "Discarded\tAll\n";
+
     for (size_t length = 0; length < stats.read_lengths.size(); ++length) {
         const std::vector<size_t>& lengths = stats.read_lengths.at(length);
         const size_t total = std::accumulate(lengths.begin(), lengths.end(), 0);
 
         settings << prefix << length
-                 << '\t' << lengths.at(rt_mate_1)
-                 << '\t' << lengths.at(rt_mate_2)
-                 << '\t' << lengths.at(rt_singleton)
-                 << '\t' << lengths.at(rt_collapsed)
-                 << '\t' << lengths.at(rt_collapsed_truncated)
-                 << '\t' << lengths.at(rt_discarded)
+                 << '\t' << lengths.at(rt_mate_1);
+
+        if (config.paired_ended_mode) {
+            settings << '\t' << lengths.at(rt_mate_2)
+                     << '\t' << lengths.at(rt_singleton);
+        }
+
+        if (config.collapse) {
+            settings << '\t' << lengths.at(rt_collapsed)
+                     << '\t' << lengths.at(rt_collapsed_truncated);
+        }
+
+        settings << '\t' << lengths.at(rt_discarded)
                  << '\t' << total << '\n';
     }
 
@@ -271,8 +272,6 @@ public:
 
         try {
             for (fastq read; read.read(file_1_it, file_1_end, *m_config.quality_input_fmt); file_chunk->offset += 4) {
-                m_config.trim_barcodes_if_enabled(read, *stats);
-
                 const alignment_info alignment = align_single_ended_sequence(read, m_config.adapters, m_config.shift);
                 const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
 
@@ -379,8 +378,6 @@ public:
                 // Throws if read-names or mate numbering does not match
                 fastq::validate_paired_reads(read1, read2);
 
-                m_config.trim_barcodes_if_enabled(read1, *stats);
-
                 // Reverse complement to match the orientation of read1
                 read2.reverse_complement();
 
@@ -483,19 +480,6 @@ int remove_adapter_sequences(const userconfig& config)
         }
     }
 
-    std::auto_ptr<std::ostream> settings;
-    try {
-        settings = config.open_with_default_filename("--settings",
-                                                     ".settings",
-                                                     false);
-
-        write_settings(config, *settings);
-    } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error writing settings file; aborting:\n"
-                  << cli_formatter::fmt(error.what()) << std::endl;
-        return 1;
-    }
-
     scheduler sch;
     reads_processor* processor = NULL;
     try {
@@ -551,17 +535,17 @@ int remove_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    std::auto_ptr<statistics> stats(processor->get_final_statistics());
-
     try {
-        write_statistics(config, *settings, *stats);
+        std::auto_ptr<statistics> stats(processor->get_final_statistics());
+        std::auto_ptr<std::ostream> settings \
+            = config.open_with_default_filename("--settings", ".settings", false);
+
+        write_trimming_settings(config, *stats, *settings);
     } catch (const std::ios_base::failure& error) {
-        std::cerr << "Error writing statistics to settings file:\n"
+        std::cerr << "IO error writing settings file; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
         return 1;
     }
-
-    settings->flush();
 
     return 0;
 }
