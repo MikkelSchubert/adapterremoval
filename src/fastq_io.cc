@@ -59,7 +59,9 @@ fastq_file_chunk::fastq_file_chunk(size_t offset_)
 
 fastq_output_chunk::fastq_output_chunk(bool eof_)
   : eof(eof_)
+  , count(0)
   , reads()
+  , buffers()
 {
     reads.reserve(CHUNK_SIZE);
 }
@@ -73,6 +75,13 @@ fastq_output_chunk::~fastq_output_chunk()
 
 }
 
+
+void fastq_output_chunk::add(const fastq_encoding& encoding,
+                             const fastq& read, size_t count_)
+{
+    count += count_;
+    reads.push_back(read.to_str(encoding));
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -425,13 +434,12 @@ static timer s_timer = timer("reads", false);
 static bool s_finalized = false;
 
 
-write_paired_fastq::write_paired_fastq(const userconfig& config,
+write_paired_fastq::write_paired_fastq(const userconfig& config, // FIXME
                                        read_type type)
   : analytical_step(analytical_step::ordered, true)
   , m_type(type)
   , m_output()
   , m_progress(!config.quiet)
-  , m_pair_ended(config.paired_ended_mode)
 {
     switch (m_type) {
         case rt_mate_1:
@@ -497,13 +505,8 @@ chunk_list write_paired_fastq::process(analytical_chunk* chunk)
     }
 
     if (m_progress) {
-        size_t record_count = lines.size();
-        if (m_pair_ended && (m_type == rt_collapsed || m_type == rt_collapsed_truncated)) {
-            record_count *= 2;
-        }
-
         mutex_locker lock(s_timer_lock);
-        s_timer.increment(record_count);
+        s_timer.increment(file_chunk->count);
     }
 
     return chunk_list();

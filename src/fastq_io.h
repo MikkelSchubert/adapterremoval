@@ -79,8 +79,20 @@ public:
     /** Destructor; frees buffers. */
     ~fastq_output_chunk();
 
+    /** Add FASTQ read, accounting for one or more input reads. */
+    void add(const fastq_encoding& encoding, const fastq& read, size_t count = 1);
+
     //! Indicates that EOF has been reached.
-    bool eof;
+    const bool eof;
+
+private:
+    friend class gzip_paired_fastq;
+    friend class bzip2_paired_fastq;
+    friend class write_paired_fastq;
+
+    //! The number of reads used to generate this chunk; may differ from the
+    //! the number of reads, in the case of collapsed reads.
+    size_t count;
 
     //! Lines read from the mate 1 and mate 2 files
     string_vec reads;
@@ -223,8 +235,6 @@ private:
 
     //! Specifies if progress reports are to be printed
     bool m_progress;
-    //! FIXME
-    bool m_pair_ended;
 };
 
 

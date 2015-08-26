@@ -167,9 +167,9 @@ void write_trimming_settings(const userconfig& config,
 
 void process_collapsed_read(const userconfig& config, statistics& stats,
                             fastq& collapsed_read,
-                            string_vec& out_collapsed,
-                            string_vec& out_collapsed_truncated,
-                            string_vec& out_discarded)
+                            fastq_output_chunk& out_collapsed,
+                            fastq_output_chunk& out_collapsed_truncated,
+                            fastq_output_chunk& out_discarded)
 {
     const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
 
@@ -184,23 +184,23 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
         stats.number_of_full_length_collapsed++;
     }
 
+    const size_t read_count = config.paired_ended_mode ? 2 : 1;
     if (config.is_acceptable_read(collapsed_read)) {
         stats.total_number_of_nucleotides += collapsed_read.length();
         stats.total_number_of_good_reads++;
         stats.inc_length_count(was_trimmed ? rt_collapsed_truncated : rt_collapsed,
                                collapsed_read.length());
 
-        const std::string& line = collapsed_read.to_str(*config.quality_output_fmt);
         if (was_trimmed) {
-            out_collapsed_truncated.push_back(line);
+            out_collapsed_truncated.add(*config.quality_output_fmt, collapsed_read, read_count);
         } else {
-            out_collapsed.push_back(line);
+            out_collapsed.add(*config.quality_output_fmt, collapsed_read, read_count);
         }
     } else {
         stats.discard1++;
         stats.discard2++;
         stats.inc_length_count(rt_discarded, collapsed_read.length());
-        out_discarded.push_back(collapsed_read.to_str(*config.quality_output_fmt));
+        out_discarded.add(*config.quality_output_fmt, collapsed_read, read_count);
     }
 }
 
@@ -260,6 +260,7 @@ public:
 
         std::auto_ptr<statistics> stats(m_stats.get_sink());
 
+        const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(file_chunk->eof));
         output_chunk_ptr out_collapsed;
         output_chunk_ptr out_collapsed_truncated;
@@ -282,9 +283,9 @@ public:
 
                     if (m_config.is_alignment_collapsible(alignment)) {
                         process_collapsed_read(m_config, *stats, read,
-                                               out_collapsed->reads,
-                                               out_collapsed_truncated->reads,
-                                               out_discarded->reads);
+                                               *out_collapsed,
+                                               *out_collapsed_truncated,
+                                               *out_discarded);
                         continue;
                     }
                 } else if (aln_type == userconfig::poor_alignment) {
@@ -299,13 +300,13 @@ public:
                     stats->total_number_of_good_reads++;
                     stats->total_number_of_nucleotides += read.length();
 
-                    out_mate_1->reads.push_back(read.to_str(*m_config.quality_output_fmt));
+                    out_mate_1->add(encoding, read);
                     stats->inc_length_count(rt_mate_1, read.length());
                 } else {
                     stats->discard1++;
                     stats->inc_length_count(rt_discarded, read.length());
 
-                    out_discarded->reads.push_back(read.to_str(*m_config.quality_output_fmt));
+                    out_discarded->add(encoding, read);
                 }
             }
         } catch (const fastq_error& error) {
@@ -350,6 +351,7 @@ public:
 
         std::auto_ptr<statistics> stats(m_stats.get_sink());
 
+        const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(file_chunk->eof));
         output_chunk_ptr out_mate_2(new fastq_output_chunk(file_chunk->eof));
         output_chunk_ptr out_singleton(new fastq_output_chunk(file_chunk->eof));
@@ -391,9 +393,9 @@ public:
                     if (m_config.is_alignment_collapsible(alignment)) {
                         fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
                         process_collapsed_read(m_config, *stats, collapsed_read,
-                                               out_collapsed->reads,
-                                               out_collapsed_truncated->reads,
-                                               out_discarded->reads);
+                                               *out_collapsed,
+                                               *out_collapsed_truncated,
+                                               *out_discarded);
                         continue;
                     }
                 } else if (aln_type == userconfig::poor_alignment) {
@@ -418,8 +420,8 @@ public:
                 stats->total_number_of_good_reads += read_2_acceptable;
 
                 if (read_1_acceptable && read_2_acceptable) {
-                    out_mate_1->reads.push_back(read1.to_str(*m_config.quality_output_fmt));
-                    out_mate_2->reads.push_back(read2.to_str(*m_config.quality_output_fmt));
+                    out_mate_1->add(encoding, read1);
+                    out_mate_2->add(encoding, read2);
 
                     stats->inc_length_count(rt_mate_1, read1.length());
                     stats->inc_length_count(rt_mate_2, read2.length());
@@ -433,15 +435,15 @@ public:
                     stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
 
                     if (read_1_acceptable) {
-                        out_singleton->reads.push_back(read1.to_str(*m_config.quality_output_fmt));
+                        out_singleton->add(encoding, read1);
                     } else {
-                        out_discarded->reads.push_back(read1.to_str(*m_config.quality_output_fmt));
+                        out_discarded->add(encoding, read1);
                     }
 
                     if (read_2_acceptable) {
-                        out_singleton->reads.push_back(read2.to_str(*m_config.quality_output_fmt));
+                        out_singleton->add(encoding, read2);
                     } else {
-                        out_discarded->reads.push_back(read2.to_str(*m_config.quality_output_fmt));
+                        out_discarded->add(encoding, read2);
                     }
                 }
             }
