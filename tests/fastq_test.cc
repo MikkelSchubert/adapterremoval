@@ -210,8 +210,8 @@ TEST(fastq, trim_low_quality_bases__trim_nothing)
     const fastq reference("Rec", "NNNNN", "!!!!!");
     const fastq::ntrimmed expected(0, 0);
     fastq record = reference;
-    // Trim neither Ns nor low Phred score bases
 
+    // Trim neither Ns nor low Phred score bases
     ASSERT_EQ(expected, record.trim_low_quality_bases(false, -1));
     ASSERT_EQ(reference, record);
 }
@@ -222,7 +222,7 @@ TEST(fastq, trim_low_quality_bases__trim_ns)
     const fastq expected_record("Rec", "ANT", "456");
     const fastq::ntrimmed expected_ntrim(2, 0);
     fastq record("Rec", "NNANT", "23456");
-    // Trim neither Ns nor low Phred score bases
+
     ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, -1));
     ASSERT_EQ(expected_record, record);
 }
@@ -233,7 +233,7 @@ TEST(fastq, trim_low_quality_bases__trim_low_quality_bases)
     const fastq expected_record("Rec", "TN", "%$");
     const fastq::ntrimmed expected_ntrim(0, 3);
     fastq record("Rec", "TNANT", "%$#!\"");
-    // Trim neither Ns nor low Phred score bases
+
     ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(false, 2));
     ASSERT_EQ(expected_record, record);
 }
@@ -244,7 +244,7 @@ TEST(fastq, trim_low_quality_bases__trim_mixed)
     const fastq expected_record("Rec", "TAG", "$12");
     const fastq::ntrimmed expected_ntrim(3, 2);
     fastq record("Rec", "NTNTAGNT", "1!#$12#\"");
-    // Trim neither Ns nor low Phred score bases
+
     ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 2));
     ASSERT_EQ(expected_record, record);
 }
@@ -255,10 +255,21 @@ TEST(fastq, trim_low_quality_bases__trim_mixed__no_low_quality_bases)
     const fastq expected_record("Rec", "ACTTAG", "12I$12");
     const fastq::ntrimmed expected_ntrim(0, 0);
     fastq record = expected_record;
-    // Trim neither Ns nor low Phred score bases
+
     ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 2));
     ASSERT_EQ(expected_record, record);
 }
+
+
+TEST(fastq, trim_low_quality_bases__trim_everything)
+{
+    fastq record("Rec", "TAG", "!!!");
+    const fastq expected_record = fastq("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(0, 3);
+    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 2));
+    ASSERT_EQ(expected_record, record);
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////

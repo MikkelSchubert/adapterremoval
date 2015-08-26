@@ -124,32 +124,29 @@ size_t fastq::count_ns() const
 fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality)
 {
     low_quality += PHRED_OFFSET_33;
-    if (m_sequence.empty()) {
-        return ntrimmed();
+
+    size_t right_exclusive = 0;
+    for (size_t i = m_sequence.length(); i; --i) {
+        if ((!trim_ns || m_sequence.at(i - 1) != 'N') && (m_qualities.at(i - 1) > low_quality)) {
+            right_exclusive = i;
+            break;
+        }
     }
 
-	size_t lower_bound = m_sequence.length();
-	for (size_t i = 0; i < m_sequence.length(); ++i) {
+	size_t left_inclusive = 0;
+	for (size_t i = 0; i < right_exclusive; ++i) {
 		if ((!trim_ns || m_sequence.at(i) != 'N') && (m_qualities.at(i) > low_quality)) {
-			lower_bound = i;
+			left_inclusive = i;
 			break;
 		}
 	}
 
-	size_t upper_bound = lower_bound;
-	for (size_t i = m_sequence.length() - 1; i > lower_bound; --i) {
-		if ((!trim_ns || m_sequence.at(i) != 'N') && (m_qualities.at(i) > low_quality)) {
-			upper_bound = i;
-			break;
-		}
-	}
-
-	const size_t retained = upper_bound - lower_bound + 1;
-    const ntrimmed summary(lower_bound, m_sequence.length() - upper_bound - 1);
+    const ntrimmed summary(left_inclusive, m_sequence.length() - right_exclusive);
 
     if (summary.first || summary.second) {
-    	m_sequence = m_sequence.substr(lower_bound, retained);
-    	m_qualities = m_qualities.substr(lower_bound, retained);
+        const size_t retained = right_exclusive - left_inclusive;
+        m_sequence = m_sequence.substr(left_inclusive, retained);
+        m_qualities = m_qualities.substr(left_inclusive, retained);
     }
 
     return summary;
