@@ -74,7 +74,7 @@ void write_trimming_settings(const userconfig& config,
 
     size_t adapter_id = 0;
     for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, ++adapter_id) {
-        settings << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence() << "\n";
+        settings << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence();
         if (config.paired_ended_mode) {
             fastq adapter = it->second;
             adapter.reverse_complement();
