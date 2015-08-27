@@ -273,6 +273,8 @@ bool scheduler::run(int nthreads, unsigned seed)
 {
     if (m_steps.empty()) {
         throw std::invalid_argument("pipeline must contain at least one step");
+    } else if (!m_steps.at(0)) {
+        throw std::invalid_argument("first step has not been specified");
     } else if (nthreads <= 0) {
         throw std::invalid_argument("scheduler::run: nthreads <= 0");
     }
