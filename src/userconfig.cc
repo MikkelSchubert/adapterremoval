@@ -47,40 +47,6 @@ size_t get_seed()
 }
 
 
-bool cleanup_and_validate_sequence(std::string& sequence,
-                                   const std::string& desc)
-{
-    try {
-        fastq::clean_sequence(sequence);
-    } catch (const fastq_error&) {
-        std::cerr << "Error: Invalid nucleotide sequence supplied to " << desc
-                  << ": '" << sequence << "'" << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
-
-fastq read_adapter_sequence(std::stringstream& instream)
-{
-    std::string adapter_seq;
-    instream >> adapter_seq;
-
-    if (instream.eof() && adapter_seq.empty()) {
-        throw fastq_error("Adapter table contains partial record");
-    } else if (instream.fail()) {
-        throw fastq_error("IO error reading adapter-table");
-    } else if (adapter_seq.empty()) {
-        throw fastq_error("Adapter table contains empty entries");
-    }
-
-    fastq::clean_sequence(adapter_seq);
-    return fastq("adapter", adapter_seq,
-                 std::string(adapter_seq.length(), 'I'));
-}
-
-
 std::auto_ptr<fastq_encoding> select_encoding(const std::string& name,
                                               const std::string& value,
                                               size_t quality_max = MAX_PHRED_SCORE_DEFAULT)
@@ -101,6 +67,85 @@ std::auto_ptr<fastq_encoding> select_encoding(const std::string& name,
     }
 
     return ptr;
+}
+
+
+typedef std::vector<string_vec> string_table;
+typedef string_table::const_iterator string_table_citer;
+
+
+std::string trim_comments(std::string line)
+{
+    const size_t index = line.find('#');
+    if (index != std::string::npos) {
+        line.resize(index);
+    }
+
+    return line;
+}
+
+
+bool read_table(const std::string& filename, string_table& dst, size_t min_col, size_t max_col)
+{
+    if (max_col < min_col) {
+        throw std::invalid_argument("read_table: min_col > max_col");
+    } else if (min_col < 1) {
+        throw std::invalid_argument("read_table: min_col < 1");
+    }
+
+    size_t last_row_size = 0;
+    size_t line_num = 1;
+    try {
+        line_reader adapter_file(filename);
+
+        for (std::string line; adapter_file.getline(line); ++line_num) {
+            string_vec row;
+            std::string field;
+            std::stringstream instream(trim_comments(line));
+
+            while (instream >> field) {
+                row.push_back(field);
+            }
+
+            if (row.empty()) {
+                // Ignore empty lines, e.g. those containing only comments
+                continue;
+            } else if (row.size() < min_col) {
+                std::cerr << "Error reading '" << filename << "' (line "
+                          << line_num << "); expected at least " << min_col
+                          << " columns, but found " << row.size() << "!"
+                          << std::endl;
+
+                return false;
+            } else if (row.size() > max_col) {
+                std::cerr << "Error reading '" << filename << "' (line "
+                          << line_num << "); expected at most " << max_col
+                          << " columns, but found " << row.size() << "!"
+                          << std::endl;
+
+                return false;
+            } else if (last_row_size && last_row_size != row.size()) {
+                std::cerr << "Error reading '" << filename << "' (line "
+                          << line_num << "); rows contain unequal number of "
+                          << "columns; last row contained " << last_row_size
+                          << " column(s) but current row contains "
+                          << row.size() << " column(s)!" << std::endl;
+
+                return false;
+            } else {
+                last_row_size = row.size();
+            }
+
+            dst.push_back(row);
+        }
+    } catch (const std::ios_base::failure& error) {
+        std::cerr << "IO error reading '" << filename << "' (line "
+                  << line_num << "); aborting:\n    " << error.what()
+                  << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -563,32 +608,31 @@ bool userconfig::setup_adapter_sequences()
     }
 
     if (adapter_list_is_set) {
-        if (!read_adapter_sequences(adapter_list, adapters, "adapter", paired_ended_mode)) {
+        if (!read_adapter_sequences(adapter_list, adapters, paired_ended_mode)) {
             return false;
         } else if (adapters.empty()) {
             std::cerr << "Error: No adapter sequences found in table!" << std::endl;
             return false;
         }
     } else {
-        const char* label_1 = pcr_is_set ? "--pcr1" : "--adapter1";
-        const char* label_2 = pcr_is_set ? "--pcr2" : "--adapter2";
+        try {
+            fastq adapter1 = fastq("PCR1", adapter_1);
+            fastq adapter2 = fastq("PCR2", adapter_2);
 
-        if (!cleanup_and_validate_sequence(adapter_1, label_1)) {
-            return false;
-        } else if (!cleanup_and_validate_sequence(adapter_2, label_2)) {
+            if (!pcr_is_set) {
+                // --pcr2 is expected to already be reverse completed; whereas
+                // --adapter2 should correspond to the sequences observed directly
+                // in the .fastq files.
+                adapter2.reverse_complement();
+            }
+
+            adapters.push_back(fastq_pair(adapter1, adapter2));
+        } catch (const fastq_error& error) {
+            std::cerr << "Error parsing adapter sequence(s):\n"
+                      << "   " << error.what() << std::endl;
+
             return false;
         }
-
-        fastq adapter1 = fastq("PCR1", adapter_1, std::string(adapter_1.length(), 'J'));
-        fastq adapter2 = fastq("PCR2", adapter_2, std::string(adapter_2.length(), 'J'));
-        if (!pcr_is_set) {
-            // --pcr2 is expected to already be reverse completed; whereas
-            // --adapter2 should correspond to the sequences observed directly
-            // in the .fastq files.
-            adapter2.reverse_complement();
-        }
-
-        adapters.push_back(fastq_pair(adapter1, adapter2));
     }
 
     return true;
@@ -597,40 +641,30 @@ bool userconfig::setup_adapter_sequences()
 
 
 bool userconfig::read_adapter_sequences(const std::string& filename,
-                                         fastq_pair_vec& adapters,
-                                         const std::string& name,
-                                         bool paired_ended) const
+                                        fastq_pair_vec& adapters,
+                                        bool paired_ended) const
 {
-    size_t line_num = 1;
+    string_table raw_adapters;
+    if (!read_table(filename, raw_adapters, paired_ended ? 2 : 1, 2)) {
+        return false;
+    }
+
+    size_t row_num = 1;
     try {
-        line_reader adapter_file(filename);
-
-        std::string line;
-        while (adapter_file.getline(line)) {
-            const size_t index = line.find_first_not_of(" \t");
-            if (index == std::string::npos || line.at(index) == '#') {
-                line_num++;
-                continue;
-            }
-
-            std::stringstream instream(line);
-
-            fastq adapter_5p = read_adapter_sequence(instream);
+        for (string_table_citer it = raw_adapters.begin(); it != raw_adapters.end(); ++it) {
+            fastq adapter_5p = fastq("adapter", it->at(0));
             fastq adapter_3p;
+
             if (paired_ended) {
-                adapter_3p = read_adapter_sequence(instream);
+                adapter_3p = fastq("adapter", it->at(1));
                 adapter_3p.reverse_complement();
             }
 
             adapters.push_back(fastq_pair(adapter_5p, adapter_3p));
-            line_num++;
+            row_num++;
         }
-    } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error reading " << name << " sequences (line " << line_num
-                  << "); aborting:\n    " << error.what() << std::endl;
-        return false;
     } catch (const fastq_error& error) {
-        std::cerr << "Error parsing " << name << " sequences (line " << line_num
+        std::cerr << "Error parsing '" << filename << "' (row " << row_num
                   << "); aborting:\n    " << error.what() << std::endl;
         return false;
     }

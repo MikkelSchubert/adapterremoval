@@ -673,47 +673,6 @@ TEST(fastq, Writing_to_stream_phred_64_explicit)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Clean sequence
-
-TEST(fastq, clean_empty)
-{
-    std::string sequence;
-    fastq::clean_sequence(sequence);
-    ASSERT_EQ("", sequence);
-}
-
-
-TEST(fastq, clean_lowercase)
-{
-    std::string sequence = "acGtAcngN";
-    fastq::clean_sequence(sequence);
-    ASSERT_EQ("ACGTACNGN", sequence);
-}
-
-
-TEST(fastq, clean_dots)
-{
-    std::string sequence = "ACGTAC.G.";
-    fastq::clean_sequence(sequence);
-    ASSERT_EQ("ACGTACNGN", sequence);
-}
-
-
-TEST(fastq, reject_non_nucleotides_1)
-{
-    std::string sequence = "AsTACNGN";
-    ASSERT_THROW(fastq::clean_sequence(sequence), fastq_error);
-}
-
-
-TEST(fastq, reject_non_nucleotides_2)
-{
-    std::string sequence = "ACGTAC1GN";
-    ASSERT_THROW(fastq::clean_sequence(sequence), fastq_error);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 // Validating pairs
 
 TEST(fastq, validate_paired_reads__throws_if_order_is_wrong)

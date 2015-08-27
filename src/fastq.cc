@@ -101,6 +101,16 @@ fastq::fastq(const std::string& header,
 }
 
 
+fastq::fastq(const std::string& header,
+             const std::string& sequence)
+    : m_header(header)
+    , m_sequence(sequence)
+    , m_qualities(std::string(sequence.length(), '!'))
+{
+    process_record(FASTQ_ENCODING_33);
+}
+
+
 bool fastq::operator==(const fastq& other) const
 {
     return (m_header == other.m_header)

@@ -41,6 +41,7 @@ public:
     fastq();
 
     /**
+     * Create a new FASTQ record.
      *
      * @param qname FASTQ header, including read name and meta information.
      * @param sequence nucleotide sequence containing the letters "acgtnACGTN."
@@ -59,6 +60,18 @@ public:
           const std::string& sequence,
           const std::string& qualities,
           const fastq_encoding& encoding = FASTQ_ENCODING_33);
+
+
+    /**
+     * Create FASTQ record from a sequence alone.
+     *
+     * @param qname FASTQ header, including read name and meta information.
+     * @param sequence nucleotide sequence containing the letters "acgtnACGTN."
+     *
+     * Works like the full constructor, except that qualities are all 0 ('!').
+     */
+    fastq(const std::string& header,
+          const std::string& sequence);
 
 
     /** Returns true IFF all fields are identical. **/
@@ -130,7 +143,13 @@ public:
      */
     std::string to_str(const fastq_encoding& encoding = FASTQ_ENCODING_33) const;
 
+    /** Converts an error-probability to a Phred+33 encoded quality score. **/
+    static char p_to_phred_33(double p);
 
+    /** Validate that two reads form a valid pair. */
+    static void validate_paired_reads(const fastq& mate1, const fastq& mate2);
+
+private:
     /**
      * Converting lower-case nucleotides to uppercase, '.' to N.
      *
@@ -139,13 +158,6 @@ public:
      **/
     static void clean_sequence(std::string& sequence);
 
-    /** Converts an error-probability to a Phred+33 encoded quality score. **/
-    static char p_to_phred_33(double p);
-
-    /** Validate that two reads form a valid pair. */
-    static void validate_paired_reads(const fastq& mate1, const fastq& mate2);
-
-private:
     /** Initializes record; used by constructor and read function. **/
     void process_record(const fastq_encoding& encoding);
 

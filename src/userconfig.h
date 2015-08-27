@@ -191,7 +191,6 @@ private:
      **/
     bool read_adapter_sequences(const std::string& filename,
                                 fastq_pair_vec& adapters,
-                                const std::string& name,
                                 bool paired_ended = true) const;
 
     //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
