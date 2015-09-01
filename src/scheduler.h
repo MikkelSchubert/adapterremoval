@@ -63,7 +63,7 @@ public:
 
 
 typedef std::pair<size_t, analytical_chunk*> chunk_pair;
-typedef std::list<chunk_pair> chunk_list;
+typedef std::vector<chunk_pair> chunk_list;
 
 
 /**
@@ -181,9 +181,9 @@ public:
 
 private:
     //! Stores the ordering of data chunks expected by the step
-    ordering m_step_order;
+    const ordering m_step_order;
     //! True if the step involves file IO (read and / or writes)
-    bool m_file_io;
+    const bool m_file_io;
 };
 
 

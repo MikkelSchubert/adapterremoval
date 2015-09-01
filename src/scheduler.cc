@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <cstdlib>
 
+#include "debug.h"
 #include "scheduler.h"
 #include "strutils.h"
 
@@ -163,6 +164,7 @@ struct scheduler_step
       : lock()
       , ptr(value)
       , current_chunk(0)
+      , last_chunk(0)
       , queue()
     {
     }
@@ -196,6 +198,9 @@ struct scheduler_step
     std::auto_ptr<analytical_step> ptr;
     //! The current chunk to be processed
     unsigned current_chunk;
+    //! The last chunk queued to the step;
+    //! Used to correct numbering for sparse output from sequential steps
+    unsigned last_chunk;
     //! (Ordered) vector of chunks to be processed
     std::priority_queue<data_chunk> queue;
 
@@ -419,20 +424,27 @@ void scheduler::execute_analytical_step(scheduler_step* step)
     // Schedule each of the resulting blocks
     for (chunk_list::iterator it = chunks.begin(); it != chunks.end(); ++it) {
         scheduler_step* other_step = m_steps.at(it->first);
+        AR_DEBUG_ASSERT(other_step != NULL);
 
         mutex_locker lock(other_step->lock);
         // Inherit reference count from source chunk
-        other_step->queue.push(data_chunk(chunk, it->second));
+        data_chunk next_chunk(chunk, it->second);
+        if (step->ptr->get_ordering() == analytical_step::ordered) {
+            // Ordered steps are allowed to not return results, so the chunk
+            // numbering is remembered for down-stream steps
+            next_chunk.chunk_id = other_step->last_chunk++;
+        }
 
-        queue_analytical_step(other_step, chunk.chunk_id);
+        other_step->queue.push(next_chunk);
+        queue_analytical_step(other_step, next_chunk.chunk_id);
     }
 
     // Reschedule current step if ordered and next chunk is available
     {
-        mutex_locker lock(step->lock);
         if (step->ptr->get_ordering() == analytical_step::ordered) {
-            step->current_chunk++;
+            mutex_locker lock(step->lock);
 
+            step->current_chunk++;
             if (!step->queue.empty()) {
                 queue_analytical_step(step, step->queue.top().chunk_id);
             }
