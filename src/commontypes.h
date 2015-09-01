@@ -62,36 +62,40 @@ enum read_type
 /** Unique IDs for analytical steps. */
 enum analyses_id
 {
-    //! Step for reading of mate 1 reads
-    ai_read_mate_1 = 0,
-    //! Step for reading of mate 2 reads
-    ai_read_mate_2,
+    //! Step for reading of SE or PE reads
+    ai_read_fastq = 0,
+
+    //! Step for demultiplexing SE or PE reads
+    ai_demultiplex,
+
+    //! Step for writing mate 1 reads which were not identified
+    ai_write_unidentified_1,
+    //! Step for writing mate 2 reads which were not identified
+    ai_write_unidentified_2,
+
+    //! Offset for post-demultiplexing analytical steps
+    //! If enabled, the demultiplexing step will forward reads to the
+    //! nth * ai_analyses_offset analytical step, corresponding to the
+    //! barcode number.
+    ai_analyses_offset = 20,
 
     //! Step for reading adapter identification
-    ai_identify_adapters,
+    ai_identify_adapters = 20,
     //! Step for trimming of PE reads
-    ai_trim_pe,
+    ai_trim_pe = 20,
     //! Step for trimming of SE reads
-    ai_trim_se,
+    ai_trim_se = 20,
 
-    //! Steps for (optional) compression of trimmed reads
-    ai_zip_mate_1,
-    ai_zip_mate_2,
-    ai_zip_singleton,
-    ai_zip_collapsed,
-    ai_zip_collapsed_truncated,
-    ai_zip_discarded, // 10
+    //! Offset added to write steps when zipping
+    ai_zip_offset = 10,
 
     //! Steps for writing of trimmed reads
-    ai_write_mate_1,
-    ai_write_mate_2,
-    ai_write_singleton,
-    ai_write_collapsed,
-    ai_write_collapsed_truncated,
-    ai_write_discarded,
-
-    //! End value; not to be used as an argument.
-    ai_max
+    ai_write_mate_1 = 21,
+    ai_write_mate_2 = 22,
+    ai_write_singleton = 23,
+    ai_write_collapsed = 24,
+    ai_write_collapsed_truncated = 25,
+    ai_write_discarded = 26
 };
 
 

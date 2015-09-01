@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "alignment.h"
+#include "debug.h"
 #include "fastq_io.h"
 #include "scheduler.h"
 #include "strutils.h"
@@ -359,36 +360,21 @@ public:
         fastq_pair_vec adapters;
         adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
 
-        std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
-        if (file_chunk->mates.at(0).size() != file_chunk->mates.at(1).size()) {
-            throw fastq_error("input files contain unequal line numbers!");
-        }
+        std::auto_ptr<fastq_read_chunk> file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
         std::auto_ptr<adapter_stats> sink(m_sinks.get_sink());
         statistics& stats = *sink->stats;
 
-        string_vec_citer file_1_it = file_chunk->mates.at(0).begin();
-        const string_vec_citer file_1_end = file_chunk->mates.at(0).end();
-        string_vec_citer file_2_it = file_chunk->mates.at(1).begin();
-        const string_vec_citer file_2_end = file_chunk->mates.at(1).end();
+        AR_DEBUG_ASSERT(file_chunk->reads_1.size() == file_chunk->reads_2.size());
+        fastq_vec::iterator read_1 = file_chunk->reads_1.begin();
+        fastq_vec::iterator read_2 = file_chunk->reads_2.begin();
 
-        size_t n_record = file_chunk->offset;
-        try {
-            fastq read1, read2;
-            while (read1.read(file_1_it, file_1_end, *m_config.quality_input_fmt) &&
-                   read2.read(file_2_it, file_2_end, *m_config.quality_input_fmt)) {
-                process_reads(adapters, stats, *sink, read1, read2);
-                n_record += 4;
-            }
-        } catch (const fastq_error& error) {
-            print_locker lock;
-            std::cerr << "Error reading FASTQ record at line " << n_record << "; aborting:\n"
-                      << cli_formatter::fmt(error.what()) << std::endl;
-            throw thread_abort();
+        while (read_1 != file_chunk->reads_1.end()) {
+            process_reads(adapters, stats, *sink, *read_1++, *read_2++);
         }
 
         m_sinks.return_sink(sink.release());
-        m_timer.increment(file_chunk->mates.at(0).size() / 2);
+        m_timer.increment(file_chunk->reads_1.size() * 2);
 
         return chunk_list();
     }
@@ -405,7 +391,8 @@ public:
                   << "Printing adapter sequences, including poly-A tails:"
                   << std::endl;
 
-        print_consensus_adapter(sink->pcr1_counts, sink->pcr1_kmers, "--adapter1", m_config.adapters.get_raw_adapters().front().first.sequence());
+        print_consensus_adapter(sink->pcr1_counts, sink->pcr1_kmers, "--adapter1",
+                                m_config.adapters.get_raw_adapters().front().first.sequence());
         std::cout << "\n\n";
 
         fastq adapter2 = m_config.adapters.get_raw_adapters().front().second;
@@ -479,8 +466,10 @@ int identify_adapter_sequences(const userconfig& config)
 
     scheduler sch;
     try {
-        sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_read_mate_2));
-        sch.add_step(ai_read_mate_2, new read_paired_fastq(config, rt_mate_2, ai_identify_adapters));
+        sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
+                                                          config.input_file_1,
+                                                          config.input_file_2,
+                                                          ai_identify_adapters));
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;

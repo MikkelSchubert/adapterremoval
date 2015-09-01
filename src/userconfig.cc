@@ -25,7 +25,6 @@
 #include <iostream>
 #include <cstring>
 #include <cerrno>
-#include <fstream>
 #include <string>
 #include <stdexcept>
 #include <sys/time.h>
@@ -477,32 +476,6 @@ bool userconfig::is_acceptable_read(const fastq& seq) const
         && seq.count_ns() <= max_ambiguous_bases;
 }
 
-
-std::auto_ptr<std::ostream> userconfig::open_with_default_filename(
-                                            const std::string& key,
-                                            const std::string& postfix,
-                                            bool compressed) const
-{
-    std::string filename = basename + postfix;
-    if (argparser.is_set(key)) {
-        filename = argparser.at(key)->to_str();
-    } else if (compressed && gzip && gzip_level) {
-        filename += ".gz";
-    } else if (compressed && bzip2) {
-        filename += ".bz2";
-    }
-
-    std::auto_ptr<std::ofstream> stream(new std::ofstream(filename.c_str(),
-                                                           std::ofstream::out));
-
-    if (!stream->is_open()) {
-        std::string message = std::string("Failed to open file '") + filename + "': ";
-        throw std::ofstream::failure(message + std::strerror(errno));
-    }
-
-    stream->exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    return std::auto_ptr<std::ostream>(stream);
-}
 
 std::string userconfig::get_output_filename(const std::string& key,
                                             size_t nth) const

@@ -237,8 +237,6 @@ const phred_scores& get_updated_phred_scores(char qual_1, char qual_2)
 }
 
 
-typedef std::pair<std::string, std::string> string_pair;
-
 string_pair collapse_sequence(const std::string& sequence1,
                               const std::string& sequence2,
                               const std::string& qualities1,

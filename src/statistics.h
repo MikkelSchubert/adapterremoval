@@ -117,4 +117,31 @@ struct statistics
     }
 };
 
+
+/** Object used to collect summary statistics for demultiplexing. */
+struct demux_statistics
+{
+    demux_statistics(const size_t n_barcodes)
+        : barcodes(n_barcodes)
+        , unidentified(0)
+    {
+    }
+
+    size_t total() const
+    {
+        size_t total = unidentified;
+        for (size_t i = 0; i < barcodes.size(); ++i) {
+            total += barcodes.at(i);
+        }
+
+        return total;
+    }
+
+    //! Number of reads / pairs identified for a given barcode / pair of barcodes
+    std::vector<size_t> barcodes;
+    //! Number of unidentified reads / pairs
+    size_t unidentified;
+};
+
+
 #endif

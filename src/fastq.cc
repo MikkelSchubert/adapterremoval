@@ -28,6 +28,7 @@
 #include <sstream>
 
 #include "fastq.h"
+#include "linereader.h"
 
 
 struct mate_info
@@ -191,49 +192,35 @@ void fastq::add_prefix_to_header(const std::string& prefix)
 }
 
 
-bool fastq::read(string_vec_citer& it, const string_vec_citer& end, const fastq_encoding& encoding)
+bool fastq::read(line_reader& reader, const fastq_encoding& encoding)
 {
-    if (it == end) {
+    std::string line;
+    if (!reader.getline(line)) {
+        // End of file; terminate gracefully
         return false;
-    } else {
-        const std::string& header_line = *it;
-        if (header_line.empty() || header_line.at(0) != '@') {
-            throw fastq_error("FASTQ header did not start with '@'  ");
-        }
-
-        m_header = it->substr(1);
-        if (m_header.empty()) {
-            throw fastq_error("FASTQ header is empty");
-        }
-
-        ++it;
     }
 
-    if (it == end) {
+    m_header = line.substr(1);
+    if (m_header.empty() || line.at(0) != '@') {
+        throw fastq_error("Malformed or empty FASTQ header");
+    }
+
+    if (!reader.getline(m_sequence)) {
         throw fastq_error("partial FASTQ record; cut off after header");
-    } else {
-        m_sequence = *it++;
-        if (m_sequence.empty()) {
-            throw fastq_error("sequence is empty");
-        }
+    } else if (m_sequence.empty()) {
+        throw fastq_error("sequence is empty");
     }
 
-    if (it == end) {
+    if (!reader.getline(line)) {
         throw fastq_error("partial FASTQ record; cut off after sequence");
-    } else {
-        const std::string& separator = *it++;
-        if (separator.empty() || separator.at(0) != '+') {
-            throw fastq_error("FASTQ record lacks seperator character (+)");
-        }
+    } else if (line.empty() || line.at(0) != '+') {
+        throw fastq_error("FASTQ record lacks seperator character (+)");
     }
 
-    if (it == end) {
+    if (!reader.getline(m_qualities)) {
         throw fastq_error("partial FASTQ record; cut off after separator");
-    } else {
-        m_qualities = *it++;
-        if (m_sequence.empty()) {
-            throw fastq_error("sequence is empty");
-        }
+    } else if (m_sequence.empty()) {
+        throw fastq_error("sequence is empty");
     }
 
     process_record(encoding);

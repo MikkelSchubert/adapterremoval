@@ -32,6 +32,8 @@
 #include <vector>
 
 #include "alignment.h"
+#include "debug.h"
+#include "demultiplex.h"
 #include "fastq.h"
 #include "fastq_io.h"
 #include "main.h"
@@ -60,6 +62,7 @@ void add_chunk(chunk_list& chunks, size_t target, std::auto_ptr<fastq_output_chu
 
 void write_trimming_settings(const userconfig& config,
                              const statistics& stats,
+                             size_t nth,
                              std::ostream& settings)
 {
     settings << "Running " << NAME << " " << VERSION << " using the following options:"
@@ -72,13 +75,11 @@ void write_trimming_settings(const userconfig& config,
     }
 
     size_t adapter_id = 0;
-    for (fastq_pair_vec::const_iterator it = config.adapters.get_raw_adapters().begin(); it != config.adapters.get_raw_adapters().end(); ++it, ++adapter_id) {
-        settings << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence();
+    const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
+    for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+        settings << "\nAdapter1[" << adapter_id << "]: " << it->first;
         if (config.paired_ended_mode) {
-            fastq adapter = it->second;
-            adapter.reverse_complement();
-
-            settings << "\nAdapter2[" << adapter_id << "]: " << adapter.sequence() << "\n";
+            settings << "\nAdapter2[" << adapter_id << "]: " << it->second << "\n";
         }
     }
 
@@ -164,6 +165,71 @@ void write_trimming_settings(const userconfig& config,
 }
 
 
+
+bool write_demux_settings(const userconfig& config,
+                          const demultiplex_reads* step)
+{
+    if (!step) {
+        // Demultiplexing not enabled; nothing to do
+        return true;
+    }
+
+    const demux_statistics stats = step->statistics();
+    const std::string filename = config.get_output_filename("demux_stats");
+
+    try {
+        std::ofstream output(filename.c_str(), std::ofstream::out);
+        if (!output.is_open()) {
+            std::string message = std::string("Failed to open file '") + filename + "': ";
+            throw std::ofstream::failure(message + std::strerror(errno));
+        }
+
+        output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+        output.precision(3);
+        output << std::fixed << std::setw(3);
+
+        output << NAME << " " << VERSION << " demultiplexing of "
+               << (config.paired_ended_mode ? "paired" : "single")
+               << "-end reads:\n\n";
+
+        output << "Maximum mismatches (total): " << config.barcode_mm << "\n";
+        if (config.paired_ended_mode) {
+            output << "Maximum mate 1 mismatches: " << config.barcode_mm_r1 << "\n";
+            output << "Maximum mate 2 mismatches: " << config.barcode_mm_r2 << "\n";
+        }
+
+        const size_t total = stats.total();
+        output << "\nNth\tBarcode_1\tBarcode_2\tHits\tFraction\n"
+               << "NA\tNA\tNA\t" << stats.unidentified << "\t"
+               << stats.unidentified / static_cast<double>(total) << "\n";
+
+        const fastq_pair_vec barcodes = config.adapters.get_barcodes();
+        for (size_t nth = 0; nth < barcodes.size(); ++nth) {
+            const fastq_pair& current = barcodes.at(nth);
+
+            output << nth << "\t" << current.first.sequence() << "\t";
+            if (current.second.length()) {
+                output << current.second.sequence() << "\t";
+            } else {
+                output << "*\t";
+            }
+
+            output << stats.barcodes.at(nth) << "\t"
+                   << stats.barcodes.at(nth) / static_cast<double>(total)
+                   << "\n";
+        }
+
+        output << "*\t*\t*\t" << total << "\t" << 1.0 << std::endl;
+    } catch (const std::ios_base::failure& error) {
+        std::cerr << "IO error writing demultiplexing statistics; aborting:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+
 void process_collapsed_read(const userconfig& config, statistics& stats,
                             fastq& collapsed_read,
                             fastq_output_chunk& out_collapsed,
@@ -204,14 +270,15 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
 }
 
 
-
 class reads_processor : public analytical_step
 {
 public:
-    reads_processor(const userconfig& config)
+    reads_processor(const userconfig& config, size_t nth)
       : analytical_step(analytical_step::unordered)
       , m_config(config)
+      , m_adapters(config.adapters.get_adapter_set(nth))
       , m_stats(config)
+      , m_nth(nth)
     {
 
     }
@@ -238,7 +305,9 @@ protected:
     };
 
     const userconfig& m_config;
+    const fastq_pair_vec m_adapters;
     stats_sink m_stats;
+    const size_t m_nth;
 };
 
 
@@ -246,85 +315,77 @@ protected:
 class se_reads_processor : public reads_processor
 {
 public:
-    se_reads_processor(const userconfig& config)
-      : reads_processor(config)
+    se_reads_processor(const userconfig& config, size_t nth = 0)
+      : reads_processor(config, nth)
     {
     }
 
     chunk_list process(analytical_chunk* chunk)
     {
-        std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
-        string_vec_citer file_1_it = file_chunk->mates.at(rt_mate_1).begin();
-        const string_vec_citer file_1_end = file_chunk->mates.at(rt_mate_1).end();
+        std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
         std::auto_ptr<statistics> stats(m_stats.get_sink());
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
-        output_chunk_ptr out_mate_1(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
         output_chunk_ptr out_collapsed;
         output_chunk_ptr out_collapsed_truncated;
-        output_chunk_ptr out_discarded(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_discarded(new fastq_output_chunk(read_chunk->eof));
 
         if (m_config.collapse) {
-            out_collapsed.reset(new fastq_output_chunk(file_chunk->eof));
-            out_collapsed_truncated.reset(new fastq_output_chunk(file_chunk->eof));
+            out_collapsed.reset(new fastq_output_chunk(read_chunk->eof));
+            out_collapsed_truncated.reset(new fastq_output_chunk(read_chunk->eof));
         }
 
-        try {
-            for (fastq read; read.read(file_1_it, file_1_end, *m_config.quality_input_fmt); file_chunk->offset += 4) {
-                const alignment_info alignment = align_single_ended_sequence(read, m_config.adapters.get_raw_adapters(), m_config.shift);
-                const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
+        for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
+            fastq& read = *it;
 
-                if (aln_type == userconfig::valid_alignment) {
-                    truncate_single_ended_sequence(alignment, read);
-                    stats->number_of_reads_with_adapter.at(alignment.adapter_id)++;
-                    stats->well_aligned_reads++;
+            const alignment_info alignment = align_single_ended_sequence(read, m_adapters, m_config.shift);
+            const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
 
-                    if (m_config.is_alignment_collapsible(alignment)) {
-                        process_collapsed_read(m_config, *stats, read,
-                                               *out_collapsed,
-                                               *out_collapsed_truncated,
-                                               *out_discarded);
-                        continue;
-                    }
-                } else if (aln_type == userconfig::poor_alignment) {
-                    stats->poorly_aligned_reads++;
-                } else {
-                    stats->unaligned_reads++;
+            if (aln_type == userconfig::valid_alignment) {
+                truncate_single_ended_sequence(alignment, read);
+                stats->number_of_reads_with_adapter.at(alignment.adapter_id)++;
+                stats->well_aligned_reads++;
+
+                if (m_config.is_alignment_collapsible(alignment)) {
+                    process_collapsed_read(m_config, *stats, read,
+                                           *out_collapsed,
+                                           *out_collapsed_truncated,
+                                           *out_discarded);
+                    continue;
                 }
-
-                m_config.trim_sequence_by_quality_if_enabled(read);
-                if (m_config.is_acceptable_read(read)) {
-                    stats->keep1++;
-                    stats->total_number_of_good_reads++;
-                    stats->total_number_of_nucleotides += read.length();
-
-                    out_mate_1->add(encoding, read);
-                    stats->inc_length_count(rt_mate_1, read.length());
-                } else {
-                    stats->discard1++;
-                    stats->inc_length_count(rt_discarded, read.length());
-
-                    out_discarded->add(encoding, read);
-                }
+            } else if (aln_type == userconfig::poor_alignment) {
+                stats->poorly_aligned_reads++;
+            } else {
+                stats->unaligned_reads++;
             }
-        } catch (const fastq_error& error) {
-            print_locker lock;
-            std::cerr << "Error reading FASTQ record at line " << file_chunk->offset << "; aborting:\n"
-                      << cli_formatter::fmt(error.what()) << std::endl;
 
-            throw thread_abort();
+            m_config.trim_sequence_by_quality_if_enabled(read);
+            if (m_config.is_acceptable_read(read)) {
+                stats->keep1++;
+                stats->total_number_of_good_reads++;
+                stats->total_number_of_nucleotides += read.length();
+
+                out_mate_1->add(encoding, read);
+                stats->inc_length_count(rt_mate_1, read.length());
+            } else {
+                stats->discard1++;
+                stats->inc_length_count(rt_discarded, read.length());
+
+                out_discarded->add(encoding, read);
+            }
         }
 
-        stats->records += file_chunk->mates.at(rt_mate_1).size() / 4;
+        stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(stats.release());
 
         chunk_list chunks;
-        const bool compress = m_config.gzip || m_config.bzip2;
-        add_chunk(chunks, compress ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
-        add_chunk(chunks, compress ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
-        add_chunk(chunks, compress ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
-        add_chunk(chunks, compress ? ai_zip_discarded : ai_write_discarded, out_discarded);
+        const size_t offset = m_nth * ai_analyses_offset;
+        add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, offset + ai_write_collapsed, out_collapsed);
+        add_chunk(chunks, offset + ai_write_collapsed_truncated, out_collapsed_truncated);
+        add_chunk(chunks, offset + ai_write_discarded, out_discarded);
 
         return chunks;
     }
@@ -334,196 +395,225 @@ public:
 class pe_reads_processor : public reads_processor
 {
 public:
-    pe_reads_processor(const userconfig& config)
-      : reads_processor(config)
+    pe_reads_processor(const userconfig& config, size_t nth)
+      : reads_processor(config, nth)
     {
     }
 
     chunk_list process(analytical_chunk* chunk)
     {
-        std::auto_ptr<fastq_file_chunk> file_chunk(dynamic_cast<fastq_file_chunk*>(chunk));
-
-        string_vec_citer file_1_it = file_chunk->mates.at(rt_mate_1).begin();
-        const string_vec_citer file_1_end = file_chunk->mates.at(rt_mate_1).end();
-        string_vec_citer file_2_it = file_chunk->mates.at(rt_mate_2).begin();
-        const string_vec_citer file_2_end = file_chunk->mates.at(rt_mate_2).end();
+        std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
         std::auto_ptr<statistics> stats(m_stats.get_sink());
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
-        output_chunk_ptr out_mate_1(new fastq_output_chunk(file_chunk->eof));
-        output_chunk_ptr out_mate_2(new fastq_output_chunk(file_chunk->eof));
-        output_chunk_ptr out_singleton(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
+        output_chunk_ptr out_mate_2(new fastq_output_chunk(read_chunk->eof));
+        output_chunk_ptr out_singleton(new fastq_output_chunk(read_chunk->eof));
         output_chunk_ptr out_collapsed;
         output_chunk_ptr out_collapsed_truncated;
-        output_chunk_ptr out_discarded(new fastq_output_chunk(file_chunk->eof));
+        output_chunk_ptr out_discarded(new fastq_output_chunk(read_chunk->eof));
 
         if (m_config.collapse) {
-            out_collapsed.reset(new fastq_output_chunk(file_chunk->eof));
-            out_collapsed_truncated.reset(new fastq_output_chunk(file_chunk->eof));
+            out_collapsed.reset(new fastq_output_chunk(read_chunk->eof));
+            out_collapsed_truncated.reset(new fastq_output_chunk(read_chunk->eof));
         }
 
-        fastq read1;
-        fastq read2;
-        try {
-            for (; ; file_chunk->offset += 4) {
-                const bool read_file_1_ok = read1.read(file_1_it, file_1_end, *m_config.quality_input_fmt);
-                const bool read_file_2_ok = read2.read(file_2_it, file_2_end, *m_config.quality_input_fmt);
+        AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
-                if (read_file_1_ok != read_file_2_ok) {
-                    throw fastq_error("files contain unequal number of records");
-                } else if (!read_file_1_ok) {
-                    break;
+        fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
+        fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
+        while (it_1 != read_chunk->reads_1.end()) {
+            fastq read1 = *it_1++;
+            fastq read2 = *it_2++;
+
+            // Throws if read-names or mate numbering does not match
+            fastq::validate_paired_reads(read1, read2);
+
+            // Reverse complement to match the orientation of read1
+            read2.reverse_complement();
+
+            const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_adapters, m_config.shift);
+            const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
+            if (aln_type == userconfig::valid_alignment) {
+                stats->well_aligned_reads++;
+                const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
+                stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
+
+                if (m_config.is_alignment_collapsible(alignment)) {
+                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
+                    process_collapsed_read(m_config, *stats, collapsed_read,
+                                           *out_collapsed,
+                                           *out_collapsed_truncated,
+                                           *out_discarded);
+                    continue;
+                }
+            } else if (aln_type == userconfig::poor_alignment) {
+                stats->poorly_aligned_reads++;
+            } else {
+                stats->unaligned_reads++;
+            }
+
+            // Reads were not aligned or collapsing is not enabled
+            // Undo reverse complementation (post truncation of adapters)
+            read2.reverse_complement();
+
+            // Are the reads good enough? Not too many Ns?
+            m_config.trim_sequence_by_quality_if_enabled(read1);
+            m_config.trim_sequence_by_quality_if_enabled(read2);
+            const bool read_1_acceptable = m_config.is_acceptable_read(read1);
+            const bool read_2_acceptable = m_config.is_acceptable_read(read2);
+
+            stats->total_number_of_nucleotides += read_1_acceptable ? read1.length() : 0u;
+            stats->total_number_of_nucleotides += read_1_acceptable ? read2.length() : 0u;
+            stats->total_number_of_good_reads += read_1_acceptable;
+            stats->total_number_of_good_reads += read_2_acceptable;
+
+            if (read_1_acceptable && read_2_acceptable) {
+                out_mate_1->add(encoding, read1);
+                out_mate_2->add(encoding, read2);
+
+                stats->inc_length_count(rt_mate_1, read1.length());
+                stats->inc_length_count(rt_mate_2, read2.length());
+            } else {
+                // Keep one or none of the reads ...
+                stats->keep1 += read_1_acceptable;
+                stats->keep2 += read_2_acceptable;
+                stats->discard1 += !read_1_acceptable;
+                stats->discard2 += !read_2_acceptable;
+                stats->inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read1.length());
+                stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
+
+                if (read_1_acceptable) {
+                    out_singleton->add(encoding, read1);
+                } else {
+                    out_discarded->add(encoding, read1);
                 }
 
-                // Throws if read-names or mate numbering does not match
-                fastq::validate_paired_reads(read1, read2);
-
-                // Reverse complement to match the orientation of read1
-                read2.reverse_complement();
-
-                const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_config.adapters.get_raw_adapters(), m_config.shift);
-                const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
-                if (aln_type == userconfig::valid_alignment) {
-                    stats->well_aligned_reads++;
-                    const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
-                    stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
-
-                    if (m_config.is_alignment_collapsible(alignment)) {
-                        fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
-                        process_collapsed_read(m_config, *stats, collapsed_read,
-                                               *out_collapsed,
-                                               *out_collapsed_truncated,
-                                               *out_discarded);
-                        continue;
-                    }
-                } else if (aln_type == userconfig::poor_alignment) {
-                    stats->poorly_aligned_reads++;
+                if (read_2_acceptable) {
+                    out_singleton->add(encoding, read2);
                 } else {
-                    stats->unaligned_reads++;
-                }
-
-                // Reads were not aligned or collapsing is not enabled
-                // Undo reverse complementation (post truncation of adapters)
-                read2.reverse_complement();
-
-                // Are the reads good enough? Not too many Ns?
-                m_config.trim_sequence_by_quality_if_enabled(read1);
-                m_config.trim_sequence_by_quality_if_enabled(read2);
-                const bool read_1_acceptable = m_config.is_acceptable_read(read1);
-                const bool read_2_acceptable = m_config.is_acceptable_read(read2);
-
-                stats->total_number_of_nucleotides += read_1_acceptable ? read1.length() : 0u;
-                stats->total_number_of_nucleotides += read_1_acceptable ? read2.length() : 0u;
-                stats->total_number_of_good_reads += read_1_acceptable;
-                stats->total_number_of_good_reads += read_2_acceptable;
-
-                if (read_1_acceptable && read_2_acceptable) {
-                    out_mate_1->add(encoding, read1);
-                    out_mate_2->add(encoding, read2);
-
-                    stats->inc_length_count(rt_mate_1, read1.length());
-                    stats->inc_length_count(rt_mate_2, read2.length());
-                } else {
-                    // Keep one or none of the reads ...
-                    stats->keep1 += read_1_acceptable;
-                    stats->keep2 += read_2_acceptable;
-                    stats->discard1 += !read_1_acceptable;
-                    stats->discard2 += !read_2_acceptable;
-                    stats->inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read1.length());
-                    stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
-
-                    if (read_1_acceptable) {
-                        out_singleton->add(encoding, read1);
-                    } else {
-                        out_discarded->add(encoding, read1);
-                    }
-
-                    if (read_2_acceptable) {
-                        out_singleton->add(encoding, read2);
-                    } else {
-                        out_discarded->add(encoding, read2);
-                    }
+                    out_discarded->add(encoding, read2);
                 }
             }
-        } catch (const fastq_error& error) {
-            print_locker lock;
-            std::cerr << "Error reading FASTQ record at line "
-                      << file_chunk->offset << "; aborting:\n"
-                      << cli_formatter::fmt(error.what()) << std::endl;
-            throw thread_abort();
         }
 
-        stats->records += file_chunk->mates.at(rt_mate_1).size() / 4;
+        stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(stats.release());
 
         chunk_list chunks;
-        const bool compress = m_config.gzip || m_config.bzip2;
-        add_chunk(chunks, compress ? ai_zip_mate_1 : ai_write_mate_1, out_mate_1);
-        add_chunk(chunks, compress ? ai_zip_mate_2 : ai_write_mate_2, out_mate_2);
-        add_chunk(chunks, compress ? ai_zip_singleton : ai_write_singleton, out_singleton);
-        add_chunk(chunks, compress ? ai_zip_collapsed : ai_write_collapsed, out_collapsed);
-        add_chunk(chunks, compress ? ai_zip_collapsed_truncated : ai_write_collapsed_truncated, out_collapsed_truncated);
-        add_chunk(chunks, compress ? ai_zip_discarded : ai_write_discarded, out_discarded);
+        const size_t offset = m_nth * ai_analyses_offset;
+        add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, offset + ai_write_mate_2, out_mate_2);
+        add_chunk(chunks, offset + ai_write_singleton, out_singleton);
+        add_chunk(chunks, offset + ai_write_collapsed, out_collapsed);
+        add_chunk(chunks, offset + ai_write_collapsed_truncated, out_collapsed_truncated);
+        add_chunk(chunks, offset + ai_write_discarded, out_discarded);
 
         return chunks;
     }
 };
 
 
-int remove_adapter_sequences(const userconfig& config)
+
+bool write_settings(const userconfig& config, const std::vector<reads_processor*>& processors)
 {
-    if (config.paired_ended_mode) {
-        std::cerr << "Trimming pair ended reads ..." << std::endl;
-    } else {
-        std::cerr << "Trimming single ended reads ..." << std::endl;
+    for (size_t nth = 0; nth < processors.size(); ++nth) {
+        const std::string filename = config.get_output_filename("--settings", nth);
+
+        const std::auto_ptr<statistics> stats(processors.at(nth)->get_final_statistics());
+
+        try {
+            std::ofstream output(filename.c_str(), std::ofstream::out);
+
+            if (!output.is_open()) {
+                std::string message = std::string("Failed to open file '") + filename + "': ";
+                throw std::ofstream::failure(message + std::strerror(errno));
+            }
+
+            output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+            write_trimming_settings(config, *stats, nth, output);
+        } catch (const std::ios_base::failure& error) {
+            std::cerr << "IO error writing settings file; aborting:\n"
+                      << cli_formatter::fmt(error.what()) << std::endl;
+            return false;
+        }
     }
 
-    scheduler sch;
-    reads_processor* processor = NULL;
-    try {
-        if (config.paired_ended_mode) {
-            sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_read_mate_2));
-            sch.add_step(ai_read_mate_2, new read_paired_fastq(config, rt_mate_2, ai_trim_pe));
-            sch.add_step(ai_trim_pe, processor = new pe_reads_processor(config));
-            sch.add_step(ai_write_mate_1, new write_paired_fastq(config, rt_mate_1));
-            sch.add_step(ai_write_mate_2, new write_paired_fastq(config, rt_mate_2));
-            sch.add_step(ai_write_singleton, new write_paired_fastq(config, rt_singleton));
-        } else {
-            sch.add_step(ai_read_mate_1, new read_paired_fastq(config, rt_mate_1, ai_trim_se));
-            sch.add_step(ai_trim_se, processor = new se_reads_processor(config));
-            sch.add_step(ai_write_mate_1, new write_paired_fastq(config, rt_mate_1));
-        }
+    return true;
+}
 
-        if (config.collapse) {
-            sch.add_step(ai_write_collapsed, new write_paired_fastq(config, rt_collapsed));
-            sch.add_step(ai_write_collapsed_truncated, new write_paired_fastq(config, rt_collapsed_truncated));
-        }
 
+void add_write_step(const userconfig& config, scheduler& sch, size_t offset,
+                    analytical_step* step)
+{
+    if (false) {
+
+    }
 #ifdef AR_GZIP_SUPPORT
-        if (config.gzip) {
-            sch.add_step(ai_zip_mate_1, new gzip_paired_fastq(config, ai_write_mate_1));
-            sch.add_step(ai_zip_mate_2, new gzip_paired_fastq(config, ai_write_mate_2));
-            sch.add_step(ai_zip_singleton, new gzip_paired_fastq(config, ai_write_singleton));
-            sch.add_step(ai_zip_collapsed, new gzip_paired_fastq(config, ai_write_collapsed));
-            sch.add_step(ai_zip_collapsed_truncated, new gzip_paired_fastq(config, ai_write_collapsed_truncated));
-            sch.add_step(ai_zip_discarded, new gzip_paired_fastq(config, ai_write_discarded));
-        }
+    else if (config.gzip) {
+        sch.add_step(offset + ai_zip_offset, step);
+        sch.add_step(offset, new gzip_paired_fastq(config, offset + ai_zip_offset));
+    }
 #endif
 
 #ifdef AR_BZIP2_SUPPORT
-        if (config.bzip2) {
-            sch.add_step(ai_zip_mate_1, new bzip2_paired_fastq(config, ai_write_mate_1));
-            sch.add_step(ai_zip_mate_2, new bzip2_paired_fastq(config, ai_write_mate_2));
-            sch.add_step(ai_zip_singleton, new bzip2_paired_fastq(config, ai_write_singleton));
-            sch.add_step(ai_zip_collapsed, new bzip2_paired_fastq(config, ai_write_collapsed));
-            sch.add_step(ai_zip_collapsed_truncated, new bzip2_paired_fastq(config, ai_write_collapsed_truncated));
-            sch.add_step(ai_zip_discarded, new bzip2_paired_fastq(config, ai_write_discarded));
-        }
+    else if (config.bzip2) {
+        sch.add_step(offset + ai_zip_offset, step);
+        sch.add_step(offset, new bzip2_paired_fastq(config, offset + ai_zip_offset));
+    }
 #endif
+    else {
+        sch.add_step(offset, step);
+    }
+}
 
-        // Progress reporting enabled for final writer
-        sch.add_step(ai_write_discarded, new write_paired_fastq(config, rt_discarded));
+
+int remove_adapter_sequences_se(const userconfig& config)
+{
+    std::cout << "Trimming single ended reads ..." << std::endl;
+
+    scheduler sch;
+    std::vector<reads_processor*> processors;
+    demultiplex_reads* demultiplexer = NULL;
+
+    try {
+        if (config.adapters.barcode_count()) {
+            // Step 1: Read input file
+            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_output_fmt.get(),
+                                                              config.input_file_1,
+                                                              ai_demultiplex));
+
+            // Step 2: Parse and demultiplex reads based on single or double indices
+            sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_se_reads(&config));
+
+            add_write_step(config, sch, ai_write_unidentified_1,
+                           new write_paired_fastq(config.get_output_filename("demux_unknown")));
+        } else {
+            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_output_fmt.get(),
+                                                              config.input_file_1,
+                                                              ai_analyses_offset));
+        }
+
+        // Step 3 - N: Trim and write demultiplexed readss
+        for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
+            const size_t offset = nth * ai_analyses_offset;
+
+            processors.push_back(new se_reads_processor(config, nth));
+            sch.add_step(offset + ai_trim_se, processors.back());
+
+            add_write_step(config, sch, offset + ai_write_mate_1,
+                           new write_paired_fastq(config.get_output_filename("--output1", nth)));
+            add_write_step(config, sch, offset + ai_write_discarded,
+                         new write_paired_fastq(config.get_output_filename("--discarded", nth)));
+
+            if (config.collapse) {
+                add_write_step(config, sch, offset + ai_write_collapsed,
+                               new write_paired_fastq(config.get_output_filename("--outputcollapsed", nth)));
+                add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                               new write_paired_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+            }
+        }
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
@@ -532,18 +622,93 @@ int remove_adapter_sequences(const userconfig& config)
 
     if (!sch.run(config.max_threads, config.seed)) {
         return 1;
+    } else if (!write_settings(config, processors)) {
+        return 1;
+    } else if (!write_demux_settings(config, demultiplexer)) {
+        return 1;
     }
 
-    try {
-        std::auto_ptr<statistics> stats(processor->get_final_statistics());
-        std::auto_ptr<std::ostream> settings \
-            = config.open_with_default_filename("--settings", ".settings", false);
+    return 0;
+}
 
-        write_trimming_settings(config, *stats, *settings);
+
+int remove_adapter_sequences_pe(const userconfig& config)
+{
+    std::cout << "Trimming paired end reads ..." << std::endl;
+
+    scheduler sch;
+    std::vector<reads_processor*> processors;
+    demultiplex_reads* demultiplexer = NULL;
+
+    try {
+        if (config.adapters.barcode_count()) {
+            // Step 1: Read input file
+            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_output_fmt.get(),
+                                                              config.input_file_1,
+                                                              config.input_file_2,
+                                                              ai_demultiplex));
+
+            // Step 2: Parse and demultiplex reads based on single or double indices
+            sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_pe_reads(&config));
+
+            add_write_step(config, sch, ai_write_unidentified_1,
+                           new write_paired_fastq(config.get_output_filename("demux_unknown", 1)));
+            add_write_step(config, sch, ai_write_unidentified_2,
+                           new write_paired_fastq(config.get_output_filename("demux_unknown", 2)));
+        } else {
+            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_output_fmt.get(),
+                                                              config.input_file_1,
+                                                              config.input_file_2,
+                                                              ai_analyses_offset));
+        }
+
+        // Step 3 - N: Trim and write demultiplexed reads
+        for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
+            const size_t offset = nth * ai_analyses_offset;
+
+            processors.push_back(new pe_reads_processor(config, nth));
+            sch.add_step(offset + ai_trim_pe, processors.back());
+
+            add_write_step(config, sch, offset + ai_write_mate_1,
+                           new write_paired_fastq(config.get_output_filename("--output1", nth)));
+            add_write_step(config, sch, offset + ai_write_mate_2,
+                           new write_paired_fastq(config.get_output_filename("--output2", nth)));
+            add_write_step(config, sch, offset + ai_write_discarded,
+                           new write_paired_fastq(config.get_output_filename("--discarded", nth)));
+            add_write_step(config, sch, offset + ai_write_singleton,
+                           new write_paired_fastq(config.get_output_filename("--singleton", nth)));
+
+            if (config.collapse) {
+                add_write_step(config, sch, offset + ai_write_collapsed,
+                               new write_paired_fastq(config.get_output_filename("--outputcollapsed", nth)));
+                add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                               new write_paired_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+            }
+        }
     } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error writing settings file; aborting:\n"
+        std::cerr << "IO error opening file; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
         return 1;
+    }
+
+    if (!sch.run(config.max_threads, config.seed)) {
+        return 1;
+    } else if (!write_settings(config, processors)) {
+        return 1;
+    } else if (!write_demux_settings(config, demultiplexer)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+
+int remove_adapter_sequences(const userconfig& config)
+{
+    if (config.paired_ended_mode) {
+        return remove_adapter_sequences_pe(config);
+    } else {
+        return remove_adapter_sequences_se(config);
     }
 
     return 0;

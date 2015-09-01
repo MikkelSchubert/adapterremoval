@@ -85,12 +85,6 @@ public:
     bool is_acceptable_read(const fastq& seq) const;
 
 
-    std::auto_ptr<std::ostream> open_with_default_filename(
-                                        const std::string& key,
-                                        const std::string& postfix,
-                                        bool compressed = true) const;
-
-
     /** Trims a read if enabled, returning the #bases removed from each end. */
     fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
 

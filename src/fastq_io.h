@@ -25,7 +25,7 @@
 #define FASTQ_IO_H
 
 #include <vector>
-#include <memory>
+#include <fstream>
 
 #include <zlib.h>
 
@@ -39,6 +39,7 @@
 #include "scheduler.h"
 #include "timer.h"
 #include "linereader.h"
+#include "strutils.h"
 
 
 class userconfig;
@@ -47,23 +48,33 @@ typedef std::pair<size_t, unsigned char*> buffer_pair;
 typedef std::vector<buffer_pair> buffer_vec;
 
 
+//! Number of FASTQ records to read for each data-chunk
+const size_t FASTQ_CHUNK_SIZE = 2 * 1024;
+
+#if defined(AR_GZIP_SUPPORT) || defined(AR_BZIP2_SUPPORT)
+//! Size of compressed chunks used to transport compressed data
+const size_t FASTQ_COMPRESSED_CHUNK = 40 * 1024;
+#endif
+
+
+
+
 /**
- * Container object for raw reads.
+ * Container object for (demultiplexed) reads.
  */
-class fastq_file_chunk : public analytical_chunk
+class fastq_read_chunk : public analytical_chunk
 {
 public:
     /** Create chunk representing lines starting at line offset (1-based). */
-    fastq_file_chunk(size_t offset_);
+    fastq_read_chunk(bool eof_ = false);
 
     //! Indicates that EOF has been reached.
     bool eof;
 
-    //! The line-number offset from which the lines start
-    size_t offset;
-
-    //! Lines read from the mate 1 and mate 2 files
-    std::vector<string_vec> mates;
+    //! Lines read from the mate 1 files
+    fastq_vec reads_1;
+    //! Lines read from the mate 2 files
+    fastq_vec reads_2;
 };
 
 
@@ -74,7 +85,7 @@ class fastq_output_chunk : public analytical_chunk
 {
 public:
     /** Constructor; does nothing. */
-    fastq_output_chunk(bool eof);
+    fastq_output_chunk(bool eof_ = false);
 
     /** Destructor; frees buffers. */
     ~fastq_output_chunk();
@@ -83,16 +94,16 @@ public:
     void add(const fastq_encoding& encoding, const fastq& read, size_t count = 1);
 
     //! Indicates that EOF has been reached.
-    const bool eof;
+    bool eof;
+
+    //! The number of reads used to generate this chunk; may differ from the
+    //! the number of reads, in the case of collapsed reads.
+    size_t count;
 
 private:
     friend class gzip_paired_fastq;
     friend class bzip2_paired_fastq;
     friend class write_paired_fastq;
-
-    //! The number of reads used to generate this chunk; may differ from the
-    //! the number of reads, in the case of collapsed reads.
-    size_t count;
 
     //! Lines read from the mate 1 and mate 2 files
     string_vec reads;
@@ -105,40 +116,80 @@ private:
 /**
  * Simple file reading step.
  *
- * Reads from either the mate 1 or the mate 2 file, storing the reads in the
- * mates variable of a fastq_file_chunk, using the index corresponding to
- * either rt_mate_1 or rt_mate_2. Once the EOF has been reached, a single
- * empty of lines will be returned.
+ * Reads from the mate 1 and the mate 2 files, storing the reads in a
+ * fastq_file_chunk. Once the EOF has been reached, a single empty of lines
+ * will be returned.
+ */
+class read_single_fastq : public analytical_step
+{
+public:
+    /**
+     * Constructor.
+     *
+     * @param filename Path to FASTQ file containing mate 1 / 2 reads.
+     * @param mate Either rt_mate_1 or rt_mate_2; other values throw.
+     *
+     * Opens the input file corresponding to the specified mate.
+     */
+    read_single_fastq(const fastq_encoding* encoding,
+                      const std::string& filename,
+                      size_t next_step);
+
+    /** Reads N lines from the input file and saves them in an fastq_read_chunk. */
+    virtual chunk_list process(analytical_chunk* chunk);
+
+private:
+    //! Not implemented
+    read_single_fastq(const read_single_fastq&);
+    //! Not implemented
+    read_single_fastq& operator=(const read_single_fastq&);
+
+    //! Encoding used to parse FASTQ reads.
+    const fastq_encoding* m_encoding;
+    //! Current line in the input file (1-based)
+    size_t m_line_offset;
+    //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
+    line_reader m_io_input;
+    //! The analytical step following this step
+    const size_t m_next_step;
+};
+
+
+/**
+ * Simple file reading step.
  *
- * The class will re-use existing fastq_file_chunk objects passed to the
- * 'process' function, resizing the list of lines as nessesary to match the
- * number of lines read.
+ * Reads from the mate 1 and the mate 2 files, storing the reads in a
+ * fastq_file_chunk. Once the EOF has been reached, a single empty of lines
+ * will be returned.
  */
 class read_paired_fastq : public analytical_step
 {
 public:
     /**
      * Constructor.
-     *
-     * @param config User settings; needed for 'open_ifstream'.
-     * @param mate Either rt_mate_1 or rt_mate_2; other values throw.
-     *
-     * Opens the input file corresponding to the specified mate.
      */
-    read_paired_fastq(const userconfig& config, read_type mate, size_t next_step);
+    read_paired_fastq(const fastq_encoding* encoding,
+                      const std::string& filename_1,
+                      const std::string& filename_2,
+                      size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
     virtual chunk_list process(analytical_chunk* chunk);
 
 private:
-    static std::string get_filename(const userconfig& config, read_type mate);
+    //! Not implemented
+    read_paired_fastq(const read_paired_fastq&);
+    //! Not implemented
+    read_paired_fastq& operator=(const read_paired_fastq&);
 
+    //! Encoding used to parse FASTQ reads.
+    const fastq_encoding* m_encoding;
     //! Current line in the input file (1-based)
     size_t m_line_offset;
-    //! Pointer to iostream opened using userconfig::open_ifstream
-    line_reader m_io_input;
-    //! Read type; either rt_mate_1 or rt_mate_2.
-    const read_type m_type;
+    //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
+    line_reader m_io_input_1;
+    //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
+    line_reader m_io_input_2;
     //! The analytical step following this step
     const size_t m_next_step;
 };
@@ -161,6 +212,14 @@ public:
     virtual chunk_list process(analytical_chunk* chunk);
 
 private:
+    //! Not implemented
+    bzip2_paired_fastq(const bzip2_paired_fastq&);
+    //! Not implemented
+    bzip2_paired_fastq& operator=(const bzip2_paired_fastq&);
+
+    //! N reads which did not result in an output chunk
+    size_t m_buffered_reads;
+
     //! The analytical step following this step
     const size_t m_next_step;
 
@@ -188,6 +247,14 @@ public:
     virtual chunk_list process(analytical_chunk* chunk);
 
 private:
+    //! Not implemented
+    gzip_paired_fastq(const gzip_paired_fastq&);
+    //! Not implemented
+    gzip_paired_fastq& operator=(const gzip_paired_fastq&);
+
+    //! N reads which did not result in an output chunk
+    size_t m_buffered_reads;
+
     //! The analytical step following this step
     const size_t m_next_step;
 
@@ -216,7 +283,7 @@ public:
      * Based on the read-type specified, and SE / PE mode, the corresponding
      * output file is opened
      */
-    write_paired_fastq(const userconfig& config, read_type type);
+    write_paired_fastq(const std::string& filename);
 
     /** Destructor; closes output file. */
     ~write_paired_fastq();
@@ -228,13 +295,8 @@ public:
     virtual void finalize();
 
 private:
-    //! The read type written by this instance.
-    const read_type m_type;
     //! Pointer to output file opened using userconfig::open_with_default_filename.
-    std::auto_ptr<std::ostream> m_output;
-
-    //! Specifies if progress reports are to be printed
-    bool m_progress;
+    std::ofstream m_output;
 };
 
 

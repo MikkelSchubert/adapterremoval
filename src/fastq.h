@@ -31,6 +31,9 @@
 #include "fastq_enc.h"
 
 
+class line_reader;
+
+
 /**
  * Represents a FASTQ record with Phred (offset=33) encoded quality scores.
  */
@@ -131,7 +134,7 @@ public:
      * empty headers, or sequences / qualities, as this typically indicates
      * a problem with the source file.
 	 */
-    bool read(string_vec_citer& begin, const string_vec_citer& end,
+    bool read(line_reader& reader,
               const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
     /**
