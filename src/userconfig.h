@@ -147,9 +147,6 @@ public:
     //! If true, the program attempts to identify the adapter pair of PE reads
     bool identify_adapters;
 
-    //! If true, only error messages are printed to STDERR
-    bool quiet;
-
     //! The maximum number of threads used by the program
     unsigned max_threads;
 

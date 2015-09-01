@@ -172,7 +172,6 @@ userconfig::userconfig(const std::string& name,
     , shift(2)
     , seed(get_seed())
     , identify_adapters(false)
-    , quiet(false)
     , max_threads(1)
     , gzip(false)
     , gzip_level(6)
@@ -350,9 +349,6 @@ userconfig::userconfig(const std::string& name,
         new argparse::knob(&bzip2_level, "LEVEL",
             "Compression level, 0 - 9 [current: %default]");
 #endif
-    argparser["--quiet"] =
-        new argparse::flag(&quiet,
-            "Only print warnings / errors to STDERR [current: %default]");
 
 #ifdef AR_PTHREAD_SUPPORT
     argparser["--threads"] =

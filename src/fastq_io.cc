@@ -429,7 +429,7 @@ chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
 //! Mutex used to control access to s_timer and s_finalized;
 static mutex s_timer_lock;
 //! Timer used to track trimming progress; accessed by all instances
-static timer s_timer = timer("reads", false);
+static timer s_timer = timer("reads");
 //! Indicates if 'timer::finalize' has been called.
 static bool s_finalized = false;
 
@@ -439,7 +439,7 @@ write_paired_fastq::write_paired_fastq(const userconfig& config, // FIXME
   : analytical_step(analytical_step::ordered, true)
   , m_type(type)
   , m_output()
-  , m_progress(!config.quiet)
+  , m_progress()
 {
     switch (m_type) {
         case rt_mate_1:

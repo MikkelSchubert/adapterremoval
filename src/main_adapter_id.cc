@@ -355,7 +355,7 @@ public:
     adapter_identification(const userconfig& config)
       : analytical_step(analytical_step::unordered)
       , m_config(config)
-      , m_timer("reads", config.quiet)
+      , m_timer("reads")
       , m_sinks(config)
     {
     }

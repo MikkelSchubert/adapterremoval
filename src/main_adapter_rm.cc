@@ -473,12 +473,10 @@ public:
 
 int remove_adapter_sequences(const userconfig& config)
 {
-    if (!config.quiet) {
-        if (config.paired_ended_mode) {
-            std::cerr << "Trimming pair ended reads ..." << std::endl;
-        } else {
-            std::cerr << "Trimming single ended reads ..." << std::endl;
-        }
+    if (config.paired_ended_mode) {
+        std::cerr << "Trimming pair ended reads ..." << std::endl;
+    } else {
+        std::cerr << "Trimming single ended reads ..." << std::endl;
     }
 
     scheduler sch;

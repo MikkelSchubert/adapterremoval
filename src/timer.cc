@@ -94,11 +94,10 @@ std::string format_time(double seconds)
 }
 
 
-timer::timer(const std::string& what, bool muted)
+timer::timer(const std::string& what)
   : m_what(what)
   , m_total(0)
   , m_first_time(get_current_time())
-  , m_muted(muted)
   , m_counts()
 {
     m_counts.push_back(time_count_pair(get_current_time(), 0));
@@ -110,7 +109,7 @@ void timer::increment(size_t inc)
     m_total += inc;
     m_counts.back().second += inc;
 
-    if (!m_muted && m_counts.back().second >= REPORT_EVERY) {
+    if (m_counts.back().second >= REPORT_EVERY) {
         const double current_time = get_current_time();
         // Number of seconds since oldest block was created
         const double seconds = current_time - m_counts.front().first;
@@ -132,12 +131,10 @@ void timer::increment(size_t inc)
 
 void timer::finalize() const
 {
-    if (!m_muted) {
-        const double current_time = get_current_time();
-        const double seconds = current_time - m_first_time;
+    const double current_time = get_current_time();
+    const double seconds = current_time - m_first_time;
 
-        do_print(static_cast<size_t>(m_total / seconds), current_time, true);
-    }
+    do_print(static_cast<size_t>(m_total / seconds), current_time, true);
 }
 
 

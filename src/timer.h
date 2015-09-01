@@ -45,13 +45,8 @@ public:
     /* Constructor.
      *
      * @param what Short name of what is being processed, for use in reports.
-     * @param muted If true, no messages are printed.
-     *
-     * The 'muted' parameter is included to simply handling of optional
-     * progress reports, without having to add conditional logic around calls
-     * to the functions 'increment' and 'finalize'.
      */
-    timer(const std::string& what, bool muted = false);
+    timer(const std::string& what);
 
     /** Increment the progress, and (possibly) print a status report. */
     void increment(size_t inc = 1);
@@ -72,8 +67,6 @@ private:
     size_t m_total;
     //! Starting time (in seconds) of the timer.
     double m_first_time;
-    //! If true, no output is produced by calling 'increment' or 'finalize'.
-    bool m_muted;
     //! Counts for last N updates, for calculating running mean rate.
     time_count_deque m_counts;
 };
