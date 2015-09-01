@@ -50,17 +50,6 @@ const size_t TOP_N_KMERS = 5;
 
 
 /**
- * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
- * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
- * only) will result in hash collisions.
- */
-inline size_t ACGT_TO_IDX(char nt)
-{
-    return (nt >> 1) & 0x3;
-}
-
-
-/**
  * Hashing function for string consiting of the chars "ACGT" (uppercase only).
  * Will return a unique number in the range 0 to 4^N - 1 for a given nucleotide
  * sequence. Passing characters other than "ACGT" (uppercase only) will result

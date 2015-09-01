@@ -170,6 +170,25 @@ private:
 };
 
 
+///////////////////////////////////////////////////////////////////////////////
+
+
+/**
+ * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
+ * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
+ * only) will result in hash collisions.
+ */
+inline size_t ACGT_TO_IDX(char nt)
+{
+    return (nt >> 1) & 0x3;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+typedef std::pair<fastq, fastq> fastq_pair;
+typedef std::vector<fastq_pair> fastq_pair_vec;
 
 
 ///////////////////////////////////////////////////////////////////////////////

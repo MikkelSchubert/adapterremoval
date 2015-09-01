@@ -26,10 +26,7 @@
 
 #include <string>
 
-class fastq;
-
-typedef std::pair<fastq, fastq> fastq_pair;
-typedef std::vector<fastq_pair> fastq_pair_vec;
+#include "fastq.h"
 
 
 /**
