@@ -28,6 +28,7 @@
 #include <string>
 #include <memory>
 
+#include "adapterset.h"
 #include "argparse.h"
 #include "fastq.h"
 #include "alignment.h"
@@ -59,6 +60,9 @@ public:
 
     /** Returns new statistics object, initialized using usersettings. */
     std::auto_ptr<statistics> create_stats() const;
+
+
+    std::string get_output_filename(const std::string& key, size_t nth = 0) const;
 
 
     enum alignment_type
@@ -103,9 +107,6 @@ public:
 
     //! Set to true if both --input1 and --input2 are set.
     bool paired_ended_mode;
-
-    //! Pairs of adapters; may only contain the first value in SE enabled
-    fastq_pair_vec adapters;
 
     //! The minimum length of trimmed reads (ie. genomic nts) to be retained
     unsigned min_genomic_length;
@@ -160,6 +161,15 @@ public:
     //! BZip2 compression level used for output reads
     unsigned int bzip2_level;
 
+    //! Maximum number of mismatches (considering both barcodes for PE)
+    unsigned barcode_mm;
+    //! Maximum number of mismatches (considering both barcodes for PE)
+    unsigned barcode_mm_r1;
+    //! Maximum number of mismatches (considering both barcodes for PE)
+    unsigned barcode_mm_r2;
+
+    adapter_set adapters;
+
 private:
     //! Not implemented
     userconfig(const userconfig&);
@@ -174,28 +184,15 @@ private:
     bool setup_adapter_sequences();
 
 
-    /** Reads adapter sequences from a file.
-     *
-     * @param filename Path to text file containing adapter sequences
-     * @param adapters Adapters or adapter pairs are appended to this list.
-     * @param name Name of sequence type being read.
-     * @param paired_ended For paired ended mode; expect pairs of sequences.
-     * @return True on success, false otherwise.
-     *
-     * PCR1 adapters are expected to be found in column 1, while PCR2 adapters
-     * are expected to be found in column 2 (if 'paried_ended' is true). These
-     * are expected to contain only the standard nucleotides (ACGTN).
-     **/
-    bool read_adapter_sequences(const std::string& filename,
-                                fastq_pair_vec& adapters,
-                                bool paired_ended = true) const;
-
     //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
     std::string adapter_1;
     //! Sink for --adapter2, adapter sequence expected at 3' of mate 2 reads
     std::string adapter_2;
     //! Sink for --adapter-list; list of adapter #1 and #2 sequences
     std::string adapter_list;
+
+    //! Sink for --barcode-list; list of barcode #1 (and #2 sequences)
+    std::string barcode_list;
 
     //! Sink for user-supplied quality score formats; use quality_input_fmt.
     std::string quality_input_base;

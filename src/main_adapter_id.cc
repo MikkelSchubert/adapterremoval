@@ -405,10 +405,10 @@ public:
                   << "Printing adapter sequences, including poly-A tails:"
                   << std::endl;
 
-        print_consensus_adapter(sink->pcr1_counts, sink->pcr1_kmers, "--adapter1", m_config.adapters.front().first.sequence());
+        print_consensus_adapter(sink->pcr1_counts, sink->pcr1_kmers, "--adapter1", m_config.adapters.get_raw_adapters().front().first.sequence());
         std::cout << "\n\n";
 
-        fastq adapter2 = m_config.adapters.front().second;
+        fastq adapter2 = m_config.adapters.get_raw_adapters().front().second;
         adapter2.reverse_complement();
         print_consensus_adapter(sink->pcr2_counts, sink->pcr2_kmers, "--adapter2", adapter2.sequence());
     }

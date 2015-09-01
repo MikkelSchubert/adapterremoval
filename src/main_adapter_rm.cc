@@ -72,7 +72,7 @@ void write_trimming_settings(const userconfig& config,
     }
 
     size_t adapter_id = 0;
-    for (fastq_pair_vec::const_iterator it = config.adapters.begin(); it != config.adapters.end(); ++it, ++adapter_id) {
+    for (fastq_pair_vec::const_iterator it = config.adapters.get_raw_adapters().begin(); it != config.adapters.get_raw_adapters().end(); ++it, ++adapter_id) {
         settings << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence();
         if (config.paired_ended_mode) {
             fastq adapter = it->second;
@@ -272,7 +272,7 @@ public:
 
         try {
             for (fastq read; read.read(file_1_it, file_1_end, *m_config.quality_input_fmt); file_chunk->offset += 4) {
-                const alignment_info alignment = align_single_ended_sequence(read, m_config.adapters, m_config.shift);
+                const alignment_info alignment = align_single_ended_sequence(read, m_config.adapters.get_raw_adapters(), m_config.shift);
                 const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
 
                 if (aln_type == userconfig::valid_alignment) {
@@ -382,7 +382,7 @@ public:
                 // Reverse complement to match the orientation of read1
                 read2.reverse_complement();
 
-                const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_config.adapters, m_config.shift);
+                const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_config.adapters.get_raw_adapters(), m_config.shift);
                 const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
                 if (aln_type == userconfig::valid_alignment) {
                     stats->well_aligned_reads++;

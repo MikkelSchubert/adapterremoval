@@ -23,9 +23,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <iostream>
-#include <fstream>
 #include <cstring>
 #include <cerrno>
+#include <fstream>
 #include <string>
 #include <stdexcept>
 #include <sys/time.h>
@@ -34,7 +34,6 @@
 #include "userconfig.h"
 #include "fastq.h"
 #include "alignment.h"
-#include "linereader.h"
 #include "strutils.h"
 
 
@@ -70,85 +69,6 @@ std::auto_ptr<fastq_encoding> select_encoding(const std::string& name,
 }
 
 
-typedef std::vector<string_vec> string_table;
-typedef string_table::const_iterator string_table_citer;
-
-
-std::string trim_comments(std::string line)
-{
-    const size_t index = line.find('#');
-    if (index != std::string::npos) {
-        line.resize(index);
-    }
-
-    return line;
-}
-
-
-bool read_table(const std::string& filename, string_table& dst, size_t min_col, size_t max_col)
-{
-    if (max_col < min_col) {
-        throw std::invalid_argument("read_table: min_col > max_col");
-    } else if (min_col < 1) {
-        throw std::invalid_argument("read_table: min_col < 1");
-    }
-
-    size_t last_row_size = 0;
-    size_t line_num = 1;
-    try {
-        line_reader adapter_file(filename);
-
-        for (std::string line; adapter_file.getline(line); ++line_num) {
-            string_vec row;
-            std::string field;
-            std::stringstream instream(trim_comments(line));
-
-            while (instream >> field) {
-                row.push_back(field);
-            }
-
-            if (row.empty()) {
-                // Ignore empty lines, e.g. those containing only comments
-                continue;
-            } else if (row.size() < min_col) {
-                std::cerr << "Error reading '" << filename << "' (line "
-                          << line_num << "); expected at least " << min_col
-                          << " columns, but found " << row.size() << "!"
-                          << std::endl;
-
-                return false;
-            } else if (row.size() > max_col) {
-                std::cerr << "Error reading '" << filename << "' (line "
-                          << line_num << "); expected at most " << max_col
-                          << " columns, but found " << row.size() << "!"
-                          << std::endl;
-
-                return false;
-            } else if (last_row_size && last_row_size != row.size()) {
-                std::cerr << "Error reading '" << filename << "' (line "
-                          << line_num << "); rows contain unequal number of "
-                          << "columns; last row contained " << last_row_size
-                          << " column(s) but current row contains "
-                          << row.size() << " column(s)!" << std::endl;
-
-                return false;
-            } else {
-                last_row_size = row.size();
-            }
-
-            dst.push_back(row);
-        }
-    } catch (const std::ios_base::failure& error) {
-        std::cerr << "IO error reading '" << filename << "' (line "
-                  << line_num << "); aborting:\n    " << error.what()
-                  << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
-
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
@@ -157,7 +77,6 @@ userconfig::userconfig(const std::string& name,
     , input_file_1()
     , input_file_2()
     , paired_ended_mode(false)
-    , adapters()
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
     , min_alignment_length(11)
@@ -177,9 +96,14 @@ userconfig::userconfig(const std::string& name,
     , gzip_level(6)
     , bzip2(false)
     , bzip2_level(9)
+    , barcode_mm(0)
+    , barcode_mm_r1(0)
+    , barcode_mm_r2(0)
+    , adapters()
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , adapter_list()
+    , barcode_list()
     , quality_input_base("33")
     , quality_output_base("33")
     , quality_max(MAX_PHRED_SCORE_DEFAULT)
@@ -254,6 +178,31 @@ userconfig::userconfig(const std::string& name,
             "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; "
             "only the first adapter in each pair is required / used in SE "
             "mode [current: %default].");
+
+    argparser.add_header("DEMULTIPLEXING:");
+    argparser["--barcode-list"] =
+        new argparse::any(&barcode_list, "FILENAME",
+            "List of barcodes or barcode pairs for single or double-indexed "
+            "demultiplexing. Note that both indexes should be specified for "
+            "both single-end and paired-end trimming, if double-indexed "
+            "multiplexing was used, in order to ensure that the demultiplexed "
+            "reads can be trimmed correctly [current: %default].");
+
+    argparser["--barcode-mm"] =
+        new argparse::knob(&barcode_mm, "N",
+            "Maximum number of mismatches allowed when counting mismatches in "
+            "both the mate 1 and the mate 2 barcode for paired reads "
+            "[current: %default].");
+    argparser["--barcode-mm-r1"] =
+        new argparse::knob(&barcode_mm_r1, "N",
+            "Maximum number of mismatches allowed for the mate 1 barcode; "
+            "if not set, this value is equal to the '--barcode-mm' value; "
+            "cannot be higher than the '--barcode-mm value'.");
+    argparser["--barcode-mm-r2"] =
+        new argparse::knob(&barcode_mm_r2, "N",
+            "Maximum number of mismatches allowed for the mate 2 barcode; "
+            "if not set, this value is equal to the '--barcode-mm' value; "
+            "cannot be higher than the '--barcode-mm value'.");
 
     argparser.add_seperator();
     argparser["--mm"]
@@ -370,12 +319,10 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return result;
     }
 
-
     quality_input_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
     if (!quality_input_fmt.get()) {
         return argparse::pr_error;
     }
-
 
     if (argparser.is_set("--qualitybase-output")) {
         quality_output_fmt = select_encoding("--qualitybase-out", quality_output_base, quality_max);
@@ -475,10 +422,9 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 std::auto_ptr<statistics> userconfig::create_stats() const
 {
     std::auto_ptr<statistics> stats(new statistics());
-    stats->number_of_reads_with_adapter.resize(adapters.size());
+    stats->number_of_reads_with_adapter.resize(adapters.adapter_count());
     return stats;
 }
-
 
 
 userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& alignment) const
@@ -558,6 +504,75 @@ std::auto_ptr<std::ostream> userconfig::open_with_default_filename(
     return std::auto_ptr<std::ostream>(stream);
 }
 
+std::string userconfig::get_output_filename(const std::string& key,
+                                            size_t nth) const
+{
+    std::string filename = basename;
+
+    if (key == "demux_stats") {
+        return filename += ".settings";
+    } else if (key == "demux_unknown") {
+        filename += ".unidentified";
+        if (nth) {
+            filename.push_back('_');
+            filename.push_back('0' + nth);
+        }
+
+        if (gzip) {
+            filename += ".gz";
+        } else if (bzip2) {
+            filename += ".bz2";
+        }
+
+        return filename;
+    } else if (adapters.barcode_count()) {
+        const fastq_pair& barcodes = adapters.get_barcodes().at(nth);
+
+        filename.push_back('.');
+        filename.append(barcodes.first.sequence());
+        if (!barcodes.second.sequence().empty()) {
+            filename.push_back('_');
+            filename.append(barcodes.second.sequence());
+        }
+    } else if (argparser.is_set(key)) {
+        return argparser.at(key)->to_str();
+    }
+
+    if (key == "--settings") {
+        return filename + ".settings";
+    } else if (key == "--outputcollapsed") {
+        filename += ".collapsed";
+    } else if (key == "--outputcollapsedtruncated") {
+        filename += ".collapsed.truncated";
+    } else if (key == "--discarded") {
+        filename += ".discarded";
+    } else if (paired_ended_mode) {
+        if (key == "--output1") {
+            filename += ".pair1.truncated";
+        } else if (key == "--output2") {
+            filename += ".pair2.truncated";
+        } else if (key == "--singleton") {
+            filename += ".singleton.truncated";
+        } else {
+            throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
+        }
+    } else {
+       if (key == "--output1") {
+            filename += ".truncated";
+        } else {
+            throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
+        }
+    }
+
+    if (gzip) {
+        filename += ".gz";
+    } else if (bzip2) {
+        filename += ".bz2";
+    }
+
+    return filename;
+}
+
 
 fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) const
 {
@@ -569,6 +584,25 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
     }
 
     return trimmed;
+}
+
+
+bool check_and_set_barcode_mm(const argparse::parser& argparser,
+                              const std::string& key,
+                              unsigned barcode_mm,
+                              unsigned& dst)
+{
+    if (!argparser.is_set(key)) {
+        dst = barcode_mm;
+    } else if (dst > barcode_mm) {
+        std::cerr << "The maximum number of errors for " << key << " is set \n"
+                     "to a higher value than the total number of mismatches allowed\n"
+                     "for barcodes (--barcode-mm). Please correct these settings."
+                  << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -604,25 +638,19 @@ bool userconfig::setup_adapter_sequences()
     }
 
     if (adapter_list_is_set) {
-        if (!read_adapter_sequences(adapter_list, adapters, paired_ended_mode)) {
+        if (!adapters.load_adapters(adapter_list, paired_ended_mode)) {
             return false;
-        } else if (adapters.empty()) {
+        } else if (adapters.adapter_count()) {
+            std::cout << "Read " << adapters.adapter_count()
+                      << " adapters / adapter pairs from '" << adapter_list
+                      << "'..." << std::endl;
+        } else {
             std::cerr << "Error: No adapter sequences found in table!" << std::endl;
             return false;
         }
     } else {
         try {
-            fastq adapter1 = fastq("PCR1", adapter_1);
-            fastq adapter2 = fastq("PCR2", adapter_2);
-
-            if (!pcr_is_set) {
-                // --pcr2 is expected to already be reverse completed; whereas
-                // --adapter2 should correspond to the sequences observed directly
-                // in the .fastq files.
-                adapter2.reverse_complement();
-            }
-
-            adapters.push_back(fastq_pair(adapter1, adapter2));
+            adapters.add_adapters(adapter_1, adapter_2, !pcr_is_set);
         } catch (const fastq_error& error) {
             std::cerr << "Error parsing adapter sequence(s):\n"
                       << "   " << error.what() << std::endl;
@@ -631,38 +659,25 @@ bool userconfig::setup_adapter_sequences()
         }
     }
 
-    return true;
-
-}
-
-
-bool userconfig::read_adapter_sequences(const std::string& filename,
-                                        fastq_pair_vec& adapters,
-                                        bool paired_ended) const
-{
-    string_table raw_adapters;
-    if (!read_table(filename, raw_adapters, paired_ended ? 2 : 1, 2)) {
+    if (!check_and_set_barcode_mm(argparser, "--barcode-mm-r1", barcode_mm, barcode_mm_r1)) {
         return false;
     }
 
-    size_t row_num = 1;
-    try {
-        for (string_table_citer it = raw_adapters.begin(); it != raw_adapters.end(); ++it) {
-            fastq adapter_5p = fastq("adapter", it->at(0));
-            fastq adapter_3p;
-
-            if (paired_ended) {
-                adapter_3p = fastq("adapter", it->at(1));
-                adapter_3p.reverse_complement();
-            }
-
-            adapters.push_back(fastq_pair(adapter_5p, adapter_3p));
-            row_num++;
-        }
-    } catch (const fastq_error& error) {
-        std::cerr << "Error parsing '" << filename << "' (row " << row_num
-                  << "); aborting:\n    " << error.what() << std::endl;
+    if (!check_and_set_barcode_mm(argparser, "--barcode-mm-r2", barcode_mm, barcode_mm_r2)) {
         return false;
+    }
+
+    if (argparser.is_set("--barcode-list")) {
+        if (!adapters.load_barcodes(barcode_list, paired_ended_mode)) {
+            return false;
+        } else if (adapters.adapter_count()) {
+            std::cout << "Read " << adapters.barcode_count()
+                      << " barcodes / barcode pairs from '" << barcode_list
+                      << "'..." << std::endl;
+        } else {
+            std::cerr << "Error: No barcodes sequences found in table!" << std::endl;
+            return false;
+        }
     }
 
     return true;

@@ -77,16 +77,17 @@ endif
 
 
 PROG     := AdapterRemoval
-OBJS     := $(BDIR)/argparse.o \
-			$(BDIR)/debug.o \
-			$(BDIR)/main.o \
-			$(BDIR)/main_adapter_id.o \
-			$(BDIR)/main_adapter_rm.o \
+OBJS     := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
+            $(BDIR)/argparse.o \
+            $(BDIR)/debug.o \
             $(BDIR)/fastq.o \
             $(BDIR)/fastq_enc.o \
             $(BDIR)/fastq_io.o \
             $(BDIR)/linereader.o \
+            $(BDIR)/main.o \
+            $(BDIR)/main_adapter_id.o \
+            $(BDIR)/main_adapter_rm.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \
