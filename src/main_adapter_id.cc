@@ -22,21 +22,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>
-#include <iostream>
 #include <fstream>
-#include <vector>
-#include <queue>
 #include <iomanip>
+#include <iostream>
 #include <list>
+#include <queue>
 #include <stdexcept>
+#include <vector>
 
-#include "main_adapter_id.h"
-#include "userconfig.h"
 #include "alignment.h"
-#include "scheduler.h"
-#include "timer.h"
 #include "fastq_io.h"
+#include "scheduler.h"
 #include "strutils.h"
+#include "timer.h"
+#include "userconfig.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////

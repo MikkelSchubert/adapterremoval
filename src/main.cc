@@ -24,10 +24,15 @@
 \*************************************************************************/
 #include <iostream>
 
+#include "debug.h"
 #include "main.h"
 #include "userconfig.h"
-#include "main_adapter_id.h"
-#include "main_adapter_rm.h"
+
+
+// See main_adapter_rm.cc
+int remove_adapter_sequences(const userconfig& config);
+// See main_adapter_id.cc
+int identify_adapter_sequences(const userconfig& config);
 
 
 int main(int argc, char *argv[])

@@ -22,21 +22,20 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
 #include <cerrno>
 #include <cstring>
-#include <stdexcept>
+#include <fstream>
+#include <iostream>
 #include <numeric>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-#include "main.h"
-#include "strutils.h"
-#include "main_adapter_rm.h"
+#include "alignment.h"
 #include "fastq.h"
 #include "fastq_io.h"
-#include "alignment.h"
+#include "main.h"
+#include "strutils.h"
 #include "userconfig.h"
 
 
