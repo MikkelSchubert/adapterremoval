@@ -303,8 +303,15 @@ void line_reader::refill_buffers_gzip()
     m_gzip_stream->next_out = reinterpret_cast<Bytef*>(m_buffer);
     switch (inflate(m_gzip_stream, Z_NO_FLUSH)) {
         case Z_OK:
-        case Z_STREAM_END:
         case Z_BUF_ERROR: /* input buffer empty or output buffer full */
+            break;
+
+        case Z_STREAM_END:
+            // Handle concatenated streams; causes unnessesary reset at EOF
+            if (inflateReset(m_gzip_stream) != Z_OK) {
+                throw gzip_error("line_reader::refill_buffers_gzip: failed to reset stream",
+                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+            }
             break;
 
         case Z_STREAM_ERROR:
@@ -349,6 +356,55 @@ void line_reader::close_buffers_gzip()
 }
 
 
+#ifdef AR_BZIP2_SUPPORT
+
+void bzip2_initialize_stream(bz_stream* stream)
+{
+    switch (BZ2_bzDecompressInit(stream, 0, 0)) {
+        case BZ_OK:
+            break;
+
+        case BZ_CONFIG_ERROR:
+            throw bzip2_error("bzip2_initialize_buffer: "
+                              "bzip2 library is miscompiled");
+
+        case BZ_PARAM_ERROR:
+            throw bzip2_error("bzip2_initialize_buffer: "
+                              "invalid parameters during initialization");
+
+        case BZ_MEM_ERROR:
+            throw bzip2_error("bzip2_initialize_buffer: "
+                              "insufficient memory to initialize");
+
+        case BZ_SEQUENCE_ERROR:
+            throw bzip2_error("bzip2_initialize_buffer: bzip2 sequence error");
+
+        default:
+            throw bzip2_error("bzip2_initialize_buffer: unknown error");
+    }
+}
+
+
+void bzip2_close_stream(bz_stream* stream)
+{
+    switch (BZ2_bzDecompressEnd(stream)) {
+        case BZ_OK:
+            break;
+
+        case BZ_PARAM_ERROR:
+            throw bzip2_error("bzip2_close_stream: invalid parameters");
+
+        case BZ_SEQUENCE_ERROR:
+            throw bzip2_error("bzip2_close_stream: bzip2 sequence error");
+
+        default:
+            throw bzip2_error("bzip2_close_stream: unknown bzip2 error");
+    }
+}
+
+#endif
+
+
 bool line_reader::identify_bzip2() const
 {
     if (m_raw_buffer_end - m_raw_buffer < 4) {
@@ -383,30 +439,7 @@ void line_reader::initialize_buffers_bzip2()
     m_bzip2_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
     m_bzip2_stream->next_in = m_raw_buffer;
 
-    switch (BZ2_bzDecompressInit(m_bzip2_stream, 0, 0)) {
-        case BZ_OK:
-            break;
-
-        case BZ_CONFIG_ERROR:
-            throw bzip2_error("line_reader::initialize_buffers_bzip2: "
-                              "bzip2 library is miscompiled");
-
-        case BZ_PARAM_ERROR:
-            throw bzip2_error("line_reader::initialize_buffers_bzip2: "
-                              "invalid parameters during initialization");
-
-        case BZ_MEM_ERROR:
-            throw bzip2_error("line_reader::initialize_buffers_bzip2: "
-                              "insufficient memory to initialize");
-
-        case BZ_SEQUENCE_ERROR:
-            throw bzip2_error("line_reader::initialize_buffers_bzip2: "
-                              "bzip2 sequence error");
-
-        default:
-            throw bzip2_error("line_reader::initialize_buffers_bzip2: "
-                              "unknown error");
-    }
+    bzip2_initialize_stream(m_bzip2_stream);
 #else
     throw bzip2_error("Attempted to read bzipped file, but bzip2"
                       "support was not enabled when AdapterRemoval"
@@ -429,7 +462,12 @@ void line_reader::refill_buffers_bzip2()
     if (m_bzip2_stream->avail_in) {
         switch (BZ2_bzDecompress(m_bzip2_stream)) {
             case BZ_OK:
+                break;
+
             case BZ_STREAM_END:
+                // Close an restart stream, to handle concatenated files
+                bzip2_close_stream(m_bzip2_stream);
+                bzip2_initialize_stream(m_bzip2_stream);
                 break;
 
             case BZ_PARAM_ERROR:
@@ -465,22 +503,7 @@ void line_reader::close_buffers_bzip2()
 {
 #ifdef AR_BZIP2_SUPPORT
     if (m_bzip2_stream) {
-        switch (BZ2_bzDecompressEnd(m_bzip2_stream)) {
-            case BZ_OK:
-                break;
-
-            case BZ_PARAM_ERROR:
-                throw bzip2_error("line_reader::close_buffers_bzip2: "
-                                  "invalid parameters");
-
-            case BZ_SEQUENCE_ERROR:
-                throw bzip2_error("line_reader::close_buffers_bzip2: "
-                                  "bzip2 sequence error");
-
-            default:
-                throw bzip2_error("line_reader::close_buffers_bzip2: "
-                                  "unknown bzip2 error");
-        }
+        bzip2_close_stream(m_bzip2_stream);
 
         delete m_bzip2_stream;
         m_bzip2_stream = NULL;

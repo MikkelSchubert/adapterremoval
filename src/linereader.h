@@ -96,7 +96,6 @@ private:
     //! Not implemented
     line_reader& operator=(const line_reader&);
 
-    //! FIXME
     //! Refills 'm_buffer' and sets 'm_buffer_ptr' and 'm_buffer_end'.
     void refill_buffers();
 
