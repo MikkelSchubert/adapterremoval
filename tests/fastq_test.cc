@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 
 #include "fastq.h"
+#include "linereader.h"
 
 
 inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
@@ -37,6 +38,30 @@ inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
 
     return stream;
 }
+
+
+class vec_reader : public line_reader_base
+{
+public:
+    vec_reader(const string_vec& lines)
+        : m_lines(lines)
+        , m_it(m_lines.begin())
+    {
+    }
+
+    bool getline(std::string& dst) {
+        if (m_it == m_lines.end()) {
+            return false;
+        }
+
+        dst = *m_it++;
+        return true;
+    }
+
+private:
+    string_vec m_lines;
+    string_vec::const_iterator m_it;
+};
 
 
 
@@ -407,14 +432,13 @@ TEST(fastq, simple_fastq_record_1)
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_TRUE(record.read(reader, FASTQ_ENCODING_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
-    ASSERT_EQ(it, lines.end());
 }
 
 TEST(fastq, simple_fastq_record_2)
@@ -428,19 +452,18 @@ TEST(fastq, simple_fastq_record_2)
     lines.push_back("GTCAGGAT");
     lines.push_back("+");
     lines.push_back("D7BIG!F8");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_TRUE(record.read(reader, FASTQ_ENCODING_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
-    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_TRUE(record.read(reader, FASTQ_ENCODING_33));
     ASSERT_EQ("record_2", record.header());
     ASSERT_EQ("GTCAGGAT", record.sequence());
     ASSERT_EQ("D7BIG!F8", record.qualities());
-    ASSERT_EQ(it, lines.end());
-    ASSERT_FALSE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_FALSE(record.read(reader, FASTQ_ENCODING_33));
 }
 
 
@@ -451,15 +474,14 @@ TEST(fastq, simple_fastq_record__with_extra_header_1)
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_TRUE(record.read(reader, FASTQ_ENCODING_33));
     ASSERT_EQ("record_1 Extra header here", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
-    ASSERT_EQ(it, lines.end());
-    ASSERT_FALSE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_FALSE(record.read(reader, FASTQ_ENCODING_33));
 }
 
 
@@ -470,15 +492,14 @@ TEST(fastq, simple_fastq_record__with_extra_header_2)
     lines.push_back("ACGAGTCA");
     lines.push_back("+Extra header here");
     lines.push_back("!7BF8DGI");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_TRUE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_TRUE(record.read(reader, FASTQ_ENCODING_33));
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
     ASSERT_EQ("!7BF8DGI", record.qualities());
-    ASSERT_EQ(it, lines.end());
-    ASSERT_FALSE(record.read(it, lines.end(), FASTQ_ENCODING_33));
+    ASSERT_FALSE(record.read(reader, FASTQ_ENCODING_33));
 }
 
 
@@ -489,10 +510,10 @@ TEST(fastq, simple_fastq_record__no_header)
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
+    ASSERT_THROW(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -503,10 +524,10 @@ TEST(fastq, simple_fastq_record__no_sequence)
     lines.push_back("");
     lines.push_back("+");
     lines.push_back("!7BF8DGI");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
+    ASSERT_THROW(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -517,10 +538,10 @@ TEST(fastq, simple_fastq_record__no_qualities)
     lines.push_back("ACGAGTCA");
     lines.push_back("+");
     lines.push_back("");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
+    ASSERT_THROW(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 
@@ -531,21 +552,20 @@ TEST(fastq, simple_fastq_record__no_qualities_or_sequence)
     lines.push_back("");
     lines.push_back("+");
     lines.push_back("");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end(), FASTQ_ENCODING_33), fastq_error);
+    ASSERT_THROW(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 
 TEST(fastq, eof_when_starting_to_read_record)
 {
     string_vec lines;
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_FALSE(record.read(it, lines.end()));
-    ASSERT_EQ(it, lines.end());
+    ASSERT_FALSE(record.read(reader));
 }
 
 
@@ -553,10 +573,10 @@ TEST(fastq, eof_after_header)
 {
     string_vec lines;
     lines.push_back("@record");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
 
 
@@ -565,10 +585,10 @@ TEST(fastq, eof_after_sequence_1)
     string_vec lines;
     lines.push_back("@record");
     lines.push_back("ACGTA");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
 
 
@@ -578,10 +598,10 @@ TEST(fastq, eof_after_sequence_2)
     lines.push_back("@record");
     lines.push_back("ACGTA");
     lines.push_back("");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
 
 
@@ -591,10 +611,10 @@ TEST(fastq, eof_after_sep_1)
     lines.push_back("@record");
     lines.push_back("ACGTA");
     lines.push_back("+");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
 
 
@@ -605,10 +625,10 @@ TEST(fastq, eof_after_sep_2)
     lines.push_back("ACGTA");
     lines.push_back("+");
     lines.push_back("");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
 
 
@@ -622,11 +642,11 @@ TEST(fastq, eof_after_qualities_following_previous_read_1)
     lines.push_back("@record_2");
     lines.push_back("ACGTA");
     lines.push_back("+");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_NO_THROW(record.read(it, lines.end()));
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_NO_THROW(record.read(reader));
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
 
 
@@ -641,14 +661,12 @@ TEST(fastq, eof_after_qualities_following_previous_read_2)
     lines.push_back("ACGTA");
     lines.push_back("+");
     lines.push_back("");
-    string_vec_citer it = lines.begin();
+    vec_reader reader(lines);
 
     fastq record;
-    ASSERT_NO_THROW(record.read(it, lines.end()));
-    ASSERT_THROW(record.read(it, lines.end()), fastq_error);
+    ASSERT_NO_THROW(record.read(reader));
+    ASSERT_THROW(record.read(reader), fastq_error);
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Writing to stream

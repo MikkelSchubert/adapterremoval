@@ -32,7 +32,9 @@
 #include <unistd.h>
 
 #include "argparse.h"
+#include "debug.h"
 #include "strutils.h"
+
 
 namespace argparse
 {
@@ -91,9 +93,8 @@ parser::~parser()
 
 consumer_ptr& parser::operator[](const std::string& key)
 {
-    if (key.empty()) {
-        throw std::invalid_argument("empty key");
-    } else if (m_parsers.find(key) == m_parsers.end()) {
+    AR_DEBUG_ASSERT(!key.empty());
+    if (m_parsers.find(key) == m_parsers.end()) {
         m_keys.push_back(key_pair(true, key));
     }
 
@@ -148,7 +149,10 @@ parse_result parser::parse_args(int argc, char* argv[])
 
 bool parser::is_set(const std::string& key) const
 {
-	return m_parsers.at(key)->is_set();
+    const consumer_map::const_iterator it = m_parsers.find(key);
+    AR_DEBUG_ASSERT(it != m_parsers.end());
+
+	return it->second->is_set();
 }
 
 
@@ -167,10 +171,7 @@ void parser::add_header(const std::string& header)
 
 void parser::create_alias(const std::string& key, const std::string& alias)
 {
-    if (m_parsers.find(alias) != m_parsers.end()) {
-        throw std::invalid_argument("Attemping to overwrite existing command-"
-                                    "line argument with new alias.");
-    }
+    AR_DEBUG_ASSERT(m_parsers.find(alias) == m_parsers.end());
 
     m_parsers[alias] = m_parsers.at(key);
 }
@@ -254,7 +255,6 @@ void parser::print_arguments(const key_pair_vec& keys) const
 
     std::cerr << std::endl;
 }
-
 
 
 bool parser::find_argument(consumer_map::iterator& it, const std::string& str)
@@ -415,9 +415,7 @@ knob::knob(unsigned* value, const std::string& metavar, const std::string& help)
     : consumer_base(metavar, help)
     , m_ptr(value)
 {
-    if (!m_ptr) {
-        throw std::invalid_argument("sink is null");
-    }
+    AR_DEBUG_ASSERT(m_ptr);
 }
 
 
@@ -462,9 +460,7 @@ floaty_knob::floaty_knob(double* value, const std::string& metavar, const std::s
     : consumer_base(metavar, help)
     , m_ptr(value)
 {
-    if (!m_ptr) {
-        throw std::invalid_argument("sink is null");
-    }
+    AR_DEBUG_ASSERT(m_ptr);
 }
 
 

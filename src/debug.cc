@@ -28,6 +28,24 @@
 #include <sstream>
 
 
+#ifdef AR_TEST_BUILD
+assert_failed::assert_failed(const std::string& what)
+    : m_what(what)
+{
+}
+
+
+assert_failed::~assert_failed() throw()
+{
+}
+
+const char* assert_failed::what() const throw()
+{
+    return m_what.c_str();
+}
+#endif
+
+
 void debug_raise_assert(const char* filename, size_t lineno, const char* what)
 {
     std::stringstream message;
@@ -37,6 +55,11 @@ void debug_raise_assert(const char* filename, size_t lineno, const char* what)
             << "This should not happen! Please file a bug-report at\n    "
             << "https://github.com/MikkelSchubert/adapterremoval/issues/new";
 
+#ifdef AR_TEST_BUILD
+    throw assert_failed(message.str());
+#else
     std::cerr << message.str() << std::endl;
-    abort();
+
+    std::abort();
+#endif
 }

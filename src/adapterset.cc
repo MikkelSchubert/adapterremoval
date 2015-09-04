@@ -32,13 +32,14 @@
 #include "strutils.h"
 
 
-typedef std::vector<fastq_vec> fastq_table;
+typedef std::pair<std::string, fastq_vec> named_fastq_row;
+typedef std::vector<named_fastq_row> fastq_table;
 typedef fastq_table::const_iterator fastq_table_citer;
 
 
 bool print_parse_error(const std::stringstream& message)
 {
-    std::cerr << "ERROR READING SEQUENCE TABLE:\n"
+    std::cerr << "ERROR READING TABLE:\n"
               << cli_formatter::fmt(message.str()) << std::endl;
 
     return false;
@@ -56,13 +57,12 @@ std::string trim_comments(std::string line)
 }
 
 
-bool read_table(const std::string& filename, fastq_table& dst, size_t min_col, size_t max_col)
+bool read_table(const std::string& filename, fastq_table& dst,
+                size_t min_col, size_t max_col,
+                bool row_names = false)
 {
-    if (max_col < min_col) {
-        throw std::invalid_argument("read_table: min_col > max_col");
-    } else if (min_col < 1) {
-        throw std::invalid_argument("read_table: min_col < 1");
-    }
+    AR_DEBUG_ASSERT(min_col < max_col);
+    AR_DEBUG_ASSERT(min_col >= 1);
 
     size_t last_row_size = 0;
     size_t line_num = 1;
@@ -71,12 +71,17 @@ bool read_table(const std::string& filename, fastq_table& dst, size_t min_col, s
 
         for (std::string line; adapter_file.getline(line); ++line_num) {
             fastq_vec row;
+            std::string name;
             std::string field;
             std::stringstream instream(trim_comments(line));
 
             for (size_t index = 1; instream >> field; ++index) {
                 try {
-                    row.push_back(fastq("sequence", field));
+                    if (index == 1 && row_names) {
+                        name = field;
+                    } else {
+                        row.push_back(fastq("sequence", field));
+                    }
                 } catch (const fastq_error& error) {
                     std::stringstream message;
                     message << "Failed to parse sequence in '" << filename
@@ -87,7 +92,7 @@ bool read_table(const std::string& filename, fastq_table& dst, size_t min_col, s
                 }
             }
 
-            if (row.empty()) {
+            if (name.empty() && row.empty()) {
                 // Ignore empty lines, e.g. those containing only comments
                 continue;
             } else if (row.size() < min_col) {
@@ -117,7 +122,7 @@ bool read_table(const std::string& filename, fastq_table& dst, size_t min_col, s
                 last_row_size = row.size();
             }
 
-            dst.push_back(row);
+            dst.push_back(named_fastq_row(name, row));
         }
     } catch (const std::ios_base::failure& error) {
         std::stringstream message;
@@ -219,11 +224,75 @@ bool check_barcodes_sequences(const fastq_pair_vec& barcodes,
 }
 
 
+bool valid_sample_name(const std::string& name)
+{
+    std::string::const_iterator it = name.begin();
+    for (; it != name.end(); ++it) {
+        const char c = *it;
+
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') || (c == '_')) {
+            continue;
+        }
+
+        std::stringstream error;
+        error << "The sample name '" << name << "' is not a valid sample "
+                 "name; only letters ('a' to 'z' and 'A' to 'Z'), numbers (0 "
+                 "to 9) and underscores (_) are allowed.";
+
+        return print_parse_error(error);
+    }
+
+    if (name == "unidentified") {
+        std::stringstream error;
+        error << "The sample name '" << name << "' is a reserved name, and "
+                 "cannot be used!";
+
+        return print_parse_error(error);
+    }
+
+    return true;
+}
+
+
+bool check_sample_names(const string_vec& names)
+{
+    if (names.empty()) {
+        return true;
+    }
+
+    for (string_vec_citer it = names.begin(); it != names.end(); ++it) {
+        if (!valid_sample_name(*it)) {
+            return false;
+        }
+    }
+
+    string_vec sorted_names = names;
+    std::sort(sorted_names.begin(), sorted_names.end());
+
+    string_vec::const_iterator prev = sorted_names.begin();
+    string_vec::const_iterator curr = prev + 1;
+    for (; curr != sorted_names.end(); ++prev, ++curr) {
+        if (*prev == *curr) {
+            std::stringstream error;
+            error << "Duplicate sample name '" << *prev << "'; combining "
+                     "different barcodes for one sample is not supported. "
+                     "Please ensure that all sample names are unique!";
+
+            return print_parse_error(error);
+        }
+    }
+
+    return true;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'adapters' class
 
 adapter_set::adapter_set()
-    : m_barcodes()
+    : m_samples()
+    , m_barcodes()
     , m_adapters()
 {
 }
@@ -252,11 +321,11 @@ bool adapter_set::load_adapters(const std::string& filename, bool paired_end)
     }
 
     for (fastq_table_citer it = raw_adapters.begin(); it != raw_adapters.end(); ++it) {
-        fastq adapter_5p = it->at(0);
+        fastq adapter_5p = it->second.at(0);
         fastq adapter_3p;
 
-        if (it->size() > 1) {
-            adapter_3p = it->at(1);
+        if (it->second.size() > 1) {
+            adapter_3p = it->second.at(1);
         }
 
         m_adapters.push_back(fastq_pair(adapter_5p, adapter_3p));
@@ -269,22 +338,24 @@ bool adapter_set::load_adapters(const std::string& filename, bool paired_end)
 bool adapter_set::load_barcodes(const std::string& filename, bool paired_end)
 {
     fastq_table raw_barcodes;
-    if (!read_table(filename, raw_barcodes, 1, 2)) {
+    if (!read_table(filename, raw_barcodes, 1, 2, true)) {
         return false;
     }
 
     for (fastq_table_citer it = raw_barcodes.begin(); it != raw_barcodes.end(); ++it) {
-        fastq barcode_5p = it->at(0);
+        fastq barcode_5p = it->second.at(0);
         fastq barcode_3p;
 
-        if (it->size() > 1) {
-            barcode_3p = it->at(1);
+        if (it->second.size() > 1) {
+            barcode_3p = it->second.at(1);
         }
 
+        m_samples.push_back(it->first);
         m_barcodes.push_back(fastq_pair(barcode_5p, barcode_3p));
     }
 
-    return check_barcodes_sequences(m_barcodes, filename, paired_end);
+    return check_barcodes_sequences(m_barcodes, filename, paired_end)
+        && check_sample_names(m_samples);
 }
 
 
@@ -377,3 +448,7 @@ const fastq_pair_vec& adapter_set::get_barcodes() const
     return m_barcodes;
 }
 
+const std::string& adapter_set::get_sample_name(size_t nth) const
+{
+    return m_samples.at(nth);
+}

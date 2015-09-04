@@ -118,11 +118,11 @@ read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
 }
 
 
-chunk_list read_single_fastq::process(analytical_chunk* chunk)
+chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_ASSERT(chunk == NULL);
     if (!m_io_input.is_open()) {
-        return chunk_list();
+        return chunk_vec();
     }
 
     chunk_ptr file_chunk(new fastq_read_chunk());
@@ -139,7 +139,7 @@ chunk_list read_single_fastq::process(analytical_chunk* chunk)
 
     m_line_offset += n_read;
 
-    chunk_list chunks;
+    chunk_vec chunks;
     chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
 
     return chunks;
@@ -163,11 +163,11 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
 }
 
 
-chunk_list read_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_ASSERT(chunk == NULL);
     if (!m_io_input_1.is_open()) {
-        return chunk_list();
+        return chunk_vec();
     }
 
     chunk_ptr file_chunk(new fastq_read_chunk());
@@ -195,7 +195,7 @@ chunk_list read_paired_fastq::process(analytical_chunk* chunk)
 
     m_line_offset += n_read_1;
 
-    chunk_list chunks;
+    chunk_vec chunks;
     chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
 
     return chunks;
@@ -281,12 +281,12 @@ bzip2_paired_fastq::~bzip2_paired_fastq()
                 break;
         }
 
-        std::exit(1);
+        std::abort();
     }
 }
 
 
-chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
@@ -294,7 +294,7 @@ chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
     if (file_chunk->reads.empty() && !file_chunk->eof) {
         // The empty chunk must still be forwarded, to ensure that tracking of
         // ordered chunks does not break.
-        chunk_list chunks;
+        chunk_vec chunks;
         chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
         return chunks;
     }
@@ -346,7 +346,7 @@ chunk_list bzip2_paired_fastq::process(analytical_chunk* chunk)
         throw;
     }
 
-    chunk_list chunks;
+    chunk_vec chunks;
     if (!file_chunk->buffers.empty() || file_chunk->eof) {
         file_chunk->count += m_buffered_reads;
         chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
@@ -421,12 +421,12 @@ gzip_paired_fastq::~gzip_paired_fastq()
                 break;
         }
 
-        std::exit(1);
+        std::abort();
     }
 }
 
 
-chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
@@ -434,7 +434,7 @@ chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
     if (file_chunk->reads.empty() && !file_chunk->eof) {
         // The empty chunk must still be forwarded, to ensure that tracking of
         // ordered chunks does not break.
-        chunk_list chunks;
+        chunk_vec chunks;
         chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
         return chunks;
     }
@@ -487,7 +487,7 @@ chunk_list gzip_paired_fastq::process(analytical_chunk* chunk)
         throw;
     }
 
-    chunk_list chunks;
+    chunk_vec chunks;
     if (!file_chunk->buffers.empty() || file_chunk->eof) {
         file_chunk->count += m_buffered_reads;
         chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
@@ -531,7 +531,7 @@ write_paired_fastq::~write_paired_fastq()
 }
 
 
-chunk_list write_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec write_paired_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     const string_vec& lines = file_chunk->reads;
@@ -556,7 +556,7 @@ chunk_list write_paired_fastq::process(analytical_chunk* chunk)
     mutex_locker lock(s_timer_lock);
     s_timer.increment(file_chunk->count);
 
-    return chunk_list();
+    return chunk_vec();
 }
 
 

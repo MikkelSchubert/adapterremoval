@@ -81,6 +81,7 @@ OBJS     := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
             $(BDIR)/argparse.o \
             $(BDIR)/debug.o \
+            $(BDIR)/demultiplex.o \
             $(BDIR)/fastq.o \
             $(BDIR)/fastq_enc.o \
             $(BDIR)/fastq_io.o \
@@ -138,17 +139,23 @@ build/%.1: %.pod
 # Unit testing
 #
 TEST_DIR := build/tests
-TEST_OBJS := $(TEST_DIR)/fastq_test.o $(BDIR)/fastq.o $(BDIR)/fastq_enc.o \
-	$(TEST_DIR)/alignment_test.o $(BDIR)/alignment.o \
-	$(TEST_DIR)/argparse_test.o $(BDIR)/argparse.o \
-	$(TEST_DIR)/strutils_test.o $(BDIR)/strutils.o
+TEST_OBJS := $(TEST_DIR)/alignment.o \
+             $(TEST_DIR)/alignment_test.o \
+             $(TEST_DIR)/argparse.o \
+             $(TEST_DIR)/argparse_test.o \
+             $(TEST_DIR)/debug.o \
+             $(TEST_DIR)/fastq.o \
+             $(TEST_DIR)/fastq_enc.o \
+             $(TEST_DIR)/fastq_test.o \
+             $(TEST_DIR)/strutils.o \
+             $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
 GTEST_DIR := gtest-1.7.0
 GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
 GTEST_LIB :=$(TEST_DIR)/libgtest.a
 
-TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc
+TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc -DAR_TEST_BUILD
 GTEST_CXXFLAGS := $(TEST_CXXFLAGS)
 
 
@@ -169,6 +176,12 @@ $(TEST_DIR)/libgtest.a: $(GTEST_OBJS)
 	$(QUIET) ar -rv $@ $^
 
 $(TEST_DIR)/%.o: tests/%.cc
+	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
+	mkdir -p $(TEST_DIR)
+	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
+	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
+
+$(TEST_DIR)/%.o: src/%.cc
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<

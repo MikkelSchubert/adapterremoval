@@ -350,7 +350,7 @@ public:
     {
     }
 
-    chunk_list process(analytical_chunk* chunk)
+    chunk_vec process(analytical_chunk* chunk)
     {
         if (!chunk) {
             throw std::invalid_argument("sink recieved NULL chunk");
@@ -376,7 +376,7 @@ public:
         m_sinks.return_sink(sink.release());
         m_timer.increment(file_chunk->reads_1.size() * 2);
 
-        return chunk_list();
+        return chunk_vec();
     }
 
     /** Prints summary of inferred consensus sequences. */

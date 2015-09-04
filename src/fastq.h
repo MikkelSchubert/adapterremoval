@@ -31,7 +31,7 @@
 #include "fastq_enc.h"
 
 
-class line_reader;
+class line_reader_base;
 
 
 /**
@@ -134,7 +134,7 @@ public:
      * empty headers, or sequences / qualities, as this typically indicates
      * a problem with the source file.
 	 */
-    bool read(line_reader& reader,
+    bool read(line_reader_base& reader,
               const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
     /**

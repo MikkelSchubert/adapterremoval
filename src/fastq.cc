@@ -192,7 +192,7 @@ void fastq::add_prefix_to_header(const std::string& prefix)
 }
 
 
-bool fastq::read(line_reader& reader, const fastq_encoding& encoding)
+bool fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {
     std::string line;
     if (!reader.getline(line)) {

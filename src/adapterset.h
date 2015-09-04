@@ -87,7 +87,12 @@ public:
     /** Returns the (pairs of) barcodes. */
     const fastq_pair_vec& get_barcodes() const;
 
+    /** Returns the name assosiated with the nth set of barcodes. */
+    const std::string& get_sample_name(size_t nth) const;
+
 private:
+    //! Names assosiated with barcodes
+    string_vec m_samples;
     //! User-supplied barcodes
     fastq_pair_vec m_barcodes;
     //! User-supplied adapter sequences, without barcodes added

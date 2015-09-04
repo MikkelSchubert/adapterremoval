@@ -44,14 +44,14 @@
 typedef std::auto_ptr<fastq_output_chunk> output_chunk_ptr;
 
 
-void add_chunk(chunk_list& chunks, size_t target, std::auto_ptr<fastq_output_chunk> chunk)
+void add_chunk(chunk_vec& chunks, size_t target, std::auto_ptr<fastq_output_chunk> chunk)
 {
     try {
         if (chunk.get()) {
             chunks.push_back(chunk_pair(target, chunk.release()));
         }
     } catch (...) {
-        for (chunk_list::iterator it = chunks.begin(); it != chunks.end(); ++it) {
+        for (chunk_vec::iterator it = chunks.begin(); it != chunks.end(); ++it) {
             delete it->second;
         }
 
@@ -199,15 +199,16 @@ bool write_demux_settings(const userconfig& config,
         }
 
         const size_t total = stats.total();
-        output << "\nNth\tBarcode_1\tBarcode_2\tHits\tFraction\n"
-               << "NA\tNA\tNA\t" << stats.unidentified << "\t"
+        output << "\nName\tBarcode_1\tBarcode_2\tHits\tFraction\n"
+               << "unidentified\tNA\tNA\t" << stats.unidentified << "\t"
                << stats.unidentified / static_cast<double>(total) << "\n";
 
         const fastq_pair_vec barcodes = config.adapters.get_barcodes();
         for (size_t nth = 0; nth < barcodes.size(); ++nth) {
             const fastq_pair& current = barcodes.at(nth);
 
-            output << nth << "\t" << current.first.sequence() << "\t";
+            output << config.adapters.get_sample_name(nth) << "\t"
+                   << current.first.sequence() << "\t";
             if (current.second.length()) {
                 output << current.second.sequence() << "\t";
             } else {
@@ -320,7 +321,7 @@ public:
     {
     }
 
-    chunk_list process(analytical_chunk* chunk)
+    chunk_vec process(analytical_chunk* chunk)
     {
         std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
@@ -380,7 +381,7 @@ public:
         stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(stats.release());
 
-        chunk_list chunks;
+        chunk_vec chunks;
         const size_t offset = m_nth * ai_analyses_offset;
         add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
         add_chunk(chunks, offset + ai_write_collapsed, out_collapsed);
@@ -400,7 +401,7 @@ public:
     {
     }
 
-    chunk_list process(analytical_chunk* chunk)
+    chunk_vec process(analytical_chunk* chunk)
     {
         std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
@@ -501,7 +502,7 @@ public:
         stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(stats.release());
 
-        chunk_list chunks;
+        chunk_vec chunks;
         const size_t offset = m_nth * ai_analyses_offset;
         add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
         add_chunk(chunks, offset + ai_write_mate_2, out_mate_2);
@@ -513,7 +514,6 @@ public:
         return chunks;
     }
 };
-
 
 
 bool write_settings(const userconfig& config, const std::vector<reads_processor*>& processors)
@@ -547,23 +547,20 @@ bool write_settings(const userconfig& config, const std::vector<reads_processor*
 void add_write_step(const userconfig& config, scheduler& sch, size_t offset,
                     analytical_step* step)
 {
-    if (false) {
-
-    }
 #ifdef AR_GZIP_SUPPORT
-    else if (config.gzip) {
+    if (config.gzip) {
         sch.add_step(offset + ai_zip_offset, step);
         sch.add_step(offset, new gzip_paired_fastq(config, offset + ai_zip_offset));
-    }
+    } else
 #endif
 
 #ifdef AR_BZIP2_SUPPORT
-    else if (config.bzip2) {
+    if (config.bzip2) {
         sch.add_step(offset + ai_zip_offset, step);
         sch.add_step(offset, new bzip2_paired_fastq(config, offset + ai_zip_offset));
-    }
+    } else
 #endif
-    else {
+    {
         sch.add_step(offset, step);
     }
 }

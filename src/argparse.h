@@ -175,7 +175,12 @@ private:
 
 
 /**
- * TODO
+ * Base class for argument parsers;
+ *
+ * Each consumer must implement the consume function, which takes iterators to
+ * the arguments following the key for this parser (i.e. not including the
+ * --option). These then consume zero or more values, returning the number
+ * thus consumed, or (size_t)-1 if the values were missing or invalid.
  */
 class consumer_base
 {

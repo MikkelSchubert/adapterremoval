@@ -344,7 +344,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     }
 
 
-    if (low_quality_score > MAX_PHRED_SCORE) {
+    if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
         std::cerr << "Error: Invalid value for --minquality: "
                   << low_quality_score << "\n"
                   << "   must be in the range 0 .. " << MAX_PHRED_SCORE
@@ -486,6 +486,7 @@ std::string userconfig::get_output_filename(const std::string& key,
         return filename += ".settings";
     } else if (key == "demux_unknown") {
         filename += ".unidentified";
+
         if (nth) {
             filename.push_back('_');
             filename.push_back('0' + nth);
@@ -499,14 +500,8 @@ std::string userconfig::get_output_filename(const std::string& key,
 
         return filename;
     } else if (adapters.barcode_count()) {
-        const fastq_pair& barcodes = adapters.get_barcodes().at(nth);
-
         filename.push_back('.');
-        filename.append(barcodes.first.sequence());
-        if (!barcodes.second.sequence().empty()) {
-            filename.push_back('_');
-            filename.append(barcodes.second.sequence());
-        }
+        filename.append(adapters.get_sample_name(nth));
     } else if (argparser.is_set(key)) {
         return argparser.at(key)->to_str();
     }

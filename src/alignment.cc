@@ -32,8 +32,8 @@
 #include <cstring>
 
 #include "alignment.h"
+#include "debug.h"
 #include "fastq.h"
-
 
 
 #if defined(__SSE__) && defined(__SSE2__)
@@ -189,7 +189,7 @@ std::vector<phred_scores> calculate_phred_score()
 {
     std::vector<double> Perror(MAX_PHRED_SCORE + 1, 0.0);
     std::vector<double> Ptrue(MAX_PHRED_SCORE + 1, 0.0);
-    for (size_t i = 0; i <= MAX_PHRED_SCORE; ++i) {
+    for (int i = 0; i <= MAX_PHRED_SCORE; ++i) {
         const double p_err = std::min<double>(0.75, std::pow(10, static_cast<double>(i) / -10.0));
 
         Perror.at(i) = std::log(p_err / 3.0);
@@ -197,9 +197,9 @@ std::vector<phred_scores> calculate_phred_score()
     }
 
     std::vector<phred_scores> new_scores((MAX_PHRED_SCORE + 1) * (MAX_PHRED_SCORE + 1));
-    for (size_t i = 0; i <= MAX_PHRED_SCORE; ++i) {
-        for (size_t j = 0; j <= i; ++j) {
-            const size_t index = (i * MAX_PHRED_SCORE) + j;
+    for (int i = 0; i <= MAX_PHRED_SCORE; ++i) {
+        for (int j = 0; j <= i; ++j) {
+            const int index = (i * MAX_PHRED_SCORE) + j;
             phred_scores& scores = new_scores.at(index);
 
             {   // When two nucleotides are identical
@@ -225,9 +225,7 @@ std::vector<phred_scores> calculate_phred_score()
 
 const phred_scores& get_updated_phred_scores(char qual_1, char qual_2)
 {
-    if (qual_1 < qual_2) {
-        throw std::invalid_argument("qual_1 must be superior or equal to qual_2");
-    }
+    AR_DEBUG_ASSERT(qual_1 >= qual_2);
 
     // Cache of pre-calculated Phred scores for consensus bases; see above.
     static const std::vector<phred_scores> updated_phred_scores = calculate_phred_score();
@@ -242,11 +240,9 @@ string_pair collapse_sequence(const std::string& sequence1,
                               const std::string& qualities1,
                               const std::string& qualities2)
 {
-    if (sequence1.length() != sequence2.length() ||
-        sequence1.length() != qualities1.length() ||
-        sequence1.length() != qualities2.length()) {
-        throw std::invalid_argument("length mismatch between sequences and/or qualities");
-    }
+    AR_DEBUG_ASSERT(sequence1.length() == sequence2.length() &&
+                     sequence1.length() == qualities1.length() &&
+                     sequence1.length() == qualities2.length());
 
     std::string collapsed_seq(sequence1.length(), 'X');
     std::string collapsed_qual(sequence1.length(), '\0');

@@ -28,6 +28,27 @@
 #include <string>
 
 
+#ifdef AR_TEST_BUILD
+/** Exception replaining 'abort' calls when running unit-tests. */
+class assert_failed : public std::exception
+{
+public:
+    /** Creates exception with the specified error message. */
+    assert_failed(const std::string& what);
+
+    /** Does nothing. */
+    virtual ~assert_failed() throw();
+
+    /** Returns user supplied error message; owned by object. */
+    virtual const char* what() const throw();
+
+private:
+    //! User supplied error message
+    const std::string m_what;
+};
+#endif
+
+
 /**
  * Aborts after printing the filename, line-number, and message, plus
  * instructions for how to report the problem.

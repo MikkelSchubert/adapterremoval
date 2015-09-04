@@ -136,7 +136,7 @@ public:
                       size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_read_chunk. */
-    virtual chunk_list process(analytical_chunk* chunk);
+    virtual chunk_vec process(analytical_chunk* chunk);
 
 private:
     //! Not implemented
@@ -174,7 +174,7 @@ public:
                       size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
-    virtual chunk_list process(analytical_chunk* chunk);
+    virtual chunk_vec process(analytical_chunk* chunk);
 
 private:
     //! Not implemented
@@ -209,7 +209,7 @@ public:
     virtual ~bzip2_paired_fastq();
 
     /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-    virtual chunk_list process(analytical_chunk* chunk);
+    virtual chunk_vec process(analytical_chunk* chunk);
 
 private:
     //! Not implemented
@@ -244,7 +244,7 @@ public:
     virtual ~gzip_paired_fastq();
 
     /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-    virtual chunk_list process(analytical_chunk* chunk);
+    virtual chunk_vec process(analytical_chunk* chunk);
 
 private:
     //! Not implemented
@@ -289,7 +289,7 @@ public:
     ~write_paired_fastq();
 
     /** Writes the reads of the type specified in the constructor. */
-    virtual chunk_list process(analytical_chunk* chunk);
+    virtual chunk_vec process(analytical_chunk* chunk);
 
     /** Flushes the output file and prints progress report (if enabled). */
     virtual void finalize();

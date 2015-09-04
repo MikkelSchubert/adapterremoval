@@ -79,7 +79,7 @@ protected:
     //! Returns a chunk-list with any set of reads exceeding the max cache size
     //! If 'eof' is true, all chunks are returned, and the 'eof' values in the
     //! chunks are set to true.
-    chunk_list flush_cache(bool eof = false);
+    chunk_vec flush_cache(bool eof = false);
 
     typedef std::vector<fastq_read_chunk*> demultiplexed_cache;
 
@@ -115,7 +115,7 @@ public:
      * the IDs corresponding to ai_analyses_offset * (nth + 1) for the nth
      * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1.
      */
-    chunk_list process(analytical_chunk* chunk);
+    chunk_vec process(analytical_chunk* chunk);
 };
 
 
@@ -132,7 +132,7 @@ public:
      * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1
      * and ai_write_unidentified_2.
      */
-    chunk_list process(analytical_chunk* chunk);
+    chunk_vec process(analytical_chunk* chunk);
 };
 
 #endif

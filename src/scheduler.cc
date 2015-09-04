@@ -261,13 +261,12 @@ scheduler::~scheduler()
 void scheduler::add_step(size_t step_id, analytical_step* step)
 {
     mutex_locker lock(m_running);
-    if (!step) {
-        throw std::invalid_argument("scheduler::scheduler: NULL not allowed");
-    } else if (m_steps.size() <= step_id) {
+    if (m_steps.size() <= step_id) {
         m_steps.resize(step_id + 1);
-    } else if (m_steps.at(step_id)) {
-        throw std::invalid_argument("scheduler::scheduler: id used multiple times");
     }
+
+    AR_DEBUG_ASSERT(step);
+    AR_DEBUG_ASSERT(!m_steps.at(step_id));
 
     m_steps.at(step_id) = new scheduler_step(step);
 }
@@ -276,14 +275,9 @@ void scheduler::add_step(size_t step_id, analytical_step* step)
 
 bool scheduler::run(int nthreads, unsigned seed)
 {
-    if (m_steps.empty()) {
-        throw std::invalid_argument("pipeline must contain at least one step");
-    } else if (!m_steps.at(0)) {
-        throw std::invalid_argument("first step has not been specified");
-    } else if (nthreads <= 0) {
-        throw std::invalid_argument("scheduler::run: nthreads <= 0");
-    }
-
+    AR_DEBUG_ASSERT(!m_steps.empty());
+    AR_DEBUG_ASSERT(m_steps.front());
+    AR_DEBUG_ASSERT(nthreads >= 1);
     mutex_locker lock(m_running);
 
     m_chunk_counter = 0;
@@ -410,7 +404,7 @@ void scheduler::execute_analytical_step(scheduler_step* step)
         step->queue.pop();
     }
 
-    chunk_list chunks = step->ptr->process(chunk.data);
+    chunk_vec chunks = step->ptr->process(chunk.data);
 
     // Unlock use of IO steps immediately after finishing processing
     if (step->ptr->file_io()) {
@@ -422,7 +416,7 @@ void scheduler::execute_analytical_step(scheduler_step* step)
     }
 
     // Schedule each of the resulting blocks
-    for (chunk_list::iterator it = chunks.begin(); it != chunks.end(); ++it) {
+    for (chunk_vec::iterator it = chunks.begin(); it != chunks.end(); ++it) {
         scheduler_step* other_step = m_steps.at(it->first);
         AR_DEBUG_ASSERT(other_step != NULL);
 
@@ -491,11 +485,8 @@ void scheduler::queue_analytical_step(scheduler_step* step, size_t current)
 bool scheduler::initialize_threads(int nthreads, unsigned seed)
 {
 #ifdef AR_PTHREAD_SUPPORT
-    if (!m_threads.empty()) {
-        throw std::invalid_argument("scheduler::initialize_threads: threads must be empty");
-    } else if (nthreads < 0) {
-        throw std::invalid_argument("scheduler::initialize_threads: negative thread count");
-    }
+    AR_DEBUG_ASSERT(m_threads.empty());
+    AR_DEBUG_ASSERT(nthreads >= 0);
 
     try {
         for (int i = 0; i < nthreads; ++i) {

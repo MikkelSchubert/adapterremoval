@@ -354,9 +354,9 @@ int demultiplex_reads::select_barcode(const fastq& read_r1, const fastq& read_r2
 }
 
 
-chunk_list demultiplex_reads::flush_cache(bool eof)
+chunk_vec demultiplex_reads::flush_cache(bool eof)
 {
-    chunk_list output;
+    chunk_vec output;
 
     if (eof || m_unidentified_1->count >= FASTQ_CHUNK_SIZE) {
         output.push_back(chunk_pair(ai_write_unidentified_1, m_unidentified_1));
@@ -399,7 +399,7 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig* config)
 }
 
 
-chunk_list demultiplex_se_reads::process(analytical_chunk* chunk)
+chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
@@ -432,7 +432,7 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig* config)
 }
 
 
-chunk_list demultiplex_pe_reads::process(analytical_chunk* chunk)
+chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());

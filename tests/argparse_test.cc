@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 
 #include "argparse.h"
+#include "debug.h"
 
 
 typedef std::auto_ptr<argparse::consumer_base> consumer_autoptr;
@@ -194,7 +195,7 @@ TEST(knob, defaults__sink_required)
 	try {
 		argparse::knob knob(NULL);
 		FAIL();
-	} catch (const std::invalid_argument&) {}
+	} catch (const assert_failed&) {}
 }
 
 
@@ -322,7 +323,7 @@ TEST(floaty_knob, defaults__sink_required)
 	try {
 		argparse::floaty_knob knob(NULL);
 		FAIL();
-	} catch (const std::invalid_argument&) {}
+	} catch (const assert_failed&) {}
 }
 
 

@@ -60,6 +60,21 @@ public:
 };
 
 
+/** Base-class for line reading; used by recievers. */
+class line_reader_base
+{
+public:
+    /** Does nothing. */
+    line_reader_base();
+
+    /** Closes the file, if still open. */
+    virtual ~line_reader_base();
+
+    /** Reads a lien into dst, returning false on EOF. */
+    virtual bool getline(std::string& dst) = 0;
+};
+
+
 /**
  * Simple line reader.
  *
@@ -69,7 +84,7 @@ public:
  *
  * Errors are reported using either 'io_error' or 'gzip_error'.
  */
-class line_reader
+class line_reader : public line_reader_base
 {
 public:
     /** Constructor; opens file and throws on errors. */
@@ -152,6 +167,18 @@ private:
     //! Indicates if a read across the EOF has been attempted.
     bool m_eof;
 };
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline line_reader_base::line_reader_base()
+{
+}
+
+
+inline line_reader_base::~line_reader_base()
+{
+}
 
 
 #endif
