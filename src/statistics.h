@@ -124,12 +124,13 @@ struct demux_statistics
     demux_statistics(const size_t n_barcodes)
         : barcodes(n_barcodes)
         , unidentified(0)
+        , ambiguous(0)
     {
     }
 
     size_t total() const
     {
-        size_t total = unidentified;
+        size_t total = unidentified + ambiguous;
         for (size_t i = 0; i < barcodes.size(); ++i) {
             total += barcodes.at(i);
         }
@@ -139,8 +140,10 @@ struct demux_statistics
 
     //! Number of reads / pairs identified for a given barcode / pair of barcodes
     std::vector<size_t> barcodes;
-    //! Number of unidentified reads / pairs
+    //! Number of reads / pairs with no hits
     size_t unidentified;
+    //! Number of reads / pairs with no single best hit
+    size_t ambiguous;
 };
 
 

@@ -60,46 +60,105 @@ void add_chunk(chunk_vec& chunks, size_t target, std::auto_ptr<fastq_output_chun
 }
 
 
+
+void write_settings(const userconfig& config, std::ostream& output, int nth)
+{
+    output << NAME << " " << VERSION
+             << "\nTrimming of ";
+
+    if (config.adapters.barcode_count()) {
+        if (config.adapters.get_barcodes().front().second.length()) {
+            output << "double-indexed ";
+        } else {
+            output << "single-indexed ";
+        }
+    }
+
+    if (config.paired_ended_mode) {
+        output << "paired-end reads";
+    } else {
+        output << "single-end mode\n";
+    }
+
+    if (config.adapters.barcode_count()) {
+        output << "\n\n\n[Demultiplexing]"
+               << "\nMaximum mismatches (total): " << config.barcode_mm;
+        if (config.paired_ended_mode) {
+            output << "\nMaximum mate 1 mismatches: " << config.barcode_mm_r1;
+            output << "\nMaximum mate 2 mismatches: " << config.barcode_mm_r2;
+        }
+
+        output << "\n\n\n[Demultiplexing samples]"
+               << "\nName\tBarcode_1\tBarcode_2";
+
+        const fastq_pair_vec barcodes = config.adapters.get_barcodes();
+        for (size_t idx = 0; idx < barcodes.size(); ++idx) {
+            output << "\n" << config.adapters.get_sample_name(idx);
+            if (static_cast<int>(idx) == nth) {
+                output << "*";
+            }
+
+            const fastq_pair& current = barcodes.at(idx);
+            output << "\t" << current.first.sequence();
+
+            if (current.second.length()) {
+                output << "\t" << current.second.sequence();
+            } else {
+                output << "\t*";
+            }
+        }
+    }
+
+    output << "\n\n\n[Adapter sequences]";
+    if (nth == -1) {
+        const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
+        size_t adapter_id = 0;
+        for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+            output << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence();
+            if (config.paired_ended_mode) {
+                output << "\nAdapter2[" << adapter_id << "]: " << it->second.sequence() << "\n";
+            }
+        }
+    } else {
+        const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
+        size_t adapter_id = 0;
+        for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+            output << "\nAdapter1[" << adapter_id << "]: " << it->first;
+            if (config.paired_ended_mode) {
+                output << "\nAdapter2[" << adapter_id << "]: " << it->second << "\n";
+            }
+        }
+    }
+
+    output << "\n\n[Adapter trimming]"
+           << "\nRNG seed: " << config.seed
+           << "\nAlignment shift value: " << config.shift
+           << "\nGlobal mismatch threshold: " << config.mismatch_threshold
+           << "\nQuality format (input): " << config.quality_input_fmt->name()
+           << "\nQuality score max (input): " << config.quality_input_fmt->max_score()
+           << "\nQuality format (output): " << config.quality_output_fmt->name()
+           << "\nQuality score max (output): " << config.quality_output_fmt->max_score()
+           << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
+           << "\nTrimming Phred scores <= " << config.low_quality_score
+           << ": " << (config.trim_by_quality ? "yes" : "no")
+           << "\nMinimum genomic length: " << config.min_genomic_length
+           << "\nMaximum genomic length: " << config.max_genomic_length
+           << "\nCollapse overlapping reads: " << ((config.collapse) ? "Yes" : "No")
+           << "\nMinimum overlap (in case of collapse): " << config.min_alignment_length;
+}
+
+
+
 void write_trimming_settings(const userconfig& config,
                              const statistics& stats,
                              size_t nth,
                              std::ostream& settings)
 {
-    settings << "Running " << NAME << " " << VERSION << " using the following options:"
-             << "\nRNG seed: " << config.seed;
-
-    if (config.paired_ended_mode) {
-        settings << "\nPaired end mode\n";
-    } else {
-        settings << "\nSingle end mode\n";
-    }
-
-    size_t adapter_id = 0;
-    const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
-    for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
-        settings << "\nAdapter1[" << adapter_id << "]: " << it->first;
-        if (config.paired_ended_mode) {
-            settings << "\nAdapter2[" << adapter_id << "]: " << it->second << "\n";
-        }
-    }
-
-    settings << "\nAlignment shift value: " << config.shift
-             << "\nGlobal mismatch threshold: " << config.mismatch_threshold
-             << "\nQuality format (input): " << config.quality_input_fmt->name()
-             << "\nQuality score max (input): " << config.quality_input_fmt->max_score()
-             << "\nQuality format (output): " << config.quality_output_fmt->name()
-             << "\nQuality score max (output): " << config.quality_output_fmt->max_score()
-             << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
-             << "\nTrimming Phred scores <= " << config.low_quality_score
-             << ": " << (config.trim_by_quality ? "yes" : "no")
-             << "\nMinimum genomic length: " << config.min_genomic_length
-             << "\nMaximum genomic length: " << config.max_genomic_length
-             << "\nCollapse overlapping reads: " << ((config.collapse) ? "Yes" : "No")
-             << "\nMinimum overlap (in case of collapse): " << config.min_alignment_length;
+    write_settings(config, settings, nth);
 
     const std::string reads_type = (config.paired_ended_mode ? "read pairs: " : "reads: ");
-
-    settings << "\n\nTotal number of " << reads_type << stats.records
+    settings << "\n\n\n[Trimming statistics]"
+             << "\nTotal number of " << reads_type << stats.records
              << "\nNumber of unaligned " << reads_type << stats.unaligned_reads
              << "\nNumber of well aligned " << reads_type << stats.well_aligned_reads
              << "\nNumber of inadequate alignments: " << stats.poorly_aligned_reads
@@ -124,12 +183,10 @@ void write_trimming_settings(const userconfig& config,
     settings << "\nNumber of retained reads: " << stats.total_number_of_good_reads
              << "\nNumber of retained nucleotides: " << stats.total_number_of_nucleotides
              << "\nAverage read length of trimmed reads: "
-             << (stats.total_number_of_good_reads ? ( static_cast<double>(stats.total_number_of_nucleotides) / stats.total_number_of_good_reads) : 0)
-             << "\n\n";
+             << (stats.total_number_of_good_reads ? ( static_cast<double>(stats.total_number_of_nucleotides) / stats.total_number_of_good_reads) : 0);
 
-    const std::string prefix = "Length distribution: ";
-
-    settings << prefix << "Length\tMate1\t";
+    settings << "\n\n\n[Length distribution]"
+             << "\nLength\tMate1\t";
     if (config.paired_ended_mode) {
         settings << "Mate2\tSingleton\t";
     }
@@ -144,8 +201,7 @@ void write_trimming_settings(const userconfig& config,
         const std::vector<size_t>& lengths = stats.read_lengths.at(length);
         const size_t total = std::accumulate(lengths.begin(), lengths.end(), 0);
 
-        settings << prefix << length
-                 << '\t' << lengths.at(rt_mate_1);
+        settings << length << '\t' << lengths.at(rt_mate_1);
 
         if (config.paired_ended_mode) {
             settings << '\t' << lengths.at(rt_mate_2)
@@ -185,23 +241,19 @@ bool write_demux_settings(const userconfig& config,
         }
 
         output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        output.precision(3);
-        output << std::fixed << std::setw(3);
 
-        output << NAME << " " << VERSION << " demultiplexing of "
-               << (config.paired_ended_mode ? "paired" : "single")
-               << "-end reads:\n\n";
-
-        output << "Maximum mismatches (total): " << config.barcode_mm << "\n";
-        if (config.paired_ended_mode) {
-            output << "Maximum mate 1 mismatches: " << config.barcode_mm_r1 << "\n";
-            output << "Maximum mate 2 mismatches: " << config.barcode_mm_r2 << "\n";
-        }
+        write_settings(config, output, -1);
 
         const size_t total = stats.total();
-        output << "\nName\tBarcode_1\tBarcode_2\tHits\tFraction\n"
+
+        output.precision(3);
+        output << std::fixed << std::setw(3)
+               << "\n\n\n[Demultiplexing statistics]"
+               << "\nName\tBarcode_1\tBarcode_2\tHits\tFraction\n"
                << "unidentified\tNA\tNA\t" << stats.unidentified << "\t"
-               << stats.unidentified / static_cast<double>(total) << "\n";
+               << stats.unidentified / static_cast<double>(total) << "\n"
+               << "ambiguous\tNA\tNA\t" << stats.ambiguous << "\t"
+               << stats.ambiguous / static_cast<double>(total) << "\n";
 
         const fastq_pair_vec barcodes = config.adapters.get_barcodes();
         for (size_t nth = 0; nth < barcodes.size(); ++nth) {

@@ -161,7 +161,7 @@ void prune_tree(demux_node_vec& tree)
 /**
  * Builds a sparse quad tree using the first sequence in a set of unique
  * barcodes pairs; duplicate pairs will negatively impact the identification of
- * these, since all hits will be considered ambigious.
+ * these, since all hits will be considered ambiguous.
  */
 demux_node_vec build_demux_tree(const fastq_pair_vec& barcodes)
 {
@@ -345,12 +345,20 @@ int demultiplex_reads::select_barcode(const fastq& read_r1, const fastq& read_r2
             best_barcode = it->first;
             min_mismatches = it->second;
         } else if (it->second == min_mismatches) {
-            // Ambigious results; multiple best matches
+            // Ambiguous results; multiple best matches
             best_barcode = -1;
         }
     }
 
-    return best_barcode;
+    if (best_barcode >= 0) {
+        return best_barcode;
+    } else if (min_mismatches == m_max_mismatches + 1) {
+        // No viable candidates
+        return -1;
+    } else {
+        // Ambiguous results
+        return -2;
+    }
 }
 
 
@@ -407,10 +415,14 @@ chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
     for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
         const int best_barcode = select_barcode(*it, empty_read);
 
-        if (best_barcode == -1) {
+        if (best_barcode < 0) {
             m_unidentified_1->add(*m_config->quality_output_fmt, *it);
 
-            m_statistics.unidentified += 1;
+            if (best_barcode == -1) {
+                m_statistics.unidentified += 1;
+            } else {
+                m_statistics.ambiguous += 1;
+            }
         } else {
             fastq_read_chunk* dst = m_cache.at(best_barcode);
             dst->reads_1.push_back(*it);
@@ -442,11 +454,15 @@ chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
     for (; it_1 != read_chunk->reads_1.end(); ++it_1, ++it_2) {
         const int best_barcode = select_barcode(*it_1, *it_2);
 
-        if (best_barcode == -1) {
+        if (best_barcode < 0) {
             m_unidentified_1->add(*m_config->quality_output_fmt, *it_1);
             m_unidentified_2->add(*m_config->quality_output_fmt, *it_2);
 
-            m_statistics.unidentified += 1;
+            if (best_barcode == -1) {
+                m_statistics.unidentified += 1;
+            } else {
+                m_statistics.ambiguous += 1;
+            }
         } else {
             fastq_read_chunk* dst = m_cache.at(best_barcode);
 
