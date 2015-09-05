@@ -78,10 +78,10 @@ public:
 
     virtual ~fastq_encoding();
 
-    /** Encodes a string of Phred+33 quality-scores in-place. */
-    void encode_string(std::string::iterator it, const std::string::iterator& end) const;
+    /** Encodes a string of Phred+33/66 quality-scores in-place. */
+    virtual void encode_string(std::string::iterator it, const std::string::iterator& end) const;
     /** Decodes a string of ASCII values in-place. */
-    void decode_string(std::string::iterator it, const std::string::iterator& end) const;
+    virtual void decode_string(std::string::iterator it, const std::string::iterator& end) const;
 
     /** Returns the standard name for this encoding. */
     virtual std::string name() const;
@@ -91,21 +91,6 @@ public:
      * range to which output scores are truncated.
      */
     virtual size_t max_score() const;
-
-protected:
-    /**
-     * Takes a phred score (0 - 93) and should returns a printable character
-     * according to the specific encoding. By default this is simply the score
-     * plus the specified offset, limited by the specified max.
-     */
-    virtual int encode(int phred) const;
-
-    /**
-     * Takes an ASCII character and returns a Phred-33 score; the minimum and
-     * maximum allowed values are determined by m_offset and m_max_score, but
-     * always lie within the range '!' to '~'.
-     */
-    virtual int decode(int raw) const;
 
 protected:
     //! Character offset for Phred encoded scores (33 or 64)
@@ -140,11 +125,10 @@ public:
      */
     fastq_encoding_solexa(unsigned max_score = MAX_PHRED_SCORE_DEFAULT);
 
-    /** Converts a 0-based Phred score to the ~ corresponding Solexa score. */
-    virtual int encode(int phred) const;
-
-    /** Converts ASCII to Solexa; expects a value in the range ';' to 'h'. */
-    virtual int decode(int raw) const;
+    /** Encodes a string of Phred+33/66 quality-scores in-place. */
+    virtual void encode_string(std::string::iterator it, const std::string::iterator& end) const;
+    /** Decodes a string of ASCII values in-place. */
+    virtual void decode_string(std::string::iterator it, const std::string::iterator& end) const;
 
     /** Returns the standard name for this encoding. */
     std::string name() const;
