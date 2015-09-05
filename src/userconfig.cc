@@ -471,9 +471,12 @@ bool userconfig::is_alignment_collapsible(const alignment_info& alignment) const
 
 bool userconfig::is_acceptable_read(const fastq& seq) const
 {
-    return seq.length() >= min_genomic_length
-        && seq.length() <= max_genomic_length
-        && seq.count_ns() <= max_ambiguous_bases;
+    const size_t seq_len = seq.length();
+
+    return seq_len >= min_genomic_length
+        && seq_len <= max_genomic_length
+        && (max_ambiguous_bases >= seq_len
+            || seq.count_ns() <= max_ambiguous_bases);
 }
 
 
