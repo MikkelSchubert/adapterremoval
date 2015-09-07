@@ -887,6 +887,18 @@ TEST(extract_adapter_sequences, empty_sequence_2)
 }
 
 
+TEST(extract_adapter_sequences, empty_sequence_3)
+{
+    const fastq expected_1 = fastq("read1", "", "");
+    const fastq expected_2 = fastq("read2", "", "");
+    fastq read1 = expected_1;
+    fastq read2 = expected_2;
+    extract_adapter_sequences(alignment_info(), read1, read2);
+    ASSERT_EQ(fastq("read1", "", ""), read1);
+    ASSERT_EQ(fastq("read2", "", ""), read2);
+}
+
+
 TEST(extract_adapter_sequences, case_1_no_alignment)
 {
     const fastq expected_1 = fastq("read1", "AATTTT", "!!!!!!");
@@ -982,11 +994,6 @@ TEST(extract_adapter_sequences, case_8_reads_extends_past_each_pther)
     ASSERT_EQ(fastq("read1", "CCC", "GHI"), read1);
     ASSERT_EQ(fastq("read2", "AA", "12"), read2);
 }
-
-
-#pragma message("TODO: Empty sequences")
-#pragma message("TODO: Test PE with multiple adapters")
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
