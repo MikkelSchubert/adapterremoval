@@ -115,12 +115,29 @@ userconfig::userconfig(const std::string& name,
         new argparse::any(&input_file_2, "FILE",
             "Input file containing mate 2 reads [OPTIONAL].");
 
-    argparser.add_seperator();
+    argparser.add_header("FASTQ OPTIONS:");
+    argparser["--qualitybase"] =
+        new argparse::any(&quality_input_base, "BASE",
+            "Quality base used to encode Phred scores in input; either 33, "
+            "64, or solexa [current: %default].");
+    argparser["--qualitybase-output"] =
+        new argparse::any(&quality_output_base, "BASE",
+            "Quality base used to encode Phred scores in output; either 33, "
+            "64. By default, reads will be written in the same format as the "
+            "that specified using --qualitybase.");
+    argparser["--qualitymax"] =
+        new argparse::knob(&quality_max, "BASE",
+            "Specifies the maximum Phred score expected in input files, and "
+            "used when writing output. ASCII encoded values are limited to "
+            "the characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning "
+            "that possible scores are 0 - 93 with offset 33, and 0 - 62 "
+            "for offset 64 and Solexa scores [default: %default].");
+
+    argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
         new argparse::any(&basename, "BASENAME",
             "Default prefix for all output files for which no filename was "
             "explicitly set [current: %default].");
-
     argparser["--settings"] =
         new argparse::any(NULL, "FILE",
             "Output file containing information on the parameters used in the "
@@ -149,14 +166,36 @@ userconfig::userconfig(const std::string& name,
     argparser["--outputcollapsedtruncated"] =
         new argparse::any(NULL, "FILE",
             "Collapsed reads (see --outputcollapsed) which were trimmed due "
-            "the presence of low-quality or ambiguous nucleotides"
+            "the presence of low-quality or ambiguous nucleotides "
             "[default: BASENAME.collapsed.truncated]");
     argparser["--discarded"] =
         new argparse::any(NULL, "FILE",
             "Contains reads discarded due to the --minlength, --maxlength or "
             "--maxns options [default: BASENAME.discarded]");
 
-    argparser.add_seperator();
+
+#if defined(AR_GZIP_SUPPORT) || defined(AR_BZIP2_SUPPORT)
+   argparser.add_header("OUTPUT COMPRESSION:");
+#endif
+
+#ifdef AR_GZIP_SUPPORT
+    argparser["--gzip"] =
+        new argparse::flag(&gzip,
+            "Enable gzip compression [current: %default]");
+    argparser["--gzip-level"] =
+        new argparse::knob(&gzip_level, "LEVEL",
+            "Compression level, 0 - 9 [current: %default]");
+#endif
+#ifdef AR_BZIP2_SUPPORT
+    argparser["--bzip2"] =
+        new argparse::flag(&bzip2,
+            "Enable bzip2 compression [current: %default]");
+    argparser["--bzip2-level"] =
+        new argparse::knob(&bzip2_level, "LEVEL",
+            "Compression level, 0 - 9 [current: %default]");
+#endif
+
+    argparser.add_header("TRIMMING SETTINGS:");
     // Backwards compatibility with AdapterRemoval v1; not recommended due to
     // schematicts that differ from most other adapter trimming programs,
     // namely requiring that the --pcr2 sequence is that which is observed in
@@ -178,30 +217,6 @@ userconfig::userconfig(const std::string& name,
             "only the first adapter in each pair is required / used in SE "
             "mode [current: %default].");
 
-    argparser.add_header("DEMULTIPLEXING:");
-    argparser["--barcode-list"] =
-        new argparse::any(&barcode_list, "FILENAME",
-            "List of barcodes or barcode pairs for single or double-indexed "
-            "demultiplexing. Note that both indexes should be specified for "
-            "both single-end and paired-end trimming, if double-indexed "
-            "multiplexing was used, in order to ensure that the demultiplexed "
-            "reads can be trimmed correctly [current: %default].");
-
-    argparser["--barcode-mm"] =
-        new argparse::knob(&barcode_mm, "N",
-            "Maximum number of mismatches allowed when counting mismatches in "
-            "both the mate 1 and the mate 2 barcode for paired reads.");
-    argparser["--barcode-mm-r1"] =
-        new argparse::knob(&barcode_mm_r1, "N",
-            "Maximum number of mismatches allowed for the mate 1 barcode; "
-            "if not set, this value is equal to the '--barcode-mm' value; "
-            "cannot be higher than the '--barcode-mm value'.");
-    argparser["--barcode-mm-r2"] =
-        new argparse::knob(&barcode_mm_r2, "N",
-            "Maximum number of mismatches allowed for the mate 2 barcode; "
-            "if not set, this value is equal to the '--barcode-mm' value; "
-            "cannot be higher than the '--barcode-mm value'.");
-
     argparser.add_seperator();
     argparser["--mm"]
         = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
@@ -217,24 +232,6 @@ userconfig::userconfig(const std::string& name,
         new argparse::knob(&shift, "N",
             "Consider alignments where up to N nucleotides are missing from "
             "the 5' termini [current: %default].");
-
-    argparser.add_seperator();
-    argparser["--qualitybase"] =
-        new argparse::any(&quality_input_base, "BASE",
-            "Quality base used to encode Phred scores in input; either 33, "
-            "64, or solexa [current: %default].");
-    argparser["--qualitybase-output"] =
-        new argparse::any(&quality_output_base, "BASE",
-            "Quality base used to encode Phred scores in output; either 33, "
-            "64. By default, reads will be written in the same format as the "
-            "that specified using --qualitybase.");
-    argparser["--qualitymax"] =
-        new argparse::knob(&quality_max, "BASE",
-            "Specifies the maximum Phred score expected in input files, and "
-            "used when writing output. ASCII encoded values are limited to "
-            "the characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning "
-            "that possible scores are 0 - 93 with offset 33, and 0 - 62 "
-            "for offset 64 and Solexa scores [default: %default].");
 
     argparser.add_seperator();
     argparser["--trimns"] =
@@ -271,7 +268,31 @@ userconfig::userconfig(const std::string& name,
             "overlap at least this number of bases with the adapter to be "
             "considered complete template molecules [current: %default].");
 
-    argparser.add_seperator();
+    argparser.add_header("DEMULTIPLEXING:");
+    argparser["--barcode-list"] =
+        new argparse::any(&barcode_list, "FILENAME",
+            "List of barcodes or barcode pairs for single or double-indexed "
+            "demultiplexing. Note that both indexes should be specified for "
+            "both single-end and paired-end trimming, if double-indexed "
+            "multiplexing was used, in order to ensure that the demultiplexed "
+            "reads can be trimmed correctly [current: %default].");
+
+    argparser["--barcode-mm"] =
+        new argparse::knob(&barcode_mm, "N",
+            "Maximum number of mismatches allowed when counting mismatches in "
+            "both the mate 1 and the mate 2 barcode for paired reads.");
+    argparser["--barcode-mm-r1"] =
+        new argparse::knob(&barcode_mm_r1, "N",
+            "Maximum number of mismatches allowed for the mate 1 barcode; "
+            "if not set, this value is equal to the '--barcode-mm' value; "
+            "cannot be higher than the '--barcode-mm value'.");
+    argparser["--barcode-mm-r2"] =
+        new argparse::knob(&barcode_mm_r2, "N",
+            "Maximum number of mismatches allowed for the mate 2 barcode; "
+            "if not set, this value is equal to the '--barcode-mm' value; "
+            "cannot be higher than the '--barcode-mm value'.");
+
+    argparser.add_header("MISC:");
     argparser["--identify-adapters"] =
         new argparse::flag(&identify_adapters,
             "Attempt to identify the adapter pair of PE reads, by searching "
@@ -279,23 +300,9 @@ userconfig::userconfig(const std::string& name,
     argparser["--seed"] =
         new argparse::knob(&seed, "SEED",
             "Sets the RNG seed used when choosing between bases with equal "
-            "Phred scores when collapsing [current: %default].");
-
-    argparser.add_seperator();
-    argparser["--gzip"] =
-        new argparse::flag(&gzip,
-            "Enable gzip compression [current: %default]");
-    argparser["--gzip-level"] =
-        new argparse::knob(&gzip_level, "LEVEL",
-            "Compression level, 0 - 9 [current: %default]");
-#ifdef AR_BZIP2_SUPPORT
-    argparser["--bzip2"] =
-        new argparse::flag(&bzip2,
-            "Enable bzip2 compression [current: %default]");
-    argparser["--bzip2-level"] =
-        new argparse::knob(&bzip2_level, "LEVEL",
-            "Compression level, 0 - 9 [current: %default]");
-#endif
+            "Phred scores when collapsing. Note that runs are not "
+            "deterministic if more than one thread is used. If not specified, "
+            "a seed is generated using the current time.");
 
 #ifdef AR_PTHREAD_SUPPORT
     argparser["--threads"] =
