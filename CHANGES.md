@@ -2,11 +2,34 @@
 Changelog
 =========
 
-Version 2.0.X
+Version 2.1.0 - 2015-09-08
 ==========================
 
-* Display currently specified --adapter1 / adapter2 sequences for comparison
-  when attempting to infer adapter sequences. Only the first pair is used.
+Major changes:
+  * Support for (transparently) reading and writing bzip2 files.
+  * Parallelization of adapter trimming and identification using pthreads; the
+    number of threads used is specified using --threads. Note that only one
+    thread is allowed to perform IO (reads / writes) at a time, to prevent
+    clobbering the disk, but compression (if enabled) is performed in parallel.
+  * Support for combined demultiplexing and adapter-removal using the
+    --barcode-list command-line option; when demultiplexing, the barcodes
+    identified for a given read is added to the adapter sequence, in ordre to
+    ensure correct trimming of the reads.
+  * Features depending on external libraries (gzip, bzip2, and threading
+    support) can be disabled in the Makefile on systems lacking these
+    libraries.
+
+Other changes / bug-fixes:
+  * Display currently specified --adapter1 / adapter2 sequences for comparison
+    when attempting to infer adapter sequences. Only the first pair is used, if
+    multiple adapter pairs are specified.
+  * Sites with no majority-base during adapter-identification are set to N.
+  * Fixed failure to read of barcode sequences (--5prime / --5prime-list).
+  * Progress report now shows total number of reads processes, for both single
+    ended and pair ended analyses.
+  * FASTQ reads with Solexa scores are now output as Solexa scores by default,
+    rather than Phred+64. Note that the program represents quality scores using
+    Phred scores internally, resulting in a lossy conversion. It is therefore recommended to convert to Phred scores rather than use Solexa scores.
 
 
 Version 2.0.0 - 2014-03-10

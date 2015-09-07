@@ -6,7 +6,7 @@ AdapterRemoval - Remove adapters from sequences in either single end or paired e
 
 =head1 SYNOPSIS
 
-B<AdapterRemoval> --file1 filename [--file2 filename] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--5prime sequence] [--5prime-list filename] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--version] [--help]
+B<AdapterRemoval> --file1 filename [--file2 filename] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
 
 
 =head1 DESCRIPTION
@@ -117,13 +117,39 @@ Note that --adapter1 and --adapter2 replaces the --pcr[12] options of B<AdapterR
 
 Read one or more PCR sequences from a file. The first two columns (seperated by whitespace) of each line in the file are expected to correspond to values passed to --adapter1 and --adapter2. In single ended mode, only column one is required. Lines starting with '#' are ignored. When multiple pcr sequences are specified, AdapterRemoval will try each and select the best aligning adapters for each read processed.
 
-=item B<--5prime> I<sequence>
+=item B<--barcode-list> I<filename>
 
-If specified, the program will look for matches to the sequence in the 5 prime end of the reads first. These matches are expected to be near perfect (very few mismatches) and often full length, although some missing nucleotides are allowed (controlled by the B<--shift> parameter).
+Read a table of one or two fixed-length barcodes and perform demultiplexing of single or double indexed reads. The table is expected to contain 2 or 3 columns, the first of which represent the name of a given sample, and the second and third of which represent the mate 1 and (optionally) the mate 2 barcode sequence:
 
-=item B<--5prime-list> I<filename>
+    $ cat barcodes.txt
+    sample_1 ATGCGGA TGAATCT
+    sample_2 ATGGATT ATAGTGA
+    sample_7 CAAAACT TCGCTGC
 
-Read one or more 5prime sequences from a file. The first column of each line in the file are expected to correspond to values passed to --5prime. Lines starting with '#' are ignored. When multiple 5prime sequences are specified, AdapterRemoval will try each and select the best aligning sequence for each read processed.
+Results are written to ${basename}.${sample_name}.*, using the default names for other output files. A setting file with statistics is written for each sample at ${basename}.${sample_name}.settings, as is a setting file containing the demultiplexing statistics, at ${basename}.settings.
+
+When demultiplexing is used, the barcode identified for a given read is automatically added to the adapter sequence, in order to ensure that overlapping reads are correctly trimmed. The .settings file represents this by showing the reverse complemented) barcode sequence added to the --adapter1 and --adapter2 sequences, followed by an underscore (shown here for barcodes pair ATGCGGA / TGAATCT):
+
+    [Adapter sequences]
+    Adapter1[0]: AGATTCA_AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+    Adapter2[0]: TCCGCAT_AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+
+Note that the sequence added to each adapter is the reverse complement of the barcode sequence of the other mate, as this sequence is expected to be found immediately before the adapter sequence.
+
+
+=item B<--barcode-mm> I<num>
+
+The maximum number of mismatches allowed for barcodes, when counting mismatches in I<both> the mate 1 and mate 2 barcodes. In conjunction with the --barcode-mm-r1 and --barcode-mm-r2, this allows fine-grained control over the barcode comparisons. If not set, this value is set to the sum of --barcode-mm-r1 and --barcode-mm-r2.
+
+For example, to allow one mismatch in either the mate 1 or the mate 2 barcode, one might specify --barcode-mm 1; to allow a mismatch in the mate 1 and / or the mate 2 barcode, one might specify --barcode-mm 2 --barcode-mm-r1 1 --barcode-mm-r2 1, and so on.
+
+=item B<--barcode-mm-r1> I<num>
+
+The maximum number of mismatches allowed in the mate 1 barcode; if not set, this number is equal to the value of --barcode-mm. This number cannot exceed the value specified for --barcode-mm.
+
+=item B<--barcode-mm-r2> I<num>
+
+The maximum number of mismatches allowed in the mate 1 barcode; if not set, this number is equal to the value of --barcode-mm. This number cannot exceed the value specified for --barcode-mm.
 
 =item B<--output1> I<file>
 
@@ -174,6 +200,10 @@ If set, all FASTQ files written by AdapterRemoval will be gzip compressed using 
 =item B<--gzip-level>
 
 Determines the compression level used when gzip'ing FASTQ files. Must be a value in the range 0 to 9, with 0 disabling compression and 9 being the best compression. Defaults to 6.
+
+=item B<--threads>
+
+Maximum number of threads to use for current run; note that file IO is single-threaded, regardless of the number of threads specified.
 
 =item B<--version>
 

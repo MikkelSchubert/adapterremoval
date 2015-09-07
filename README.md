@@ -49,6 +49,33 @@ If AdapterRemoval has been installed, this may be accessed using the command "ma
 https://github.com/MikkelSchubert/adapterremoval/blob/master/AdapterRemoval.pod
 
 
+Demultiplexing
+==============
+
+As of version 2.1, AdapterRemoval supports simultanious demultiplexing and adapter trimming; demultiplexing is carried out using a simple comparison between the specified barcode sequences and the first N bases of the reads, corresponding to the length of the barcodes. Reads identified as containing a specific barcode or pair of barcodes are then trimmed using adapter sequences including these barcodes. Demultiplexing is accomplished by creating a table of barcodes, the first column of which species the sample name (using characters [a-zA-Z0-9_]) and the second and (optional) third columns specifies the mate 1 and mate 2 barcode sequences.
+
+For example, a table of barcodes from a double-indexed run might be
+
+    sample_1 ATGCGGA TGAATCT
+    sample_2 ATGGATT ATAGTGA
+    sample_7 CAAAACT TCGCTGC
+
+AdapterRemoval is invoked with the --barcode-list option, specifying the path to this table, and generates a set of output files for each sample thus specified, using the basename (--basename) as the prefix, followed by a dot and the sample name, followed by a dot and the default name for a given file type. For example, the output files for sample_2 could be
+
+    your_output.sample_2.discarded
+    your_output.sample_2.pair1.truncated
+    your_output.sample_2.pair2.truncated
+    your_output.sample_2.settings
+    your_output.sample_2.singleton.truncated
+
+The settings files generated for each sample summarizes the reads for that sample only; in addition, a basename.settings file is generated which summarizes the number and proportion of reads identified as belonging to each sample.
+
+The maximum number of mismatches allowed when comparing barocdes is controlled using the options --barcode-mm, --barcode-mm-r1, and --barcode-mm-r2, which specify the maximum number of mismatches total, and the maximum number of mismatches for the mate 1 and mate 2 barcodes respectively. Thus, if mm_1(i) and mm_2(i) represents the number of mismatches observed for barcode-pair i for a given pair of reads, these options require that
+
+   1. mm_1(i) <= --barcode-mm-r1
+   2. mm_2(i) <= --barcode-mm-r2
+   3. mm_1(i) + mm_2(i) <= --barcode-mm
+
 
 A note on specifying adapter sequences
 ======================================
