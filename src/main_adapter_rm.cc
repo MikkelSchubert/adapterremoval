@@ -77,7 +77,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
     if (config.paired_ended_mode) {
         output << "paired-end reads";
     } else {
-        output << "single-end mode\n";
+        output << "single-end reads\n";
     }
 
     if (config.adapters.barcode_count()) {

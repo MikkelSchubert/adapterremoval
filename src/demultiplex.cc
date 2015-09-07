@@ -411,7 +411,7 @@ chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-    fastq empty_read;
+    const fastq empty_read;
     for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
         const int best_barcode = select_barcode(*it, empty_read);
 

@@ -32,7 +32,7 @@
 #include "threads.h"
 
 //! Size of compressed and uncompressed buffers.
-const int BUF_SIZE = BUFSIZ;
+const int BUF_SIZE = 10 * BUFSIZ;
 
 
 ///////////////////////////////////////////////////////////////////////////////

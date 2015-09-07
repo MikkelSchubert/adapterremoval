@@ -37,20 +37,21 @@ typedef std::auto_ptr<fastq_read_chunk> chunk_ptr;
 bool read_fastq_reads(fastq_vec& dst, line_reader& reader, size_t offset,
                       const fastq_encoding& encoding)
 {
-    dst.resize(FASTQ_CHUNK_SIZE);
+    dst.reserve(FASTQ_CHUNK_SIZE);
 
-    fastq_vec::iterator it = dst.begin();
     try {
-        for (; it != dst.end(); ++it) {
-            if (!it->read(reader, encoding)) {
-                dst.resize(it - dst.begin());
+        fastq record;
+        for (size_t i = 0; i < FASTQ_CHUNK_SIZE; ++i) {
+            if (record.read(reader, encoding)) {
+                dst.push_back(record);
+            } else {
                 break;
             }
         }
     } catch (const fastq_error& error) {
         print_locker lock;
         std::cerr << "Error reading FASTQ record at line "
-                  << offset + (it - dst.begin())
+                  << offset + dst.size()
                   << "; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
 

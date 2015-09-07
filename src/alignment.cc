@@ -82,7 +82,7 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
     int remaining_bases = current.score = current.length;
 
 #if defined(__SSE__) && defined(__SSE2__)
-    while (remaining_bases >= 16) {
+    while (remaining_bases >= 16 && current.score >= best.score) {
         const __m128i s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
         const __m128i s2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
 
@@ -98,10 +98,6 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
 
         // Matches count for 1, Ns for 0, and mismatches for -1
         current.score = current.length - current.n_ambiguous - (current.n_mismatches * 2);
-        if (current.score < best.score) {
-            // No possibility of a better alignment
-            return false;
-        }
 
         seq_1_ptr += 16;
         seq_2_ptr += 16;
@@ -109,7 +105,7 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
     }
 #endif
 
-    for (; remaining_bases; --remaining_bases) {
+    for (; remaining_bases && current.score >= best.score; --remaining_bases) {
         const char nt_1 = *seq_1_ptr++;
         const char nt_2 = *seq_2_ptr++;
 

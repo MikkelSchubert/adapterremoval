@@ -190,8 +190,7 @@ userconfig::userconfig(const std::string& name,
     argparser["--barcode-mm"] =
         new argparse::knob(&barcode_mm, "N",
             "Maximum number of mismatches allowed when counting mismatches in "
-            "both the mate 1 and the mate 2 barcode for paired reads "
-            "[current: %default].");
+            "both the mate 1 and the mate 2 barcode for paired reads.");
     argparser["--barcode-mm-r1"] =
         new argparse::knob(&barcode_mm_r1, "N",
             "Maximum number of mismatches allowed for the mate 1 barcode; "
@@ -628,6 +627,10 @@ bool userconfig::setup_adapter_sequences()
 
             return false;
         }
+    }
+
+    if (!argparser.is_set("--barcode-mm")) {
+        barcode_mm = barcode_mm_r1 + barcode_mm_r2;
     }
 
     if (!check_and_set_barcode_mm(argparser, "--barcode-mm-r1", barcode_mm, barcode_mm_r1)) {
