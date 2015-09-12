@@ -61,7 +61,7 @@ bool read_table(const std::string& filename, fastq_table& dst,
                 size_t min_col, size_t max_col,
                 bool row_names = false)
 {
-    AR_DEBUG_ASSERT(min_col < max_col);
+    AR_DEBUG_ASSERT(min_col <= max_col);
     AR_DEBUG_ASSERT(min_col >= 1);
 
     size_t last_row_size = 0;
