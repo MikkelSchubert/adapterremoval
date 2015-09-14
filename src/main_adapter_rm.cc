@@ -629,7 +629,7 @@ int remove_adapter_sequences_se(const userconfig& config)
     try {
         if (config.adapters.barcode_count()) {
             // Step 1: Read input file
-            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_output_fmt.get(),
+            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
                                                               ai_demultiplex));
 
@@ -639,7 +639,7 @@ int remove_adapter_sequences_se(const userconfig& config)
             add_write_step(config, sch, ai_write_unidentified_1,
                            new write_paired_fastq(config.get_output_filename("demux_unknown")));
         } else {
-            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_output_fmt.get(),
+            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
                                                               ai_analyses_offset));
         }
@@ -692,7 +692,7 @@ int remove_adapter_sequences_pe(const userconfig& config)
     try {
         if (config.adapters.barcode_count()) {
             // Step 1: Read input file
-            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_output_fmt.get(),
+            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
                                                               config.input_file_2,
                                                               ai_demultiplex));
@@ -705,7 +705,7 @@ int remove_adapter_sequences_pe(const userconfig& config)
             add_write_step(config, sch, ai_write_unidentified_2,
                            new write_paired_fastq(config.get_output_filename("demux_unknown", 2)));
         } else {
-            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_output_fmt.get(),
+            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
                                                               config.input_file_2,
                                                               ai_analyses_offset));
