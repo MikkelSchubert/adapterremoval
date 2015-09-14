@@ -2,6 +2,14 @@
 Changelog
 =========
 
+
+Version 2.1.1 - 2015-09-14
+==========================
+
+  * Fixed broken assert preventing the use of --adapter-list.
+  * Fixed bug using --qualitybase-output for both input and output.
+
+
 Version 2.1.0 - 2015-09-08
 ==========================
 
