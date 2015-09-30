@@ -1,0 +1,11 @@
+--- pear-0.9.6-src/src/pear-pt.c	2015-01-15 17:23:52.000000000 +0100
++++ pear-0.9.6-src.new/src/pear-pt.c	2015-08-15 00:29:02.393980761 +0200
+@@ -2014,7 +2014,7 @@
+       {
+         PEAR_RESET_ASM_TYPE(fwd[i]);
+         revconvert(fwd[i]->data);
+-        fprintf (fd[0], "%s\n", fwd[i]->header);
++        fprintf (fd[0], "@M_%s\n", fwd[i]->header + 1);
+         if (!bothOut)
+          {
+            fprintf (fd[0], "%s\n", fwd[i]->data);

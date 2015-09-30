@@ -1,0 +1,29 @@
+diff --git a/src/leeHom.cpp b/src/leeHom.cpp
+index 14ff31d..ae83533 100644
+--- a/src/leeHom.cpp
++++ b/src/leeHom.cpp
+@@ -449,7 +449,7 @@ int main (int argc, char *argv[]) {
+ 
+ 		}else{
+ 		        if(result.sequence != ""){ //new sequence			    
+-			    onereadgroup.single<<"@"<<def1s<<"" <<endl << result.sequence<<endl<<"+"<<endl <<result.quality<<endl;    	    
++			    onereadgroup.single<<"@M_"<<def1s<<"" <<endl << result.sequence<<endl<<"+"<<endl <<result.quality<<endl;
+ 
+ 			    if( result.sequence.length() > max(fo1->getSeq()->length(),fo2->getSeq()->length()) ){
+ 				mtr.incrementCountmergedoverlap();
+diff --git a/libgab/gzstream/gzstream.C b/libgab/gzstream/gzstream.C
+index 8cb4590..4de5c09 100644
+--- a/libgab/gzstream/gzstream.C
++++ b/libgab/gzstream/gzstream.C
+@@ -54,8 +54,10 @@ gzstreambuf* gzstreambuf::open( const char* name, int open_mode) {
+     char* fmodeptr = fmode;
+     if ( mode & std::ios::in)
+         *fmodeptr++ = 'r';
+-    else if ( mode & std::ios::out)
++    else if ( mode & std::ios::out) {
+         *fmodeptr++ = 'w';
++        *fmodeptr++ = '0';
++    }
+     *fmodeptr++ = 'b';
+     *fmodeptr = '\0';
+     file = gzopen( name, fmode);
