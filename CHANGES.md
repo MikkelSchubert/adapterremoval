@@ -2,6 +2,15 @@
 Changelog
 =========
 
+Version 2.1.2 - 2015-10-08
+==========================
+
+  * Changed the way "full-length" and "truncated collapsed" reads are counted
+    in the .settings file; previously, all collapsed reads were counted, even
+    if these were subsequently discarded (due to the length). Now only retained
+    reads are counted, matching the behavior of AdapterRemoval v1.x.
+  * Added setup instructions when running 'make test' for the first time.
+
 
 Version 2.1.1 - 2015-09-14
 ==========================

@@ -296,10 +296,8 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
     const bool was_trimmed = trimmed.first || trimmed.second;
     if (was_trimmed) {
         collapsed_read.add_prefix_to_header("MT_");
-        stats.number_of_truncated_collapsed++;
     } else {
         collapsed_read.add_prefix_to_header("M_");
-        stats.number_of_full_length_collapsed++;
     }
 
     const size_t read_count = config.paired_ended_mode ? 2 : 1;
@@ -311,8 +309,10 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
 
         if (was_trimmed) {
             out_collapsed_truncated.add(*config.quality_output_fmt, collapsed_read, read_count);
+            stats.number_of_truncated_collapsed++;
         } else {
             out_collapsed.add(*config.quality_output_fmt, collapsed_read, read_count);
+            stats.number_of_full_length_collapsed++;
         }
     } else {
         stats.discard1++;

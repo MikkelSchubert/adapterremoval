@@ -193,7 +193,9 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -pthread -c $< -o $@
 
 $(GTEST_DIR)/src/gtest%.cc:
-	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder."$(COLOR_END)
+	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder:"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ wget https://googletest.googlecode.com/files/gtest-1.7.0.zip"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ unzip gtest-1.7.0.zip"$(COLOR_END)
 	@exit 1
 
 # Automatic header dependencies for tests
