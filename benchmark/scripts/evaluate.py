@@ -140,7 +140,7 @@ def missing_reads(expectations, se_mode):
     max_errors = 0
     for name, mates in reads:
         for mate, record in enumerate(mates, start=1):
-            if record:
+            if record is not None:
                 if max_errors > 4:
                     sys.stderr.write("    ...\n")
                     return True
@@ -366,7 +366,7 @@ def main(argv):
         trimmed_reads.append(read_fastq(filename))
 
     if not evaluate(args, expected, itertools.chain(*trimmed_reads)):
-            return 1
+        return 1
 
     args.out.close()
     os.rename(os.path.join(args.root, "table"), args.root + ".table")
