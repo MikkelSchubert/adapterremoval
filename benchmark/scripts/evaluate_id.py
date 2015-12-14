@@ -114,11 +114,12 @@ class evalulate_adapterrm(object):
     def _parse_report(self, fpath):
         result = {}
         with open(fpath) as handle:
+            key = "Consensus:"
             counter = 1
             for line in handle:
                 line = line.strip()
-                if line.startswith("Consensus:"):
-                    adapter = line.split()[1]
+                if line.startswith(key):
+                    adapter = line[line.index(key) + len(key):].strip()
                     result["PCR%i" % (counter,)] \
                         = cmp_pcr(adapter, self._pcr[counter - 1])
 
