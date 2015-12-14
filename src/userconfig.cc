@@ -213,9 +213,10 @@ userconfig::userconfig(const std::string& name,
             "[current: %default].");
     argparser["--adapter-list"] =
         new argparse::any(&adapter_list, "FILENAME",
-            "List of adapters pairs, used as if supplied to --pcr1 / --pcr2; "
-            "only the first adapter in each pair is required / used in SE "
-            "mode [current: %default].");
+            "Read table of white-space seperated adapters pairs, used as if "
+            "the first column was supplied to --adapter1, and the second "
+            "column was supplied to --adapter2; only the first adapter in "
+            "each pair is required SE trimming mode [current: %default].");
 
     argparser.add_seperator();
     argparser["--mm"]
