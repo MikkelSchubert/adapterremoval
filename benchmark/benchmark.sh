@@ -34,7 +34,7 @@ NUM_REPLICATES=10
 # Read lengths to examine
 # Lengths > 100 use an interpolated profile, and should therefore not be used
 # to estimate anything other than runtime (see 'simulate_reads').
-READ_LENGTHS=(100 150 200)
+READ_LENGTHS=(100 200)
 
 # Insert sizes of reads to simulate for adapter ID
 ADAPTER_ID_INSERT_SIZES=($(seq 250 5 350))
@@ -140,11 +140,16 @@ EXEC_MINION="bin/minion"
 check_for_executable "minion (kraken)" ${EXEC_MINION}
 # http://www.ebi.ac.uk/research/enright/software/kraken
 
+EXEC_FASTQ_MCF="bin/fastq-mcf"
+check_for_executable "fastq-mcf" ${EXEC_FASTQ_MCF}
+# https://code.google.com/p/ea-utils/
+
+
 EXEC_TIME=/usr/bin/time
 check_for_executable "GNU time" ${EXEC_TIME}
 # Needed for time / RAM usage
 
-EXEC_JAVA="java"
+EXEC_JAVA="bin/java"
 check_for_executable "Java JRE" ${EXEC_JAVA}
 # Needed for Trimmomatic
 
@@ -687,6 +692,46 @@ function run_leeHom()
 }
 
 
+function run_fastq_mcf_se()
+{
+    DST=$1
+    FQ_INFO=$2
+    FQ_MATE1=$3
+    shift 3
+
+    # -0 to disable quality trimming
+    do_run "${DST}" ${EXEC_FASTQ_MCF} -0 \
+        "./adapters/adapters.fasta" \
+        "${FQ_MATE1}" \
+        -o "${DST}/reads.trimmed" "$@"
+
+    do_evaluate "${DST}" "${FQ_INFO}" --read-mode SE \
+        --dimers-are-discarded
+}
+
+
+function run_fastq_mcf_pe()
+{
+    DST=$1
+    FQ_INFO=$2
+    FQ_MATE1=$3
+    FQ_MATE2=$4
+    shift 4
+
+    # -0 to disable quality trimming
+    do_run "${DST}" ${EXEC_FASTQ_MCF} -0 \
+        "./adapters/adapters.fasta" \
+        "${FQ_MATE1}" \
+        "${FQ_MATE2}" \
+        -o "${DST}/reads.trimmed.mate1" \
+        -o "${DST}/reads.trimmed.mate2" \
+        "$@"
+
+    do_evaluate "${DST}" "${FQ_INFO}" --read-mode PE \
+        --dimers-are-discarded
+}
+
+
 ###############################################################################
 
 function run_minion()
@@ -821,6 +866,10 @@ function benchmark_se()
                     "${SIMULATED_INFO}" \
                     -fq1 "${SIMULATED_MATE1}" \
                     --ancientdna
+
+                echo run_fastq_mcf_se "${RESULTS}/fastq_mcf" \
+                    "${SIMULATED_INFO}" \
+                    "${SIMULATED_MATE1}"
             } | shuffle_and_run
         done
     done
@@ -911,6 +960,11 @@ function benchmark_pe()
                     -fq1 "${SIMULATED_MATE1}" \
                     -fq2 "${SIMULATED_MATE2}" \
                     --ancientdna
+
+                echo run_fastq_mcf_pe "${RESULTS}/fastq_mcf" \
+                    "${SIMULATED_INFO}" \
+                    "${SIMULATED_MATE1}" \
+                    "${SIMULATED_MATE2}"
             } | shuffle_and_run
         done
     done
@@ -1130,7 +1184,7 @@ function benchmark_adapter_id
 
 
 cd "$(dirname "$0")"
-
+mkdir -p results
 
 fetch_reference
 
