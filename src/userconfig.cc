@@ -123,8 +123,8 @@ userconfig::userconfig(const std::string& name,
     argparser["--qualitybase-output"] =
         new argparse::any(&quality_output_base, "BASE",
             "Quality base used to encode Phred scores in output; either 33, "
-            "64. By default, reads will be written in the same format as the "
-            "that specified using --qualitybase.");
+            "64, or solexa. By default, reads will be written in the same "
+            "format as the that specified using --qualitybase.");
     argparser["--qualitymax"] =
         new argparse::knob(&quality_max, "BASE",
             "Specifies the maximum Phred score expected in input files, and "
