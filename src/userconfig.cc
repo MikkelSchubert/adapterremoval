@@ -619,7 +619,7 @@ bool userconfig::setup_adapter_sequences()
         if (!adapters.load_adapters(adapter_list, paired_ended_mode)) {
             return false;
         } else if (adapters.adapter_count()) {
-            std::cout << "Read " << adapters.adapter_count()
+            std::cerr << "Read " << adapters.adapter_count()
                       << " adapters / adapter pairs from '" << adapter_list
                       << "'..." << std::endl;
         } else {
@@ -653,7 +653,7 @@ bool userconfig::setup_adapter_sequences()
         if (!adapters.load_barcodes(barcode_list, paired_ended_mode)) {
             return false;
         } else if (adapters.adapter_count()) {
-            std::cout << "Read " << adapters.barcode_count()
+            std::cerr << "Read " << adapters.barcode_count()
                       << " barcodes / barcode pairs from '" << barcode_list
                       << "'..." << std::endl;
         } else {

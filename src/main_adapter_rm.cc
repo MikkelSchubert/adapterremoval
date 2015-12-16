@@ -620,7 +620,7 @@ void add_write_step(const userconfig& config, scheduler& sch, size_t offset,
 
 int remove_adapter_sequences_se(const userconfig& config)
 {
-    std::cout << "Trimming single ended reads ..." << std::endl;
+    std::cerr << "Trimming single ended reads ..." << std::endl;
 
     scheduler sch;
     std::vector<reads_processor*> processors;
@@ -683,7 +683,7 @@ int remove_adapter_sequences_se(const userconfig& config)
 
 int remove_adapter_sequences_pe(const userconfig& config)
 {
-    std::cout << "Trimming paired end reads ..." << std::endl;
+    std::cerr << "Trimming paired end reads ..." << std::endl;
 
     scheduler sch;
     std::vector<reads_processor*> processors;
