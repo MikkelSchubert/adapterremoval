@@ -257,10 +257,14 @@ userconfig::userconfig(const std::string& name,
             "following trimming [current: %default].");
     argparser["--collapse"] =
         new argparse::flag(&collapse,
-            "If set, paired ended reads which overlap at least "
-            "--minalignmentlength bases are combined into a single consensus "
-            "read; for single-ended reads, full inserts are identified by "
-            "requiring --minalignmentlength overlap with the adapter sequence "
+            "When set, paired ended read alignments of --minalignmentlength "
+            "or more bases are combined into a single consensus sequence, "
+            "representing the complete insert, and written to either "
+            "basename.collapsed or basename.collapsed.truncated (if trimmed "
+            "due to low-quality bases following collapse); for single-ended "
+            "reads, putative complete inserts are identified as having at "
+            "least --minalignmentlength bases overlap with the adapter "
+            "sequence, and are written to the the same files "
             "[current: %default].");
     argparser["--minalignmentlength"] =
         new argparse::knob(&min_alignment_length, "LENGTH",
