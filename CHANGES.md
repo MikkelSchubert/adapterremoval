@@ -2,6 +2,15 @@
 Changelog
 =========
 
+  * Greatly expanded README.md, adding several examples with test data included
+    in the 'examples' folder, demonstrating common usage of the program.
+  * Updated man-page with missing information and rewrote several parts.
+  * Updated the help-text for several command-line options.
+  * Avoid writing information to stdout, so that (SE) trimming can be piped.
+    This can be accomplished by using the option --output1 /dev/stdout.
+  * Fixed the --seed option, which was not properly applied during runtime.
+
+
 Version 2.1.2 - 2015-10-08
 ==========================
 
