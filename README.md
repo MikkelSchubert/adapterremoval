@@ -71,6 +71,8 @@ The following command removes adapters from the file 'reads\_1.fq' trims both Ns
 
 Since --gzip and --basename is specified, the trimmed FASTQ reads are written to 'output_single.truncated.gz', the dicarded FASTQ reads are written to 'output_single.discarded.gz', and settings and summary statistics are written to 'output_single.settings'.
 
+Note that by default, AdapterRemoval does not require a minimum number of bases overlapping with the adapter sequence, before reads are trimmed. This may result in an excess of very short (1 - 3 bp) 3' fragments being falsely identified as adapter sequences, and trimmed. This behavior may be changed using the --minadapteroverlap option, which allows the specification of a minimum number of bases (excluding Ns) that must be aligned to carry trimming. For example, use --minadapteroverlap 3 to require an overlap of at least 3 bp.
+
 
 
 ### Trimming paired-end reads
