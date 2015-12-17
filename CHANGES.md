@@ -1,7 +1,9 @@
-=========
-Changelog
-=========
+# Changelog
 
+  * Added option --minadapteroverlap, which sets a minimum alignment length
+    when carrying out trimming of single-end reads. The default (0) may result
+    in an excess of false postiives around (1 - 2 bp long), which may be
+    mitigated by running AdapterRemoval with '--minadapteroverlap 3'.
   * Greatly expanded README.md, adding several examples with test data included
     in the 'examples' folder, demonstrating common usage of the program.
   * Updated man-page with missing information and rewrote several parts.
@@ -11,8 +13,7 @@ Changelog
   * Fixed the --seed option, which was not properly applied during runtime.
 
 
-Version 2.1.2 - 2015-10-08
-==========================
+### Version 2.1.2 - 2015-10-08
 
   * Changed the way "full-length" and "truncated collapsed" reads are counted
     in the .settings file; previously, all collapsed reads were counted, even
@@ -21,15 +22,13 @@ Version 2.1.2 - 2015-10-08
   * Added setup instructions when running 'make test' for the first time.
 
 
-Version 2.1.1 - 2015-09-14
-==========================
+### Version 2.1.1 - 2015-09-14
 
   * Fixed broken assert preventing the use of --adapter-list.
   * Fixed bug using --qualitybase-output for both input and output.
 
 
-Version 2.1.0 - 2015-09-08
-==========================
+### Version 2.1.0 - 2015-09-08
 
 Major changes:
   * Support for (transparently) reading and writing bzip2 files.
@@ -55,11 +54,12 @@ Other changes / bug-fixes:
     ended and pair ended analyses.
   * FASTQ reads with Solexa scores are now output as Solexa scores by default,
     rather than Phred+64. Note that the program represents quality scores using
-    Phred scores internally, resulting in a lossy conversion. It is therefore recommended to convert to Phred scores rather than use Solexa scores.
+    Phred scores internally, resulting in a lossy conversion. It is therefore
+    recommended to convert to Phred scores rather than use Solexa scores.
 
 
-Version 2.0.0 - 2014-03-10
-==========================
+### Version 2.0.0 - 2014-03-10
+
 Version 2.0.0 of AdapterRemoval is a near complete rewrite, with the goal of
 improved safety, increased speed, fixing a number of minor issues with
 previous versions of AdapterRemoval, and adding a few new features:
@@ -135,8 +135,8 @@ Other improvements / bug-fixes:
     run-time and number of reads processed.
 
 
-Version 1.5.4 - 2014-04-23
-==========================
+### Version 1.5.4 - 2014-04-23
+
   * Fixed bug in which collapsed reads would not be considered truncated if
     bases were trimmed from the 5' end.
   * Fixed bug in which the quality bases used for mate 2 during collapsing of
@@ -144,8 +144,8 @@ Version 1.5.4 - 2014-04-23
   * Reduced the amount of IO operations during trimming.
 
 
-Version 1.5.2 - 2013-10-22
-==========================
+### Version 1.5.2 - 2013-10-22
+
 Two changes to the program:
   * I have added a reference to the paper to both the man page and the help
      text.
@@ -155,16 +155,16 @@ Two changes to the program:
     This has been fixed so that the the result is now C with quality ".
 
 
-Version 1.5.0 - 2013-04-29
-==========================
+### Version 1.5.0 - 2013-04-29
+
 Small update: Due to user feedback, the program now outputs collapsed pairs in
 two files: One contains full-length collapsed pairs constituting the full
 insert, the other contains collapsed pairs that have been truncated due to low
 qualities or Ns in the reads.
 
 
-Version 1.4.0 - 2013-03-24
-==========================
+### Version 1.4.0 - 2013-03-24
+
 I have made some fixes to the program:
   * The program can now handle the use of '.' instead of 'N' to encode
     undefined nucleotides.
@@ -172,8 +172,8 @@ I have made some fixes to the program:
   * Some minor changes to output etc.
 
 
-Version 1.3.0 - 2013-02-10
-==========================
+### Version 1.3.0 - 2013-02-10
+
 I have updated AdapterRemoval and released version 1.3. These changes are based
 on feedback from users of the program that had some very specific and well-
 founded suggestions. Some of these changes are minor, others will have more
@@ -206,8 +206,8 @@ As always, please contact me with any questions or comments.
 Stinus
 
 
-Version 1.1.0 - 2012-05-01
-==========================
+### Version 1.1.0 - 2012-05-01
+
   * It is now possible to look for adapter in the 5' end of reads using the
     --5prime parameter.
   * Updated trimming of qualities.

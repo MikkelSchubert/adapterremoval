@@ -78,6 +78,7 @@ userconfig::userconfig(const std::string& name,
     , paired_ended_mode(false)
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
+    , min_adapter_overlap(0)
     , min_alignment_length(11)
     , mismatch_threshold(-1.0)
     , quality_input_fmt()
@@ -272,6 +273,15 @@ userconfig::userconfig(const std::string& name,
             "number of bases to be collapsed, and single-ended reads must "
             "overlap at least this number of bases with the adapter to be "
             "considered complete template molecules [current: %default].");
+    argparser["--minadapteroverlap"] =
+        new argparse::knob(&min_adapter_overlap, "LENGTH",
+            "In single-end mode, reads are only trimmed if the overlap "
+            "between read and the adapter is at least X bases long, not "
+            "counting ambiguous nucleotides (N); this is independant of the "
+            "--minalignmentlength when using --collapse, allowing a "
+            "conservative selection of putative complete inserts while "
+            "ensuring that all possible adapter contamination is trimmed "
+            "[current: %default].");
 
     argparser.add_header("DEMULTIPLEXING:");
     argparser["--barcode-list"] =
@@ -382,7 +392,10 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         return argparse::pr_error;
     }
 
-    paired_ended_mode = file_2_set;
+    if (file_2_set) {
+        paired_ended_mode = true;
+        min_adapter_overlap = 0;
+    }
 
     // (Optionally) read adapters from file and validate
     if (!setup_adapter_sequences()) {
@@ -449,6 +462,10 @@ userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& 
     // Only pairs of called bases are considered part of the alignment
     const size_t n_aligned = static_cast<size_t>(alignment.length - alignment.n_ambiguous);
     size_t mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
+
+    if (n_aligned < min_adapter_overlap) {
+        return poor_alignment;
+    }
 
     if (n_aligned < 6) {
         mm_threshold = 0;
