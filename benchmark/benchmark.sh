@@ -89,7 +89,7 @@ EXEC_ADAPTERREMOVAL1x="bin/AdapterRemoval-1.5.4"
 check_for_executable "AdapterRemoval v1.x" "${EXEC_ADAPTERREMOVAL1x}"
 # https://github.com/slindgreen/AdapterRemoval/raw/master/AdapterRemoval-1.5.4.tar.gz
 
-EXEC_ADAPTERREMOVAL2x="bin/AdapterRemoval-2.1.0"
+EXEC_ADAPTERREMOVAL2x="bin/AdapterRemoval-2.1.3"
 check_for_executable "AdapterRemoval v2.x" "${EXEC_ADAPTERREMOVAL2x}"
 # https://github.com/MikkelSchubert/adapterremoval
 
@@ -330,49 +330,59 @@ function simulate_mixed_reads()
     echo "Simulating mixed reads ..."  > /dev/stderr
     echo ""  > /dev/stderr
 
-    readlen=100
-    INSERT_MEAN=$(((${readlen} * 3) / 2))
-    INSERT_SD=$((${INSERT_MEAN} / 2))
-
-    for run_n in ${REPLICATES};
+    for readlen in ${READ_LENGTHS[*]};
     do
-        DST="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}"
+	    INSERT_MEAN=$(((${readlen} * 3) / 2))
+	    INSERT_SD=$((${INSERT_MEAN} / 2))
 
-        if [ -e "${DST}.read.info" ];
+        if [ "${readlen}" -gt 100 ];
         then
-            echo "    Skipping ${DST}.*" > /dev/stderr
+            # Use fake profiles, built using scripts/extend_profile.py
+            PROFILE_CLI="-b profiles/phixv2.InDel.matrix -s profiles/humNew.PE100.matrix.gz"
         else
-            echo "    Simulating mixed reads run=${run_n}, l=${readlen}, m=${INSERT_MEAN}, v=${INSERT_SD} ..." > /dev/stderr
-            rm -rf "${DST:?}/"
-            mkdir -p "${DST}/"
-
-            # -c 0 = uncompressed output
-            # -x ${NREADS}
-            if ! ${EXEC_PIRS} simulate \
-                -x "${SIMULATED_NREADS}" -l "${readlen}" -i "${REFSEQ}" \
-                -c 0 -m "${INSERT_MEAN}" -v "${INSERT_SD}" -Q 33 \
-                -o "${DST}/reads" \
-                -1 AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCACCTAATCTCGTATGCCGTCTTCTGCTTG \
-                -1 AAACTTGCTCTGTGCCCGCTCCGTATGTCACAACAGTGCGTGTATCACCTCAATGCAGGACTCA \
-                -1 CTAATTTGCCGTAGCGACGTACTTCAGCCTCCAGGAATTGGACCCTTACGCACACGCATTCATG \
-                -1 GTTCATACGACGACGACCAATGGCACACTTATCCGGTACTTGCGTTTCAATGCGCATGCCCCAT \
-                -1 CCATGCCCCGAAGATTCCTATACCCTTAAGGTCGCAATTGTTCGAGTAAGCTGTACGCGCCCAT \
-                -2 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT \
-                -2 GATCGGGAGTAATTTGGAGGCAGTAGTTCGTCGAAACTCGGAGCGTCTTTAGCAGGAG \
-                -2 TACCGTGAAAGGTGCGCTTAGTGGCATATGCGTTAAGAGCTAGGTAACGGTCTGGAGG \
-                -2 TAAGAAACTCGGAGTTTGGCCTGCGAGGTAGCTTGGGTGTTATGAAGAACGGCATGCG \
-                -2 GTTGCATTGACCCGAAGGGCTCGATGTTTAGGGAGGTCAGAAGTTGAGCGGGTTCAAA \
-                > "${DST}/stdout.txt" 2> "${DST}/stderr.txt";
-            then
-                echo "Error simulated reads ..." > /dev/stderr
-                exit 1
-            fi
-
-            gunzip "${DST}/reads_${readlen}_${INSERT_MEAN}.read.info.gz"
-            ln -sf "$(basename "${DST}")/reads_${readlen}_${INSERT_MEAN}_1.fq" "${DST}_1.fq"
-            ln -sf "$(basename "${DST}")/reads_${readlen}_${INSERT_MEAN}_2.fq" "${DST}_2.fq"
-            ln -sf "$(basename "${DST}")/reads_${readlen}_${INSERT_MEAN}.read.info" "${DST}.read.info"
+            PROFILE_CLI=
         fi
+
+	    for run_n in ${REPLICATES};
+	    do
+	        DST="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}"
+
+	        if [ -e "${DST}.read.info" ];
+	        then
+	            echo "    Skipping ${DST}.*" > /dev/stderr
+	        else
+	            echo "    Simulating mixed reads run=${run_n}, l=${readlen}, m=${INSERT_MEAN}, v=${INSERT_SD} ..." > /dev/stderr
+	            rm -rf "${DST:?}/"
+	            mkdir -p "${DST}/"
+
+	            # -c 0 = uncompressed output
+	            # -x ${NREADS}
+	            if ! ${EXEC_PIRS} simulate ${PROFILE_CLI} \
+	                -x "${SIMULATED_NREADS}" -l "${readlen}" -i "${REFSEQ}" \
+	                -c 0 -m "${INSERT_MEAN}" -v "${INSERT_SD}" -Q 33 \
+	                -o "${DST}/reads" \
+	                -1 AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCACCTAATCTCGTATGCCGTCTTCTGCTTG \
+	                -1 AAACTTGCTCTGTGCCCGCTCCGTATGTCACAACAGTGCGTGTATCACCTCAATGCAGGACTCA \
+	                -1 CTAATTTGCCGTAGCGACGTACTTCAGCCTCCAGGAATTGGACCCTTACGCACACGCATTCATG \
+	                -1 GTTCATACGACGACGACCAATGGCACACTTATCCGGTACTTGCGTTTCAATGCGCATGCCCCAT \
+	                -1 CCATGCCCCGAAGATTCCTATACCCTTAAGGTCGCAATTGTTCGAGTAAGCTGTACGCGCCCAT \
+	                -2 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT \
+	                -2 GATCGGGAGTAATTTGGAGGCAGTAGTTCGTCGAAACTCGGAGCGTCTTTAGCAGGAG \
+	                -2 TACCGTGAAAGGTGCGCTTAGTGGCATATGCGTTAAGAGCTAGGTAACGGTCTGGAGG \
+	                -2 TAAGAAACTCGGAGTTTGGCCTGCGAGGTAGCTTGGGTGTTATGAAGAACGGCATGCG \
+	                -2 GTTGCATTGACCCGAAGGGCTCGATGTTTAGGGAGGTCAGAAGTTGAGCGGGTTCAAA \
+	                > "${DST}/stdout.txt" 2> "${DST}/stderr.txt";
+	            then
+	                echo "Error simulated reads ..." > /dev/stderr
+	                exit 1
+	            fi
+
+	            gunzip "${DST}/reads_${readlen}_${INSERT_MEAN}.read.info.gz"
+	            ln -sf "$(basename "${DST}")/reads_${readlen}_${INSERT_MEAN}_1.fq" "${DST}_1.fq"
+	            ln -sf "$(basename "${DST}")/reads_${readlen}_${INSERT_MEAN}_2.fq" "${DST}_2.fq"
+	            ln -sf "$(basename "${DST}")/reads_${readlen}_${INSERT_MEAN}.read.info" "${DST}.read.info"
+	        fi
+	    done
     done
 
     echo > /dev/stderr
@@ -696,12 +706,13 @@ function run_fastq_mcf_se()
 {
     DST=$1
     FQ_INFO=$2
-    FQ_MATE1=$3
-    shift 3
+    ADAPTERS=$3
+    FQ_MATE1=$4
+    shift 4
 
     # -0 to disable quality trimming
     do_run "${DST}" ${EXEC_FASTQ_MCF} -0 \
-        "./adapters/adapters.fasta" \
+        "${ADAPTERS}" \
         "${FQ_MATE1}" \
         -o "${DST}/reads.trimmed" "$@"
 
@@ -714,13 +725,14 @@ function run_fastq_mcf_pe()
 {
     DST=$1
     FQ_INFO=$2
-    FQ_MATE1=$3
-    FQ_MATE2=$4
-    shift 4
+    ADAPTERS=$3
+    FQ_MATE1=$4
+    FQ_MATE2=$5
+    shift 5
 
     # -0 to disable quality trimming
     do_run "${DST}" ${EXEC_FASTQ_MCF} -0 \
-        "./adapters/adapters.fasta" \
+        "${ADAPTERS}" \
         "${FQ_MATE1}" \
         "${FQ_MATE2}" \
         -o "${DST}/reads.trimmed.mate1" \
@@ -810,6 +822,20 @@ function benchmark_se()
                     --file1 "${SIMULATED_MATE1}" \
                     --mm 3
 
+                # -mm 3 --minadapteroverlap 3 (test)
+                echo run_adapterremoval SE ${EXEC_ADAPTERREMOVAL2x} 1 \
+                    "${RESULTS}/adapterremoval2x_min3_mm3" \
+                    "${SIMULATED_INFO}" \
+                    --file1 "${SIMULATED_MATE1}" \
+                    --minadapteroverlap 3 --mm 3
+
+                # -mm 5 --minadapteroverlap 3 (test)
+                echo run_adapterremoval SE ${EXEC_ADAPTERREMOVAL2x} 1 \
+                    "${RESULTS}/adapterremoval2x_min3_mm5" \
+                    "${SIMULATED_INFO}" \
+                    --file1 "${SIMULATED_MATE1}" \
+                    --minadapteroverlap 3 --mm 5
+
                 for nthreads in $(seq 1 ${MAX_THREADS});
                 do
                     AR_PREFIX="${RESULTS}/adapterremoval2x"
@@ -869,6 +895,7 @@ function benchmark_se()
 
                 echo run_fastq_mcf_se "${RESULTS}/fastq_mcf" \
                     "${SIMULATED_INFO}" \
+                    "./adapters/adapter_1.fasta" \
                     "${SIMULATED_MATE1}"
             } | shuffle_and_run
         done
@@ -963,6 +990,7 @@ function benchmark_pe()
 
                 echo run_fastq_mcf_pe "${RESULTS}/fastq_mcf" \
                     "${SIMULATED_INFO}" \
+                    "./adapters/adapters.fasta" \
                     "${SIMULATED_MATE1}" \
                     "${SIMULATED_MATE2}"
             } | shuffle_and_run
@@ -1048,46 +1076,68 @@ function benchmark_mixed_se
     echo "Running mixed se adapters benchmarks ..."  > /dev/stderr
     echo ""  > /dev/stderr
 
-    readlen=100
-    for run_n in ${REPLICATES};
+    for readlen in ${READ_LENGTHS[*]};
     do
-        { # Shuffle each individual run
-            SIMULATED_MATE1="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_1.fq"
-            SIMULATED_MATE2="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_2.fq"
-            SIMULATED_INFO="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}.read.info"
-            RESULTS="results/mixed_se/${readlen}_${run_n}"
+	    for run_n in ${REPLICATES};
+	    do
+	        { # Shuffle each individual run
+	            SIMULATED_MATE1="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_1.fq"
+	            SIMULATED_MATE2="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_2.fq"
+	            SIMULATED_INFO="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}.read.info"
+	            RESULTS="results/mixed_se/${readlen}_${run_n}"
 
-            DEFAULT_ARGS=("${SIMULATED_INFO}" "${SIMULATED_MATE1}" "${SIMULATED_MATE2}")
+	            DEFAULT_ARGS=("${SIMULATED_INFO}" "${SIMULATED_MATE1}" "${SIMULATED_MATE2}")
+	            AR_PREFIX="${RESULTS}/adapterremoval2x"
 
-            for nthreads in $(seq 1 ${MAX_THREADS});
-            do
-                AR_PREFIX="${RESULTS}/adapterremoval2x"
+	            # -mm 3 --minadapteroverlap 3 (test)
+	            echo run_adapterremoval SE ${EXEC_ADAPTERREMOVAL2x} 1 \
+	                "${AR_PREFIX}_min3_mm3" \
+	                "${SIMULATED_INFO}" \
+	                --file1 "${SIMULATED_MATE1}" \
+	                --adapter-list ./adapters/mixed.table \
+	                --minadapteroverlap 3 --mm 3
 
-                echo run_adapterremoval SE ${EXEC_ADAPTERREMOVAL2x} "${nthreads}" \
-                    "${AR_PREFIX}_t${nthreads}" \
-                    "${SIMULATED_INFO}" \
-                    --file1 "${SIMULATED_MATE1}" \
-                    --adapter-list ./adapters/mixed.table
+	            # -mm 5 --minadapteroverlap 3 (test)
+	            echo run_adapterremoval SE ${EXEC_ADAPTERREMOVAL2x} 1 \
+	                "${AR_PREFIX}_min3_mm5" \
+	                "${SIMULATED_INFO}" \
+	                --file1 "${SIMULATED_MATE1}" \
+	                --adapter-list ./adapters/mixed.table \
+	                --minadapteroverlap 3 --mm 5
 
-                echo run_trimmomatic_se MIXED "${nthreads}" \
-                    "${RESULTS}/trimmomatic_t${nthreads}" \
-                    "${SIMULATED_INFO}" \
-                    "${SIMULATED_MATE1}" \
-                    ".fastq"
-            done
+	            for nthreads in $(seq 1 ${MAX_THREADS});
+	            do
+	                echo run_adapterremoval SE ${EXEC_ADAPTERREMOVAL2x} "${nthreads}" \
+	                    "${AR_PREFIX}_t${nthreads}" \
+	                    "${SIMULATED_INFO}" \
+	                    --file1 "${SIMULATED_MATE1}" \
+	                    --adapter-list ./adapters/mixed.table
 
-            echo run_alientrimmer_se "${RESULTS}/alientrimmer_q00" \
-                "${SIMULATED_INFO}" \
-                "${SIMULATED_MATE1}" \
-                -c "adapters/mixed_1.txt" \
-                -q 0
+	                echo run_trimmomatic_se MIXED "${nthreads}" \
+	                    "${RESULTS}/trimmomatic_t${nthreads}" \
+	                    "${SIMULATED_INFO}" \
+	                    "${SIMULATED_MATE1}" \
+	                    ".fastq"
+	            done
 
-            echo run_cutadapt_se "${RESULTS}/cutadapt" \
-                "${SIMULATED_INFO}" \
-                "${SIMULATED_MATE1}" \
-                $(for seq in $(cat adapters/mixed_1.txt); do echo "-a ${seq}";done)
-        } | shuffle_and_run
-    done
+	            echo run_alientrimmer_se "${RESULTS}/alientrimmer_q00" \
+	                "${SIMULATED_INFO}" \
+	                "${SIMULATED_MATE1}" \
+	                -c "adapters/mixed_1.txt" \
+	                -q 0
+
+	            echo run_cutadapt_se "${RESULTS}/cutadapt" \
+	                "${SIMULATED_INFO}" \
+	                "${SIMULATED_MATE1}" \
+	                $(for seq in $(cat adapters/mixed_1.txt); do echo "-a ${seq}";done)
+
+	            echo run_fastq_mcf_se "${RESULTS}/fastq_mcf" \
+	                "${SIMULATED_INFO}" \
+	                "./adapters/mixed_1.fasta" \
+	                "${SIMULATED_MATE1}"
+	        } | shuffle_and_run
+	    done
+	done
 
     ${SCRIPT_MERGE} results/mixed_se > results/mixed_se.table
 }
@@ -1101,50 +1151,58 @@ function benchmark_mixed_pe
     echo "Running mixed pe adapters benchmarks ..."  > /dev/stderr
     echo ""  > /dev/stderr
 
-    readlen=100
-    for run_n in ${REPLICATES};
+    for readlen in ${READ_LENGTHS[*]};
     do
-        { # Shuffle each individual run
-            SIMULATED_MATE1="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_1.fq"
-            SIMULATED_MATE2="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_2.fq"
-            SIMULATED_INFO="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}.read.info"
-            RESULTS="results/mixed_pe/${readlen}_${run_n}"
+	    for run_n in ${REPLICATES};
+	    do
+	        { # Shuffle each individual run
+	            SIMULATED_MATE1="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_1.fq"
+	            SIMULATED_MATE2="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}_2.fq"
+	            SIMULATED_INFO="${SIMULATED_MIXED_PREFIX}_${run_n}_${readlen}.read.info"
+	            RESULTS="results/mixed_pe/${readlen}_${run_n}"
 
-            DEFAULT_ARGS=("${SIMULATED_INFO}" "${SIMULATED_MATE1}" "${SIMULATED_MATE2}")
+	            DEFAULT_ARGS=("${SIMULATED_INFO}" "${SIMULATED_MATE1}" "${SIMULATED_MATE2}")
 
-            for nthreads in $(seq 1 ${MAX_THREADS});
-            do
-                AR_PREFIX="${RESULTS}/adapterremoval2x"
+	            for nthreads in $(seq 1 ${MAX_THREADS});
+	            do
+	                AR_PREFIX="${RESULTS}/adapterremoval2x"
 
-                echo run_adapterremoval PE ${EXEC_ADAPTERREMOVAL2x} "${nthreads}" \
-                    "${AR_PREFIX}_t${nthreads}" \
-                    "${SIMULATED_INFO}" \
-                    --file1 "${SIMULATED_MATE1}" \
-                    --file2 "${SIMULATED_MATE2}" \
-                    --adapter-list ./adapters/mixed.table
+	                echo run_adapterremoval PE ${EXEC_ADAPTERREMOVAL2x} "${nthreads}" \
+	                    "${AR_PREFIX}_t${nthreads}" \
+	                    "${SIMULATED_INFO}" \
+	                    --file1 "${SIMULATED_MATE1}" \
+	                    --file2 "${SIMULATED_MATE2}" \
+	                    --adapter-list ./adapters/mixed.table
 
-                echo run_peat_pe "${nthreads}" \
-                    "${RESULTS}/peat_t${nthreads}" \
-                    "${DEFAULT_ARGS[*]}"
+	                echo run_peat_pe "${nthreads}" \
+	                    "${RESULTS}/peat_t${nthreads}" \
+	                    "${DEFAULT_ARGS[*]}"
 
-                echo run_trimmomatic_pe MIXED "${nthreads}" \
-                    "${RESULTS}/trimmomatic_t${nthreads}" \
-                    "${DEFAULT_ARGS[*]}" \
-                    ".fastq"
-            done
+	                echo run_trimmomatic_pe MIXED "${nthreads}" \
+	                    "${RESULTS}/trimmomatic_t${nthreads}" \
+	                    "${DEFAULT_ARGS[*]}" \
+	                    ".fastq"
+	            done
 
-            echo run_alientrimmer_pe "${RESULTS}/alientrimmer_q00" \
-                "${DEFAULT_ARGS[*]}" \
-                -cf "adapters/mixed_1.txt" \
-                -cr "adapters/mixed_2.txt" \
-                -q 0
+	            echo run_alientrimmer_pe "${RESULTS}/alientrimmer_q00" \
+	                "${DEFAULT_ARGS[*]}" \
+	                -cf "adapters/mixed_1.txt" \
+	                -cr "adapters/mixed_2.txt" \
+	                -q 0
 
-            echo run_cutadapt_pe "${RESULTS}/cutadapt" \
-                "${DEFAULT_ARGS[*]}" \
-                $(for seq in $(cat adapters/mixed_1.txt); do echo "-a ${seq}";done) \
-                $(for seq in $(cat adapters/mixed_2.txt); do echo "-A ${seq}";done)
-        } | shuffle_and_run
-    done
+	            echo run_cutadapt_pe "${RESULTS}/cutadapt" \
+	                "${DEFAULT_ARGS[*]}" \
+	                $(for seq in $(cat adapters/mixed_1.txt); do echo "-a ${seq}";done) \
+	                $(for seq in $(cat adapters/mixed_2.txt); do echo "-A ${seq}";done)
+
+	            echo run_fastq_mcf_pe "${RESULTS}/fastq_mcf" \
+	                "${SIMULATED_INFO}" \
+	                "./adapters/mixed.fasta" \
+	                "${SIMULATED_MATE1}" \
+	                "${SIMULATED_MATE2}"
+	        } | shuffle_and_run
+	    done
+	done
 
     ${SCRIPT_MERGE} results/mixed_pe > results/mixed_pe.table
 }
