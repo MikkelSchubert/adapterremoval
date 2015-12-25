@@ -1,5 +1,7 @@
 # Changelog
 
+### Version 2.1.3 - 2015-12-25
+
   * Added option --minadapteroverlap, which sets a minimum alignment length
     when carrying out trimming of single-end reads. The default (0) may result
     in an excess of false postiives around (1 - 2 bp long), which may be
