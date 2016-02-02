@@ -40,6 +40,8 @@
 #include "strutils.h"
 #include "userconfig.h"
 
+namespace ar
+{
 
 typedef std::auto_ptr<fastq_output_chunk> output_chunk_ptr;
 
@@ -766,3 +768,5 @@ int remove_adapter_sequences(const userconfig& config)
 
     return 0;
 }
+
+} // namespace ar

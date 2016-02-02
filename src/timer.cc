@@ -32,6 +32,8 @@
 #include "timer.h"
 #include "threads.h"
 
+namespace ar
+{
 
 //! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
@@ -163,3 +165,5 @@ void timer::do_print(size_t rate, double current_time, bool finalize) const
         std::cerr.flush();
     }
 }
+
+} // namespace ar

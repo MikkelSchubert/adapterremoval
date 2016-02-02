@@ -31,6 +31,9 @@
 #include "linereader.h"
 #include "threads.h"
 
+namespace ar
+{
+
 //! Size of compressed and uncompressed buffers.
 const int BUF_SIZE = 10 * BUFSIZ;
 
@@ -513,3 +516,5 @@ void line_reader::close_buffers_bzip2()
     }
 #endif
 }
+
+} // namespace ar

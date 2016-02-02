@@ -34,7 +34,8 @@
 #include "alignment.h"
 #include "statistics.h"
 
-
+namespace ar
+{
 
 struct alignment_info;
 
@@ -198,5 +199,6 @@ private:
     unsigned quality_max;
 };
 
+} // namespace ar
 
 #endif

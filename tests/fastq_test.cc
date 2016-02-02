@@ -29,6 +29,8 @@
 #include "fastq.h"
 #include "linereader.h"
 
+namespace ar
+{
 
 inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
 {
@@ -752,3 +754,5 @@ TEST(fastq, validate_paired_reads__throws_if_name_differs)
    const fastq mate1 = fastq("WrongName/2", "ACGT", "!!#$");
    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
 }
+
+} // namespace ar

@@ -29,6 +29,8 @@
 #include "scheduler.h"
 #include "statistics.h"
 
+namespace ar
+{
 
 class userconfig;
 class fastq_read_chunk;
@@ -134,5 +136,7 @@ public:
      */
     chunk_vec process(analytical_chunk* chunk);
 };
+
+} // namespace ar
 
 #endif

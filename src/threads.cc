@@ -33,6 +33,9 @@
 
 #include <ctime>
 
+namespace ar
+{
+
 ///////////////////////////////////////////////////////////////////////////////
 // exceptions
 
@@ -343,3 +346,5 @@ size_t atomic_counter::decrement()
 
     return --m_count;
 }
+
+} // namespace ar

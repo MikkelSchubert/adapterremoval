@@ -28,6 +28,8 @@
 #include <string>
 #include <deque>
 
+namespace ar
+{
 
 /**
  * Simply class for reporting current progress of a run.
@@ -71,5 +73,6 @@ private:
     time_count_deque m_counts;
 };
 
+} // namespace ar
 
 #endif

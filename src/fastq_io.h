@@ -41,6 +41,8 @@
 #include "linereader.h"
 #include "strutils.h"
 
+namespace ar
+{
 
 class userconfig;
 
@@ -299,5 +301,6 @@ private:
     std::ofstream m_output;
 };
 
+} // namespace ar
 
 #endif

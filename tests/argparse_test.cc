@@ -29,6 +29,8 @@
 #include "argparse.h"
 #include "debug.h"
 
+namespace ar
+{
 
 typedef std::auto_ptr<argparse::consumer_base> consumer_autoptr;
 
@@ -380,3 +382,4 @@ TEST(floaty_knob, trailing_garbage)
 ///////////////////////////////////////////////////////////////////////////////
 // parser
 
+} // namespace ar

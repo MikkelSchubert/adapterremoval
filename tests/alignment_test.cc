@@ -30,6 +30,8 @@
 #include "alignment.h"
 #include "fastq.h"
 
+namespace ar
+{
 
 alignment_info new_aln(int score = 0, int offset = 0, size_t length = 0,
                        size_t nmm = 0, size_t nn = 0, int adapter = 0)
@@ -1090,3 +1092,5 @@ TEST(compare_subsequences, brute_force_validation)
         }
     }
 }
+
+} // namespace ar

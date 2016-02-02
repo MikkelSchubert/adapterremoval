@@ -35,6 +35,8 @@
 #include <bzlib.h>
 #endif
 
+namespace ar
+{
 
 /** Represents errors during basic IO. */
 class io_error : public std::ios_base::failure
@@ -180,5 +182,6 @@ inline line_reader_base::~line_reader_base()
 {
 }
 
+} // namespace ar
 
 #endif

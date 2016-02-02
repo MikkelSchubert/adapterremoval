@@ -30,6 +30,8 @@
 #include "fastq.h"
 #include "linereader.h"
 
+namespace ar
+{
 
 struct mate_info
 {
@@ -336,3 +338,5 @@ void fastq::process_record(const fastq_encoding& encoding)
     clean_sequence(m_sequence);
     encoding.decode_string(m_qualities.begin(), m_qualities.end());
 }
+
+} // namespace ar

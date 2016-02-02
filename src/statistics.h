@@ -30,6 +30,8 @@
 
 #include "vecutils.h"
 
+namespace ar
+{
 
 /** Object used to collect summary statistics for trimming and other tasks. */
 struct statistics
@@ -146,5 +148,6 @@ struct demux_statistics
     size_t ambiguous;
 };
 
+} // namespace ar
 
 #endif

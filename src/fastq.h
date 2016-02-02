@@ -30,6 +30,8 @@
 #include "commontypes.h"
 #include "fastq_enc.h"
 
+namespace ar
+{
 
 class line_reader_base;
 
@@ -222,5 +224,7 @@ inline const std::string& fastq::qualities() const
 {
     return m_qualities;
 }
+
+} // namespace ar
 
 #endif

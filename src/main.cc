@@ -29,15 +29,20 @@
 #include "main.h"
 #include "userconfig.h"
 
+namespace ar
+{
 
 // See main_adapter_rm.cc
 int remove_adapter_sequences(const userconfig& config);
 // See main_adapter_id.cc
 int identify_adapter_sequences(const userconfig& config);
 
+} // namespace ar
+
 
 int main(int argc, char *argv[])
 {
+    using namespace ar;
     std::ios_base::sync_with_stdio(false);
 
     userconfig config(NAME, VERSION, HELPTEXT);
@@ -45,7 +50,7 @@ int main(int argc, char *argv[])
     if (result == argparse::pr_error) {
         return 1;
     } else if (result == argparse::pr_exit) {
-        // --version, --help, or simular used.
+        // --version, --help, or similar used.
         return 0;
     }
 

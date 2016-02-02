@@ -35,6 +35,8 @@
 #include "alignment.h"
 #include "strutils.h"
 
+namespace ar
+{
 
 size_t get_seed()
 {
@@ -685,3 +687,5 @@ bool userconfig::setup_adapter_sequences()
 
     return true;
 }
+
+} // namespace ar
