@@ -1,5 +1,14 @@
 # Changelog
 
+### Current
+  * The following was contributed by Hannes Pétur Eggertsson:
+    * Wrapped code in 'ar' namespace, and made it possible to compile
+      AdapterRemoval as a static library (via the command 'make static'),
+      allowing it to be used as part of other projects.
+    * Updated instructions for installing GTest library using new repository.
+    * Fixed typos.
+
+
 ### Version 2.1.3 - 2015-12-25
 
   * Added option --minadapteroverlap, which sets a minimum alignment length

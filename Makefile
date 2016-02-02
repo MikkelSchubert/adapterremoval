@@ -130,7 +130,7 @@ build/$(PROG): $(OBJS)
 
 # Static library
 build/$(LIBNAME).a: $(LIBOBJS)
-	@echo $(COLOR_GREEN)"Linking static library '$@'.a"$(COLOR_END)
+	@echo $(COLOR_GREEN)"Linking static library '$@'"$(COLOR_END)
 	$(AR) rcs build/$(LIBNAME).a $(LIBOBJS)
 
 build/%.1: %.pod
@@ -158,7 +158,7 @@ TEST_OBJS := $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-GTEST_DIR := gtest-1.7.0
+GTEST_DIR := googletest-release-1.7.0
 GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
 GTEST_LIB :=$(TEST_DIR)/libgtest.a
 
@@ -201,9 +201,8 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 
 $(GTEST_DIR)/src/gtest%.cc:
 	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder:"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.7.0.zip -O gtest-1.7.0.zip"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ unzip gtest-1.7.0.zip"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ mv googletest-release-1.7.0 gtest-1.7.0
+	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.7.0.zip -O googletest-release-1.7.0.zip"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ unzip googletest-release-1.7.0.zip"$(COLOR_END)
 	@exit 1
 
 # Automatic header dependencies for tests
