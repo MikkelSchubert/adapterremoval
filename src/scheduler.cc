@@ -34,6 +34,8 @@
 #include "scheduler.h"
 #include "strutils.h"
 
+namespace ar
+{
 
 ///////////////////////////////////////////////////////////////////////////////
 // exceptions
@@ -577,4 +579,4 @@ bool scheduler::join_threads()
     return join_result;
 }
 
-
+} // namespace ar

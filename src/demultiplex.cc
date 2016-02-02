@@ -31,6 +31,8 @@
 #include "userconfig.h"
 #include "strutils.h"
 
+namespace ar
+{
 
 typedef std::vector<unsigned> int_vec;
 typedef demux_node_vec::iterator node_vec_iter;
@@ -477,3 +479,5 @@ chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
 
     return flush_cache(read_chunk->eof);
 }
+
+} // namespace ar

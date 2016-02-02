@@ -23,6 +23,8 @@
 \*************************************************************************/
 #include "strutils.h"
 
+namespace ar
+{
 
 std::string toupper(const std::string& str)
 {
@@ -199,3 +201,5 @@ std::string cli_formatter::fmt(const std::string& prefix, const std::string& val
 
     return prefix + value;
 }
+
+} // namespace ar

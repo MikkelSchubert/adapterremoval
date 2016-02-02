@@ -30,6 +30,8 @@
 #include "fastq_io.h"
 #include "userconfig.h"
 
+namespace ar
+{
 
 typedef std::auto_ptr<fastq_read_chunk> chunk_ptr;
 
@@ -570,3 +572,4 @@ void write_paired_fastq::finalize()
     }
 }
 
+} // namespace ar

@@ -30,7 +30,8 @@
 
 #include "commontypes.h"
 
-
+namespace ar
+{
 namespace argparse
 {
 
@@ -365,9 +366,7 @@ private:
     double* m_ptr;
 };
 
-
-
-
-}
+} // namespace argparse
+} // namespace ar
 
 #endif

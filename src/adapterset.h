@@ -28,6 +28,8 @@
 #include "commontypes.h"
 #include "fastq.h"
 
+namespace ar
+{
 
 /**
  * Class for reading sets of adapters and barcodes, and for generating
@@ -99,5 +101,6 @@ private:
     fastq_pair_vec m_adapters;
 };
 
+} // namespace ar
 
 #endif

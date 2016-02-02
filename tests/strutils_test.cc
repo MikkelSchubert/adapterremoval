@@ -28,6 +28,8 @@
 
 #include "strutils.h"
 
+namespace ar
+{
 
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for 'indent_lines'
@@ -154,3 +156,4 @@ TEST(strutils_columnize, ljust)
     ASSERT_EQ("foo\n  bar\n  zood", columnize_text("foo bar\nzood", 0, 2));
 }
 
+} // namespace ar

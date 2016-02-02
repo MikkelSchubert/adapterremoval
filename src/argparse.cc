@@ -36,6 +36,8 @@
 #include "strutils.h"
 
 
+namespace ar
+{
 namespace argparse
 {
 
@@ -494,4 +496,5 @@ std::string floaty_knob::to_str() const
     return stream.str();
 }
 
-}
+} // namespace argparse
+} // namespace ar

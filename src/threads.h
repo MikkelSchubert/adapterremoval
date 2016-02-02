@@ -30,6 +30,8 @@
 #include <pthread.h>
 #endif
 
+namespace ar
+{
 
 /**
  * Exception thrown for threading related errors, including errors with
@@ -183,5 +185,6 @@ private:
     size_t m_count;
 };
 
+} // namespace ar
 
 #endif

@@ -27,6 +27,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace ar
+{
 
 #ifdef AR_TEST_BUILD
 assert_failed::assert_failed(const std::string& what)
@@ -63,3 +65,5 @@ void debug_raise_assert(const char* filename, size_t lineno, const char* what)
     std::abort();
 #endif
 }
+
+} // namespace ar

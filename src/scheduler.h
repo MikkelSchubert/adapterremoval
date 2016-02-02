@@ -31,6 +31,8 @@
 
 #include "threads.h"
 
+namespace ar
+{
 
 struct data_chunk;
 struct scheduler_step;
@@ -354,5 +356,7 @@ inline bool analytical_step::file_io() const
 {
     return m_file_io;
 }
+
+} // namespace ar
 
 #endif

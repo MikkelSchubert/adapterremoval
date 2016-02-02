@@ -27,6 +27,8 @@
 #include <stdexcept>
 #include <string>
 
+namespace ar
+{
 
 #ifdef AR_TEST_BUILD
 /** Exception replaining 'abort' calls when running unit-tests. */
@@ -70,5 +72,6 @@ void debug_raise_assert(const char* filename, size_t lineno,
 #define AR_DEBUG_FAIL(msg) \
     debug_raise_assert(__FILE__, __LINE__, msg)
 
+} // namespace ar
 
 #endif

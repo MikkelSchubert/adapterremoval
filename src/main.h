@@ -27,6 +27,9 @@
 
 #include <string>
 
+namespace ar
+{
+
 const std::string NAME = "AdapterRemoval";
 const std::string VERSION = "ver. 2.1.3";
 const std::string HELPTEXT = \
@@ -40,5 +43,7 @@ const std::string HELPTEXT = \
     "    S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next\n"
     "    Generation Sequencing Reads, BMC Research Notes, 5:337,\n"
     "    URL: http://www.biomedcentral.com/1756-0500/5/337/\n";
+
+} // namespace ar
 
 #endif

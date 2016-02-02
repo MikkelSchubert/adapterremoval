@@ -77,7 +77,8 @@ endif
 
 
 PROG     := AdapterRemoval
-OBJS     := $(BDIR)/adapterset.o \
+LIBNAME  := libadapterremoval
+LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
             $(BDIR)/argparse.o \
             $(BDIR)/debug.o \
@@ -86,7 +87,6 @@ OBJS     := $(BDIR)/adapterset.o \
             $(BDIR)/fastq_enc.o \
             $(BDIR)/fastq_io.o \
             $(BDIR)/linereader.o \
-            $(BDIR)/main.o \
             $(BDIR)/main_adapter_id.o \
             $(BDIR)/main_adapter_rm.o \
             $(BDIR)/scheduler.o \
@@ -94,11 +94,11 @@ OBJS     := $(BDIR)/adapterset.o \
             $(BDIR)/threads.o \
             $(BDIR)/timer.o \
             $(BDIR)/userconfig.o
-
+OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)
 
 
-.PHONY: all install clean test clean_tests
+.PHONY: all install clean test clean_tests static
 
 all: build/$(PROG) build/$(PROG).1
 
@@ -114,6 +114,8 @@ install:
 	$(QUIET) mv -f build/$(PROG) /usr/local/bin/
 	$(QUIET) mv -f build/$(PROG).1 /usr/share/man/man1/
 
+static: build/$(LIBNAME).a
+
 # Object files
 $(BDIR)/%.o: src/%.cc
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
@@ -125,6 +127,11 @@ $(BDIR)/%.o: src/%.cc
 build/$(PROG): $(OBJS)
 	@echo $(COLOR_GREEN)"Linking executable '$@'"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) $^ ${LIBRARIES} -o $@
+
+# Static library
+build/$(LIBNAME).a: $(LIBOBJS)
+	@echo $(COLOR_GREEN)"Linking static library '$@'.a"$(COLOR_END)
+	$(AR) rcs build/$(LIBNAME).a $(LIBOBJS)
 
 build/%.1: %.pod
 	@echo $(COLOR_GREEN)"Constructing man-page '$@' from '$<'"$(COLOR_END)
@@ -194,8 +201,9 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 
 $(GTEST_DIR)/src/gtest%.cc:
 	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder:"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ wget https://googletest.googlecode.com/files/gtest-1.7.0.zip"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.7.0.zip -O gtest-1.7.0.zip"$(COLOR_END)
 	@echo $(COLOR_YELLOW)"  $$ unzip gtest-1.7.0.zip"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ mv googletest-release-1.7.0 gtest-1.7.0
 	@exit 1
 
 # Automatic header dependencies for tests
