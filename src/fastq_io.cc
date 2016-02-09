@@ -311,6 +311,8 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
         m_stream.next_in = reinterpret_cast<char*>(input_buffer.second);
 
         if (m_stream.avail_in || file_chunk->eof) {
+            int errorcode = -1;
+
             do {
                 output_buffer.first = FASTQ_COMPRESSED_CHUNK;
                 output_buffer.second = new unsigned char[FASTQ_COMPRESSED_CHUNK];
@@ -318,11 +320,18 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
                 m_stream.avail_out = output_buffer.first;
                 m_stream.next_out = reinterpret_cast<char*>(output_buffer.second);
 
-                switch (BZ2_bzCompress(&m_stream, file_chunk->eof ? BZ_FINISH : BZ_RUN)) {
+                errorcode = BZ2_bzCompress(&m_stream, file_chunk->eof ? BZ_FINISH : BZ_RUN);
+                switch (errorcode) {
                     case BZ_RUN_OK:
                     case BZ_FINISH_OK:
                     case BZ_STREAM_END:
                         break;
+
+                    case BZ_FLUSH_OK:
+                        throw thread_error("bzip2_paired_fastq::process: BZ_FLUSH_OK");
+
+                    case BZ_PARAM_ERROR:
+                        throw thread_error("bzip2_paired_fastq::process: BZ_PARAM_ERROR");
 
                     case BZ_SEQUENCE_ERROR:
                         throw thread_error("bzip2_paired_fastq::process: sequence error");
@@ -339,7 +348,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
                 }
 
                 output_buffer.second = NULL;
-            } while (m_stream.avail_out == 0);
+            } while (m_stream.avail_in || errorcode == BZ_FINISH_OK);
         }
 
         delete[] input_buffer.second;
