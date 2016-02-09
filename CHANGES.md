@@ -1,6 +1,9 @@
 # Changelog
 
-### Current
+### Version 2.1.4 - 2016-02-09
+
+  * Fixed bug which could occasionally result in failure when bzip2 compression
+    was enabled, by attempting to compress empty buffer.
   * The following was contributed by Hannes Pétur Eggertsson:
     * Wrapped code in 'ar' namespace, and made it possible to compile
       AdapterRemoval as a static library (via the command 'make static'),
