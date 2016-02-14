@@ -62,7 +62,7 @@ In paired-end mode, if the two mates overlap, collapse the two reads into one re
 
 =item B<--mm> I<mismatchrate>
 
-The allowed fraction of mismatches allowed in the aligned region. If 0 < I<mismatchrate> < 1, the rate is used directly. If I<mismatchrate> > 1, the rate is set to 1/I<mismatchrate>. The default setting is 1/3 for single end use and 0.1 for paired end use (because the paired end alignments are longer).
+The allowed fraction of mismatches allowed in the aligned region. If 0 < I<mismatchrate> < 1, the rate is used directly. If I<mismatchrate> > 1, the rate is set to 1/I<mismatchrate>. The default setting is 3, corresponding to a maximum mismatch rate of 1/3.
 
 =item B<--minlength> I<len>
 
