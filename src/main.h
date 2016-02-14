@@ -40,9 +40,10 @@ const std::string HELPTEXT = \
     "Lindgreen (stinus@binf.ku.dk) and Mikkel Schubert (MikkelSch@gmail.com).\n"
     "\n"
     "If you use the program, please cite the paper:\n"
-    "    S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next\n"
-    "    Generation Sequencing Reads, BMC Research Notes, 5:337,\n"
-    "    URL: http://www.biomedcentral.com/1756-0500/5/337/\n";
+    "    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
+    "    adapter trimming, identification, and read merging.\n"
+    "    BMC Research Notes, 12;9(1):88.\n\n"
+    "    http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n";
 
 } // namespace ar
 
