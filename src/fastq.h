@@ -151,8 +151,15 @@ public:
     /** Converts an error-probability to a Phred+33 encoded quality score. **/
     static char p_to_phred_33(double p);
 
-    /** Validate that two reads form a valid pair. */
-    static void validate_paired_reads(const fastq& mate1, const fastq& mate2);
+    /**
+     * Validate that two reads form a valid pair.
+     *
+     * The mate separator character is the character expected as the second-to-
+     * last charater, if the last character (either '1' or '2') specify the
+     * mate number.
+     */
+    static void validate_paired_reads(const fastq& mate1, const fastq& mate2,
+                                      char mate_separator = '/');
 
 private:
     /**

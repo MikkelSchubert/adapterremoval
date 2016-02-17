@@ -78,6 +78,7 @@ userconfig::userconfig(const std::string& name,
     , input_file_1()
     , input_file_2()
     , paired_ended_mode(false)
+    , mate_separator('/')
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
     , min_adapter_overlap(0)
@@ -109,6 +110,7 @@ userconfig::userconfig(const std::string& name,
     , quality_input_base("33")
     , quality_output_base("33")
     , quality_max(MAX_PHRED_SCORE_DEFAULT)
+    , mate_separator_str("/")
 {
     argparser["--file1"] =
         new argparse::any(&input_file_1, "FILE",
@@ -135,6 +137,10 @@ userconfig::userconfig(const std::string& name,
             "the characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning "
             "that possible scores are 0 - 93 with offset 33, and 0 - 62 "
             "for offset 64 and Solexa scores [default: %default].");
+    argparser["--mate-separator"] =
+        new argparse::any(&mate_separator_str, "CHAR",
+            "Character separating the mate number (1 or 2) from the read name "
+            "in FASTQ records [default: '%default'].");
 
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
@@ -216,7 +222,7 @@ userconfig::userconfig(const std::string& name,
             "[current: %default].");
     argparser["--adapter-list"] =
         new argparse::any(&adapter_list, "FILENAME",
-            "Read table of white-space seperated adapters pairs, used as if "
+            "Read table of white-space separated adapters pairs, used as if "
             "the first column was supplied to --adapter1, and the second "
             "column was supplied to --adapter2; only the first adapter in "
             "each pair is required SE trimming mode [current: %default].");
@@ -358,6 +364,16 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         }
     }
 
+    if (mate_separator_str.size() != 1) {
+        std::cerr << "Error: The argument for --mate-separator must be "
+                     "exactly one character long, not "
+                     << mate_separator_str.size()
+                     << " characters!" << std::endl;
+        return argparse::pr_error;
+    } else {
+        mate_separator = mate_separator_str.at(0);
+    }
+
     // Previous settings are overwritten; this ensures that bad arguments are still caught
     if (identify_adapters) {
         // By default quality scores are ignored when inferring adapter
@@ -365,7 +381,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         quality_input_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
         quality_output_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
     }
-
 
     if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
         std::cerr << "Error: Invalid value for --minquality: "

@@ -695,11 +695,32 @@ TEST(fastq, Writing_to_stream_phred_64_explicit)
 ///////////////////////////////////////////////////////////////////////////////
 // Validating pairs
 
-TEST(fastq, validate_paired_reads__throws_if_order_is_wrong)
+TEST(fastq, validate_paired_reads__throws_if_order_or_number_is_wrong)
 {
+    const fastq mate0 = fastq("Mate/0", "ACGT", "!!#$");
     const fastq mate1 = fastq("Mate/1", "ACGT", "!!#$");
-    const fastq mate2 = fastq("Mate/2", "GCTAA", "$!@#$");
+    const fastq mate2 = fastq("Mate/2", "ACGT", "!!#$");
+    const fastq mate3 = fastq("Mate/3", "ACGT", "!!#$");
+    const fastq matea = fastq("Mate/A", "ACGT", "!!#$");
+    const fastq mateb = fastq("Mate/B", "ACGT", "!!#$");
+
+    ASSERT_THROW(fastq::validate_paired_reads(mate0, mate1), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate0), fastq_error);
     fastq::validate_paired_reads(mate1, mate2);
+    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate3), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(mate3, mate2), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(matea, mateb), fastq_error);
+    ASSERT_THROW(fastq::validate_paired_reads(mateb, matea), fastq_error);
+}
+
+
+TEST(fastq, validate_paired_reads__allows_other_separators)
+{
+    const fastq mate1 = fastq("Mate:1", "ACGT", "!!#$");
+    const fastq mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
+
+    fastq::validate_paired_reads(mate1, mate2, ':');
     ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
 }
 

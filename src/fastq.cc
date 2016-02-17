@@ -56,7 +56,7 @@ struct mate_info
 };
 
 
-inline mate_info get_mate_information(const fastq& read)
+inline mate_info get_mate_information(const fastq& read, char mate_separator)
 {
     mate_info info;
     const std::string& header = read.header();
@@ -66,12 +66,13 @@ inline mate_info get_mate_information(const fastq& read)
         pos = header.length();
     }
 
-    if (pos >= 2) {
-        const std::string substr = header.substr(0, pos);
-        if (substr.substr(pos - 2) == "/1") {
+    if (pos >= 2 && header.at(pos - 2) == mate_separator) {
+        const char digit = header.at(pos - 1);
+
+        if (digit == '1') {
             info.mate = mate_info::mate1;
             pos -= 2;
-        } else if (substr.substr(pos - 2) == "/2") {
+        } else if (digit == '2') {
             info.mate = mate_info::mate2;
             pos -= 2;
         }
@@ -87,8 +88,8 @@ inline mate_info get_mate_information(const fastq& read)
 
 fastq::fastq()
     : m_header()
-	, m_sequence()
-	, m_qualities()
+    , m_sequence()
+    , m_qualities()
 {
 }
 
@@ -146,13 +147,13 @@ fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality)
         }
     }
 
-	size_t left_inclusive = 0;
-	for (size_t i = 0; i < right_exclusive; ++i) {
-		if ((!trim_ns || m_sequence.at(i) != 'N') && (m_qualities.at(i) > low_quality)) {
-			left_inclusive = i;
-			break;
-		}
-	}
+    size_t left_inclusive = 0;
+    for (size_t i = 0; i < right_exclusive; ++i) {
+        if ((!trim_ns || m_sequence.at(i) != 'N') && (m_qualities.at(i) > low_quality)) {
+            left_inclusive = i;
+            break;
+        }
+    }
 
     const ntrimmed summary(left_inclusive, m_sequence.length() - right_exclusive);
 
@@ -216,7 +217,7 @@ bool fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
     if (!reader.getline(line)) {
         throw fastq_error("partial FASTQ record; cut off after sequence");
     } else if (line.empty() || line.at(0) != '+') {
-        throw fastq_error("FASTQ record lacks seperator character (+)");
+        throw fastq_error("FASTQ record lacks separator character (+)");
     }
 
     if (!reader.getline(m_qualities)) {
@@ -296,19 +297,32 @@ char fastq::p_to_phred_33(double p)
 }
 
 
-void fastq::validate_paired_reads(const fastq& mate1, const fastq& mate2)
+void fastq::validate_paired_reads(const fastq& mate1, const fastq& mate2,
+                                  char mate_separator)
 {
     if (mate1.length() == 0 || mate2.length() == 0) {
         throw fastq_error("Pair contains empty reads");
     }
 
-    const mate_info info1 = get_mate_information(mate1);
-    const mate_info info2 = get_mate_information(mate2);
+    const mate_info info1 = get_mate_information(mate1, mate_separator);
+    const mate_info info2 = get_mate_information(mate2, mate_separator);
 
     if (info1.name != info2.name) {
         std::stringstream error;
-        error << "Pair contains reads with mismatching names: '"
-              << info1.name << "' and '" << info2.name;
+        error << "Pair contains reads with mismatching names:\n"
+              << " - '" << info1.name << "'\n"
+              << " - '" << info1.name << "'";
+
+        if (info1.mate == mate_info::unknown || info2.mate == mate_info::unknown) {
+            error << "\n\nNote that AdapterRemoval by determines the mate "
+                     "numbers as the digit found at the end of the read name, "
+                     "if this is preceeded by the character '"
+                  << mate_separator
+                  << "'; if these data makes use of a different character to "
+                     "separate the mate number from the read name, then you "
+                     "will need to set the --mate-separator command-line "
+                     "option to the appropriate character.";
+        }
 
         throw fastq_error(error.str());
     }

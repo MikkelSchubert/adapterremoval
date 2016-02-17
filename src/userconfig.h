@@ -103,6 +103,9 @@ public:
     //! Set to true if both --input1 and --input2 are set.
     bool paired_ended_mode;
 
+    //! Character separating the mate number from the read name in FASTQ reads.
+    char mate_separator;
+
     //! The minimum length of trimmed reads (ie. genomic nts) to be retained
     unsigned min_genomic_length;
     //! The maximum length of trimmed reads (ie. genomic nts) to be retained
@@ -197,6 +200,8 @@ private:
     std::string quality_output_base;
     //! Sink for maximum quality score for input / output
     unsigned quality_max;
+    //! Sink for the mate separator character; use mate separator
+    std::string mate_separator_str;
 };
 
 } // namespace ar

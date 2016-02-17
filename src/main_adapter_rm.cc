@@ -487,7 +487,7 @@ public:
             fastq read2 = *it_2++;
 
             // Throws if read-names or mate numbering does not match
-            fastq::validate_paired_reads(read1, read2);
+            fastq::validate_paired_reads(read1, read2, m_config.mate_separator);
 
             // Reverse complement to match the orientation of read1
             read2.reverse_complement();
