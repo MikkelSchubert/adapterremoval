@@ -68,10 +68,10 @@ inline mate_info get_mate_information(const fastq& read)
 
     if (pos >= 2) {
         const std::string substr = header.substr(0, pos);
-        if (substr.substr(pos - 2) == "/1") {
+        if (substr.substr(pos - 2) == "/1" || substr.substr(pos - 2) == ".1") {
             info.mate = mate_info::mate1;
             pos -= 2;
-        } else if (substr.substr(pos - 2) == "/2") {
+        } else if (substr.substr(pos - 2) == "/2" || substr.substr(pos - 2) == ".2") {
             info.mate = mate_info::mate2;
             pos -= 2;
         }
