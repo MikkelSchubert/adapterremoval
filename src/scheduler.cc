@@ -408,14 +408,7 @@ void scheduler::execute_analytical_step(scheduler_step* step)
 
     chunk_vec chunks = step->ptr->process(chunk.data);
 
-    // Unlock use of IO steps immediately after finishing processing
-    if (step->ptr->file_io()) {
-        mutex_locker lock(m_queue_lock);
-        m_io_active = false;
-        if (!m_queue_io.empty()) {
-            m_condition.signal();
-        }
-    }
+    mutex_locker lock(m_queue_lock);
 
     // Schedule each of the resulting blocks
     for (chunk_vec::iterator it = chunks.begin(); it != chunks.end(); ++it) {
@@ -435,15 +428,21 @@ void scheduler::execute_analytical_step(scheduler_step* step)
         queue_analytical_step(other_step, next_chunk.chunk_id);
     }
 
-    // Reschedule current step if ordered and next chunk is available
-    {
-        if (step->ptr->get_ordering() == analytical_step::ordered) {
-            mutex_locker lock(step->lock);
+    // Unlock use of IO steps after finishing processing
+    if (step->ptr->file_io()) {
+        m_io_active = false;
+        if (!m_queue_io.empty()) {
+            m_condition.signal();
+        }
+    }
 
-            step->current_chunk++;
-            if (!step->queue.empty()) {
-                queue_analytical_step(step, step->queue.top().chunk_id);
-            }
+    // Reschedule current step if ordered and next chunk is available
+    if (step->ptr->get_ordering() == analytical_step::ordered) {
+        mutex_locker lock(step->lock);
+
+        step->current_chunk++;
+        if (!step->queue.empty()) {
+            queue_analytical_step(step, step->queue.top().chunk_id);
         }
     }
 
@@ -459,19 +458,15 @@ void scheduler::execute_analytical_step(scheduler_step* step)
         m_chunk_counter++;
     }
 
-    // Counter is decremented last, so that threads do not exit while new
-    // parts are being scheduled.
-    {
-        mutex_locker lock(m_queue_lock);
-        m_live_chunks--;
-    }
+    // Decrement counters before releasing lock
+    chunk = data_chunk(0);
+    m_live_chunks--;
 }
 
 
 void scheduler::queue_analytical_step(scheduler_step* step, size_t current)
 {
     if (step->can_run(current)) {
-        mutex_locker lock(m_queue_lock);
         if (step->ptr->file_io()) {
             m_queue_io.push_back(step);
         } else {
