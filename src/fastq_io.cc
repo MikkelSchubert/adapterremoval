@@ -240,6 +240,7 @@ bzip2_paired_fastq::bzip2_paired_fastq(const userconfig& config, size_t next_ste
   , m_buffered_reads(0)
   , m_next_step(next_step)
   , m_stream()
+  , m_eof(false)
 {
     m_stream.bzalloc = NULL;
     m_stream.bzfree = NULL;
@@ -271,6 +272,11 @@ bzip2_paired_fastq::bzip2_paired_fastq(const userconfig& config, size_t next_ste
 
 bzip2_paired_fastq::~bzip2_paired_fastq()
 {
+    if (!m_eof) {
+        std::cerr << "bzip2_paired_fastq::~bzip2_paired_fastq: terminated before EOF" << std::endl;
+        std::abort();
+    }
+
     const int errorcode = BZ2_bzCompressEnd(&m_stream);
     if (errorcode != BZ_OK) {
         print_locker lock;
@@ -294,7 +300,12 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
-    if (file_chunk->reads.empty() && !file_chunk->eof) {
+    if (m_eof) {
+        throw thread_error("bzip2_paired_fastq::process: received data after EOF");
+    }
+
+    m_eof = file_chunk->eof;
+    if (file_chunk->reads.empty() && !m_eof) {
         // The empty chunk must still be forwarded, to ensure that tracking of
         // ordered chunks does not break.
         chunk_vec chunks;
@@ -310,7 +321,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
         m_stream.avail_in = input_buffer.first;
         m_stream.next_in = reinterpret_cast<char*>(input_buffer.second);
 
-        if (m_stream.avail_in || file_chunk->eof) {
+        if (m_stream.avail_in || m_eof) {
             int errorcode = -1;
 
             do {
@@ -320,7 +331,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
                 m_stream.avail_out = output_buffer.first;
                 m_stream.next_out = reinterpret_cast<char*>(output_buffer.second);
 
-                errorcode = BZ2_bzCompress(&m_stream, file_chunk->eof ? BZ_FINISH : BZ_RUN);
+                errorcode = BZ2_bzCompress(&m_stream, m_eof ? BZ_FINISH : BZ_RUN);
                 switch (errorcode) {
                     case BZ_RUN_OK:
                     case BZ_FINISH_OK:
@@ -359,7 +370,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
     }
 
     chunk_vec chunks;
-    if (!file_chunk->buffers.empty() || file_chunk->eof) {
+    if (!file_chunk->buffers.empty() || m_eof) {
         file_chunk->count += m_buffered_reads;
         chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
         m_buffered_reads = 0;
@@ -383,6 +394,7 @@ gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
   , m_buffered_reads(0)
   , m_next_step(next_step)
   , m_stream()
+  , m_eof(false)
 {
     m_stream.zalloc = Z_NULL;
     m_stream.zfree = Z_NULL;
@@ -416,6 +428,11 @@ gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
 
 gzip_paired_fastq::~gzip_paired_fastq()
 {
+    if (!m_eof) {
+        std::cerr << "gzip_paired_fastq::~gzip_paired_fastq: terminated before EOF" << std::endl;
+        std::abort();
+    }
+
     const int errorcode = deflateEnd(&m_stream);
     if (errorcode != Z_OK) {
         print_locker lock;
@@ -443,7 +460,12 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
-    if (file_chunk->reads.empty() && !file_chunk->eof) {
+    if (m_eof) {
+        throw thread_error("bzip2_paired_fastq::process: received data after EOF");
+    }
+
+    m_eof = file_chunk->eof;
+    if (file_chunk->reads.empty() && !m_eof) {
         // The empty chunk must still be forwarded, to ensure that tracking of
         // ordered chunks does not break.
         chunk_vec chunks;
@@ -457,9 +479,10 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
         input_buffer = build_input_buffer(file_chunk->reads);
         file_chunk->reads.clear();
 
-        if (input_buffer.first || file_chunk->eof) {
+        if (input_buffer.first || m_eof) {
             m_stream.avail_in = input_buffer.first;
             m_stream.next_in = input_buffer.second;
+            int returncode = -1;
 
             do {
                 output_buffer.first = FASTQ_COMPRESSED_CHUNK;
@@ -468,11 +491,14 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
                 m_stream.avail_out = output_buffer.first;
                 m_stream.next_out = output_buffer.second;
 
-                switch (deflate(&m_stream, file_chunk->eof ? Z_FINISH : Z_NO_FLUSH)) {
+                returncode = deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
+                switch (returncode) {
                     case Z_OK:
                     case Z_STREAM_END:
-                    case Z_BUF_ERROR: /* End of out / in buffer reached. */
                         break;
+
+                    case Z_BUF_ERROR:
+                        throw thread_error("gzip_paired_fastq::process: buf error");
 
                     case Z_STREAM_ERROR:
                         throw thread_error("gzip_paired_fastq::process: stream error");
@@ -489,7 +515,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
                 }
 
                 output_buffer.second = NULL;
-            } while (m_stream.avail_out == 0);
+            } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
         }
 
         delete[] input_buffer.second;
@@ -500,7 +526,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
     }
 
     chunk_vec chunks;
-    if (!file_chunk->buffers.empty() || file_chunk->eof) {
+    if (!file_chunk->buffers.empty() || m_eof) {
         file_chunk->count += m_buffered_reads;
         chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
         m_buffered_reads = 0;
@@ -528,6 +554,7 @@ static bool s_finalized = false;
 write_paired_fastq::write_paired_fastq(const std::string& filename)
   : analytical_step(analytical_step::ordered, true)
   , m_output(filename.c_str(), std::ofstream::out)
+  , m_eof(false)
 {
     if (!m_output.is_open()) {
         std::string message = std::string("Failed to open file '") + filename + "': ";
@@ -540,6 +567,10 @@ write_paired_fastq::write_paired_fastq(const std::string& filename)
 
 write_paired_fastq::~write_paired_fastq()
 {
+    if (!m_eof) {
+        std::cerr << "write_paired_fastq::~write_paired_fastq: terminated before EOF" << std::endl;
+        std::abort();
+    }
 }
 
 
@@ -548,6 +579,11 @@ chunk_vec write_paired_fastq::process(analytical_chunk* chunk)
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     const string_vec& lines = file_chunk->reads;
 
+    if (m_eof) {
+        throw thread_error("bzip2_paired_fastq::process: received data after EOF");
+    }
+
+    m_eof = file_chunk->eof;
     if (file_chunk->buffers.empty()) {
         for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
             m_output << *it;
@@ -561,7 +597,7 @@ chunk_vec write_paired_fastq::process(analytical_chunk* chunk)
         }
     }
 
-    if (file_chunk->eof) {
+    if (m_eof) {
         m_output.flush();
     }
 

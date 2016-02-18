@@ -227,6 +227,9 @@ private:
 
     //! BZip2 stream object
     bz_stream m_stream;
+
+    //! Used to track whether an EOF block has been received.
+    bool m_eof;
 };
 
 #endif
@@ -262,6 +265,9 @@ private:
 
     //! GZip stream object
     z_stream m_stream;
+
+    //! Used to track whether an EOF block has been received.
+    bool m_eof;
 };
 #endif
 
@@ -299,6 +305,9 @@ public:
 private:
     //! Pointer to output file opened using userconfig::open_with_default_filename.
     std::ofstream m_output;
+
+    //! Used to track whether an EOF block has been received.
+    bool m_eof;
 };
 
 } // namespace ar
