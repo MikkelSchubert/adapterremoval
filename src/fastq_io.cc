@@ -117,6 +117,7 @@ read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
   , m_line_offset(1)
   , m_io_input(filename)
   , m_next_step(next_step)
+  , m_eof(false)
 {
 }
 
@@ -138,6 +139,7 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
         // so that unbalanced files can be caught in all cases.
         m_io_input.close();
         file_chunk->eof = true;
+        m_eof = true;
     }
 
     m_line_offset += n_read;
@@ -146,6 +148,14 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
     chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
 
     return chunks;
+}
+
+
+void read_single_fastq::finalize()
+{
+    if (!m_eof) {
+        throw thread_error("read_single_fastq::finalize: terminated before EOF");
+    }
 }
 
 
@@ -162,6 +172,7 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
   , m_io_input_1(filename_1)
   , m_io_input_2(filename_2)
   , m_next_step(next_step)
+  , m_eof(false)
 {
 }
 
@@ -194,6 +205,7 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
         m_io_input_1.close();
         m_io_input_2.close();
         file_chunk->eof = true;
+        m_eof = true;
     }
 
     m_line_offset += n_read_1;
@@ -202,6 +214,14 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
     chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
 
     return chunks;
+}
+
+
+void read_paired_fastq::finalize()
+{
+    if (!m_eof) {
+        throw thread_error("read_paired_fastq::finalize: terminated before EOF");
+    }
 }
 
 
@@ -270,11 +290,10 @@ bzip2_paired_fastq::bzip2_paired_fastq(const userconfig& config, size_t next_ste
 }
 
 
-bzip2_paired_fastq::~bzip2_paired_fastq()
+void bzip2_paired_fastq::finalize()
 {
     if (!m_eof) {
-        std::cerr << "bzip2_paired_fastq::~bzip2_paired_fastq: terminated before EOF" << std::endl;
-        std::abort();
+        throw thread_error("bzip2_paired_fastq::finalize: terminated before EOF");
     }
 
     const int errorcode = BZ2_bzCompressEnd(&m_stream);
@@ -282,15 +301,11 @@ bzip2_paired_fastq::~bzip2_paired_fastq()
         print_locker lock;
         switch (errorcode) {
             case BZ_PARAM_ERROR:
-                std::cerr << "bzip2_paired_fastq::~bzip2_paired_fastq: parameter error" << std::endl;
-                break;
+                throw thread_error("bzip2_paired_fastq::finalize: parameter error");
 
             default:
-                std::cerr << "Unknown error in bzip2_paired_fastq::~bzip2_paired_fastq: " << errorcode << std::endl;
-                break;
+                throw thread_error("Unknown error in bzip2_paired_fastq::finalize");
         }
-
-        std::abort();
     }
 }
 
@@ -426,11 +441,10 @@ gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
 }
 
 
-gzip_paired_fastq::~gzip_paired_fastq()
+void gzip_paired_fastq::finalize()
 {
     if (!m_eof) {
-        std::cerr << "gzip_paired_fastq::~gzip_paired_fastq: terminated before EOF" << std::endl;
-        std::abort();
+        throw thread_error("gzip_paired_fastq::finalize: terminated before EOF");
     }
 
     const int errorcode = deflateEnd(&m_stream);
@@ -438,19 +452,14 @@ gzip_paired_fastq::~gzip_paired_fastq()
         print_locker lock;
         switch (errorcode) {
             case Z_STREAM_ERROR:
-                std::cerr << "gzip_paired_fastq::~gzip_paired_fastq: stream error" << std::endl;
-                break;
+                throw thread_error("gzip_paired_fastq::finalize: stream error");
 
             case Z_DATA_ERROR:
-                std::cerr << "gzip_paired_fastq::~gzip_paired_fastq: data error" << std::endl;
-                break;
+                throw thread_error("gzip_paired_fastq::finalize: data error");
 
             default:
-                std::cerr << "Unknown error in gzip_paired_fastq::~gzip_paired_fastq: " << errorcode << std::endl;
-                break;
+                throw thread_error("Unknown error in gzip_paired_fastq::finalize");
         }
-
-        std::abort();
     }
 }
 
@@ -565,22 +574,13 @@ write_paired_fastq::write_paired_fastq(const std::string& filename)
 }
 
 
-write_paired_fastq::~write_paired_fastq()
-{
-    if (!m_eof) {
-        std::cerr << "write_paired_fastq::~write_paired_fastq: terminated before EOF" << std::endl;
-        std::abort();
-    }
-}
-
-
 chunk_vec write_paired_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     const string_vec& lines = file_chunk->reads;
 
     if (m_eof) {
-        throw thread_error("bzip2_paired_fastq::process: received data after EOF");
+        throw thread_error("write_paired_fastq::process: received data after EOF");
     }
 
     m_eof = file_chunk->eof;
@@ -615,6 +615,13 @@ void write_paired_fastq::finalize()
         s_timer.finalize();
         s_finalized = true;
     }
+
+    if (!m_eof) {
+        throw thread_error("write_paired_fastq::finalize: terminated before EOF");
+    }
+
+    // Close file to trigger any exceptions due to badbit / failbit
+    m_output.close();
 }
 
 } // namespace ar

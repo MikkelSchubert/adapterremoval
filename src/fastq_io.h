@@ -140,6 +140,9 @@ public:
     /** Reads N lines from the input file and saves them in an fastq_read_chunk. */
     virtual chunk_vec process(analytical_chunk* chunk);
 
+    /** Finalizer; checks that all input has been processed. */
+    virtual void finalize();
+
 private:
     //! Not implemented
     read_single_fastq(const read_single_fastq&);
@@ -154,6 +157,8 @@ private:
     line_reader m_io_input;
     //! The analytical step following this step
     const size_t m_next_step;
+    //! Used to track whether an EOF block has been received.
+    bool m_eof;
 };
 
 
@@ -178,6 +183,9 @@ public:
     /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
     virtual chunk_vec process(analytical_chunk* chunk);
 
+    /** Finalizer; checks that all input has been processed. */
+    virtual void finalize();
+
 private:
     //! Not implemented
     read_paired_fastq(const read_paired_fastq&);
@@ -194,6 +202,8 @@ private:
     line_reader m_io_input_2;
     //! The analytical step following this step
     const size_t m_next_step;
+    //! Used to track whether an EOF block has been received.
+    bool m_eof;
 };
 
 
@@ -207,11 +217,11 @@ public:
     /** Constructor; 'next_step' sets the destination of compressed chunks. */
     bzip2_paired_fastq(const userconfig& config, size_t next_step);
 
-    /** Destructor; frees BZip2 stream. */
-    virtual ~bzip2_paired_fastq();
-
     /** Compresses input lines, saving compressed chunks to chunk->buffers. */
     virtual chunk_vec process(analytical_chunk* chunk);
+
+    /** Checks that all input has been processed and frees stream. */
+    virtual void finalize();
 
 private:
     //! Not implemented
@@ -221,13 +231,10 @@ private:
 
     //! N reads which did not result in an output chunk
     size_t m_buffered_reads;
-
     //! The analytical step following this step
     const size_t m_next_step;
-
     //! BZip2 stream object
     bz_stream m_stream;
-
     //! Used to track whether an EOF block has been received.
     bool m_eof;
 };
@@ -245,11 +252,11 @@ public:
     /** Constructor; 'next_step' sets the destination of compressed chunks. */
     gzip_paired_fastq(const userconfig& config, size_t next_step);
 
-    /** Destructor; frees GZip stream. */
-    virtual ~gzip_paired_fastq();
-
     /** Compresses input lines, saving compressed chunks to chunk->buffers. */
     virtual chunk_vec process(analytical_chunk* chunk);
+
+    /** Checks that all input has been processed and frees stream. */
+    virtual void finalize();
 
 private:
     //! Not implemented
@@ -259,13 +266,10 @@ private:
 
     //! N reads which did not result in an output chunk
     size_t m_buffered_reads;
-
     //! The analytical step following this step
     const size_t m_next_step;
-
     //! GZip stream object
     z_stream m_stream;
-
     //! Used to track whether an EOF block has been received.
     bool m_eof;
 };
@@ -292,9 +296,6 @@ public:
      * output file is opened
      */
     write_paired_fastq(const std::string& filename);
-
-    /** Destructor; closes output file. */
-    ~write_paired_fastq();
 
     /** Writes the reads of the type specified in the constructor. */
     virtual chunk_vec process(analytical_chunk* chunk);
