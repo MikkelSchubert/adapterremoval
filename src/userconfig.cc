@@ -78,7 +78,7 @@ userconfig::userconfig(const std::string& name,
     , input_file_1()
     , input_file_2()
     , paired_ended_mode(false)
-    , mate_separator('/')
+    , mate_separator(MATE_SEPARATOR)
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
     , min_adapter_overlap(0)
@@ -110,7 +110,7 @@ userconfig::userconfig(const std::string& name,
     , quality_input_base("33")
     , quality_output_base("33")
     , quality_max(MAX_PHRED_SCORE_DEFAULT)
-    , mate_separator_str("/")
+    , mate_separator_str(1, MATE_SEPARATOR)
 {
     argparser["--file1"] =
         new argparse::any(&input_file_1, "FILE",
