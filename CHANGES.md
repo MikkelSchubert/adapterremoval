@@ -1,5 +1,15 @@
 # Changelog
 
+### Version 2.1.5 - 2016-02-19
+
+  * Added the --mate-separator option, which specifies the character separating
+    the mate number; by default this is '/', and AdapterRemoval will therefore
+    identify mate numbers if read-names end with "/1" or "/2".
+  * Fixed race condition which could result in premature termination when using
+    --gzip or --bzip2 together with the --threads options.
+  * Improved checks during compression and sanity checks following processing.
+
+
 ### Version 2.1.4 - 2016-02-09
 
   * Fixed bug which could occasionally result in failure when bzip2 compression
