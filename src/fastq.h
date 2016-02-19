@@ -34,6 +34,7 @@ namespace ar
 {
 
 class line_reader_base;
+struct mate_info;
 
 
 /**
@@ -156,10 +157,10 @@ public:
      *
      * The mate separator character is the character expected as the second-to-
      * last charater, if the last character (either '1' or '2') specify the
-     * mate number.
+     * mate number. Non-standard mate-seprators (not '/') are changed to '/'.
      */
-    static void validate_paired_reads(const fastq& mate1, const fastq& mate2,
-                                      char mate_separator = '/');
+    static void validate_paired_reads(fastq& mate1, fastq& mate2,
+                                      char mate_separator = MATE_SEPARATOR);
 
 private:
     /**
@@ -172,6 +173,9 @@ private:
 
     /** Initializes record; used by constructor and read function. **/
     void process_record(const fastq_encoding& encoding);
+
+    /** Helper function to get mate numbering and fix the separator char. */
+    friend mate_info get_and_fix_mate_info(fastq& read, char mate_separator);
 
     //! Header excluding the @ sigil, but (possibly) including meta-info
 	std::string m_header;

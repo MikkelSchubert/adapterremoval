@@ -56,10 +56,10 @@ struct mate_info
 };
 
 
-inline mate_info get_mate_information(const fastq& read, char mate_separator)
+inline mate_info get_and_fix_mate_info(fastq& read, char mate_separator)
 {
     mate_info info;
-    const std::string& header = read.header();
+    std::string& header = read.m_header;
 
     size_t pos = header.find_first_of(' ');
     if (pos == std::string::npos) {
@@ -70,9 +70,11 @@ inline mate_info get_mate_information(const fastq& read, char mate_separator)
         const char digit = header.at(pos - 1);
 
         if (digit == '1') {
+            header[pos - 2] = MATE_SEPARATOR;
             info.mate = mate_info::mate1;
             pos -= 2;
         } else if (digit == '2') {
+            header[pos - 2] = MATE_SEPARATOR;
             info.mate = mate_info::mate2;
             pos -= 2;
         }
@@ -297,21 +299,21 @@ char fastq::p_to_phred_33(double p)
 }
 
 
-void fastq::validate_paired_reads(const fastq& mate1, const fastq& mate2,
+void fastq::validate_paired_reads(fastq& mate1, fastq& mate2,
                                   char mate_separator)
 {
     if (mate1.length() == 0 || mate2.length() == 0) {
         throw fastq_error("Pair contains empty reads");
     }
 
-    const mate_info info1 = get_mate_information(mate1, mate_separator);
-    const mate_info info2 = get_mate_information(mate2, mate_separator);
+    const mate_info info1 = get_and_fix_mate_info(mate1, mate_separator);
+    const mate_info info2 = get_and_fix_mate_info(mate2, mate_separator);
 
     if (info1.name != info2.name) {
         std::stringstream error;
         error << "Pair contains reads with mismatching names:\n"
               << " - '" << info1.name << "'\n"
-              << " - '" << info1.name << "'";
+              << " - '" << info2.name << "'";
 
         if (info1.mate == mate_info::unknown || info2.mate == mate_info::unknown) {
             error << "\n\nNote that AdapterRemoval by determines the mate "

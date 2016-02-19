@@ -50,6 +50,9 @@ const int MIN_SOLEXA_SCORE = -5;
 //! Maximum Solexa score allowed; encodes to 'h' with an offset of 64
 const int MAX_SOLEXA_SCORE = 40;
 
+//! Default character used to seperate mate number
+const char MATE_SEPARATOR = '/';
+
 
 /** Exception raised for FASTQ parsing and validation errors. */
 class fastq_error : public std::exception
