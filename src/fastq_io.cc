@@ -36,7 +36,7 @@ namespace ar
 typedef std::auto_ptr<fastq_read_chunk> chunk_ptr;
 
 
-bool read_fastq_reads(fastq_vec& dst, line_reader& reader, size_t offset,
+size_t read_fastq_reads(fastq_vec& dst, line_reader& reader, size_t offset,
                       const fastq_encoding& encoding)
 {
     dst.reserve(FASTQ_CHUNK_SIZE);
