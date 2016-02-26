@@ -105,7 +105,7 @@ public:
 private:
     friend class gzip_paired_fastq;
     friend class bzip2_paired_fastq;
-    friend class write_paired_fastq;
+    friend class write_fastq;
 
     //! Lines read from the mate 1 and mate 2 files
     string_vec reads;
@@ -283,7 +283,7 @@ private:
  * at the offset corresponding to the 'type' argument to the corresponding
  * output file. The list of lines is cleared upon writing.
  */
-class write_paired_fastq : public analytical_step
+class write_fastq : public analytical_step
 {
 public:
     /**
@@ -295,7 +295,7 @@ public:
      * Based on the read-type specified, and SE / PE mode, the corresponding
      * output file is opened
      */
-    write_paired_fastq(const std::string& filename);
+    write_fastq(const std::string& filename);
 
     /** Writes the reads of the type specified in the constructor. */
     virtual chunk_vec process(analytical_chunk* chunk);

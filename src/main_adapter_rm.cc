@@ -643,7 +643,7 @@ int remove_adapter_sequences_se(const userconfig& config)
             sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_se_reads(&config));
 
             add_write_step(config, sch, ai_write_unidentified_1,
-                           new write_paired_fastq(config.get_output_filename("demux_unknown")));
+                           new write_fastq(config.get_output_filename("demux_unknown")));
         } else {
             sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
@@ -658,15 +658,15 @@ int remove_adapter_sequences_se(const userconfig& config)
             sch.add_step(offset + ai_trim_se, processors.back());
 
             add_write_step(config, sch, offset + ai_write_mate_1,
-                           new write_paired_fastq(config.get_output_filename("--output1", nth)));
+                           new write_fastq(config.get_output_filename("--output1", nth)));
             add_write_step(config, sch, offset + ai_write_discarded,
-                         new write_paired_fastq(config.get_output_filename("--discarded", nth)));
+                         new write_fastq(config.get_output_filename("--discarded", nth)));
 
             if (config.collapse) {
                 add_write_step(config, sch, offset + ai_write_collapsed,
-                               new write_paired_fastq(config.get_output_filename("--outputcollapsed", nth)));
+                               new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
                 add_write_step(config, sch, offset + ai_write_collapsed_truncated,
-                               new write_paired_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                               new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
             }
         }
     } catch (const std::ios_base::failure& error) {
@@ -707,9 +707,9 @@ int remove_adapter_sequences_pe(const userconfig& config)
             sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_pe_reads(&config));
 
             add_write_step(config, sch, ai_write_unidentified_1,
-                           new write_paired_fastq(config.get_output_filename("demux_unknown", 1)));
+                           new write_fastq(config.get_output_filename("demux_unknown", 1)));
             add_write_step(config, sch, ai_write_unidentified_2,
-                           new write_paired_fastq(config.get_output_filename("demux_unknown", 2)));
+                           new write_fastq(config.get_output_filename("demux_unknown", 2)));
         } else {
             sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
@@ -725,19 +725,19 @@ int remove_adapter_sequences_pe(const userconfig& config)
             sch.add_step(offset + ai_trim_pe, processors.back());
 
             add_write_step(config, sch, offset + ai_write_mate_1,
-                           new write_paired_fastq(config.get_output_filename("--output1", nth)));
+                           new write_fastq(config.get_output_filename("--output1", nth)));
             add_write_step(config, sch, offset + ai_write_mate_2,
-                           new write_paired_fastq(config.get_output_filename("--output2", nth)));
+                           new write_fastq(config.get_output_filename("--output2", nth)));
             add_write_step(config, sch, offset + ai_write_discarded,
-                           new write_paired_fastq(config.get_output_filename("--discarded", nth)));
+                           new write_fastq(config.get_output_filename("--discarded", nth)));
             add_write_step(config, sch, offset + ai_write_singleton,
-                           new write_paired_fastq(config.get_output_filename("--singleton", nth)));
+                           new write_fastq(config.get_output_filename("--singleton", nth)));
 
             if (config.collapse) {
                 add_write_step(config, sch, offset + ai_write_collapsed,
-                               new write_paired_fastq(config.get_output_filename("--outputcollapsed", nth)));
+                               new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
                 add_write_step(config, sch, offset + ai_write_collapsed_truncated,
-                               new write_paired_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                               new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
             }
         }
     } catch (const std::ios_base::failure& error) {

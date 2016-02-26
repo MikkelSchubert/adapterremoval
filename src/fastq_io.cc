@@ -550,7 +550,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'write_paired_fastq'
+// Implementations for 'write_fastq'
 
 //! Mutex used to control access to s_timer and s_finalized;
 static mutex s_timer_lock;
@@ -560,7 +560,7 @@ static timer s_timer = timer("reads");
 static bool s_finalized = false;
 
 
-write_paired_fastq::write_paired_fastq(const std::string& filename)
+write_fastq::write_fastq(const std::string& filename)
   : analytical_step(analytical_step::ordered, true)
   , m_output(filename.c_str(), std::ofstream::out)
   , m_eof(false)
@@ -574,13 +574,13 @@ write_paired_fastq::write_paired_fastq(const std::string& filename)
 }
 
 
-chunk_vec write_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec write_fastq::process(analytical_chunk* chunk)
 {
     std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     const string_vec& lines = file_chunk->reads;
 
     if (m_eof) {
-        throw thread_error("write_paired_fastq::process: received data after EOF");
+        throw thread_error("write_fastq::process: received data after EOF");
     }
 
     m_eof = file_chunk->eof;
@@ -608,7 +608,7 @@ chunk_vec write_paired_fastq::process(analytical_chunk* chunk)
 }
 
 
-void write_paired_fastq::finalize()
+void write_fastq::finalize()
 {
     mutex_locker lock(s_timer_lock);
     if (!s_finalized) {
@@ -617,7 +617,7 @@ void write_paired_fastq::finalize()
     }
 
     if (!m_eof) {
-        throw thread_error("write_paired_fastq::finalize: terminated before EOF");
+        throw thread_error("write_fastq::finalize: terminated before EOF");
     }
 
     // Close file to trigger any exceptions due to badbit / failbit
