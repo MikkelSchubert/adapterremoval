@@ -697,82 +697,179 @@ TEST(fastq, Writing_to_stream_phred_64_explicit)
 
 TEST(fastq, validate_paired_reads__throws_if_order_or_number_is_wrong)
 {
-    const fastq mate0 = fastq("Mate/0", "ACGT", "!!#$");
-    const fastq mate1 = fastq("Mate/1", "ACGT", "!!#$");
-    const fastq mate2 = fastq("Mate/2", "ACGT", "!!#$");
-    const fastq mate3 = fastq("Mate/3", "ACGT", "!!#$");
-    const fastq matea = fastq("Mate/A", "ACGT", "!!#$");
-    const fastq mateb = fastq("Mate/B", "ACGT", "!!#$");
+    const fastq ref_mate0 = fastq("Mate/0", "ACGT", "!!#$");
+    const fastq ref_mate1 = fastq("Mate/1", "ACGT", "!!#$");
+    const fastq ref_mate2 = fastq("Mate/2", "ACGT", "!!#$");
+    const fastq ref_mate3 = fastq("Mate/3", "ACGT", "!!#$");
+    const fastq ref_matea = fastq("Mate/A", "ACGT", "!!#$");
+    const fastq ref_mateb = fastq("Mate/B", "ACGT", "!!#$");
 
-    ASSERT_THROW(fastq::validate_paired_reads(mate0, mate1), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate0), fastq_error);
-    fastq::validate_paired_reads(mate1, mate2);
-    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate3), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(mate3, mate2), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(matea, mateb), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(mateb, matea), fastq_error);
+    {
+        fastq mate0 = ref_mate0;
+        fastq mate1 = ref_mate1;
+        ASSERT_THROW(fastq::validate_paired_reads(mate0, mate1), fastq_error);
+    }
+
+    {
+        fastq mate0 = ref_mate0;
+        fastq mate1 = ref_mate1;
+        ASSERT_THROW(fastq::validate_paired_reads(mate1, mate0), fastq_error);
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        fastq::validate_paired_reads(mate1, mate2);
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    }
+
+    {
+        fastq mate2 = ref_mate2;
+        fastq mate3 = ref_mate3;
+        ASSERT_THROW(fastq::validate_paired_reads(mate2, mate3), fastq_error);
+    }
+
+    {
+        fastq mate2 = ref_mate2;
+        fastq mate3 = ref_mate3;
+        ASSERT_THROW(fastq::validate_paired_reads(mate3, mate2), fastq_error);
+    }
+
+    {
+        fastq matea = ref_matea;
+        fastq mateb = ref_mateb;
+        ASSERT_THROW(fastq::validate_paired_reads(matea, mateb), fastq_error);
+    }
+
+    {
+        fastq matea = ref_matea;
+        fastq mateb = ref_mateb;
+        ASSERT_THROW(fastq::validate_paired_reads(mateb, matea), fastq_error);
+    }
 }
 
 
 TEST(fastq, validate_paired_reads__allows_other_separators)
 {
-    const fastq mate1 = fastq("Mate:1", "ACGT", "!!#$");
-    const fastq mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
+    const fastq ref_mate1 = fastq("Mate:1", "ACGT", "!!#$");
+    const fastq ref_mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
 
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        fastq::validate_paired_reads(mate1, mate2, ':');
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    }
+}
+
+
+TEST(fastq, validate_paired_reads__mate_separator_is_updated)
+{
+    const fastq ref_mate_1 = fastq("Mate/1", "ACGT", "!!#$");
+    const fastq ref_mate_2 = fastq("Mate/2", "GCTAA", "$!@#$");
+
+    fastq mate1 = fastq("Mate:1", "ACGT", "!!#$");
+    fastq mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
     fastq::validate_paired_reads(mate1, mate2, ':');
-    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+
+    ASSERT_EQ(mate1, ref_mate_1);
+    ASSERT_EQ(mate2, ref_mate_2);
 }
 
 
 TEST(fastq, validate_paired_reads__throws_if_mate_is_empty)
 {
-    const fastq mate1 = fastq("Mate", "", "");
-    const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
-    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
-    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate1), fastq_error);
+    const fastq ref_mate1 = fastq("Mate", "", "");
+    const fastq ref_mate2 = fastq("Mate", "ACGT", "!!#$");
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate1, mate1), fastq_error);
+    }
 }
 
 
 TEST(fastq, validate_paired_reads__throws_if_only_mate_1_is_numbered)
 {
-   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
-   const fastq mate1 = fastq("Mate", "ACGT", "!!#$");
-   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
-   ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    const fastq ref_mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
+    const fastq ref_mate1 = fastq("Mate", "ACGT", "!!#$");
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+
+        ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    }
 }
 
 
 TEST(fastq, validate_paired_reads__throws_if_only_mate_2_is_numbered)
 {
-   const fastq mate2 = fastq("Mate", "GCTAA", "$!@#$");
-   const fastq mate1 = fastq("Mate/2", "ACGT", "!!#$");
-   ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
-   ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    const fastq ref_mate1 = fastq("Mate", "GCTAA", "$!@#$");
+    const fastq ref_mate2 = fastq("Mate/2", "ACGT", "!!#$");
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    }
+
+    {
+        fastq mate1 = ref_mate1;
+        fastq mate2 = ref_mate2;
+        ASSERT_THROW(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    }
 }
 
 
 TEST(fastq, validate_paired_reads__throws_if_mate_is_misnumbered)
 {
-   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
-   const fastq mate1 = fastq("Mate/3", "ACGT", "!!#$");
+   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
+   fastq mate2 = fastq("Mate/3", "ACGT", "!!#$");
    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
 }
 
 
 TEST(fastq, validate_paired_reads__throws_if_same_mate_numbers)
 {
-   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
-   const fastq mate1 = fastq("Mate/1", "ACGT", "!!#$");
+   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
+   fastq mate2 = fastq("Mate/1", "ACGT", "!!#$");
    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
 }
 
 
 TEST(fastq, validate_paired_reads__throws_if_name_differs)
 {
-   const fastq mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
-   const fastq mate1 = fastq("WrongName/2", "ACGT", "!!#$");
+   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
+   fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
    ASSERT_THROW(fastq::validate_paired_reads(mate1, mate2), fastq_error);
 }
 
