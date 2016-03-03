@@ -1,5 +1,16 @@
 # Changelog
 
+### Version 2.1.6 - 2016-03-03
+
+  * Added support for reading / writing interleaved FASTQ files; this is
+    enabled by the options --interleaved-input and --interleaved-output,
+    respectively, or by setting --interleaved option which implies both of
+    the former options. See the README for an example.
+  * Fixed bug in a sanity check meant to detect if the mate 1 and mate 2 files
+    were of unequal length. This is now correctly detected in all cases.
+  * Expanded README with information about reading / writing FASTQ files with
+    different PHRED encodings / maximum quality scores.
+
 ### Version 2.1.5 - 2016-02-19
 
   * Added the --mate-separator option, which specifies the character separating
