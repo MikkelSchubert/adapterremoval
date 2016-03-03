@@ -92,7 +92,6 @@ The following command removes adapters from a paired-end reads, where the mate 1
 This command generates the files 'output_paired.pair1.truncated' and 'output_paired.pair2.truncated', which contain trimmed pairs of reads which were not collapsed, 'output_paired.singleton.truncated' containing reads where one mate was discarded, 'output_paired.collapsed' containing merged reads, and 'output_paired.collapsed.truncated' containing merged reads that have been trimmed due to the --trimns or --trimqualities options. Finally, the 'output_paired.discarded' and 'output_paired.settings' files correspond to those of the single-end run.
 
 
-
 ### Interleaved FASTQ reads
 
 AdapterRemoval is able to read and write paired-end reads stored in a single, so-called interleaved FASTQ file (one pair at a time, first mate 1, then mate 2). This is accomplished by specifying the location of the file using --file1 and *also* setting the --interleaved command-line option:
@@ -100,6 +99,24 @@ AdapterRemoval is able to read and write paired-end reads stored in a single, so
     $ AdapterRemoval --interleaved --file1 interleaved.fq --basename output_interleaved
 
 Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'pair1' and a 'pair2' file, but instead these are instead written to a single, interleaved file, named 'paired'. The location of this file is controlled using the --output1 option. Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the --interleaved-input and --interleaved-output options, both of which are enabled by the --interleaved option.
+
+
+### Different quality score encodings
+
+By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred+33 encoded, meaning that the error probabilities are encoded as (char)('!' - 10 * log10(p)). Most data will be encoded using Phred+33, but Phred+64 and 'Solexa' encoded quality scores are also supported. These are selected by specifying the --qualitybase command-line option (specifying either '33', '64', or 'solexa'):
+
+    $ AdapterRemoval --qualitybase 64 --file1 reads_q64.fq --basename phred_64_encoded
+
+By default, reads are written using the *same* encoding as the input. If a different encoding is desired, this may be accomplished using the --qualitybase-output option::
+
+    $ AdapterRemoval --qualitybase 64 --qualitybase-output 33 --file1 reads_q64.fq --basename phred_33_encoded
+
+Note furthermore that AdapterRemoval by default only expects quality scores in the range 0 - 41 (or -5 to 41 in the case of Solexa encoded scores). If input data using a different maximum quality score is to be processed, or if the desired maximum quality score of collapsed reads is greater than 41, then this limit may be increased using the --qualitymax option::
+
+    $ AdapterRemoval --qualitymax 50 --file1 reads_1.fq --file2 reads_2.fq --collapsed --basename collapsed_q50
+
+For a detailed overview of Phred encoding schemes currently and previously in use, see e.g. the Wikipedia article on the subject:
+https://en.wikipedia.org/wiki/FASTQ_format#Encoding
 
 
 ### Trimming paired-end reads with multiple adapter pairs
