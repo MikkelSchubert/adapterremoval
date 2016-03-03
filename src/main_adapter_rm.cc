@@ -77,6 +77,10 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
     }
 
     if (config.paired_ended_mode) {
+        if (config.interleaved_input) {
+            output << "interleaved ";
+        }
+
         output << "paired-end reads";
     } else {
         output << "single-end reads\n";
@@ -467,7 +471,11 @@ public:
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
-        output_chunk_ptr out_mate_2(new fastq_output_chunk(read_chunk->eof));
+        output_chunk_ptr out_mate_2;
+        if (!m_config.interleaved_output) {
+            out_mate_2.reset(new fastq_output_chunk(read_chunk->eof));
+        }
+
         output_chunk_ptr out_singleton(new fastq_output_chunk(read_chunk->eof));
         output_chunk_ptr out_collapsed;
         output_chunk_ptr out_collapsed_truncated;
@@ -530,7 +538,12 @@ public:
 
             if (read_1_acceptable && read_2_acceptable) {
                 out_mate_1->add(encoding, read1);
-                out_mate_2->add(encoding, read2);
+
+                if (m_config.interleaved_output) {
+                    out_mate_1->add(encoding, read2);
+                } else {
+                    out_mate_2->add(encoding, read2);
+                }
 
                 stats->inc_length_count(rt_mate_1, read1.length());
                 stats->inc_length_count(rt_mate_2, read2.length());
@@ -562,8 +575,12 @@ public:
 
         chunk_vec chunks;
         const size_t offset = m_nth * ai_analyses_offset;
+
         add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
-        add_chunk(chunks, offset + ai_write_mate_2, out_mate_2);
+        if (!m_config.interleaved_output) {
+            add_chunk(chunks, offset + ai_write_mate_2, out_mate_2);
+        }
+
         add_chunk(chunks, offset + ai_write_singleton, out_singleton);
         add_chunk(chunks, offset + ai_write_collapsed, out_collapsed);
         add_chunk(chunks, offset + ai_write_collapsed_truncated, out_collapsed_truncated);
@@ -696,13 +713,20 @@ int remove_adapter_sequences_pe(const userconfig& config)
     demultiplex_reads* demultiplexer = NULL;
 
     try {
-        if (config.adapters.barcode_count()) {
-            // Step 1: Read input file
+        // Step 1: Read input file
+        const size_t next_step = config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
+        if (config.interleaved_input) {
+            sch.add_step(ai_read_fastq, new read_interleaved_fastq(config.quality_input_fmt.get(),
+                                                                   config.input_file_1,
+                                                                   next_step));
+        } else {
             sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
                                                               config.input_file_1,
                                                               config.input_file_2,
-                                                              ai_demultiplex));
+                                                              next_step));
+        }
 
+        if (config.adapters.barcode_count()) {
             // Step 2: Parse and demultiplex reads based on single or double indices
             sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_pe_reads(&config));
 
@@ -710,11 +734,6 @@ int remove_adapter_sequences_pe(const userconfig& config)
                            new write_fastq(config.get_output_filename("demux_unknown", 1)));
             add_write_step(config, sch, ai_write_unidentified_2,
                            new write_fastq(config.get_output_filename("demux_unknown", 2)));
-        } else {
-            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
-                                                              config.input_file_1,
-                                                              config.input_file_2,
-                                                              ai_analyses_offset));
         }
 
         // Step 3 - N: Trim and write demultiplexed reads
@@ -726,8 +745,13 @@ int remove_adapter_sequences_pe(const userconfig& config)
 
             add_write_step(config, sch, offset + ai_write_mate_1,
                            new write_fastq(config.get_output_filename("--output1", nth)));
-            add_write_step(config, sch, offset + ai_write_mate_2,
-                           new write_fastq(config.get_output_filename("--output2", nth)));
+
+            if (!config.interleaved_output) {
+                add_write_step(config, sch, offset + ai_write_mate_2,
+                               new write_fastq(config.get_output_filename("--output2", nth)));
+            }
+
+
             add_write_step(config, sch, offset + ai_write_discarded,
                            new write_fastq(config.get_output_filename("--discarded", nth)));
             add_write_step(config, sch, offset + ai_write_singleton,

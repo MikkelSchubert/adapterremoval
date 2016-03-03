@@ -100,8 +100,13 @@ public:
     //! Path to input file containing mate 2 reads (for PE reads)
     std::string input_file_2;
 
-    //! Set to true if both --input1 and --input2 are set.
+    //! Set to true if both --input1 and --input2 are set, or if either of
+    //! --interleaved or --interleaved-input are set.
     bool paired_ended_mode;
+    //! Set to true if --interleaved or --interleaved-input is set.
+    bool interleaved_input;
+    //! Set to true if --interleaved or --interleaved-output is set.
+    bool interleaved_output;
 
     //! Character separating the mate number from the read name in FASTQ reads.
     char mate_separator;
@@ -202,6 +207,8 @@ private:
     unsigned quality_max;
     //! Sink for the mate separator character; use mate separator
     std::string mate_separator_str;
+    //! Sink for --interleaved
+    bool interleaved;
 };
 
 } // namespace ar

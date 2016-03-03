@@ -32,6 +32,19 @@ Read FASTQ reads from file I<filename>. This contains either the single ended (S
 
 Read FASTQ file I<filename> containing mate 2 reads for a paired end run. If specified, --file1 must also be set. The file may optionally be gzip or bzip2 compressed.
 
+=item B<--interleaved>
+
+Enables I<--interleaved-input> and I<--interleaved-output>.
+
+=item B<--interleaved-input>
+
+If set, input is expected to be a single FASTQ file specified using I<--file1>, in which pairs of paired-end reads are listed one after each other (read1/1, read1/2, read2/1, read2/2, etc.).
+
+=item B<--interleaved-ouput>
+
+If set, and AdapterRemoval is processing paired-end reads, retained pairs of reads are written to a single FASTQ file, one pair after each otehr (read1/1, read1/2, read2/1, read2/2, etc.). By default, this file is named I<basename.paired.truncated>, but this may be changed using the I<--output1> option.
+
+
 =item B<--basename> I<filename>
 
 Determines the default filename for output files, unless overridden using the specific output file settings. For single-ended mode, the following filenames are used: I<basename.truncated>, I<basename.discarded>, and I<basename.settings>. In paired end mode, the following filenames are used: I<basename.pair1.truncated>, I<basename.pair2.truncated>, I<basename.singleton.truncated>, I<basename.discarded>, and I<basename.settings>. If collapsing of reads is enabled for paired ended mode, the following filenames are also used: I<basename.collapsed>, and I<basename.collapsed.truncated>. The default basename is I<your_output>. If gzip compression is enabled, the extension ".gz" is added to all files but the I<filename.settings> file, while the extension ".bz2" is used if bzip2 compression is enabled.
@@ -244,6 +257,15 @@ The following command removes adapters from a paired-end reads, where the mate 1
     $ AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_paired --trimns --trimqualities --collapse
 
 This command generates the files I<output_paired.pair1.truncated> and I<output_paired.pair2.truncated>, which contain trimmed pairs of reads which were not collapsed, I<output_paired.singleton.truncated> containing reads where one mate was discarded, I<output_paired.collapsed> containing merged reads, and I<output_paired.collapsed.truncated> containing merged reads that have been trimmed due to the --trimns or --trimqualities options. Finally, the I<output_paired.discarded> and I<output_paired.settings> files correspond to those of the single-end run.
+
+
+=head1 EXAMPLE: Interleaved FASTQ reads.
+
+AdapterRemoval is able to read and write paired-end reads stored in a single, so-called interleaved FASTQ file (one pair at a time, first mate 1, then mate 2). This is accomplished by specifying the location of the file using I<--file1> and *also* setting the I<--interleaved> command-line option:
+
+    $ AdapterRemoval --interleaved --file1 interleaved.fq --basename output_interleaved
+
+Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'pair1' and a 'pair2' file, but instead these are instead written to a single, interleaved file, named 'paired'. The location of this file is controlled using the I<--output1> option. Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the I<--interleaved-input> and I<--interleaved-output> options, both of which are enabled by the I<--interleaved> option.
 
 
 =head1 EXAMPLE: Paired end reads containing multiple, distinct adapter pairs.

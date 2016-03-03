@@ -225,6 +225,99 @@ void read_paired_fastq::finalize()
 }
 
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'read_interleaved_fastq'
+
+read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
+                                          const std::string& filename,
+                                          size_t next_step)
+  : analytical_step(analytical_step::ordered, true)
+  , m_encoding(encoding)
+  , m_line_offset(1)
+  , m_io_input(filename)
+  , m_next_step(next_step)
+  , m_eof(false)
+{
+}
+
+
+chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
+{
+    AR_DEBUG_ASSERT(chunk == NULL);
+    if (!m_io_input.is_open()) {
+        return chunk_vec();
+    }
+
+    chunk_ptr file_chunk(new fastq_read_chunk());
+
+    file_chunk->reads_1.reserve(FASTQ_CHUNK_SIZE);
+    file_chunk->reads_2.reserve(FASTQ_CHUNK_SIZE);
+
+    try {
+        fastq record;
+        for (size_t i = 0; i < FASTQ_CHUNK_SIZE; ++i) {
+            // Mate 1 reads
+            if (record.read(m_io_input, *m_encoding)) {
+                file_chunk->reads_1.push_back(record);
+            } else {
+                break;
+            }
+
+            // Mate 2 reads
+            if (record.read(m_io_input, *m_encoding)) {
+                file_chunk->reads_2.push_back(record);
+            } else {
+                break;
+            }
+        }
+    } catch (const fastq_error& error) {
+        const size_t offset = m_line_offset
+            + file_chunk->reads_1.size() * 4
+            + file_chunk->reads_2.size() * 4;
+
+        print_locker lock;
+        std::cerr << "Error reading FASTQ record starting at line "
+                  << offset << ":\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
+
+        throw thread_abort();
+    }
+
+    const size_t n_read_1 = file_chunk->reads_1.size();
+    const size_t n_read_2 = file_chunk->reads_2.size();
+
+    if (n_read_1 != n_read_2) {
+        print_locker lock;
+        std::cerr << "ERROR: Interleaved FASTQ file contains uneven number of "
+                  << "reads; file may have been truncated! Please correct "
+                  << "before continuing!"
+                  << std::endl;
+
+        throw thread_abort();
+    } else if (!n_read_1) {
+        m_io_input.close();
+        file_chunk->eof = true;
+        m_eof = true;
+    }
+
+    m_line_offset += (n_read_1 + n_read_2) * 4;
+
+    chunk_vec chunks;
+    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+
+    return chunks;
+}
+
+
+void read_interleaved_fastq::finalize()
+{
+    if (!m_eof) {
+        throw thread_error("read_interleaved_fastq::finalize: terminated before EOF");
+    }
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Utility function used by both gzip and bzip compression steps
 

@@ -78,6 +78,8 @@ userconfig::userconfig(const std::string& name,
     , input_file_1()
     , input_file_2()
     , paired_ended_mode(false)
+    , interleaved_input(false)
+    , interleaved_output(false)
     , mate_separator(MATE_SEPARATOR)
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
@@ -111,6 +113,7 @@ userconfig::userconfig(const std::string& name,
     , quality_output_base("33")
     , quality_max(MAX_PHRED_SCORE_DEFAULT)
     , mate_separator_str(1, MATE_SEPARATOR)
+    , interleaved(false)
 {
     argparser["--file1"] =
         new argparse::any(&input_file_1, "FILE",
@@ -142,6 +145,24 @@ userconfig::userconfig(const std::string& name,
             "Character separating the mate number (1 or 2) from the read name "
             "in FASTQ records [default: '%default'].");
 
+    argparser["--interleaved"] =
+        new argparse::flag(&interleaved,
+            "This option enables both the --interleaved-input option and the "
+            "--interleaved-output option [current: %default].");
+    argparser["--interleaved-input"] =
+        new argparse::flag(&interleaved_input,
+            "The (single) input file provided contains both the mate 1 and "
+            "mate 2 reads, one pair after the other, with one mate 1 reads "
+            "followed by one mate 2 read. This option is implied by the "
+            "--interleaved option [current: %default].");
+    argparser["--interleaved-output"] =
+        new argparse::flag(&interleaved_output,
+            "If set, trimmed paired-end reads are written to a single file "
+            "containing mate 1 and mate 2 reads, one pair after the other. "
+            "This option is implied by the --interleaved option [current: "
+            "%default].");
+
+
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
         new argparse::any(&basename, "BASENAME",
@@ -155,11 +176,13 @@ userconfig::userconfig(const std::string& name,
     argparser["--output1"] =
         new argparse::any(NULL, "FILE",
             "Output file containing trimmed mate1 reads [default: "
-            "BASENAME.pair1.truncated (PE) or BASENAME.truncated (SE)]");
+            "BASENAME.pair1.truncated (PE), BASENAME.truncated (SE), or "
+            "BASENAME.paired.truncated (interleaved PE)]");
     argparser["--output2"] =
         new argparse::any(NULL, "FILE",
             "Output file containing trimmed mate 2 reads [default: "
-            "BASENAME.pair2.truncated (only used in PE mode)]");
+            "BASENAME.pair2.truncated (only used in PE mode, but not if "
+            "--interleaved-output is enabled)]");
     argparser["--singleton"] =
         new argparse::any(NULL, "FILE",
             "Output file to which containing paired reads for which the mate "
@@ -358,7 +381,8 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
             return argparse::pr_error;
         }
     } else {
-        quality_output_fmt = select_encoding("--qualitybase-out", quality_input_base, quality_max);
+        // Default to using the same output encoding as the input
+        quality_output_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
         if (!quality_output_fmt.get()) {
             return argparse::pr_error;
         }
@@ -398,20 +422,41 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: No input files (--file1 / --file2) specified.\n"
                   << "Please specify at least one input file using --file1 FILENAME."
                   << std::endl;
+
         return argparse::pr_error;
     } else if (file_2_set && !file_1_set) {
         std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
-        return argparse::pr_error;
-    } else if (identify_adapters && !(file_1_set && file_2_set)) {
-        std::cerr << "Error: Both input files (--file1 / --file2) must be "
-                  << "specified when using --identify-adapters."
-                  << std::endl;
-        return argparse::pr_error;
-    }
 
-    if (file_2_set) {
+        return argparse::pr_error;
+    } else if (file_2_set) {
         paired_ended_mode = true;
         min_adapter_overlap = 0;
+    }
+
+    interleaved_input |= interleaved;
+    interleaved_output |= interleaved;
+
+    if (interleaved_input) {
+        if (file_2_set) {
+            std::cerr << "Error: The option --interleaved cannot be used "
+                      << "together with the --file2 option; only --file1 must "
+                      << "be specified!"
+                      << std::endl;
+            return argparse::pr_error;
+        }
+
+        // Enable paired end mode .. other than the FASTQ reader, all other
+        // parts of the pipeline simply run in paired-end mode.
+        paired_ended_mode = true;
+    }
+
+    if (identify_adapters && !paired_ended_mode) {
+        std::cerr << "Error: Both input files (--file1 / --file2) must be "
+                  << "specified when using --identify-adapters, or input must "
+                  << "be interleaved FASTQ reads (requires --interleaved)."
+                  << std::endl;
+
+        return argparse::pr_error;
     }
 
     // (Optionally) read adapters from file and validate
@@ -564,7 +609,11 @@ std::string userconfig::get_output_filename(const std::string& key,
         filename += ".discarded";
     } else if (paired_ended_mode) {
         if (key == "--output1") {
-            filename += ".pair1.truncated";
+            if (interleaved_output) {
+                filename += ".paired.truncated";
+            } else {
+                filename += ".pair1.truncated";
+            }
         } else if (key == "--output2") {
             filename += ".pair2.truncated";
         } else if (key == "--singleton") {

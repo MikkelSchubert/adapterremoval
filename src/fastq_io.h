@@ -118,9 +118,9 @@ private:
 /**
  * Simple file reading step.
  *
- * Reads from the mate 1 and the mate 2 files, storing the reads in a
- * fastq_file_chunk. Once the EOF has been reached, a single empty of lines
- * will be returned.
+ * Reads from a single FASTQ file, storing the reads in a fastq_file_chunk.
+ * Once the EOF has been reached, a single empty chunk will be returned,
+ * marked using the 'eof' property.
  */
 class read_single_fastq : public analytical_step
 {
@@ -166,8 +166,8 @@ private:
  * Simple file reading step.
  *
  * Reads from the mate 1 and the mate 2 files, storing the reads in a
- * fastq_file_chunk. Once the EOF has been reached, a single empty of lines
- * will be returned.
+ * fastq_file_chunk. Once the EOF has been reached, a single empty chunk will
+ * be returned, marked using the 'eof' property.
  */
 class read_paired_fastq : public analytical_step
 {
@@ -205,6 +205,49 @@ private:
     //! Used to track whether an EOF block has been received.
     bool m_eof;
 };
+
+
+/**
+ * Simple file reading step.
+ *
+ * Reads from an FASTQ file containing interleaved FASTQ reads, storing the
+ * reads in a fastq_file_chunk. Once the EOF has been reached, a single empty
+ * chunk will be returned, marked using the 'eof' property.
+ */
+class read_interleaved_fastq : public analytical_step
+{
+public:
+    /**
+     * Constructor.
+     */
+    read_interleaved_fastq(const fastq_encoding* encoding,
+                           const std::string& filename,
+                           size_t next_step);
+
+    /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
+    virtual chunk_vec process(analytical_chunk* chunk);
+
+    /** Finalizer; checks that all input has been processed. */
+    virtual void finalize();
+
+private:
+    //! Not implemented
+    read_interleaved_fastq(const read_interleaved_fastq&);
+    //! Not implemented
+    read_interleaved_fastq& operator=(const read_interleaved_fastq&);
+
+    //! Encoding used to parse FASTQ reads.
+    const fastq_encoding* m_encoding;
+    //! Current line in the input file (1-based)
+    size_t m_line_offset;
+    //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
+    line_reader m_io_input;
+    //! The analytical step following this step
+    const size_t m_next_step;
+    //! Used to track whether an EOF block has been received.
+    bool m_eof;
+};
+
 
 
 #ifdef AR_BZIP2_SUPPORT

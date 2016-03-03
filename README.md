@@ -92,6 +92,16 @@ The following command removes adapters from a paired-end reads, where the mate 1
 This command generates the files 'output_paired.pair1.truncated' and 'output_paired.pair2.truncated', which contain trimmed pairs of reads which were not collapsed, 'output_paired.singleton.truncated' containing reads where one mate was discarded, 'output_paired.collapsed' containing merged reads, and 'output_paired.collapsed.truncated' containing merged reads that have been trimmed due to the --trimns or --trimqualities options. Finally, the 'output_paired.discarded' and 'output_paired.settings' files correspond to those of the single-end run.
 
 
+
+### Interleaved FASTQ reads
+
+AdapterRemoval is able to read and write paired-end reads stored in a single, so-called interleaved FASTQ file (one pair at a time, first mate 1, then mate 2). This is accomplished by specifying the location of the file using --file1 and *also* setting the --interleaved command-line option:
+
+    $ AdapterRemoval --interleaved --file1 interleaved.fq --basename output_interleaved
+
+Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'pair1' and a 'pair2' file, but instead these are instead written to a single, interleaved file, named 'paired'. The location of this file is controlled using the --output1 option. Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the --interleaved-input and --interleaved-output options, both of which are enabled by the --interleaved option.
+
+
 ### Trimming paired-end reads with multiple adapter pairs
 
 It is possible to trim data that contains multiple adapter pairs, by providing a one or two-column table containing possible adapter combinations (for single-end and paired-end trimming, respectively; see e.g. examples/adapters.txt):
