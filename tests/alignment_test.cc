@@ -850,6 +850,54 @@ TEST(collapsing, offset_past_the_end)
 }
 
 
+TEST(collapsing, partial_overlap__mate_numbers_removed)
+{
+    const fastq record1("Read/1", "ATATTATA", "01234567");
+    const fastq record2("Read/2", "NNNNACGT", "ABCDEFGH");
+    const alignment_info alignment = new_aln(0, 4);
+    const fastq collapsed_expected = fastq("Read", "ATATTATAACGT", "01234567EFGH");
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+
+    ASSERT_EQ(collapsed_expected, collapsed_result);
+}
+
+
+TEST(collapsing, partial_overlap__mate_numbers_removed__mate_1_meta_kept)
+{
+    const fastq record1("Read/1 Meta1", "ATATTATA", "01234567");
+    const fastq record2("Read/2 Meta2", "NNNNACGT", "ABCDEFGH");
+    const alignment_info alignment = new_aln(0, 4);
+    const fastq collapsed_expected = fastq("Read Meta1", "ATATTATAACGT", "01234567EFGH");
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+
+    ASSERT_EQ(collapsed_expected, collapsed_result);
+}
+
+
+TEST(collapsing, partial_overlap__mate_numbers_removed__non_std_mate_sep)
+{
+    const fastq record1("Read:1", "ATATTATA", "01234567");
+    const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
+    const alignment_info alignment = new_aln(0, 4);
+    const fastq collapsed_expected = fastq("Read", "ATATTATAACGT", "01234567EFGH");
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, ':');
+
+    ASSERT_EQ(collapsed_expected, collapsed_result);
+}
+
+
+TEST(collapsing, partial_overlap__mate_numbers_removed__non_std_mate_sep__not_set)
+{
+    const fastq record1("Read:1", "ATATTATA", "01234567");
+    const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
+    const alignment_info alignment = new_aln(0, 4);
+    const fastq collapsed_expected = fastq("Read:1", "ATATTATAACGT", "01234567EFGH");
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+
+    ASSERT_EQ(collapsed_expected, collapsed_result);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Barcode extraction
 

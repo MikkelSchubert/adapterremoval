@@ -418,9 +418,30 @@ size_t truncate_paired_ended_sequences(const alignment_info& alignment,
 }
 
 
+std::string strip_mate_info(const std::string& header, const char mate_sep)
+{
+    size_t pos = header.find_first_of(' ');
+    if (pos == std::string::npos) {
+        pos = header.length();
+    }
+
+    if (pos >= 2 && header.at(pos - 2) == mate_sep) {
+        const char digit = header.at(pos - 1);
+
+        if (digit == '1' || digit == '2') {
+            std::string new_header = header;
+            return new_header.erase(pos - 2, 2);
+        }
+    }
+
+    return header;
+}
+
+
 fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                       const fastq& read1,
-                                      const fastq& read2)
+                                      const fastq& read2,
+                                      const char mate_sep)
 {
     if (alignment.offset > static_cast<int>(read1.length())) {
         // Gap between the two reads is not allowed
@@ -443,7 +464,8 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                               read1.qualities().substr(read_1_offset),
                                               read2.qualities().substr(0, read_2_offset));
 
-    return fastq(read1.header(),
+    // Remove mate number from read, if present, when building new record
+    return fastq(strip_mate_info(read1.header(), mate_sep),
                  read_1_seq + collapsed.first + read_2_seq,
                  read_1_qual + collapsed.second + read_2_qual,
                  FASTQ_ENCODING_SAM);
