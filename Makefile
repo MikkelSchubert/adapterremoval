@@ -2,6 +2,9 @@
 # Makefile options: Edit / comment / uncomment to change build behavior
 #
 
+# Installation destinations
+PREFIX := /usr/local
+
 # Default compilation flags
 CXXFLAGS := -O3 -ansi -pedantic -Wall -Wextra
 CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
@@ -109,10 +112,27 @@ clean: clean_tests
 	$(QUIET) rm -rvf $(BDIR)
 
 # Install
-install:
-	@echo $(COLOR_GREEN)"Installing ..."$(COLOR_END)
-	$(QUIET) mv -f build/$(PROG) /usr/local/bin/
-	$(QUIET) mv -f build/$(PROG).1 /usr/share/man/man1/
+install: build/$(PROG) build/$(PROG).1
+	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
+	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
+	$(QUIET) mkdir -p ${PREFIX}/bin/
+	$(QUIET) mv -f build/$(PROG) ${PREFIX}/bin/
+	$(QUIET) chmod a+x ${PREFIX}/bin/$(PROG)
+
+	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
+	$(QUIET) mkdir -p ${PREFIX}/share/man/man1/
+	$(QUIET) mv -f build/$(PROG).1 ${PREFIX}/share/man/man1/
+	$(QUIET) chmod a+r ${PREFIX}/share/man/man1/$(PROG).1
+
+	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval/"$(COLOR_END)
+	$(QUIET) mkdir -p ${PREFIX}/share/adapterremoval/
+	$(QUIET) cp -a README.md ${PREFIX}/share/adapterremoval/
+	$(QUIET) chmod a+r ${PREFIX}/share/adapterremoval/README.md
+
+	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
+	$(QUIET) mkdir -p ${PREFIX}/share/adapterremoval/examples/
+	$(QUIET) cp -a examples/*.{txt,fq} ${PREFIX}/share/adapterremoval/examples/
+	$(QUIET) chmod a+r ${PREFIX}/share/adapterremoval/examples/*.{txt,fq}
 
 static: build/$(LIBNAME).a
 
@@ -165,7 +185,6 @@ GTEST_LIB :=$(TEST_DIR)/libgtest.a
 TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc -DAR_TEST_BUILD
 GTEST_CXXFLAGS := $(TEST_CXXFLAGS)
 
-
 test: $(TEST_DIR)/main
 	@echo $(COLOR_GREEN)"Running tests"$(COLOR_END)
 	$(QUIET) $< --gtest_print_time=0 --gtest_shuffle
@@ -199,11 +218,27 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -pthread -c $< -o $@
 
-$(GTEST_DIR)/src/gtest%.cc:
+.PRECIOUS: $(GTEST_DIR)/src/gtest%.cc
+$(GTEST_DIR)/src/gtest%.cc: googletest-release-1.7.0.zip
+	$(QUIET) if ! test -e "$@"; \
+	then \
+		echo $(COLOR_CYAN)"Unpacking Google Test library"$(COLOR_END); \
+		unzip -qo googletest-release-1.7.0.zip; \
+	fi
+
+googletest-release-1.7.0.zip:
+ifneq ("$(shell which wget)", "")
+	@echo $(COLOR_CYAN)"Fetching Google Test library using wget"$(COLOR_END)
+	$(QUIET) wget -q https://github.com/google/googletest/archive/release-1.7.0.zip -O googletest-release-1.7.0.zip
+else ifneq ("$(shell which curl)", "")
+	@echo $(COLOR_CYAN)"Fetching Google Test library using curl"$(COLOR_END)
+	$(QUIET) curl -L https://github.com/google/googletest/archive/release-1.7.0.zip -o googletest-release-1.7.0.zip
+else
 	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder:"$(COLOR_END)
 	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.7.0.zip -O googletest-release-1.7.0.zip"$(COLOR_END)
 	@echo $(COLOR_YELLOW)"  $$ unzip googletest-release-1.7.0.zip"$(COLOR_END)
 	@exit 1
+endif
 
 # Automatic header dependencies for tests
 -include $(TEST_DEPS)
