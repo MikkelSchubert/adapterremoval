@@ -1,5 +1,18 @@
 # Changelog
 
+### Version 2.1.7 - 2016-03-11
+
+  * The mate number is now stripped from collapsed reads, where previously this
+    would always be '\1' (if set). However, if meta-data is present in the
+    reads, that found in the mate 1 read is retained.
+  * The value used for --mate-separator is now written to the 'settings' file.
+  * Improved 'make install'. This command now makes use of a PREFIX value to
+    determine the installation destination (defaults to /usr/local), and
+    includes the 'README.md' file and 'examples' folder in the installation.
+  * Improved 'make test'. This command now attempts to download the required
+    testing library automatically, using either wget or curl if available.
+
+
 ### Version 2.1.6 - 2016-03-03
 
   * Added support for reading / writing interleaved FASTQ files; this is
