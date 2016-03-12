@@ -131,8 +131,8 @@ install: build/$(PROG) build/$(PROG).1
 
 	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
 	$(QUIET) mkdir -p ${PREFIX}/share/adapterremoval/examples/
-	$(QUIET) cp -a examples/*.{txt,fq} ${PREFIX}/share/adapterremoval/examples/
-	$(QUIET) chmod a+r ${PREFIX}/share/adapterremoval/examples/*.{txt,fq}
+	$(QUIET) cp -a examples/*.* ${PREFIX}/share/adapterremoval/examples/
+	$(QUIET) chmod a+r ${PREFIX}/share/adapterremoval/examples/*.*
 
 static: build/$(LIBNAME).a
 
