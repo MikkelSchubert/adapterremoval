@@ -328,6 +328,10 @@ protected:
         return new adapter_stats(m_config);
     }
 
+    virtual void reduce(adapter_stats* dst, const adapter_stats* src) const {
+        (*dst) += (*src);
+    }
+
 private:
     //! Not implemented
     adapter_sink(const adapter_sink&);
@@ -486,7 +490,7 @@ int identify_adapter_sequences(const userconfig& config)
 
     sch.add_step(ai_identify_adapters, new adapter_identification(config));
 
-    if (!sch.run(config.max_threads, config.seed)) {
+    if (!sch.run(config.max_threads)) {
         return 1;
     }
 

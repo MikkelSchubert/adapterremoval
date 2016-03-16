@@ -23,7 +23,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 
-#include <cstdlib>
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -236,7 +235,8 @@ const phred_scores& get_updated_phred_scores(char qual_1, char qual_2)
 string_pair collapse_sequence(const std::string& sequence1,
                               const std::string& sequence2,
                               const std::string& qualities1,
-                              const std::string& qualities2)
+                              const std::string& qualities2,
+                              std::mt19937& rng)
 {
     AR_DEBUG_ASSERT(sequence1.length() == sequence2.length() &&
                      sequence1.length() == qualities1.length() &&
@@ -265,7 +265,7 @@ string_pair collapse_sequence(const std::string& sequence1,
                 collapsed_qual.at(i) = PHRED_OFFSET_33;
             }
         } else if (nt_1 != nt_2 && qual_1 == qual_2) {
-            const int shuffle = random() % 2;
+            const int shuffle = rng() & 1;
             collapsed_seq.at(i) = shuffle ? nt_1 : nt_2;
 
             const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
@@ -441,6 +441,7 @@ std::string strip_mate_info(const std::string& header, const char mate_sep)
 fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                       const fastq& read1,
                                       const fastq& read2,
+                                      std::mt19937& rng,
                                       const char mate_sep)
 {
     if (alignment.offset > static_cast<int>(read1.length())) {
@@ -462,7 +463,8 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
     string_pair collapsed = collapse_sequence(read1.sequence().substr(read_1_offset),
                                               read2.sequence().substr(0, read_2_offset),
                                               read1.qualities().substr(read_1_offset),
-                                              read2.qualities().substr(0, read_2_offset));
+                                              read2.qualities().substr(0, read_2_offset),
+                                              rng);
 
     // Remove mate number from read, if present, when building new record
     return fastq(strip_mate_info(read1.header(), mate_sep),

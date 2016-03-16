@@ -90,6 +90,11 @@ fastq_pair_vec create_adapter_vec(const fastq& pcr1, const fastq& pcr2 = fastq()
 }
 
 
+std::random_device g_seed;
+std::mt19937 g_rng(g_seed());
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Cases for SE alignments (a = read 1, b = adapter, o = overlap):
@@ -692,7 +697,7 @@ TEST(collapsing, partial_overlap)
     const alignment_info alignment = new_aln(0, 4);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -704,7 +709,7 @@ TEST(collapsing, complete_overlap_both_directions)
     const alignment_info alignment = new_aln(0, -1);
     ASSERT_EQ(2, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -716,7 +721,7 @@ TEST(collapsing, complete_overlap_mate_1)
     const alignment_info alignment = new_aln();
     ASSERT_EQ(1, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -728,7 +733,7 @@ TEST(collapsing, complete_overlap_mate_2)
     const alignment_info alignment = new_aln(0, -1);
     ASSERT_EQ(1, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -740,7 +745,7 @@ TEST(collapsing, unequal_sequence_length__mate_1_shorter)
     const alignment_info alignment = new_aln(0, 3);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -752,7 +757,7 @@ TEST(collapsing, unequal_sequence_length__mate_1_shorter__mate_2_extends_past)
     const alignment_info alignment = new_aln(0, -2);
     ASSERT_EQ(1, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATANACGT", "012DEFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -764,7 +769,7 @@ TEST(collapsing, unequal_sequence_length__mate_2_shorter)
     const alignment_info alignment = new_aln(0, 8);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -776,7 +781,7 @@ TEST(collapsing, ambiguous_sites_are_filled_from_the_mate)
     const alignment_info alignment;
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "ACGTNNTATA", "ABCD!!6789");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -788,7 +793,7 @@ TEST(collapsing, consensus_bases__identical_nucleotides)
     const alignment_info alignment = new_aln(0, 6);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "GCATGATATATACAAC", "012345(FBcEFGHIJ", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -800,7 +805,7 @@ TEST(collapsing, consensus_bases__identical_nucleotides__scores_are_capped_at_41
     const alignment_info alignment = new_aln(0, 6);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "GCATGATATATACAAC", "012345Z\\^`EFGHIJ", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -812,7 +817,7 @@ TEST(collapsing, consensus_bases__different_nucleotides)
     const alignment_info alignment = new_aln(0, 6);
     ASSERT_EQ(0, truncate_paired_ended_sequences(alignment, record1, record2));
     const fastq collapsed_expected = fastq("Rec1", "GCATGATAATTACAAC", "012345(%5%EFGHIJ");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -822,9 +827,11 @@ TEST(collapsing, consensus_bases__different_nucleotides__same_quality_1)
     const fastq record1("Rec1", "G", "1");
     const fastq record2("Rec2", "T", "1");
     const alignment_info alignment;
-    srandom(1);
+    std::seed_seq seed{1};
+    std::mt19937 rng(seed);
+
     const fastq collapsed_expected = fastq("Rec1", "G", "#");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -834,9 +841,11 @@ TEST(collapsing, consensus_bases__different_nucleotides__same_quality_2)
     const fastq record1("Rec1", "G", "1");
     const fastq record2("Rec2", "T", "1");
     const alignment_info alignment;
-    srandom(2);
+    std::seed_seq seed{2};
+    std::mt19937 rng(seed);
+
     const fastq collapsed_expected = fastq("Rec1", "T", "#");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, rng);
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
 
@@ -846,7 +855,7 @@ TEST(collapsing, offset_past_the_end)
     const fastq record1("Rec1", "G", "1");
     const fastq record2("Rec2", "T", "1");
     const alignment_info alignment = new_aln(0, 2);
-    ASSERT_THROW(collapse_paired_ended_sequences(alignment, record1, record2), std::invalid_argument);
+    ASSERT_THROW(collapse_paired_ended_sequences(alignment, record1, record2, g_rng), std::invalid_argument);
 }
 
 
@@ -856,7 +865,7 @@ TEST(collapsing, partial_overlap__mate_numbers_removed)
     const fastq record2("Read/2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = new_aln(0, 4);
     const fastq collapsed_expected = fastq("Read", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
 
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
@@ -868,7 +877,7 @@ TEST(collapsing, partial_overlap__mate_numbers_removed__mate_1_meta_kept)
     const fastq record2("Read/2 Meta2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = new_aln(0, 4);
     const fastq collapsed_expected = fastq("Read Meta1", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
 
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
@@ -880,7 +889,7 @@ TEST(collapsing, partial_overlap__mate_numbers_removed__non_std_mate_sep)
     const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = new_aln(0, 4);
     const fastq collapsed_expected = fastq("Read", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, ':');
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng, ':');
 
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }
@@ -892,7 +901,7 @@ TEST(collapsing, partial_overlap__mate_numbers_removed__non_std_mate_sep__not_se
     const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = new_aln(0, 4);
     const fastq collapsed_expected = fastq("Read:1", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
 
     ASSERT_EQ(collapsed_expected, collapsed_result);
 }

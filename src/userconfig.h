@@ -146,10 +146,6 @@ public:
     // Allow for slipping basepairs by allowing missing bases in adapter
     unsigned shift;
 
-    //! RNG seed for randomly selecting between to bases with the same quality
-    //! when collapsing overllapping PE reads.
-    unsigned seed;
-
     //! If true, the program attempts to identify the adapter pair of PE reads
     bool identify_adapters;
 

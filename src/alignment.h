@@ -25,6 +25,7 @@
 #define ALIGNMENT_H
 
 #include <string>
+#include <random>
 
 #include "fastq.h"
 
@@ -191,6 +192,7 @@ size_t truncate_paired_ended_sequences(const alignment_info& alignment,
 fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                       const fastq& read1,
                                       const fastq& read2,
+                                      std::mt19937& rng,
                                       const char mate_sep=MATE_SEPARATOR);
 
 

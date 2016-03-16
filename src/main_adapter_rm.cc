@@ -137,7 +137,6 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
     }
 
     output << "\n\n[Adapter trimming]"
-           << "\nRNG seed: " << config.seed
            << "\nAlignment shift value: " << config.shift
            << "\nGlobal mismatch threshold: " << config.mismatch_threshold
            << "\nQuality format (input): " << config.quality_input_fmt->name()
@@ -365,6 +364,10 @@ protected:
             return m_config.create_stats().release();
         }
 
+        virtual void reduce(statistics* dst, const statistics* src) const {
+            (*dst) += (*src);
+        }
+
         const userconfig& m_config;
     };
 
@@ -456,18 +459,47 @@ public:
 };
 
 
+/** Class for building RNGs on demand. */
+class rng_sink : public statistics_sink<std::mt19937>
+{
+public:
+    rng_sink()
+      : m_seed()
+    {
+    }
+
+protected:
+    virtual std::mt19937* new_sink() const {
+        return new std::mt19937(m_seed());
+    }
+
+    virtual void reduce(std::mt19937*, const std::mt19937*) const {
+        // Intentionally left empty
+    }
+
+private:
+    //! Not implemented
+    rng_sink(const rng_sink&);
+    //! Not implemented
+    rng_sink& operator=(const rng_sink&);
+
+    mutable std::random_device m_seed;
+};
+
+
 class pe_reads_processor : public reads_processor
 {
 public:
     pe_reads_processor(const userconfig& config, size_t nth)
       : reads_processor(config, nth)
+      , m_rngs()
     {
     }
 
     chunk_vec process(analytical_chunk* chunk)
     {
+        std::auto_ptr<std::mt19937> rng(m_rngs.get_sink());
         std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-
         std::auto_ptr<statistics> stats(m_stats.get_sink());
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
@@ -509,7 +541,7 @@ public:
                 stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
 
                 if (m_config.is_alignment_collapsible(alignment)) {
-                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2);
+                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2, *rng);
                     process_collapsed_read(m_config, *stats, collapsed_read,
                                            *out_collapsed,
                                            *out_collapsed_truncated,
@@ -573,6 +605,7 @@ public:
 
         stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(stats.release());
+        m_rngs.return_sink(rng.release());
 
         chunk_vec chunks;
         const size_t offset = m_nth * ai_analyses_offset;
@@ -589,6 +622,9 @@ public:
 
         return chunks;
     }
+
+private:
+    rng_sink m_rngs;
 };
 
 
@@ -693,7 +729,7 @@ int remove_adapter_sequences_se(const userconfig& config)
         return 1;
     }
 
-    if (!sch.run(config.max_threads, config.seed)) {
+    if (!sch.run(config.max_threads)) {
         return 1;
     } else if (!write_settings(config, processors)) {
         return 1;
@@ -771,7 +807,7 @@ int remove_adapter_sequences_pe(const userconfig& config)
         return 1;
     }
 
-    if (!sch.run(config.max_threads, config.seed)) {
+    if (!sch.run(config.max_threads)) {
         return 1;
     } else if (!write_settings(config, processors)) {
         return 1;

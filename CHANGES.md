@@ -1,5 +1,10 @@
 # Changelog
 
+  * Rework selection of nucleotides at overlapping positions with the same
+    quality, in order to prevent potential data-races during tie-breaking, when
+    running in multi-threaded mode. As a side-effect, the --seed option has
+    been removed, and this value is no longer recorded in the .settings file.
+
 ### Version 2.1.7 - 2016-03-11
 
   * The mate number is now stripped from collapsed reads, where previously this

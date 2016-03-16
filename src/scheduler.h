@@ -102,6 +102,9 @@ protected:
     /** Returns a new sink object; to be implemented in subclasses. */
     virtual T* new_sink() const = 0;
 
+    /** Called to reduce objects during finalization. */
+    virtual void reduce(T* dst, const T* src) const = 0;
+
 private:
     typedef std::list<T*> sink_list;
     typedef typename sink_list::iterator sink_list_iter;
@@ -215,7 +218,7 @@ public:
     void add_step(size_t step_id, analytical_step* step);
 
     /** Runs the pipeline with n threads; return false on error. */
-    bool run(int nthreads, unsigned seed);
+    bool run(int nthreads);
 
 private:
     typedef std::list<scheduler_step*> runables;
@@ -232,7 +235,7 @@ private:
     void* do_run();
 
     /** Initializes n threads, returning false if any errors occured. */
-    bool initialize_threads(int nthreads, unsigned seed);
+    bool initialize_threads(int nthreads);
     /** Sends a number of signals corresponding to the number of threads. */
     void signal_threads();
     /** Joins all threads, returning false if any errors occured. */
@@ -329,7 +332,7 @@ T* statistics_sink<T>::finalize()
     m_sinks.pop_back();
 
     while (!m_sinks.empty()) {
-        *result += *m_sinks.back();
+        reduce(result.get(), m_sinks.back());
         delete m_sinks.back();
         m_sinks.pop_back();
     }

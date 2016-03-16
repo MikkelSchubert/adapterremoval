@@ -6,7 +6,7 @@
 PREFIX := /usr/local
 
 # Default compilation flags
-CXXFLAGS := -O3 -ansi -pedantic -Wall -Wextra
+CXXFLAGS := -std=c++11 -O3 -pedantic -Wall -Wextra
 CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
 	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
 	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=5 \

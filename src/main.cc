@@ -23,7 +23,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <iostream>
-#include <cstdlib>
 
 #include "debug.h"
 #include "main.h"
@@ -53,10 +52,6 @@ int main(int argc, char *argv[])
         // --version, --help, or similar used.
         return 0;
     }
-
-    // User-specified or timestamp-based seed;
-    // note, however, that threads are reseeded upon initialization
-    srandom(config.seed);
 
     if (config.identify_adapters) {
         return identify_adapter_sequences(config);
