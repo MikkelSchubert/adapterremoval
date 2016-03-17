@@ -246,12 +246,19 @@ private:
     /** Attempts to queue an analytical step given a current chunk. */
     void queue_analytical_step(scheduler_step* step, size_t current);
 
+    /** Returns true if an error has occured, and the run should terminate. */
+    bool errors_occured();
+    /** Mark that an error has occured, and that the run should terminate. */
+    void set_errors_occured();
+
     //! Analytical steps
     pipeline m_steps;
     //! Lock set when the scheduler is running
     mutex m_running;
+    //! Used to control access to m_errors;
+    mutex m_errors_lock;
     //! Set to indicate if errors have occured
-    volatile bool m_errors;
+    bool m_errors;
     //! Condition used to signal the (potential) availability of work
     conditional m_condition;
 
@@ -358,6 +365,25 @@ inline analytical_step::ordering analytical_step::get_ordering() const
 inline bool analytical_step::file_io() const
 {
     return m_file_io;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'scheduler'
+
+inline bool scheduler::errors_occured()
+{
+    mutex_locker lock(m_errors_lock);
+
+    return m_errors;
+}
+
+
+inline void scheduler::set_errors_occured()
+{
+    mutex_locker lock(m_errors_lock);
+
+    m_errors = true;
 }
 
 } // namespace ar

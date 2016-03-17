@@ -24,11 +24,11 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <cstdlib>
 #include <iostream>
 #include <queue>
 #include <stdexcept>
 #include <unistd.h>
-#include <cstdlib>
 
 #include "debug.h"
 #include "scheduler.h"
@@ -230,6 +230,7 @@ struct thread_info
 scheduler::scheduler()
   : m_steps()
   , m_running()
+  , m_errors_lock()
   , m_errors(false)
   , m_condition()
   , m_chunk_counter(0)
@@ -293,16 +294,23 @@ bool scheduler::run(int nthreads)
     queue_analytical_step(m_steps.front(), 0);
 
     m_io_active = false;
-    m_errors = !initialize_threads(nthreads - 1);
+    if (!initialize_threads(nthreads - 1)) {
+        set_errors_occured();
+    }
 
     // Signal for threads to start, or terminate in case of errors
     signal_threads();
 
     thread_info* info = new thread_info(this);
-    m_errors = !run_wrapper(info) || m_errors;
-    m_errors = !join_threads() || m_errors;
+    if (!run_wrapper(info)) {
+        set_errors_occured();
+    }
 
-    if (!m_errors) {
+    if (!join_threads()) {
+        set_errors_occured();
+    }
+
+    if (!errors_occured()) {
         for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
             if (*it) {
                 (*it)->ptr->finalize();
@@ -314,12 +322,13 @@ bool scheduler::run(int nthreads)
                 print_locker lock;
                 std::cerr << "ERROR: Not all parts run for step " << it - m_steps.begin()
                           << "; " << (*it)->queue.size() << " left ..." << std::endl;
-                m_errors = true;
+
+                set_errors_occured();
             }
         }
     }
 
-    return !m_errors;
+    return !errors_occured();
 }
 
 
@@ -341,7 +350,7 @@ void* scheduler::run_wrapper(void* ptr)
         std::cerr << "Unhandled exception in thread" << std::endl;
     }
 
-    sch->m_errors = true;
+    sch->set_errors_occured();
     sch->signal_threads();
 
     return reinterpret_cast<void*>(false);
@@ -353,7 +362,7 @@ void* scheduler::do_run()
     // Wait to allow early termination in case of errors during setup
     m_condition.wait();
 
-    while (!m_errors) {
+    while (!errors_occured()) {
         scheduler_step* current_step = NULL;
 
         {
