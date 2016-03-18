@@ -39,6 +39,9 @@ namespace ar
 
 struct alignment_info;
 
+typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
+typedef std::unique_ptr<statistics> statistics_ptr;
+
 
 /**
  * Configuration store, containing all user-supplied options / default values,
@@ -60,7 +63,7 @@ public:
     argparse::parse_result parse_args(int argc, char *argv[]);
 
     /** Returns new statistics object, initialized using usersettings. */
-    std::auto_ptr<statistics> create_stats() const;
+    statistics_ptr create_stats() const;
 
 
     std::string get_output_filename(const std::string& key, size_t nth = 0) const;
@@ -125,9 +128,9 @@ public:
     double mismatch_threshold;
 
     //! Quality format expected in input files.
-    std::auto_ptr<fastq_encoding> quality_input_fmt;
+    fastq_encoding_ptr quality_input_fmt;
     //! Quality format to use when writing FASTQ records.
-    std::auto_ptr<fastq_encoding> quality_output_fmt;
+    fastq_encoding_ptr quality_output_fmt;
 
     //! If true, read termini are trimmed for low-quality bases.
     bool trim_by_quality;

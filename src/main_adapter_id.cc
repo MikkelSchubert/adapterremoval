@@ -304,7 +304,7 @@ public:
     //! 5' KMer frequencies of putative adapter 2 fragments
     kmer_map pcr2_kmers;
     //! Statistics object for (number of) processed reads
-    std::auto_ptr<statistics> stats;
+    statistics_ptr stats;
 
 private:
     //! Not implemented
@@ -324,11 +324,11 @@ public:
     }
 
 protected:
-    virtual adapter_stats* new_sink() const {
-        return new adapter_stats(m_config);
+    virtual pointer new_sink() const {
+        return pointer(new adapter_stats(m_config));
     }
 
-    virtual void reduce(adapter_stats* dst, const adapter_stats* src) const {
+    virtual void reduce(pointer& dst, const pointer& src) const {
         (*dst) += (*src);
     }
 
@@ -366,9 +366,9 @@ public:
         fastq_pair_vec adapters;
         adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
 
-        std::auto_ptr<fastq_read_chunk> file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+        read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-        std::auto_ptr<adapter_stats> sink(m_sinks.get_sink());
+        adapter_sink::pointer sink = m_sinks.get_sink();
         statistics& stats = *sink->stats;
 
         AR_DEBUG_ASSERT(file_chunk->reads_1.size() == file_chunk->reads_2.size());
@@ -379,7 +379,7 @@ public:
             process_reads(adapters, stats, *sink, *read_1++, *read_2++);
         }
 
-        m_sinks.return_sink(sink.release());
+        m_sinks.return_sink(std::move(sink));
         m_timer.increment(file_chunk->reads_1.size() * 2);
 
         return chunk_vec();
@@ -390,7 +390,7 @@ public:
     {
         m_timer.finalize();
 
-        std::auto_ptr<adapter_stats> sink(m_sinks.finalize());
+        std::unique_ptr<adapter_stats> sink(m_sinks.finalize());
 
         std::cout << "   Found " << sink->stats->well_aligned_reads << " overlapping pairs ...\n"
                   << "   Of which " << sink->stats->number_of_reads_with_adapter.at(0) << " contained adapter sequence(s) ...\n\n"

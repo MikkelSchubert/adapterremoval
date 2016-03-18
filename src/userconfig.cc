@@ -38,11 +38,11 @@
 namespace ar
 {
 
-std::auto_ptr<fastq_encoding> select_encoding(const std::string& name,
-                                              const std::string& value,
-                                              size_t quality_max = MAX_PHRED_SCORE_DEFAULT)
+fastq_encoding_ptr select_encoding(const std::string& name,
+                                   const std::string& value,
+                                   size_t quality_max = MAX_PHRED_SCORE_DEFAULT)
 {
-    std::auto_ptr<fastq_encoding> ptr;
+    fastq_encoding_ptr ptr;
 
     const std::string uppercase_value = toupper(value);
     if (uppercase_value == "33") {
@@ -488,9 +488,9 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 }
 
 
-std::auto_ptr<statistics> userconfig::create_stats() const
+statistics_ptr userconfig::create_stats() const
 {
-    std::auto_ptr<statistics> stats(new statistics());
+    statistics_ptr stats(new statistics());
     stats->number_of_reads_with_adapter.resize(adapters.adapter_count());
     return stats;
 }

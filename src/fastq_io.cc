@@ -33,8 +33,6 @@
 namespace ar
 {
 
-typedef std::auto_ptr<fastq_read_chunk> chunk_ptr;
-
 
 size_t read_fastq_reads(fastq_vec& dst, line_reader& reader, size_t offset,
                       const fastq_encoding& encoding)
@@ -129,7 +127,7 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
         return chunk_vec();
     }
 
-    chunk_ptr file_chunk(new fastq_read_chunk());
+    read_chunk_ptr file_chunk(new fastq_read_chunk());
 
     const size_t n_read = read_fastq_reads(file_chunk->reads_1, m_io_input,
                                            m_line_offset, *m_encoding);
@@ -145,7 +143,7 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
     m_line_offset += n_read;
 
     chunk_vec chunks;
-    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+    chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
 
     return chunks;
 }
@@ -184,7 +182,7 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
         return chunk_vec();
     }
 
-    chunk_ptr file_chunk(new fastq_read_chunk());
+    read_chunk_ptr file_chunk(new fastq_read_chunk());
 
     const size_t n_read_1 = read_fastq_reads(file_chunk->reads_1, m_io_input_1,
                                              m_line_offset, *m_encoding);
@@ -211,7 +209,7 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
     m_line_offset += n_read_1;
 
     chunk_vec chunks;
-    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+    chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
 
     return chunks;
 }
@@ -249,7 +247,7 @@ chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
         return chunk_vec();
     }
 
-    chunk_ptr file_chunk(new fastq_read_chunk());
+    read_chunk_ptr file_chunk(new fastq_read_chunk());
 
     file_chunk->reads_1.reserve(FASTQ_CHUNK_SIZE);
     file_chunk->reads_2.reserve(FASTQ_CHUNK_SIZE);
@@ -304,7 +302,7 @@ chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
     m_line_offset += (n_read_1 + n_read_2) * 4;
 
     chunk_vec chunks;
-    chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+    chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
 
     return chunks;
 }
@@ -405,7 +403,7 @@ void bzip2_paired_fastq::finalize()
 
 chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
 {
-    std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+    output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
     if (m_eof) {
@@ -417,7 +415,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
         // The empty chunk must still be forwarded, to ensure that tracking of
         // ordered chunks does not break.
         chunk_vec chunks;
-        chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+        chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
         return chunks;
     }
 
@@ -480,7 +478,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
     chunk_vec chunks;
     if (!file_chunk->buffers.empty() || m_eof) {
         file_chunk->count += m_buffered_reads;
-        chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+        chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
         m_buffered_reads = 0;
     } else {
         m_buffered_reads += file_chunk->count;
@@ -559,7 +557,7 @@ void gzip_paired_fastq::finalize()
 
 chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
 {
-    std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+    output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
     if (m_eof) {
@@ -571,7 +569,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
         // The empty chunk must still be forwarded, to ensure that tracking of
         // ordered chunks does not break.
         chunk_vec chunks;
-        chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+        chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
         return chunks;
     }
 
@@ -630,7 +628,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
     chunk_vec chunks;
     if (!file_chunk->buffers.empty() || m_eof) {
         file_chunk->count += m_buffered_reads;
-        chunks.push_back(chunk_pair(m_next_step, file_chunk.release()));
+        chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
         m_buffered_reads = 0;
     } else {
         m_buffered_reads += file_chunk->count;
@@ -669,7 +667,7 @@ write_fastq::write_fastq(const std::string& filename)
 
 chunk_vec write_fastq::process(analytical_chunk* chunk)
 {
-    std::auto_ptr<fastq_output_chunk> file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+    output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     const string_vec& lines = file_chunk->reads;
 
     if (m_eof) {

@@ -43,24 +43,15 @@
 namespace ar
 {
 
-typedef std::auto_ptr<fastq_output_chunk> output_chunk_ptr;
+typedef std::unique_ptr<std::mt19937> mt19937_ptr;
 
 
-void add_chunk(chunk_vec& chunks, size_t target, std::auto_ptr<fastq_output_chunk> chunk)
+inline void add_chunk(chunk_vec& chunks, size_t target, output_chunk_ptr chunk)
 {
-    try {
-        if (chunk.get()) {
-            chunks.push_back(chunk_pair(target, chunk.release()));
-        }
-    } catch (...) {
-        for (chunk_vec::iterator it = chunks.begin(); it != chunks.end(); ++it) {
-            delete it->second;
-        }
-
-        throw;
+    if (chunk.get()) {
+        chunks.push_back(chunk_pair(target, std::move(chunk)));
     }
 }
-
 
 
 void write_settings(const userconfig& config, std::ostream& output, int nth)
@@ -346,7 +337,7 @@ public:
 
     }
 
-    statistics* get_final_statistics() {
+    statistics_ptr get_final_statistics() {
         return m_stats.finalize();
     }
 
@@ -360,11 +351,11 @@ protected:
         }
 
     protected:
-        virtual statistics* new_sink() const {
-            return m_config.create_stats().release();
+        virtual pointer new_sink() const {
+            return m_config.create_stats();
         }
 
-        virtual void reduce(statistics* dst, const statistics* src) const {
+        virtual void reduce(pointer& dst, const pointer& src) const {
             (*dst) += (*src);
         }
 
@@ -378,7 +369,6 @@ protected:
 };
 
 
-
 class se_reads_processor : public reads_processor
 {
 public:
@@ -389,9 +379,8 @@ public:
 
     chunk_vec process(analytical_chunk* chunk)
     {
-        std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-
-        std::auto_ptr<statistics> stats(m_stats.get_sink());
+        read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+        stats_sink::pointer stats = std::move(m_stats.get_sink());
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
@@ -445,14 +434,14 @@ public:
         }
 
         stats->records += read_chunk->reads_1.size();
-        m_stats.return_sink(stats.release());
+        m_stats.return_sink(std::move(stats));
 
         chunk_vec chunks;
         const size_t offset = m_nth * ai_analyses_offset;
-        add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
-        add_chunk(chunks, offset + ai_write_collapsed, out_collapsed);
-        add_chunk(chunks, offset + ai_write_collapsed_truncated, out_collapsed_truncated);
-        add_chunk(chunks, offset + ai_write_discarded, out_discarded);
+        add_chunk(chunks, offset + ai_write_mate_1, std::move(out_mate_1));
+        add_chunk(chunks, offset + ai_write_collapsed, std::move(out_collapsed));
+        add_chunk(chunks, offset + ai_write_collapsed_truncated, std::move(out_collapsed_truncated));
+        add_chunk(chunks, offset + ai_write_discarded, std::move(out_discarded));
 
         return chunks;
     }
@@ -469,11 +458,11 @@ public:
     }
 
 protected:
-    virtual std::mt19937* new_sink() const {
-        return new std::mt19937(m_seed());
+    virtual pointer new_sink() const {
+        return pointer(new std::mt19937(m_seed()));
     }
 
-    virtual void reduce(std::mt19937*, const std::mt19937*) const {
+    virtual void reduce(pointer&, const pointer&) const {
         // Intentionally left empty
     }
 
@@ -498,9 +487,9 @@ public:
 
     chunk_vec process(analytical_chunk* chunk)
     {
-        std::auto_ptr<std::mt19937> rng(m_rngs.get_sink());
-        std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-        std::auto_ptr<statistics> stats(m_stats.get_sink());
+        mt19937_ptr rng = std::move(m_rngs.get_sink());
+        read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+        statistics_ptr stats = std::move(m_stats.get_sink());
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
@@ -604,21 +593,21 @@ public:
         }
 
         stats->records += read_chunk->reads_1.size();
-        m_stats.return_sink(stats.release());
-        m_rngs.return_sink(rng.release());
+        m_stats.return_sink(std::move(stats));
+        m_rngs.return_sink(std::move(rng));
 
         chunk_vec chunks;
         const size_t offset = m_nth * ai_analyses_offset;
 
-        add_chunk(chunks, offset + ai_write_mate_1, out_mate_1);
+        add_chunk(chunks, offset + ai_write_mate_1, std::move(out_mate_1));
         if (!m_config.interleaved_output) {
-            add_chunk(chunks, offset + ai_write_mate_2, out_mate_2);
+            add_chunk(chunks, offset + ai_write_mate_2, std::move(out_mate_2));
         }
 
-        add_chunk(chunks, offset + ai_write_singleton, out_singleton);
-        add_chunk(chunks, offset + ai_write_collapsed, out_collapsed);
-        add_chunk(chunks, offset + ai_write_collapsed_truncated, out_collapsed_truncated);
-        add_chunk(chunks, offset + ai_write_discarded, out_discarded);
+        add_chunk(chunks, offset + ai_write_singleton, std::move(out_singleton));
+        add_chunk(chunks, offset + ai_write_collapsed, std::move(out_collapsed));
+        add_chunk(chunks, offset + ai_write_collapsed_truncated, std::move(out_collapsed_truncated));
+        add_chunk(chunks, offset + ai_write_discarded, std::move(out_discarded));
 
         return chunks;
     }
@@ -633,7 +622,7 @@ bool write_settings(const userconfig& config, const std::vector<reads_processor*
     for (size_t nth = 0; nth < processors.size(); ++nth) {
         const std::string filename = config.get_output_filename("--settings", nth);
 
-        const std::auto_ptr<statistics> stats(processors.at(nth)->get_final_statistics());
+        const statistics_ptr stats = processors.at(nth)->get_final_statistics();
 
         try {
             std::ofstream output(filename.c_str(), std::ofstream::out);

@@ -28,13 +28,12 @@
 #include "fastq.h"
 #include "scheduler.h"
 #include "statistics.h"
+#include "fastq_io.h"
 
 namespace ar
 {
 
 class userconfig;
-class fastq_read_chunk;
-class fastq_output_chunk;
 struct demultiplexer_node;
 
 typedef std::vector<demultiplexer_node> demux_node_vec;
@@ -83,16 +82,16 @@ protected:
     //! chunks are set to true.
     chunk_vec flush_cache(bool eof = false);
 
-    typedef std::vector<fastq_read_chunk*> demultiplexed_cache;
+    typedef std::vector<read_chunk_ptr> demultiplexed_cache;
 
     //! Cache of demultiplex reads; used to reduce the number of output chunks
     //! generated from each processed chunk, which would otherwise increase
     //! linearly with the number of barcodes.
     demultiplexed_cache m_cache;
     //! Cache of unidentified mate 1 reads
-    fastq_output_chunk* m_unidentified_1;
+    output_chunk_ptr m_unidentified_1;
     //! Cache of unidentified mate 2 reads
-    fastq_output_chunk* m_unidentified_2;
+    output_chunk_ptr m_unidentified_2;
 
     //! Sink for demultiplexing statistics; used by subclasses.
     demux_statistics m_statistics;

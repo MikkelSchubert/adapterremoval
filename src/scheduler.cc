@@ -26,7 +26,6 @@
 #include <cstdlib>
 #include <cstdlib>
 #include <iostream>
-#include <queue>
 #include <stdexcept>
 #include <unistd.h>
 
@@ -78,39 +77,18 @@ analytical_step::~analytical_step()
 
 struct data_chunk
 {
-    data_chunk(unsigned chunk_id_ = 0,
-               analytical_chunk* data_ = NULL)
+    explicit data_chunk(unsigned chunk_id_ = 0)
       : chunk_id(chunk_id_)
-      , data(data_)
-      , nrefs(NULL)
+      , data()
+      , counter(new bool())
     {
-        increment_refs();
     }
 
-    data_chunk(const data_chunk& parent, analytical_chunk* data = NULL)
+    explicit data_chunk(const data_chunk& parent, chunk_ptr data_)
       : chunk_id(parent.chunk_id)
-      , data(data ? data : parent.data)
-      , nrefs(parent.nrefs)
+      , data(std::move(data_))
+      , counter(parent.counter)
     {
-        increment_refs();
-    }
-
-    /** Destructor; simply decrements reference count **/
-    ~data_chunk()
-    {
-        decrement_refs();
-    }
-
-    data_chunk& operator=(const data_chunk& other)
-    {
-        other.increment_refs();
-        decrement_refs();
-
-        nrefs = other.nrefs;
-        chunk_id = other.chunk_id;
-        data = other.data;
-
-        return *this;
     }
 
     /** Sorts by counter, data, type, in that order. **/
@@ -127,36 +105,63 @@ struct data_chunk
         return false;
     }
 
-    bool unique()
+    bool unique() const
     {
-        return nrefs->current() == 1;
+        return counter.unique();
     }
 
     //! Strictly increasing counter; used to sort chunks for 'ordered' tasks
     unsigned chunk_id;
-    //! Use generated data; is not freed by this struct
-    analytical_chunk* data;
+    //! Use generated data; is normally not freed by this struct
+    chunk_ptr data;
 
 private:
-    void increment_refs() const
-    {
-        if (nrefs) {
-            nrefs->increment();
-        } else {
-            nrefs = new atomic_counter(1);
-        }
-    }
-
-    void decrement_refs() const
-    {
-        if (nrefs->decrement() == 0) {
-            delete nrefs;
-            nrefs = NULL;
-        }
-    }
-
     //! Reference counts
-    mutable atomic_counter* nrefs;
+    std::shared_ptr<bool> counter;
+};
+
+
+class chunk_queue
+{
+public:
+    explicit chunk_queue()
+    {
+    }
+
+    void push(data_chunk value)
+    {
+        m_chunks.push_back(std::move(value));
+        std::push_heap(m_chunks.begin(), m_chunks.end());
+    }
+
+    data_chunk pop()
+    {
+        std::pop_heap(m_chunks.begin(), m_chunks.end());
+        data_chunk value = std::move(m_chunks.back());
+        m_chunks.pop_back();
+
+        return std::move(value);
+    }
+
+    const data_chunk& top() const
+    {
+        return m_chunks.front();
+    }
+
+    bool empty() const
+    {
+        return m_chunks.empty();
+    }
+
+    size_t size() const
+    {
+        return m_chunks.size();
+    }
+
+private:
+    typedef std::vector<data_chunk> chunk_vec;
+
+    chunk_vec m_chunks;
 };
 
 
@@ -179,7 +184,6 @@ struct scheduler_step
     /** Cleans up after previous runs; deleting any remaining chunks. */
     void reset() {
         while (!queue.empty()) {
-            delete queue.top().data;
             queue.pop();
         }
     }
@@ -197,14 +201,14 @@ struct scheduler_step
     //! Mutex used to control access to step
     mutex lock;
     //! Analytical step implementation
-    std::auto_ptr<analytical_step> ptr;
+    std::unique_ptr<analytical_step> ptr;
     //! The current chunk to be processed
     unsigned current_chunk;
     //! The last chunk queued to the step;
     //! Used to correct numbering for sparse output from sequential steps
     unsigned last_chunk;
     //! (Ordered) vector of chunks to be processed
-    std::priority_queue<data_chunk> queue;
+    chunk_queue queue;
 
 private:
     //! Not implemented
@@ -248,13 +252,6 @@ scheduler::scheduler()
 
 scheduler::~scheduler()
 {
-    mutex_locker lock(m_running);
-
-    for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
-        delete *it;
-    }
-
-    m_steps.clear();
 }
 
 
@@ -268,7 +265,7 @@ void scheduler::add_step(size_t step_id, analytical_step* step)
     AR_DEBUG_ASSERT(step);
     AR_DEBUG_ASSERT(!m_steps.at(step_id));
 
-    m_steps.at(step_id) = new scheduler_step(step);
+    m_steps.at(step_id) = step_ptr(new scheduler_step(step));
 }
 
 
@@ -334,7 +331,7 @@ bool scheduler::run(int nthreads)
 
 void* scheduler::run_wrapper(void* ptr)
 {
-    std::auto_ptr<thread_info> info(reinterpret_cast<thread_info*>(ptr));
+    std::unique_ptr<thread_info> info(reinterpret_cast<thread_info*>(ptr));
     scheduler* sch = info->sch;
 
     try {
@@ -363,7 +360,7 @@ void* scheduler::do_run()
     m_condition.wait();
 
     while (!errors_occured()) {
-        scheduler_step* current_step = NULL;
+        step_ptr current_step;
 
         {
             mutex_locker lock(m_queue_lock);
@@ -399,35 +396,34 @@ void* scheduler::do_run()
 }
 
 
-void scheduler::execute_analytical_step(scheduler_step* step)
+void scheduler::execute_analytical_step(const step_ptr& step)
 {
     data_chunk chunk;
 
     {
         mutex_locker lock(step->lock);
-        chunk = step->queue.top();
-        step->queue.pop();
+        chunk = std::move(step->queue.pop());
     }
 
-    chunk_vec chunks = step->ptr->process(chunk.data);
+    chunk_vec chunks = step->ptr->process(chunk.data.release());
 
     mutex_locker lock(m_queue_lock);
 
     // Schedule each of the resulting blocks
     for (chunk_vec::iterator it = chunks.begin(); it != chunks.end(); ++it) {
-        scheduler_step* other_step = m_steps.at(it->first);
+        step_ptr& other_step = m_steps.at(it->first);
         AR_DEBUG_ASSERT(other_step != NULL);
 
         mutex_locker lock(other_step->lock);
         // Inherit reference count from source chunk
-        data_chunk next_chunk(chunk, it->second);
+        data_chunk next_chunk(chunk, std::move(it->second));
         if (step->ptr->get_ordering() == analytical_step::ordered) {
             // Ordered steps are allowed to not return results, so the chunk
             // numbering is remembered for down-stream steps
             next_chunk.chunk_id = other_step->last_chunk++;
         }
 
-        other_step->queue.push(next_chunk);
+        other_step->queue.push(std::move(next_chunk));
         queue_analytical_step(other_step, next_chunk.chunk_id);
     }
 
@@ -451,7 +447,7 @@ void scheduler::execute_analytical_step(scheduler_step* step)
 
     // End of the line for this chunk; re-schedule first step
     if (chunks.empty() && chunk.unique() && step != m_steps.front()) {
-        scheduler_step* other_step = m_steps.front();
+        step_ptr other_step = m_steps.front();
 
         mutex_locker lock(other_step->lock);
         other_step->queue.push(data_chunk(m_chunk_counter));
@@ -467,7 +463,7 @@ void scheduler::execute_analytical_step(scheduler_step* step)
 }
 
 
-void scheduler::queue_analytical_step(scheduler_step* step, size_t current)
+void scheduler::queue_analytical_step(const step_ptr& step, size_t current)
 {
     if (step->can_run(current)) {
         if (step->ptr->file_io()) {

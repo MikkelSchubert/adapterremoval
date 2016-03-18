@@ -206,7 +206,7 @@ void rec_lookup_sequence_no_mm(candidate_vec& candidates,
 {
     const demultiplexer_node& node = tree.at(parent);
     for (int_vec::const_iterator it = node.barcodes.begin(); it != node.barcodes.end(); ++it) {
-        candidates.push_back(std::pair<int, size_t>(*it, mismatches));
+        candidates.emplace_back(*it, mismatches);
     }
 
     if (seq_pos < seq.length()) {
@@ -230,7 +230,7 @@ void rec_lookup_sequence(candidate_vec& candidates,
 {
     const demultiplexer_node& node = tree.at(parent);
     for (int_vec::const_iterator it = node.barcodes.begin(); it != node.barcodes.end(); ++it) {
-        candidates.push_back(std::pair<int, size_t>(*it, mismatches));
+        candidates.emplace_back(*it, mismatches);
     }
 
     if (seq_pos < seq.length()) {
@@ -262,27 +262,21 @@ demultiplex_reads::demultiplex_reads(const userconfig* config)
     , m_max_mismatches_r1(std::min<size_t>(config->barcode_mm, config->barcode_mm_r1))
     , m_max_mismatches_r2(std::min<size_t>(config->barcode_mm, config->barcode_mm_r2))
     , m_config(config)
-    , m_cache(m_barcodes.size(), NULL)
+    , m_cache()
     , m_unidentified_1(new fastq_output_chunk())
     , m_unidentified_2(new fastq_output_chunk())
     , m_statistics(m_barcodes.size())
 {
     AR_DEBUG_ASSERT(!m_barcodes.empty());
 
-    for (demultiplexed_cache::iterator it = m_cache.begin(); it != m_cache.end(); ++it) {
-        *it = new fastq_read_chunk();
+    for (size_t i = 0; i < m_barcodes.size(); ++i) {
+        m_cache.push_back(read_chunk_ptr(new fastq_read_chunk()));
     }
 }
 
 
 demultiplex_reads::~demultiplex_reads()
 {
-    for (demultiplexed_cache::iterator it = m_cache.begin(); it != m_cache.end(); ++it) {
-        delete *it;
-    }
-
-    delete m_unidentified_1;
-    delete m_unidentified_2;
 }
 
 
@@ -369,25 +363,25 @@ chunk_vec demultiplex_reads::flush_cache(bool eof)
     chunk_vec output;
 
     if (eof || m_unidentified_1->count >= FASTQ_CHUNK_SIZE) {
-        output.push_back(chunk_pair(ai_write_unidentified_1, m_unidentified_1));
         m_unidentified_1->eof = eof;
-        m_unidentified_1 = new fastq_output_chunk();
+        output.push_back(chunk_pair(ai_write_unidentified_1, std::move(m_unidentified_1)));
+        m_unidentified_1 = output_chunk_ptr(new fastq_output_chunk());
     }
 
     if (m_config->paired_ended_mode && (eof || m_unidentified_2->count >= FASTQ_CHUNK_SIZE)) {
-        output.push_back(chunk_pair(ai_write_unidentified_2, m_unidentified_2));
         m_unidentified_2->eof = eof;
-        m_unidentified_2 = new fastq_output_chunk();
+        output.push_back(chunk_pair(ai_write_unidentified_2, std::move(m_unidentified_2)));
+        m_unidentified_2 = output_chunk_ptr(new fastq_output_chunk());
     }
 
     for (size_t nth = 0; nth < m_cache.size(); ++nth) {
-        fastq_read_chunk* chunk = m_cache.at(nth);
+        read_chunk_ptr& chunk = m_cache.at(nth);
         if (eof || chunk->reads_1.size() >= FASTQ_CHUNK_SIZE) {
             chunk->eof = eof;
 
             const size_t step_id = (nth + 1) * ai_analyses_offset;
-            output.push_back(chunk_pair(step_id, chunk));
-            m_cache.at(nth) = new fastq_read_chunk();
+            output.push_back(chunk_pair(step_id, std::move(chunk)));
+            chunk = read_chunk_ptr(new fastq_read_chunk());
         }
     }
 
@@ -411,7 +405,7 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig* config)
 
 chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
 {
-    std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+    read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     const fastq empty_read;
     for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
@@ -426,7 +420,7 @@ chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
                 m_statistics.ambiguous += 1;
             }
         } else {
-            fastq_read_chunk* dst = m_cache.at(best_barcode);
+            read_chunk_ptr& dst = m_cache.at(best_barcode);
             dst->reads_1.push_back(*it);
             dst->reads_1.back().truncate(m_barcodes.at(best_barcode).first.length());
 
@@ -448,7 +442,7 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig* config)
 
 chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
 {
-    std::auto_ptr<fastq_read_chunk> read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+    read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
     fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
@@ -466,7 +460,7 @@ chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
                 m_statistics.ambiguous += 1;
             }
         } else {
-            fastq_read_chunk* dst = m_cache.at(best_barcode);
+            read_chunk_ptr& dst = m_cache.at(best_barcode);
 
             it_1->truncate(m_barcodes.at(best_barcode).first.length());
             dst->reads_1.push_back(*it_1);

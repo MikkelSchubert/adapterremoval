@@ -45,7 +45,11 @@ namespace ar
 {
 
 class userconfig;
+class fastq_read_chunk;
+class fastq_output_chunk;
 
+typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
+typedef std::unique_ptr<fastq_read_chunk> read_chunk_ptr;
 typedef std::pair<size_t, unsigned char*> buffer_pair;
 typedef std::vector<buffer_pair> buffer_vec;
 

@@ -32,7 +32,7 @@
 namespace ar
 {
 
-typedef std::auto_ptr<argparse::consumer_base> consumer_autoptr;
+typedef std::unique_ptr<argparse::consumer_base> consumer_autoptr;
 
 
 ///////////////////////////////////////////////////////////////////////////////
