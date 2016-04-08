@@ -15,19 +15,6 @@ AdapterRemoval was originally published in Lindgreen 2012:
 
 ## Installation
 
-Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed, that the bzlib2 library and headers are installed, and that the pthread library and headers are installed. Please refer to your operating system documentation for installation instructions. Alternatively, use of these features may be disabled by editing the appropriate lines in the 'Makefile':
-
-    ## Optional features; comment out or set to value other than 'yes' to disable
-
-    # Enable reading writing of gzip compressed files using libz.
-    ENABLE_GZIP_SUPPORT := yes
-
-    # Enable reading writing of bzip2 compressed files using libbz2.
-    ENABLE_BZIP2_SUPPORT := yes
-
-    # Enable multi-threading support using pthreads.
-    ENABLE_PTHREAD_SUPPORT := yes
-
 To install, first download and unpack the newest release from GitHub:
 
     $ wget -O adapterremoval-2.1.7.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.1.7.tar.gz
@@ -53,6 +40,18 @@ To install, run
 It is also possible to compile AdapterRemoval as a static library:
 
     $ sudo make static
+
+
+Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed, that the bzlib2 library and headers are installed, and that the compiler used supports c++11. Please refer to your operating system documentation for installation instructions. Alternatively, use of these features may be disabled when running 'make':
+
+    # Disable gzip support
+    $ make GZIP_SUPPORT=no
+
+    # Disable bzip2 support
+    $ make BZIP2_SUPPORT=no
+
+    # Disable both gzip and bzip2 support
+    $ make GZIP_SUPPORT=no BZIP2_SUPPORT=no
 
 
 ## Documentation

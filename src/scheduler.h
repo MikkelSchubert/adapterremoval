@@ -26,8 +26,11 @@
 
 #include <list>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <condition_variable>
 
 #include "threads.h"
 
@@ -36,18 +39,6 @@ namespace ar
 
 struct data_chunk;
 struct scheduler_step;
-
-
-/**
- * This exception may be thrown by a task to abort the thread; error-messages
- * are assumed to have already been printed by the thrower, and no furher
- * messages are printed.
- */
-class thread_abort : public thread_error
-{
-public:
-    thread_abort();
-};
 
 
 /**
@@ -114,7 +105,7 @@ private:
     typedef typename sink_list::const_iterator sink_list_citer;
 
     //! Lock used to control access to sink lists
-    mutex m_sinks_lock;
+    std::mutex m_sinks_lock;
     //! List of inactive sinks
     sink_list m_sinks;
 };
@@ -234,16 +225,9 @@ private:
     scheduler& operator=(const scheduler&);
 
     /** Wrapper function which calls do_run on the provided thread. */
-    static void* run_wrapper(void*);
+    static void run_wrapper(scheduler*);
     /** Work function; invoked by each thread. */
-    void* do_run();
-
-    /** Initializes n threads, returning false if any errors occured. */
-    bool initialize_threads(int nthreads);
-    /** Sends a number of signals corresponding to the number of threads. */
-    void signal_threads();
-    /** Joins all threads, returning false if any errors occured. */
-    bool join_threads();
+    void do_run();
 
     /** Executes an analytical step. */
     void execute_analytical_step(const step_ptr& step);
@@ -257,26 +241,17 @@ private:
 
     //! Analytical steps
     pipeline m_steps;
-    //! Lock set when the scheduler is running
-    mutex m_running;
-    //! Used to control access to m_errors;
-    mutex m_errors_lock;
     //! Set to indicate if errors have occured
-    bool m_errors;
+    std::atomic_bool m_errors;
+
     //! Condition used to signal the (potential) availability of work
-    conditional m_condition;
+    std::condition_variable m_condition;
 
     //! Counter used for sequential processing of data
     size_t m_chunk_counter;
 
-#ifdef AR_PTHREAD_SUPPORT
-    typedef std::vector<pthread_t> thread_vector;
-    //! List of current threads, excluding the main thread
-    thread_vector m_threads;
-#endif
-
     //! Lock used to control access to chunks
-    mutex m_queue_lock;
+    std::mutex m_queue_lock;
     //! Queue used for currently runnable steps involving only calculations
     runables m_queue_calc;
     //! Queue used for currently runnable steps involving IO
@@ -308,7 +283,7 @@ statistics_sink<T>::~statistics_sink()
 template <typename T>
 typename statistics_sink<T>::pointer statistics_sink<T>::get_sink()
 {
-    mutex_locker lock(m_sinks_lock);
+    std::lock_guard<std::mutex> lock(m_sinks_lock);
     if (m_sinks.empty()) {
         return new_sink();
     }
@@ -323,7 +298,7 @@ typename statistics_sink<T>::pointer statistics_sink<T>::get_sink()
 template <typename T>
 void statistics_sink<T>::return_sink(pointer ptr)
 {
-    mutex_locker lock(m_sinks_lock);
+    std::lock_guard<std::mutex> lock(m_sinks_lock);
     m_sinks.push_back(std::move(ptr));
 }
 
@@ -331,7 +306,7 @@ void statistics_sink<T>::return_sink(pointer ptr)
 template <typename T>
 typename statistics_sink<T>::pointer statistics_sink<T>::finalize()
 {
-    mutex_locker lock(m_sinks_lock);
+    std::lock_guard<std::mutex> lock(m_sinks_lock);
     if (m_sinks.empty()) {
         return new_sink();
     }
@@ -373,17 +348,13 @@ inline bool analytical_step::file_io() const
 
 inline bool scheduler::errors_occured()
 {
-    mutex_locker lock(m_errors_lock);
-
-    return m_errors;
+    return m_errors.load();
 }
 
 
 inline void scheduler::set_errors_occured()
 {
-    mutex_locker lock(m_errors_lock);
-
-    m_errors = true;
+    m_errors.store(true);
 }
 
 } // namespace ar

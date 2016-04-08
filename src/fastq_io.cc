@@ -412,11 +412,7 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
 
     m_eof = file_chunk->eof;
     if (file_chunk->reads.empty() && !m_eof) {
-        // The empty chunk must still be forwarded, to ensure that tracking of
-        // ordered chunks does not break.
-        chunk_vec chunks;
-        chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
-        return chunks;
+        return chunk_vec();
     }
 
     std::pair<size_t, unsigned char*> input_buffer;
@@ -566,11 +562,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
 
     m_eof = file_chunk->eof;
     if (file_chunk->reads.empty() && !m_eof) {
-        // The empty chunk must still be forwarded, to ensure that tracking of
-        // ordered chunks does not break.
-        chunk_vec chunks;
-        chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
-        return chunks;
+        return chunk_vec();
     }
 
     std::pair<size_t, unsigned char*> input_buffer;
@@ -644,7 +636,7 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
 // Implementations for 'write_fastq'
 
 //! Mutex used to control access to s_timer and s_finalized;
-static mutex s_timer_lock;
+static std::mutex s_timer_lock;
 //! Timer used to track trimming progress; accessed by all instances
 static timer s_timer = timer("reads");
 //! Indicates if 'timer::finalize' has been called.
@@ -692,7 +684,7 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
         m_output.flush();
     }
 
-    mutex_locker lock(s_timer_lock);
+    std::lock_guard<std::mutex> lock(s_timer_lock);
     s_timer.increment(file_chunk->count);
 
     return chunk_vec();
@@ -701,7 +693,7 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
 
 void write_fastq::finalize()
 {
-    mutex_locker lock(s_timer_lock);
+    std::lock_guard<std::mutex> lock(s_timer_lock);
     if (!s_finalized) {
         s_timer.finalize();
         s_finalized = true;

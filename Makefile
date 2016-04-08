@@ -6,52 +6,49 @@
 PREFIX := /usr/local
 
 # Default compilation flags
-CXXFLAGS := -std=c++11 -O3 -pedantic -Wall -Wextra
-CXXFLAGS := ${CXXFLAGS} -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
-	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
-	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=5 \
-	-Wswitch-default -Wundef -Weffc++
+CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
+CXXFLAGS := ${CXXFLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual \
+	-Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self \
+	-Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo \
+	-Wstrict-overflow=5 -Wswitch-default -Wundef -Weffc++
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
 # Enable reading writing of gzip compressed files using libz.
-ENABLE_GZIP_SUPPORT := yes
+GZIP_SUPPORT := yes
 
 # Enable reading writing of bzip2 compressed files using libbz2.
-ENABLE_BZIP2_SUPPORT := yes
-
-# Enable multi-threading support using pthreads.
-ENABLE_PTHREAD_SUPPORT := yes
+BZIP2_SUPPORT := yes
 
 # Hide individual commands during build; only shows summaries instead.
-ENABLE_QUIET_BUILD := yes
+QUIET_BUILD := yes
 
 # Use of colored output during build
-ENABLE_COLOR_BUILD := yes
+COLOR_BUILD := yes
 
 
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
 
 # Libraries required by AdapterRemoval
-LIBRARIES :=
+LIBRARIES := -pthread
 
 # Build directory; modified depending on build options
 BDIR     := build/main
 
 
-ifeq ($(strip ${ENABLE_QUIET_BUILD}),yes)
+ifeq ($(strip ${QUIET_BUILD}),yes)
 QUIET := @
 endif
 
-ifeq ($(strip ${ENABLE_COLOR_BUILD}),yes)
+ifeq ($(strip ${COLOR_BUILD}),yes)
 COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
 endif
 
-ifeq ($(strip ${ENABLE_GZIP_SUPPORT}),yes)
+ifeq ($(strip ${GZIP_SUPPORT}),yes)
 $(info Building AdapterRemoval with gzip support: yes)
 CXXFLAGS := ${CXXFLAGS} -DAR_GZIP_SUPPORT
 LIBRARIES := ${LIBRARIES} -lz
@@ -60,22 +57,13 @@ else
 $(info Building AdapterRemoval with gzip support: no)
 endif
 
-ifeq ($(strip ${ENABLE_BZIP2_SUPPORT}),yes)
+ifeq ($(strip ${BZIP2_SUPPORT}),yes)
 $(info Building AdapterRemoval with bzip2 support: yes)
 CXXFLAGS := ${CXXFLAGS} -DAR_BZIP2_SUPPORT
 LIBRARIES := ${LIBRARIES} -lbz2
 BDIR := ${BDIR}_bz2
 else
 $(info Building AdapterRemoval with bzip2 support: no)
-endif
-
-ifeq ($(strip ${ENABLE_PTHREAD_SUPPORT}),yes)
-$(info Building AdapterRemoval with pthreads support: yes)
-CXXFLAGS := ${CXXFLAGS} -DAR_PTHREAD_SUPPORT
-LIBRARIES := ${LIBRARIES} -lpthread
-BDIR := ${BDIR}_pthreads
-else
-$(info Building AdapterRemoval with pthreads support: no)
 endif
 
 
@@ -194,8 +182,8 @@ clean_tests:
 	$(QUIET) rm -rvf $(TEST_DIR)
 
 $(TEST_DIR)/main: $(GTEST_LIB) $(TEST_OBJS)
-	@echo $(COLOR_GREEN)"Linking executable $@\033[0m"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) -pthread $^ -o $@
+	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
+	$(QUIET) $(CXX) $(CXXFLAGS) ${LIBRARIES} $^ -o $@
 
 $(TEST_DIR)/libgtest.a: $(GTEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking GTest library '$@'"$(COLOR_END)
@@ -203,20 +191,20 @@ $(TEST_DIR)/libgtest.a: $(GTEST_OBJS)
 
 $(TEST_DIR)/%.o: tests/%.cc
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	mkdir -p $(TEST_DIR)
+	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 $(TEST_DIR)/%.o: src/%.cc
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	mkdir -p $(TEST_DIR)
+	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
 	$(QUIET) mkdir -p $(TEST_DIR)
-	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -pthread -c $< -o $@
+	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -c $< -o $@
 
 .PRECIOUS: $(GTEST_DIR)/src/gtest%.cc
 $(GTEST_DIR)/src/gtest%.cc: googletest-release-1.7.0.zip

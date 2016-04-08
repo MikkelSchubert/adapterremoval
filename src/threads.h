@@ -25,10 +25,9 @@
 #define THREADS_H
 
 #include <string>
+#include <thread>
+#include <mutex>
 
-#ifdef AR_PTHREAD_SUPPORT
-#include <pthread.h>
-#endif
 
 namespace ar
 {
@@ -55,84 +54,14 @@ private:
 
 
 /**
- * Wrapper around PThread Mutex.
- *
- * Locking is performed using the mutex_locker object.
+ * This exception may be thrown by a task to abort the thread; error-messages
+ * are assumed to have already been printed by the thrower, and no furher
+ * messages are printed.
  */
-class mutex
+class thread_abort : public thread_error
 {
 public:
-    /** Constructor. Creates unlocked mutex. */
-    mutex();
-    /** Destructor. Mutex must be unlocked when destructing; exits on error. */
-    ~mutex();
-
-private:
-    //! Not implemented
-    mutex(const mutex&);
-    //! Not implemented
-    mutex& operator=(const mutex&);
-
-    friend class mutex_locker;
-    friend class conditional;
-
-#ifdef AR_PTHREAD_SUPPORT
-    pthread_mutex_t m_mutex;
-#endif
-};
-
-
-/**
- * Simple conditional.
- *
- *
- */
-class conditional
-{
-public:
-    /** Constructor; initializes conditional. */
-    conditional();
-    /** Destructor; destroys conditional, exits on error. */
-    ~conditional();
-
-    /** Wait for and consume signal; non-blocking if signals are queued. */
-    void wait();
-
-    /** Signal a waiting thread, or queue signal if no threads are waiting. */
-    void signal();
-
-
-#ifdef AR_PTHREAD_SUPPORT
-private:
-    //! Mutex assosiated with conditional; not exposed.
-    mutex m_mutex;
-    //! Raw conditional; not exposed.
-    pthread_cond_t m_cond;
-    //! Number of queued signals.
-    volatile unsigned m_count;
-#endif
-};
-
-
-/** Simple class for automatic locking / unlocking of mutexes. **/
-class mutex_locker
-{
-public:
-    //! Locks the mutex (blocking)
-    mutex_locker(mutex& to_lock);
-
-    //! Unlocks the mutex
-    virtual ~mutex_locker();
-
-private:
-    //! Not implemented
-    mutex_locker(const mutex_locker&);
-    //! Not implemented
-    mutex_locker& operator=(const mutex_locker&);
-
-#ifdef AR_PTHREAD_SUPPORT
-    pthread_mutex_t& m_mutex;
-#endif
+    thread_abort();
 };
 
 
@@ -143,7 +72,7 @@ private:
  * print_locker object. This ensures that output from different threads is
  * not interleaved, regardless of the destination of these pipes.
  */
-class print_locker : public mutex_locker
+class print_locker
 {
 public:
     //! Locks the mutex (blocking)
@@ -154,36 +83,13 @@ public:
 
 private:
     //! Not implemented
-    print_locker(const mutex_locker&);
+    print_locker(const print_locker&);
     //! Not implemented
-    print_locker& operator=(const mutex_locker&);
+    print_locker& operator=(const print_locker&);
+
+    std::lock_guard<std::mutex> m_lock;
 };
 
-
-/**
- * Basic atomic counter.
- */
-class atomic_counter
-{
-public:
-    /** Initialize counter to the given value. */
-    atomic_counter(size_t init = 0);
-
-    /** Returns the current value (which may have changed already). */
-    size_t current() const;
-
-    /** Increment the current value. */
-    size_t increment();
-
-    /** Decrement the current value. */
-    size_t decrement();
-
-private:
-    //! Mutex used to control access to the counter/
-    mutable mutex m_lock;
-    //! Raw counter value; access controlled using m_lock;
-    size_t m_count;
-};
 
 } // namespace ar
 

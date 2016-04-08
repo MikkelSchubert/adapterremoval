@@ -334,11 +334,9 @@ userconfig::userconfig(const std::string& name,
             "Attempt to identify the adapter pair of PE reads, by searching "
             "for overlapping reads [current: %default].");
 
-#ifdef AR_PTHREAD_SUPPORT
     argparser["--threads"] =
         new argparse::knob(&max_threads, "THREADS",
             "Maximum number of threads [current: %default]");
-#endif
 }
 
 

@@ -22,8 +22,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 
+#include <algorithm>
 #include <cerrno>
-#include <cstdlib>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -35,15 +35,6 @@
 
 namespace ar
 {
-
-///////////////////////////////////////////////////////////////////////////////
-// exceptions
-
-thread_abort::thread_abort()
-  : thread_error("abort thread")
-{
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_chunk
@@ -121,10 +112,12 @@ private:
 };
 
 
+/** Simple priority queue; needed to allow moving values out of queue. */
 class chunk_queue
 {
 public:
-    explicit chunk_queue()
+    chunk_queue()
+      : m_chunks()
     {
     }
 
@@ -176,18 +169,6 @@ struct scheduler_step
     {
     }
 
-    /** Deletes any remaining chunks. */
-    ~scheduler_step() {
-        reset();
-    }
-
-    /** Cleans up after previous runs; deleting any remaining chunks. */
-    void reset() {
-        while (!queue.empty()) {
-            queue.pop();
-        }
-    }
-
     bool can_run(size_t next_chunk)
     {
         if (ptr->get_ordering() == analytical_step::ordered) {
@@ -199,7 +180,7 @@ struct scheduler_step
 
 
     //! Mutex used to control access to step
-    mutex lock;
+    std::mutex lock;
     //! Analytical step implementation
     std::unique_ptr<analytical_step> ptr;
     //! The current chunk to be processed
@@ -218,29 +199,11 @@ private:
 };
 
 
-/** Simple structure used to pass parameters to threads. */
-struct thread_info
-{
-    thread_info(scheduler* sch_)
-      : sch(sch_)
-    {
-    }
-
-    //! Pointer to current scheduler
-    scheduler* sch;
-};
-
-
 scheduler::scheduler()
   : m_steps()
-  , m_running()
-  , m_errors_lock()
   , m_errors(false)
   , m_condition()
   , m_chunk_counter(0)
-#ifdef AR_PTHREAD_SUPPORT
-  , m_threads()
-#endif
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
@@ -257,7 +220,6 @@ scheduler::~scheduler()
 
 void scheduler::add_step(size_t step_id, analytical_step* step)
 {
-    mutex_locker lock(m_running);
     if (m_steps.size() <= step_id) {
         m_steps.resize(step_id + 1);
     }
@@ -269,20 +231,12 @@ void scheduler::add_step(size_t step_id, analytical_step* step)
 }
 
 
-
 bool scheduler::run(int nthreads)
 {
     AR_DEBUG_ASSERT(!m_steps.empty());
     AR_DEBUG_ASSERT(m_steps.front());
     AR_DEBUG_ASSERT(nthreads >= 1);
-    mutex_locker lock(m_running);
-
-    m_chunk_counter = 0;
-    for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
-        if (*it) {
-            (*it)->reset();
-        }
-    }
+    AR_DEBUG_ASSERT(!m_chunk_counter);
 
     for (unsigned task = 3 * nthreads; task; --task) {
         m_steps.front()->queue.push(data_chunk(m_chunk_counter++));
@@ -290,50 +244,58 @@ bool scheduler::run(int nthreads)
 
     queue_analytical_step(m_steps.front(), 0);
 
-    m_io_active = false;
-    if (!initialize_threads(nthreads - 1)) {
-        set_errors_occured();
-    }
+    std::vector<std::thread> threads;
 
-    // Signal for threads to start, or terminate in case of errors
-    signal_threads();
-
-    thread_info* info = new thread_info(this);
-    if (!run_wrapper(info)) {
-        set_errors_occured();
-    }
-
-    if (!join_threads()) {
-        set_errors_occured();
-    }
-
-    if (!errors_occured()) {
-        for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
-            if (*it) {
-                (*it)->ptr->finalize();
-            }
+    try {
+        for (int i = 0; i < nthreads - 1; ++i) {
+            threads.emplace_back(run_wrapper, this);
         }
+    } catch (const std::system_error& error) {
+        print_locker lock;
+        std::cerr << "Error creating threads:\n"
+                  << cli_formatter::fmt(error.what()) << std::endl;
 
-        for (pipeline::iterator it = m_steps.begin(); it != m_steps.end(); ++it) {
-            if (*it && !(*it)->queue.empty()) {
-                print_locker lock;
-                std::cerr << "ERROR: Not all parts run for step " << it - m_steps.begin()
+        set_errors_occured();
+    }
+
+    // Run the main thread (the only thread in case of non-threaded mode)
+    run_wrapper(this);
+
+    for (auto& thread: threads) {
+        try {
+            thread.join();
+        } catch (const std::system_error& error) {
+            std::cerr << "Error joining thread: " << error.what() << std::endl;
+            set_errors_occured();
+        }
+    }
+
+    for (auto it = m_steps.begin(); it != m_steps.end(); ++it) {
+        if (*it && !(*it)->queue.empty()) {
+            print_locker lock;
+            std::cerr << "ERROR: Not all parts run for step " << it - m_steps.begin()
                           << "; " << (*it)->queue.size() << " left ..." << std::endl;
 
-                set_errors_occured();
-            }
+            set_errors_occured();
         }
     }
 
-    return !errors_occured();
+    if (errors_occured()) {
+        return false;
+    }
+
+    for (auto step: m_steps) {
+        if (step) {
+            step->ptr->finalize();
+        }
+    }
+
+    return true;
 }
 
 
-void* scheduler::run_wrapper(void* ptr)
+void scheduler::run_wrapper(scheduler* sch)
 {
-    std::unique_ptr<thread_info> info(reinterpret_cast<thread_info*>(ptr));
-    scheduler* sch = info->sch;
-
     try {
         return sch->do_run();
     } catch (const thread_abort&) {
@@ -348,51 +310,42 @@ void* scheduler::run_wrapper(void* ptr)
     }
 
     sch->set_errors_occured();
-    sch->signal_threads();
-
-    return reinterpret_cast<void*>(false);
+    sch->m_condition.notify_all();
 }
 
 
-void* scheduler::do_run()
+void scheduler::do_run()
 {
-    // Wait to allow early termination in case of errors during setup
-    m_condition.wait();
+    std::unique_lock<std::mutex> lock(m_queue_lock);
 
     while (!errors_occured()) {
+        // Try to keep the disk busy by preferring IO chunks
         step_ptr current_step;
-
-        {
-            mutex_locker lock(m_queue_lock);
-
-            // Try to keep the disk busy by preferring IO chunks
-            if (m_io_active || m_queue_io.empty()) {
-                if (!m_queue_calc.empty()) {
-                    current_step = m_queue_calc.front();
-                    m_queue_calc.pop_front();
-                } else if (!m_live_chunks) {
-                    // Nothing left to do at all
-                    break;
-                }
-            } else {
-                current_step = m_queue_io.front();
-                m_queue_io.pop_front();
-                m_io_active = true;
+        if (m_io_active || m_queue_io.empty()) {
+            if (!m_queue_calc.empty()) {
+                current_step = m_queue_calc.front();
+                m_queue_calc.pop_front();
+            } else if (!m_live_chunks) {
+                // Nothing left to do at all
+                break;
             }
+        } else {
+            current_step = m_queue_io.front();
+            m_queue_io.pop_front();
+            m_io_active = true;
         }
 
         if (current_step) {
+            lock.unlock();
             execute_analytical_step(current_step);
+            lock.lock();
         } else {
-            // Nothing to do yet ...
-            m_condition.wait();
+            m_condition.wait(lock);
         }
     }
 
     // Signal any waiting threads
-    m_condition.signal();
-
-    return reinterpret_cast<void*>(true);
+    m_condition.notify_all();
 }
 
 
@@ -401,22 +354,22 @@ void scheduler::execute_analytical_step(const step_ptr& step)
     data_chunk chunk;
 
     {
-        mutex_locker lock(step->lock);
+        std::lock_guard<std::mutex> lock(step->lock);
         chunk = std::move(step->queue.pop());
     }
 
     chunk_vec chunks = step->ptr->process(chunk.data.release());
 
-    mutex_locker lock(m_queue_lock);
+    std::lock_guard<std::mutex> lock(m_queue_lock);
 
     // Schedule each of the resulting blocks
-    for (chunk_vec::iterator it = chunks.begin(); it != chunks.end(); ++it) {
-        step_ptr& other_step = m_steps.at(it->first);
+    for (auto& result: chunks) {
+        step_ptr& other_step = m_steps.at(result.first);
         AR_DEBUG_ASSERT(other_step != NULL);
 
-        mutex_locker lock(other_step->lock);
+        std::lock_guard<std::mutex> lock(other_step->lock);
         // Inherit reference count from source chunk
-        data_chunk next_chunk(chunk, std::move(it->second));
+        data_chunk next_chunk(chunk, std::move(result.second));
         if (step->ptr->get_ordering() == analytical_step::ordered) {
             // Ordered steps are allowed to not return results, so the chunk
             // numbering is remembered for down-stream steps
@@ -431,13 +384,13 @@ void scheduler::execute_analytical_step(const step_ptr& step)
     if (step->ptr->file_io()) {
         m_io_active = false;
         if (!m_queue_io.empty()) {
-            m_condition.signal();
+            m_condition.notify_all();
         }
     }
 
     // Reschedule current step if ordered and next chunk is available
     if (step->ptr->get_ordering() == analytical_step::ordered) {
-        mutex_locker lock(step->lock);
+        std::lock_guard<std::mutex> lock(step->lock);
 
         step->current_chunk++;
         if (!step->queue.empty()) {
@@ -449,7 +402,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
     if (chunks.empty() && chunk.unique() && step != m_steps.front()) {
         step_ptr other_step = m_steps.front();
 
-        mutex_locker lock(other_step->lock);
+        std::lock_guard<std::mutex> lock(other_step->lock);
         other_step->queue.push(data_chunk(m_chunk_counter));
 
         queue_analytical_step(other_step, m_chunk_counter);
@@ -473,102 +426,8 @@ void scheduler::queue_analytical_step(const step_ptr& step, size_t current)
         }
 
         m_live_chunks++;
-        m_condition.signal();
+        m_condition.notify_one();
     }
-}
-
-
-bool scheduler::initialize_threads(int nthreads)
-{
-#ifdef AR_PTHREAD_SUPPORT
-    AR_DEBUG_ASSERT(m_threads.empty());
-    AR_DEBUG_ASSERT(nthreads >= 0);
-
-    try {
-        for (int i = 0; i < nthreads; ++i) {
-            m_threads.push_back(pthread_t());
-            thread_info* info = new thread_info(this);
-            switch (pthread_create(&m_threads.back(), NULL, &run_wrapper, info)) {
-                case 0:
-                    break;
-
-                case EAGAIN:
-                    throw thread_error("pthread_create: insufficient resources to create thread");
-
-                case EINVAL:
-                    throw thread_error("pthread_create: invalid attributes");
-
-                case EPERM:
-                    throw thread_error("pthread_create: insufficient permissions");
-
-                default:
-                    throw thread_error("pthread_create: unknown error");
-            }
-        }
-    } catch (const thread_error& error) {
-        print_locker lock;
-        std::cerr << "Error creating threads:\n"
-                  << cli_formatter::fmt(error.what()) << std::endl;
-
-        m_threads.pop_back();
-        return false;
-    }
-#else
-    (void)nthreads;
-#endif
-    return true;
-}
-
-
-void scheduler::signal_threads()
-{
-#ifdef AR_PTHREAD_SUPPORT
-    // Signal the main and all other threads
-    for (size_t i = 0; i < m_threads.size() + 1; ++i) {
-        m_condition.signal();
-    }
-#endif
-}
-
-
-bool scheduler::join_threads()
-{
-    bool join_result = true;
-
-#ifdef AR_PTHREAD_SUPPORT
-    for (thread_vector::iterator it = m_threads.begin(); it != m_threads.end(); ++it) {
-        void* run_result = NULL;
-        const int join_error = pthread_join(*it, &run_result);
-
-        if (join_error) {
-            join_result = false;
-
-            print_locker lock;
-            switch (join_error) {
-                case EINVAL:
-                    std::cerr << "Error in pthread_join: invalid thread" << std::endl;
-                    break;
-
-                case ESRCH:
-                    std::cerr << "Error in pthread_join: thread not joinable" << std::endl;
-                    break;
-
-                case EDEADLK:
-                    std::cerr << "Error in pthread_join: deadlock detected" << std::endl;
-                    break;
-
-                default:
-                    std::cerr << "Error in pthread_join: unknown error: " << join_error << std::endl;
-            }
-        } else {
-            join_result &= static_cast<bool>(run_result);
-        }
-    }
-
-    m_threads.clear();
-#endif
-
-    return join_result;
 }
 
 } // namespace ar
