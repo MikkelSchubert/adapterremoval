@@ -55,9 +55,14 @@ int main(int argc, char *argv[])
 
     if (config.identify_adapters) {
         return identify_adapter_sequences(config);
-    } else {
-        return remove_adapter_sequences(config);
     }
 
-    return 1;
+    const auto returncode = remove_adapter_sequences(config);
+    if (returncode) {
+        std::cerr << "ERROR: AdapterRemoval did not run to completion;\n"
+                  << "       do NOT make use of resulting trimmed reads!"
+                  << std::endl;
+    }
+
+    return returncode;
 }
