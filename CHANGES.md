@@ -1,5 +1,9 @@
 # Changelog
 
+  * Minor changes to .settings: Adapter numbers now 1-based; the 'Number of
+    reads with adapters' is changed to 'Number of read pairs with adapters'
+    when trimming PE reads; the 'Average read length of trimmed reads' is
+    changed to 'Average read length of retained reads' for clarity.
   * Dropped the undocumented 'poor' classification for alignments; for
     statistical purposes, reads are either counted as aligned or not aligned.
     This ony changes how results are presented in the .settings files.

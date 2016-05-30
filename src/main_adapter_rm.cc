@@ -111,18 +111,18 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
         const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
         size_t adapter_id = 0;
         for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
-            output << "\nAdapter1[" << adapter_id << "]: " << it->first.sequence();
+            output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first.sequence();
             if (config.paired_ended_mode) {
-                output << "\nAdapter2[" << adapter_id << "]: " << it->second.sequence() << "\n";
+                output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second.sequence() << "\n";
             }
         }
     } else {
         const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
         size_t adapter_id = 0;
         for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
-            output << "\nAdapter1[" << adapter_id << "]: " << it->first;
+            output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
             if (config.paired_ended_mode) {
-                output << "\nAdapter2[" << adapter_id << "]: " << it->second << "\n";
+                output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
             }
         }
     }
@@ -171,7 +171,9 @@ void write_trimming_settings(const userconfig& config,
 
     for (size_t adapter_id = 0; adapter_id < stats.number_of_reads_with_adapter.size(); ++adapter_id) {
         const size_t count = stats.number_of_reads_with_adapter.at(adapter_id);
-        settings << "\nNumber of reads with adapters[" << adapter_id << "]: " << count;
+        settings << "\nNumber of "
+                 << (config.paired_ended_mode ? "read pairs" : "reads")
+                 << " with adapters[" << adapter_id + 1 << "]: " << count;
     }
 
     if (config.collapse) {
@@ -181,7 +183,7 @@ void write_trimming_settings(const userconfig& config,
 
     settings << "\nNumber of retained reads: " << stats.total_number_of_good_reads
              << "\nNumber of retained nucleotides: " << stats.total_number_of_nucleotides
-             << "\nAverage read length of trimmed reads: "
+             << "\nAverage read length of retained reads: "
              << (stats.total_number_of_good_reads ? ( static_cast<double>(stats.total_number_of_nucleotides) / stats.total_number_of_good_reads) : 0);
 
     settings << "\n\n\n[Length distribution]"
