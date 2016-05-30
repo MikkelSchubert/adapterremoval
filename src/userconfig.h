@@ -69,18 +69,8 @@ public:
     std::string get_output_filename(const std::string& key, size_t nth = 0) const;
 
 
-    enum alignment_type
-    {
-        //! Valid alignment according to user settings
-        valid_alignment,
-        //! Alignment with negative score
-        poor_alignment,
-        //! Read not aligned; too many mismatches, not enough bases, etc.
-        not_aligned
-    };
-
     /** Characterize an alignment based on user settings. */
-    alignment_type evaluate_alignment(const alignment_info& alignment) const;
+    bool is_good_alignment(const alignment_info& alignment) const;
 
     /** Returns true if the alignment is sufficient for collapsing. */
     bool is_alignment_collapsible(const alignment_info& alignment) const;
@@ -124,7 +114,7 @@ public:
     unsigned min_alignment_length;
     //! Rate of mismatches determining the threshold for a an acceptable
     //! alignment, depending on the length of the alignment. But see also the
-    //! limits set in the function 'evaluate_alignment'.
+    //! limits set in the function 'is_good_alignment'.
     double mismatch_threshold;
 
     //! Quality format expected in input files.

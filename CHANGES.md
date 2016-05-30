@@ -1,5 +1,8 @@
 # Changelog
 
+  * Dropped the undocumented 'poor' classification for alignments; for
+    statistical purposes, reads are either counted as aligned or not aligned.
+    This ony changes how results are presented in the .settings files.
   * Rework selection of nucleotides at overlapping positions with the same
     quality, in order to prevent potential data-races during tie-breaking, when
     running in multi-threaded mode. As a side-effect, the --seed option has

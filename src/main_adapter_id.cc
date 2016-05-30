@@ -421,8 +421,8 @@ private:
         read2.reverse_complement();
 
         const alignment_info alignment = align_paired_ended_sequences(read1, read2, adapters, m_config.shift);
-        const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
-        if (aln_type == userconfig::valid_alignment) {
+
+        if (m_config.is_good_alignment(alignment)) {
             stats.well_aligned_reads++;
             if (m_config.is_alignment_collapsible(alignment)) {
                 if (extract_adapter_sequences(alignment, read1, read2)) {
@@ -434,8 +434,6 @@ private:
                     process_adapter(read2.sequence(), sink.pcr2_counts, sink.pcr2_kmers);
                 }
             }
-        } else if (aln_type == userconfig::poor_alignment) {
-            stats.poorly_aligned_reads++;
         } else {
             stats.unaligned_reads++;
         }

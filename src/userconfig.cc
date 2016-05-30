@@ -494,13 +494,10 @@ statistics_ptr userconfig::create_stats() const
 }
 
 
-userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& alignment) const
+bool userconfig::is_good_alignment(const alignment_info& alignment) const
 {
-    if (!alignment.length) {
-        return not_aligned;
-    } else if (alignment.score <= 0) {
-        // Very poor alignment, will not be considered
-        return poor_alignment;
+    if (!alignment.length || alignment.score <= 0) {
+        return false;
     }
 
     // Only pairs of called bases are considered part of the alignment
@@ -508,7 +505,7 @@ userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& 
     size_t mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
 
     if (n_aligned < min_adapter_overlap) {
-        return poor_alignment;
+        return false;
     }
 
     if (n_aligned < 6) {
@@ -519,10 +516,10 @@ userconfig::alignment_type userconfig::evaluate_alignment(const alignment_info& 
     }
 
     if (alignment.n_mismatches > mm_threshold) {
-        return not_aligned;
+        return false;
     }
 
-    return valid_alignment;
+    return true;
 }
 
 

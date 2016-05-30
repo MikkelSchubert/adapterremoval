@@ -149,7 +149,6 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
 }
 
 
-
 void write_trimming_settings(const userconfig& config,
                              const statistics& stats,
                              size_t nth,
@@ -162,7 +161,6 @@ void write_trimming_settings(const userconfig& config,
              << "\nTotal number of " << reads_type << stats.records
              << "\nNumber of unaligned " << reads_type << stats.unaligned_reads
              << "\nNumber of well aligned " << reads_type << stats.well_aligned_reads
-             << "\nNumber of inadequate alignments: " << stats.poorly_aligned_reads
              << "\nNumber of discarded mate 1 reads: " << stats.discard1
              << "\nNumber of singleton mate 1 reads: " << stats.keep1;
 
@@ -397,9 +395,8 @@ public:
             fastq& read = *it;
 
             const alignment_info alignment = align_single_ended_sequence(read, m_adapters, m_config.shift);
-            const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
 
-            if (aln_type == userconfig::valid_alignment) {
+            if (m_config.is_good_alignment(alignment)) {
                 truncate_single_ended_sequence(alignment, read);
                 stats->number_of_reads_with_adapter.at(alignment.adapter_id)++;
                 stats->well_aligned_reads++;
@@ -411,8 +408,6 @@ public:
                                            *out_discarded);
                     continue;
                 }
-            } else if (aln_type == userconfig::poor_alignment) {
-                stats->poorly_aligned_reads++;
             } else {
                 stats->unaligned_reads++;
             }
@@ -523,8 +518,8 @@ public:
             read2.reverse_complement();
 
             const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_adapters, m_config.shift);
-            const userconfig::alignment_type aln_type = m_config.evaluate_alignment(alignment);
-            if (aln_type == userconfig::valid_alignment) {
+
+            if (m_config.is_good_alignment(alignment)) {
                 stats->well_aligned_reads++;
                 const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
                 stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
@@ -537,8 +532,6 @@ public:
                                            *out_discarded);
                     continue;
                 }
-            } else if (aln_type == userconfig::poor_alignment) {
-                stats->poorly_aligned_reads++;
             } else {
                 stats->unaligned_reads++;
             }
