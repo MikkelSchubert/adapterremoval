@@ -294,7 +294,9 @@ void fastq::clean_sequence(std::string& sequence)
 
 char fastq::p_to_phred_33(double p)
 {
-    const int raw_score = static_cast<int>(-10.0 * std::log10(p));
+    // Lowest possible error rate representable is '~' (~5e-10)
+    const auto min_p = std::max(5e-10, p);
+    const auto raw_score = static_cast<int>(-10.0 * std::log10(min_p));
     return std::min<int>('~', raw_score + PHRED_OFFSET_33);
 }
 
