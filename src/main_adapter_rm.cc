@@ -380,7 +380,7 @@ public:
     chunk_vec process(analytical_chunk* chunk)
     {
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-        stats_sink::pointer stats = std::move(m_stats.get_sink());
+        stats_sink::pointer stats = m_stats.get_sink();
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
@@ -484,9 +484,9 @@ public:
 
     chunk_vec process(analytical_chunk* chunk)
     {
-        mt19937_ptr rng = std::move(m_rngs.get_sink());
+        mt19937_ptr rng = m_rngs.get_sink();
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-        statistics_ptr stats = std::move(m_stats.get_sink());
+        statistics_ptr stats = m_stats.get_sink();
 
         const fastq_encoding& encoding = *m_config.quality_output_fmt;
         output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
