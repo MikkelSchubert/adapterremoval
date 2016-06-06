@@ -297,6 +297,8 @@ adapter_set::adapter_set()
     , m_barcodes()
     , m_adapters()
 {
+    // Default name if no barcodes are used
+    m_samples.push_back("main");
 }
 
 
@@ -343,6 +345,9 @@ bool adapter_set::load_barcodes(const std::string& filename, bool paired_end)
     if (!read_table(filename, raw_barcodes, 1, 2, true)) {
         return false;
     }
+
+    m_samples.clear();
+    m_barcodes.clear();
 
     for (fastq_table_citer it = raw_barcodes.begin(); it != raw_barcodes.end(); ++it) {
         fastq barcode_5p = it->second.at(0);
