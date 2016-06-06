@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <limits>
 #include <sstream>
+#include <iostream>
 
 #include "fastq_enc.h"
 
@@ -78,8 +79,9 @@ std::string calc_phred_to_solexa()
     scores.resize(MAX_PHRED_SCORE - MIN_PHRED_SCORE + 1);
 
     for (int i = MIN_PHRED_SCORE; i <= MAX_PHRED_SCORE; ++i) {
-        const double score = round(10.0 * log10(pow(10.0, i / 10.0) - 1.0));
-        const int transformed = std::max<int>(MIN_SOLEXA_SCORE, std::min<int>(MAX_PHRED_SCORE, score));
+        const auto min_i = std::max(1, i);
+        const auto score = round(10.0 * log10(pow(10.0, min_i / 10.0) - 1.0));
+        const auto transformed = std::max<int>(MIN_SOLEXA_SCORE, std::min<int>(MAX_PHRED_SCORE, score));
 
         scores.at(i) = transformed;
     }
