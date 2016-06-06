@@ -30,10 +30,12 @@
 #include <sys/time.h>
 #include <limits>
 
-#include "userconfig.h"
-#include "fastq.h"
 #include "alignment.h"
+#include "debug.h"
+#include "fastq.h"
 #include "strutils.h"
+#include "userconfig.h"
+
 
 namespace ar
 {
@@ -559,6 +561,7 @@ std::string userconfig::get_output_filename(const std::string& key,
     } else if (key == "demux_unknown") {
         filename += ".unidentified";
 
+        AR_DEBUG_ASSERT(nth >= 0 && nth <= 9);
         if (nth) {
             filename.push_back('_');
             filename.push_back('0' + nth);
