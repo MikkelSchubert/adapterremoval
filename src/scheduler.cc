@@ -85,12 +85,12 @@ struct data_chunk
     /** Sorts by counter, data, type, in that order. **/
     bool operator<(const data_chunk& other) const
     {
-        if (chunk_id > other.chunk_id) {
-            return true;
-        } else if (chunk_id == other.chunk_id) {
-            if (data > other.data) {
-                return true;
-            }
+        if (chunk_id != other.chunk_id) {
+            return chunk_id > other.chunk_id;
+        } else if (data != other.data) {
+            return data > other.data;
+        } else if (counter != other.counter) {
+            return counter > other.counter;
         }
 
         return false;
@@ -133,7 +133,7 @@ public:
         data_chunk value = std::move(m_chunks.back());
         m_chunks.pop_back();
 
-        return std::move(value);
+        return value;
     }
 
     const data_chunk& top() const
@@ -299,7 +299,8 @@ void scheduler::run_wrapper(scheduler* sch)
     try {
         return sch->do_run();
     } catch (const thread_abort&) {
-        // Error messaging is assumed to have been done by thrower
+        print_locker lock;
+        std::cerr << "Aborting thread due to error." << std::endl;
     } catch (const std::exception& error) {
         print_locker lock;
         std::cerr << "Error in thread:\n"
@@ -355,7 +356,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
 
     {
         std::lock_guard<std::mutex> lock(step->lock);
-        chunk = std::move(step->queue.pop());
+        chunk = step->queue.pop();
     }
 
     chunk_vec chunks = step->ptr->process(chunk.data.release());
