@@ -646,14 +646,14 @@ void add_write_step(const userconfig& config, scheduler& sch, size_t offset,
 #ifdef AR_GZIP_SUPPORT
     if (config.gzip) {
         sch.add_step(offset + ai_zip_offset, step);
-        sch.add_step(offset, new gzip_paired_fastq(config, offset + ai_zip_offset));
+        sch.add_step(offset, new gzip_fastq(config, offset + ai_zip_offset));
     } else
 #endif
 
 #ifdef AR_BZIP2_SUPPORT
     if (config.bzip2) {
         sch.add_step(offset + ai_zip_offset, step);
-        sch.add_step(offset, new bzip2_paired_fastq(config, offset + ai_zip_offset));
+        sch.add_step(offset, new bzip2_fastq(config, offset + ai_zip_offset));
     } else
 #endif
     {

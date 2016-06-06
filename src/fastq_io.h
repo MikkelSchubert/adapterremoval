@@ -107,8 +107,8 @@ public:
     size_t count;
 
 private:
-    friend class gzip_paired_fastq;
-    friend class bzip2_paired_fastq;
+    friend class gzip_fastq;
+    friend class bzip2_fastq;
     friend class write_fastq;
 
     //! Lines read from the mate 1 and mate 2 files
@@ -258,11 +258,11 @@ private:
 /**
  * BZip2 compression step; takes any lines in the input chunk, compresses them,
  * and adds them to the buffer list of the chunk, before forwarding it. */
-class bzip2_paired_fastq : public analytical_step
+class bzip2_fastq : public analytical_step
 {
 public:
     /** Constructor; 'next_step' sets the destination of compressed chunks. */
-    bzip2_paired_fastq(const userconfig& config, size_t next_step);
+    bzip2_fastq(const userconfig& config, size_t next_step);
 
     /** Compresses input lines, saving compressed chunks to chunk->buffers. */
     virtual chunk_vec process(analytical_chunk* chunk);
@@ -272,9 +272,9 @@ public:
 
 private:
     //! Not implemented
-    bzip2_paired_fastq(const bzip2_paired_fastq&);
+    bzip2_fastq(const bzip2_fastq&);
     //! Not implemented
-    bzip2_paired_fastq& operator=(const bzip2_paired_fastq&);
+    bzip2_fastq& operator=(const bzip2_fastq&);
 
     //! N reads which did not result in an output chunk
     size_t m_buffered_reads;
@@ -293,11 +293,11 @@ private:
 /**
  * GZip compression step; takes any lines in the input chunk, compresses them,
  * and adds them to the buffer list of the chunk, before forwarding it. */
-class gzip_paired_fastq : public analytical_step
+class gzip_fastq : public analytical_step
 {
 public:
     /** Constructor; 'next_step' sets the destination of compressed chunks. */
-    gzip_paired_fastq(const userconfig& config, size_t next_step);
+    gzip_fastq(const userconfig& config, size_t next_step);
 
     /** Compresses input lines, saving compressed chunks to chunk->buffers. */
     virtual chunk_vec process(analytical_chunk* chunk);
@@ -307,9 +307,9 @@ public:
 
 private:
     //! Not implemented
-    gzip_paired_fastq(const gzip_paired_fastq&);
+    gzip_fastq(const gzip_fastq&);
     //! Not implemented
-    gzip_paired_fastq& operator=(const gzip_paired_fastq&);
+    gzip_fastq& operator=(const gzip_fastq&);
 
     //! N reads which did not result in an output chunk
     size_t m_buffered_reads;

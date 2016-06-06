@@ -343,10 +343,10 @@ std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
 #ifdef AR_BZIP2_SUPPORT
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'gzip_paired_fastq'
+// Implementations for 'gzip_fastq'
 
 
-bzip2_paired_fastq::bzip2_paired_fastq(const userconfig& config, size_t next_step)
+bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
   : analytical_step(analytical_step::ordered, false)
   , m_buffered_reads(0)
   , m_next_step(next_step)
@@ -367,24 +367,24 @@ bzip2_paired_fastq::bzip2_paired_fastq(const userconfig& config, size_t next_ste
             break;
 
         case BZ_MEM_ERROR:
-            throw thread_error("bzip2_paired_fastq: not enough memory");
+            throw thread_error("bzip2_fastq: not enough memory");
 
         case BZ_CONFIG_ERROR:
-            throw thread_error("bzip2_paired_fastq: miscompiled bzip2 library");
+            throw thread_error("bzip2_fastq: miscompiled bzip2 library");
 
         case BZ_PARAM_ERROR:
-            throw thread_error("bzip2_paired_fastq: invalid parameters");
+            throw thread_error("bzip2_fastq: invalid parameters");
 
         default:
-            throw thread_error("bzip2_paired_fastq: unknown error");
+            throw thread_error("bzip2_fastq: unknown error");
     }
 }
 
 
-void bzip2_paired_fastq::finalize()
+void bzip2_fastq::finalize()
 {
     if (!m_eof) {
-        throw thread_error("bzip2_paired_fastq::finalize: terminated before EOF");
+        throw thread_error("bzip2_fastq::finalize: terminated before EOF");
     }
 
     const int errorcode = BZ2_bzCompressEnd(&m_stream);
@@ -392,22 +392,22 @@ void bzip2_paired_fastq::finalize()
         print_locker lock;
         switch (errorcode) {
             case BZ_PARAM_ERROR:
-                throw thread_error("bzip2_paired_fastq::finalize: parameter error");
+                throw thread_error("bzip2_fastq::finalize: parameter error");
 
             default:
-                throw thread_error("Unknown error in bzip2_paired_fastq::finalize");
+                throw thread_error("Unknown error in bzip2_fastq::finalize");
         }
     }
 }
 
 
-chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec bzip2_fastq::process(analytical_chunk* chunk)
 {
     output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
     if (m_eof) {
-        throw thread_error("bzip2_paired_fastq::process: received data after EOF");
+        throw thread_error("bzip2_fastq::process: received data after EOF");
     }
 
     m_eof = file_chunk->eof;
@@ -441,16 +441,16 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
                         break;
 
                     case BZ_FLUSH_OK:
-                        throw thread_error("bzip2_paired_fastq::process: BZ_FLUSH_OK");
+                        throw thread_error("bzip2_fastq::process: BZ_FLUSH_OK");
 
                     case BZ_PARAM_ERROR:
-                        throw thread_error("bzip2_paired_fastq::process: BZ_PARAM_ERROR");
+                        throw thread_error("bzip2_fastq::process: BZ_PARAM_ERROR");
 
                     case BZ_SEQUENCE_ERROR:
-                        throw thread_error("bzip2_paired_fastq::process: sequence error");
+                        throw thread_error("bzip2_fastq::process: sequence error");
 
                     default:
-                        throw thread_error("bzip2_paired_fastq::process: unknown error");
+                        throw thread_error("bzip2_fastq::process: unknown error");
                 }
 
                 output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
@@ -489,9 +489,9 @@ chunk_vec bzip2_paired_fastq::process(analytical_chunk* chunk)
 #ifdef AR_GZIP_SUPPORT
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'gzip_paired_fastq'
+// Implementations for 'gzip_fastq'
 
-gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
+gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   : analytical_step(analytical_step::ordered, false)
   , m_buffered_reads(0)
   , m_next_step(next_step)
@@ -514,24 +514,24 @@ gzip_paired_fastq::gzip_paired_fastq(const userconfig& config, size_t next_step)
             break;
 
         case Z_MEM_ERROR:
-            throw thread_error("gzip_paired_fastq: not enough memory");
+            throw thread_error("gzip_fastq: not enough memory");
 
         case Z_STREAM_ERROR:
-            throw thread_error("gzip_paired_fastq: invalid parameters");
+            throw thread_error("gzip_fastq: invalid parameters");
 
         case Z_VERSION_ERROR:
-            throw thread_error("gzip_paired_fastq: incompatible zlib version");
+            throw thread_error("gzip_fastq: incompatible zlib version");
 
         default:
-            throw thread_error("gzip_paired_fastq: unknown error");
+            throw thread_error("gzip_fastq: unknown error");
     }
 }
 
 
-void gzip_paired_fastq::finalize()
+void gzip_fastq::finalize()
 {
     if (!m_eof) {
-        throw thread_error("gzip_paired_fastq::finalize: terminated before EOF");
+        throw thread_error("gzip_fastq::finalize: terminated before EOF");
     }
 
     const int errorcode = deflateEnd(&m_stream);
@@ -539,25 +539,25 @@ void gzip_paired_fastq::finalize()
         print_locker lock;
         switch (errorcode) {
             case Z_STREAM_ERROR:
-                throw thread_error("gzip_paired_fastq::finalize: stream error");
+                throw thread_error("gzip_fastq::finalize: stream error");
 
             case Z_DATA_ERROR:
-                throw thread_error("gzip_paired_fastq::finalize: data error");
+                throw thread_error("gzip_fastq::finalize: data error");
 
             default:
-                throw thread_error("Unknown error in gzip_paired_fastq::finalize");
+                throw thread_error("Unknown error in gzip_fastq::finalize");
         }
     }
 }
 
 
-chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
+chunk_vec gzip_fastq::process(analytical_chunk* chunk)
 {
     output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
     if (m_eof) {
-        throw thread_error("bzip2_paired_fastq::process: received data after EOF");
+        throw thread_error("bzip2_fastq::process: received data after EOF");
     }
 
     m_eof = file_chunk->eof;
@@ -590,13 +590,13 @@ chunk_vec gzip_paired_fastq::process(analytical_chunk* chunk)
                         break;
 
                     case Z_BUF_ERROR:
-                        throw thread_error("gzip_paired_fastq::process: buf error");
+                        throw thread_error("gzip_fastq::process: buf error");
 
                     case Z_STREAM_ERROR:
-                        throw thread_error("gzip_paired_fastq::process: stream error");
+                        throw thread_error("gzip_fastq::process: stream error");
 
                     default:
-                        throw thread_error("gzip_paired_fastq::process: unknown error");
+                        throw thread_error("gzip_fastq::process: unknown error");
                 }
 
                 output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
