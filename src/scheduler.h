@@ -24,13 +24,13 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <list>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <vector>
 #include <atomic>
 #include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <vector>
 
 #include "threads.h"
 
@@ -100,9 +100,7 @@ protected:
     virtual void reduce(pointer& dst, const pointer& src) const = 0;
 
 private:
-    typedef std::list<pointer> sink_list;
-    typedef typename sink_list::iterator sink_list_iter;
-    typedef typename sink_list::const_iterator sink_list_citer;
+    typedef std::queue<pointer> sink_list;
 
     //! Lock used to control access to sink lists
     std::mutex m_sinks_lock;
@@ -204,19 +202,22 @@ public:
      * Adds a step to the pipeline.
      *
      * @param step_id Unique ID of current step; cannot be used twice.
+     * @param name Textual name for the (type) of step being added.
      * @param step A analytical step; is deleted when scheduler is destroyed.
      *
      * The ID specified here is specified as the first value of 'chunk_pair's
      * in order to determine to which analytical step a chunk is assigned.
      **/
-    void add_step(size_t step_id, analytical_step* step);
+    void add_step(size_t step_id,
+                  const std::string& name,
+                  analytical_step* step);
 
     /** Runs the pipeline with n threads; return false on error. */
     bool run(int nthreads);
 
 private:
     typedef std::shared_ptr<scheduler_step> step_ptr;
-    typedef std::list<step_ptr> runables;
+    typedef std::queue<step_ptr> runables;
     typedef std::vector<step_ptr> pipeline;
 
     //! Not implemented
@@ -241,14 +242,14 @@ private:
 
     //! Analytical steps
     pipeline m_steps;
-    //! Set to indicate if errors have occured
-    std::atomic_bool m_errors;
 
     //! Condition used to signal the (potential) availability of work
     std::condition_variable m_condition;
 
     //! Counter used for sequential processing of data
     size_t m_chunk_counter;
+    //! Count of currently live chunks
+    size_t m_live_chunks;
 
     //! Lock used to control access to chunks
     std::mutex m_queue_lock;
@@ -256,10 +257,11 @@ private:
     runables m_queue_calc;
     //! Queue used for currently runnable steps involving IO
     runables m_queue_io;
+
     //! Indicates if a thread is doing IO; access control through 'm_queue_lock'
     bool m_io_active;
-    //! Count of currently live chunks
-    size_t m_live_chunks;
+    //! Set to indicate if errors have occured
+    std::atomic_bool m_errors;
 };
 
 
@@ -289,7 +291,7 @@ typename statistics_sink<T>::pointer statistics_sink<T>::get_sink()
     }
 
     pointer ptr = std::move(m_sinks.front());
-    m_sinks.pop_front();
+    m_sinks.pop();
 
     return ptr;
 }
@@ -299,7 +301,7 @@ template <typename T>
 void statistics_sink<T>::return_sink(pointer ptr)
 {
     std::lock_guard<std::mutex> lock(m_sinks_lock);
-    m_sinks.push_back(std::move(ptr));
+    m_sinks.push(std::move(ptr));
 }
 
 
@@ -311,12 +313,12 @@ typename statistics_sink<T>::pointer statistics_sink<T>::finalize()
         return new_sink();
     }
 
-    pointer result(std::move(m_sinks.back()));
-    m_sinks.pop_back();
+    pointer result(std::move(m_sinks.front()));
+    m_sinks.pop();
 
     while (!m_sinks.empty()) {
-        reduce(result, m_sinks.back());
-        m_sinks.pop_back();
+        reduce(result, m_sinks.front());
+        m_sinks.pop();
     }
 
     return std::move(result);

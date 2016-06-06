@@ -472,14 +472,16 @@ int identify_adapter_sequences(const userconfig& config)
     scheduler sch;
     try {
         if (config.interleaved_input) {
-            sch.add_step(ai_read_fastq, new read_interleaved_fastq(config.quality_input_fmt.get(),
-                                                                   config.input_file_1,
-                                                                   ai_identify_adapters));
+            sch.add_step(ai_read_fastq, "read_interleaved_fastq",
+                         new read_interleaved_fastq(config.quality_input_fmt.get(),
+                                                    config.input_file_1,
+                                                    ai_identify_adapters));
         } else {
-            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
-                                                              config.input_file_1,
-                                                              config.input_file_2,
-                                                              ai_identify_adapters));
+            sch.add_step(ai_read_fastq, "read_paired_fastq",
+                         new read_paired_fastq(config.quality_input_fmt.get(),
+                                               config.input_file_1,
+                                               config.input_file_2,
+                                               ai_identify_adapters));
         }
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error opening file; aborting:\n"
@@ -487,7 +489,8 @@ int identify_adapter_sequences(const userconfig& config)
         return 1;
     }
 
-    sch.add_step(ai_identify_adapters, new adapter_identification(config));
+    sch.add_step(ai_identify_adapters, "identify_adapters",
+                 new adapter_identification(config));
 
     if (!sch.run(config.max_threads)) {
         return 1;

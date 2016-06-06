@@ -68,7 +68,7 @@ analytical_step::~analytical_step()
 
 struct data_chunk
 {
-    explicit data_chunk(unsigned chunk_id_ = 0)
+    explicit data_chunk(size_t chunk_id_ = 0)
       : chunk_id(chunk_id_)
       , data()
       , counter(new bool())
@@ -102,7 +102,7 @@ struct data_chunk
     }
 
     //! Strictly increasing counter; used to sort chunks for 'ordered' tasks
-    unsigned chunk_id;
+    size_t chunk_id;
     //! Use generated data; is normally not freed by this struct
     chunk_ptr data;
 
@@ -160,12 +160,13 @@ private:
 
 struct scheduler_step
 {
-    scheduler_step(analytical_step* value)
+    scheduler_step(analytical_step* value, const std::string& name_)
       : lock()
       , ptr(value)
       , current_chunk(0)
       , last_chunk(0)
       , queue()
+      , name(name_)
     {
     }
 
@@ -178,18 +179,19 @@ struct scheduler_step
         return true;
     }
 
-
     //! Mutex used to control access to step
     std::mutex lock;
     //! Analytical step implementation
     std::unique_ptr<analytical_step> ptr;
     //! The current chunk to be processed
-    unsigned current_chunk;
+    size_t current_chunk;
     //! The last chunk queued to the step;
     //! Used to correct numbering for sparse output from sequential steps
-    unsigned last_chunk;
+    size_t last_chunk;
     //! (Ordered) vector of chunks to be processed
     chunk_queue queue;
+    //! Short name for step used for error reporting
+    std::string name;
 
 private:
     //! Not implemented
@@ -201,14 +203,14 @@ private:
 
 scheduler::scheduler()
   : m_steps()
-  , m_errors(false)
   , m_condition()
   , m_chunk_counter(0)
+  , m_live_chunks(0)
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
   , m_io_active(false)
-  , m_live_chunks(0)
+  , m_errors(false)
 {
 }
 
@@ -218,7 +220,8 @@ scheduler::~scheduler()
 }
 
 
-void scheduler::add_step(size_t step_id, analytical_step* step)
+void scheduler::add_step(size_t step_id, const std::string& name,
+                         analytical_step* step)
 {
     if (m_steps.size() <= step_id) {
         m_steps.resize(step_id + 1);
@@ -227,7 +230,7 @@ void scheduler::add_step(size_t step_id, analytical_step* step)
     AR_DEBUG_ASSERT(step);
     AR_DEBUG_ASSERT(!m_steps.at(step_id));
 
-    m_steps.at(step_id) = step_ptr(new scheduler_step(step));
+    m_steps.at(step_id) = step_ptr(new scheduler_step(step, name));
 }
 
 
@@ -238,7 +241,7 @@ bool scheduler::run(int nthreads)
     AR_DEBUG_ASSERT(nthreads >= 1);
     AR_DEBUG_ASSERT(!m_chunk_counter);
 
-    for (unsigned task = 3 * nthreads; task; --task) {
+    for (size_t task = 3 * static_cast<size_t>(nthreads); task; --task) {
         m_steps.front()->queue.push(data_chunk(m_chunk_counter++));
     }
 
@@ -252,7 +255,7 @@ bool scheduler::run(int nthreads)
         }
     } catch (const std::system_error& error) {
         print_locker lock;
-        std::cerr << "Error creating threads:\n"
+        std::cerr << "ERROR: Failed to create threads:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
 
         set_errors_occured();
@@ -265,16 +268,16 @@ bool scheduler::run(int nthreads)
         try {
             thread.join();
         } catch (const std::system_error& error) {
-            std::cerr << "Error joining thread: " << error.what() << std::endl;
+            std::cerr << "ERROR: Failed to joini thread: " << error.what() << std::endl;
             set_errors_occured();
         }
     }
 
-    for (auto it = m_steps.begin(); it != m_steps.end(); ++it) {
-        if (*it && !(*it)->queue.empty()) {
+    for (auto& step: m_steps) {
+        if (step && !step->queue.empty()) {
             print_locker lock;
-            std::cerr << "ERROR: Not all parts run for step " << it - m_steps.begin()
-                          << "; " << (*it)->queue.size() << " left ..." << std::endl;
+            std::cerr << "ERROR: Not all parts run for step " << step->name
+                          << "; " << step->queue.size() << " left ..." << std::endl;
 
             set_errors_occured();
         }
@@ -286,7 +289,12 @@ bool scheduler::run(int nthreads)
 
     for (auto step: m_steps) {
         if (step) {
-            step->ptr->finalize();
+            try {
+                step->ptr->finalize();
+            } catch (const std::exception&) {
+                std::cerr << "ERROR: Failed to finalizing task " << step->name << ":\n";
+                throw;
+            }
         }
     }
 
@@ -303,11 +311,11 @@ void scheduler::run_wrapper(scheduler* sch)
         std::cerr << "Aborting thread due to error." << std::endl;
     } catch (const std::exception& error) {
         print_locker lock;
-        std::cerr << "Error in thread:\n"
+        std::cerr << "ERROR: Unhandled exception in thread:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
     } catch (...) {
         print_locker lock;
-        std::cerr << "Unhandled exception in thread" << std::endl;
+        std::cerr << "ERROR: Unhandled, non-standard exception in thread" << std::endl;
     }
 
     sch->set_errors_occured();
@@ -325,14 +333,14 @@ void scheduler::do_run()
         if (m_io_active || m_queue_io.empty()) {
             if (!m_queue_calc.empty()) {
                 current_step = m_queue_calc.front();
-                m_queue_calc.pop_front();
+                m_queue_calc.pop();
             } else if (!m_live_chunks) {
                 // Nothing left to do at all
                 break;
             }
         } else {
             current_step = m_queue_io.front();
-            m_queue_io.pop_front();
+            m_queue_io.pop();
             m_io_active = true;
         }
 
@@ -368,7 +376,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
         step_ptr& other_step = m_steps.at(result.first);
         AR_DEBUG_ASSERT(other_step != NULL);
 
-        std::lock_guard<std::mutex> lock(other_step->lock);
+        std::lock_guard<std::mutex> step_lock(other_step->lock);
         // Inherit reference count from source chunk
         data_chunk next_chunk(chunk, std::move(result.second));
         if (step->ptr->get_ordering() == analytical_step::ordered) {
@@ -391,7 +399,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
 
     // Reschedule current step if ordered and next chunk is available
     if (step->ptr->get_ordering() == analytical_step::ordered) {
-        std::lock_guard<std::mutex> lock(step->lock);
+        std::lock_guard<std::mutex> step_lock(step->lock);
 
         step->current_chunk++;
         if (!step->queue.empty()) {
@@ -403,7 +411,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
     if (chunks.empty() && chunk.unique() && step != m_steps.front()) {
         step_ptr other_step = m_steps.front();
 
-        std::lock_guard<std::mutex> lock(other_step->lock);
+        std::lock_guard<std::mutex> step_lock(other_step->lock);
         other_step->queue.push(data_chunk(m_chunk_counter));
 
         queue_analytical_step(other_step, m_chunk_counter);
@@ -421,9 +429,9 @@ void scheduler::queue_analytical_step(const step_ptr& step, size_t current)
 {
     if (step->can_run(current)) {
         if (step->ptr->file_io()) {
-            m_queue_io.push_back(step);
+            m_queue_io.push(step);
         } else {
-            m_queue_calc.push_back(step);
+            m_queue_calc.push(step);
         }
 
         m_live_chunks++;

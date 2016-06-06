@@ -641,23 +641,25 @@ bool write_settings(const userconfig& config, const std::vector<reads_processor*
 
 
 void add_write_step(const userconfig& config, scheduler& sch, size_t offset,
-                    analytical_step* step)
+                    const std::string& name, analytical_step* step)
 {
 #ifdef AR_GZIP_SUPPORT
     if (config.gzip) {
-        sch.add_step(offset + ai_zip_offset, step);
-        sch.add_step(offset, new gzip_fastq(config, offset + ai_zip_offset));
+        sch.add_step(offset + ai_zip_offset, "write_gzip_" + name, step);
+        sch.add_step(offset, "gzip_" + name,
+                     new gzip_fastq(config, offset + ai_zip_offset));
     } else
 #endif
 
 #ifdef AR_BZIP2_SUPPORT
     if (config.bzip2) {
-        sch.add_step(offset + ai_zip_offset, step);
-        sch.add_step(offset, new bzip2_fastq(config, offset + ai_zip_offset));
+        sch.add_step(offset + ai_zip_offset, "write_bzip2_" + name, step);
+        sch.add_step(offset, "bzip2_" + name,
+                     new bzip2_fastq(config, offset + ai_zip_offset));
     } else
 #endif
     {
-        sch.add_step(offset, step);
+        sch.add_step(offset, "write_" + name, step);
     }
 }
 
@@ -673,37 +675,43 @@ int remove_adapter_sequences_se(const userconfig& config)
     try {
         if (config.adapters.barcode_count()) {
             // Step 1: Read input file
-            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_input_fmt.get(),
-                                                              config.input_file_1,
-                                                              ai_demultiplex));
+            sch.add_step(ai_read_fastq, "read_fastq",
+                         new read_single_fastq(config.quality_input_fmt.get(),
+                                               config.input_file_1,
+                                               ai_demultiplex));
 
             // Step 2: Parse and demultiplex reads based on single or double indices
-            sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_se_reads(&config));
+            sch.add_step(ai_demultiplex, "demultiplex_se",
+                         demultiplexer = new demultiplex_se_reads(&config));
 
-            add_write_step(config, sch, ai_write_unidentified_1,
+            add_write_step(config, sch, ai_write_unidentified_1, "unidentified",
                            new write_fastq(config.get_output_filename("demux_unknown")));
         } else {
-            sch.add_step(ai_read_fastq, new read_single_fastq(config.quality_input_fmt.get(),
-                                                              config.input_file_1,
-                                                              ai_analyses_offset));
+            sch.add_step(ai_read_fastq, "read_fastq",
+                         new read_single_fastq(config.quality_input_fmt.get(),
+                                               config.input_file_1,
+                                               ai_analyses_offset));
         }
 
-        // Step 3 - N: Trim and write demultiplexed readss
+        // Step 3 - N: Trim and write demultiplexed reads
         for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
             const size_t offset = nth * ai_analyses_offset;
+            const std::string& sample = config.adapters.get_sample_name(nth);
 
             processors.push_back(new se_reads_processor(config, nth));
-            sch.add_step(offset + ai_trim_se, processors.back());
+            sch.add_step(offset + ai_trim_se, "trim_se_" + sample,
+                         processors.back());
 
-            add_write_step(config, sch, offset + ai_write_mate_1,
+            add_write_step(config, sch, offset + ai_write_mate_1, sample + "_fastq",
                            new write_fastq(config.get_output_filename("--output1", nth)));
-            add_write_step(config, sch, offset + ai_write_discarded,
+            add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
                          new write_fastq(config.get_output_filename("--discarded", nth)));
 
             if (config.collapse) {
-                add_write_step(config, sch, offset + ai_write_collapsed,
+                add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
                                new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
                 add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                               sample + "_collapsed_truncated",
                                new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
             }
         }
@@ -737,51 +745,56 @@ int remove_adapter_sequences_pe(const userconfig& config)
         // Step 1: Read input file
         const size_t next_step = config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
         if (config.interleaved_input) {
-            sch.add_step(ai_read_fastq, new read_interleaved_fastq(config.quality_input_fmt.get(),
-                                                                   config.input_file_1,
-                                                                   next_step));
+            sch.add_step(ai_read_fastq, "read_interleaved_fastq",
+                         new read_interleaved_fastq(config.quality_input_fmt.get(),
+                                                    config.input_file_1,
+                                                    next_step));
         } else {
-            sch.add_step(ai_read_fastq, new read_paired_fastq(config.quality_input_fmt.get(),
-                                                              config.input_file_1,
-                                                              config.input_file_2,
-                                                              next_step));
+            sch.add_step(ai_read_fastq, "read_paired_fastq",
+                         new read_paired_fastq(config.quality_input_fmt.get(),
+                                               config.input_file_1,
+                                               config.input_file_2,
+                                               next_step));
         }
 
         if (config.adapters.barcode_count()) {
             // Step 2: Parse and demultiplex reads based on single or double indices
-            sch.add_step(ai_demultiplex, demultiplexer = new demultiplex_pe_reads(&config));
+            sch.add_step(ai_demultiplex, "demultiplex_pe",
+                         demultiplexer = new demultiplex_pe_reads(&config));
 
-            add_write_step(config, sch, ai_write_unidentified_1,
+            add_write_step(config, sch, ai_write_unidentified_1, "unidentified_mate_1",
                            new write_fastq(config.get_output_filename("demux_unknown", 1)));
-            add_write_step(config, sch, ai_write_unidentified_2,
+            add_write_step(config, sch, ai_write_unidentified_2, "unidentified_mate_2",
                            new write_fastq(config.get_output_filename("demux_unknown", 2)));
         }
 
         // Step 3 - N: Trim and write demultiplexed reads
         for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
             const size_t offset = nth * ai_analyses_offset;
+            const std::string& sample = config.adapters.get_sample_name(nth);
 
             processors.push_back(new pe_reads_processor(config, nth));
-            sch.add_step(offset + ai_trim_pe, processors.back());
+            sch.add_step(offset + ai_trim_pe, "trim_pe_" + sample,
+                         processors.back());
 
-            add_write_step(config, sch, offset + ai_write_mate_1,
+            add_write_step(config, sch, offset + ai_write_mate_1, sample + "_mate_1",
                            new write_fastq(config.get_output_filename("--output1", nth)));
 
             if (!config.interleaved_output) {
-                add_write_step(config, sch, offset + ai_write_mate_2,
+                add_write_step(config, sch, offset + ai_write_mate_2, sample + "_mate_2",
                                new write_fastq(config.get_output_filename("--output2", nth)));
             }
 
-
-            add_write_step(config, sch, offset + ai_write_discarded,
+            add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
                            new write_fastq(config.get_output_filename("--discarded", nth)));
-            add_write_step(config, sch, offset + ai_write_singleton,
+            add_write_step(config, sch, offset + ai_write_singleton, sample + "_singleton",
                            new write_fastq(config.get_output_filename("--singleton", nth)));
 
             if (config.collapse) {
-                add_write_step(config, sch, offset + ai_write_collapsed,
+                add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
                                new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
                 add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                               sample + "_collapsed_truncated",
                                new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
             }
         }
