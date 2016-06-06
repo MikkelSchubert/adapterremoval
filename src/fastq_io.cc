@@ -645,7 +645,7 @@ static bool s_finalized = false;
 
 write_fastq::write_fastq(const std::string& filename)
   : analytical_step(analytical_step::ordered, true)
-  , m_output(filename.c_str(), std::ofstream::out)
+  , m_output(filename.c_str(), std::ofstream::out | std::ofstream::binary)
   , m_eof(false)
 {
     if (!m_output.is_open()) {
