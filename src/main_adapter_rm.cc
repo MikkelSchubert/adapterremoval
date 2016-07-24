@@ -127,8 +127,14 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
         }
     }
 
-    output << "\n\n[Adapter trimming]"
-           << "\nAlignment shift value: " << config.shift
+    output << "\n\n[Adapter trimming]";
+    if (config.max_threads > 1) {
+        output << "\nRNG seed: NA";
+    } else {
+        output << "\nRNG seed: " << config.seed;
+    }
+
+    output << "\nAlignment shift value: " << config.shift
            << "\nGlobal mismatch threshold: " << config.mismatch_threshold
            << "\nQuality format (input): " << config.quality_input_fmt->name()
            << "\nQuality score max (input): " << config.quality_input_fmt->max_score()
@@ -449,8 +455,8 @@ public:
 class rng_sink : public statistics_sink<std::mt19937>
 {
 public:
-    rng_sink()
-      : m_seed()
+    rng_sink(unsigned seed)
+      : m_seed(seed)
     {
     }
 
@@ -469,7 +475,7 @@ private:
     //! Not implemented
     rng_sink& operator=(const rng_sink&);
 
-    mutable std::random_device m_seed;
+    mutable std::mt19937 m_seed;
 };
 
 
@@ -478,7 +484,7 @@ class pe_reads_processor : public reads_processor
 public:
     pe_reads_processor(const userconfig& config, size_t nth)
       : reads_processor(config, nth)
-      , m_rngs()
+      , m_rngs(config.seed)
     {
     }
 

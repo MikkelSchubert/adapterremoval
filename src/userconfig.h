@@ -50,14 +50,14 @@ typedef std::unique_ptr<statistics> statistics_ptr;
 class userconfig
 {
 public:
-	/**
-	 * @param name Name of program.
-	 * @param version Version string excluding program name.
-	 * @param help Help text describing program.
-	 */
+    /**
+     * @param name Name of program.
+     * @param version Version string excluding program name.
+     * @param help Help text describing program.
+     */
     userconfig(const std::string& name,
-           	   const std::string& version,
-           	   const std::string& help);
+               const std::string& version,
+               const std::string& help);
 
     /** Parses a set of commandline arguments. */
     argparse::parse_result parse_args(int argc, char *argv[]);
@@ -138,6 +138,10 @@ public:
     bool collapse;
     // Allow for slipping basepairs by allowing missing bases in adapter
     unsigned shift;
+
+    //! RNG seed for randomly selecting between to bases with the same quality
+    //! when collapsing overllapping PE reads.
+    unsigned seed;
 
     //! If true, the program attempts to identify the adapter pair of PE reads
     bool identify_adapters;

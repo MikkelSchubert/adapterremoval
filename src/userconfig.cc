@@ -40,6 +40,16 @@
 namespace ar
 {
 
+
+size_t get_seed()
+{
+    struct timeval timestamp;
+    gettimeofday(&timestamp, NULL);
+
+    return (timestamp.tv_sec << 20) | timestamp.tv_usec;
+}
+
+
 fastq_encoding_ptr select_encoding(const std::string& name,
                                    const std::string& value,
                                    size_t quality_max = MAX_PHRED_SCORE_DEFAULT)
@@ -87,6 +97,7 @@ userconfig::userconfig(const std::string& name,
     , max_ambiguous_bases(1000)
     , collapse(false)
     , shift(2)
+    , seed(get_seed())
     , identify_adapters(false)
     , max_threads(1)
     , gzip(false)
@@ -335,7 +346,12 @@ userconfig::userconfig(const std::string& name,
         new argparse::flag(&identify_adapters,
             "Attempt to identify the adapter pair of PE reads, by searching "
             "for overlapping reads [current: %default].");
-
+    argparser["--seed"] =
+        new argparse::knob(&seed, "SEED",
+            "Sets the RNG seed used when choosing between bases with equal "
+            "Phred scores when collapsing. Note that runs are not "
+            "deterministic if more than one thread is used. If not specified, "
+            "a seed is generated using the current time.");
     argparser["--threads"] =
         new argparse::knob(&max_threads, "THREADS",
             "Maximum number of threads [current: %default]");
@@ -481,6 +497,12 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 
     if (!max_threads) {
         std::cerr << "Error: --threads must be at least 1!" << std::endl;
+        return argparse::pr_error;
+    } else if (max_threads > 1 && argparser.is_set("--seed")) {
+        std::cerr << "Error: The option --seed cannot be used when --threads "
+                  << "is greater than one; multi-threaded behavior is not "
+                  << "deterministic!"
+                  << std::endl;
         return argparse::pr_error;
     }
 
