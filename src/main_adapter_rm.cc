@@ -823,8 +823,6 @@ int remove_adapter_sequences(const userconfig& config)
     } else {
         return remove_adapter_sequences_se(config);
     }
-
-    return 0;
 }
 
 } // namespace ar

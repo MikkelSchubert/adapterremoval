@@ -41,11 +41,13 @@ class thread_error : public std::exception
 public:
     /** Constructor; takes an error-message. */
     thread_error(const std::string& message);
+    /** Copy-constructor; takes an exiting error. */
+    thread_error(const thread_error& error);
     /** Destructor; does nothing. */
-    ~thread_error() throw();
+    ~thread_error() noexcept;
 
     /** Returns error message; lifetime is the same as the object. */
-    virtual const char* what() const throw();
+    virtual const char* what() const noexcept;
 
 private:
     //! User provided error message

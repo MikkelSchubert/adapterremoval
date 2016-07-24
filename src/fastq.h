@@ -49,7 +49,7 @@ public:
     /**
      * Create a new FASTQ record.
      *
-     * @param qname FASTQ header, including read name and meta information.
+     * @param header FASTQ header, including read name and meta information.
      * @param sequence nucleotide sequence containing the letters "acgtnACGTN."
      * @param qualities phred or solexa encoded quality scores
      * @param encoding the encoding used for the quality scores.
@@ -71,7 +71,7 @@ public:
     /**
      * Create FASTQ record from a sequence alone.
      *
-     * @param qname FASTQ header, including read name and meta information.
+     * @param header FASTQ header, including read name and meta information.
      * @param sequence nucleotide sequence containing the letters "acgtnACGTN."
      *
      * Works like the full constructor, except that qualities are all 0 ('!').

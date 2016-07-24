@@ -59,10 +59,12 @@ class fastq_error : public std::exception
 {
 public:
     fastq_error(const std::string& message);
-    ~fastq_error() throw();
+    fastq_error(const fastq_error& error);
+
+    virtual ~fastq_error() noexcept;
 
     /** Returns error message; string is owned by exception. */
-    virtual const char* what() const throw();
+    virtual const char* what() const noexcept;
 
 private:
     //! Error message assosiated with exception.

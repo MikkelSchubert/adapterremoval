@@ -132,8 +132,9 @@ public:
     /**
      * Constructor.
      *
+     * @param encoding FASTQ encoding for reading quality scores.
      * @param filename Path to FASTQ file containing mate 1 / 2 reads.
-     * @param mate Either rt_mate_1 or rt_mate_2; other values throw.
+     * @param next_step ID of analytical step to which data is forwarded.
      *
      * Opens the input file corresponding to the specified mate.
      */
@@ -336,8 +337,7 @@ public:
     /**
      * Constructor.
      *
-     * @param config User settings.
-     * @param read_type The type of reads to write.
+     * @param filename Filename to which FASTQ reads are written.
      *
      * Based on the read-type specified, and SE / PE mode, the corresponding
      * output file is opened

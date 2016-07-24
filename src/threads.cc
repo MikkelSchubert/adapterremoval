@@ -46,12 +46,19 @@ thread_error::thread_error(const std::string& message)
 }
 
 
-thread_error::~thread_error() throw()
+thread_error::thread_error(const thread_error& error)
+    : std::exception()
+    , m_message(error.m_message)
 {
 }
 
 
-const char* thread_error::what() const throw()
+thread_error::~thread_error() noexcept
+{
+}
+
+
+const char* thread_error::what() const noexcept
 {
     return m_message.c_str();
 }

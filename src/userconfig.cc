@@ -561,7 +561,7 @@ std::string userconfig::get_output_filename(const std::string& key,
     } else if (key == "demux_unknown") {
         filename += ".unidentified";
 
-        AR_DEBUG_ASSERT(nth >= 0 && nth <= 9);
+        AR_DEBUG_ASSERT(nth <= 9);
         if (nth) {
             filename.push_back('_');
             filename.push_back('0' + nth);
