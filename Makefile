@@ -84,6 +84,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \
             $(BDIR)/timer.o \
+            $(BDIR)/trimmed_reads.o \
             $(BDIR)/userconfig.o
 OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)

@@ -467,7 +467,7 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                               rng);
 
     // Remove mate number from read, if present, when building new record
-    return fastq(strip_mate_info(read1.header(), mate_sep),
+    return fastq(mate_sep ? strip_mate_info(read1.header(), mate_sep) : read1.header(),
                  read_1_seq + collapsed.first + read_2_seq,
                  read_1_qual + collapsed.second + read_2_qual,
                  FASTQ_ENCODING_SAM);

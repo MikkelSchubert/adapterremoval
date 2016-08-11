@@ -83,6 +83,7 @@ userconfig::userconfig(const std::string& name,
     , paired_ended_mode(false)
     , interleaved_input(false)
     , interleaved_output(false)
+    , combined_output(false)
     , mate_separator(MATE_SEPARATOR)
     , min_genomic_length(15)
     , max_genomic_length(std::numeric_limits<unsigned>::max())
@@ -164,7 +165,14 @@ userconfig::userconfig(const std::string& name,
             "containing mate 1 and mate 2 reads, one pair after the other. "
             "This option is implied by the --interleaved option [current: "
             "%default].");
-
+    argparser["--combined-output"] =
+        new argparse::flag(&combined_output,
+            "If set, all reads are written to the same file(s), specified by "
+            "--output1 and --output2 (--output2 only if --interleaved-output "
+            "is not set). Each read is futher marked by either a \"PASSED\" "
+            "or a \"FAILED\" flag, and any read that has been FAILED "
+            "(including the mate for collapsed are replaced with a single 'N' "
+            "with Phred score 0 [current: %default].");
 
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
@@ -438,7 +446,8 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 
     if (interleaved_input) {
         if (file_2_set) {
-            std::cerr << "Error: The option --interleaved cannot be used "
+            std::cerr << "Error: The options --interleaved and "
+                      << "--interleaved-input cannot be used "
                       << "together with the --file2 option; only --file1 must "
                       << "be specified!"
                       << std::endl;

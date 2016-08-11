@@ -197,6 +197,20 @@ void fastq::add_prefix_to_header(const std::string& prefix)
 }
 
 
+void fastq::add_postfix_to_header(const std::string& postfix)
+{
+    m_header += postfix;
+}
+
+
+void fastq::discard()
+{
+	m_sequence = 'N';
+	m_qualities = '!';
+}
+
+
+
 bool fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {
     std::string line;

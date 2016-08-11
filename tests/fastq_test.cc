@@ -425,6 +425,66 @@ TEST(fastq, add_prefix_to_header__header)
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Adding postfixes to the header
+
+TEST(fastq, add_postfix_to_header)
+{
+    const fastq expected("my_header new postfix", "ACGTA", "12345");
+    fastq record("my_header", "ACGTA", "12345");
+    record.add_postfix_to_header(" new postfix");
+    ASSERT_EQ(expected, record);
+}
+
+
+TEST(fastq, add_postfix_to_header__empty_prefix)
+{
+    const fastq expected("my_header", "ACGTA", "12345");
+    fastq record = expected;
+    record.add_postfix_to_header("");
+    ASSERT_EQ(expected, record);
+}
+
+
+TEST(fastq, add_postfix_to_header__header)
+{
+    const fastq expected("new_header", "ACGTA", "12345");
+    fastq record("", "ACGTA", "12345");
+    record.add_postfix_to_header("new_header");
+    ASSERT_EQ(expected, record);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Discarding read, setting seq to N and qual to '!'
+
+TEST(fastq, discard_read)
+{
+    const fastq expected("my_header", "N", "!");
+    fastq record("my_header", "ACGTA", "12345");
+    record.discard();
+    ASSERT_EQ(expected, record);
+}
+
+
+TEST(fastq, discard_discarded_read)
+{
+    const fastq expected("my_header", "N", "!");
+    fastq record("my_header", "N", "!");
+    record.discard();
+    ASSERT_EQ(expected, record);
+}
+
+
+TEST(fastq, discard_empty_read)
+{
+    const fastq expected("my_header", "N", "!");
+    fastq record("my_header", "", "");
+    record.discard();
+    ASSERT_EQ(expected, record);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Reading from stream
 
 TEST(fastq, simple_fastq_record_1)

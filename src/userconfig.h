@@ -100,6 +100,8 @@ public:
     bool interleaved_input;
     //! Set to true if --interleaved or --interleaved-output is set.
     bool interleaved_output;
+    //! Set to true if --combined-output is set.
+    bool combined_output;
 
     //! Character separating the mate number from the read name in FASTQ reads.
     char mate_separator;

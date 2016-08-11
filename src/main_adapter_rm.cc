@@ -38,7 +38,9 @@
 #include "fastq_io.h"
 #include "main.h"
 #include "strutils.h"
+#include "trimmed_reads.h"
 #include "userconfig.h"
+
 
 namespace ar
 {
@@ -177,9 +179,10 @@ void write_trimming_settings(const userconfig& config,
 
     for (size_t adapter_id = 0; adapter_id < stats.number_of_reads_with_adapter.size(); ++adapter_id) {
         const size_t count = stats.number_of_reads_with_adapter.at(adapter_id);
-        settings << "\nNumber of "
-                 << (config.paired_ended_mode ? "read pairs" : "reads")
-                 << " with adapters[" << adapter_id + 1 << "]: " << count;
+        // Value between 0 and stats.records for SE, and 0 and 2*stats.records
+        // for N PE pairs. For PE reads, mate 1 and mate 2 reads being of
+        // unequal length can cause uneven numbers.
+        settings << "\nNumber of reads with adapters[" << adapter_id + 1 << "]: " << count;
     }
 
     if (config.collapse) {
@@ -290,22 +293,22 @@ bool write_demux_settings(const userconfig& config,
 }
 
 
-void process_collapsed_read(const userconfig& config, statistics& stats,
+void process_collapsed_read(const userconfig& config,
+                            statistics& stats,
                             fastq& collapsed_read,
-                            fastq_output_chunk& out_collapsed,
-                            fastq_output_chunk& out_collapsed_truncated,
-                            fastq_output_chunk& out_discarded)
+                            fastq* mate_read,
+                            trimmed_reads& chunks)
 {
     const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
 
     // If trimmed, the external coordinates are no longer reliable
     // for determining the size of the original template.
     const bool was_trimmed = trimmed.first || trimmed.second;
-    if (was_trimmed) {
-        collapsed_read.add_prefix_to_header("MT_");
-    } else {
-        collapsed_read.add_prefix_to_header("M_");
+    collapsed_read.add_prefix_to_header(was_trimmed ? "MT_" : "M_");
+    if (mate_read) {
+        mate_read->add_prefix_to_header(was_trimmed ? "MT_" : "M_");
     }
+
 
     const size_t read_count = config.paired_ended_mode ? 2 : 1;
     if (config.is_acceptable_read(collapsed_read)) {
@@ -315,17 +318,22 @@ void process_collapsed_read(const userconfig& config, statistics& stats,
                                collapsed_read.length());
 
         if (was_trimmed) {
-            out_collapsed_truncated.add(*config.quality_output_fmt, collapsed_read, read_count);
+            chunks.add_collapsed_truncated_read(collapsed_read, PASSED, read_count);
             stats.number_of_truncated_collapsed++;
         } else {
-            out_collapsed.add(*config.quality_output_fmt, collapsed_read, read_count);
+            chunks.add_collapsed_read(collapsed_read, PASSED, read_count);
             stats.number_of_full_length_collapsed++;
         }
     } else {
         stats.discard1++;
         stats.discard2++;
         stats.inc_length_count(rt_discarded, collapsed_read.length());
-        out_discarded.add(*config.quality_output_fmt, collapsed_read, read_count);
+
+        if (was_trimmed) {
+            chunks.add_collapsed_truncated_read(collapsed_read, FAILED, read_count);
+        } else {
+            chunks.add_collapsed_read(collapsed_read, FAILED, read_count);
+        }
     }
 }
 
@@ -385,19 +393,11 @@ public:
 
     chunk_vec process(analytical_chunk* chunk)
     {
+        const size_t offset = m_nth * ai_analyses_offset;
+
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+        trimmed_reads chunks(m_config, offset, read_chunk->eof);
         stats_sink::pointer stats = m_stats.get_sink();
-
-        const fastq_encoding& encoding = *m_config.quality_output_fmt;
-        output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
-        output_chunk_ptr out_collapsed;
-        output_chunk_ptr out_collapsed_truncated;
-        output_chunk_ptr out_discarded(new fastq_output_chunk(read_chunk->eof));
-
-        if (m_config.collapse) {
-            out_collapsed.reset(new fastq_output_chunk(read_chunk->eof));
-            out_collapsed_truncated.reset(new fastq_output_chunk(read_chunk->eof));
-        }
 
         for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
             fastq& read = *it;
@@ -410,10 +410,7 @@ public:
                 stats->well_aligned_reads++;
 
                 if (m_config.is_alignment_collapsible(alignment)) {
-                    process_collapsed_read(m_config, *stats, read,
-                                           *out_collapsed,
-                                           *out_collapsed_truncated,
-                                           *out_discarded);
+                    process_collapsed_read(m_config, *stats, read, NULL, chunks);
                     continue;
                 }
             } else {
@@ -426,27 +423,20 @@ public:
                 stats->total_number_of_good_reads++;
                 stats->total_number_of_nucleotides += read.length();
 
-                out_mate_1->add(encoding, read);
+                chunks.add_mate_1_read(read, PASSED);
                 stats->inc_length_count(rt_mate_1, read.length());
             } else {
                 stats->discard1++;
                 stats->inc_length_count(rt_discarded, read.length());
 
-                out_discarded->add(encoding, read);
+                chunks.add_mate_1_read(read, FAILED);
             }
         }
 
         stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(std::move(stats));
 
-        chunk_vec chunks;
-        const size_t offset = m_nth * ai_analyses_offset;
-        add_chunk(chunks, offset + ai_write_mate_1, std::move(out_mate_1));
-        add_chunk(chunks, offset + ai_write_collapsed, std::move(out_collapsed));
-        add_chunk(chunks, offset + ai_write_collapsed_truncated, std::move(out_collapsed_truncated));
-        add_chunk(chunks, offset + ai_write_discarded, std::move(out_discarded));
-
-        return chunks;
+        return chunks.finalize();
     }
 };
 
@@ -490,54 +480,50 @@ public:
 
     chunk_vec process(analytical_chunk* chunk)
     {
+        const size_t offset = m_nth * ai_analyses_offset;
+        const char mate_separator = m_config.combined_output ? '\0' : m_config.mate_separator;
+
         mt19937_ptr rng = m_rngs.get_sink();
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+        trimmed_reads chunks(m_config, offset, read_chunk->eof);
         statistics_ptr stats = m_stats.get_sink();
-
-        const fastq_encoding& encoding = *m_config.quality_output_fmt;
-        output_chunk_ptr out_mate_1(new fastq_output_chunk(read_chunk->eof));
-        output_chunk_ptr out_mate_2;
-        if (!m_config.interleaved_output) {
-            out_mate_2.reset(new fastq_output_chunk(read_chunk->eof));
-        }
-
-        output_chunk_ptr out_singleton(new fastq_output_chunk(read_chunk->eof));
-        output_chunk_ptr out_collapsed;
-        output_chunk_ptr out_collapsed_truncated;
-        output_chunk_ptr out_discarded(new fastq_output_chunk(read_chunk->eof));
-
-        if (m_config.collapse) {
-            out_collapsed.reset(new fastq_output_chunk(read_chunk->eof));
-            out_collapsed_truncated.reset(new fastq_output_chunk(read_chunk->eof));
-        }
 
         AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
         fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
         fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
         while (it_1 != read_chunk->reads_1.end()) {
-            fastq read1 = *it_1++;
-            fastq read2 = *it_2++;
+            fastq read_1 = *it_1++;
+            fastq read_2 = *it_2++;
 
             // Throws if read-names or mate numbering does not match
-            fastq::validate_paired_reads(read1, read2, m_config.mate_separator);
+            fastq::validate_paired_reads(read_1, read_2, m_config.mate_separator);
 
-            // Reverse complement to match the orientation of read1
-            read2.reverse_complement();
+            // Reverse complement to match the orientation of read_1
+            read_2.reverse_complement();
 
-            const alignment_info alignment = align_paired_ended_sequences(read1, read2, m_adapters, m_config.shift);
+            const alignment_info alignment = align_paired_ended_sequences(read_1, read_2, m_adapters, m_config.shift);
 
             if (m_config.is_good_alignment(alignment)) {
                 stats->well_aligned_reads++;
-                const size_t n_adapters = truncate_paired_ended_sequences(alignment, read1, read2);
+                const size_t n_adapters = truncate_paired_ended_sequences(alignment, read_1, read_2);
                 stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
 
                 if (m_config.is_alignment_collapsible(alignment)) {
-                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read1, read2, *rng);
-                    process_collapsed_read(m_config, *stats, collapsed_read,
-                                           *out_collapsed,
-                                           *out_collapsed_truncated,
-                                           *out_discarded);
+                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read_1, read_2, *rng,
+                                                                           mate_separator);
+                    process_collapsed_read(m_config,
+                                           *stats,
+                                           collapsed_read,
+                                           // Make sure read_2 header is updated, if needed
+                                           m_config.combined_output ? &read_2 : NULL,
+                                           chunks);
+
+                    if (m_config.combined_output) {
+                        // Dummy read with read-count of zero; both mates have
+                        // already been accounted for in process_collapsed_read
+                        chunks.add_mate_2_read(read_2, FAILED, 0);
+                    }
                     continue;
                 }
             } else {
@@ -546,71 +532,39 @@ public:
 
             // Reads were not aligned or collapsing is not enabled
             // Undo reverse complementation (post truncation of adapters)
-            read2.reverse_complement();
+            read_2.reverse_complement();
 
             // Are the reads good enough? Not too many Ns?
-            m_config.trim_sequence_by_quality_if_enabled(read1);
-            m_config.trim_sequence_by_quality_if_enabled(read2);
-            const bool read_1_acceptable = m_config.is_acceptable_read(read1);
-            const bool read_2_acceptable = m_config.is_acceptable_read(read2);
+            m_config.trim_sequence_by_quality_if_enabled(read_1);
+            m_config.trim_sequence_by_quality_if_enabled(read_2);
+            const bool read_1_acceptable = m_config.is_acceptable_read(read_1);
+            const bool read_2_acceptable = m_config.is_acceptable_read(read_2);
 
-            stats->total_number_of_nucleotides += read_1_acceptable ? read1.length() : 0u;
-            stats->total_number_of_nucleotides += read_1_acceptable ? read2.length() : 0u;
+            stats->total_number_of_nucleotides += read_1_acceptable ? read_1.length() : 0u;
+            stats->total_number_of_nucleotides += read_1_acceptable ? read_2.length() : 0u;
             stats->total_number_of_good_reads += read_1_acceptable;
             stats->total_number_of_good_reads += read_2_acceptable;
 
-            if (read_1_acceptable && read_2_acceptable) {
-                out_mate_1->add(encoding, read1);
+            const read_status state_1 = read_1_acceptable ? PASSED : FAILED;
+            const read_status state_2 = read_2_acceptable ? PASSED : FAILED;
 
-                if (m_config.interleaved_output) {
-                    out_mate_1->add(encoding, read2);
-                } else {
-                    out_mate_2->add(encoding, read2);
-                }
+            chunks.add_pe_reads(read_1, state_1, read_2, state_2);
 
-                stats->inc_length_count(rt_mate_1, read1.length());
-                stats->inc_length_count(rt_mate_2, read2.length());
-            } else {
-                // Keep one or none of the reads ...
-                stats->keep1 += read_1_acceptable;
-                stats->keep2 += read_2_acceptable;
-                stats->discard1 += !read_1_acceptable;
-                stats->discard2 += !read_2_acceptable;
-                stats->inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read1.length());
-                stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read2.length());
+            // Count singleton reads
+            stats->keep1 += read_1_acceptable && !read_2_acceptable;
+            stats->keep2 += read_2_acceptable && !read_1_acceptable;
 
-                if (read_1_acceptable) {
-                    out_singleton->add(encoding, read1);
-                } else {
-                    out_discarded->add(encoding, read1);
-                }
-
-                if (read_2_acceptable) {
-                    out_singleton->add(encoding, read2);
-                } else {
-                    out_discarded->add(encoding, read2);
-                }
-            }
+            stats->discard1 += !read_1_acceptable;
+            stats->discard2 += !read_2_acceptable;
+            stats->inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read_1.length());
+            stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read_2.length());
         }
 
         stats->records += read_chunk->reads_1.size();
         m_stats.return_sink(std::move(stats));
         m_rngs.return_sink(std::move(rng));
 
-        chunk_vec chunks;
-        const size_t offset = m_nth * ai_analyses_offset;
-
-        add_chunk(chunks, offset + ai_write_mate_1, std::move(out_mate_1));
-        if (!m_config.interleaved_output) {
-            add_chunk(chunks, offset + ai_write_mate_2, std::move(out_mate_2));
-        }
-
-        add_chunk(chunks, offset + ai_write_singleton, std::move(out_singleton));
-        add_chunk(chunks, offset + ai_write_collapsed, std::move(out_collapsed));
-        add_chunk(chunks, offset + ai_write_collapsed_truncated, std::move(out_collapsed_truncated));
-        add_chunk(chunks, offset + ai_write_discarded, std::move(out_discarded));
-
-        return chunks;
+        return chunks.finalize();
     }
 
 private:
@@ -710,15 +664,18 @@ int remove_adapter_sequences_se(const userconfig& config)
 
             add_write_step(config, sch, offset + ai_write_mate_1, sample + "_fastq",
                            new write_fastq(config.get_output_filename("--output1", nth)));
-            add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
-                         new write_fastq(config.get_output_filename("--discarded", nth)));
 
-            if (config.collapse) {
-                add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
-                               new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
-                add_write_step(config, sch, offset + ai_write_collapsed_truncated,
-                               sample + "_collapsed_truncated",
-                               new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+            if (!config.combined_output) {
+                add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
+                             new write_fastq(config.get_output_filename("--discarded", nth)));
+
+                if (config.collapse) {
+                    add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
+                                   new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
+                    add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                                   sample + "_collapsed_truncated",
+                                   new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                }
             }
         }
     } catch (const std::ios_base::failure& error) {
@@ -791,17 +748,19 @@ int remove_adapter_sequences_pe(const userconfig& config)
                                new write_fastq(config.get_output_filename("--output2", nth)));
             }
 
-            add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
-                           new write_fastq(config.get_output_filename("--discarded", nth)));
-            add_write_step(config, sch, offset + ai_write_singleton, sample + "_singleton",
-                           new write_fastq(config.get_output_filename("--singleton", nth)));
+            if (!config.combined_output) {
+                add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
+                               new write_fastq(config.get_output_filename("--discarded", nth)));
+                add_write_step(config, sch, offset + ai_write_singleton, sample + "_singleton",
+                               new write_fastq(config.get_output_filename("--singleton", nth)));
 
-            if (config.collapse) {
-                add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
-                               new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
-                add_write_step(config, sch, offset + ai_write_collapsed_truncated,
-                               sample + "_collapsed_truncated",
-                               new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                if (config.collapse) {
+                    add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
+                                   new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
+                    add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                                   sample + "_collapsed_truncated",
+                                   new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                }
             }
         }
     } catch (const std::ios_base::failure& error) {
