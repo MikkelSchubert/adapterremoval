@@ -1,3 +1,4 @@
 build
-gtest
+misc
+googletest-release*
 *~
