@@ -1,0 +1,6 @@
+{
+	"arguments": ["--combined-output", "--trimns", "--minlength", "50", "--interleaved-output"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

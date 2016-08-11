@@ -1,0 +1,6 @@
+{
+	"arguments": ["--combined-output", "--collapse", "--interleaved-output"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

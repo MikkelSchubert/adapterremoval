@@ -1,0 +1,6 @@
+{
+    "arguments": ["--combined-output", "--collapse", "--trimns"],
+    "return_code": 0,
+    "stderr": [
+    ]
+}

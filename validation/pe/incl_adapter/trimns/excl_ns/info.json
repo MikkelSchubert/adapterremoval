@@ -1,0 +1,6 @@
+{
+	"arguments": ["--trimns"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

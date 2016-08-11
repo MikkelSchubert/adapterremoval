@@ -10,7 +10,7 @@ CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
 CXXFLAGS := ${CXXFLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual \
 	-Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self \
 	-Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo \
-	-Wstrict-overflow=5 -Wswitch-default -Wundef -Weffc++
+	-Wstrict-overflow=5 -Wswitch-default -Wundef -Weffc++ -Wdeprecated
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
@@ -90,7 +90,7 @@ OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)
 
 
-.PHONY: all install clean test clean_tests static
+.PHONY: all install clean test clean_tests static validate validation
 
 all: build/$(PROG) build/$(PROG).1
 
@@ -129,13 +129,13 @@ static: build/$(LIBNAME).a
 $(BDIR)/%.o: src/%.cc
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
 	$(QUIET) mkdir -p $(BDIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 # Executable
 build/$(PROG): $(OBJS)
 	@echo $(COLOR_GREEN)"Linking executable '$@'"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) $^ ${LIBRARIES} -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
 
 # Static library
 build/$(LIBNAME).a: $(LIBOBJS)
@@ -169,7 +169,7 @@ TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
 GTEST_DIR := googletest-release-1.7.0
 GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
-GTEST_LIB :=$(TEST_DIR)/libgtest.a
+GTEST_LIB := $(TEST_DIR)/libgtest.a
 
 TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc -DAR_TEST_BUILD
 GTEST_CXXFLAGS := $(TEST_CXXFLAGS)
@@ -228,6 +228,21 @@ else
 	@echo $(COLOR_YELLOW)"  $$ unzip googletest-release-1.7.0.zip"$(COLOR_END)
 	@exit 1
 endif
+
+
+#
+# Validation
+#
+VALIDATION_BDIR=build/validation
+VALIDATION_SDIR=validation
+
+validate: build/$(PROG)
+	@echo $(COLOR_CYAN)"Validating AdapterRemoval results"$(COLOR_END)
+	@mkdir -p $(VALIDATION_BDIR)
+	@./validation/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
+
+validation: validate
+
 
 # Automatic header dependencies for tests
 -include $(TEST_DEPS)

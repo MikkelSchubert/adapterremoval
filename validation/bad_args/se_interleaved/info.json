@@ -1,0 +1,7 @@
+{
+	"arguments": ["--interleaved"],
+	"return_code": 1,
+	"stderr": [
+		"Pair contains reads with mismatching names:"
+	]
+}

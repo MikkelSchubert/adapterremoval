@@ -1,0 +1,60 @@
+Sequences:
+	No adapter
+	Short adapter
+	Long adapter
+	Complete adapter
+
+Filetypes:
+   Unix
+   Windows (\r\n)
+
+
+Automatic variants?
+	- gzip
+	- bzip
+	- uncompressed
+
+
+Single end:
+x	--collapse
+x	--combined-output
+x	--trimns
+x	--trimqualities
+x	--minlength
+x	--maxlength
+
+	Bad:
+		--interleaved
+		--interleaved-input
+		--interleaved-output
+
+
+
+
+
+
+
+
+
+Possibilities:
+	- adapter
+	- overlap
+	- collapse (yes, no, yes but too short)
+	- lq trimming
+
+
+
+TODO:
+	- Single-end
+		- No adapter
+		- No adapter, lq trimming
+
+
+	- Single-end
+		- No adapter
+		- No adapter, lq trimming
+		- No adapter, overlapping
+		- No adapter, overlapping, lq trimming
+		- No adapter, overlapping, too short
+		- No adapter, overlapping, too short, lq trimming
+

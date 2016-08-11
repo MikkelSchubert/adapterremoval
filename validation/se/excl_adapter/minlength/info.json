@@ -1,0 +1,6 @@
+{
+	"arguments": ["--minlength", "999"],
+	"return_code": 0,
+	"stderr": [
+	]
+}
