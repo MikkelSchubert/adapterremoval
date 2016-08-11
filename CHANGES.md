@@ -11,6 +11,7 @@
     quality, in order to prevent potential data-races during tie-breaking, when
     running in multi-threaded mode. As a side-effect, the --seed option has
     been removed, and this value is no longer recorded in the .settings file.
+  * Added support for reading FASTQ files using Windows-style newlines (\r\n).
 
 ### Version 2.1.7 - 2016-03-11
 

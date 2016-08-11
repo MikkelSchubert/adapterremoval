@@ -132,19 +132,26 @@ bool line_reader::getline(std::string& dst)
     dst.clear();
 
     while (m_file && !m_eof) {
-        char* start = m_buffer_ptr;
+        const char* start = m_buffer_ptr;
         char* end = m_buffer_ptr;
 
         for (; end != m_buffer_end; ++end) {
             if (*end == '\n') {
                 // Excluding terminal \n
                 dst.append(start, end - start);
+                if (!dst.empty() && dst.back() == '\r') {
+                    // Excluding terminal \r; dst is examined, since the \r may
+                    // have been added seperately, if the \r was the last
+                    // character in the previous buffer fill (see below).
+                    dst.pop_back();
+                }
 
                 m_buffer_ptr = end + 1;
                 return true;
             }
         }
 
+        // Can potentially introduce a \r; this is handled above.
         dst.append(start, end - start);
         refill_buffers();
     }
