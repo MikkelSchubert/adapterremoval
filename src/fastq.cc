@@ -140,22 +140,72 @@ size_t fastq::count_ns() const
 fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality)
 {
     low_quality += PHRED_OFFSET_33;
+    const size_t winlen = (m_sequence.length() / 10) + 1;
 
-    size_t right_exclusive = 0;
-    for (size_t i = m_sequence.length(); i; --i) {
-        if ((!trim_ns || m_sequence.at(i - 1) != 'N') && (m_qualities.at(i - 1) > low_quality)) {
+    // Windowed left trim
+    uint64_t running_sum = 0;
+    bool found_start = false;
+    bool found_end = false;
+    size_t left_inclusive = 0;
+    size_t right_exclusive = m_sequence.length();
+    size_t i = 0;
+    for (; i < m_sequence.length(); i++) {
+        // Keep track of a running window's sum of quality scores
+        running_sum += m_qualities.at(i);
+        if (i >= winlen) {
+            running_sum -= m_qualities.at(i - winlen);
+        }
+
+        if (!found_start) {
+            // We trim away low quality/N bases from the start of reads,
+            // **before** we consider windows.
+            if ((m_sequence.at(i) == 'N' && trim_ns) || m_qualities.at(i) < low_quality) {
+                // Quality (still) too low and/OR there's an N and we trim at
+                // Ns. Don't start windowed QC yet.
+                continue;
+            }
+            left_inclusive = i;
+            found_start = true;
+        }
+
+        // In good qual. reads, we will find the start before winlen, but our
+        // running sum won't be full. So below here, `i` refers to the right
+        // hand side of a window. In bad reads, we wait till `winlen` bases
+        // past the end of the crappy qualities, as that is where the RHS of the
+        // window will be.
+        if (i < left_inclusive + winlen - 1) {
+            continue;
+        }
+
+        // If this window's mean is below threshold, set the right hand trim
+        // point here. The exact point will be refined below.
+        char window_mean = running_sum / winlen;
+        if (window_mean < low_quality) {
+            found_end = true;
+            break;
+        }
+    }
+
+    // Right trim
+    if (!found_start) {
+        // Trim all bases starting from start.
+        i = 0;
+    } else if (found_end) {
+        // `i` is the (inclusive) end of the first bad window, which we should
+        // go to the start of, triming at the first bad base
+        i = i - winlen + 1;
+    } else {
+        // `i` is the length of the sequence: go back `winlen` if we can.
+        if (i >= winlen) i -= winlen;
+        else i = 0;
+    }
+    for (; i < m_qualities.length(); i++) {
+        if ((trim_ns && m_sequence.at(i) == 'N') || m_qualities.at(i) < low_quality) {
             right_exclusive = i;
             break;
         }
     }
 
-    size_t left_inclusive = 0;
-    for (size_t i = 0; i < right_exclusive; ++i) {
-        if ((!trim_ns || m_sequence.at(i) != 'N') && (m_qualities.at(i) > low_quality)) {
-            left_inclusive = i;
-            break;
-        }
-    }
 
     const ntrimmed summary(left_inclusive, m_sequence.length() - right_exclusive);
 
