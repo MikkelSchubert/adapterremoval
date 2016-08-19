@@ -23,6 +23,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <iostream>
+#include <algorithm>
 
 #include "debug.h"
 #include "demultiplex.h"
@@ -34,9 +35,10 @@
 namespace ar
 {
 
+typedef std::pair<std::string, size_t> barcode_pair;
+typedef std::vector<barcode_pair> barcode_vec;
 typedef std::vector<unsigned> int_vec;
 typedef demux_node_vec::iterator node_vec_iter;
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -76,21 +78,27 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/** Fills a quadtree with nodes representing keys of len 'max_key_len' */
-void fill_demux_tree(demux_node_vec& tree, const size_t max_key_len)
+/**
+ * Returns a lexographically sorted list of mate 1 barcodes, each paired with
+ * the 0-based index of corresponding barcode in the source vector.
+ */
+barcode_vec sort_barcodes(const fastq_pair_vec& barcodes)
 {
-    const size_t n_keys = (1 - (1 << (2 * (max_key_len + 1)))) / (1 - 4);
-    const size_t n_internal = n_keys - (1 << (2 * max_key_len));
+    barcode_vec sorted_barcodes;
 
-    tree.resize(n_keys);
+    const size_t max_key_1_len = barcodes.front().first.length();
+    const size_t max_key_2_len = barcodes.front().second.length();
+    for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
+        AR_DEBUG_ASSERT(it->first.length() == max_key_1_len);
+        AR_DEBUG_ASSERT(it->second.length() == max_key_2_len);
 
-    for (size_t index = 0; index < n_keys; ++index) {
-        demultiplexer_node& node = tree.at(index);
-
-        for (size_t nt_idx = 0; nt_idx < 4; ++nt_idx) {
-            node.children[nt_idx] = (index < n_internal) ? 4 * index + nt_idx + 1 : -1;
-        }
+        sorted_barcodes.push_back(barcode_pair(it->first.sequence(),
+                                               it - barcodes.begin()));
     }
+
+    std::sort(sorted_barcodes.begin(), sorted_barcodes.end());
+
+    return sorted_barcodes;
 }
 
 
@@ -99,64 +107,25 @@ void add_sequence_to_tree(demux_node_vec& tree,
                           const std::string& sequence,
                           const size_t barcode_id)
 {
-    demultiplexer_node* parent = &tree.at(0);
-    for (std::string::const_iterator it = sequence.begin(); it != sequence.end(); ++it) {
-        const int child = parent->children[ACGT_TO_IDX(*it)];
-        AR_DEBUG_ASSERT(child != -1);
+    size_t node_idx = 0;
+    for (auto nuc: sequence) {
+        auto& node = tree.at(node_idx);
+        const auto nuc_idx = ACGT_TO_IDX(nuc);
+        auto child = node.children[nuc_idx];
 
-        parent = &tree.at(child);
-    }
-
-    parent->barcodes.push_back(barcode_id);
-}
-
-
-/**
- * Converts a full quad-tree to a sparse quad-tree, by removing any nodes
- * which does not contain any barcodes and which does not have any children.
- * Once these have been removed, the resulting list is compressed such that
- * only populated parts of the tree are included in the vector.
- */
-void prune_tree(demux_node_vec& tree)
-{
-    if (tree.empty()) {
-        return;
-    }
-
-    for (size_t idx = tree.size() - 1; idx; --idx) {
-        const demultiplexer_node& node = tree.at(0);
-
-        if (node.barcodes.empty() && !node.has_children()) {
-            tree.at((idx - 1) / 4).children[(idx - 1) % 4] = -1;
+        if (child == -1) {
+            // New nodes are added to the end of the list; as barcodes are
+            // added in lexographic order, this helps ensure that a set of
+            // dissimilar barcodes will be placed in mostly contigious runs
+            // of the vector representation.
+            child = node.children[nuc_idx] = tree.size();
+            tree.push_back(demultiplexer_node());
         }
+
+        node_idx = child;
     }
 
-    size_t last_index = 0;
-    std::vector<int> new_indices(tree.size(), -1);
-    for (size_t idx = 0; idx < tree.size(); ++idx) {
-        const demultiplexer_node& node = tree.at(0);
-
-        if (!node.barcodes.empty() || node.has_children()) {
-            if (idx != last_index) {
-                tree.at(last_index) = node;
-            }
-
-            new_indices.at(idx) = last_index;
-            last_index++;
-        }
-    }
-
-    tree.resize(last_index);
-
-    for (size_t idx = 0; idx < tree.size(); ++idx) {
-        demultiplexer_node& node = tree.at(0);
-
-        for (size_t nt_idx = 0; nt_idx < 4; ++nt_idx) {
-            if (node.children[nt_idx] != -1) {
-                node.children[nt_idx] = new_indices.at(node.children[nt_idx]);
-            }
-        }
-    }
+    tree.at(node_idx).barcodes.push_back(barcode_id);
 }
 
 
@@ -167,26 +136,19 @@ void prune_tree(demux_node_vec& tree)
  */
 demux_node_vec build_demux_tree(const fastq_pair_vec& barcodes)
 {
+    // Step 1: Construct list of barcodes sorted by the mate 1 barcode;
+    //         this allows construction of the sparse tree in one pass.
+    const barcode_vec sorted_barcodes = sort_barcodes(barcodes);
+
+    // Step 2: Create empty tree containing just the root node; creating
+    //         the root here simplifies the 'add_sequence_to_tree' function.
     demux_node_vec tree;
+    tree.push_back(demultiplexer_node());
 
-    if (barcodes.empty()) {
-        return tree;
+    // Step 3: Add each barcode to the tree, in sorted order
+    for (auto& pair: sorted_barcodes) {
+        add_sequence_to_tree(tree, pair.first, pair.second);
     }
-
-    const size_t max_key_1_len = barcodes.front().first.length();
-    const size_t max_key_2_len = barcodes.front().second.length();
-    for (fastq_pair_vec::const_iterator it = barcodes.begin(); it != barcodes.end(); ++it) {
-        AR_DEBUG_ASSERT(it->first.length() == max_key_1_len);
-        AR_DEBUG_ASSERT(it->second.length() == max_key_2_len);
-    }
-
-    fill_demux_tree(tree, max_key_1_len);
-
-    for (fastq_pair_vec::const_iterator it = barcodes.begin(); it != barcodes.end(); ++it) {
-        add_sequence_to_tree(tree, it->first.sequence(), it - barcodes.begin());
-    }
-
-    prune_tree(tree);
 
     return tree;
 }

@@ -14,6 +14,9 @@
   * Added support for reading FASTQ files using Windows-style newlines (\r\n).
   * AdapterRemoval will not print a warning to STDERR if the same command-line
     option is specified multiple times.
+  * Reworked handling of barcodes to avoid unnecessary memory allocations,
+    which would cause problems when using longer barcodes.
+
 
 ### Version 2.1.7 - 2016-03-11
 
