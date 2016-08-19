@@ -35,14 +35,16 @@ namespace ar
 class assert_failed : public std::exception
 {
 public:
+    /** Copy constructor. */
+    assert_failed(const assert_failed& errror);
     /** Creates exception with the specified error message. */
     assert_failed(const std::string& what);
 
     /** Does nothing. */
-    virtual ~assert_failed() throw();
+    virtual ~assert_failed() noexcept;
 
     /** Returns user supplied error message; owned by object. */
-    virtual const char* what() const throw();
+    virtual const char* what() const noexcept;
 
 private:
     //! User supplied error message

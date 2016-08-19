@@ -31,17 +31,23 @@ namespace ar
 {
 
 #ifdef AR_TEST_BUILD
+assert_failed::assert_failed(const assert_failed& errror)
+    : m_what(errror.m_what)
+{
+}
+
+
 assert_failed::assert_failed(const std::string& what)
     : m_what(what)
 {
 }
 
 
-assert_failed::~assert_failed() throw()
+assert_failed::~assert_failed() noexcept
 {
 }
 
-const char* assert_failed::what() const throw()
+const char* assert_failed::what() const noexcept
 {
     return m_what.c_str();
 }
