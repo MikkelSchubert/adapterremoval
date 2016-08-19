@@ -12,6 +12,8 @@
     running in multi-threaded mode. As a side-effect, the --seed option has
     been removed, and this value is no longer recorded in the .settings file.
   * Added support for reading FASTQ files using Windows-style newlines (\r\n).
+  * AdapterRemoval will not print a warning to STDERR if the same command-line
+    option is specified multiple times.
 
 ### Version 2.1.7 - 2016-03-11
 

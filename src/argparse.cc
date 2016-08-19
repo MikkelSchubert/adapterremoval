@@ -60,18 +60,18 @@ size_t get_terminal_columns()
 parser::parser(const std::string& name,
                const std::string& version,
                const std::string& help)
-	: m_keys()
+    : m_keys()
     , m_parsers()
     , m_name(name)
-	, m_version(version)
-	, m_help(help)
+    , m_version(version)
+    , m_help(help)
 {
-	// Built-in arguments (aliases are not shown!)
+    // Built-in arguments (aliases are not shown!)
     (*this)["--help"] = new flag(NULL, "Display this message.");
     create_alias("--help", "-help");
     create_alias("--help", "-h");
 
-	(*this)["--version"] = new flag(NULL, "Print the version string.");
+    (*this)["--version"] = new flag(NULL, "Print the version string.");
     create_alias("--version", "-version");
     create_alias("--version", "-v");
 
@@ -100,13 +100,13 @@ consumer_ptr& parser::operator[](const std::string& key)
         m_keys.push_back(key_pair(true, key));
     }
 
-	return m_parsers[key];
+    return m_parsers[key];
 }
 
 
 const consumer_ptr& parser::at(const std::string& key) const
 {
-	return m_parsers.at(key);
+    return m_parsers.at(key);
 }
 
 
@@ -117,6 +117,12 @@ parse_result parser::parse_args(int argc, char* argv[])
     while (it != argvec.end()) {
         consumer_map::iterator parser = m_parsers.end();
         if (find_argument(parser, *it)) {
+            if (parser->second->is_set()) {
+                std::cerr << "WARNING: Command-line option " << parser->first
+                          << " has been specified more than once."
+                          << std::endl;
+            }
+
             const size_t consumed = parser->second->consume(++it, argvec.end());
 
             if (consumed == static_cast<size_t>(-1)) {
@@ -154,7 +160,7 @@ bool parser::is_set(const std::string& key) const
     const consumer_map::const_iterator it = m_parsers.find(key);
     AR_DEBUG_ASSERT(it != m_parsers.end());
 
-	return it->second->is_set();
+    return it->second->is_set();
 }
 
 
@@ -296,7 +302,7 @@ bool parser::find_argument(consumer_map::iterator& it, const std::string& str)
 
 
 std::string parser::get_metavar_str(const consumer_ptr ptr,
-                                               const std::string& key) const
+                                    const std::string& key) const
 {
     if (!ptr->metavar().empty()) {
         return ptr->metavar();
@@ -358,9 +364,9 @@ flag::flag(bool* value, const std::string& help)
 
 size_t flag::consume(string_vec_citer, const string_vec_citer&)
 {
-	if (m_ptr) {
-	    *m_ptr = true;
-	}
+    if (m_ptr) {
+        *m_ptr = true;
+    }
     m_value_set = true;
 
     return 0;
