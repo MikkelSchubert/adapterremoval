@@ -205,8 +205,8 @@ void fastq::add_postfix_to_header(const std::string& postfix)
 
 void fastq::discard()
 {
-	m_sequence = 'N';
-	m_qualities = '!';
+    m_sequence = 'N';
+    m_qualities = '!';
 }
 
 

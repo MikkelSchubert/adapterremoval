@@ -55,67 +55,67 @@ trimmed_reads::trimmed_reads(const userconfig& config, size_t offset, bool eof)
 {
     m_mate_1.reset(new fastq_output_chunk(eof));
     if (config.paired_ended_mode && !config.interleaved_output) {
-	    m_mate_2.reset(new fastq_output_chunk(eof));
+        m_mate_2.reset(new fastq_output_chunk(eof));
     }
 
     if (!config.combined_output) {
-    	m_discarded.reset(new fastq_output_chunk(eof));
+        m_discarded.reset(new fastq_output_chunk(eof));
 
-	    if (config.paired_ended_mode) {
-	    	m_singleton.reset(new fastq_output_chunk(eof));
-	    }
+        if (config.paired_ended_mode) {
+            m_singleton.reset(new fastq_output_chunk(eof));
+        }
 
-	    if (config.collapse) {
-	        m_collapsed.reset(new fastq_output_chunk(eof));
-	        m_collapsed_truncated.reset(new fastq_output_chunk(eof));
-	    }
+        if (config.collapse) {
+            m_collapsed.reset(new fastq_output_chunk(eof));
+            m_collapsed_truncated.reset(new fastq_output_chunk(eof));
+        }
     }
 }
 
 
 void trimmed_reads::add_mate_1_read(fastq& read, read_status state,
-									size_t read_count)
+                                    size_t read_count)
 {
-	// Single end reads always go into the mate 1 file or the discarded file
-	distribute_read(m_mate_1, m_mate_1, read, state, PASSED, read_count);
+    // Single end reads always go into the mate 1 file or the discarded file
+    distribute_read(m_mate_1, m_mate_1, read, state, PASSED, read_count);
 }
 
 
 void trimmed_reads::add_mate_2_read(fastq& read, read_status state,
-									size_t read_count)
+                                    size_t read_count)
 {
-	// Single end reads always go into the mate 2 file or the discarded file
-	distribute_read(m_mate_2, m_mate_1, read, state, PASSED, read_count);
+    // Single end reads always go into the mate 2 file or the discarded file
+    distribute_read(m_mate_2, m_mate_1, read, state, PASSED, read_count);
 }
 
 
 void trimmed_reads::add_pe_reads(fastq& read_1, read_status state_1,
-                  				 fastq& read_2, read_status state_2)
+                                 fastq& read_2, read_status state_2)
 {
-	distribute_read(m_mate_1, m_mate_1, read_1, state_1, state_2);
-	distribute_read(m_mate_2, m_mate_1, read_2, state_2, state_1);
+    distribute_read(m_mate_1, m_mate_1, read_1, state_1, state_2);
+    distribute_read(m_mate_2, m_mate_1, read_2, state_2, state_1);
 }
 
 
 void trimmed_reads::add_collapsed_read(fastq& read,
-									   read_status state,
-									   size_t read_count)
+                                       read_status state,
+                                       size_t read_count)
 {
-	output_chunk_ptr& destination = m_config.combined_output ? m_mate_1 : m_collapsed;
+    output_chunk_ptr& destination = m_config.combined_output ? m_mate_1 : m_collapsed;
 
-	// Collapsed reads may go into the mate 1, mate 2, or discard file
-	distribute_read(destination, destination, read, state, PASSED, read_count);
+    // Collapsed reads may go into the mate 1, mate 2, or discard file
+    distribute_read(destination, destination, read, state, PASSED, read_count);
 }
 
 
 void trimmed_reads::add_collapsed_truncated_read(fastq& read,
-												 read_status state,
-												 size_t read_count)
+                                                 read_status state,
+                                                 size_t read_count)
 {
-	output_chunk_ptr& destination = m_config.combined_output ? m_mate_1 : m_collapsed_truncated;
+    output_chunk_ptr& destination = m_config.combined_output ? m_mate_1 : m_collapsed_truncated;
 
-	// Collapsed tr. reads may go into the mate 1, mate 2, or discard file
-	distribute_read(destination, destination, read, state, PASSED, read_count);
+    // Collapsed tr. reads may go into the mate 1, mate 2, or discard file
+    distribute_read(destination, destination, read, state, PASSED, read_count);
 }
 
 
@@ -135,38 +135,38 @@ chunk_vec trimmed_reads::finalize()
 
 
 void trimmed_reads::distribute_read(output_chunk_ptr& regular,
-									output_chunk_ptr& interleaved,
-									fastq& read,
-									read_status state_1,
-									read_status state_2,
-									size_t read_count)
+                                    output_chunk_ptr& interleaved,
+                                    fastq& read,
+                                    read_status state_1,
+                                    read_status state_2,
+                                    size_t read_count)
 {
-	if (state_1 == PASSED) {
-		if (m_config.combined_output) {
-			read.add_postfix_to_header(PASSED_POSTFIX);
-		}
+    if (state_1 == PASSED) {
+        if (m_config.combined_output) {
+            read.add_postfix_to_header(PASSED_POSTFIX);
+        }
 
-		if (state_2 == PASSED || m_config.combined_output) {
-			if (m_config.interleaved_output) {
-				interleaved->add(m_encoding, read, read_count);
-			} else {
-				regular->add(m_encoding, read, read_count);
-			}
-		} else {
-			m_singleton->add(m_encoding, read, read_count);
-		}
-	} else if (m_config.combined_output) {
-		read.add_postfix_to_header(FAILED_POSTFIX);
-		read.discard();
+        if (state_2 == PASSED || m_config.combined_output) {
+            if (m_config.interleaved_output) {
+                interleaved->add(m_encoding, read, read_count);
+            } else {
+                regular->add(m_encoding, read, read_count);
+            }
+        } else {
+            m_singleton->add(m_encoding, read, read_count);
+        }
+    } else if (m_config.combined_output) {
+        read.add_postfix_to_header(FAILED_POSTFIX);
+        read.discard();
 
-		if (m_config.interleaved_output) {
-			interleaved->add(m_encoding, read, read_count);
-		} else {
-			regular->add(m_encoding, read, read_count);
-		}
-	} else {
-		m_discarded->add(m_encoding, read, read_count);
-	}
+        if (m_config.interleaved_output) {
+            interleaved->add(m_encoding, read, read_count);
+        } else {
+            regular->add(m_encoding, read, read_count);
+        }
+    } else {
+        m_discarded->add(m_encoding, read, read_count);
+    }
 }
 
 
