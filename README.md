@@ -104,15 +104,15 @@ Other than taking just a single input file, this mode operates almost exactly li
 
 By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred+33 encoded, meaning that the error probabilities are encoded as (char)('!' - 10 * log10(p)). Most data will be encoded using Phred+33, but Phred+64 and 'Solexa' encoded quality scores are also supported. These are selected by specifying the --qualitybase command-line option (specifying either '33', '64', or 'solexa'):
 
-    $ AdapterRemoval --qualitybase 64 --file1 reads_q64.fq --basename phred_64_encoded
+    $ AdapterRemoval --qualitybase 64 --file1 reads_q64.fq --basename output_phred_64
 
 By default, reads are written using the *same* encoding as the input. If a different encoding is desired, this may be accomplished using the --qualitybase-output option::
 
-    $ AdapterRemoval --qualitybase 64 --qualitybase-output 33 --file1 reads_q64.fq --basename phred_33_encoded
+    $ AdapterRemoval --qualitybase 64 --qualitybase-output 33 --file1 reads_q64.fq --basename output_phred_33
 
 Note furthermore that AdapterRemoval by default only expects quality scores in the range 0 - 41 (or -5 to 41 in the case of Solexa encoded scores). If input data using a different maximum quality score is to be processed, or if the desired maximum quality score of collapsed reads is greater than 41, then this limit may be increased using the --qualitymax option::
 
-    $ AdapterRemoval --qualitymax 50 --file1 reads_1.fq --file2 reads_2.fq --collapsed --basename collapsed_q50
+    $ AdapterRemoval --qualitymax 50 --file1 reads_1.fq --file2 reads_2.fq --collapse --basename output_collapsed_q50
 
 For a detailed overview of Phred encoding schemes currently and previously in use, see e.g. the Wikipedia article on the subject:
 https://en.wikipedia.org/wiki/FASTQ_format#Encoding
@@ -195,7 +195,7 @@ For example, a table of barcodes from a double-indexed run might be as follows (
 
 In the case of single-read reads, only the first two columns are required. AdapterRemoval is invoked with the --barcode-list option, specifying the path to this table:
 
-    $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_dumux --barcode-list barcodes.txt
+    $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_demux --barcode-list barcodes.txt
 
 This generates a set of output files for each sample specified in the barcode table, using the basename (--basename) as the prefix, followed by a dot and the sample name, followed by a dot and the default name for a given file type. For example, the output files for sample_2 would be
 
@@ -213,6 +213,11 @@ The maximum number of mismatches allowed when comparing barocdes is controlled u
    2. mm_2(i) <= --barcode-mm-r2
    3. mm_1(i) + mm_2(i) <= --barcode-mm
 
+In addition, AdapterRemoval can be used to demultiplex reads, without carrying out other forms of trimming. This is accomplished by specifying the --demultiplex-only option:
+
+    $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
+
+Options listed under "TRIMMING SETTINGS" (see 'AdapterRemoval --help') do not apply to this mode, but compression (--gzip, --bzip2), multi-threading (--threads), interleaving (--interleaved, etc.) and other such options may be used in conjunction with --demultiplex-only.
 
 
 ## A note on specifying adapter sequences

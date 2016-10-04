@@ -43,6 +43,14 @@ typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
 typedef std::unique_ptr<statistics> statistics_ptr;
 
 
+enum ar_run_types
+{
+    ar_trim_adapters,
+    ar_identify_adapters,
+    ar_demultiplex_sequences,
+};
+
+
 /**
  * Configuration store, containing all user-supplied options / default values,
  * as well as help-functions using these options.
@@ -82,9 +90,8 @@ public:
     /** Trims a read if enabled, returning the #bases removed from each end. */
     fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
 
-
-    //! Argument parser setup to parse the arguments expected by AR
-    argparse::parser argparser;
+    //! Type of run to execute; see ar_run_types
+    ar_run_types run_type;
 
     //! Prefix used for output files for which no filename was explicitly set
     std::string basename;
@@ -145,9 +152,6 @@ public:
     //! when collapsing overllapping PE reads.
     unsigned seed;
 
-    //! If true, the program attempts to identify the adapter pair of PE reads
-    bool identify_adapters;
-
     //! The maximum number of threads used by the program
     unsigned max_threads;
 
@@ -183,6 +187,8 @@ private:
      */
     bool setup_adapter_sequences();
 
+    //! Argument parser setup to parse the arguments expected by AR
+    argparse::parser argparser;
 
     //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
     std::string adapter_1;
@@ -204,6 +210,11 @@ private:
     std::string mate_separator_str;
     //! Sink for --interleaved
     bool interleaved;
+
+    //! Sink for --identify-adapters
+    bool identify_adapters;
+    //! Sink for --identify-adapters
+    bool demultiplex_sequences;
 };
 
 } // namespace ar

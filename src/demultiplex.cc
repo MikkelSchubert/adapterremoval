@@ -226,10 +226,14 @@ demultiplex_reads::demultiplex_reads(const userconfig* config)
     , m_config(config)
     , m_cache()
     , m_unidentified_1(new fastq_output_chunk())
-    , m_unidentified_2(new fastq_output_chunk())
+    , m_unidentified_2()
     , m_statistics(m_barcodes.size())
 {
     AR_DEBUG_ASSERT(!m_barcodes.empty());
+
+    if (!config->interleaved_output) {
+        m_unidentified_2.reset(new fastq_output_chunk());
+    }
 
     for (size_t i = 0; i < m_barcodes.size(); ++i) {
         m_cache.push_back(read_chunk_ptr(new fastq_read_chunk()));
@@ -330,7 +334,7 @@ chunk_vec demultiplex_reads::flush_cache(bool eof)
         m_unidentified_1 = output_chunk_ptr(new fastq_output_chunk());
     }
 
-    if (m_config->paired_ended_mode && (eof || m_unidentified_2->count >= FASTQ_CHUNK_SIZE)) {
+    if (m_config->paired_ended_mode && !m_config->interleaved_output && (eof || m_unidentified_2->count >= FASTQ_CHUNK_SIZE)) {
         m_unidentified_2->eof = eof;
         output.push_back(chunk_pair(ai_write_unidentified_2, std::move(m_unidentified_2)));
         m_unidentified_2 = output_chunk_ptr(new fastq_output_chunk());
@@ -414,7 +418,11 @@ chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
 
         if (best_barcode < 0) {
             m_unidentified_1->add(*m_config->quality_output_fmt, *it_1);
-            m_unidentified_2->add(*m_config->quality_output_fmt, *it_2);
+            if (m_config->interleaved_output) {
+                m_unidentified_1->add(*m_config->quality_output_fmt, *it_2);
+            } else {
+                m_unidentified_2->add(*m_config->quality_output_fmt, *it_2);
+            }
 
             if (best_barcode == -1) {
                 m_statistics.unidentified += 1;

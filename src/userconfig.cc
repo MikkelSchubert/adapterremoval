@@ -76,7 +76,7 @@ fastq_encoding_ptr select_encoding(const std::string& name,
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
-    : argparser(name, version, help)
+    : run_type(ar_trim_adapters)
     , basename("your_output")
     , input_file_1()
     , input_file_2()
@@ -99,7 +99,6 @@ userconfig::userconfig(const std::string& name,
     , collapse(false)
     , shift(2)
     , seed(get_seed())
-    , identify_adapters(false)
     , max_threads(1)
     , gzip(false)
     , gzip_level(6)
@@ -109,6 +108,7 @@ userconfig::userconfig(const std::string& name,
     , barcode_mm_r1(0)
     , barcode_mm_r2(0)
     , adapters()
+    , argparser(name, version, help)
     , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG")
     , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT")
     , adapter_list()
@@ -118,6 +118,8 @@ userconfig::userconfig(const std::string& name,
     , quality_max(MAX_PHRED_SCORE_DEFAULT)
     , mate_separator_str(1, MATE_SEPARATOR)
     , interleaved(false)
+    , identify_adapters(false)
+    , demultiplex_sequences(false)
 {
     argparser["--file1"] =
         new argparse::any(&input_file_1, "FILE",
@@ -168,11 +170,11 @@ userconfig::userconfig(const std::string& name,
     argparser["--combined-output"] =
         new argparse::flag(&combined_output,
             "If set, all reads are written to the same file(s), specified by "
-            "--output1 and --output2 (--output2 only if --interleaved-output "
+            "--output1 and --output2 (--output1 only if --interleaved-output "
             "is not set). Each read is futher marked by either a \"PASSED\" "
             "or a \"FAILED\" flag, and any read that has been FAILED "
-            "(including the mate for collapsed are replaced with a single 'N' "
-            "with Phred score 0 [current: %default].");
+            "(including the mate for collapsed reads) are replaced with a "
+            "single 'N' with Phred score 0 [current: %default].");
 
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
@@ -215,7 +217,6 @@ userconfig::userconfig(const std::string& name,
         new argparse::any(NULL, "FILE",
             "Contains reads discarded due to the --minlength, --maxlength or "
             "--maxns options [default: BASENAME.discarded]");
-
 
 #if defined(AR_GZIP_SUPPORT) || defined(AR_BZIP2_SUPPORT)
    argparser.add_header("OUTPUT COMPRESSION:");
@@ -333,7 +334,6 @@ userconfig::userconfig(const std::string& name,
             "both single-end and paired-end trimming, if double-indexed "
             "multiplexing was used, in order to ensure that the demultiplexed "
             "reads can be trimmed correctly [current: %default].");
-
     argparser["--barcode-mm"] =
         new argparse::knob(&barcode_mm, "N",
             "Maximum number of mismatches allowed when counting mismatches in "
@@ -348,6 +348,11 @@ userconfig::userconfig(const std::string& name,
             "Maximum number of mismatches allowed for the mate 2 barcode; "
             "if not set, this value is equal to the '--barcode-mm' value; "
             "cannot be higher than the '--barcode-mm value'.");
+    argparser["--demultiplex-only"] =
+        new argparse::flag(&demultiplex_sequences,
+            "Only carry out demultiplexing using the list of barcodes "
+            "supplied with --barcode-list; do not attempt to trim adapters "
+            "to carry out other processing.");
 
     argparser.add_header("MISC:");
     argparser["--identify-adapters"] =
@@ -412,7 +417,27 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         // sequences. However, arguments are still checked above.
         quality_input_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
         quality_output_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
+        run_type = ar_identify_adapters;
     }
+
+    if (demultiplex_sequences) {
+        if (identify_adapters) {
+            std::cerr << "Error: Cannot use --identify-adapters and "
+                      << "--demultiplex-only at the same time!"
+                      << std::endl;
+
+            return argparse::pr_error;
+        } else if (!argparser.is_set("--barcode-list")) {
+            std::cerr << "Error: Cannot use --demultiplex-only without specifying "
+                      << "a list of barcodes using --barcode-list!"
+                      << std::endl;
+
+            return argparse::pr_error;
+        }
+
+        run_type = ar_demultiplex_sequences;
+    }
+
 
     if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
         std::cerr << "Error: Invalid value for --minquality: "
@@ -592,9 +617,13 @@ std::string userconfig::get_output_filename(const std::string& key,
         filename += ".unidentified";
 
         AR_DEBUG_ASSERT(nth <= 9);
-        if (nth) {
-            filename.push_back('_');
-            filename.push_back('0' + nth);
+        if (!interleaved_output) {
+            if (nth) {
+                filename.push_back('_');
+                filename.push_back('0' + nth);
+            }
+        } else {
+            filename += ".paired";
         }
 
         if (gzip) {
@@ -622,20 +651,26 @@ std::string userconfig::get_output_filename(const std::string& key,
     } else if (paired_ended_mode) {
         if (key == "--output1") {
             if (interleaved_output) {
-                filename += ".paired.truncated";
+                filename += ".paired";
             } else {
-                filename += ".pair1.truncated";
+                filename += ".pair1";
             }
         } else if (key == "--output2") {
-            filename += ".pair2.truncated";
+            filename += ".pair2";
         } else if (key == "--singleton") {
-            filename += ".singleton.truncated";
+            filename += ".singleton";
         } else {
             throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
         }
-    } else {
-       if (key == "--output1") {
+
+        if (run_type != ar_demultiplex_sequences) {
             filename += ".truncated";
+        }
+    } else {
+        if (key == "--output1") {
+            if (run_type != ar_demultiplex_sequences) {
+                filename += ".truncated";
+            }
         } else {
             throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
         }
@@ -754,7 +789,7 @@ bool userconfig::setup_adapter_sequences()
         } else if (adapters.adapter_count()) {
             std::cerr << "Read " << adapters.barcode_count()
                       << " barcodes / barcode pairs from '" << barcode_list
-                      << "'..." << std::endl;
+                      << "' ..." << std::endl;
         } else {
             std::cerr << "Error: No barcodes sequences found in table!" << std::endl;
             return false;

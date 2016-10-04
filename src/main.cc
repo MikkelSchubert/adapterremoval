@@ -35,6 +35,8 @@ namespace ar
 int remove_adapter_sequences(const userconfig& config);
 // See main_adapter_id.cc
 int identify_adapter_sequences(const userconfig& config);
+// See main_demultiplex.cc
+int demultiplex_sequences(const userconfig& config);
 
 } // namespace ar
 
@@ -53,11 +55,26 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (config.identify_adapters) {
-        return identify_adapter_sequences(config);
+    auto returncode = 0;
+    switch (config.run_type) {
+        case ar_trim_adapters:
+            returncode = remove_adapter_sequences(config);
+            break;
+
+        case ar_demultiplex_sequences:
+            returncode = demultiplex_sequences(config);
+            break;
+
+        case ar_identify_adapters:
+            return identify_adapter_sequences(config);
+
+        default:
+            std::cerr << "ERROR: Unknown run-type: "
+                      << static_cast<size_t>(config.run_type)
+                      << std::endl;
+            return 1;
     }
 
-    const auto returncode = remove_adapter_sequences(config);
     if (returncode) {
         std::cerr << "ERROR: AdapterRemoval did not run to completion;\n"
                   << "       do NOT make use of resulting trimmed reads!"

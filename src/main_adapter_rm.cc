@@ -48,14 +48,6 @@ namespace ar
 typedef std::unique_ptr<std::mt19937> mt19937_ptr;
 
 
-inline void add_chunk(chunk_vec& chunks, size_t target, output_chunk_ptr chunk)
-{
-    if (chunk.get()) {
-        chunks.push_back(chunk_pair(target, std::move(chunk)));
-    }
-}
-
-
 void write_settings(const userconfig& config, std::ostream& output, int nth)
 {
     output << NAME << " " << VERSION
@@ -231,6 +223,11 @@ void write_trimming_settings(const userconfig& config,
 }
 
 
+//! Implemented in main_demultiplex.cc
+void write_demultiplex_statistics(std::ofstream& output,
+                                  const userconfig& config,
+                                  const demultiplex_reads* step);
+
 
 bool write_demux_settings(const userconfig& config,
                           const demultiplex_reads* step)
@@ -240,7 +237,6 @@ bool write_demux_settings(const userconfig& config,
         return true;
     }
 
-    const demux_statistics stats = step->statistics();
     const std::string filename = config.get_output_filename("demux_stats");
 
     try {
@@ -253,36 +249,7 @@ bool write_demux_settings(const userconfig& config,
         output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
         write_settings(config, output, -1);
-
-        const size_t total = stats.total();
-
-        output.precision(3);
-        output << std::fixed << std::setw(3)
-               << "\n\n\n[Demultiplexing statistics]"
-               << "\nName\tBarcode_1\tBarcode_2\tHits\tFraction\n"
-               << "unidentified\tNA\tNA\t" << stats.unidentified << "\t"
-               << stats.unidentified / static_cast<double>(total) << "\n"
-               << "ambiguous\tNA\tNA\t" << stats.ambiguous << "\t"
-               << stats.ambiguous / static_cast<double>(total) << "\n";
-
-        const fastq_pair_vec barcodes = config.adapters.get_barcodes();
-        for (size_t nth = 0; nth < barcodes.size(); ++nth) {
-            const fastq_pair& current = barcodes.at(nth);
-
-            output << config.adapters.get_sample_name(nth) << "\t"
-                   << current.first.sequence() << "\t";
-            if (current.second.length()) {
-                output << current.second.sequence() << "\t";
-            } else {
-                output << "*\t";
-            }
-
-            output << stats.barcodes.at(nth) << "\t"
-                   << stats.barcodes.at(nth) / static_cast<double>(total)
-                   << "\n";
-        }
-
-        output << "*\t*\t*\t" << total << "\t" << 1.0 << std::endl;
+        write_demultiplex_statistics(output, config, step);
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error writing demultiplexing statistics; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
@@ -308,7 +275,6 @@ void process_collapsed_read(const userconfig& config,
     if (mate_read) {
         mate_read->add_prefix_to_header(was_trimmed ? "MT_" : "M_");
     }
-
 
     const size_t read_count = config.paired_ended_mode ? 2 : 1;
     if (config.is_acceptable_read(collapsed_read)) {
@@ -734,8 +700,11 @@ int remove_adapter_sequences_pe(const userconfig& config)
 
             add_write_step(config, sch, ai_write_unidentified_1, "unidentified_mate_1",
                            new write_fastq(config.get_output_filename("demux_unknown", 1)));
-            add_write_step(config, sch, ai_write_unidentified_2, "unidentified_mate_2",
-                           new write_fastq(config.get_output_filename("demux_unknown", 2)));
+
+            if (!config.interleaved_output) {
+                add_write_step(config, sch, ai_write_unidentified_2, "unidentified_mate_2",
+                               new write_fastq(config.get_output_filename("demux_unknown", 2)));
+            }
         }
 
         // Step 3 - N: Trim and write demultiplexed reads

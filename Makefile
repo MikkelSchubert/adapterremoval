@@ -7,10 +7,6 @@ PREFIX := /usr/local
 
 # Default compilation flags
 CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
-CXXFLAGS := ${CXXFLAGS} -pedantic -Wall -Wextra -Wcast-align -Wcast-qual \
-	-Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self \
-	-Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo \
-	-Wstrict-overflow=5 -Wswitch-default -Wundef -Weffc++ -Wdeprecated
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
@@ -25,6 +21,9 @@ QUIET_BUILD := yes
 
 # Use of colored output during build
 COLOR_BUILD := yes
+
+# Debug build; adds warnings and debugging symbols
+DEBUG_BUILD := yes
 
 
 ###############################################################################
@@ -66,6 +65,15 @@ else
 $(info Building AdapterRemoval with bzip2 support: no)
 endif
 
+ifeq ($(strip ${DEBUG_BUILD}), yes)
+$(info Building AdapterRemoval with debug information: yes)
+CXXFLAGS := ${CXXFLAGS} -g -pedantic -Wall -Wextra -Wcast-align -Wcast-qual \
+	-Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self \
+	-Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo \
+	-Wstrict-overflow=2 -Wswitch-default -Wundef -Weffc++ -Wdeprecated
+else
+$(info Building AdapterRemoval with debug information: yes)
+endif
 
 PROG     := AdapterRemoval
 LIBNAME  := libadapterremoval
@@ -80,6 +88,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/linereader.o \
             $(BDIR)/main_adapter_id.o \
             $(BDIR)/main_adapter_rm.o \
+            $(BDIR)/main_demultiplex.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \
