@@ -548,16 +548,23 @@ public:
             const read_status state_1 = read_1_acceptable ? PASSED : FAILED;
             const read_status state_2 = read_2_acceptable ? PASSED : FAILED;
 
+            if (read_1_acceptable && read_2_acceptable) {
+                stats->inc_length_count(rt_mate_1, read_1.length());
+                stats->inc_length_count(rt_mate_2, read_2.length());
+            } else {
+                // Count singleton reads
+                stats->keep1 += read_1_acceptable && !read_2_acceptable;
+                stats->keep2 += read_2_acceptable && !read_1_acceptable;
+
+                stats->discard1 += !read_1_acceptable;
+                stats->discard2 += !read_2_acceptable;
+
+                stats->inc_length_count(read_1_acceptable ? rt_singleton : rt_discarded, read_1.length());
+                stats->inc_length_count(read_2_acceptable ? rt_singleton : rt_discarded, read_2.length());
+            }
+
+            // Queue reads last, since this result in modifications to lengths
             chunks.add_pe_reads(read_1, state_1, read_2, state_2);
-
-            // Count singleton reads
-            stats->keep1 += read_1_acceptable && !read_2_acceptable;
-            stats->keep2 += read_2_acceptable && !read_1_acceptable;
-
-            stats->discard1 += !read_1_acceptable;
-            stats->discard2 += !read_2_acceptable;
-            stats->inc_length_count(read_1_acceptable ? rt_mate_1 : rt_discarded, read_1.length());
-            stats->inc_length_count(read_2_acceptable ? rt_mate_2 : rt_discarded, read_2.length());
         }
 
         stats->records += read_chunk->reads_1.size();
