@@ -213,7 +213,7 @@ The maximum number of mismatches allowed when comparing barocdes is controlled u
    2. mm_2(i) <= --barcode-mm-r2
    3. mm_1(i) + mm_2(i) <= --barcode-mm
 
-In addition, AdapterRemoval can be used to demultiplex reads, without carrying out other forms of trimming. This is accomplished by specifying the --demultiplex-only option:
+As of version 2.2, AdapterRemoval can furthermore be used to demultiplex reads, without carrying out other forms of trimming. This is accomplished by specifying the --demultiplex-only option:
 
     $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
 
