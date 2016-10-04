@@ -1,0 +1,6 @@
+{
+	"arguments": ["--maxlength", "99", "--trimns"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

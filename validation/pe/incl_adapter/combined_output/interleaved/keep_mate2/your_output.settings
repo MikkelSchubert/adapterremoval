@@ -40,7 +40,7 @@ Average read length of retained reads: 0
 [Length distribution]
 Length	Mate1	Mate2	Singleton	Discarded	All
 0	0	0	0	0	0
-1	0	0	0	1	1
+1	0	0	0	0	0
 2	0	0	0	0	0
 3	0	0	0	0	0
 4	0	0	0	0	0
@@ -88,5 +88,5 @@ Length	Mate1	Mate2	Singleton	Discarded	All
 46	0	0	0	0	0
 47	0	0	0	0	0
 48	0	0	0	0	0
-49	0	0	0	0	0
-50	0	1	0	0	1
+49	0	0	0	1	1
+50	0	0	1	0	1

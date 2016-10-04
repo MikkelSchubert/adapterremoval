@@ -1,0 +1,7 @@
+{
+	"arguments": ["--demultiplex-only"],
+	"return_code": 1,
+	"stderr": [
+		"Cannot use --demultiplex-only without specifying a list of barcodes using --barcode-list!"
+	]
+}
