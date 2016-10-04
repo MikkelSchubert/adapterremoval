@@ -508,11 +508,10 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: --threads must be at least 1!" << std::endl;
         return argparse::pr_error;
     } else if (max_threads > 1 && argparser.is_set("--seed")) {
-        std::cerr << "Error: The option --seed cannot be used when --threads "
-                  << "is greater than one; multi-threaded behavior is not "
-                  << "deterministic!"
+        std::cerr << "Warning: The option --seed should not be used when "
+                  << "using multiple threads; multi-threaded behavior is not "
+                  << "deterministic even with a fixed seed!"
                   << std::endl;
-        return argparse::pr_error;
     }
 
     return argparse::pr_ok;
