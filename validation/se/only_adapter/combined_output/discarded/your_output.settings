@@ -15,7 +15,7 @@ Quality format (output): Phred+33
 Quality score max (output): 41
 Mate-number seperator (input): '/'
 Trimming Ns: No
-Trimming Phred scores <= 2: no
+Trimming Phred scores <= 2: No
 Minimum genomic length: 15
 Maximum genomic length: 4294967295
 Collapse overlapping reads: No
@@ -32,7 +32,7 @@ Number of singleton mate 1 reads: 0
 Number of reads with adapters[1]: 1
 Number of retained reads: 0
 Number of retained nucleotides: 0
-Average read length of retained reads: 0
+Average length of retained reads: 0
 
 
 [Length distribution]
