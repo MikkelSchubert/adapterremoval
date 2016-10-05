@@ -57,28 +57,86 @@ enum read_status
 class trimmed_reads
 {
 public:
+    /**
+     * Constructor.
+     *
+     * @param config Global User-config instance; must outlive instance.
+     * @param config offset The file-offset for the reads being processed.
+     * @param config eof If true, this chunk of reads are at the EOF.
+     */
     trimmed_reads(const userconfig& config, size_t offset, bool eof);
 
+    /**
+     * Encodes and caches the specified mate 1 read.
+     *
+     * @param read Processed FASTQ read.
+     * @param state FAILED or PASSED; determines destination file.
+     * @param read_count Number of actual reads represented by 'read'; for
+     *                   merged sequences this may be > 1.
+     *
+     * Note that 'read' may be modified (truncated) depending on user options.
+     */
     void add_mate_1_read(fastq& read, read_status state, size_t read_count = 1);
+    /**
+     * Encodes and caches the specified mate 2 read.
+     *
+     * @param read Processed FASTQ read.
+     * @param state FAILED or PASSED; determines destination file.
+     * @param read_count Number of actual reads represented by 'read'; for
+     *                   merged sequences this may be > 1.
+     *
+     * Note that 'read' may be modified (truncated) depending on user options.
+     */
     void add_mate_2_read(fastq& read, read_status state, size_t read_count = 1);
 
     /**
+     * Encodes and caches the specified pair of reads.
      *
+     * @param read_1 Processed mate 1 FASTQ read.
+     * @param state_1 FAILED or PASSED; determines destination file for mate 1.
+     * @param read_2 Processed mate 2 FASTQ read.
+     * @param state_2 FAILED or PASSED; determines destination file for mate 2.
      *
-     *
-     *
-     *
-     * Note that each read is assumed to represent one read (read_count = 1).
+     * Note that 'read' may be modified (truncated) depending on user options.
      */
     void add_pe_reads(fastq& read_1, read_status state_1,
                       fastq& read_2, read_status state_2);
 
+    /**
+     * Encodes and caches the specified collapsed read.
+     *
+     * @param read Processed FASTQ read.
+     * @param state FAILED or PASSED; determines destination file.
+     * @param read_count Number of actual reads represented by 'read'; for
+     *                   merged sequences this may be > 1.
+     *
+     * Note that 'read' may be modified (truncated) depending on user options.
+     */
     void add_collapsed_read(fastq& read, read_status, size_t read_count = 1);
+    /**
+     * Encodes and caches the specified collapsed, truncated read.
+     *
+     * @param read Processed FASTQ read.
+     * @param state FAILED or PASSED; determines destination file.
+     * @param read_count Number of actual reads represented by 'read'; for
+     *                   merged sequences this may be > 1.
+     *
+     * Note that 'read' may be modified (truncated) depending on user options.
+     */
     void add_collapsed_truncated_read(fastq& read, read_status state, size_t read_count = 1);
 
+    /** Returns vector of chunks from all cached reads. */
     chunk_vec finalize();
 
 private:
+    /*
+     * Helper function; assigns a given read to a cache depending on state and
+     * user settings, it's state (state_1) and the state of its mate (state_2).
+     *
+     * If interleaved output is enabled, reads are typically (depending on
+     * state, etc.) written to 'regular', and are otherwise written to
+     * 'interleaved'.
+     */
     void distribute_read(output_chunk_ptr& regular,
                          output_chunk_ptr& interleaved,
                          fastq& read,
@@ -86,17 +144,25 @@ private:
                          read_status state_2,
                          size_t read_count = 1);
 
+    //! User configuration; must outlive instance.
     const userconfig& m_config;
+    //! Output-encoding used to write reads.
     const fastq_encoding& m_encoding;
 
-    //! The offset 
+    //! The offset of this chunk of reads.
     size_t m_offset;
 
+    //! Pointer to cached mate 1 reads.
     output_chunk_ptr m_mate_1;
+    //! Pointer to cached mate 2 reads; may be NULL.
     output_chunk_ptr m_mate_2;
+    //! Pointer to cached singleton reads; may be NULL.
     output_chunk_ptr m_singleton;
+    //! Pointer to cached collapsed reads; may be NULL.
     output_chunk_ptr m_collapsed;
+    //! Pointer to cached collapsed, truncated reads; may be NULL.
     output_chunk_ptr m_collapsed_truncated;
+    //! Pointer to cached discarded reads; may be NULL.
     output_chunk_ptr m_discarded;
 };
 
