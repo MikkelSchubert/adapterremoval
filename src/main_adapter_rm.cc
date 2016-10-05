@@ -184,7 +184,7 @@ void write_trimming_settings(const userconfig& config,
 
     settings << "\nNumber of retained reads: " << stats.total_number_of_good_reads
              << "\nNumber of retained nucleotides: " << stats.total_number_of_nucleotides
-             << "\nAverage read length of retained reads: "
+             << "\nAverage length of retained reads: "
              << (stats.total_number_of_good_reads ? ( static_cast<double>(stats.total_number_of_nucleotides) / stats.total_number_of_good_reads) : 0);
 
     settings << "\n\n\n[Length distribution]"
