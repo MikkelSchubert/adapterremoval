@@ -31,7 +31,7 @@
 namespace ar
 {
 
-const size_t DEFAULT_MAX_COLUMNS = 60;
+const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
 
