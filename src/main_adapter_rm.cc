@@ -137,7 +137,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
            << "\nMate-number seperator (input): '" << config.mate_separator << "'"
            << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
            << "\nTrimming Phred scores <= " << config.low_quality_score
-           << ": " << (config.trim_by_quality ? "yes" : "no")
+           << ": " << (config.trim_by_quality ? "Yes" : "No")
            << "\nMinimum genomic length: " << config.min_genomic_length
            << "\nMaximum genomic length: " << config.max_genomic_length
            << "\nCollapse overlapping reads: " << ((config.collapse) ? "Yes" : "No")
