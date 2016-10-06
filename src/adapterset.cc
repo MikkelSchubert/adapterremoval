@@ -430,11 +430,11 @@ string_pair_vec adapter_set::get_pretty_adapter_set(size_t nth) const
         std::string seq_2 = adapter_2.sequence();
 
         if (barcodes.first.length()) {
-            seq_1.insert(barcodes.first.length(), 1, '_');
+            seq_2.insert(barcodes.first.length(), 1, '_');
         }
 
         if (barcodes.second.length()) {
-            seq_2.insert(barcodes.second.length(), 1, '_');
+            seq_1.insert(barcodes.second.length(), 1, '_');
         }
 
         adapters.push_back(string_pair(seq_1, seq_2));
