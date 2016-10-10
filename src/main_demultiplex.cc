@@ -83,9 +83,11 @@ void write_demultiplex_statistics(std::ofstream& output,
 
 
 bool write_demultiplex_settings(const userconfig& config,
-                                const demultiplex_reads* step)
+                                const demultiplex_reads* step,
+                                int nth = -1)
 {
-    const std::string filename = config.get_output_filename("demux_stats");
+    const std::string filename \
+        = config.get_output_filename(nth == -1 ? "demux_stats" : "--settings", nth);
 
     try {
         std::ofstream output(filename.c_str(), std::ofstream::out);
@@ -118,7 +120,7 @@ bool write_demultiplex_settings(const userconfig& config,
             output << "single-end reads";
         }
 
-        output << "\n\n[Demultiplexing]"
+        output << "\n\n\n[Demultiplexing]"
                << "\nMaximum mismatches (total): " << config.barcode_mm;
 
         if (config.paired_ended_mode) {
@@ -126,24 +128,47 @@ bool write_demultiplex_settings(const userconfig& config,
             output << "\nMaximum mate 2 mismatches: " << config.barcode_mm_r2;
         }
 
-        output << "\n\n[Demultiplexing samples]"
-               << "\nName\tBarcode_1\tBarcode_2";
+        output << "\n\n\n[Demultiplexing samples]"
+               << "\nName\tBarcode_1\tBarcode_2\n";
 
         const fastq_pair_vec barcodes = config.adapters.get_barcodes();
         for (size_t idx = 0; idx < barcodes.size(); ++idx) {
-            output << "\n" << config.adapters.get_sample_name(idx);
+            output << config.adapters.get_sample_name(idx);
+            if (static_cast<size_t>(nth) == idx) {
+                output << "*";
+            }
 
             const fastq_pair& current = barcodes.at(idx);
             output << "\t" << current.first.sequence();
 
             if (current.second.length()) {
-                output << "\t" << current.second.sequence();
+                output << "\t" << current.second.sequence() << "\n";
             } else {
-                output << "\t*";
+                output << "\t*\n";
             }
         }
 
-        write_demultiplex_statistics(output, config, step);
+        output << "\n\n[Adapter sequences]";
+        if (nth == -1) {
+            const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
+            size_t adapter_id = 0;
+            for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+                output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first.sequence();
+
+                fastq adapter_2 = it->second;
+                adapter_2.reverse_complement();
+                output << "\nAdapter2[" << adapter_id + 1 << "]: " << adapter_2.sequence() << "\n";
+            }
+
+            write_demultiplex_statistics(output, config, step);
+        } else {
+            const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
+            size_t adapter_id = 0;
+            for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+                output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
+                output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
+            }
+        }
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error writing settings file; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
@@ -283,6 +308,12 @@ int demultiplex_sequences_se(const userconfig& config)
         return 1;
     }
 
+    for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
+        if (!write_demultiplex_settings(config, demultiplexer, nth)) {
+            return 1;
+        }
+    }
+
     return 0;
 }
 
@@ -347,6 +378,12 @@ int demultiplex_sequences_pe(const userconfig& config)
         return 1;
     } else if (!write_demultiplex_settings(config, demultiplexer)) {
         return 1;
+    }
+
+    for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
+        if (!write_demultiplex_settings(config, demultiplexer, nth)) {
+            return 1;
+        }
     }
 
     return 0;

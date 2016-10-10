@@ -626,6 +626,11 @@ std::string userconfig::get_output_filename(const std::string& key,
             filename += ".paired";
         }
 
+        // Currently only when demultiplexing; for backwards compatibility
+        if (run_type == ar_demultiplex_sequences) {
+            filename += ".fastq";
+        }
+
         if (gzip) {
             filename += ".gz";
         } else if (bzip2) {
@@ -666,14 +671,17 @@ std::string userconfig::get_output_filename(const std::string& key,
         if (run_type != ar_demultiplex_sequences) {
             filename += ".truncated";
         }
-    } else {
-        if (key == "--output1") {
-            if (run_type != ar_demultiplex_sequences) {
-                filename += ".truncated";
-            }
-        } else {
-            throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
+    } else if (key == "--output1") {
+        if (run_type != ar_demultiplex_sequences) {
+            filename += ".truncated";
         }
+    } else if (key != "demux_unknown") {
+        throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
+    }
+
+    // Currently only when demultiplexing; for backwards compatibility
+    if (run_type == ar_demultiplex_sequences) {
+        filename += ".fastq";
     }
 
     if (gzip) {

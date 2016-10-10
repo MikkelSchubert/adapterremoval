@@ -66,25 +66,26 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
             output << "interleaved ";
         }
 
-        output << "paired-end reads";
+        output << "paired-end reads\n";
     } else {
         output << "single-end reads\n";
     }
 
     if (config.adapters.barcode_count()) {
-        output << "\n\n\n[Demultiplexing]"
+        output << "\n\n[Demultiplexing]"
                << "\nMaximum mismatches (total): " << config.barcode_mm;
+
         if (config.paired_ended_mode) {
             output << "\nMaximum mate 1 mismatches: " << config.barcode_mm_r1;
             output << "\nMaximum mate 2 mismatches: " << config.barcode_mm_r2;
         }
 
         output << "\n\n\n[Demultiplexing samples]"
-               << "\nName\tBarcode_1\tBarcode_2";
+               << "\nName\tBarcode_1\tBarcode_2\n";
 
         const fastq_pair_vec barcodes = config.adapters.get_barcodes();
         for (size_t idx = 0; idx < barcodes.size(); ++idx) {
-            output << "\n" << config.adapters.get_sample_name(idx);
+            output << config.adapters.get_sample_name(idx);
             if (static_cast<int>(idx) == nth) {
                 output << "*";
             }
@@ -93,9 +94,9 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
             output << "\t" << current.first.sequence();
 
             if (current.second.length()) {
-                output << "\t" << current.second.sequence();
+                output << "\t" << current.second.sequence() << "\n";
             } else {
-                output << "\t*";
+                output << "\t*\n";
             }
         }
     }
@@ -106,18 +107,18 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
         size_t adapter_id = 0;
         for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
             output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first.sequence();
-            if (config.paired_ended_mode) {
-                output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second.sequence() << "\n";
-            }
+
+            fastq adapter_2 = it->second;
+            adapter_2.reverse_complement();
+
+            output << "\nAdapter2[" << adapter_id + 1 << "]: " << adapter_2.sequence() << "\n";
         }
     } else {
         const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
         size_t adapter_id = 0;
         for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
             output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
-            if (config.paired_ended_mode) {
-                output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
-            }
+            output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
         }
     }
 
@@ -249,6 +250,7 @@ bool write_demux_settings(const userconfig& config,
         output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
         write_settings(config, output, -1);
+        output << "\n";
         write_demultiplex_statistics(output, config, step);
     } catch (const std::ios_base::failure& error) {
         std::cerr << "IO error writing demultiplexing statistics; aborting:\n"
