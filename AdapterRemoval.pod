@@ -6,7 +6,7 @@ AdapterRemoval - Remove adapters from sequences in either single end or paired e
 
 =head1 SYNOPSIS
 
-B<AdapterRemoval> --file1 filename [--file2 filename] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
+B<AdapterRemoval> --file1 filename [--file2 filename] [--interleaved] [--interleaved-input] [--interleaved-output] [--combined-output] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--demultiplex-only] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
 
 
 =head1 DESCRIPTION
@@ -44,6 +44,9 @@ If set, input is expected to be a single FASTQ file specified using I<--file1>, 
 
 If set, and AdapterRemoval is processing paired-end reads, retained pairs of reads are written to a single FASTQ file, one pair after each otehr (read1/1, read1/2, read2/1, read2/2, etc.). By default, this file is named I<basename.paired.truncated>, but this may be changed using the I<--output1> option.
 
+=item B<--combined-output>
+
+If set, all reads are written to the same file(s), specified by --output1 and --output2. Each read is futher marked by either a "PASSED" or a "FAILED" flag, and any read that has been FAILED (including the mate for collapsed reads) are replaced with a single 'N' with Phred score 0. This option can be combined with --interleaved / --interleaved-output to write all reads to a single output file specified with --output1.
 
 =item B<--basename> I<filename>
 
@@ -163,6 +166,10 @@ The maximum number of mismatches allowed in the mate 1 barcode; if not set, this
 =item B<--barcode-mm-r2> I<num>
 
 The maximum number of mismatches allowed in the mate 1 barcode; if not set, this number is equal to the value of --barcode-mm. This number cannot exceed the value specified for --barcode-mm.
+
+=item B<--demultiplex-only> I<num>
+
+Only carry out demultiplexing, using the list of barcodes supplied using --barcode-list. Note that trimming and filtering options do not apply to this mode of operation.
 
 =item B<--output1> I<file>
 
@@ -297,7 +304,7 @@ It is possible to trim data that contains multiple adapter pairs, by providing a
     GTTCATACGACGACGACCAATGGCACACTTATCCGGTACTTGCGTTTCAATGCGCATGCCCCAT    TAAGAAACTCGGAGTTTGGCCTGCGAGGTAGCTTGGGTGTTATGAAGAACGGCATGCG
     CCATGCCCCGAAGATTCCTATACCCTTAAGGTCGCAATTGTTCGAGTAAGCTGTACGCGCCCAT    GTTGCATTGACCCGAAGGGCTCGATGTTTAGGGAGGTCAGAAGTTGAGCGGGTTCAAA
 
-This table is then specified using the --adapter-list option:
+This table is then specified using the I<--adapter-list> option:
 
     $ AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_multi --trimns --trimqualities --collapse --adapter-list adapters.txt
 
@@ -311,7 +318,7 @@ Note that in the case of paired-end adapters, AdapterRemoval considers only the 
 
 If we did not know the adapter sequences for paired-end reads, AdapterRemoval may be used to generate a consensus adapter sequence based on fragments identified as belonging to the adapters through pairwise alignments of the reads, provided that the data set contains only a single adpater sequence (not counting differences in index sequences).
 
-In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not nessesary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
+In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not nessesary to specify this tail when using the I<--adapter1> or I<--adapter2> command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
 
     $ AdapterRemoval --identify-adapters --file1 reads_1.fq --file2 reads_2.fq
 
@@ -344,7 +351,7 @@ In the following example, the identified adapters corresponds to the default ada
 
 No files are generated from running the adapter identification step.
 
-The consensus sequences inferred are compared to those specified using the --adapter1 and --adapter2 command-line options, or with the default values for these if no values have been given (as in this case). Pipes (|) indicate matches between the provided sequences and the consensus sequence, and "*" indicate the presence of unspecified bases (Ns).
+The consensus sequences inferred are compared to those specified using the I<--adapter1> and I<--adapter2> command-line options, or with the default values for these if no values have been given (as in this case). Pipes (|) indicate matches between the provided sequences and the consensus sequence, and "*" indicate the presence of unspecified bases (Ns).
 
 
 
@@ -361,11 +368,11 @@ For example, a table of barcodes from a double-indexed run might be as follows (
     sample_2 ATGGATT ATAGTGA
     sample_7 CAAAACT TCGCTGC
 
-In the case of single-read reads, only the first two columns are required. AdapterRemoval is invoked with the --barcode-list option, specifying the path to this table:
+In the case of single-read reads, only the first two columns are required. AdapterRemoval is invoked with the I<--barcode-list> option, specifying the path to this table:
 
     $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_dumux --barcode-list barcodes.txt
 
-This generates a set of output files for each sample specified in the barcode table, using the basename (--basename) as the prefix, followed by a dot and the sample name, followed by a dot and the default name for a given file type. For example, the output files for sample_2 would be
+This generates a set of output files for each sample specified in the barcode table, using the basename (I<--basename>) as the prefix, followed by a dot and the sample name, followed by a dot and the default name for a given file type. For example, the output files for sample_2 would be
 
     output_demux.sample_2.discarded
     output_demux.sample_2.pair1.truncated
@@ -375,12 +382,17 @@ This generates a set of output files for each sample specified in the barcode ta
 
 The settings files generated for each sample summarizes the reads for that sample only; in addition, a basename.settings file is generated which summarizes the number and proportion of reads identified as belonging to each sample.
 
-The maximum number of mismatches allowed when comparing barocdes is controlled using the options --barcode-mm, --barcode-mm-r1, and --barcode-mm-r2, which specify the maximum number of mismatches total, and the maximum number of mismatches for the mate 1 and mate 2 barcodes respectively. Thus, if mm_1(i) and mm_2(i) represents the number of mismatches observed for barcode-pair i for a given pair of reads, these options require that
+The maximum number of mismatches allowed when comparing barocdes is controlled using the options I<--barcode-mmI>, I<--barcode-mm-r1>, and I<--barcode-mm-r2>, which specify the maximum number of mismatches total, and the maximum number of mismatches for the mate 1 and mate 2 barcodes respectively. Thus, if mm_1(i) and mm_2(i) represents the number of mismatches observed for barcode-pair i for a given pair of reads, these options require that
 
    1. mm_1(i) <= --barcode-mm-r1
    2. mm_2(i) <= --barcode-mm-r2
    3. mm_1(i) + mm_2(i) <= --barcode-mm
 
+As of version 2.2, AdapterRemoval can furthermore be used to demultiplex reads without carrying out other forms of read trimming. This is accomplished by specifying the I<--demultiplex-only> option:
+
+    $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
+
+Trimming and filtering related options to not apply to this mode ("TRIMMING SETTINGS" when viewing 'AdapterRemoval --help'), but compression (I<--gzip>, I<--bzip2>), multi-threading (I<--threads>), interleaving (I<--interleaved>, etc.) and other such options may be used in conjunction with --demultiplex-only.
 
 
 =head1 EXIT STATUS

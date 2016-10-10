@@ -180,7 +180,7 @@ The consensus sequences inferred are compared to those specified using the --ada
 
 
 
-### Demultiplexing
+### Demultiplexing and adapter-trimming
 
 As of version 2.1, AdapterRemoval supports simultanious demultiplexing and adapter trimming; demultiplexing is carried out using a simple comparison between the specified barcode sequences and the first N bases of the reads, corresponding to the length of the barcodes. Reads identified as containing a specific barcode or pair of barcodes are then trimmed using adapter sequences including these barcodes.
 
@@ -213,11 +213,18 @@ The maximum number of mismatches allowed when comparing barocdes is controlled u
    2. mm_2(i) <= --barcode-mm-r2
    3. mm_1(i) + mm_2(i) <= --barcode-mm
 
+
+### Demultiplexing mode
+
 As of version 2.2, AdapterRemoval can furthermore be used to demultiplex reads, without carrying out other forms of trimming. This is accomplished by specifying the --demultiplex-only option:
 
     $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
 
 Options listed under "TRIMMING SETTINGS" (see 'AdapterRemoval --help') do not apply to this mode, but compression (--gzip, --bzip2), multi-threading (--threads), interleaving (--interleaved, etc.) and other such options may be used in conjunction with --demultiplex-only.
+
+AdapterRemoval will generate a '.settings' file for each sample listed in the --barcode-list file, along with the adapter-sequences that should be used when trimming reads for a given sample. Thse adapters correspond to the adapters that were specified when running AdapterRemoval in demultiplexing mode, with the barcode prefixed as appropriate. An underscore is used to demarcate the location at which the barcode ends and the adapter beings.
+
+It is important to use these, updated, adapter sequences when trimming the demultiplexed reads, to avoid the inclusion of barcode sequences in reads extending past the 3' termini of the DNA template sequence.
 
 
 ## A note on specifying adapter sequences
