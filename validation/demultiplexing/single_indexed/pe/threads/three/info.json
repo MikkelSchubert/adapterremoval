@@ -1,0 +1,6 @@
+{
+	"arguments": ["--thread", "3"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

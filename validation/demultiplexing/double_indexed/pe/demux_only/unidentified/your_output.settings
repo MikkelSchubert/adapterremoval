@@ -1,0 +1,28 @@
+AdapterRemoval ver. 2.1.7
+Demultiplexing of double-indexed paired-end reads
+
+
+[Demultiplexing]
+Maximum mismatches (total): 0
+Maximum mate 1 mismatches: 0
+Maximum mate 2 mismatches: 0
+
+
+[Demultiplexing samples]
+Name	Barcode_1	Barcode_2
+sample_1	GGCCCCTG	CCAAAGCT
+sample_2	AATCCTAG	GTCTAGTT
+
+
+[Adapter sequences]
+Adapter1[1]: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+Adapter2[1]: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+
+
+[Demultiplexing statistics]
+Name	Barcode_1	Barcode_2	Hits	Fraction
+unidentified	NA	NA	2	0.250
+ambiguous	NA	NA	0	0.000
+sample_1	GGCCCCTG	CCAAAGCT	3	0.375
+sample_2	AATCCTAG	GTCTAGTT	3	0.375
+*	*	*	8	1.000

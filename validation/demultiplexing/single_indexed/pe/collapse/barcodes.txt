@@ -1,0 +1,2 @@
+sample_1	CAAGCACG	
+sample_2	ATTTTGAG	

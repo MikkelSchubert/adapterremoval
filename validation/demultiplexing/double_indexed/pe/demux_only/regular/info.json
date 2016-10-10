@@ -1,0 +1,6 @@
+{
+	"arguments": ["--demultiplex-only"],
+	"return_code": 0,
+	"stderr": [
+	]
+}
