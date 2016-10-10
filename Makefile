@@ -103,6 +103,8 @@ DFILES   := $(OBJS:.o=.deps)
 
 all: build/$(PROG) build/$(PROG).1
 
+everything: all static test validation
+
 # Clean
 clean: clean_tests
 	@echo $(COLOR_GREEN)"Cleaning ..."$(COLOR_END)
