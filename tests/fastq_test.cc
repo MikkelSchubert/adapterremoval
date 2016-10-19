@@ -295,7 +295,7 @@ TEST(fastq, trim_low_quality_bases__trim_window)
     fastq record("Rec", "NNAAAAAAAAATNNNNNNNA", "##EEEEEEEEEE#######E");
     const fastq expected_record = fastq("Rec", "AAAAAAAAAT", "EEEEEEEEEE");
     const fastq::ntrimmed expected_ntrim(2, 8);
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 10));
+    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 10, 5));
     ASSERT_EQ(expected_record, record);
 }
 

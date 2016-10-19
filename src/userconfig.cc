@@ -93,6 +93,7 @@ userconfig::userconfig(const std::string& name,
     , quality_input_fmt()
     , quality_output_fmt()
     , trim_by_quality(false)
+    , window_len(1)
     , low_quality_score(2)
     , trim_ambiguous_bases(false)
     , max_ambiguous_bases(1000)
@@ -286,11 +287,17 @@ userconfig::userconfig(const std::string& name,
             "[current: %default]");
     argparser["--trimqualities"] =
         new argparse::flag(&trim_by_quality,
-            "If set, trim bases at 5'/3' termini with quality scores <= to "
-            "--minquality value [current: %default]");
+            "If set, use a windowed qualitry trimming algorithm to trim bases "
+            "with quality scores <= to --minquality value "
+            "[current: %default]");
+    argparser["--qualwinlen"] =
+        new argparse::knob(&window_len, "INT",
+            "Window size; see --trimqualities for details "
+            "[current: %default]");
     argparser["--minquality"] =
         new argparse::knob(&low_quality_score, "PHRED",
-            "Inclusive minimum; see --trimqualities for details "
+            "Inclusive minimum; see --trimqualities for details. Set to 1 to "
+            "disable window-based QC and revert to 5'/3'-terminal trimming "
             "[current: %default]");
     argparser["--minlength"] =
         new argparse::knob(&min_genomic_length, "LENGTH",
@@ -698,7 +705,8 @@ fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) con
     if (trim_ambiguous_bases || trim_by_quality) {
         char quality_score = trim_by_quality ? low_quality_score : -1;
         trimmed = read.trim_low_quality_bases(trim_ambiguous_bases,
-                                              quality_score);
+                                              quality_score,
+                                              window_len);
     }
 
     return trimmed;

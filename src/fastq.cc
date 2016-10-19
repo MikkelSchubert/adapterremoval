@@ -137,10 +137,9 @@ size_t fastq::count_ns() const
 }
 
 
-fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality)
+fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality, const size_t winlen)
 {
     low_quality += PHRED_OFFSET_33;
-    const size_t winlen = (m_sequence.length() / 10) + 1;
 
     // Windowed left trim
     uint64_t running_sum = 0;
@@ -187,24 +186,37 @@ fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality)
     }
 
     // Right trim
-    if (!found_start) {
-        // Trim all bases starting from start.
-        i = 0;
-    } else if (found_end) {
-        // `i` is the (inclusive) end of the first bad window, which we should
-        // go to the start of, triming at the first bad base
-        i = i - winlen + 1;
-    } else {
-        // `i` is the length of the sequence: go back `winlen` if we can.
-        if (i >= winlen) i -= winlen;
-        else i = 0;
-    }
-    for (; i < m_qualities.length(); i++) {
-        if ((trim_ns && m_sequence.at(i) == 'N') || m_qualities.at(i) < low_quality) {
-            right_exclusive = i;
-            break;
+    if (winlen > 1) {
+        if (!found_start) {
+            // Trim all bases starting from start.
+            i = 0;
+        } else if (found_end) {
+            // `i` is the (inclusive) end of the first bad window, which we should
+            // go to the start of, triming at the first bad base
+            i = i - winlen + 1;
+        } else {
+            // `i` is the length of the sequence: go back `winlen` if we can.
+            if (i >= winlen) i -= winlen;
+            else i = 0;
         }
+        for (; i < m_qualities.length(); i++) {
+            if ((trim_ns && m_sequence.at(i) == 'N') || m_qualities.at(i) < low_quality) {
+                right_exclusive = i;
+                break;
+            }
+        }
+    } else {
+        std::cerr << "LI " << left_inclusive << "\n";
+        for (i = m_qualities.length(); i > left_inclusive; i--) {
+            if ((trim_ns && m_sequence.at(i - 1) == 'N') || m_qualities.at(i - 1) < low_quality) {
+                right_exclusive = i;
+            } else {
+                break;
+            }
+        }
+        std::cerr << "Re " << right_exclusive << "\n";
     }
+
 
 
     const ntrimmed summary(left_inclusive, m_sequence.length() - right_exclusive);
