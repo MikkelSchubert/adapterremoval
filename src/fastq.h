@@ -25,6 +25,8 @@
 #ifndef FASTQ_H
 #define FASTQ_H
 
+#include <iostream>
+
 #include <string>
 
 #include "commontypes.h"
@@ -111,7 +113,7 @@ public:
      * @param low_quality Trim bases with a quality score at or below this value.
      * @return A pair containing hte number of bases trimmed from either end.
      */
-	ntrimmed trim_low_quality_bases(bool trim_ns = true, char low_quality = -1);
+	ntrimmed trim_low_quality_bases(bool trim_ns = true, char low_quality = -1, const size_t winlen=1);
 
     /**
      * Truncates the record in place.
