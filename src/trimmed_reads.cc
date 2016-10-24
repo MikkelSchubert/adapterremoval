@@ -30,10 +30,6 @@
 namespace ar
 {
 
-const std::string PASSED_POSTFIX = " PASSED";
-const std::string FAILED_POSTFIX = " FAILED";
-
-
 inline void add_chunk(chunk_vec& chunks, size_t target, output_chunk_ptr chunk)
 {
     if (chunk.get()) {
@@ -142,10 +138,6 @@ void trimmed_reads::distribute_read(output_chunk_ptr& regular,
                                     size_t read_count)
 {
     if (state_1 == PASSED) {
-        if (m_config.combined_output) {
-            read.add_postfix_to_header(PASSED_POSTFIX);
-        }
-
         if (state_2 == PASSED || m_config.combined_output) {
             if (m_config.interleaved_output) {
                 interleaved->add(m_encoding, read, read_count);
@@ -156,7 +148,6 @@ void trimmed_reads::distribute_read(output_chunk_ptr& regular,
             m_singleton->add(m_encoding, read, read_count);
         }
     } else if (m_config.combined_output) {
-        read.add_postfix_to_header(FAILED_POSTFIX);
         read.discard();
 
         if (m_config.interleaved_output) {
