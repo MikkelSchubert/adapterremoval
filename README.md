@@ -100,6 +100,11 @@ AdapterRemoval is able to read and write paired-end reads stored in a single, so
 Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'pair1' and a 'pair2' file, but instead these are instead written to a single, interleaved file, named 'paired'. The location of this file is controlled using the --output1 option. Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the --interleaved-input and --interleaved-output options, both of which are enabled by the --interleaved option.
 
 
+### Combining FASTQ output
+
+By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for collapsed reads. Alternatively, these files may be combined using the --combined-output, in which case all output is directed to the mate 1 and (in PE mode) to the mate 2 file. In cases where reads are discarded due to trimming to due to being collapsed into a single sequence, the sequence and quality scores of the discarded read is replaced with a single 'N' with base-quality 0. This option may be combined with --interleaved / --interleaved-output, to write a single, interleaved file in paired-end mode.
+
+
 ### Different quality score encodings
 
 By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred+33 encoded, meaning that the error probabilities are encoded as (char)('!' - 10 * log10(p)). Most data will be encoded using Phred+33, but Phred+64 and 'Solexa' encoded quality scores are also supported. These are selected by specifying the --qualitybase command-line option (specifying either '33', '64', or 'solexa'):
@@ -136,7 +141,6 @@ This table is then specified using the --adapter-list option:
 The resulting .summary file contains an overview of how frequently each adapter (pair) was used.
 
 Note that in the case of paired-end adapters, AdapterRemoval considers only the combinations of adapters specified in the table, one combination per row. For single-end trimming, only the first column of the table file is required, and the list may therefore take the form of a file containing one sequence per line.
-
 
 
 ### Identifying adapter sequences from paired-ended reads
@@ -179,12 +183,11 @@ No files are generated from running the adapter identification step.
 The consensus sequences inferred are compared to those specified using the --adapter1 and --adapter2 command-line options, or with the default values for these if no values have been given (as in this case). Pipes (|) indicate matches between the provided sequences and the consensus sequence, and "*" indicate the presence of unspecified bases (Ns).
 
 
-
 ### Demultiplexing and adapter-trimming
 
-As of version 2.1, AdapterRemoval supports simultanious demultiplexing and adapter trimming; demultiplexing is carried out using a simple comparison between the specified barcode sequences and the first N bases of the reads, corresponding to the length of the barcodes. Reads identified as containing a specific barcode or pair of barcodes are then trimmed using adapter sequences including these barcodes.
+As of version 2.1, AdapterRemoval supports simultaneous demultiplexing and adapter trimming; demultiplexing is carried out using a simple comparison between the specified barcode (a sequence of A, C, G, and T) and the first N bases of the mate 1 read, where N is the length of the barcode. Demultiplexing of double-indexed sequences is also supported, in which case two barcodes must be specified for each sample. The first barcode is then compared to first N_1 bases of the mate 1 read, and the second barcode is compared to the first N_2 bases of the mate 2 read. By default, this comparison requires a perfect match. Reads identified as containing a specific barcode(s) are then trimmed using adapter sequences including the barcode(s) as necessary. Reads for which no (pair of) barcodes matched are written to a separate file or pair of files (for paired end reads).
 
-Demultiplexing is enabled by creating a table of barcodes, the first column of which species the sample name (using characters [a-zA-Z0-9_]) and the second and (optional) third columns specifies the mate 1 and mate 2 barcode sequences.
+Demultiplexing is enabled by creating a table of barcodes, the first column of which species the sample name (using characters [a-zA-Z0-9_]) and the second and (optional) third columns specifies the barcode sequences expected at the 5' termini of mate 1 and mate 2 reads, respectively.
 
 For example, a table of barcodes from a double-indexed run might be as follows (see examples/barcodes.txt):
 
@@ -216,7 +219,7 @@ The maximum number of mismatches allowed when comparing barocdes is controlled u
 
 ### Demultiplexing mode
 
-As of version 2.2, AdapterRemoval can furthermore be used to demultiplex reads, without carrying out other forms of trimming. This is accomplished by specifying the --demultiplex-only option:
+As of version 2.2, AdapterRemoval can furthermore be used to demultiplex reads, without carrying out other forms of adapter trimming. This is accomplished by specifying the --demultiplex-only option:
 
     $ AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
 

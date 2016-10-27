@@ -1,5 +1,9 @@
-# Changelog
+### Version 2.2.0 - 2016-10-27
 
+  * AdapterRemoval now requires a C++11 compliant compiler; furthermore,
+    multithreading is no longer an optional feature, as this is now
+    implemented using the C++11 instead of directly calling pthreads.
+  * Add explicit message not to use the results after failed runs.
   * Minor changes to .settings: Adapter numbers now 1-based; the 'Number of
     reads with adapters' is changed to 'Number of read pairs with adapters'
     when trimming PE reads; the 'Average read length of trimmed reads' is
@@ -8,14 +12,23 @@
     statistical purposes, reads are either counted as aligned or not aligned.
     This ony changes how results are presented in the .settings files.
   * Rework selection of nucleotides at overlapping positions with the same
-    quality, in order to prevent potential data-races during tie-breaking, when
-    running in multi-threaded mode. As a side-effect, the --seed option has
-    been removed, and this value is no longer recorded in the .settings file.
+    quality, in order to prevent potential data-races during tie-breaking,
+    when running in multi-threaded mode.
   * Added support for reading FASTQ files using Windows-style newlines (\r\n).
   * AdapterRemoval will not print a warning to STDERR if the same command-line
     option is specified multiple times.
   * Reworked handling of barcodes to avoid unnecessary memory allocations,
-    which would cause problems when using longer barcodes.
+    which would cause problems when using long barcodes.
+  * Added support for combining output files; this is enabled using the
+    --combined-output option, and ensures that all reads are written to the
+    same file, or pair of files (for non-interleaved PE reads). The sequence
+    of reads that fail are replaced with a single 'N' with quality score 0.
+  * Fixed bug in the counting of singleton reads used in '.settings' files.
+  * Fixed mis-placement of underscore when pretty printing adapter sequences
+    that included barcodes.
+  * Fixed misprinting of mate 2 adapter sequences in the .settings file;
+    these would be printed in the reverse complemented orientation, relative
+    to how they were specified on the command-line.
 
 
 ### Version 2.1.7 - 2016-03-11

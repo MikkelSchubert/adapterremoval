@@ -23,7 +23,7 @@ QUIET_BUILD := yes
 COLOR_BUILD := yes
 
 # Debug build; adds warnings and debugging symbols
-DEBUG_BUILD := yes
+DEBUG_BUILD := no
 
 
 ###############################################################################
@@ -72,7 +72,7 @@ CXXFLAGS := ${CXXFLAGS} -g -pedantic -Wall -Wextra -Wcast-align -Wcast-qual \
 	-Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo \
 	-Wstrict-overflow=2 -Wswitch-default -Wundef -Weffc++ -Wdeprecated
 else
-$(info Building AdapterRemoval with debug information: yes)
+$(info Building AdapterRemoval with debug information: no)
 endif
 
 PROG     := AdapterRemoval
