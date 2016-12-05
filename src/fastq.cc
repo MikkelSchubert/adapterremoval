@@ -334,7 +334,7 @@ void fastq::validate_paired_reads(fastq& mate1, fastq& mate2,
         if (info1.mate == mate_info::unknown || info2.mate == mate_info::unknown) {
             error << "\n\nNote that AdapterRemoval by determines the mate "
                      "numbers as the digit found at the end of the read name, "
-                     "if this is preceeded by the character '"
+                     "if this is preceded by the character '"
                   << mate_separator
                   << "'; if these data makes use of a different character to "
                      "separate the mate number from the read name, then you "

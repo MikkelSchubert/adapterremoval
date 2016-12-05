@@ -11,7 +11,7 @@ B<AdapterRemoval> --file1 filename [--file2 filename] [--interleaved] [--interle
 
 =head1 DESCRIPTION
 
-B<AdapterRemoval> reads either one FASTQ file (single ended mode) or two FASTQ files (paired ended mode). It removes the residual adapter sequence from the reads and optionally trims Ns from the reads, and low qualities bases using the quality string, and collapses overlapping paired ended mates into one read. Reads are discarded if the remaining genomic part is too short, or if the read contains more than an (user specified) amount of amigious nucleotides ('N'). These operations may be combined with simultanous demultiplexing.
+B<AdapterRemoval> reads either one FASTQ file (single ended mode) or two FASTQ files (paired ended mode). It removes the residual adapter sequence from the reads and optionally trims Ns from the reads, and low qualities bases using the quality string, and collapses overlapping paired ended mates into one read. Reads are discarded if the remaining genomic part is too short, or if the read contains more than an (user specified) amount of amigious nucleotides ('N'). These operations may be combined with simultaneous demultiplexing.
 
 Alternatively, B<AdapterRemoval> may attempt to reconstruct a consensus adapter sequences from paired-ended data, in order to allow the identification of the adapter sequences originally used, and thereby ensure proper trimming of these reads.
 
@@ -42,11 +42,11 @@ If set, input is expected to be a single FASTQ file specified using I<--file1>, 
 
 =item B<--interleaved-ouput>
 
-If set, and AdapterRemoval is processing paired-end reads, retained pairs of reads are written to a single FASTQ file, one pair after each otehr (read1/1, read1/2, read2/1, read2/2, etc.). By default, this file is named I<basename.paired.truncated>, but this may be changed using the I<--output1> option.
+If set, and AdapterRemoval is processing paired-end reads, retained pairs of reads are written to a single FASTQ file, one pair after each other (read1/1, read1/2, read2/1, read2/2, etc.). By default, this file is named I<basename.paired.truncated>, but this may be changed using the I<--output1> option.
 
 =item B<--combined-output>
 
-If set, all reads are written to the same file(s), specified by --output1 and --output2. Each read is futher marked by either a "PASSED" or a "FAILED" flag, and any read that has been FAILED (including the mate for collapsed reads) are replaced with a single 'N' with Phred score 0. This option can be combined with --interleaved / --interleaved-output to write all reads to a single output file specified with --output1.
+If set, all reads are written to the same file(s), specified by --output1 and --output2. Each read is further marked by either a "PASSED" or a "FAILED" flag, and any read that has been FAILED (including the mate for collapsed reads) are replaced with a single 'N' with Phred score 0. This option can be combined with --interleaved / --interleaved-output to write all reads to a single output file specified with --output1.
 
 =item B<--basename> I<filename>
 
@@ -318,7 +318,7 @@ Note that in the case of paired-end adapters, AdapterRemoval considers only the 
 
 If we did not know the adapter sequences for paired-end reads, AdapterRemoval may be used to generate a consensus adapter sequence based on fragments identified as belonging to the adapters through pairwise alignments of the reads, provided that the data set contains only a single adpater sequence (not counting differences in index sequences).
 
-In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not nessesary to specify this tail when using the I<--adapter1> or I<--adapter2> command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
+In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not necessary to specify this tail when using the I<--adapter1> or I<--adapter2> command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
 
     $ AdapterRemoval --identify-adapters --file1 reads_1.fq --file2 reads_2.fq
 

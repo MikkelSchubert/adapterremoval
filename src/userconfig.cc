@@ -171,7 +171,7 @@ userconfig::userconfig(const std::string& name,
         new argparse::flag(&combined_output,
             "If set, all reads are written to the same file(s), specified by "
             "--output1 and --output2 (--output1 only if --interleaved-output "
-            "is not set). Each read is futher marked by either a \"PASSED\" "
+            "is not set). Each read is further marked by either a \"PASSED\" "
             "or a \"FAILED\" flag, and any read that has been FAILED "
             "(including the mate for collapsed reads) are replaced with a "
             "single 'N' with Phred score 0 [current: %default].");
@@ -320,7 +320,7 @@ userconfig::userconfig(const std::string& name,
         new argparse::knob(&min_adapter_overlap, "LENGTH",
             "In single-end mode, reads are only trimmed if the overlap "
             "between read and the adapter is at least X bases long, not "
-            "counting ambiguous nucleotides (N); this is independant of the "
+            "counting ambiguous nucleotides (N); this is independent of the "
             "--minalignmentlength when using --collapse, allowing a "
             "conservative selection of putative complete inserts while "
             "ensuring that all possible adapter contamination is trimmed "

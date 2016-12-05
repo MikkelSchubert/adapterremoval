@@ -135,7 +135,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
            << "\nQuality score max (input): " << config.quality_input_fmt->max_score()
            << "\nQuality format (output): " << config.quality_output_fmt->name()
            << "\nQuality score max (output): " << config.quality_output_fmt->max_score()
-           << "\nMate-number seperator (input): '" << config.mate_separator << "'"
+           << "\nMate-number separator (input): '" << config.mate_separator << "'"
            << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
            << "\nTrimming Phred scores <= " << config.low_quality_score
            << ": " << (config.trim_by_quality ? "Yes" : "No")

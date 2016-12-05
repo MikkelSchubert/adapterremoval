@@ -213,7 +213,7 @@ bool check_barcodes_sequences(const fastq_pair_vec& barcodes,
                 std::stringstream error;
                 error << "Duplicate mate 1 barcodes found in '"
                       << filename << "': "<< prev->first << ". Even if these "
-                         "are assosiated with different mate 2 barcodes, it "
+                         "are associated with different mate 2 barcodes, it "
                          "is not possible to distinguish between these in "
                          "single-end mode!";
 

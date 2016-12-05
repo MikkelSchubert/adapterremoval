@@ -1,3 +1,7 @@
+### Unreleased
+  * Numerous spelling errors fixed courtesy of Andreas Tille (tillea).
+
+
 ### Version 2.2.0 - 2016-10-27
 
   * AdapterRemoval now requires a C++11 compliant compiler; furthermore,
