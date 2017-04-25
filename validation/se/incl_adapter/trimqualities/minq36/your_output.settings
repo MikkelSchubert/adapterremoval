@@ -15,7 +15,7 @@ Quality format (input): Phred+33
 Quality score max (input): 41
 Quality format (output): Phred+33
 Quality score max (output): 41
-Mate-number seperator (input): '/'
+Mate-number separator (input): '/'
 Trimming Ns: No
 Trimming Phred scores <= 36: Yes
 Minimum genomic length: 15
