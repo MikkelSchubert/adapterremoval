@@ -44,7 +44,7 @@ typedef std::map<std::string, consumer_ptr> consumer_map;
 enum parse_result {
     //! Terminate now (e.g. --version or --help used)
     pr_exit,
-    //! Error occured parsing arguments / invalid combination of args
+    //! Error occurred parsing arguments / invalid combination of args
     pr_error,
     //! No errors parsing commandline arguments
     pr_ok
@@ -163,7 +163,7 @@ private:
     //! Vector of keys (command-line options), tracking the order of addition.
     key_pair_vec m_keys;
     //! Map of keys (command-line args) to parser pointers; multiple
-    //! keys may be assosiated with the same pointer.
+    //! keys may be associated with the same pointer.
     consumer_map m_parsers;
 
     //! Name of the program
@@ -190,7 +190,7 @@ public:
      * Base constructor; sets various values used when printing --help.
      *
      *  metavar - Used to represent the input value; if empty,
-     *            argparse::parser will use the current key assosiated with
+     *            argparse::parser will use the current key associated with
      *            the parser to generate a metavar.
      *  help    - Help string; the value %default is replaced with the default
      *            value.
@@ -215,13 +215,13 @@ public:
     /** Returns true if the consumer has consumed a value. **/
     virtual bool is_set() const;
 
-    /** Returns the metavariable assosiated with the consumer. **/
+    /** Returns the metavariable associated with the consumer. **/
     virtual const std::string& metavar() const;
 
-    /** Returns the help string assosiated with the consumer. **/
+    /** Returns the help string associated with the consumer. **/
     virtual const std::string& help() const;
 
-    /** Returns the value assosiated with the consumer as a string. **/
+    /** Returns the value associated with the consumer as a string. **/
     virtual std::string to_str() const = 0;
 
 protected:
@@ -234,7 +234,7 @@ private:
     //! Not implemented
     consumer_base& operator=(const consumer_base&);
 
-    //! Stores the metavar assosiated with the consumer
+    //! Stores the metavar associated with the consumer
     std::string m_metavar;
     //! Stores the optional description of default behavior.
     std::string m_help;
@@ -244,8 +244,8 @@ private:
 /**
  * Consumer for boolean values (i.e. flags).
  *
- * Unlike typical consumers, this consumer does not expected a value assosiated
- * with the command-line argument, but instead sets the assosiated value to
+ * Unlike typical consumers, this consumer does not expected a value associated
+ * with the command-line argument, but instead sets the associated value to
  * true if the command-line argument is specified one or more times.
  */
 class flag : public consumer_base

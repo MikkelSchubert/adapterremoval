@@ -76,7 +76,7 @@ The following command removes adapters from the file 'reads\_1.fq' trims both Ns
 
     $ AdapterRemoval --file1 reads_1.fq --basename output_single --trimns --trimqualities --gzip
 
-Since --gzip and --basename is specified, the trimmed FASTQ reads are written to 'output_single.truncated.gz', the dicarded FASTQ reads are written to 'output_single.discarded.gz', and settings and summary statistics are written to 'output_single.settings'.
+Since --gzip and --basename is specified, the trimmed FASTQ reads are written to 'output_single.truncated.gz', the discarded FASTQ reads are written to 'output_single.discarded.gz', and settings and summary statistics are written to 'output_single.settings'.
 
 Note that by default, AdapterRemoval does not require a minimum number of bases overlapping with the adapter sequence, before reads are trimmed. This may result in an excess of very short (1 - 3 bp) 3' fragments being falsely identified as adapter sequences, and trimmed. This behavior may be changed using the --minadapteroverlap option, which allows the specification of a minimum number of bases (excluding Ns) that must be aligned to carry trimming. For example, use --minadapteroverlap 3 to require an overlap of at least 3 bp.
 
@@ -145,9 +145,9 @@ Note that in the case of paired-end adapters, AdapterRemoval considers only the 
 
 ### Identifying adapter sequences from paired-ended reads
 
-If we did not know the adapter sequences for the 'reads\_*.fq' files, AdapterRemoval may be used to generate a consensus adapter sequence based on fragments identified as belonging to the adapters through pairwise alignments of the reads, provided that the data set contains only a single adpater sequence (not counting differences in index sequences).
+If we did not know the adapter sequences for the 'reads\_*.fq' files, AdapterRemoval may be used to generate a consensus adapter sequence based on fragments identified as belonging to the adapters through pairwise alignments of the reads, provided that the data set contains only a single adapter sequence (not counting differences in index sequences).
 
-In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not nessesary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
+In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not necessary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
 
     $ AdapterRemoval --identify-adapters --file1 reads_1.fq --file2 reads_2.fq
 
@@ -225,7 +225,7 @@ As of version 2.2, AdapterRemoval can furthermore be used to demultiplex reads, 
 
 Options listed under "TRIMMING SETTINGS" (see 'AdapterRemoval --help') do not apply to this mode, but compression (--gzip, --bzip2), multi-threading (--threads), interleaving (--interleaved, etc.) and other such options may be used in conjunction with --demultiplex-only.
 
-AdapterRemoval will generate a '.settings' file for each sample listed in the --barcode-list file, along with the adapter-sequences that should be used when trimming reads for a given sample. Thse adapters correspond to the adapters that were specified when running AdapterRemoval in demultiplexing mode, with the barcode prefixed as appropriate. An underscore is used to demarcate the location at which the barcode ends and the adapter beings.
+AdapterRemoval will generate a '.settings' file for each sample listed in the --barcode-list file, along with the adapter-sequences that should be used when trimming reads for a given sample. These adapters correspond to the adapters that were specified when running AdapterRemoval in demultiplexing mode, with the barcode prefixed as appropriate. An underscore is used to demarcate the location at which the barcode ends and the adapter beings.
 
 It is important to use these, updated, adapter sequences when trimming the demultiplexed reads, to avoid the inclusion of barcode sequences in reads extending past the 3' termini of the DNA template sequence.
 

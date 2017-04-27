@@ -50,7 +50,7 @@ const int MIN_SOLEXA_SCORE = -5;
 //! Maximum Solexa score allowed; encodes to 'h' with an offset of 64
 const int MAX_SOLEXA_SCORE = 40;
 
-//! Default character used to seperate mate number
+//! Default character used to separate mate number
 const char MATE_SEPARATOR = '/';
 
 
@@ -67,7 +67,7 @@ public:
     virtual const char* what() const noexcept;
 
 private:
-    //! Error message assosiated with exception.
+    //! Error message associated with exception.
     std::string m_message;
 };
 

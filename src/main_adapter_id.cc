@@ -54,7 +54,7 @@ const size_t TOP_N_KMERS = 5;
 
 
 /**
- * Hashing function for string consiting of the chars "ACGT" (uppercase only).
+ * Hashing function for string consisting of the chars "ACGT" (uppercase only).
  * Will return a unique number in the range 0 to 4^N - 1 for a given nucleotide
  * sequence. Passing characters other than "ACGT" (uppercase only) will result
  * in hash collisions.
@@ -174,7 +174,7 @@ void print_most_common_kmers(const kmer_map& kmers, size_t print_n = TOP_N_KMERS
 // Consensus adapter related functions and constants
 
 /**
- * Build represention of identity between an adapter and a consensus sequence.
+ * Build representation of identity between an adapter and a consensus sequence.
  *
  * The resulting string represents N with wildcards ('*'), matching bases with
  * pipes ('|') and mismatches with spaces (' '). Only overlapping bases are
@@ -467,7 +467,7 @@ private:
 
 int identify_adapter_sequences(const userconfig& config)
 {
-    std::cout << "Attemping to identify adapter sequences ..." << std::endl;
+    std::cout << "Attempting to identify adapter sequences ..." << std::endl;
 
     scheduler sch;
     try {

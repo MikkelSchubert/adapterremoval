@@ -39,7 +39,7 @@ const size_t DEFAULT_INDENTATION = 4;
 std::string toupper(const std::string& str);
 
 
-/** Split text by newlines and add fixed identation following newlines. */
+/** Split text by newlines and add fixed indentation following newlines. */
 std::string indent_lines(const std::string& lines, size_t identation = DEFAULT_INDENTATION);
 
 
@@ -48,7 +48,7 @@ std::string indent_lines(const std::string& lines, size_t identation = DEFAULT_I
  *
  * @param value Text representing a single paragraph to be formatted.
  * @param max_width Maximum width of output lines in characters.
- * @param ljust Ident lines after the first line by this amount of characters.
+ * @param ljust Indent lines after the first line by this amount of characters.
  *
  * Note that all whitespace in the input string is consumed; output words are
  * seperated by a single space, and the terminal line does not end with a
@@ -88,7 +88,7 @@ public:
 
     /**
      * Format string using default parameters, but include prefix on first line
-     * and ident subsequent lines usign the width of the prefix.
+     * and indent subsequent lines using the width of the prefix.
      */
     static std::string fmt(const std::string& prefix, const std::string& value);
 

@@ -113,7 +113,7 @@ private:
  * Base class for analytical steps in a pipeline.
  *
  * Each step must implement the 'process' function as described below; note
- * that this function may be called simutanously by multiple threads, and that
+ * that this function may be called simultaneously by multiple threads, and that
  * thread-safe storage (e.g. statistics_sink) must be used for writable
  * resources used by the step.
  */
@@ -143,7 +143,7 @@ public:
     /**
      * Function called by pipeline to generate / process / consume data chunks.
      *
-     * Initially, the first step in the pipeline will recieve NULL; during
+     * Initially, the first step in the pipeline will receive NULL; during
      * subsequent cycles, the pipeline will return the value output from the
      * last step to the initial step, which may re-use it to avoid allocations;
      * if this is not done, the chunk must be freed by the first step.
@@ -235,9 +235,9 @@ private:
     /** Attempts to queue an analytical step given a current chunk. */
     void queue_analytical_step(const step_ptr& step, size_t current);
 
-    /** Returns true if an error has occured, and the run should terminate. */
+    /** Returns true if an error has occurred, and the run should terminate. */
     bool errors_occured();
-    /** Mark that an error has occured, and that the run should terminate. */
+    /** Mark that an error has occurred, and that the run should terminate. */
     void set_errors_occured();
 
     //! Analytical steps
@@ -260,7 +260,7 @@ private:
 
     //! Indicates if a thread is doing IO; access control through 'm_queue_lock'
     bool m_io_active;
-    //! Set to indicate if errors have occured
+    //! Set to indicate if errors have occurred
     std::atomic_bool m_errors;
 };
 

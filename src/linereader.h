@@ -62,7 +62,7 @@ public:
 };
 
 
-/** Base-class for line reading; used by recievers. */
+/** Base-class for line reading; used by receivers. */
 class line_reader_base
 {
 public:
@@ -135,7 +135,7 @@ private:
     void initialize_buffers_gzip();
     /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
     void refill_buffers_gzip();
-    /** Closes gzip buffers and frees assosiated memory. */
+    /** Closes gzip buffers and frees associated memory. */
     void close_buffers_gzip();
 
 
@@ -150,7 +150,7 @@ private:
     void initialize_buffers_bzip2();
     /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
     void refill_buffers_bzip2();
-    /** Closes gzip2 buffers and frees assosiated memory. */
+    /** Closes gzip2 buffers and frees associated memory. */
     void close_buffers_bzip2();
 
 

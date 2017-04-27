@@ -141,7 +141,7 @@ bool line_reader::getline(std::string& dst)
                 dst.append(start, end - start);
                 if (!dst.empty() && dst.back() == '\r') {
                     // Excluding terminal \r; dst is examined, since the \r may
-                    // have been added seperately, if the \r was the last
+                    // have been added separately, if the \r was the last
                     // character in the previous buffer fill (see below).
                     dst.pop_back();
                 }
@@ -317,7 +317,7 @@ void line_reader::refill_buffers_gzip()
             break;
 
         case Z_STREAM_END:
-            // Handle concatenated streams; causes unnessesary reset at EOF
+            // Handle concatenated streams; causes unnecessary reset at EOF
             if (inflateReset(m_gzip_stream) != Z_OK) {
                 throw gzip_error("line_reader::refill_buffers_gzip: failed to reset stream",
                              m_gzip_stream ? m_gzip_stream->msg : NULL);

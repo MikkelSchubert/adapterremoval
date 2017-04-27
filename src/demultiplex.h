@@ -41,7 +41,7 @@ typedef std::vector<demultiplexer_node> demux_node_vec;
 
 
 /**
- * Baseclass for demultiplexing of reads; responsible for building the quadtree
+ * Baseclass for demultiplexing of reads; responsible for building the quad-tree
  * representing the set of adapter sequences, and for maintaining the cache of
  * demultiplexed reads.
  */
@@ -66,7 +66,7 @@ protected:
 
     //! List of barcode (pairs) supplied by caller
     const fastq_pair_vec& m_barcodes;
-    //! Quadtree representing all mate 1 adapters; for search with n mismatches
+    //! Quad-tree representing all mate 1 adapters; for search with n mismatches
     const demux_node_vec m_tree;
     //! Maximum number of mismatches allowed between the mate 1 and mate 2 read
     const size_t m_max_mismatches;

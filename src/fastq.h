@@ -105,7 +105,7 @@ public:
     typedef std::pair<size_t, size_t> ntrimmed;
 
     /**
-     * Trims consequtive low-quality bases from the 5'/3' ends of the sequence.
+     * Trims consecutive low-quality bases from the 5'/3' ends of the sequence.
      *
      * @param trim_ns If true, ambiguous bases ('N') are trimmed.
      * @param low_quality Trim bases with a quality score at or below this value.
@@ -164,8 +164,8 @@ public:
      * Validate that two reads form a valid pair.
      *
      * The mate separator character is the character expected as the second-to-
-     * last charater, if the last character (either '1' or '2') specify the
-     * mate number. Non-standard mate-seprators (not '/') are changed to '/'.
+     * last character, if the last character (either '1' or '2') specify the
+     * mate number. Non-standard mate-separators (not '/') are changed to '/'.
      */
     static void validate_paired_reads(fastq& mate1, fastq& mate2,
                                       char mate_separator = MATE_SEPARATOR);

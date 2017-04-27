@@ -31,7 +31,7 @@ namespace ar
 {
 
 #ifdef AR_TEST_BUILD
-/** Exception replaining 'abort' calls when running unit-tests. */
+/** Exception explaining 'abort' calls when running unit-tests. */
 class assert_failed : public std::exception
 {
 public:

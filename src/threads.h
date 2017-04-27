@@ -57,7 +57,7 @@ private:
 
 /**
  * This exception may be thrown by a task to abort the thread; error-messages
- * are assumed to have already been printed by the thrower, and no furher
+ * are assumed to have already been printed by the thrower, and no further
  * messages are printed.
  */
 class thread_abort : public thread_error
@@ -70,7 +70,7 @@ public:
 /**
  * Locker for using stdout / stderr.
  *
- * Any useage of stdout and / or stderr should be preceeded by creating a
+ * Any useage of stdout and / or stderr should be preceded by creating a
  * print_locker object. This ensures that output from different threads is
  * not interleaved, regardless of the destination of these pipes.
  */

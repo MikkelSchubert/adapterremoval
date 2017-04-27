@@ -45,7 +45,7 @@ typedef demux_node_vec::iterator node_vec_iter;
 /**
  * Struct representing node in quad-tree; children are referenced using the
  * corresponding indice in the vector representing the tree; -1 is used to
- * represent unasigned children.
+ * represent unassigned children.
  */
 struct demultiplexer_node
 {
@@ -79,7 +79,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Returns a lexographically sorted list of mate 1 barcodes, each paired with
+ * Returns a lexicographically sorted list of mate 1 barcodes, each paired with
  * the 0-based index of corresponding barcode in the source vector.
  */
 barcode_vec sort_barcodes(const fastq_pair_vec& barcodes)
@@ -102,7 +102,7 @@ barcode_vec sort_barcodes(const fastq_pair_vec& barcodes)
 }
 
 
-/** Adds a nucleotide sequence with a given ID to a quadtree. */
+/** Adds a nucleotide sequence with a given ID to a quad-tree. */
 void add_sequence_to_tree(demux_node_vec& tree,
                           const std::string& sequence,
                           const size_t barcode_id)
@@ -115,8 +115,8 @@ void add_sequence_to_tree(demux_node_vec& tree,
 
         if (child == -1) {
             // New nodes are added to the end of the list; as barcodes are
-            // added in lexographic order, this helps ensure that a set of
-            // dissimilar barcodes will be placed in mostly contigious runs
+            // added in lexicographic order, this helps ensure that a set of
+            // dissimilar barcodes will be placed in mostly contiguous runs
             // of the vector representation.
             child = node.children[nuc_idx] = tree.size();
             tree.push_back(demultiplexer_node());

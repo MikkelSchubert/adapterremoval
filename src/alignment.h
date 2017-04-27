@@ -54,7 +54,7 @@ namespace ar
  * Offset: 8
  *
  * The meaning of the offset is slightly different in SE and PE mode; in SE
- * mode seq2 is the adapter sequence, and the offset therefore unambigiously
+ * mode seq2 is the adapter sequence, and the offset therefore unambiguously
  * shows the starting position of the adapter, regardless of the size of the
  * adapter sequence.
  *
@@ -199,7 +199,7 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
 /**
  * Truncates reads such that only adapter sequence remains.
  *
- * @return True if either or both reads containted adapter sequence.
+ * @return True if either or both reads contained adapter sequence.
  *
  * Reads that do not contain any adapter sequence are completely truncated,
  * such no bases remain of the original sequence.

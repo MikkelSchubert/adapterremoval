@@ -166,7 +166,7 @@ Major changes:
     specified format/offset, and more.
   * Limited support for Solexa quality scores; these are converted to and
     saved as Phred+33 or Phred+64 encoded scores.
-  * Improved handling of asymetric read-pairs, in which the length of the
+  * Improved handling of asymmetric read-pairs, in which the length of the
     mate 1 read differs from the length of the mate 2 read.
   * Significant improvements in performance, resulting in a ~5x increase in the
     rate of adapter trimming in basic version, and a ~20x increase in the rate
@@ -174,7 +174,7 @@ Major changes:
   * Support for multiple adapter sequences as well as multiple barcode
     sequences; AdapterRemoval will favor the highest scoring alignment,
     favoring longer alignments over shorter alignments with the same score,
-    and favoring alignments with the fewest ambigous bases (N) involved if
+    and favoring alignments with the fewest ambiguous bases (N) involved if
     the score and length is identical.
   * If --collapse is set in single-ended mode, "collapsed" reads will be
     identified using the same criteria as for paired-ended mode, i.e. requiring

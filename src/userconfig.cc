@@ -268,7 +268,7 @@ userconfig::userconfig(const std::string& name,
             "Max error-rate when aligning reads and/or adapters. If > 1, the "
             "max error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults "
             "are used, otherwise the user-supplied value is used directly. "
-            "[defaults: 1/3 for trimming; 1/10 when identifing adapters].");
+            "[defaults: 1/3 for trimming; 1/10 when identifying adapters].");
     argparser["--maxns"] =
         new argparse::knob(&max_ambiguous_bases, "MAX",
             "Reads containing more ambiguous bases (N) than this number after "

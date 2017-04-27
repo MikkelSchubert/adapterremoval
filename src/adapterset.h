@@ -74,7 +74,7 @@ public:
     size_t barcode_count() const;
 
     /**
-     * Returns the nth set of adapters; when barcodes are speceified, the
+     * Returns the nth set of adapters; when barcodes are specified, the
      * raw adapters are merged with the 'nth' barcodes. If no barcodes are
      * set, the get_adapters(0) == get_raw_adapters().
      */
@@ -89,11 +89,11 @@ public:
     /** Returns the (pairs of) barcodes. */
     const fastq_pair_vec& get_barcodes() const;
 
-    /** Returns the name assosiated with the nth set of barcodes. */
+    /** Returns the name associated with the nth set of barcodes. */
     const std::string& get_sample_name(size_t nth) const;
 
 private:
-    //! Names assosiated with barcodes
+    //! Names associated with barcodes
     string_vec m_samples;
     //! User-supplied barcodes
     fastq_pair_vec m_barcodes;
