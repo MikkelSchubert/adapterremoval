@@ -179,6 +179,117 @@ TEST(any, consume__with_sink__preset)
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// many -- strings
+
+TEST(many, defaults)
+{
+	consumer_autoptr ptr(new argparse::many());
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ("", ptr->metavar());
+	ASSERT_EQ("", ptr->help());
+	ASSERT_EQ("<not set>", ptr->to_str());
+}
+
+
+TEST(many, args_set)
+{
+	string_vec sink;
+	sink.push_back("kitchensink");
+
+	consumer_autoptr ptr(new argparse::many(&sink, "a metavar", "help!"));
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ("a metavar", ptr->metavar());
+	ASSERT_EQ("help!", ptr->help());
+	ASSERT_EQ("kitchensink", ptr->to_str());
+}
+
+
+TEST(many, consumes_one_argument)
+{
+	string_vec arguments;
+	arguments.push_back("foo");
+	consumer_autoptr ptr(new argparse::many());
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
+	ASSERT_TRUE(ptr->is_set());
+	ASSERT_EQ("foo", ptr->to_str());
+}
+
+
+TEST(many, consumes_two_arguments)
+{
+	string_vec arguments;
+	arguments.push_back("foo");
+	arguments.push_back("bar");
+	consumer_autoptr ptr(new argparse::many());
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ(2, ptr->consume(arguments.begin(), arguments.end()));
+	ASSERT_TRUE(ptr->is_set());
+	ASSERT_EQ("foo;bar", ptr->to_str());
+}
+
+
+TEST(many, consumes_until_next)
+{
+	string_vec arguments;
+	arguments.push_back("foo");
+	arguments.push_back("--zoo");
+	arguments.push_back("bar");
+	consumer_autoptr ptr(new argparse::many());
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
+	ASSERT_TRUE(ptr->is_set());
+	ASSERT_EQ("foo", ptr->to_str());
+}
+
+
+TEST(many, consume_past_the_end)
+{
+	const string_vec arguments;
+	consumer_autoptr ptr(new argparse::many());
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ(0, ptr->consume(arguments.begin(), arguments.end()));
+	ASSERT_TRUE(ptr->is_set());
+	ASSERT_EQ("<not set>", ptr->to_str());
+}
+
+
+TEST(many, consume__with_sink__empty)
+{
+	string_vec sink;
+	string_vec expected;
+	expected.push_back("foo");
+
+	consumer_autoptr ptr(new argparse::many(&sink));
+	ASSERT_EQ("<not set>", ptr->to_str());
+	string_vec arguments;
+	arguments.push_back("foo");
+	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
+	ASSERT_TRUE(ptr->is_set());
+	ASSERT_EQ(expected, sink);
+	ASSERT_EQ("foo", ptr->to_str());
+}
+
+
+TEST(many, consume__with_sink__preset)
+{
+	string_vec sink;
+	sink.push_back("kitchensink");
+	string_vec expected;
+	expected.push_back("foo");
+
+	consumer_autoptr ptr(new argparse::many(&sink));
+	ASSERT_EQ("kitchensink", ptr->to_str());
+	string_vec arguments;
+	arguments.push_back("foo");
+	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
+	ASSERT_TRUE(ptr->is_set());
+	ASSERT_EQ(expected, sink);
+	ASSERT_EQ("foo", ptr->to_str());
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // knob -- unsigned
 
 TEST(knob, defaults)

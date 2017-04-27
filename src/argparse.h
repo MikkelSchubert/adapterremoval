@@ -26,6 +26,7 @@
 #define ARGPARSE_H
 
 #include <sstream>
+#include <vector>
 #include <map>
 
 #include "commontypes.h"
@@ -278,7 +279,7 @@ private:
 
 
 /**
- * Consumer for unsigned string values (filenames, etc.).
+ * Consumer for string values (filenames, etc.).
  */
 class any : public consumer_base
 {
@@ -304,6 +305,37 @@ private:
     std::string* m_ptr;
     //! Value sink used if a pointer to a sink is not provided.
     std::string m_sink;
+};
+
+
+/**
+ * Consumer for multiple string values; consumes values until another option
+ * (value starting with '-') is encountered.
+ */
+class many : public consumer_base
+{
+public:
+    /**
+     * See consumer_base::consumer_base
+     */
+    many(string_vec* sink = NULL, const std::string& metavar = "", const std::string& help = "");
+
+    /** See consumer_base::consume */
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
+
+    /** See consumer_base::to_str */
+    virtual std::string to_str() const;
+
+private:
+    //! Not implemented
+    many(const many&);
+    //! Not implemented
+    many& operator=(const many&);
+
+    //! Optional pointer to storage for string value; if NULL, m_value is used.
+    string_vec* m_ptr;
+    //! Value sink used if a pointer to a sink is not provided.
+    string_vec m_sink;
 };
 
 
