@@ -417,6 +417,49 @@ std::string any::to_str() const
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+anymulti::anymulti(string_vec* value, const std::string& metavar, const std::string& help)
+    : consumer_base(metavar, help)
+    , m_ptr(value)
+    , m_sink()
+{
+}
+
+
+size_t anymulti::consume(string_vec_citer start, const string_vec_citer& end)
+{
+    if (start != end) {
+        m_value_set = true;
+        if (m_ptr) {
+            m_ptr->push_back(*start);
+        } else {
+            m_sink.push_back(*start);
+        }
+
+        return 1;
+    }
+
+    return static_cast<size_t>(-1);
+}
+
+
+std::string anymulti::to_str() const
+{
+    const string_vec& result_vec = m_ptr ? *m_ptr : m_sink;
+    if (result_vec.empty()) {
+        return "<not set>";
+    } else {
+      std::string result;
+      string_vec_citer it = result_vec.begin();
+      result += *(it++);//We already checked that result_vec is not empty
+      while (it != result_vec.end()) {
+        result += ",";
+        result += *(it++);
+      }
+      return result;
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

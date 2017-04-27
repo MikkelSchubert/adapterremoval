@@ -306,6 +306,34 @@ private:
     std::string m_sink;
 };
 
+/**
+ * Consumer for multiple unsigned string values (filenames, etc.).
+ */
+class anymulti : public consumer_base
+{
+public:
+    /**
+     * See consumer_base::consumer_base
+     */
+    anymulti(string_vec* sink = NULL, const std::string& metavar = "", const std::string& help = "");
+
+    /** See consumer_base::consume */
+    virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
+
+    /** See consumer_base::to_str */
+    virtual std::string to_str() const;
+
+private:
+    //! Not implemented
+    anymulti(const anymulti&);
+    //! Not implemented
+    anymulti& operator=(const anymulti&);
+
+    //! Optional pointer to storage for string value; if NULL, m_value is used.
+    string_vec* m_ptr;
+    //! Value sink used if a pointer to a sink is not provided.
+    string_vec m_sink;
+};
 
 /**
  * Consumer for unsigned integer values.

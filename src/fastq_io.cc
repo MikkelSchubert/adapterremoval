@@ -122,12 +122,26 @@ read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
 
 chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 {
-    AR_DEBUG_ASSERT(chunk == NULL);
     if (!m_io_input.is_open()) {
-        return chunk_vec();
+        if (chunk == NULL) {
+          return chunk_vec();
+        } else {
+          read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+          chunk_vec chunks;
+          chunks.push_back(chunk_pair(m_next_step, std::move(read_chunk)));
+          //should maybe push an empty chunk???
+          read_chunk->eof = true;
+          return chunks;
+        }
     }
 
     read_chunk_ptr file_chunk(new fastq_read_chunk());
+
+    if ( chunk != NULL ) {
+      //copy into file_chunk
+      read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+      std::copy(read_chunk->reads_1.begin(), read_chunk->reads_1.end(), std::back_inserter(file_chunk->reads_1));
+    }
 
     const size_t n_read = read_fastq_reads(file_chunk->reads_1, m_io_input,
                                            m_line_offset, *m_encoding);
@@ -144,7 +158,6 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 
     chunk_vec chunks;
     chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
-
     return chunks;
 }
 
@@ -177,12 +190,27 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
 
 chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 {
-    AR_DEBUG_ASSERT(chunk == NULL);
-    if (!m_io_input_1.is_open()) {
+    if (!(m_io_input_1.is_open() && m_io_input_2.is_open())) {
+      if (chunk == NULL) {
         return chunk_vec();
+      } else {
+        read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+        chunk_vec chunks;
+        chunks.push_back(chunk_pair(m_next_step, std::move(read_chunk)));
+        //should maybe push an empty chunk???
+        read_chunk->eof = true;
+        return chunks;
+      }
     }
 
     read_chunk_ptr file_chunk(new fastq_read_chunk());
+
+    if ( chunk != NULL ) {
+      //copy into file_chunk
+      read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+      std::copy(read_chunk->reads_1.begin(), read_chunk->reads_1.end(), std::back_inserter(file_chunk->reads_1));
+      std::copy(read_chunk->reads_2.begin(), read_chunk->reads_2.end(), std::back_inserter(file_chunk->reads_2));
+    }
 
     const size_t n_read_1 = read_fastq_reads(file_chunk->reads_1, m_io_input_1,
                                              m_line_offset, *m_encoding);
@@ -210,7 +238,6 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 
     chunk_vec chunks;
     chunks.push_back(chunk_pair(m_next_step, std::move(file_chunk)));
-
     return chunks;
 }
 

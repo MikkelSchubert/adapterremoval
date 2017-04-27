@@ -122,12 +122,12 @@ userconfig::userconfig(const std::string& name,
     , demultiplex_sequences(false)
 {
     argparser["--file1"] =
-        new argparse::any(&input_file_1, "FILE",
-            "Input file containing mate 1 reads or single-ended reads "
-            "[REQUIRED].");
+        new argparse::anymulti(&input_file_1, "FILE",
+              "Input file(s) containing mate 1 reads or single-ended reads "
+              "[REQUIRED].");
     argparser["--file2"] =
-        new argparse::any(&input_file_2, "FILE",
-            "Input file containing mate 2 reads [OPTIONAL].");
+        new argparse::anymulti(&input_file_2, "FILE",
+            "Input file(s) containing mate 2 reads [OPTIONAL].");
 
     argparser.add_header("FASTQ OPTIONS:");
     argparser["--qualitybase"] =
@@ -461,6 +461,10 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
 
         return argparse::pr_error;
+    } else if (file_2_set && input_file_1.size() != input_file_2.size()) {
+      std::cerr << "Error: Count of input files must match, but (--file1 != --file2) (" << input_file_1.size() << " != " << input_file_2.size() << ")." << std::endl;
+
+      return argparse::pr_error;
     } else if (file_2_set) {
         paired_ended_mode = true;
         min_adapter_overlap = 0;

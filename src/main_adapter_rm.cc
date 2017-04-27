@@ -309,12 +309,13 @@ void process_collapsed_read(const userconfig& config,
 class reads_processor : public analytical_step
 {
 public:
-    reads_processor(const userconfig& config, size_t nth)
+    reads_processor(const userconfig& config, size_t nth, size_t input_file_offset)
       : analytical_step(analytical_step::unordered)
       , m_config(config)
       , m_adapters(config.adapters.get_adapter_set(nth))
       , m_stats(config)
       , m_nth(nth)
+      , m_input_file_offset(input_file_offset)
     {
 
     }
@@ -348,23 +349,23 @@ protected:
     const fastq_pair_vec m_adapters;
     stats_sink m_stats;
     const size_t m_nth;
+    const size_t m_input_file_offset;
 };
 
 
 class se_reads_processor : public reads_processor
 {
 public:
-    se_reads_processor(const userconfig& config, size_t nth = 0)
-      : reads_processor(config, nth)
+    se_reads_processor(const userconfig& config, size_t nth = 0, size_t input_file_offset = 0)
+      : reads_processor(config, nth, input_file_offset)
     {
     }
 
     chunk_vec process(analytical_chunk* chunk)
     {
         const size_t offset = m_nth * ai_analyses_offset;
-
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-        trimmed_reads chunks(m_config, offset, read_chunk->eof);
+        trimmed_reads chunks(m_config, offset + m_input_file_offset, read_chunk->eof);
         stats_sink::pointer stats = m_stats.get_sink();
 
         for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
@@ -440,8 +441,8 @@ private:
 class pe_reads_processor : public reads_processor
 {
 public:
-    pe_reads_processor(const userconfig& config, size_t nth)
-      : reads_processor(config, nth)
+    pe_reads_processor(const userconfig& config, size_t nth, size_t input_file_offset = 0)
+      : reads_processor(config, nth, input_file_offset)
       , m_rngs(config.seed)
     {
     }
@@ -453,7 +454,7 @@ public:
 
         mt19937_ptr rng = m_rngs.get_sink();
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-        trimmed_reads chunks(m_config, offset, read_chunk->eof);
+        trimmed_reads chunks(m_config, offset + m_input_file_offset, read_chunk->eof);
         statistics_ptr stats = m_stats.get_sink();
 
         AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
@@ -607,12 +608,14 @@ int remove_adapter_sequences_se(const userconfig& config)
     std::vector<reads_processor*> processors;
     demultiplex_reads* demultiplexer = NULL;
 
+    size_t input_file_offset = 0;
+
     try {
         if (config.adapters.barcode_count()) {
             // Step 1: Read input file
             sch.add_step(ai_read_fastq, "read_fastq",
                          new read_single_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
+                                               config.input_file_1[0],
                                                ai_demultiplex));
 
             // Step 2: Parse and demultiplex reads based on single or double indices
@@ -622,10 +625,25 @@ int remove_adapter_sequences_se(const userconfig& config)
             add_write_step(config, sch, ai_write_unidentified_1, "unidentified",
                            new write_fastq(config.get_output_filename("demux_unknown")));
         } else {
-            sch.add_step(ai_read_fastq, "read_fastq",
+          string_vec_citer it = config.input_file_1.begin();
+
+          while (it != config.input_file_1.end()) {
+
+            size_t current_input_file_offset = input_file_offset;
+            analyses_id current_ai = ai_read_fastq;
+            std::string current_input_file_1 = *(it++);
+
+            if (it != config.input_file_1.end()) {
+              input_file_offset += 1;//There is another input file
+            } else {
+              current_ai = ai_analyses_offset;
+            }
+
+            sch.add_step(current_input_file_offset + ai_read_fastq, "read_fastq",
                          new read_single_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
-                                               ai_analyses_offset));
+                                               current_input_file_1,
+                                               input_file_offset + current_ai));
+            }
         }
 
         // Step 3 - N: Trim and write demultiplexed reads
@@ -633,21 +651,20 @@ int remove_adapter_sequences_se(const userconfig& config)
             const size_t offset = nth * ai_analyses_offset;
             const std::string& sample = config.adapters.get_sample_name(nth);
 
-            processors.push_back(new se_reads_processor(config, nth));
-            sch.add_step(offset + ai_trim_se, "trim_se_" + sample,
+            processors.push_back(new se_reads_processor(config, nth, input_file_offset));
+            sch.add_step(offset + ai_trim_se + input_file_offset, "trim_se_" + sample,
                          processors.back());
-
-            add_write_step(config, sch, offset + ai_write_mate_1, sample + "_fastq",
+            add_write_step(config, sch, offset + ai_write_mate_1 + input_file_offset, sample + "_fastq",
                            new write_fastq(config.get_output_filename("--output1", nth)));
 
             if (!config.combined_output) {
-                add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
+                add_write_step(config, sch, offset + ai_write_discarded + input_file_offset, sample + "_discarded",
                              new write_fastq(config.get_output_filename("--discarded", nth)));
 
                 if (config.collapse) {
-                    add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
+                    add_write_step(config, sch, offset + ai_write_collapsed + input_file_offset, sample + "_collapsed",
                                    new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
-                    add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                    add_write_step(config, sch, offset + ai_write_collapsed_truncated + input_file_offset,
                                    sample + "_collapsed_truncated",
                                    new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
                 }
@@ -679,20 +696,41 @@ int remove_adapter_sequences_pe(const userconfig& config)
     std::vector<reads_processor*> processors;
     demultiplex_reads* demultiplexer = NULL;
 
+    size_t input_file_offset = 0;
+
     try {
         // Step 1: Read input file
-        const size_t next_step = config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
+        const analyses_id next_step = config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
         if (config.interleaved_input) {
             sch.add_step(ai_read_fastq, "read_interleaved_fastq",
                          new read_interleaved_fastq(config.quality_input_fmt.get(),
-                                                    config.input_file_1,
+                                                    config.input_file_1[0],
                                                     next_step));
         } else {
-            sch.add_step(ai_read_fastq, "read_paired_fastq",
-                         new read_paired_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
-                                               config.input_file_2,
-                                               next_step));
+            AR_DEBUG_ASSERT(config.input_file_1.size() == config.input_file_2.size());
+
+            string_vec_citer it_1 = config.input_file_1.begin();
+            string_vec_citer it_2 = config.input_file_2.begin();
+
+            while (it_1 != config.input_file_1.end() ) {
+              
+              size_t current_input_file_offset = input_file_offset;
+              analyses_id current_ai = ai_read_fastq;
+              std::string current_input_file_1 = *(it_1++);
+              std::string current_input_file_2 = *(it_2++);
+
+              if (it_1 != config.input_file_1.end()) {
+                input_file_offset += 1;//There is another input file
+              } else {
+                current_ai = next_step;
+              }
+
+              sch.add_step(current_input_file_offset + ai_read_fastq, "read_fastq",
+                           new read_paired_fastq(config.quality_input_fmt.get(),
+                                                 current_input_file_1,
+                                                 current_input_file_2,
+                                                 input_file_offset + current_ai));
+            }
         }
 
         if (config.adapters.barcode_count()) {
@@ -700,11 +738,11 @@ int remove_adapter_sequences_pe(const userconfig& config)
             sch.add_step(ai_demultiplex, "demultiplex_pe",
                          demultiplexer = new demultiplex_pe_reads(&config));
 
-            add_write_step(config, sch, ai_write_unidentified_1, "unidentified_mate_1",
+            add_write_step(config, sch, ai_write_unidentified_1 + input_file_offset, "unidentified_mate_1",
                            new write_fastq(config.get_output_filename("demux_unknown", 1)));
 
             if (!config.interleaved_output) {
-                add_write_step(config, sch, ai_write_unidentified_2, "unidentified_mate_2",
+                add_write_step(config, sch, ai_write_unidentified_2 + input_file_offset, "unidentified_mate_2",
                                new write_fastq(config.get_output_filename("demux_unknown", 2)));
             }
         }
@@ -714,28 +752,28 @@ int remove_adapter_sequences_pe(const userconfig& config)
             const size_t offset = nth * ai_analyses_offset;
             const std::string& sample = config.adapters.get_sample_name(nth);
 
-            processors.push_back(new pe_reads_processor(config, nth));
-            sch.add_step(offset + ai_trim_pe, "trim_pe_" + sample,
+            processors.push_back(new pe_reads_processor(config, nth, input_file_offset));
+            sch.add_step(offset + ai_trim_pe + input_file_offset, "trim_pe_" + sample,
                          processors.back());
 
-            add_write_step(config, sch, offset + ai_write_mate_1, sample + "_mate_1",
+            add_write_step(config, sch, offset + ai_write_mate_1 + input_file_offset, sample + "_mate_1",
                            new write_fastq(config.get_output_filename("--output1", nth)));
 
             if (!config.interleaved_output) {
-                add_write_step(config, sch, offset + ai_write_mate_2, sample + "_mate_2",
+                add_write_step(config, sch, offset + ai_write_mate_2 + input_file_offset, sample + "_mate_2",
                                new write_fastq(config.get_output_filename("--output2", nth)));
             }
 
             if (!config.combined_output) {
-                add_write_step(config, sch, offset + ai_write_discarded, sample + "_discarded",
+                add_write_step(config, sch, offset + ai_write_discarded + input_file_offset, sample + "_discarded",
                                new write_fastq(config.get_output_filename("--discarded", nth)));
-                add_write_step(config, sch, offset + ai_write_singleton, sample + "_singleton",
+                add_write_step(config, sch, offset + ai_write_singleton + input_file_offset, sample + "_singleton",
                                new write_fastq(config.get_output_filename("--singleton", nth)));
 
                 if (config.collapse) {
-                    add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
+                    add_write_step(config, sch, offset + ai_write_collapsed + input_file_offset, sample + "_collapsed",
                                    new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
-                    add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                    add_write_step(config, sch, offset + ai_write_collapsed_truncated + input_file_offset,
                                    sample + "_collapsed_truncated",
                                    new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
                 }

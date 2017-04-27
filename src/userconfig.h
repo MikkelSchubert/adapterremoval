@@ -95,10 +95,10 @@ public:
 
     //! Prefix used for output files for which no filename was explicitly set
     std::string basename;
-    //! Path to input file containing mate 1 reads (required)
-    std::string input_file_1;
-    //! Path to input file containing mate 2 reads (for PE reads)
-    std::string input_file_2;
+    //! Path(s) to input file containing mate 1 reads (required)
+    string_vec input_file_1;
+    //! Path(s) to input file containing mate 2 reads (for PE reads)
+    string_vec input_file_2;
 
     //! Set to true if both --input1 and --input2 are set, or if either of
     //! --interleaved or --interleaved-input are set.
