@@ -268,9 +268,13 @@ bool scheduler::run(int nthreads)
         try {
             thread.join();
         } catch (const std::system_error& error) {
-            std::cerr << "ERROR: Failed to joini thread: " << error.what() << std::endl;
+            std::cerr << "ERROR: Failed to join thread: " << error.what() << std::endl;
             set_errors_occured();
         }
+    }
+
+    if (errors_occured()) {
+        return false;
     }
 
     for (auto& step: m_steps) {
