@@ -612,7 +612,7 @@ int remove_adapter_sequences_se(const userconfig& config)
             // Step 1: Read input file
             sch.add_step(ai_read_fastq, "read_fastq",
                          new read_single_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
+                                               config.input_files_1,
                                                ai_demultiplex));
 
             // Step 2: Parse and demultiplex reads based on single or double indices
@@ -624,7 +624,7 @@ int remove_adapter_sequences_se(const userconfig& config)
         } else {
             sch.add_step(ai_read_fastq, "read_fastq",
                          new read_single_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
+                                               config.input_files_1,
                                                ai_analyses_offset));
         }
 
@@ -685,13 +685,13 @@ int remove_adapter_sequences_pe(const userconfig& config)
         if (config.interleaved_input) {
             sch.add_step(ai_read_fastq, "read_interleaved_fastq",
                          new read_interleaved_fastq(config.quality_input_fmt.get(),
-                                                    config.input_file_1,
+                                                    config.input_files_1,
                                                     next_step));
         } else {
             sch.add_step(ai_read_fastq, "read_paired_fastq",
                          new read_paired_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
-                                               config.input_file_2,
+                                               config.input_files_1,
+                                               config.input_files_2,
                                                next_step));
         }
 

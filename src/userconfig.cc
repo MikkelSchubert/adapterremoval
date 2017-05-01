@@ -78,8 +78,8 @@ userconfig::userconfig(const std::string& name,
                        const std::string& help)
     : run_type(ar_trim_adapters)
     , basename("your_output")
-    , input_file_1()
-    , input_file_2()
+    , input_files_1()
+    , input_files_2()
     , paired_ended_mode(false)
     , interleaved_input(false)
     , interleaved_output(false)
@@ -122,12 +122,13 @@ userconfig::userconfig(const std::string& name,
     , demultiplex_sequences(false)
 {
     argparser["--file1"] =
-        new argparse::any(&input_file_1, "FILE",
-            "Input file containing mate 1 reads or single-ended reads "
-            "[REQUIRED].");
+        new argparse::many(&input_files_1, "FILE [FILE ...]",
+            "Input files containing mate 1 reads or single-ended reads; "
+            "one or more files may be listed [REQUIRED].");
     argparser["--file2"] =
-        new argparse::any(&input_file_2, "FILE",
-            "Input file containing mate 2 reads [OPTIONAL].");
+        new argparse::many(&input_files_2, "[FILE ...]",
+            "Input files containing mate 2 reads; if used, then the same "
+            "number of files as --file1 must be listed [OPTIONAL].");
 
     argparser.add_header("FASTQ OPTIONS:");
     argparser["--qualitybase"] =
@@ -448,20 +449,17 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     }
 
     // Check for invalid combinations of settings
-    const bool file_1_set = argparser.is_set("--file1");
-    const bool file_2_set = argparser.is_set("--file2");
-
-    if (!(file_1_set || file_2_set)) {
+    if (input_files_1.empty() && input_files_2.empty()) {
         std::cerr << "Error: No input files (--file1 / --file2) specified.\n"
                   << "Please specify at least one input file using --file1 FILENAME."
                   << std::endl;
 
         return argparse::pr_error;
-    } else if (file_2_set && !file_1_set) {
-        std::cerr << "Error: --file2 specified, but --file1 is not specified." << std::endl;
+    } else if (!input_files_2.empty() && (input_files_1.size() != input_files_2.size())) {
+        std::cerr << "Error: Different number of files specified for --file1 and --file2." << std::endl;
 
         return argparse::pr_error;
-    } else if (file_2_set) {
+    } else if (!input_files_2.empty()) {
         paired_ended_mode = true;
         min_adapter_overlap = 0;
     }
@@ -470,7 +468,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     interleaved_output |= interleaved;
 
     if (interleaved_input) {
-        if (file_2_set) {
+        if (!input_files_2.empty()) {
             std::cerr << "Error: The options --interleaved and "
                       << "--interleaved-input cannot be used "
                       << "together with the --file2 option; only --file1 must "

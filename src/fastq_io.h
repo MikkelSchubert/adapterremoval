@@ -36,10 +36,10 @@
 
 #include "commontypes.h"
 #include "fastq.h"
+#include "linereader_joined.h"
 #include "scheduler.h"
-#include "timer.h"
-#include "linereader.h"
 #include "strutils.h"
+#include "timer.h"
 
 namespace ar
 {
@@ -139,7 +139,7 @@ public:
      * Opens the input file corresponding to the specified mate.
      */
     read_single_fastq(const fastq_encoding* encoding,
-                      const std::string& filename,
+                      const string_vec& filenames,
                       size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_read_chunk. */
@@ -159,7 +159,7 @@ private:
     //! Current line in the input file (1-based)
     size_t m_line_offset;
     //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-    line_reader m_io_input;
+    joined_line_readers m_io_input;
     //! The analytical step following this step
     const size_t m_next_step;
     //! Used to track whether an EOF block has been received.
@@ -181,8 +181,8 @@ public:
      * Constructor.
      */
     read_paired_fastq(const fastq_encoding* encoding,
-                      const std::string& filename_1,
-                      const std::string& filename_2,
+                      const string_vec& filenames_1,
+                      const string_vec& filenames_2,
                       size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
@@ -202,9 +202,9 @@ private:
     //! Current line in the input file (1-based)
     size_t m_line_offset;
     //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-    line_reader m_io_input_1;
+    joined_line_readers m_io_input_1;
     //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-    line_reader m_io_input_2;
+    joined_line_readers m_io_input_2;
     //! The analytical step following this step
     const size_t m_next_step;
     //! Used to track whether an EOF block has been received.
@@ -226,7 +226,7 @@ public:
      * Constructor.
      */
     read_interleaved_fastq(const fastq_encoding* encoding,
-                           const std::string& filename,
+                           const string_vec& filenames,
                            size_t next_step);
 
     /** Reads N lines from the input file and saves them in an fastq_file_chunk. */
@@ -246,7 +246,7 @@ private:
     //! Current line in the input file (1-based)
     size_t m_line_offset;
     //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-    line_reader m_io_input;
+    joined_line_readers m_io_input;
     //! The analytical step following this step
     const size_t m_next_step;
     //! Used to track whether an EOF block has been received.

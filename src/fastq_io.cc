@@ -34,8 +34,8 @@ namespace ar
 {
 
 
-size_t read_fastq_reads(fastq_vec& dst, line_reader& reader, size_t offset,
-                      const fastq_encoding& encoding)
+size_t read_fastq_reads(fastq_vec& dst, joined_line_readers& reader,
+                        size_t offset, const fastq_encoding& encoding)
 {
     dst.reserve(FASTQ_CHUNK_SIZE);
 
@@ -108,22 +108,23 @@ void fastq_output_chunk::add(const fastq_encoding& encoding,
 // Implementations for 'read_single_fastq'
 
 read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
-                                     const std::string& filename,
+                                     const string_vec& filenames,
                                      size_t next_step)
   : analytical_step(analytical_step::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
-  , m_io_input(filename)
+  , m_io_input(filenames)
   , m_next_step(next_step)
   , m_eof(false)
 {
+  AR_DEBUG_ASSERT(!filenames.empty());
 }
 
 
 chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_ASSERT(chunk == NULL);
-    if (!m_io_input.is_open()) {
+    if (m_eof) {
         return chunk_vec();
     }
 
@@ -135,7 +136,6 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
     if (!n_read) {
         // EOF is detected by failure to read any lines, not line_reader::eof,
         // so that unbalanced files can be caught in all cases.
-        m_io_input.close();
         file_chunk->eof = true;
         m_eof = true;
     }
@@ -161,24 +161,25 @@ void read_single_fastq::finalize()
 // Implementations for 'read_paired_fastq'
 
 read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
-                                     const std::string& filename_1,
-                                     const std::string& filename_2,
+                                     const string_vec& filenames_1,
+                                     const string_vec& filenames_2,
                                      size_t next_step)
   : analytical_step(analytical_step::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
-  , m_io_input_1(filename_1)
-  , m_io_input_2(filename_2)
+  , m_io_input_1(filenames_1)
+  , m_io_input_2(filenames_2)
   , m_next_step(next_step)
   , m_eof(false)
 {
+  AR_DEBUG_ASSERT(filenames_1.size() == filenames_2.size());
 }
 
 
 chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_ASSERT(chunk == NULL);
-    if (!m_io_input_1.is_open()) {
+    if (m_eof) {
         return chunk_vec();
     }
 
@@ -200,8 +201,6 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
     } else if (!n_read_1) {
         // EOF is detected by failure to read any lines, not line_reader::eof,
         // so that unbalanced files can be caught in all cases.
-        m_io_input_1.close();
-        m_io_input_2.close();
         file_chunk->eof = true;
         m_eof = true;
     }
@@ -228,22 +227,23 @@ void read_paired_fastq::finalize()
 // Implementations for 'read_interleaved_fastq'
 
 read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
-                                          const std::string& filename,
+                                          const string_vec& filenames,
                                           size_t next_step)
   : analytical_step(analytical_step::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
-  , m_io_input(filename)
+  , m_io_input(filenames)
   , m_next_step(next_step)
   , m_eof(false)
 {
+  AR_DEBUG_ASSERT(!filenames.empty());
 }
 
 
 chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_ASSERT(chunk == NULL);
-    if (!m_io_input.is_open()) {
+    if (m_eof) {
         return chunk_vec();
     }
 
@@ -294,7 +294,6 @@ chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
 
         throw thread_abort();
     } else if (!n_read_1) {
-        m_io_input.close();
         file_chunk->eof = true;
         m_eof = true;
     }

@@ -474,13 +474,13 @@ int identify_adapter_sequences(const userconfig& config)
         if (config.interleaved_input) {
             sch.add_step(ai_read_fastq, "read_interleaved_fastq",
                          new read_interleaved_fastq(config.quality_input_fmt.get(),
-                                                    config.input_file_1,
+                                                    config.input_files_1,
                                                     ai_identify_adapters));
         } else {
             sch.add_step(ai_read_fastq, "read_paired_fastq",
                          new read_paired_fastq(config.quality_input_fmt.get(),
-                                               config.input_file_1,
-                                               config.input_file_2,
+                                               config.input_files_1,
+                                               config.input_files_2,
                                                ai_identify_adapters));
         }
     } catch (const std::ios_base::failure& error) {

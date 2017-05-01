@@ -2,6 +2,6 @@
 	"arguments": [],
 	"return_code": 1,
 	"stderr": [
-		"Error: --file2 specified, but --file1 is not specified."
+		"Error: Different number of files specified for --file1 and --file2."
 	]
 }
