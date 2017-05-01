@@ -31,6 +31,8 @@
 
 #include "debug.h"
 #include "linereader_joined.h"
+#include "threads.h"
+
 
 namespace ar
 {
@@ -70,7 +72,12 @@ bool joined_line_readers::open_next_file()
     }
 
     auto filename = m_filenames.back();
-    std::cerr << "Opening FASTQ file '" << filename << "'" << std::endl;
+
+    {
+        print_locker lock;
+        std::cerr << "Opening FASTQ file '" << filename << "'" << std::endl;
+    }
+
     m_reader.reset(new line_reader(filename));
     m_filenames.pop_back();
 
