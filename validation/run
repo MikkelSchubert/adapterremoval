@@ -137,23 +137,28 @@ def pretty_output(s, padding=0, max_lines=float("inf")):
     return "\n".join(result)
 
 
-def interleave(text_1, text_2):
-    lines_1 = text_1.split("\n")
-    lines_2 = text_2.split("\n")
-    iters = (iter(lines_1).next, iter(lines_2).next)
+def interleave(texts_1, texts_2):
+    files = []
 
-    assert len(lines_1) == len(lines_2)
+    for text_1, text_2 in zip(texts_1, texts_2):
+        lines_1 = text_1.split("\n")
+        lines_2 = text_2.split("\n")
+        iters = (iter(lines_1).next, iter(lines_2).next)
 
-    result = []
-    while True:
-        try:
-            for it in iters:
-                for _ in xrange(4):
-                    result.append(it())
-        except StopIteration:
-            break
+        assert len(lines_1) == len(lines_2)
 
-    return "\n".join(result)
+        result = []
+        while True:
+            try:
+                for it in iters:
+                    for _ in xrange(4):
+                        result.append(it())
+            except StopIteration:
+                break
+
+        files.append("\n".join(result))
+
+    return files
 
 
 class TestError(StandardError):
@@ -178,7 +183,7 @@ class TestCase(object):
         root = os.path.join(root, *self.path)
 
         interleaved_tests = [False]
-        if self._is_paired():
+        if self._is_properly_paired():
             interleaved_tests.append(True)
 
         for in_compression in (UNCOMPRESSED, GZIP, BZIP2):
@@ -210,30 +215,35 @@ class TestCase(object):
     def _setup_input(self, root, compression, interleaved):
         input_files = {}
         for key in ("input_1", "input_2"):
-            if self._files[key] is not None:
-                input_files[key] = open(self._files[key]).read()
+            input_files[key] = [open(filename).read()
+                                for filename in self._files[key]]
 
         if interleaved:
             input_files = {"input_1": interleave(input_files["input_1"],
-                                                 input_files["input_2"])}
+                                                 input_files["input_2"]),
+                           "input_2": []}
 
         final_files = {}
-        for key, value in input_files.iteritems():
-            filename = key + ".fastq"
-            if compression != UNCOMPRESSED:
-                filename += "." + compression
-                value = compress(value, compression)
+        for key, values in input_files.iteritems():
+            filenames = []
+            for idx, value in enumerate(values):
+                filename = '%s%s.fastq' % (key, chr(ord('a') + idx))
+                if compression != UNCOMPRESSED:
+                    filename += "." + compression
+                    value = compress(value, compression)
 
-            with open(os.path.join(root, filename), "w") as handle:
-                handle.write(value)
+                with open(os.path.join(root, filename), "w") as handle:
+                    handle.write(value)
 
-            final_files[key] = filename
+                filenames.append(filename)
+
+            final_files[key] = filenames
 
         if 'barcodes' in self._files:
             with open(os.path.join(root, 'barcodes.txt'), 'w') as handle:
                 handle.writelines(self._files['barcodes'])
 
-        return final_files.get("input_1"), final_files.get("input_2")
+        return final_files["input_1"], final_files["input_2"]
 
     def _do_call(self, root, input_1, input_2, compression, interleaved):
         command = self._build_command(root, input_1, input_2, compression, interleaved)
@@ -278,8 +288,8 @@ class TestCase(object):
                     expected_files_.add(value)
             expected_files = expected_files_
 
-        observed_files = frozenset(os.listdir(root)) - frozenset((input_1,
-                                                                  input_2))
+        observed_files = frozenset(os.listdir(root)) \
+            - frozenset(input_1) - frozenset(input_2)
 
         if expected_files - observed_files:
             raise TestError("ERROR: Expected output file(s) not created:\n"
@@ -325,24 +335,28 @@ class TestCase(object):
         if 'barcodes' in self._files:
             command.extend(('--barcode-list', 'barcodes.txt'))
 
-        if input_1 is not None or input_2 is not None:
+        if input_1 or input_2:
             if compression == BZIP2:
                 command.append("--bzip2")
             elif compression == GZIP:
                 command.append("--gzip")
 
-        if input_1 is not None:
-            command.extend(('--file1', input_1))
-        if input_2 is not None:
-            command.extend(('--file2', input_2))
+        if input_1:
+            command.append('--file1')
+            command.extend(input_1)
+        if input_2:
+            command.append('--file2')
+            command.extend(input_2)
 
         command.extend(self._info['arguments'])
 
         return [field % {"ROOT": root} for field in command]
 
-    def _is_paired(self):
-        return (self._files["input_1"] is not None) \
-            and (self._files["input_2"] is not None)
+    def _is_properly_paired(self):
+        input_1 = self._files["input_1"]
+        input_2 = self._files["input_2"]
+
+        return input_1 and len(input_1) == len(input_2)
 
     @classmethod
     def _mangle_settings(cls, handle):
@@ -363,27 +377,20 @@ class TestCase(object):
     @classmethod
     def _collect_files(cls, root):
         result = {
-            "input_1": None,
-            "input_2": None,
+            "input_1": [],
+            "input_2": [],
             "output": {},
         }
 
         def read_lines(root, filename):
             return open(os.path.join(root, filename)).readlines()
 
-        for filename in os.listdir(root):
-            if filename.startswith("input_1.fastq"):
-                if result["input_1"] is not None:
-                    raise TestError('Duplicate input_1.fastq* files in %r'
-                                    % (root,))
-                result["input_1"] = os.path.abspath(os.path.join(root,
-                                                                 filename))
-            elif filename.startswith("input_2.fastq"):
-                if result["input_2"] is not None:
-                    raise TestError('Duplicate input_2.fastq* files in %r'
-                                    % (root,))
-                result["input_2"] = os.path.abspath(os.path.join(root,
-                                                                 filename))
+        abs_root = os.path.abspath(root)
+        for filename in sorted(os.listdir(root)):
+            if filename.startswith("input_1"):
+                result["input_1"].append(os.path.join(abs_root, filename))
+            elif filename.startswith("input_2"):
+                result["input_2"].append(os.path.join(abs_root, filename))
             elif filename not in ('info.json', 'README', 'barcodes.txt'):
                 result["output"][filename] = read_lines(root, filename)
             elif filename == 'barcodes.txt':
@@ -464,6 +471,9 @@ def main(argv):
 
     print('Reading test-cases from %r' % (args.source_dir,))
     tests = TestCase.collect(args.source_dir)
+
+    if not os.path.exists(args.work_dir):
+        os.makedirs(args.work_dir)
 
     args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
     print('Writing test-cases results to %r' % (args.work_dir,))
