@@ -33,7 +33,6 @@
 namespace ar
 {
 
-
 size_t read_fastq_reads(fastq_vec& dst, joined_line_readers& reader,
                         size_t offset, const fastq_encoding& encoding)
 {
@@ -116,6 +115,7 @@ read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
   , m_io_input(filenames)
   , m_next_step(next_step)
   , m_eof(false)
+  , m_lock()
 {
   AR_DEBUG_ASSERT(!filenames.empty());
 }
@@ -123,6 +123,7 @@ read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
 
 chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     AR_DEBUG_ASSERT(chunk == NULL);
     if (m_eof) {
         return chunk_vec();
@@ -151,6 +152,7 @@ chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 
 void read_single_fastq::finalize()
 {
+    AR_DEBUG_LOCK(m_lock);
     if (!m_eof) {
         throw thread_error("read_single_fastq::finalize: terminated before EOF");
     }
@@ -171,6 +173,7 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
   , m_io_input_2(filenames_2)
   , m_next_step(next_step)
   , m_eof(false)
+  , m_lock()
 {
   AR_DEBUG_ASSERT(filenames_1.size() == filenames_2.size());
 }
@@ -178,6 +181,7 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
 
 chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     AR_DEBUG_ASSERT(chunk == NULL);
     if (m_eof) {
         return chunk_vec();
@@ -216,6 +220,7 @@ chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 
 void read_paired_fastq::finalize()
 {
+    AR_DEBUG_LOCK(m_lock);
     if (!m_eof) {
         throw thread_error("read_paired_fastq::finalize: terminated before EOF");
     }
@@ -235,6 +240,7 @@ read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
   , m_io_input(filenames)
   , m_next_step(next_step)
   , m_eof(false)
+  , m_lock()
 {
   AR_DEBUG_ASSERT(!filenames.empty());
 }
@@ -242,6 +248,7 @@ read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
 
 chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     AR_DEBUG_ASSERT(chunk == NULL);
     if (m_eof) {
         return chunk_vec();
@@ -309,6 +316,7 @@ chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
 
 void read_interleaved_fastq::finalize()
 {
+    AR_DEBUG_LOCK(m_lock);
     if (!m_eof) {
         throw thread_error("read_interleaved_fastq::finalize: terminated before EOF");
     }
@@ -351,6 +359,7 @@ bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
+  , m_lock()
 {
     m_stream.bzalloc = NULL;
     m_stream.bzfree = NULL;
@@ -382,6 +391,7 @@ bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
 
 void bzip2_fastq::finalize()
 {
+    AR_DEBUG_LOCK(m_lock);
     if (!m_eof) {
         throw thread_error("bzip2_fastq::finalize: terminated before EOF");
     }
@@ -402,6 +412,7 @@ void bzip2_fastq::finalize()
 
 chunk_vec bzip2_fastq::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
@@ -496,6 +507,7 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
+  , m_lock()
 {
     m_stream.zalloc = Z_NULL;
     m_stream.zfree = Z_NULL;
@@ -529,6 +541,7 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
 
 void gzip_fastq::finalize()
 {
+    AR_DEBUG_LOCK(m_lock);
     if (!m_eof) {
         throw thread_error("gzip_fastq::finalize: terminated before EOF");
     }
@@ -552,6 +565,7 @@ void gzip_fastq::finalize()
 
 chunk_vec gzip_fastq::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     buffer_vec& buffers = file_chunk->buffers;
 
@@ -646,6 +660,7 @@ write_fastq::write_fastq(const std::string& filename)
   : analytical_step(analytical_step::ordered, true)
   , m_output(filename.c_str(), std::ofstream::out | std::ofstream::binary)
   , m_eof(false)
+  , m_lock()
 {
     if (!m_output.is_open()) {
         std::string message = std::string("Failed to open file '") + filename + "': ";
@@ -658,6 +673,7 @@ write_fastq::write_fastq(const std::string& filename)
 
 chunk_vec write_fastq::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
     const string_vec& lines = file_chunk->reads;
 
@@ -692,6 +708,7 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
 
 void write_fastq::finalize()
 {
+    AR_DEBUG_LOCK(m_lock);
     std::lock_guard<std::mutex> lock(s_timer_lock);
     if (!s_finalized) {
         s_timer.finalize();

@@ -62,7 +62,7 @@ protected:
      * Returns the id of the best matching barcode(s), or -1 if no matches were
      * found or if no single best match was found.
      */
-    int select_barcode(const fastq& read_r1, const fastq& read_r2);
+    int select_barcode(const fastq& read_r1, const fastq& read_r2) const;
 
     //! List of barcode (pairs) supplied by caller
     const fastq_pair_vec& m_barcodes;
@@ -95,6 +95,9 @@ protected:
 
     //! Sink for demultiplexing statistics; used by subclasses.
     demux_statistics m_statistics;
+
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 
 private:
     //! Not implemented

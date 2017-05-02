@@ -164,6 +164,8 @@ private:
     const size_t m_next_step;
     //! Used to track whether an EOF block has been received.
     bool m_eof;
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 };
 
 
@@ -209,6 +211,8 @@ private:
     const size_t m_next_step;
     //! Used to track whether an EOF block has been received.
     bool m_eof;
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 };
 
 
@@ -251,6 +255,8 @@ private:
     const size_t m_next_step;
     //! Used to track whether an EOF block has been received.
     bool m_eof;
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 };
 
 
@@ -285,6 +291,8 @@ private:
     bz_stream m_stream;
     //! Used to track whether an EOF block has been received.
     bool m_eof;
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 };
 
 #endif
@@ -320,6 +328,8 @@ private:
     z_stream m_stream;
     //! Used to track whether an EOF block has been received.
     bool m_eof;
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 };
 #endif
 
@@ -356,6 +366,8 @@ private:
 
     //! Used to track whether an EOF block has been received.
     bool m_eof;
+    //! Lock used to verify that the analytical_step is only run sequentially.
+    std::mutex m_lock;
 };
 
 } // namespace ar

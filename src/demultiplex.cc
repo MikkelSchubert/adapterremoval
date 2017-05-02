@@ -228,6 +228,7 @@ demultiplex_reads::demultiplex_reads(const userconfig* config)
     , m_unidentified_1(new fastq_output_chunk())
     , m_unidentified_2()
     , m_statistics(m_barcodes.size())
+    , m_lock()
 {
     AR_DEBUG_ASSERT(!m_barcodes.empty());
 
@@ -275,7 +276,7 @@ size_t count_mismatches(const std::string& barcode,
  * Returns the best matching barcode (pair) for sequences read_r1 and read_r2
  *
  */
-int demultiplex_reads::select_barcode(const fastq& read_r1, const fastq& read_r2)
+int demultiplex_reads::select_barcode(const fastq& read_r1, const fastq& read_r2) const
 {
     candidate_vec candidates;
     if (m_max_mismatches_r1) {
@@ -371,6 +372,7 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig* config)
 
 chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     const fastq empty_read;
@@ -408,6 +410,7 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig* config)
 
 chunk_vec demultiplex_pe_reads::process(analytical_chunk* chunk)
 {
+    AR_DEBUG_LOCK(m_lock);
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 

@@ -74,6 +74,15 @@ void debug_raise_assert(const char* filename, size_t lineno,
 #define AR_DEBUG_FAIL(msg) \
     debug_raise_assert(__FILE__, __LINE__, msg)
 
+
+/** Raise a failure if a scope is accessed more than once at the same time. */
+#define AR_DEBUG_LOCK(lock) \
+    std::unique_lock<std::mutex> locker(lock, std::defer_lock); \
+    if (!locker.try_lock()) { \
+        AR_DEBUG_FAIL("race condition detected"); \
+    };
+
+
 } // namespace ar
 
 #endif
