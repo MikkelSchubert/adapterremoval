@@ -142,7 +142,7 @@ void timer::finalize() const
 
 void timer::do_print(size_t rate, double current_time, bool finalize) const
 {
-    print_locker lock;
+    print_locker lock(false);
 
     if (finalize) {
         std::cerr << "\rProcessed a total of ";
@@ -163,6 +163,7 @@ void timer::do_print(size_t rate, double current_time, bool finalize) const
     } else {
         std::cerr << "...";
         std::cerr.flush();
+        lock.partial_stderr_output();
     }
 }
 

@@ -77,11 +77,18 @@ public:
 class print_locker
 {
 public:
-    //! Locks the mutex (blocking)
-    print_locker();
+    /*
+     * Locks the mutex (blocking). If flush_stderr is true, and
+     * partial_stderr_output has been called, then a newline is first
+     * written to stderr.
+     */
+    print_locker(bool flush_stderr=true);
 
     //! Unlocks the mutex
     ~print_locker();
+
+    //! Call to indicate that a partial line has been written to STDERR.
+    void partial_stderr_output();
 
 private:
     //! Not implemented

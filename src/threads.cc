@@ -76,15 +76,27 @@ thread_abort::thread_abort()
 //! Shared mutex for STDOUT / STDERR
 static std::mutex s_print_mutex;
 
+//! Shared bool indicating if STDERR contains a partial line.
+static bool s_stderr_is_incomplete = false;
 
-print_locker::print_locker()
+
+print_locker::print_locker(bool flush_stderr)
   : m_lock(s_print_mutex)
 {
+    if (flush_stderr && s_stderr_is_incomplete) {
+        s_stderr_is_incomplete = false;
+        std::cerr << std::endl;
+    }
 }
 
 
 print_locker::~print_locker()
 {
+}
+
+
+void print_locker::partial_stderr_output() {
+    s_stderr_is_incomplete = true;
 }
 
 
