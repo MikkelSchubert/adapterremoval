@@ -1,0 +1,7 @@
+{
+	"arguments": [],
+	"return_code": 1,
+	"stderr": [
+		"Error: Different number of files specified for --file1 and --file2."
+	]
+}
