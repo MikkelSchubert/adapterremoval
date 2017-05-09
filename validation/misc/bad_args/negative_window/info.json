@@ -1,0 +1,7 @@
+{
+	"arguments": ["--trimwindows", "-1"],
+	"return_code": 1,
+	"stderr": [
+		"Error: Invalid value for --trimwindow"
+	]
+}

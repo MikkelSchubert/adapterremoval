@@ -289,7 +289,7 @@ userconfig::userconfig(const std::string& name,
         new argparse::flag(&trim_by_quality,
             "If set, trim bases at 5'/3' termini with quality scores <= to "
             "--minquality value [current: %default]");
-    argparser["--trimwindow"] =
+    argparser["--trimwindows"] =
         new argparse::floaty_knob(&trim_window_length, "INT",
             "If set, quality trimming will be carried out using window based "
             "approach, where windows with an average quality less than "
@@ -460,7 +460,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     } else if (trim_window_length >= 0) {
         trim_by_quality = true;
     } else if (trim_window_length < 0.0) {
-        std::cerr << "Error: Invalid value for --trimwindow ("
+        std::cerr << "Error: Invalid value for --trimwindows ("
                   << trim_window_length << "); value must be >= 0."
                   << std::endl;
         return argparse::pr_error;
