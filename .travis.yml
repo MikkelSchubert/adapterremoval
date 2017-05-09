@@ -1,0 +1,18 @@
+language: cpp
+
+compiler:
+  - clang
+  - gcc
+
+addons:
+  apt:
+    packages:
+      - zlib1g-dev
+      - libbz2-dev
+
+install: true
+
+script:
+    - make
+    - make test
+    - make validate
