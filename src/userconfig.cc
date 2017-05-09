@@ -701,15 +701,19 @@ std::string userconfig::get_output_filename(const std::string& key,
 
 fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) const
 {
-    fastq::ntrimmed trimmed;
     if (trim_ambiguous_bases || trim_by_quality) {
         char quality_score = trim_by_quality ? low_quality_score : -1;
-        trimmed = read.trim_low_quality_bases(trim_ambiguous_bases,
-                                              quality_score,
-                                              window_len);
+        if (window_len > 1) {
+            return read.trim_windowed_bases(trim_ambiguous_bases,
+                                            quality_score,
+                                            window_len);
+        } else {
+            return read.trim_trailing_bases(trim_ambiguous_bases,
+                                            quality_score);
+        }
     }
 
-    return trimmed;
+    return fastq::ntrimmed();
 }
 
 

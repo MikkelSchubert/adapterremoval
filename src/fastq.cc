@@ -125,19 +125,43 @@ bool fastq::operator==(const fastq& other) const
 }
 
 
-size_t fastq::length() const
-{
-    return m_sequence.length();
-}
-
-
 size_t fastq::count_ns() const
 {
     return static_cast<size_t>(std::count(m_sequence.begin(), m_sequence.end(), 'N'));
 }
 
 
-fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality, const size_t winlen)
+fastq::ntrimmed fastq::trim_trailing_bases(const bool trim_ns, char low_quality)
+{
+    low_quality += PHRED_OFFSET_33;
+    auto is_quality_base = [&] (size_t i) {
+        return m_qualities.at(i) > low_quality
+            && (!trim_ns || m_sequence.at(i) != 'N');
+    };
+
+    size_t right_exclusive = 0;
+    for (size_t i = m_sequence.length(); i; --i) {
+        if (is_quality_base(i - 1)) {
+            right_exclusive = i;
+            break;
+        }
+    }
+
+    size_t left_inclusive = 0;
+    for (size_t i = 0; i < right_exclusive; ++i) {
+        if (is_quality_base(i)) {
+            left_inclusive = i;
+            break;
+        }
+    }
+
+    return trim_sequence_and_qualities(left_inclusive, right_exclusive);
+}
+
+
+fastq::ntrimmed fastq::trim_windowed_bases(const bool trim_ns,
+                                           char low_quality,
+                                           const size_t winlen)
 {
     low_quality += PHRED_OFFSET_33;
 
@@ -186,48 +210,26 @@ fastq::ntrimmed fastq::trim_low_quality_bases(bool trim_ns, char low_quality, co
     }
 
     // Right trim
-    if (winlen > 1) {
-        if (!found_start) {
-            // Trim all bases starting from start.
-            i = 0;
-        } else if (found_end) {
-            // `i` is the (inclusive) end of the first bad window, which we should
-            // go to the start of, triming at the first bad base
-            i = i - winlen + 1;
-        } else {
-            // `i` is the length of the sequence: go back `winlen` if we can.
-            if (i >= winlen) i -= winlen;
-            else i = 0;
-        }
-        for (; i < m_qualities.length(); i++) {
-            if ((trim_ns && m_sequence.at(i) == 'N') || m_qualities.at(i) < low_quality) {
-                right_exclusive = i;
-                break;
-            }
-        }
+    if (!found_start) {
+        // Trim all bases starting from start.
+        i = 0;
+    } else if (found_end) {
+        // `i` is the (inclusive) end of the first bad window, which we should
+        // go to the start of, triming at the first bad base
+        i = i - winlen + 1;
     } else {
-        std::cerr << "LI " << left_inclusive << "\n";
-        for (i = m_qualities.length(); i > left_inclusive; i--) {
-            if ((trim_ns && m_sequence.at(i - 1) == 'N') || m_qualities.at(i - 1) < low_quality) {
-                right_exclusive = i;
-            } else {
-                break;
-            }
+        // `i` is the length of the sequence: go back `winlen` if we can.
+        if (i >= winlen) i -= winlen;
+        else i = 0;
+    }
+    for (; i < m_qualities.length(); i++) {
+        if ((trim_ns && m_sequence.at(i) == 'N') || m_qualities.at(i) < low_quality) {
+            right_exclusive = i;
+            break;
         }
-        std::cerr << "Re " << right_exclusive << "\n";
     }
 
-
-
-    const ntrimmed summary(left_inclusive, m_sequence.length() - right_exclusive);
-
-    if (summary.first || summary.second) {
-        const size_t retained = right_exclusive - left_inclusive;
-        m_sequence = m_sequence.substr(left_inclusive, retained);
-        m_qualities = m_qualities.substr(left_inclusive, retained);
-    }
-
-    return summary;
+    return trim_sequence_and_qualities(left_inclusive, right_exclusive);
 }
 
 
@@ -431,6 +433,21 @@ void fastq::process_record(const fastq_encoding& encoding)
 
     clean_sequence(m_sequence);
     encoding.decode_string(m_qualities.begin(), m_qualities.end());
+}
+
+
+fastq::ntrimmed fastq::trim_sequence_and_qualities(const size_t left_inclusive,
+                                                   const size_t right_exclusive)
+{
+    const ntrimmed summary(left_inclusive, length() - right_exclusive);
+
+    if (summary.first || summary.second) {
+        const size_t retained = right_exclusive - left_inclusive;
+        m_sequence = m_sequence.substr(left_inclusive, retained);
+        m_qualities = m_qualities.substr(left_inclusive, retained);
+    }
+
+    return summary;
 }
 
 } // namespace ar

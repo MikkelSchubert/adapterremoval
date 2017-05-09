@@ -106,14 +106,28 @@ public:
     /** The number of bases trimmmed from the 5p and 3p end respectively. **/
     typedef std::pair<size_t, size_t> ntrimmed;
 
-    /**
+   /**
      * Trims consecutive low-quality bases from the 5'/3' ends of the sequence.
      *
      * @param trim_ns If true, ambiguous bases ('N') are trimmed.
      * @param low_quality Trim bases with a quality score at or below this value.
-     * @return A pair containing hte number of bases trimmed from either end.
+     * @return A pair containing the number of 5' and 3' bases trimmed.
      */
-	ntrimmed trim_low_quality_bases(bool trim_ns = true, char low_quality = -1, const size_t winlen=1);
+    ntrimmed trim_trailing_bases(const bool trim_ns = true,
+                                    char low_quality = -1);
+
+    /**
+     * Trims low-quality bases using a sliding window approach.
+     *
+     * @param trim_ns If true, ambiguous bases ('N') are trimmed.
+     * @param low_quality Trim bases with a quality score at or below this value.
+     * @param winlen The length of the sliding window.
+     * @return A pair containing the number of 5' and 3' bases trimmed.
+     */
+    ntrimmed trim_windowed_bases(const bool trim_ns = true,
+                                 char low_quality = -1,
+                                 const size_t winlen = 1);
+
 
     /**
      * Truncates the record in place.
@@ -184,6 +198,13 @@ private:
     /** Initializes record; used by constructor and read function. **/
     void process_record(const fastq_encoding& encoding);
 
+    /**
+     * Trims the read to the specified bases, and returns a pair specifying the
+     * number of 5' and 3' bases removed.
+     */
+    ntrimmed trim_sequence_and_qualities(const size_t left_inclusive,
+                                         const size_t right_exclusive);
+
     /** Helper function to get mate numbering and fix the separator char. */
     friend mate_info get_and_fix_mate_info(fastq& read, char mate_separator);
 
@@ -244,6 +265,12 @@ inline const std::string& fastq::sequence() const
 inline const std::string& fastq::qualities() const
 {
     return m_qualities;
+}
+
+
+inline size_t fastq::length() const
+{
+    return m_sequence.length();
 }
 
 } // namespace ar

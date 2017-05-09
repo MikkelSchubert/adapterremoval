@@ -221,90 +221,168 @@ TEST(fastq, count_ns)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// trim_low_quality_bases
+// trim_trailing_bases
 
-TEST(fastq, trim_low_quality_bases__empty_record)
+TEST(fastq, trim_trailing_bases__empty_record)
 {
     fastq record("Empty", "", "");
     const fastq::ntrimmed expected(0, 0);
-    ASSERT_EQ(expected, record.trim_low_quality_bases(true, 10));
+    ASSERT_EQ(expected, record.trim_trailing_bases(true, 10));
     ASSERT_EQ(fastq("Empty", "", ""), record);
 }
 
 
-TEST(fastq, trim_low_quality_bases__trim_nothing)
+TEST(fastq, trim_trailing_bases__trim_nothing)
 {
     const fastq reference("Rec", "NNNNN", "!!!!!");
     const fastq::ntrimmed expected(0, 0);
     fastq record = reference;
 
     // Trim neither Ns nor low Phred score bases
-    ASSERT_EQ(expected, record.trim_low_quality_bases(false, -1));
+    ASSERT_EQ(expected, record.trim_trailing_bases(false, -1));
     ASSERT_EQ(reference, record);
 }
 
 
-TEST(fastq, trim_low_quality_bases__trim_ns)
+TEST(fastq, trim_trailing_bases__trim_ns)
 {
     fastq record("Rec", "NNANT", "23456");
     const fastq expected_record("Rec", "ANT", "456");
     const fastq::ntrimmed expected_ntrim(2, 0);
 
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, -1));
+    ASSERT_EQ(expected_ntrim, record.trim_trailing_bases(true, -1));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_low_quality_bases__trim_low_quality_bases)
+TEST(fastq, trim_trailing_bases__trim_trailing_bases)
+{
+    const fastq expected_record("Rec", "TN", "%$");
+    const fastq::ntrimmed expected_ntrim(0, 3);
+    fastq record("Rec", "TNANT", "%$#!\"");
+
+    ASSERT_EQ(expected_ntrim, record.trim_trailing_bases(false, 2));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+TEST(fastq, trim_trailing_bases__trim_mixed)
+{
+    const fastq expected_record("Rec", "TAG", "$12");
+    const fastq::ntrimmed expected_ntrim(3, 2);
+    fastq record("Rec", "NTNTAGNT", "1!#$12#\"");
+
+    ASSERT_EQ(expected_ntrim, record.trim_trailing_bases(true, 2));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+TEST(fastq, trim_trailing_bases__trim_mixed__no_low_quality_bases)
+{
+    const fastq expected_record("Rec", "ACTTAG", "12I$12");
+    const fastq::ntrimmed expected_ntrim(0, 0);
+    fastq record = expected_record;
+
+    ASSERT_EQ(expected_ntrim, record.trim_trailing_bases(true, 2));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+TEST(fastq, trim_trailing_bases__trim_everything)
+{
+    fastq record("Rec", "TAG", "!!!");
+    const fastq expected_record = fastq("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(0, 3);
+    ASSERT_EQ(expected_ntrim, record.trim_trailing_bases(true, 2));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// trim_windowed_bases
+
+TEST(fastq, trim_windowed_bases__empty_record)
+{
+    fastq record("Empty", "", "");
+    const fastq::ntrimmed expected(0, 0);
+    ASSERT_EQ(expected, record.trim_windowed_bases(true, 10));
+    ASSERT_EQ(fastq("Empty", "", ""), record);
+}
+
+
+TEST(fastq, trim_windowed_bases__trim_nothing)
+{
+    const fastq reference("Rec", "NNNNN", "!!!!!");
+    const fastq::ntrimmed expected(0, 0);
+    fastq record = reference;
+
+    // Trim neither Ns nor low Phred score bases
+    ASSERT_EQ(expected, record.trim_windowed_bases(false, -1));
+    ASSERT_EQ(reference, record);
+}
+
+
+TEST(fastq, trim_windowed_bases__trim_ns)
+{
+    fastq record("Rec", "NNANT", "23456");
+    const fastq expected_record("Rec", "ANT", "456");
+    const fastq::ntrimmed expected_ntrim(2, 0);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, -1, 1));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+TEST(fastq, trim_windowed_bases__trim_windowed_bases)
 {
     const fastq expected_record("Rec", "TN", "JJ");
     const fastq::ntrimmed expected_ntrim(0, 3);
     fastq record("Rec", "TNANT", "JJ###");
 
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(false, 10));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, 10));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_low_quality_bases__trim_mixed)
+TEST(fastq, trim_windowed_bases__trim_mixed)
 {
     const fastq expected_record("Rec", "AAANAAA", "JJJ#JJJ");
     const fastq::ntrimmed expected_ntrim(1, 2);
     fastq record("Rec", "NAAANAAANT", "#JJJ#JJJ##");
 
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 10));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 20, 2));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_low_quality_bases__trim_mixed__no_low_quality_bases)
+TEST(fastq, trim_windowed_bases__trim_mixed__no_low_quality_bases)
 {
     const fastq expected_record("Rec", "ACTTAG", "JJJJJJ");
     const fastq::ntrimmed expected_ntrim(0, 0);
     fastq record = expected_record;
 
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 2));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 2));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_low_quality_bases__trim_window)
+TEST(fastq, trim_windowed_bases__trim_window)
 {
     // Should trim starting at the window of low quality bases in the middle
     // even with high qual bases at the end.
     fastq record("Rec", "NNAAAAAAAAATNNNNNNNA", "##EEEEEEEEEE#######E");
     const fastq expected_record = fastq("Rec", "AAAAAAAAAT", "EEEEEEEEEE");
     const fastq::ntrimmed expected_ntrim(2, 8);
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 10, 5));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 10, 5));
     ASSERT_EQ(expected_record, record);
 }
 
-TEST(fastq, trim_low_quality_bases__trim_everything)
+TEST(fastq, trim_windowed_bases__trim_everything)
 {
     fastq record("Rec", "TAG", "!!!");
     const fastq expected_record = fastq("Rec", "", "");
     const fastq::ntrimmed expected_ntrim(0, 3);
-    ASSERT_EQ(expected_ntrim, record.trim_low_quality_bases(true, 10));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 10));
     ASSERT_EQ(expected_record, record);
 }
 
