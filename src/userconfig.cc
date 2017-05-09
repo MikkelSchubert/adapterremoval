@@ -93,7 +93,7 @@ userconfig::userconfig(const std::string& name,
     , quality_input_fmt()
     , quality_output_fmt()
     , trim_by_quality(false)
-    , window_len(1)
+    , trim_window_length(std::numeric_limits<double>::quiet_NaN())
     , low_quality_score(2)
     , trim_ambiguous_bases(false)
     , max_ambiguous_bases(1000)
@@ -269,7 +269,7 @@ userconfig::userconfig(const std::string& name,
         = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
             "Max error-rate when aligning reads and/or adapters. If > 1, the "
             "max error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults "
-            "are used, otherwise the user-supplied value is used directly. "
+            "are used, otherwise the user-supplied value is used directly "
             "[defaults: 1/3 for trimming; 1/10 when identifying adapters].");
     argparser["--maxns"] =
         new argparse::knob(&max_ambiguous_bases, "MAX",
@@ -287,18 +287,23 @@ userconfig::userconfig(const std::string& name,
             "[current: %default]");
     argparser["--trimqualities"] =
         new argparse::flag(&trim_by_quality,
-            "If set, use a windowed qualitry trimming algorithm to trim bases "
-            "with quality scores <= to --minquality value "
-            "[current: %default]");
-    argparser["--qualwinlen"] =
-        new argparse::knob(&window_len, "INT",
-            "Window size; see --trimqualities for details "
-            "[current: %default]");
+            "If set, trim bases at 5'/3' termini with quality scores <= to "
+            "--minquality value [current: %default]");
+    argparser["--trimwindow"] =
+        new argparse::floaty_knob(&trim_window_length, "INT",
+            "If set, quality trimming will be carried out using window based "
+            "approach, where windows with an average quality less than "
+            "--minquality will be trimmed. If >= 1, this value will be used "
+            "as the window size. If the value is < 1, the value will be "
+            "multiplied with the read length to determine a window size per "
+            "read. If the resulting window size is 0 or larger than the read "
+            "length, the read length is used as the window size. This option "
+            "implies --trimqualities [current: %default].");
     argparser["--minquality"] =
         new argparse::knob(&low_quality_score, "PHRED",
-            "Inclusive minimum; see --trimqualities for details. Set to 1 to "
-            "disable window-based QC and revert to 5'/3'-terminal trimming "
+            "Inclusive minimum; see --trimqualities for details "
             "[current: %default]");
+
     argparser["--minlength"] =
         new argparse::knob(&min_genomic_length, "LENGTH",
             "Reads shorter than this length are discarded "
@@ -446,11 +451,17 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         run_type = ar_demultiplex_sequences;
     }
 
-
     if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
         std::cerr << "Error: Invalid value for --minquality: "
                   << low_quality_score << "\n"
                   << "   must be in the range 0 .. " << MAX_PHRED_SCORE
+                  << std::endl;
+        return argparse::pr_error;
+    } else if (trim_window_length >= 0) {
+        trim_by_quality = true;
+    } else if (trim_window_length < 0.0) {
+        std::cerr << "Error: Invalid value for --trimwindow ("
+                  << trim_window_length << "); value must be >= 0."
                   << std::endl;
         return argparse::pr_error;
     }
@@ -701,16 +712,15 @@ std::string userconfig::get_output_filename(const std::string& key,
 
 fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) const
 {
-    if (trim_ambiguous_bases || trim_by_quality) {
-        char quality_score = trim_by_quality ? low_quality_score : -1;
-        if (window_len > 1) {
-            return read.trim_windowed_bases(trim_ambiguous_bases,
-                                            quality_score,
-                                            window_len);
-        } else {
-            return read.trim_trailing_bases(trim_ambiguous_bases,
-                                            quality_score);
-        }
+    if (trim_window_length >= 0) {
+        return read.trim_windowed_bases(trim_ambiguous_bases,
+                                        low_quality_score,
+                                        trim_window_length);
+    } else if (trim_ambiguous_bases || trim_by_quality) {
+        const char quality_score = trim_by_quality ? low_quality_score : -1;
+
+        return read.trim_trailing_bases(trim_ambiguous_bases,
+                                        quality_score);
     }
 
     return fastq::ntrimmed();

@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <sstream>
 
+#include "debug.h"
 #include "fastq.h"
 #include "linereader.h"
 
@@ -159,76 +160,77 @@ fastq::ntrimmed fastq::trim_trailing_bases(const bool trim_ns, char low_quality)
 }
 
 
+//! Calculates the size of the sliding window for quality trimming given a
+//! read length and a user-defined window-size (fraction or whole number).
+size_t calculate_winlen(const size_t read_length, const double window_size)
+{
+    size_t winlen;
+    if (window_size >= 1.0) {
+        winlen = static_cast<size_t>(window_size);
+    } else {
+        winlen = static_cast<size_t>(window_size * read_length);
+    }
+
+    if (winlen == 0 || winlen > read_length) {
+        winlen = read_length;
+    }
+
+    return winlen;
+}
+
+
 fastq::ntrimmed fastq::trim_windowed_bases(const bool trim_ns,
                                            char low_quality,
-                                           const size_t winlen)
+                                           const double window_size)
 {
+    AR_DEBUG_ASSERT(window_size >= 0.0);
+    if (m_sequence.empty()) {
+        return ntrimmed();
+    }
+
     low_quality += PHRED_OFFSET_33;
+    auto is_quality_base = [&] (size_t i) {
+        return m_qualities.at(i) > low_quality
+            && (!trim_ns || m_sequence.at(i) != 'N');
+    };
 
-    // Windowed left trim
-    uint64_t running_sum = 0;
-    bool found_start = false;
-    bool found_end = false;
-    size_t left_inclusive = 0;
-    size_t right_exclusive = m_sequence.length();
-    size_t i = 0;
-    for (; i < m_sequence.length(); i++) {
-        // Keep track of a running window's sum of quality scores
-        running_sum += m_qualities.at(i);
-        if (i >= winlen) {
-            running_sum -= m_qualities.at(i - winlen);
+    const size_t winlen = calculate_winlen(length(), window_size);
+    long running_sum = std::accumulate(m_qualities.begin(),
+                                       m_qualities.begin() + winlen,
+                                       0);
+
+    size_t left_inclusive = std::string::npos;
+    size_t right_exclusive = std::string::npos;
+    for (size_t offset = 0; offset + winlen <= length(); ++offset) {
+        const long running_avg = running_sum / static_cast<long>(winlen);
+
+        // We trim away low quality bases and Ns from the start of reads,
+        // **before** we consider windows.
+        if (left_inclusive == std::string::npos && is_quality_base(offset) && running_avg >= low_quality) {
+            left_inclusive = offset;
         }
 
-        if (!found_start) {
-            // We trim away low quality/N bases from the start of reads,
-            // **before** we consider windows.
-            if ((m_sequence.at(i) == 'N' && trim_ns) || m_qualities.at(i) < low_quality) {
-                // Quality (still) too low and/OR there's an N and we trim at
-                // Ns. Don't start windowed QC yet.
-                continue;
+        if (left_inclusive != std::string::npos && (running_avg < low_quality || offset + winlen == length())) {
+            right_exclusive = offset;
+            while (right_exclusive < length() && is_quality_base(right_exclusive)) {
+                right_exclusive++;
             }
-            left_inclusive = i;
-            found_start = true;
-        }
 
-        // In good qual. reads, we will find the start before winlen, but our
-        // running sum won't be full. So below here, `i` refers to the right
-        // hand side of a window. In bad reads, we wait till `winlen` bases
-        // past the end of the crappy qualities, as that is where the RHS of the
-        // window will be.
-        if (i < left_inclusive + winlen - 1) {
-            continue;
-        }
-
-        // If this window's mean is below threshold, set the right hand trim
-        // point here. The exact point will be refined below.
-        char window_mean = running_sum / winlen;
-        if (window_mean < low_quality) {
-            found_end = true;
             break;
         }
-    }
 
-    // Right trim
-    if (!found_start) {
-        // Trim all bases starting from start.
-        i = 0;
-    } else if (found_end) {
-        // `i` is the (inclusive) end of the first bad window, which we should
-        // go to the start of, triming at the first bad base
-        i = i - winlen + 1;
-    } else {
-        // `i` is the length of the sequence: go back `winlen` if we can.
-        if (i >= winlen) i -= winlen;
-        else i = 0;
-    }
-    for (; i < m_qualities.length(); i++) {
-        if ((trim_ns && m_sequence.at(i) == 'N') || m_qualities.at(i) < low_quality) {
-            right_exclusive = i;
-            break;
+        running_sum -= m_qualities.at(offset);
+        if (offset + winlen < length()) {
+            running_sum += m_qualities.at(offset + winlen);
         }
     }
 
+    if (left_inclusive == std::string::npos) {
+        // No starting window found. Trim all bases starting from start.
+        return trim_sequence_and_qualities(length(), length());
+    }
+
+    AR_DEBUG_ASSERT(right_exclusive != std::string::npos);
     return trim_sequence_and_qualities(left_inclusive, right_exclusive);
 }
 

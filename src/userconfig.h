@@ -134,8 +134,8 @@ public:
 
     //! If true, read termini are trimmed for low-quality bases.
     bool trim_by_quality;
-    //! Window size for windowed Qual trim
-    unsigned window_len;
+    //! Window size for window trimming; a fraction, whole number, or negative.
+    double trim_window_length;
     //! The highest quality score which is considered low-quality
     unsigned low_quality_score;
 

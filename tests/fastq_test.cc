@@ -381,7 +381,7 @@ TEST(fastq, trim_windowed_bases__trim_everything)
 {
     fastq record("Rec", "TAG", "!!!");
     const fastq expected_record = fastq("Rec", "", "");
-    const fastq::ntrimmed expected_ntrim(0, 3);
+    const fastq::ntrimmed expected_ntrim(3, 0);
     ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 10));
     ASSERT_EQ(expected_record, record);
 }

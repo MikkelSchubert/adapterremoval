@@ -126,7 +126,7 @@ public:
      */
     ntrimmed trim_windowed_bases(const bool trim_ns = true,
                                  char low_quality = -1,
-                                 const size_t winlen = 1);
+                                 const double window_size = 0.1);
 
 
     /**
