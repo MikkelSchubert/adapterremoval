@@ -22,6 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <gtest/gtest.h>
@@ -431,6 +432,17 @@ TEST(floaty_knob, defaults)
 }
 
 
+TEST(floaty_knob, default_nan)
+{
+	double sink = std::numeric_limits<double>::quiet_NaN();
+	consumer_autoptr ptr(new argparse::floaty_knob(&sink));
+	ASSERT_FALSE(ptr->is_set());
+	ASSERT_EQ("", ptr->metavar());
+	ASSERT_EQ("", ptr->help());
+	ASSERT_EQ("<not set>", ptr->to_str());
+}
+
+
 TEST(floaty_knob, defaults__sink_required)
 {
 	try {
@@ -489,6 +501,7 @@ TEST(floaty_knob, trailing_garbage)
     ASSERT_EQ(-1, ptr->consume(arguments.begin(), arguments.end()));
     ASSERT_FALSE(ptr->is_set());
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // parser

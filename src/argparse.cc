@@ -22,11 +22,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <stdexcept>
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <set>
+#include <stdexcept>
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -541,9 +542,13 @@ size_t floaty_knob::consume(string_vec_citer start, const string_vec_citer& end)
 
 std::string floaty_knob::to_str() const
 {
-    std::stringstream stream;
-    stream << *m_ptr;
-    return stream.str();
+    if (std::isnan(*m_ptr)) {
+        return "<not set>";
+    } else {
+        std::stringstream stream;
+        stream << *m_ptr;
+        return stream.str();
+    }
 }
 
 } // namespace argparse
