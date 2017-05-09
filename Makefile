@@ -183,7 +183,7 @@ GTEST_DIR := googletest-release-1.7.0
 GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
 GTEST_LIB := $(TEST_DIR)/libgtest.a
 
-TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc -DAR_TEST_BUILD
+TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc -DAR_TEST_BUILD -g
 GTEST_CXXFLAGS := $(TEST_CXXFLAGS)
 
 test: $(TEST_DIR)/main
