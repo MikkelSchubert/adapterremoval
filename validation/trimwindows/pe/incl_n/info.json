@@ -1,0 +1,6 @@
+{
+	"arguments": ["--trimwindows", "4", "--minquality", "20", "--trimns"],
+	"return_code": 0,
+	"stderr": [
+	]
+}
