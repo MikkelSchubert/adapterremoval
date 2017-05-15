@@ -1,5 +1,16 @@
-### Unreleased
-  * Numerous spelling errors fixed courtesy of Andreas Tille (tillea).
+### Version 2.2.1 - 2017-05-15
+
+  * Numerous spelling errors fixed courtesy of Andreas Tille.
+  * Added support for specifying multiple filenames after --file1 and --file2,
+    in which case the files are treated as if they were concatenated. This is
+    supported for all operations. Special thanks to Stephen Clayton.
+  * Added additional run-time checks to catch race-conditions.
+  * Progress messages written to STDERR no longer cause subsequent error
+    messages to be written to the same line.
+  * Implemented quality trimming using a sliding window approach inspired by
+    sickle (https://github.com/najoshi/sickle). Special thanks to Kevin Murray.
+  * Fixed miscounting of the total number of retained nucleotides, where mate 1
+    reads were being counted twice instead of counting both mate 1 and mate 2.
 
 
 ### Version 2.2.0 - 2016-10-27
