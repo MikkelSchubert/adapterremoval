@@ -1,4 +1,4 @@
-# AdapterRemoval [![Travis](https://img.shields.io/travis/MikkelSchubert/adapterremoval/master.svg)](https://travis-ci.org/MikkelSchubert/adapterremoval)
+# AdapterRemoval [![Travis](https://img.shields.io/travis/MikkelSchubert/adapterremoval/master.svg)](https://travis-ci.org/MikkelSchubert/adapterremoval) [![Coveralls](https://img.shields.io/coveralls/MikkelSchubert/adapterremoval.svg)](https://coveralls.io/github/MikkelSchubert/adapterremoval)
 
 This program searches for and removes remnant adapter sequences from High-Throughput Sequencing (HTS) data and (optionally) trims low quality bases from the 3' end of reads following adapter removal. AdapterRemoval can analyze both single end and paired end data, and can be used to merge overlapping paired-ended reads into (longer) consensus sequences. Additionally, the AdapterRemoval may be used to recover a consensus adapter sequence for paired-ended data, for which this information is not available.
 

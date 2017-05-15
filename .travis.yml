@@ -23,4 +23,4 @@ script:
     - make validate
 
 after_success:
-  - coveralls --exclude tests --gcov-options '\-lp'
+  - coveralls --exclude tests --exclude googletest-release-1.8.0 --gcov-options '\-lp'
