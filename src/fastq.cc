@@ -206,11 +206,11 @@ fastq::ntrimmed fastq::trim_windowed_bases(const bool trim_ns,
 
         // We trim away low quality bases and Ns from the start of reads,
         // **before** we consider windows.
-        if (left_inclusive == std::string::npos && is_quality_base(offset) && running_avg >= low_quality) {
+        if (left_inclusive == std::string::npos && is_quality_base(offset) && running_avg > low_quality) {
             left_inclusive = offset;
         }
 
-        if (left_inclusive != std::string::npos && (running_avg < low_quality || offset + winlen == length())) {
+        if (left_inclusive != std::string::npos && (running_avg <= low_quality || offset + winlen == length())) {
             right_exclusive = offset;
             while (right_exclusive < length() && is_quality_base(right_exclusive)) {
                 right_exclusive++;
