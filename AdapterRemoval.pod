@@ -6,31 +6,31 @@ AdapterRemoval - Remove adapters from sequences in either single end or paired e
 
 =head1 SYNOPSIS
 
-B<AdapterRemoval> --file1 filename [--file2 filename] [--interleaved] [--interleaved-input] [--interleaved-output] [--combined-output] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--demultiplex-only] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
+B<AdapterRemoval> --file1 filenames [--file2 filenames] [--interleaved] [--interleaved-input] [--interleaved-output] [--combined-output] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--demultiplex-only] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
 
 
 =head1 DESCRIPTION
 
-B<AdapterRemoval> reads either one FASTQ file (single ended mode) or two FASTQ files (paired ended mode). It removes the residual adapter sequence from the reads and optionally trims Ns from the reads, and low qualities bases using the quality string, and collapses overlapping paired ended mates into one read. Reads are discarded if the remaining genomic part is too short, or if the read contains more than an (user specified) amount of amigious nucleotides ('N'). These operations may be combined with simultaneous demultiplexing.
+B<AdapterRemoval> reads either one FASTQ file (single ended mode) or two FASTQ files (paired ended mode). It removes the residual adapter sequence from the reads and optionally trims Ns from the reads, and low qualities bases using the quality string, and collapses overlapping paired ended mates into one read. Reads are discarded if the remaining genomic part is too short, or if the read contains more than an (user specified) amount of amigious nucleotides ('N'). These operations may be combined with simultaneous demultiplexing. Alternatively, B<AdapterRemoval> may attempt to reconstruct a consensus adapter sequences from paired-ended data, in order to allow the identification of the adapter sequences originally used, and thereby ensure proper trimming of these reads.
 
-Alternatively, B<AdapterRemoval> may attempt to reconstruct a consensus adapter sequences from paired-ended data, in order to allow the identification of the adapter sequences originally used, and thereby ensure proper trimming of these reads.
-
-The reads and adapters are transformed to upper case for comparison. It is assumed that the letter 'N' is used for an unknown nucleotide, but in case the program encounters a '.' in the sequence, they will be treated as (and translated into) Ns. The program tries to check for invalid input and / or nonsensical combinations of parameters but please report strange behaviour, bugs and such to MSchubert@snm.ku.dk
+The reads and adapters are transformed to upper case for comparison. It is assumed that the letter 'N' is used for an unknown nucleotide, but in case the program encounters a '.' in the sequence, they will be treated as (and translated into) Ns. The program tries to check for invalid input and / or nonsensical combinations of parameters but please report strange behaviour, bugs and such to MikkelSch@gmail.com
 
 If you use this program, please cite the paper:
-Stinus Lindgreen (2012): AdapterRemoval: easy cleaning of next-generation sequencing reads. BMC Res Notes, 5:337. doi: 10.1186/1756-0500-5-337.
+
+Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid adapter trimming, identification, and read merging. BMC Research Notes, 12;9(1):88
+http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2
 
 =head1 OPTIONS
 
 =over 9
 
-=item B<--file1> I<filename>
+=item B<--file1> I<filename> [...]
 
-Read FASTQ reads from file I<filename>. This contains either the single ended (SE) reads or, if paired ended, the mate 1 reads. If running in paired end mode, both file1 and file2 must be set. The file may optionally be gzip or bzip2 compressed.
+Read FASTQ reads from one or more files. This contains either the single ended (SE) reads or, if paired ended, the mate 1 reads. If running in paired end mode, both I<--file1> and I<--file2> must be set. The files may optionally be gzip or bzip2 compressed.
 
-=item B<--file2> I<filename>
+=item B<--file2> I<filename> [...]
 
-Read FASTQ file I<filename> containing mate 2 reads for a paired end run. If specified, --file1 must also be set. The file may optionally be gzip or bzip2 compressed.
+Read one or more FASTQ files containing mate 2 reads for a paired end run. If specified, --file1 must also be set. The files may optionally be gzip or bzip2 compressed.
 
 =item B<--interleaved>
 
@@ -401,7 +401,7 @@ Trimming and filtering related options to not apply to this mode ("TRIMMING SETT
 
 =head1 REPORTING BUGS
 
-Report bugs to Mikkel Schubert <MSchubert@snm.ku.dk>.
+Report bugs to Mikkel Schubert <MikkelSch@gmail.com>.
 
 Your bugreport should always include:
 
@@ -426,14 +426,14 @@ Copyright (C) 2011 Stinus Lindgreen <stinus@binf.ku.dk>.
 
 Parts of the manual was written by Ole Tange <tange@binf.ku.dk>.
 
-Parts of the manual was written by Mikkel Schubert <MSchubert@snm.ku.dk>.
+Parts of the manual was written by Mikkel Schubert <MikkelSch@gmail.com>.
 
 
 =head1 LICENSE
 
 Copyright (C) 2011 Stinus Lindgreen <stinus@binf.ku.dk>.
 
-Copyright (C) 2014 Mikkel Schubert <MSchubert@snm.ku.dk>.
+Copyright (C) 2014 Mikkel Schubert <MikkelSch@gmail.com>.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

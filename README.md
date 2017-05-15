@@ -13,6 +13,20 @@ AdapterRemoval was originally published in Lindgreen 2012:
     http://www.biomedcentral.com/1756-0500/5/337/
 
 
+## Overview of major features
+
+ - Trimming of adapters sequences from single-end and paired-end FASTQ reads.
+ - Trimming of multiple, different adapters or adapter pairs.
+ - Demultiplexing of single or double indexed reads, with or without trimming
+   of adapter sequences.
+ - Reconstruction of adapter sequences from paired-end reads, by the pairwise
+   alignment of reads in the absence of a known adapter sequence.
+ - Merging of overlapping read-pairs into higher-quality consensus sequences.
+ - Multi-threading of all operations for increased throughput.
+ - Reading and writing of gzip and bzip2 compressed files.
+ - Reading and writing of interleaved FASTQ files.
+
+
 ## Installation
 
 To install, first download and unpack the newest release from GitHub:
@@ -81,7 +95,6 @@ Since --gzip and --basename is specified, the trimmed FASTQ reads are written to
 Note that by default, AdapterRemoval does not require a minimum number of bases overlapping with the adapter sequence, before reads are trimmed. This may result in an excess of very short (1 - 3 bp) 3' fragments being falsely identified as adapter sequences, and trimmed. This behavior may be changed using the --minadapteroverlap option, which allows the specification of a minimum number of bases (excluding Ns) that must be aligned to carry trimming. For example, use --minadapteroverlap 3 to require an overlap of at least 3 bp.
 
 
-
 ### Trimming paired-end reads
 
 The following command removes adapters from a paired-end reads, where the mate 1 and mate 2 reads are kept in files 'reads\_1.fq' and 'reads\_2.fq', respectively. The reads are trimmed for both Ns and low quality bases, and overlapping reads (at least 11 nucleotides, per default) are merged (collapsed):
@@ -89,6 +102,21 @@ The following command removes adapters from a paired-end reads, where the mate 1
     $ AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_paired --trimns --trimqualities --collapse
 
 This command generates the files 'output_paired.pair1.truncated' and 'output_paired.pair2.truncated', which contain trimmed pairs of reads which were not collapsed, 'output_paired.singleton.truncated' containing reads where one mate was discarded, 'output_paired.collapsed' containing merged reads, and 'output_paired.collapsed.truncated' containing merged reads that have been trimmed due to the --trimns or --trimqualities options. Finally, the 'output_paired.discarded' and 'output_paired.settings' files correspond to those of the single-end run.
+
+
+### Multiple input FASTQ files
+
+More than one input file may be specified for mate 1 and mate 2 reads. This is accomplished simply by listing more than one file after the --file1 and the --file2 options.
+
+For single-end reads:
+
+    $ AdapterRemoval --file1 reads_1a.fq reads_1b.fq reads_1c.fq
+
+And for paired-end reads:
+
+    $ AdapterRemoval --file1 reads_1a.fq reads_1b.fq reads_1c.fq --file2 reads_2a.fq reads_2b.fq reads_2c.fq
+
+AdapterRemoval will process these files as if they had been concatenated into a single file or pair of files prior to invoking AdapterRemoval. For paired reads, the files must be specified in the same order for --file1 and --file2.
 
 
 ### Interleaved FASTQ reads
