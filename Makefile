@@ -110,6 +110,7 @@ everything: all static test validation
 clean: clean_tests
 	@echo $(COLOR_GREEN)"Cleaning ..."$(COLOR_END)
 	$(QUIET) rm -f build/$(PROG) build/$(PROG).1 build/$(LIBNAME).a
+	$(QUIET) rm -rvf build/validation
 	$(QUIET) rm -rvf $(BDIR)
 
 # Install
