@@ -6,7 +6,7 @@ AdapterRemoval - Remove adapters from sequences in either single end or paired e
 
 =head1 SYNOPSIS
 
-B<AdapterRemoval> --file1 filenames [--file2 filenames] [--interleaved] [--interleaved-input] [--interleaved-output] [--combined-output] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--demultiplex-only] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
+B<AdapterRemoval> --file1 filenames [--file2 filenames] [--interleaved] [--interleaved-input] [--interleaved-output] [--combined-output] [--basename filename] [--identify-adapters] [--trimns] [--maxns max] [--trimqualities] [--trimwindows length] [--minquality minimum] [--collapse] [--version] [--mm mismatchrate] [--minlength len] [--minalignmentlength len] [--qualitybase base] [--qualitybase-output base] [--shift num] [--adapter1 sequence] [--adapter2 sequence] [--adapter-list filename] [--barcode-list filename] [--barcode-mm num] [--barcode-mm-r1 num] [--barcode-mm-r2 num] [--demultiplex-only] [--output1 filename] [--output2 filename] [--singleton filename] [--outputcollapsed filename] [--outputcollapsedtruncated filename] [--discarded filename] [--settings filename] [--seed seed] [--gzip] [--gzip-level level] [--threads num] [--version] [--help]
 
 
 =head1 DESCRIPTION
@@ -67,6 +67,18 @@ If a read has more than I<max> Ns after trimming, it is discarded (default is no
 =item B<--trimqualities>
 
 Remove consecutive stretches of low quality bases (threshold set by I<minquality>) from both the 5' and 3' end of the reads. All bases with I<minquality> or lower are trimmed. If trimming of Ns is also enabled, stretches of mixed low-quality bases and/or Ns are trimmed.
+
+=item B<--trimwindows> I<length>
+
+Remove low quality bases using a sliding window bases approach inspired by B<sickle>:
+
+B<1.> The new 5' is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than I<minquality>.
+
+B<2.> The new 3' is located by sliding the first window right, until the average quality becomes less than or equal to I<minquality>. The new 3' is placed at the last base in that window where the quality is greater than or equal to I<minquality>.
+
+B<3.> If no 5' position could be determined, the read is discarded.
+
+The value of I<length> may be a number greater than or equal to 1, in which case that number (rounded down to the nearest whole number) is used as the window length, or it may be a value greater than or equal to zero. In the latter case, that number is multipled by the lenght of each read, to determine the window length. For example, a I<trimwindow> value of 0.1 and a read length of 100 would result in 10 bp windows. If the resulting window length is zero or is greater than the current read length, then the read length is used instead.
 
 =item B<--minquality> I<minimum>
 
