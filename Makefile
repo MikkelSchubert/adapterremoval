@@ -180,7 +180,7 @@ TEST_OBJS := $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-GTEST_DIR := googletest-release-1.7.0
+GTEST_DIR := googletest-release-1.8.0/googletest
 GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
 GTEST_LIB := $(TEST_DIR)/libgtest.a
 
@@ -221,24 +221,24 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -c $< -o $@
 
 .PRECIOUS: $(GTEST_DIR)/src/gtest%.cc
-$(GTEST_DIR)/src/gtest%.cc: googletest-release-1.7.0.zip
+$(GTEST_DIR)/src/gtest%.cc: googletest-release-1.8.0.zip
 	$(QUIET) if ! test -e "$@"; \
 	then \
 		echo $(COLOR_CYAN)"Unpacking Google Test library"$(COLOR_END); \
-		unzip -qo googletest-release-1.7.0.zip; \
+		unzip -qo googletest-release-1.8.0.zip; \
 	fi
 
-googletest-release-1.7.0.zip:
+googletest-release-1.8.0.zip:
 ifneq ("$(shell which wget)", "")
 	@echo $(COLOR_CYAN)"Fetching Google Test library using wget"$(COLOR_END)
-	$(QUIET) wget -q https://github.com/google/googletest/archive/release-1.7.0.zip -O googletest-release-1.7.0.zip
+	$(QUIET) wget -q https://github.com/google/googletest/archive/release-1.8.0.zip -O googletest-release-1.8.0.zip
 else ifneq ("$(shell which curl)", "")
 	@echo $(COLOR_CYAN)"Fetching Google Test library using curl"$(COLOR_END)
-	$(QUIET) curl -L https://github.com/google/googletest/archive/release-1.7.0.zip -o googletest-release-1.7.0.zip
+	$(QUIET) curl -L https://github.com/google/googletest/archive/release-1.8.0.zip -o googletest-release-1.8.0.zip
 else
-	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.7.0 in this folder:"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.7.0.zip -O googletest-release-1.7.0.zip"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ unzip googletest-release-1.7.0.zip"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.8.0 in this folder:"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.8.0.zip -O googletest-release-1.8.0.zip"$(COLOR_END)
+	@echo $(COLOR_YELLOW)"  $$ unzip googletest-release-1.8.0.zip"$(COLOR_END)
 	@exit 1
 endif
 
