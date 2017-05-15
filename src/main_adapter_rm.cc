@@ -519,7 +519,7 @@ public:
             const bool read_2_acceptable = m_config.is_acceptable_read(read_2);
 
             stats->total_number_of_nucleotides += read_1_acceptable ? read_1.length() : 0u;
-            stats->total_number_of_nucleotides += read_1_acceptable ? read_2.length() : 0u;
+            stats->total_number_of_nucleotides += read_2_acceptable ? read_2.length() : 0u;
             stats->total_number_of_good_reads += read_1_acceptable;
             stats->total_number_of_good_reads += read_2_acceptable;
 
