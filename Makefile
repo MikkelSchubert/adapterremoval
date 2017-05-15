@@ -25,6 +25,8 @@ COLOR_BUILD := yes
 # Debug build; adds warnings and debugging symbols
 DEBUG_BUILD := no
 
+# Include coverage instrumentation in build
+COVERAGE := no
 
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
@@ -63,6 +65,14 @@ LIBRARIES := ${LIBRARIES} -lbz2
 BDIR := ${BDIR}_bz2
 else
 $(info Building AdapterRemoval with bzip2 support: no)
+endif
+
+ifeq ($(strip ${COVERAGE}), yes)
+$(info Building AdapterRemoval with coverage instrumentation: yes)
+CXXFLAGS := ${CXXFLAGS} --coverage
+DEBUG_BUILD := yes
+else
+$(info Building AdapterRemoval with coverage instrumentation: no)
 endif
 
 ifeq ($(strip ${DEBUG_BUILD}), yes)
