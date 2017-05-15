@@ -26,21 +26,13 @@
 #include <stdexcept>
 #include <gtest/gtest.h>
 
+#include "testing.h"
+#include "debug.h"
 #include "fastq.h"
 #include "linereader.h"
 
 namespace ar
 {
-
-inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
-{
-    stream << "'@" << record.header() << "\\n"
-           << record.sequence() << "\\n+\\n"
-           << record.qualities() << "\\n'";
-
-    return stream;
-}
-
 
 class vec_reader : public line_reader_base
 {
@@ -301,67 +293,173 @@ TEST(fastq, trim_trailing_bases__trim_everything)
 ///////////////////////////////////////////////////////////////////////////////
 // trim_windowed_bases
 
-TEST(fastq, trim_windowed_bases__empty_record)
+
+#define PARAMETERIZED_TEST(name, values) \
+    class name : public ::testing::TestWithParam<double> {}; \
+    INSTANTIATE_TEST_CASE_P(fastq_windowed_trimming, name, values); \
+    TEST_P(name, test)
+
+
+// Test for invalid parameters
+PARAMETERIZED_TEST(invalid_parameters, ::testing::Values(-1.0, std::numeric_limits<double>::quiet_NaN()))
+{
+    fastq record("Rec", "TAGTGACAT", "111111111");
+    ASSERT_THROW(record.trim_windowed_bases(false, -1, GetParam()), assert_failed);
+}
+
+
+// Test for trimming empty reads
+PARAMETERIZED_TEST(empty_reads, ::testing::Values(1, 0.1, 3))
 {
     fastq record("Empty", "", "");
     const fastq::ntrimmed expected(0, 0);
-    ASSERT_EQ(expected, record.trim_windowed_bases(true, 10));
+    ASSERT_EQ(expected, record.trim_windowed_bases(true, 10, GetParam()));
     ASSERT_EQ(fastq("Empty", "", ""), record);
 }
 
 
-TEST(fastq, trim_windowed_bases__trim_nothing)
+// Test for when entire read is trimmed
+PARAMETERIZED_TEST(trim_everything, ::testing::Values(1, 0.2, 4, 10))
 {
-    const fastq reference("Rec", "NNNNN", "!!!!!");
-    const fastq::ntrimmed expected(0, 0);
-    fastq record = reference;
-
-    // Trim neither Ns nor low Phred score bases
-    ASSERT_EQ(expected, record.trim_windowed_bases(false, -1));
-    ASSERT_EQ(reference, record);
+    fastq record("Rec", "TAGTGACAT", "111111111");
+    const fastq expected_record = fastq("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(9, 0);
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '2' - '!',
+                                                         GetParam()));
+    ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_windowed_bases__trim_ns)
+// Test for when nothing is trimmed
+PARAMETERIZED_TEST(trim_nothing, ::testing::Values(0, 1, 0.2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
 {
-    fastq record("Rec", "NNANT", "23456");
-    const fastq expected_record("Rec", "ANT", "456");
+    fastq record("Rec", "TAGTGACAT", "111111111");
+    const fastq expected_record = record;
+    const fastq::ntrimmed expected_ntrim(0, 0);
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, -1, GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+// Test for trimming of Ns
+PARAMETERIZED_TEST(trim_ns_1, ::testing::Values(1, 0.2))
+{
+    fastq record("Rec", "NNATNT", "234567");
+    const fastq expected_record("Rec", "ATNT", "4567");
     const fastq::ntrimmed expected_ntrim(2, 0);
 
-    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, -1, 1));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, -1, GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+// - trimming of Ns - the final window contains Ns and is therefore truncated
+PARAMETERIZED_TEST(trim_ns_2, ::testing::Values(2, 3, 4))
+{
+    fastq record("Rec", "NNATNT", "234567");
+    const fastq expected_record("Rec", "AT", "45");
+    const fastq::ntrimmed expected_ntrim(2, 2);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, -1, GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+// - trimming of Ns - No valid window is found
+TEST(fastq, trim_windowed_bases__trim_ns_5)
+{
+    fastq record("Rec", "NNATNT", "234567");
+    const fastq expected_record("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(6, 0);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, -1, 5));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_windowed_bases__trim_windowed_bases)
+// Trimming of 5' only
+PARAMETERIZED_TEST(trim_5p_1bp, ::testing::Values(1, 0.1))
 {
-    const fastq expected_record("Rec", "TN", "JJ");
-    const fastq::ntrimmed expected_ntrim(0, 3);
-    fastq record("Rec", "TNANT", "JJ###");
+    fastq record("Rec", "TAACGATCCG", "0123456789");
+    const fastq expected_record("Rec", "CGATCCG", "3456789");
+    const fastq::ntrimmed expected_ntrim(3, 0);
 
-    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, 10));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '2' - '!',
+                                                         GetParam()));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_windowed_bases__trim_mixed)
+// Trimming of 5' only
+PARAMETERIZED_TEST(trim_5p_2bp, ::testing::Values(2, 0.2))
 {
-    const fastq expected_record("Rec", "AAANAAA", "JJJ#JJJ");
-    const fastq::ntrimmed expected_ntrim(1, 2);
-    fastq record("Rec", "NAAANAAANT", "#JJJ#JJJ##");
+    fastq record("Rec", "TAACGATCCG", "0123456789");
+    const fastq expected_record("Rec", "CGATCCG", "3456789");
+    const fastq::ntrimmed expected_ntrim(3, 0);
 
-    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 20, 2));
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '2' - '!',
+                                                         GetParam()));
     ASSERT_EQ(expected_record, record);
 }
 
 
-TEST(fastq, trim_windowed_bases__trim_mixed__no_low_quality_bases)
-{
-    const fastq expected_record("Rec", "ACTTAG", "JJJJJJ");
-    const fastq::ntrimmed expected_ntrim(0, 0);
-    fastq record = expected_record;
 
-    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 2));
+// Trimming of 5' only - lowquality is inclusive
+PARAMETERIZED_TEST(trim_5p_inclusive_low_quality, ::testing::Values(2, 3))
+{
+    fastq record("Rec", "TAACGATCCG", "0123126789");
+    const fastq expected_record("Rec", "TCCG", "6789");
+    const fastq::ntrimmed expected_ntrim(6, 0);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '2' - '!',
+                                                         GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+// Trimming of 3' only - lowquality is inclusive
+PARAMETERIZED_TEST(trim_3p_inclusive_low_quality, ::testing::Values(3))
+{
+    fastq record("Rec", "TAACGATCCG", "9876312333");
+    const fastq expected_record("Rec", "TAACG", "98763");
+    const fastq::ntrimmed expected_ntrim(0, 5);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '2' - '!',
+                                                         GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+PARAMETERIZED_TEST(tiny_and_huge_window_sizes_1, ::testing::Values(0, 0.01, 20))
+{
+    fastq record("Rec", "TAACGATC", "23456789");
+    const fastq expected_record("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(8, 0);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '2' - '!',
+                                                         GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+PARAMETERIZED_TEST(tiny_and_huge_window_sizes_2, ::testing::Values(0, 0.01, 20))
+{
+    fastq record("Rec", "TAACGATC", "23456780");
+    const fastq expected_record("Rec", "TAACGAT", "2345678");
+    const fastq::ntrimmed expected_ntrim(0, 1);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '1' - '!',
+                                                         GetParam()));
+    ASSERT_EQ(expected_record, record);
+}
+
+
+PARAMETERIZED_TEST(last_trailing_window, ::testing::Values(1, 2, 3, 4, 5, 6, 7, 8, 9))
+{
+    fastq record("Rec", "TAACGATCC", "234567811");
+    const fastq expected_record("Rec", "TAACGAT", "2345678");
+    const fastq::ntrimmed expected_ntrim(0, 2);
+
+    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(false, '1' - '!',
+                                                         GetParam()));
     ASSERT_EQ(expected_record, record);
 }
 
@@ -376,16 +474,6 @@ TEST(fastq, trim_windowed_bases__trim_window)
     ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 10, 5));
     ASSERT_EQ(expected_record, record);
 }
-
-TEST(fastq, trim_windowed_bases__trim_everything)
-{
-    fastq record("Rec", "TAG", "!!!");
-    const fastq expected_record = fastq("Rec", "", "");
-    const fastq::ntrimmed expected_ntrim(3, 0);
-    ASSERT_EQ(expected_ntrim, record.trim_windowed_bases(true, 10));
-    ASSERT_EQ(expected_record, record);
-}
-
 
 
 ///////////////////////////////////////////////////////////////////////////////

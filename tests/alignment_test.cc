@@ -27,6 +27,7 @@
 #include <vector>
 #include <gtest/gtest.h>
 
+#include "testing.h"
 #include "alignment.h"
 #include "fastq.h"
 
