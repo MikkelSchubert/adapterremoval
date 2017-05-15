@@ -139,7 +139,17 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
            << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
            << "\nTrimming Phred scores <= " << config.low_quality_score
            << ": " << (config.trim_by_quality ? "Yes" : "No")
-           << "\nMinimum genomic length: " << config.min_genomic_length
+           << "\nTrimming using sliding windows: ";
+
+    if (config.trim_window_length >= 1) {
+           output << static_cast<size_t>(config.trim_window_length);
+    } else if (config.trim_window_length >= 0) {
+           output << config.trim_window_length;
+    } else {
+           output << "No";
+    }
+
+    output << "\nMinimum genomic length: " << config.min_genomic_length
            << "\nMaximum genomic length: " << config.max_genomic_length
            << "\nCollapse overlapping reads: " << ((config.collapse) ? "Yes" : "No")
            << "\nMinimum overlap (in case of collapse): " << config.min_alignment_length;

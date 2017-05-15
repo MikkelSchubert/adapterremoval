@@ -18,6 +18,7 @@ Quality score max (output): 41
 Mate-number separator (input): '/'
 Trimming Ns: No
 Trimming Phred scores <= 2: No
+Trimming using sliding windows: No
 Minimum genomic length: 999
 Maximum genomic length: 4294967295
 Collapse overlapping reads: No
