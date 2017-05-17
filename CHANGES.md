@@ -1,3 +1,9 @@
+
+### Version 2.2.1a - 2017-05-17
+
+  * Fixed compilation on OSX.
+
+
 ### Version 2.2.1 - 2017-05-15
 
   * Numerous spelling errors fixed courtesy of Andreas Tille.
