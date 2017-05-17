@@ -6,6 +6,10 @@ compiler:
   - clang
   - gcc
 
+os:
+ - linux
+ - osx
+
 addons:
   apt:
     packages:
