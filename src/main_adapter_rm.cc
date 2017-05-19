@@ -437,12 +437,12 @@ protected:
         // Intentionally left empty
     }
 
-private:
-    //! Not implemented
-    rng_sink(const rng_sink&);
-    //! Not implemented
-    rng_sink& operator=(const rng_sink&);
+    //! Copy construction not supported
+    rng_sink(const rng_sink&) = delete;
+    //! Assignment not supported
+    rng_sink& operator=(const rng_sink&) = delete;
 
+private:
     mutable std::mt19937 m_seed;
 };
 

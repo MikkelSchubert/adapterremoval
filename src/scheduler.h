@@ -176,6 +176,11 @@ public:
     /** Returns true if the step involves file IO. */
     bool file_io() const;
 
+    //! Copy construction not supported
+    analytical_step(const analytical_step&) = delete;
+    //! Assignment not supported
+    analytical_step& operator=(const analytical_step&) = delete;
+
 private:
     //! Stores the ordering of data chunks expected by the step
     const ordering m_step_order;
@@ -215,15 +220,15 @@ public:
     /** Runs the pipeline with n threads; return false on error. */
     bool run(int nthreads);
 
+    //! Copy construction not supported
+    scheduler(const scheduler&) = delete;
+    //! Assignment not supported
+    scheduler& operator=(const scheduler&) = delete;
+
 private:
     typedef std::shared_ptr<scheduler_step> step_ptr;
     typedef std::queue<step_ptr> runables;
     typedef std::vector<step_ptr> pipeline;
-
-    //! Not implemented
-    scheduler(const scheduler&);
-    //! Not implemented
-    scheduler& operator=(const scheduler&);
 
     /** Wrapper function which calls do_run on the provided thread. */
     static void run_wrapper(scheduler*);

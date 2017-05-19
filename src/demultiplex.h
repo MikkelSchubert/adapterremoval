@@ -57,6 +57,11 @@ public:
     /** Returns a statistics object summarizing the results up till now. */
     demux_statistics statistics() const;
 
+    //! Copy construction not supported
+    demultiplex_reads(const demultiplex_reads&) = delete;
+    //! Assignment not supported
+    demultiplex_reads& operator=(const demultiplex_reads&) = delete;
+
 protected:
     /**
      * Returns the id of the best matching barcode(s), or -1 if no matches were
@@ -98,12 +103,6 @@ protected:
 
     //! Lock used to verify that the analytical_step is only run sequentially.
     std::mutex m_lock;
-
-private:
-    //! Not implemented
-    demultiplex_reads(const demultiplex_reads&);
-    //! Not implemented
-    demultiplex_reads& operator=(const demultiplex_reads&);
 };
 
 

@@ -307,11 +307,10 @@ public:
     //! Statistics object for (number of) processed reads
     statistics_ptr stats;
 
-private:
-    //! Not implemented
-    adapter_stats(const adapter_stats&);
-    //! Not implemented
-    adapter_stats& operator=(const adapter_stats&);
+    //! Copy construction not supported
+    adapter_stats(const adapter_stats&) = delete;
+    //! Assignment not supported
+    adapter_stats& operator=(const adapter_stats&) = delete;
 };
 
 
@@ -333,12 +332,12 @@ protected:
         (*dst) += (*src);
     }
 
-private:
-    //! Not implemented
-    adapter_sink(const adapter_sink&);
-    //! Not implemented
-    adapter_sink& operator=(const adapter_sink&);
+    //! Copy construction not supported
+    adapter_sink(const adapter_sink&) = delete;
+    //! Assignment not supported
+    adapter_sink& operator=(const adapter_sink&) = delete;
 
+private:
     const userconfig& m_config;
 };
 

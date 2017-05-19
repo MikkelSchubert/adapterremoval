@@ -136,6 +136,11 @@ public:
     /** Helper functions; prints the full set of help-text. */
     void print_help() const;
 
+    //! Copy construction not supported
+    parser(const parser&) = delete;
+    //! Assignment not supported
+    parser& operator=(const parser&) = delete;
+
 private:
     typedef std::pair<bool, std::string> key_pair;
     typedef std::vector<key_pair> key_pair_vec;
@@ -225,15 +230,14 @@ public:
     /** Returns the value associated with the consumer as a string. **/
     virtual std::string to_str() const = 0;
 
+    //! Copy construction not supported
+    consumer_base(const consumer_base&) = delete;
+    //! Assignment not supported
+    consumer_base& operator=(const consumer_base&) = delete;
+
 protected:
     //! Should be set to true if a value has been consumed in a derived class.
     bool m_value_set;
-
-private:
-    //! Not implemented
-    consumer_base(const consumer_base&);
-    //! Not implemented
-    consumer_base& operator=(const consumer_base&);
 
     //! Stores the metavar associated with the consumer
     std::string m_metavar;
@@ -266,12 +270,12 @@ public:
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
 
-private:
-    //! Not implemented
-    flag(const flag&);
-    //! Not implemented
-    flag& operator=(const flag&);
+    //! Copy construction not supported
+    flag(const flag&) = delete;
+    //! Assignment not supported
+    flag& operator=(const flag&) = delete;
 
+private:
     //! Optional pointer to storage for boolean value; if nullptr, m_value is used.
     bool* m_ptr;
 };
@@ -295,12 +299,12 @@ public:
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
 
-private:
-    //! Not implemented
-    any(const any&);
-    //! Not implemented
-    any& operator=(const any&);
+    //! Copy construction not supported
+    any(const any&) = delete;
+    //! Assignment not supported
+    any& operator=(const any&) = delete;
 
+private:
     //! Optional pointer to storage for string value; if nullptr, m_value is used.
     std::string* m_ptr;
     //! Value sink used if a pointer to a sink is not provided.
@@ -326,12 +330,12 @@ public:
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
 
-private:
-    //! Not implemented
-    many(const many&);
-    //! Not implemented
-    many& operator=(const many&);
+    //! Copy construction not supported
+    many(const many&) = delete;
+    //! Assignment not supported
+    many& operator=(const many&) = delete;
 
+private:
     //! Optional pointer to storage for string value; if nullptr, m_value is used.
     string_vec* m_ptr;
     //! Value sink used if a pointer to a sink is not provided.
@@ -359,12 +363,12 @@ public:
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
 
-private:
-    //! Not implemented
-    knob(const knob&);
-    //! Not implemented
-    knob& operator=(const knob&);
+    //! Copy construction not supported
+    knob(const knob&) = delete;
+    //! Assignment not supported
+    knob& operator=(const knob&) = delete;
 
+private:
     //! Pointer to storage for unsigned value (required).
     unsigned* m_ptr;
 };
@@ -377,9 +381,7 @@ private:
 class floaty_knob : public consumer_base
 {
 public:
-    /**
-     * See consumer_base::consumer_base; a sink must be set.
-     */
+    /** See consumer_base::consumer_base; a sink must be set. */
     floaty_knob(double* sink, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
@@ -388,12 +390,12 @@ public:
     /** See consumer_base::to_str */
     virtual std::string to_str() const;
 
-private:
-    //! Not implemented
-    floaty_knob(const floaty_knob&);
-    //! Not implemented
-    floaty_knob& operator=(const floaty_knob&);
+    //! Copy construction not supported
+    floaty_knob(const floaty_knob&) = delete;
+    //! Assignment not supported
+    floaty_knob& operator=(const floaty_knob&) = delete;
 
+private:
     //! Pointer to storage for unsigned value (required).
     double* m_ptr;
 };

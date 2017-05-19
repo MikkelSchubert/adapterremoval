@@ -90,12 +90,12 @@ public:
     //! Call to indicate that a partial line has been written to STDERR.
     void partial_stderr_output();
 
-private:
-    //! Not implemented
-    print_locker(const print_locker&);
-    //! Not implemented
-    print_locker& operator=(const print_locker&);
+    //! Copy construction not supported
+    print_locker(const print_locker&) = delete;
+    //! Assignment not supported
+    print_locker& operator=(const print_locker&) = delete;
 
+private:
     std::lock_guard<std::mutex> m_lock;
 };
 

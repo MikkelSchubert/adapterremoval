@@ -57,17 +57,17 @@ public:
      */
     bool getline(std::string& dst);
 
+    //! Copy construction not supported
+    joined_line_readers(const joined_line_readers&) = delete;
+    //! Assignment not supported
+    joined_line_readers& operator=(const joined_line_readers&) = delete;
+
 private:
     /**
      * Open the next file, removes it from the queue, and returns true; returns
      * false if no files remain to be processed.
      */
     bool open_next_file();
-
-    //! Not implemented
-    joined_line_readers(const joined_line_readers&);
-    //! Not implemented
-    joined_line_readers& operator=(const joined_line_readers&);
 
     //! Files left to read; stored in reverse order.
     string_vec m_filenames;

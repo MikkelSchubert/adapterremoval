@@ -193,11 +193,10 @@ struct scheduler_step
     //! Short name for step used for error reporting
     std::string name;
 
-private:
-    //! Not implemented
-    scheduler_step(const scheduler_step&);
-    //! Not implemented
-    scheduler_step& operator=(const scheduler_step&);
+    //! Copy construction not supported
+    scheduler_step(const scheduler_step&) = delete;
+    //! Assignment not supported
+    scheduler_step& operator=(const scheduler_step&) = delete;
 };
 
 

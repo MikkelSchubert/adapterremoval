@@ -99,17 +99,16 @@ public:
      */
     virtual size_t max_score() const;
 
+    //! Copy construction not supported
+    fastq_encoding(const fastq_encoding&) = delete;
+    //! Assignment not supported
+    fastq_encoding& operator=(const fastq_encoding&) = delete;
+
 protected:
     //! Character offset for Phred encoded scores (33 or 64)
     const char m_offset;
     //! Maximum allowed score; used for checking input / truncating output
     const char m_max_score;
-
-private:
-    //! Not implemented
-    fastq_encoding(const fastq_encoding&);
-    //! Not implemented
-    fastq_encoding& operator=(const fastq_encoding&);
 };
 
 

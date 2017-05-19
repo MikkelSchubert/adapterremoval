@@ -128,6 +128,11 @@ public:
     /** Returns vector of chunks from all cached reads. */
     chunk_vec finalize();
 
+    //! Copy construction not supported
+    trimmed_reads(const trimmed_reads&) = delete;
+    //! Assignment not supported
+    trimmed_reads& operator=(const trimmed_reads&) = delete;
+
 private:
     /*
      * Helper function; assigns a given read to a cache depending on state and

@@ -107,12 +107,12 @@ public:
     /** Returns true if a read after EOF has been attempted. */
     bool eof() const;
 
-private:
-    //! Not implemented
-    line_reader(const line_reader&);
-    //! Not implemented
-    line_reader& operator=(const line_reader&);
+    //! Copy construction not supported
+    line_reader(const line_reader&) = delete;
+    //! Assignment not supported
+    line_reader& operator=(const line_reader&) = delete;
 
+private:
     //! Refills 'm_buffer' and sets 'm_buffer_ptr' and 'm_buffer_end'.
     void refill_buffers();
 

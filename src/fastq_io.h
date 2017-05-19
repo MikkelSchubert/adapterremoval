@@ -148,12 +148,12 @@ public:
     /** Finalizer; checks that all input has been processed. */
     virtual void finalize();
 
-private:
-    //! Not implemented
-    read_single_fastq(const read_single_fastq&);
-    //! Not implemented
-    read_single_fastq& operator=(const read_single_fastq&);
+    //! Copy construction not supported
+    read_single_fastq(const read_single_fastq&) = delete;
+    //! Assignment not supported
+    read_single_fastq& operator=(const read_single_fastq&) = delete;
 
+private:
     //! Encoding used to parse FASTQ reads.
     const fastq_encoding* m_encoding;
     //! Current line in the input file (1-based)
@@ -193,12 +193,12 @@ public:
     /** Finalizer; checks that all input has been processed. */
     virtual void finalize();
 
-private:
-    //! Not implemented
-    read_paired_fastq(const read_paired_fastq&);
-    //! Not implemented
-    read_paired_fastq& operator=(const read_paired_fastq&);
+    //! Copy construction not supported
+    read_paired_fastq(const read_paired_fastq&) = delete;
+    //! Assignment not supported
+    read_paired_fastq& operator=(const read_paired_fastq&) = delete;
 
+private:
     //! Encoding used to parse FASTQ reads.
     const fastq_encoding* m_encoding;
     //! Current line in the input file (1-based)
@@ -239,12 +239,12 @@ public:
     /** Finalizer; checks that all input has been processed. */
     virtual void finalize();
 
-private:
-    //! Not implemented
-    read_interleaved_fastq(const read_interleaved_fastq&);
-    //! Not implemented
-    read_interleaved_fastq& operator=(const read_interleaved_fastq&);
+    //! Copy construction not supported
+    read_interleaved_fastq(const read_interleaved_fastq&) = delete;
+    //! Assignment not supported
+    read_interleaved_fastq& operator=(const read_interleaved_fastq&) = delete;
 
+private:
     //! Encoding used to parse FASTQ reads.
     const fastq_encoding* m_encoding;
     //! Current line in the input file (1-based)
@@ -277,12 +277,12 @@ public:
     /** Checks that all input has been processed and frees stream. */
     virtual void finalize();
 
-private:
-    //! Not implemented
-    bzip2_fastq(const bzip2_fastq&);
-    //! Not implemented
-    bzip2_fastq& operator=(const bzip2_fastq&);
+    //! Copy construction not supported
+    bzip2_fastq(const bzip2_fastq&) = delete;
+    //! Assignment not supported
+    bzip2_fastq& operator=(const bzip2_fastq&) = delete;
 
+private:
     //! N reads which did not result in an output chunk
     size_t m_buffered_reads;
     //! The analytical step following this step
@@ -314,12 +314,12 @@ public:
     /** Checks that all input has been processed and frees stream. */
     virtual void finalize();
 
-private:
-    //! Not implemented
-    gzip_fastq(const gzip_fastq&);
-    //! Not implemented
-    gzip_fastq& operator=(const gzip_fastq&);
+    //! Copy construction not supported
+    gzip_fastq(const gzip_fastq&) = delete;
+    //! Assignment not supported
+    gzip_fastq& operator=(const gzip_fastq&) = delete;
 
+private:
     //! N reads which did not result in an output chunk
     size_t m_buffered_reads;
     //! The analytical step following this step

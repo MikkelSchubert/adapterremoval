@@ -177,13 +177,12 @@ public:
 
     adapter_set adapters;
 
+    //! Copy construction not supported
+    userconfig(const userconfig&) = delete;
+    //! Assignment not supported
+    userconfig& operator=(const userconfig&) = delete;
+
 private:
-    //! Not implemented
-    userconfig(const userconfig&);
-    //! Not implemented
-    userconfig& operator=(const userconfig&);
-
-
     /** Sets up adapter sequences based on user settings.
      *
      * @return True on success, false otherwise.
