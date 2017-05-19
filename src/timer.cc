@@ -44,7 +44,7 @@ const size_t AVG_BLOCKS = 10;
 double get_current_time()
 {
     struct timeval timestamp;
-    gettimeofday(&timestamp, NULL);
+    gettimeofday(&timestamp, nullptr);
 
     return timestamp.tv_sec + timestamp.tv_usec / 1e6;
 }

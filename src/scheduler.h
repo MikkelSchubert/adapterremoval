@@ -143,7 +143,7 @@ public:
     /**
      * Function called by pipeline to generate / process / consume data chunks.
      *
-     * Initially, the first step in the pipeline will receive NULL; during
+     * Initially, the first step in the pipeline will receive nullptr; during
      * subsequent cycles, the pipeline will return the value output from the
      * last step to the initial step, which may re-use it to avoid allocations;
      * if this is not done, the chunk must be freed by the first step.

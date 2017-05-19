@@ -97,14 +97,14 @@ bzip2_error::bzip2_error(const std::string& message)
 line_reader::line_reader(const std::string& fpath)
   : m_file(fopen(fpath.c_str(), "rb"))
 #ifdef AR_GZIP_SUPPORT
-  , m_gzip_stream(NULL)
+  , m_gzip_stream(nullptr)
 #endif
 #ifdef AR_BZIP2_SUPPORT
-  , m_bzip2_stream(NULL)
+  , m_bzip2_stream(nullptr)
 #endif
-  , m_buffer(NULL)
-  , m_buffer_ptr(NULL)
-  , m_buffer_end(NULL)
+  , m_buffer(nullptr)
+  , m_buffer_ptr(nullptr)
+  , m_buffer_end(nullptr)
   , m_raw_buffer(new char[BUF_SIZE])
   , m_raw_buffer_end(m_raw_buffer + BUF_SIZE)
   , m_eof(false)
@@ -166,13 +166,13 @@ void line_reader::close()
     close_buffers_bzip2();
 
     delete[] m_raw_buffer;
-    m_raw_buffer = NULL;
+    m_raw_buffer = nullptr;
 
     if (m_file && fclose(m_file)) {
         throw io_error("line_reader::close: error closing file", errno);
     }
 
-    m_file = NULL;
+    m_file = nullptr;
 }
 
 
@@ -265,9 +265,9 @@ void line_reader::initialize_buffers_gzip()
     m_buffer_end = m_buffer + BUF_SIZE;
 
     m_gzip_stream = new z_stream();
-    m_gzip_stream->zalloc = Z_NULL;
-    m_gzip_stream->zfree = Z_NULL;
-    m_gzip_stream->opaque = Z_NULL;
+    m_gzip_stream->zalloc = nullptr;
+    m_gzip_stream->zfree = nullptr;
+    m_gzip_stream->opaque = nullptr;
 
     m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
     m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer);
@@ -278,19 +278,19 @@ void line_reader::initialize_buffers_gzip()
 
         case Z_MEM_ERROR:
             throw gzip_error("line_reader::initialize_buffers_gzip: insufficient memory",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
 
         case Z_VERSION_ERROR:
             throw gzip_error("line_reader::initialize_buffers_gzip: incompatible zlib version",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
 
         case Z_STREAM_ERROR:
             throw gzip_error("line_reader::initialize_buffers_gzip: invalid parameters",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
 
         default:
             throw gzip_error("line_reader::initialize_buffers_gzip: unknown error",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
     }
 #else
     throw gzip_error("Attempted to read gzipped file, but gzip"
@@ -320,17 +320,17 @@ void line_reader::refill_buffers_gzip()
             // Handle concatenated streams; causes unnecessary reset at EOF
             if (inflateReset(m_gzip_stream) != Z_OK) {
                 throw gzip_error("line_reader::refill_buffers_gzip: failed to reset stream",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
             }
             break;
 
         case Z_STREAM_ERROR:
             throw gzip_error("line_reader::refill_buffers_gzip: inconsistent stream state",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
 
         default:
             throw gzip_error("line_reader::refill_buffers_gzip: unknown error",
-                             m_gzip_stream ? m_gzip_stream->msg : NULL);
+                             m_gzip_stream ? m_gzip_stream->msg : nullptr);
     }
 
     m_buffer_ptr = m_buffer;
@@ -349,18 +349,18 @@ void line_reader::close_buffers_gzip()
 
             case Z_STREAM_ERROR:
                 throw gzip_error("line_reader::close: stream error",
-                                 m_gzip_stream ? m_gzip_stream->msg : NULL);
+                                 m_gzip_stream ? m_gzip_stream->msg : nullptr);
 
             default:
                 throw gzip_error("Unknown error in line_reader::close",
-                                 m_gzip_stream ? m_gzip_stream->msg : NULL);
+                                 m_gzip_stream ? m_gzip_stream->msg : nullptr);
         }
 
         delete m_gzip_stream;
-        m_gzip_stream = NULL;
+        m_gzip_stream = nullptr;
 
         delete[] m_buffer;
-        m_buffer = NULL;
+        m_buffer = nullptr;
     }
 #endif
 }
@@ -442,9 +442,9 @@ void line_reader::initialize_buffers_bzip2()
     m_buffer_end = m_buffer + BUF_SIZE;
 
     m_bzip2_stream = new bz_stream();
-    m_bzip2_stream->bzalloc = NULL;
-    m_bzip2_stream->bzfree = NULL;
-    m_bzip2_stream->opaque = NULL;
+    m_bzip2_stream->bzalloc = nullptr;
+    m_bzip2_stream->bzfree = nullptr;
+    m_bzip2_stream->opaque = nullptr;
 
     m_bzip2_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
     m_bzip2_stream->next_in = m_raw_buffer;
@@ -516,10 +516,10 @@ void line_reader::close_buffers_bzip2()
         bzip2_close_stream(m_bzip2_stream);
 
         delete m_bzip2_stream;
-        m_bzip2_stream = NULL;
+        m_bzip2_stream = nullptr;
 
         delete[] m_buffer;
-        m_buffer = NULL;
+        m_buffer = nullptr;
     }
 #endif
 }

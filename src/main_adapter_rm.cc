@@ -388,7 +388,7 @@ public:
                 stats->well_aligned_reads++;
 
                 if (m_config.is_alignment_collapsible(alignment)) {
-                    process_collapsed_read(m_config, *stats, read, NULL, chunks);
+                    process_collapsed_read(m_config, *stats, read, nullptr, chunks);
                     continue;
                 }
             } else {
@@ -494,7 +494,7 @@ public:
                                            *stats,
                                            collapsed_read,
                                            // Make sure read_2 header is updated, if needed
-                                           m_config.combined_output ? &read_2 : NULL,
+                                           m_config.combined_output ? &read_2 : nullptr,
                                            chunks);
 
                     if (m_config.combined_output) {
@@ -615,7 +615,7 @@ int remove_adapter_sequences_se(const userconfig& config)
 
     scheduler sch;
     std::vector<reads_processor*> processors;
-    demultiplex_reads* demultiplexer = NULL;
+    demultiplex_reads* demultiplexer = nullptr;
 
     try {
         if (config.adapters.barcode_count()) {
@@ -687,7 +687,7 @@ int remove_adapter_sequences_pe(const userconfig& config)
 
     scheduler sch;
     std::vector<reads_processor*> processors;
-    demultiplex_reads* demultiplexer = NULL;
+    demultiplex_reads* demultiplexer = nullptr;
 
     try {
         // Step 1: Read input file

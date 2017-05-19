@@ -269,7 +269,7 @@ int demultiplex_sequences_se(const userconfig& config)
     std::cerr << "Demultiplexing single ended reads ..." << std::endl;
 
     scheduler sch;
-    demultiplex_reads* demultiplexer = NULL;
+    demultiplex_reads* demultiplexer = nullptr;
 
     try {
         // Step 1: Read input file
@@ -323,7 +323,7 @@ int demultiplex_sequences_pe(const userconfig& config)
     std::cerr << "Demultiplexing paired end reads ..." << std::endl;
 
     scheduler sch;
-    demultiplex_reads* demultiplexer = NULL;
+    demultiplex_reads* demultiplexer = nullptr;
 
     try {
         // Step 1: Read input file

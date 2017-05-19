@@ -154,15 +154,15 @@ private:
 
     //! Pointer to cached mate 1 reads.
     output_chunk_ptr m_mate_1;
-    //! Pointer to cached mate 2 reads; may be NULL.
+    //! Pointer to cached mate 2 reads; may be nullptr.
     output_chunk_ptr m_mate_2;
-    //! Pointer to cached singleton reads; may be NULL.
+    //! Pointer to cached singleton reads; may be nullptr.
     output_chunk_ptr m_singleton;
-    //! Pointer to cached collapsed reads; may be NULL.
+    //! Pointer to cached collapsed reads; may be nullptr.
     output_chunk_ptr m_collapsed;
-    //! Pointer to cached collapsed, truncated reads; may be NULL.
+    //! Pointer to cached collapsed, truncated reads; may be nullptr.
     output_chunk_ptr m_collapsed_truncated;
-    //! Pointer to cached discarded reads; may be NULL.
+    //! Pointer to cached discarded reads; may be nullptr.
     output_chunk_ptr m_discarded;
 };
 

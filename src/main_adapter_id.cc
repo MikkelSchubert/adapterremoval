@@ -360,7 +360,7 @@ public:
     chunk_vec process(analytical_chunk* chunk)
     {
         if (!chunk) {
-            throw std::invalid_argument("sink received NULL chunk");
+            throw std::invalid_argument("sink received nullptr chunk");
         }
 
         const fastq empty_adapter("dummy", "", "");

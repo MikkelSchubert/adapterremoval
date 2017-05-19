@@ -44,7 +44,7 @@ namespace ar
 size_t get_seed()
 {
     struct timeval timestamp;
-    gettimeofday(&timestamp, NULL);
+    gettimeofday(&timestamp, nullptr);
 
     return (timestamp.tv_sec << 20) | timestamp.tv_usec;
 }
@@ -184,26 +184,26 @@ userconfig::userconfig(const std::string& name,
             "Default prefix for all output files for which no filename was "
             "explicitly set [current: %default].");
     argparser["--settings"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "Output file containing information on the parameters used in the "
             "run as well as overall statistics on the reads after trimming "
             "[default: BASENAME.settings]");
     argparser["--output1"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "Output file containing trimmed mate1 reads [default: "
             "BASENAME.pair1.truncated (PE), BASENAME.truncated (SE), or "
             "BASENAME.paired.truncated (interleaved PE)]");
     argparser["--output2"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "Output file containing trimmed mate 2 reads [default: "
             "BASENAME.pair2.truncated (only used in PE mode, but not if "
             "--interleaved-output is enabled)]");
     argparser["--singleton"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "Output file to which containing paired reads for which the mate "
             "has been discarded [default: BASENAME.singleton.truncated]");
     argparser["--outputcollapsed"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "If --collapsed is set, contains overlapping mate-pairs which "
             "have been merged into a single read (PE mode) or reads for which "
             "the adapter was identified by a minimum overlap, indicating that "
@@ -211,12 +211,12 @@ userconfig::userconfig(const std::string& name,
             "which have subsequently been trimmed due to low-quality or "
             "ambiguous nucleotides [default: BASENAME.collapsed]");
     argparser["--outputcollapsedtruncated"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "Collapsed reads (see --outputcollapsed) which were trimmed due "
             "the presence of low-quality or ambiguous nucleotides "
             "[default: BASENAME.collapsed.truncated]");
     argparser["--discarded"] =
-        new argparse::any(NULL, "FILE",
+        new argparse::any(nullptr, "FILE",
             "Contains reads discarded due to the --minlength, --maxlength or "
             "--maxns options [default: BASENAME.discarded]");
 

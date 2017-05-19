@@ -124,7 +124,7 @@ read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
 chunk_vec read_single_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_LOCK(m_lock);
-    AR_DEBUG_ASSERT(chunk == NULL);
+    AR_DEBUG_ASSERT(chunk == nullptr);
     if (m_eof) {
         return chunk_vec();
     }
@@ -182,7 +182,7 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
 chunk_vec read_paired_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_LOCK(m_lock);
-    AR_DEBUG_ASSERT(chunk == NULL);
+    AR_DEBUG_ASSERT(chunk == nullptr);
     if (m_eof) {
         return chunk_vec();
     }
@@ -249,7 +249,7 @@ read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
 chunk_vec read_interleaved_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_LOCK(m_lock);
-    AR_DEBUG_ASSERT(chunk == NULL);
+    AR_DEBUG_ASSERT(chunk == nullptr);
     if (m_eof) {
         return chunk_vec();
     }
@@ -361,9 +361,9 @@ bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
   , m_eof(false)
   , m_lock()
 {
-    m_stream.bzalloc = NULL;
-    m_stream.bzfree = NULL;
-    m_stream.opaque = NULL;
+    m_stream.bzalloc = nullptr;
+    m_stream.bzfree = nullptr;
+    m_stream.opaque = nullptr;
 
     const int errorcode = BZ2_bzCompressInit(/* strm          = */ &m_stream,
                                              /* blockSize100k = */ config.bzip2_level,
@@ -470,7 +470,7 @@ chunk_vec bzip2_fastq::process(analytical_chunk* chunk)
                     delete[] output_buffer.second;
                 }
 
-                output_buffer.second = NULL;
+                output_buffer.second = nullptr;
             } while (m_stream.avail_in || errorcode == BZ_FINISH_OK);
         }
 
@@ -509,9 +509,9 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   , m_eof(false)
   , m_lock()
 {
-    m_stream.zalloc = Z_NULL;
-    m_stream.zfree = Z_NULL;
-    m_stream.opaque = Z_NULL;
+    m_stream.zalloc = nullptr;
+    m_stream.zfree = nullptr;
+    m_stream.opaque = nullptr;
 
     const int errorcode = deflateInit2(/* strm       = */ &m_stream,
                                        /* level      = */ config.gzip_level,
@@ -619,7 +619,7 @@ chunk_vec gzip_fastq::process(analytical_chunk* chunk)
                     delete[] output_buffer.second;
                 }
 
-                output_buffer.second = NULL;
+                output_buffer.second = nullptr;
             } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
         }
 

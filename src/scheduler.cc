@@ -378,7 +378,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
     // Schedule each of the resulting blocks
     for (auto& result: chunks) {
         step_ptr& other_step = m_steps.at(result.first);
-        AR_DEBUG_ASSERT(other_step != NULL);
+        AR_DEBUG_ASSERT(other_step != nullptr);
 
         std::lock_guard<std::mutex> step_lock(other_step->lock);
         // Inherit reference count from source chunk

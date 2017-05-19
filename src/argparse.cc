@@ -69,11 +69,11 @@ parser::parser(const std::string& name,
     , m_help(help)
 {
     // Built-in arguments (aliases are not shown!)
-    (*this)["--help"] = new flag(NULL, "Display this message.");
+    (*this)["--help"] = new flag(nullptr, "Display this message.");
     create_alias("--help", "-help");
     create_alias("--help", "-h");
 
-    (*this)["--version"] = new flag(NULL, "Print the version string.");
+    (*this)["--version"] = new flag(nullptr, "Print the version string.");
     create_alias("--version", "-version");
     create_alias("--version", "-v");
 

@@ -258,7 +258,7 @@ public:
      * Unlike the base constructor, this class does not take a 'metavar', as
      * no values are consumed during parsing.
      */
-    flag(bool* sink = NULL, const std::string& help = "");
+    flag(bool* sink = nullptr, const std::string& help = "");
 
     /** See consumer_base::consume */
     virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
@@ -272,7 +272,7 @@ private:
     //! Not implemented
     flag& operator=(const flag&);
 
-    //! Optional pointer to storage for boolean value; if NULL, m_value is used.
+    //! Optional pointer to storage for boolean value; if nullptr, m_value is used.
     bool* m_ptr;
 };
 
@@ -287,7 +287,7 @@ public:
     /**
      * See consumer_base::consumer_base
      */
-    any(std::string* sink = NULL, const std::string& metavar = "", const std::string& help = "");
+    any(std::string* sink = nullptr, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
     virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
@@ -301,7 +301,7 @@ private:
     //! Not implemented
     any& operator=(const any&);
 
-    //! Optional pointer to storage for string value; if NULL, m_value is used.
+    //! Optional pointer to storage for string value; if nullptr, m_value is used.
     std::string* m_ptr;
     //! Value sink used if a pointer to a sink is not provided.
     std::string m_sink;
@@ -318,7 +318,7 @@ public:
     /**
      * See consumer_base::consumer_base
      */
-    many(string_vec* sink = NULL, const std::string& metavar = "", const std::string& help = "");
+    many(string_vec* sink = nullptr, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
     virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
@@ -332,7 +332,7 @@ private:
     //! Not implemented
     many& operator=(const many&);
 
-    //! Optional pointer to storage for string value; if NULL, m_value is used.
+    //! Optional pointer to storage for string value; if nullptr, m_value is used.
     string_vec* m_ptr;
     //! Value sink used if a pointer to a sink is not provided.
     string_vec m_sink;

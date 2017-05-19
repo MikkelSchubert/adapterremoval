@@ -50,7 +50,7 @@ public:
 class gzip_error : public io_error
 {
 public:
-    gzip_error(const std::string& message, const char* gzip_msg = NULL);
+    gzip_error(const std::string& message, const char* gzip_msg = nullptr);
 };
 
 
