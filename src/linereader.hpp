@@ -24,8 +24,9 @@
 #ifndef GZFILE_H
 #define GZFILE_H
 
-#include <string>
 #include <cstdio>
+#include <ios>
+#include <string>
 
 #ifdef AR_GZIP_SUPPORT
 #include <zlib.h>
@@ -34,6 +35,7 @@
 #ifdef AR_BZIP2_SUPPORT
 #include <bzlib.h>
 #endif
+
 
 namespace ar
 {

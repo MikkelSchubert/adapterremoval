@@ -28,7 +28,9 @@
 #include <cstdlib>
 #include <vector>
 
+#include "commontypes.hpp"
 #include "vecutils.hpp"
+
 
 namespace ar
 {
