@@ -149,7 +149,7 @@ install: build/$(PROG) build/$(PROG).1
 static: build/$(LIBNAME).a
 
 # Object files
-$(BDIR)/%.o: src/%.cc
+$(BDIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
 	$(QUIET) mkdir -p $(BDIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
@@ -213,13 +213,13 @@ $(TEST_DIR)/libgtest.a: $(GTEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking GTest library '$@'"$(COLOR_END)
 	$(QUIET) ar -rv $@ $^
 
-$(TEST_DIR)/%.o: tests/%.cc
+$(TEST_DIR)/%.o: tests/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
-$(TEST_DIR)/%.o: src/%.cc
+$(TEST_DIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
@@ -230,8 +230,8 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -c $< -o $@
 
-.PRECIOUS: $(GTEST_DIR)/src/gtest%.cc
-$(GTEST_DIR)/src/gtest%.cc: googletest-release-1.8.0.zip
+.PRECIOUS: $(GTEST_DIR)/src/gtest%.cpp
+$(GTEST_DIR)/src/gtest%.cpp: googletest-release-1.8.0.zip
 	$(QUIET) if ! test -e "$@"; \
 	then \
 		echo $(COLOR_CYAN)"Unpacking Google Test library"$(COLOR_END); \
