@@ -349,7 +349,7 @@ class adapter_identification : public analytical_step
 {
 public:
     adapter_identification(const userconfig& config)
-      : analytical_step(analytical_step::unordered)
+      : analytical_step(analytical_step::ordering::unordered)
       , m_config(config)
       , m_timer("reads")
       , m_sinks(config)

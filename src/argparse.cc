@@ -136,24 +136,24 @@ parse_result parser::parse_args(int argc, char* argv[])
                               << "; aborting ..." << std::endl;
                 }
 
-                return pr_error;
+                return parse_result::error;
             }
 
             it += static_cast<consumer_map::iterator::difference_type>(consumed);
         } else {
-            return pr_error;
+            return parse_result::error;
         }
     }
 
     if (is_set("--help")) {
         print_help();
-        return pr_exit;
+        return parse_result::exit;
     } else if (is_set("--version")) {
         print_version();
-        return pr_exit;
+        return parse_result::exit;
     }
 
-    return pr_ok;
+    return parse_result::ok;
 }
 
 

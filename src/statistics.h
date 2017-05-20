@@ -86,7 +86,7 @@ struct statistics
     /** Increment the number of reads with of a given type / length. */
     void inc_length_count(read_type type, size_t length) {
         if (length >= read_lengths.size()) {
-            read_lengths.resize(length + 1, std::vector<size_t>(rt_max));
+            read_lengths.resize(length + 1, std::vector<size_t>(static_cast<size_t>(read_type::max)));
         }
 
         ++read_lengths.at(length).at(static_cast<size_t>(type));

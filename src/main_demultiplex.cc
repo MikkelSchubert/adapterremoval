@@ -183,7 +183,7 @@ class se_demultiplexed_reads_processor : public analytical_step
 {
 public:
     se_demultiplexed_reads_processor(const userconfig& config, size_t nth)
-      : analytical_step(analytical_step::unordered)
+      : analytical_step(analytical_step::ordering::unordered)
       , m_config(config)
       , m_nth(nth)
     {
@@ -216,7 +216,7 @@ class pe_demultiplexed_reads_processor : public analytical_step
 {
 public:
     pe_demultiplexed_reads_processor(const userconfig& config, size_t nth)
-      : analytical_step(analytical_step::unordered)
+      : analytical_step(analytical_step::ordering::unordered)
       , m_config(config)
       , m_nth(nth)
     {

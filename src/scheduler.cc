@@ -172,7 +172,7 @@ struct scheduler_step
 
     bool can_run(size_t next_chunk)
     {
-        if (ptr->get_ordering() == analytical_step::ordered) {
+        if (ptr->get_ordering() == analytical_step::ordering::ordered) {
             return (current_chunk == next_chunk);
         }
 
@@ -382,7 +382,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
         std::lock_guard<std::mutex> step_lock(other_step->lock);
         // Inherit reference count from source chunk
         data_chunk next_chunk(chunk, std::move(result.second));
-        if (step->ptr->get_ordering() == analytical_step::ordered) {
+        if (step->ptr->get_ordering() == analytical_step::ordering::ordered) {
             // Ordered steps are allowed to not return results, so the chunk
             // numbering is remembered for down-stream steps
             next_chunk.chunk_id = other_step->last_chunk++;
@@ -401,7 +401,7 @@ void scheduler::execute_analytical_step(const step_ptr& step)
     }
 
     // Reschedule current step if ordered and next chunk is available
-    if (step->ptr->get_ordering() == analytical_step::ordered) {
+    if (step->ptr->get_ordering() == analytical_step::ordering::ordered) {
         std::lock_guard<std::mutex> step_lock(step->lock);
 
         step->current_chunk++;

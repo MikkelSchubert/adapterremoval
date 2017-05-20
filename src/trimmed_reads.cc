@@ -73,7 +73,7 @@ void trimmed_reads::add_mate_1_read(fastq& read, read_status state,
                                     size_t read_count)
 {
     // Single end reads always go into the mate 1 file or the discarded file
-    distribute_read(m_mate_1, m_mate_1, read, state, PASSED, read_count);
+    distribute_read(m_mate_1, m_mate_1, read, state, read_status::passed, read_count);
 }
 
 
@@ -81,7 +81,7 @@ void trimmed_reads::add_mate_2_read(fastq& read, read_status state,
                                     size_t read_count)
 {
     // Single end reads always go into the mate 2 file or the discarded file
-    distribute_read(m_mate_2, m_mate_1, read, state, PASSED, read_count);
+    distribute_read(m_mate_2, m_mate_1, read, state, read_status::passed, read_count);
 }
 
 
@@ -100,7 +100,7 @@ void trimmed_reads::add_collapsed_read(fastq& read,
     output_chunk_ptr& destination = m_config.combined_output ? m_mate_1 : m_collapsed;
 
     // Collapsed reads may go into the mate 1, mate 2, or discard file
-    distribute_read(destination, destination, read, state, PASSED, read_count);
+    distribute_read(destination, destination, read, state, read_status::passed, read_count);
 }
 
 
@@ -111,7 +111,7 @@ void trimmed_reads::add_collapsed_truncated_read(fastq& read,
     output_chunk_ptr& destination = m_config.combined_output ? m_mate_1 : m_collapsed_truncated;
 
     // Collapsed tr. reads may go into the mate 1, mate 2, or discard file
-    distribute_read(destination, destination, read, state, PASSED, read_count);
+    distribute_read(destination, destination, read, state, read_status::passed, read_count);
 }
 
 
@@ -137,8 +137,8 @@ void trimmed_reads::distribute_read(output_chunk_ptr& regular,
                                     read_status state_2,
                                     size_t read_count)
 {
-    if (state_1 == PASSED) {
-        if (state_2 == PASSED || m_config.combined_output) {
+    if (state_1 == read_status::passed) {
+        if (state_2 == read_status::passed || m_config.combined_output) {
             if (m_config.interleaved_output) {
                 interleaved->add(m_encoding, read, read_count);
             } else {

@@ -217,7 +217,7 @@ void rec_lookup_sequence(candidate_vec& candidates,
 
 
 demultiplex_reads::demultiplex_reads(const userconfig* config)
-    : analytical_step(analytical_step::ordered)
+    : analytical_step(analytical_step::ordering::ordered)
     , m_barcodes(config->adapters.get_barcodes())
     , m_tree(build_demux_tree(m_barcodes))
     , m_max_mismatches(config->barcode_mm)

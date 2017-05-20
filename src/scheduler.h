@@ -120,7 +120,7 @@ private:
 class analytical_step
 {
 public:
-    enum ordering {
+    enum class ordering {
         //! Data must be consumed in the input order
         ordered,
         //! Data may be consumed in any order

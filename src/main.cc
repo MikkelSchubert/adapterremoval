@@ -47,32 +47,43 @@ int main(int argc, char *argv[])
     std::ios_base::sync_with_stdio(false);
 
     userconfig config(NAME, VERSION, HELPTEXT);
-    const argparse::parse_result result = config.parse_args(argc, argv);
-    if (result == argparse::pr_error) {
-        return 1;
-    } else if (result == argparse::pr_exit) {
-        // --version, --help, or similar used.
-        return 0;
+    switch (config.parse_args(argc, argv)) {
+        case argparse::parse_result::error: {
+            return 1;
+        }
+
+        case argparse::parse_result::exit: {
+            // --version, --help, or similar used.
+            return 0;
+        }
+
+        default: {
+            // Ok
+        }
     }
 
     auto returncode = 0;
     switch (config.run_type) {
-        case ar_trim_adapters:
+        case ar_command::trim_adapters: {
             returncode = remove_adapter_sequences(config);
             break;
+        }
 
-        case ar_demultiplex_sequences:
+        case ar_command::demultiplex_sequences: {
             returncode = demultiplex_sequences(config);
             break;
+        }
 
-        case ar_identify_adapters:
+        case ar_command::identify_adapters: {
             return identify_adapter_sequences(config);
+        }
 
-        default:
+        default: {
             std::cerr << "ERROR: Unknown run-type: "
                       << static_cast<size_t>(config.run_type)
                       << std::endl;
             return 1;
+        }
     }
 
     if (returncode) {

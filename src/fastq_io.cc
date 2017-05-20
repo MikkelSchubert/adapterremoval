@@ -109,7 +109,7 @@ void fastq_output_chunk::add(const fastq_encoding& encoding,
 read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
                                      const string_vec& filenames,
                                      size_t next_step)
-  : analytical_step(analytical_step::ordered, true)
+  : analytical_step(analytical_step::ordering::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
   , m_io_input(filenames)
@@ -166,7 +166,7 @@ read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
                                      const string_vec& filenames_1,
                                      const string_vec& filenames_2,
                                      size_t next_step)
-  : analytical_step(analytical_step::ordered, true)
+  : analytical_step(analytical_step::ordering::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
   , m_io_input_1(filenames_1)
@@ -234,7 +234,7 @@ void read_paired_fastq::finalize()
 read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
                                           const string_vec& filenames,
                                           size_t next_step)
-  : analytical_step(analytical_step::ordered, true)
+  : analytical_step(analytical_step::ordering::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
   , m_io_input(filenames)
@@ -354,7 +354,7 @@ std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
 
 
 bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordered, false)
+  : analytical_step(analytical_step::ordering::ordered, false)
   , m_buffered_reads(0)
   , m_next_step(next_step)
   , m_stream()
@@ -502,7 +502,7 @@ chunk_vec bzip2_fastq::process(analytical_chunk* chunk)
 // Implementations for 'gzip_fastq'
 
 gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordered, false)
+  : analytical_step(analytical_step::ordering::ordered, false)
   , m_buffered_reads(0)
   , m_next_step(next_step)
   , m_stream()
@@ -657,7 +657,7 @@ static bool s_finalized = false;
 
 
 write_fastq::write_fastq(const std::string& filename)
-  : analytical_step(analytical_step::ordered, true)
+  : analytical_step(analytical_step::ordering::ordered, true)
   , m_output(filename.c_str(), std::ofstream::out | std::ofstream::binary)
   , m_eof(false)
   , m_lock()

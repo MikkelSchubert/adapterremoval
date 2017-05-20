@@ -76,7 +76,7 @@ fastq_encoding_ptr select_encoding(const std::string& name,
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
-    : run_type(ar_trim_adapters)
+    : run_type(ar_command::trim_adapters)
     , basename("your_output")
     , input_files_1()
     , input_files_2()
@@ -388,29 +388,29 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 {
     if (argc <= 1) {
         argparser.print_help();
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     }
 
     const argparse::parse_result result = argparser.parse_args(argc, argv);
-    if (result != argparse::pr_ok) {
+    if (result != argparse::parse_result::ok) {
         return result;
     }
 
     quality_input_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
     if (!quality_input_fmt.get()) {
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     }
 
     if (argparser.is_set("--qualitybase-output")) {
         quality_output_fmt = select_encoding("--qualitybase-out", quality_output_base, quality_max);
         if (!quality_output_fmt.get()) {
-            return argparse::pr_error;
+            return argparse::parse_result::error;
         }
     } else {
         // Default to using the same output encoding as the input
         quality_output_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
         if (!quality_output_fmt.get()) {
-            return argparse::pr_error;
+            return argparse::parse_result::error;
         }
     }
 
@@ -419,7 +419,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                      "exactly one character long, not "
                      << mate_separator_str.size()
                      << " characters!" << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     } else {
         mate_separator = mate_separator_str.at(0);
     }
@@ -430,7 +430,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
         // sequences. However, arguments are still checked above.
         quality_input_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
         quality_output_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
-        run_type = ar_identify_adapters;
+        run_type = ar_command::identify_adapters;
     }
 
     if (demultiplex_sequences) {
@@ -439,16 +439,16 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                       << "--demultiplex-only at the same time!"
                       << std::endl;
 
-            return argparse::pr_error;
+            return argparse::parse_result::error;
         } else if (!argparser.is_set("--barcode-list")) {
             std::cerr << "Error: Cannot use --demultiplex-only without specifying "
                       << "a list of barcodes using --barcode-list!"
                       << std::endl;
 
-            return argparse::pr_error;
+            return argparse::parse_result::error;
         }
 
-        run_type = ar_demultiplex_sequences;
+        run_type = ar_command::demultiplex_sequences;
     }
 
     if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
@@ -456,14 +456,14 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << low_quality_score << "\n"
                   << "   must be in the range 0 .. " << MAX_PHRED_SCORE
                   << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     } else if (trim_window_length >= 0) {
         trim_by_quality = true;
     } else if (trim_window_length < 0.0) {
         std::cerr << "Error: Invalid value for --trimwindows ("
                   << trim_window_length << "); value must be >= 0."
                   << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     }
 
     // Check for invalid combinations of settings
@@ -472,11 +472,11 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << "Please specify at least one input file using --file1 FILENAME."
                   << std::endl;
 
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     } else if (!input_files_2.empty() && (input_files_1.size() != input_files_2.size())) {
         std::cerr << "Error: Different number of files specified for --file1 and --file2." << std::endl;
 
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     } else if (!input_files_2.empty()) {
         paired_ended_mode = true;
         min_adapter_overlap = 0;
@@ -492,7 +492,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                       << "together with the --file2 option; only --file1 must "
                       << "be specified!"
                       << std::endl;
-            return argparse::pr_error;
+            return argparse::parse_result::error;
         }
 
         // Enable paired end mode .. other than the FASTQ reader, all other
@@ -506,12 +506,12 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << "be interleaved FASTQ reads (requires --interleaved)."
                   << std::endl;
 
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     }
 
     // (Optionally) read adapters from file and validate
     if (!setup_adapter_sequences()) {
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     }
 
     // Set mismatch threshold
@@ -529,7 +529,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     if (gzip_level > 9) {
         std::cerr << "Error: --gzip-level must be in the range 0 to 9, not "
                   << gzip_level << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
 
     }
 
@@ -537,17 +537,17 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     if (bzip2_level < 1 || bzip2_level > 9) {
         std::cerr << "Error: --bzip2-level must be in the range 1 to 9, not "
                   << bzip2_level << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     } else if (bzip2 && gzip) {
         std::cerr << "Error: Cannot enable --gzip and --bzip2 at the same time!"
                   << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     }
 #endif
 
     if (!max_threads) {
         std::cerr << "Error: --threads must be at least 1!" << std::endl;
-        return argparse::pr_error;
+        return argparse::parse_result::error;
     } else if (max_threads > 1 && argparser.is_set("--seed")) {
         std::cerr << "Warning: The option --seed should not be used when "
                   << "using multiple threads; multi-threaded behavior is not "
@@ -555,7 +555,7 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << std::endl;
     }
 
-    return argparse::pr_ok;
+    return argparse::parse_result::ok;
 }
 
 
@@ -643,7 +643,7 @@ std::string userconfig::get_output_filename(const std::string& key,
         }
 
         // Currently only when demultiplexing; for backwards compatibility
-        if (run_type == ar_demultiplex_sequences) {
+        if (run_type == ar_command::demultiplex_sequences) {
             filename += ".fastq";
         }
 
@@ -684,11 +684,11 @@ std::string userconfig::get_output_filename(const std::string& key,
             throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
         }
 
-        if (run_type != ar_demultiplex_sequences) {
+        if (run_type != ar_command::demultiplex_sequences) {
             filename += ".truncated";
         }
     } else if (key == "--output1") {
-        if (run_type != ar_demultiplex_sequences) {
+        if (run_type != ar_command::demultiplex_sequences) {
             filename += ".truncated";
         }
     } else if (key != "demux_unknown") {
@@ -696,7 +696,7 @@ std::string userconfig::get_output_filename(const std::string& key,
     }
 
     // Currently only when demultiplexing; for backwards compatibility
-    if (run_type == ar_demultiplex_sequences) {
+    if (run_type == ar_command::demultiplex_sequences) {
         filename += ".fastq";
     }
 

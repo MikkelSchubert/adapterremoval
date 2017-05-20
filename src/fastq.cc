@@ -35,26 +35,33 @@
 namespace ar
 {
 
+enum class read_mate {
+    unknown,
+    mate_1,
+    mate_2,
+};
+
+
 struct mate_info
 {
     mate_info()
       : name()
-      , mate(unknown)
+      , mate(read_mate::unknown)
     {}
 
     std::string desc() const
     {
         switch (mate) {
-            case unknown: return "unknown";
-            case mate1: return "mate 1";
-            case mate2: return "mate 2";
+            case read_mate::unknown: return "unknown";
+            case read_mate::mate_1: return "mate 1";
+            case read_mate::mate_2: return "mate 2";
             default:
                 throw std::invalid_argument("Invalid mate in mate_info::desc");
         }
     }
 
     std::string name;
-    enum { unknown, mate1, mate2 } mate;
+    read_mate mate;
 };
 
 
@@ -73,11 +80,11 @@ inline mate_info get_and_fix_mate_info(fastq& read, char mate_separator)
 
         if (digit == '1') {
             header[pos - 2] = MATE_SEPARATOR;
-            info.mate = mate_info::mate1;
+            info.mate = read_mate::mate_1;
             pos -= 2;
         } else if (digit == '2') {
             header[pos - 2] = MATE_SEPARATOR;
-            info.mate = mate_info::mate2;
+            info.mate = read_mate::mate_2;
             pos -= 2;
         }
     }
@@ -398,7 +405,7 @@ void fastq::validate_paired_reads(fastq& mate1, fastq& mate2,
               << " - '" << info1.name << "'\n"
               << " - '" << info2.name << "'";
 
-        if (info1.mate == mate_info::unknown || info2.mate == mate_info::unknown) {
+        if (info1.mate == read_mate::unknown || info2.mate == read_mate::unknown) {
             error << "\n\nNote that AdapterRemoval by determines the mate "
                      "numbers as the digit found at the end of the read name, "
                      "if this is preceded by the character '"
@@ -412,8 +419,8 @@ void fastq::validate_paired_reads(fastq& mate1, fastq& mate2,
         throw fastq_error(error.str());
     }
 
-    if (info1.mate != mate_info::unknown || info2.mate != mate_info::unknown) {
-        if (info1.mate != mate_info::mate1 || info2.mate != mate_info::mate2) {
+    if (info1.mate != read_mate::unknown || info2.mate != read_mate::unknown) {
+        if (info1.mate != read_mate::mate_1 || info2.mate != read_mate::mate_2) {
             std::stringstream error;
             error << "Inconsistent mate numbering; please verify data:\n"
                   << "\nRead 1 identified as " << info1.desc() << ": " << mate1.name()

@@ -42,13 +42,13 @@ typedef std::map<std::string, consumer_ptr> consumer_map;
 
 
 //! Parse results for command-line arguments
-enum parse_result {
+enum class parse_result {
     //! Terminate now (e.g. --version or --help used)
-    pr_exit,
+    exit,
     //! Error occurred parsing arguments / invalid combination of args
-    pr_error,
+    error,
     //! No errors parsing commandline arguments
-    pr_ok
+    ok
 };
 
 

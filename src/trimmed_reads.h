@@ -41,13 +41,13 @@ namespace ar
 
 
 //! Enum representing the possible states of read processing
-enum read_status
+enum class read_status
 {
     //! Read passed all checks, and should be written to the main output file
-    PASSED,
+    passed,
     //! Read failed one or more checks, and should be discarded; this may
     //! include stripping the sequence and qualities, and flagging the read
-    FAILED,
+    failed,
 };
 
 

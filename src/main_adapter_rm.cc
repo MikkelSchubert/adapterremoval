@@ -214,19 +214,19 @@ void write_trimming_settings(const userconfig& config,
         const std::vector<size_t>& lengths = stats.read_lengths.at(length);
         const size_t total = std::accumulate(lengths.begin(), lengths.end(), 0);
 
-        settings << length << '\t' << lengths.at(rt_mate_1);
+        settings << length << '\t' << lengths.at(static_cast<size_t>(read_type::mate_1));
 
         if (config.paired_ended_mode) {
-            settings << '\t' << lengths.at(rt_mate_2)
-                     << '\t' << lengths.at(rt_singleton);
+            settings << '\t' << lengths.at(static_cast<size_t>(read_type::mate_2))
+                     << '\t' << lengths.at(static_cast<size_t>(read_type::singleton));
         }
 
         if (config.collapse) {
-            settings << '\t' << lengths.at(rt_collapsed)
-                     << '\t' << lengths.at(rt_collapsed_truncated);
+            settings << '\t' << lengths.at(static_cast<size_t>(read_type::collapsed))
+                     << '\t' << lengths.at(static_cast<size_t>(read_type::collapsed_truncated));
         }
 
-        settings << '\t' << lengths.at(rt_discarded)
+        settings << '\t' << lengths.at(static_cast<size_t>(read_type::discarded))
                  << '\t' << total << '\n';
     }
 
@@ -292,25 +292,25 @@ void process_collapsed_read(const userconfig& config,
     if (config.is_acceptable_read(collapsed_read)) {
         stats.total_number_of_nucleotides += collapsed_read.length();
         stats.total_number_of_good_reads++;
-        stats.inc_length_count(was_trimmed ? rt_collapsed_truncated : rt_collapsed,
+        stats.inc_length_count(was_trimmed ? read_type::collapsed_truncated : read_type::collapsed,
                                collapsed_read.length());
 
         if (was_trimmed) {
-            chunks.add_collapsed_truncated_read(collapsed_read, PASSED, read_count);
+            chunks.add_collapsed_truncated_read(collapsed_read, read_status::passed, read_count);
             stats.number_of_truncated_collapsed++;
         } else {
-            chunks.add_collapsed_read(collapsed_read, PASSED, read_count);
+            chunks.add_collapsed_read(collapsed_read, read_status::passed, read_count);
             stats.number_of_full_length_collapsed++;
         }
     } else {
         stats.discard1++;
         stats.discard2++;
-        stats.inc_length_count(rt_discarded, collapsed_read.length());
+        stats.inc_length_count(read_type::discarded, collapsed_read.length());
 
         if (was_trimmed) {
-            chunks.add_collapsed_truncated_read(collapsed_read, FAILED, read_count);
+            chunks.add_collapsed_truncated_read(collapsed_read, read_status::failed, read_count);
         } else {
-            chunks.add_collapsed_read(collapsed_read, FAILED, read_count);
+            chunks.add_collapsed_read(collapsed_read, read_status::failed, read_count);
         }
     }
 }
@@ -320,7 +320,7 @@ class reads_processor : public analytical_step
 {
 public:
     reads_processor(const userconfig& config, size_t nth)
-      : analytical_step(analytical_step::unordered)
+      : analytical_step(analytical_step::ordering::unordered)
       , m_config(config)
       , m_adapters(config.adapters.get_adapter_set(nth))
       , m_stats(config)
@@ -401,13 +401,13 @@ public:
                 stats->total_number_of_good_reads++;
                 stats->total_number_of_nucleotides += read.length();
 
-                chunks.add_mate_1_read(read, PASSED);
-                stats->inc_length_count(rt_mate_1, read.length());
+                chunks.add_mate_1_read(read, read_status::passed);
+                stats->inc_length_count(read_type::mate_1, read.length());
             } else {
                 stats->discard1++;
-                stats->inc_length_count(rt_discarded, read.length());
+                stats->inc_length_count(read_type::discarded, read.length());
 
-                chunks.add_mate_1_read(read, FAILED);
+                chunks.add_mate_1_read(read, read_status::failed);
             }
         }
 
@@ -500,7 +500,7 @@ public:
                     if (m_config.combined_output) {
                         // Dummy read with read-count of zero; both mates have
                         // already been accounted for in process_collapsed_read
-                        chunks.add_mate_2_read(read_2, FAILED, 0);
+                        chunks.add_mate_2_read(read_2, read_status::failed, 0);
                     }
                     continue;
                 }
@@ -523,12 +523,12 @@ public:
             stats->total_number_of_good_reads += read_1_acceptable;
             stats->total_number_of_good_reads += read_2_acceptable;
 
-            const read_status state_1 = read_1_acceptable ? PASSED : FAILED;
-            const read_status state_2 = read_2_acceptable ? PASSED : FAILED;
+            const read_status state_1 = read_1_acceptable ? read_status::passed : read_status::failed;
+            const read_status state_2 = read_2_acceptable ? read_status::passed : read_status::failed;
 
             if (read_1_acceptable && read_2_acceptable) {
-                stats->inc_length_count(rt_mate_1, read_1.length());
-                stats->inc_length_count(rt_mate_2, read_2.length());
+                stats->inc_length_count(read_type::mate_1, read_1.length());
+                stats->inc_length_count(read_type::mate_2, read_2.length());
             } else {
                 // Count singleton reads
                 stats->keep1 += read_1_acceptable && !read_2_acceptable;
@@ -537,8 +537,8 @@ public:
                 stats->discard1 += !read_1_acceptable;
                 stats->discard2 += !read_2_acceptable;
 
-                stats->inc_length_count(read_1_acceptable ? rt_singleton : rt_discarded, read_1.length());
-                stats->inc_length_count(read_2_acceptable ? rt_singleton : rt_discarded, read_2.length());
+                stats->inc_length_count(read_1_acceptable ? read_type::singleton : read_type::discarded, read_1.length());
+                stats->inc_length_count(read_2_acceptable ? read_type::singleton : read_type::discarded, read_2.length());
             }
 
             // Queue reads last, since this result in modifications to lengths

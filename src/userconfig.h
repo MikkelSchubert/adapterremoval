@@ -44,11 +44,11 @@ typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
 typedef std::unique_ptr<statistics> statistics_ptr;
 
 
-enum ar_run_types
+enum class ar_command
 {
-    ar_trim_adapters,
-    ar_identify_adapters,
-    ar_demultiplex_sequences,
+    trim_adapters,
+    identify_adapters,
+    demultiplex_sequences,
 };
 
 
@@ -91,8 +91,8 @@ public:
     /** Trims a read if enabled, returning the #bases removed from each end. */
     fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
 
-    //! Type of run to execute; see ar_run_types
-    ar_run_types run_type;
+    //! Type of run to execute; see command
+    ar_command run_type;
 
     //! Prefix used for output files for which no filename was explicitly set
     std::string basename;
