@@ -30,6 +30,7 @@
 #include "fastq_io.hpp"
 #include "userconfig.hpp"
 
+
 namespace ar
 {
 
@@ -347,8 +348,6 @@ std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
 }
 
 
-#ifdef AR_BZIP2_SUPPORT
-
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_fastq'
 
@@ -493,10 +492,6 @@ chunk_vec bzip2_fastq::process(analytical_chunk* chunk)
     return chunks;
 }
 
-#endif
-
-
-#ifdef AR_GZIP_SUPPORT
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_fastq'
@@ -641,8 +636,6 @@ chunk_vec gzip_fastq::process(analytical_chunk* chunk)
 
     return chunks;
 }
-
-#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////

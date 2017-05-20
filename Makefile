@@ -10,12 +10,6 @@ CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
-# Enable reading writing of gzip compressed files using libz.
-GZIP_SUPPORT := yes
-
-# Enable reading writing of bzip2 compressed files using libbz2.
-BZIP2_SUPPORT := yes
-
 # Hide individual commands during build; only shows summaries instead.
 QUIET_BUILD := yes
 
@@ -32,7 +26,7 @@ COVERAGE := no
 # Makefile internals. Normally you do not need to touch these.
 
 # Libraries required by AdapterRemoval
-LIBRARIES := -pthread
+LIBRARIES := -pthread -lz -lbz2
 
 # Build directory; modified depending on build options
 BDIR     := build/main
@@ -47,24 +41,6 @@ COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
-endif
-
-ifeq ($(strip ${GZIP_SUPPORT}),yes)
-$(info Building AdapterRemoval with gzip support: yes)
-CXXFLAGS := ${CXXFLAGS} -DAR_GZIP_SUPPORT
-LIBRARIES := ${LIBRARIES} -lz
-BDIR := ${BDIR}_gz
-else
-$(info Building AdapterRemoval with gzip support: no)
-endif
-
-ifeq ($(strip ${BZIP2_SUPPORT}),yes)
-$(info Building AdapterRemoval with bzip2 support: yes)
-CXXFLAGS := ${CXXFLAGS} -DAR_BZIP2_SUPPORT
-LIBRARIES := ${LIBRARIES} -lbz2
-BDIR := ${BDIR}_bz2
-else
-$(info Building AdapterRemoval with bzip2 support: no)
 endif
 
 ifeq ($(strip ${COVERAGE}), yes)

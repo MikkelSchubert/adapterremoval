@@ -56,16 +56,7 @@ It is also possible to compile AdapterRemoval as a static library:
     $ sudo make static
 
 
-Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed, that the bzlib2 library and headers are installed, and that the compiler used supports c++11. Please refer to your operating system documentation for installation instructions. Alternatively, use of these features may be disabled when running 'make':
-
-    # Disable gzip support
-    $ make GZIP_SUPPORT=no
-
-    # Disable bzip2 support
-    $ make BZIP2_SUPPORT=no
-
-    # Disable both gzip and bzip2 support
-    $ make GZIP_SUPPORT=no BZIP2_SUPPORT=no
+Note that AdapterRemoval requires that the zlib library and headers (www.zlib.net) are installed, that the bzlib2 library and headers are installed, and that the compiler used supports c++11. Please refer to your operating system documentation for installation instructions.
 
 
 ## Documentation

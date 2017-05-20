@@ -40,7 +40,6 @@
 namespace ar
 {
 
-
 size_t get_seed()
 {
     struct timeval timestamp;
@@ -220,26 +219,20 @@ userconfig::userconfig(const std::string& name,
             "Contains reads discarded due to the --minlength, --maxlength or "
             "--maxns options [default: BASENAME.discarded]");
 
-#if defined(AR_GZIP_SUPPORT) || defined(AR_BZIP2_SUPPORT)
-   argparser.add_header("OUTPUT COMPRESSION:");
-#endif
-
-#ifdef AR_GZIP_SUPPORT
+    argparser.add_header("OUTPUT COMPRESSION:");
     argparser["--gzip"] =
         new argparse::flag(&gzip,
             "Enable gzip compression [current: %default]");
     argparser["--gzip-level"] =
         new argparse::knob(&gzip_level, "LEVEL",
             "Compression level, 0 - 9 [current: %default]");
-#endif
-#ifdef AR_BZIP2_SUPPORT
+
     argparser["--bzip2"] =
         new argparse::flag(&bzip2,
             "Enable bzip2 compression [current: %default]");
     argparser["--bzip2-level"] =
         new argparse::knob(&bzip2_level, "LEVEL",
             "Compression level, 0 - 9 [current: %default]");
-#endif
 
     argparser.add_header("TRIMMING SETTINGS:");
     // Backwards compatibility with AdapterRemoval v1; not recommended due to
@@ -533,7 +526,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 
     }
 
-#ifdef AR_BZIP2_SUPPORT
     if (bzip2_level < 1 || bzip2_level > 9) {
         std::cerr << "Error: --bzip2-level must be in the range 1 to 9, not "
                   << bzip2_level << std::endl;
@@ -543,7 +535,6 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << std::endl;
         return argparse::parse_result::error;
     }
-#endif
 
     if (!max_threads) {
         std::cerr << "Error: --threads must be at least 1!" << std::endl;

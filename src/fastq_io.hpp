@@ -29,9 +29,7 @@
 
 #include <zlib.h>
 
-#ifdef AR_BZIP2_SUPPORT
 #include <bzlib.h>
-#endif
 
 
 #include "commontypes.hpp"
@@ -56,13 +54,8 @@ typedef std::vector<buffer_pair> buffer_vec;
 
 //! Number of FASTQ records to read for each data-chunk
 const size_t FASTQ_CHUNK_SIZE = 2 * 1024;
-
-#if defined(AR_GZIP_SUPPORT) || defined(AR_BZIP2_SUPPORT)
 //! Size of compressed chunks used to transport compressed data
 const size_t FASTQ_COMPRESSED_CHUNK = 40 * 1024;
-#endif
-
-
 
 
 /**
@@ -261,7 +254,6 @@ private:
 
 
 
-#ifdef AR_BZIP2_SUPPORT
 /**
  * BZip2 compression step; takes any lines in the input chunk, compresses them,
  * and adds them to the buffer list of the chunk, before forwarding it. */
@@ -295,10 +287,7 @@ private:
     std::mutex m_lock;
 };
 
-#endif
 
-
-#ifdef AR_GZIP_SUPPORT
 /**
  * GZip compression step; takes any lines in the input chunk, compresses them,
  * and adds them to the buffer list of the chunk, before forwarding it. */
@@ -331,7 +320,6 @@ private:
     //! Lock used to verify that the analytical_step is only run sequentially.
     std::mutex m_lock;
 };
-#endif
 
 
 /**

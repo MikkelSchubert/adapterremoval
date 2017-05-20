@@ -588,22 +588,15 @@ bool write_settings(const userconfig& config, const std::vector<reads_processor*
 void add_write_step(const userconfig& config, scheduler& sch, size_t offset,
                     const std::string& name, analytical_step* step)
 {
-#ifdef AR_GZIP_SUPPORT
     if (config.gzip) {
         sch.add_step(offset + ai_zip_offset, "write_gzip_" + name, step);
         sch.add_step(offset, "gzip_" + name,
                      new gzip_fastq(config, offset + ai_zip_offset));
-    } else
-#endif
-
-#ifdef AR_BZIP2_SUPPORT
-    if (config.bzip2) {
+    } else if (config.bzip2) {
         sch.add_step(offset + ai_zip_offset, "write_bzip2_" + name, step);
         sch.add_step(offset, "bzip2_" + name,
                      new bzip2_fastq(config, offset + ai_zip_offset));
-    } else
-#endif
-    {
+    } else {
         sch.add_step(offset, "write_" + name, step);
     }
 }

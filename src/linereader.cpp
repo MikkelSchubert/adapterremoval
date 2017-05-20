@@ -96,12 +96,8 @@ bzip2_error::bzip2_error(const std::string& message)
 
 line_reader::line_reader(const std::string& fpath)
   : m_file(fopen(fpath.c_str(), "rb"))
-#ifdef AR_GZIP_SUPPORT
   , m_gzip_stream(nullptr)
-#endif
-#ifdef AR_BZIP2_SUPPORT
   , m_bzip2_stream(nullptr)
-#endif
   , m_buffer(nullptr)
   , m_buffer_ptr(nullptr)
   , m_buffer_end(nullptr)
@@ -191,19 +187,11 @@ bool line_reader::is_open() const
 void line_reader::refill_buffers()
 {
     if (m_buffer) {
-#ifdef AR_GZIP_SUPPORT
         if (m_gzip_stream) {
             refill_buffers_gzip();
-        } else
-#endif
-
-#ifdef AR_BZIP2_SUPPORT
-        if (m_bzip2_stream) {
+        } else if (m_bzip2_stream) {
             refill_buffers_bzip2();
-        } else
-#endif
-
-        {
+        } else {
             refill_raw_buffer();
             refill_buffers_uncompressed();
         }
@@ -259,7 +247,6 @@ bool line_reader::identify_gzip() const
 
 void line_reader::initialize_buffers_gzip()
 {
-#ifdef AR_GZIP_SUPPORT
     m_buffer = new char[BUF_SIZE];
     m_buffer_ptr = m_buffer + BUF_SIZE;
     m_buffer_end = m_buffer + BUF_SIZE;
@@ -292,17 +279,11 @@ void line_reader::initialize_buffers_gzip()
             throw gzip_error("line_reader::initialize_buffers_gzip: unknown error",
                              m_gzip_stream ? m_gzip_stream->msg : nullptr);
     }
-#else
-    throw gzip_error("Attempted to read gzipped file, but gzip"
-                     "support was not enabled when AdapterRemoval"
-                     "was compiled");
-#endif
 }
 
 
 void line_reader::refill_buffers_gzip()
 {
-#ifdef AR_GZIP_SUPPORT
     if (!m_gzip_stream->avail_in) {
         refill_raw_buffer();
         m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
@@ -335,13 +316,11 @@ void line_reader::refill_buffers_gzip()
 
     m_buffer_ptr = m_buffer;
     m_buffer_end = m_buffer + (BUF_SIZE - m_gzip_stream->avail_out);
-#endif
 }
 
 
 void line_reader::close_buffers_gzip()
 {
-#ifdef AR_GZIP_SUPPORT
     if (m_gzip_stream) {
         switch (inflateEnd(m_gzip_stream)) {
             case Z_OK:
@@ -362,11 +341,8 @@ void line_reader::close_buffers_gzip()
         delete[] m_buffer;
         m_buffer = nullptr;
     }
-#endif
 }
 
-
-#ifdef AR_BZIP2_SUPPORT
 
 void bzip2_initialize_stream(bz_stream* stream)
 {
@@ -412,8 +388,6 @@ void bzip2_close_stream(bz_stream* stream)
     }
 }
 
-#endif
-
 
 bool line_reader::identify_bzip2() const
 {
@@ -436,7 +410,6 @@ bool line_reader::identify_bzip2() const
 
 void line_reader::initialize_buffers_bzip2()
 {
-#ifdef AR_BZIP2_SUPPORT
     m_buffer = new char[BUF_SIZE];
     m_buffer_ptr = m_buffer + BUF_SIZE;
     m_buffer_end = m_buffer + BUF_SIZE;
@@ -450,17 +423,11 @@ void line_reader::initialize_buffers_bzip2()
     m_bzip2_stream->next_in = m_raw_buffer;
 
     bzip2_initialize_stream(m_bzip2_stream);
-#else
-    throw bzip2_error("Attempted to read bzipped file, but bzip2"
-                      "support was not enabled when AdapterRemoval"
-                      "was compiled");
-#endif
 }
 
 
 void line_reader::refill_buffers_bzip2()
 {
-#ifdef AR_BZIP2_SUPPORT
     if (!m_bzip2_stream->avail_in) {
         refill_raw_buffer();
         m_bzip2_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
@@ -505,13 +472,11 @@ void line_reader::refill_buffers_bzip2()
 
     m_buffer_ptr = m_buffer;
     m_buffer_end = m_buffer + (BUF_SIZE - m_bzip2_stream->avail_out);
-#endif
 }
 
 
 void line_reader::close_buffers_bzip2()
 {
-#ifdef AR_BZIP2_SUPPORT
     if (m_bzip2_stream) {
         bzip2_close_stream(m_bzip2_stream);
 
@@ -521,7 +486,6 @@ void line_reader::close_buffers_bzip2()
         delete[] m_buffer;
         m_buffer = nullptr;
     }
-#endif
 }
 
 } // namespace ar

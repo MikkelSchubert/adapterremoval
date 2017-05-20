@@ -28,13 +28,8 @@
 #include <ios>
 #include <string>
 
-#ifdef AR_GZIP_SUPPORT
 #include <zlib.h>
-#endif
-
-#ifdef AR_BZIP2_SUPPORT
 #include <bzlib.h>
-#endif
 
 
 namespace ar
@@ -125,11 +120,8 @@ private:
     /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */
     void refill_buffers_uncompressed();
 
-
-#ifdef AR_GZIP_SUPPORT
     //! GZip stream pointer; used if input it detected to be gzip compressed.
     z_stream* m_gzip_stream;
-#endif
 
     /** Returns true if the raw buffer contains gzip'd data. */
     bool identify_gzip() const;
@@ -140,11 +132,8 @@ private:
     /** Closes gzip buffers and frees associated memory. */
     void close_buffers_gzip();
 
-
-#ifdef AR_BZIP2_SUPPORT
     //! GZip stream pointer; used if input it detected to be gzip compressed.
     bz_stream* m_bzip2_stream;
-#endif
 
     /** Returns true if the raw buffer contains bzip2'd data. */
     bool identify_bzip2() const;
@@ -154,7 +143,6 @@ private:
     void refill_buffers_bzip2();
     /** Closes gzip2 buffers and frees associated memory. */
     void close_buffers_bzip2();
-
 
     //! Pointer to buffer of decompressed data.
     char* m_buffer;
