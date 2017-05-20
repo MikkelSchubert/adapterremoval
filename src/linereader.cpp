@@ -114,7 +114,15 @@ line_reader::line_reader(const std::string& fpath)
 line_reader::~line_reader()
 {
     try {
-        close();
+        close_buffers_gzip();
+        close_buffers_bzip2();
+
+        delete[] m_raw_buffer;
+        m_raw_buffer = nullptr;
+
+        if (fclose(m_file)) {
+            throw io_error("line_reader::close: error closing file", errno);
+        }
     } catch (const std::exception& error) {
         print_locker lock;
         std::cerr << "Error closing file: " << error.what() << std::endl;
@@ -153,34 +161,6 @@ bool line_reader::getline(std::string& dst)
     }
 
     return !dst.empty();
-}
-
-
-void line_reader::close()
-{
-    close_buffers_gzip();
-    close_buffers_bzip2();
-
-    delete[] m_raw_buffer;
-    m_raw_buffer = nullptr;
-
-    if (m_file && fclose(m_file)) {
-        throw io_error("line_reader::close: error closing file", errno);
-    }
-
-    m_file = nullptr;
-}
-
-
-bool line_reader::eof() const
-{
-    return m_eof;
-}
-
-
-bool line_reader::is_open() const
-{
-    return m_file;
 }
 
 
@@ -346,7 +326,7 @@ void line_reader::close_buffers_gzip()
 
 void bzip2_initialize_stream(bz_stream* stream)
 {
-    switch (BZ2_bzDecompressInit(stream, 0, 0)) {
+    switch (BZ2_bzDecompressInit(stream, /* verbosity */ 0, /* small */ 0)) {
         case BZ_OK:
             break;
 

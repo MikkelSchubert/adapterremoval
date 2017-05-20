@@ -80,6 +80,7 @@ public:
  * Currently reads
  *  - uncompressed files
  *  - gzip compressed files
+ *  - bzip2 compressed files
  *
  * Errors are reported using either 'io_error' or 'gzip_error'.
  */
@@ -94,15 +95,6 @@ public:
 
     /** Reads a lien into dst, returning false on EOF. */
     bool getline(std::string& dst);
-
-    /** Closes the file, if still open. */
-    void close();
-
-    /** Returns true if the file has been closed. */
-    bool is_open() const;
-
-    /** Returns true if a read after EOF has been attempted. */
-    bool eof() const;
 
     //! Copy construction not supported
     line_reader(const line_reader&) = delete;
