@@ -207,8 +207,8 @@ $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -c $< -o $@
 
-.PRECIOUS: $(GTEST_DIR)/src/gtest%.cpp
-$(GTEST_DIR)/src/gtest%.cpp: googletest-release-1.8.0.zip
+.PRECIOUS: $(GTEST_DIR)/src/gtest%.cc
+$(GTEST_DIR)/src/gtest%.cc: googletest-release-1.8.0.zip
 	$(QUIET) if ! test -e "$@"; \
 	then \
 		echo $(COLOR_CYAN)"Unpacking Google Test library"$(COLOR_END); \
