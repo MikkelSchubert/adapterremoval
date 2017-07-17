@@ -1,4 +1,11 @@
 
+
+### Version 2.2.2 - 2017-07-17
+
+  * Made gzip and bzip2 support mandatory.
+  * Added support for Intel compilers, courtesy of Kevin Murray (kdmurray91).
+
+
 ### Version 2.2.1a - 2017-05-17
 
   * Fixed compilation on OSX.
