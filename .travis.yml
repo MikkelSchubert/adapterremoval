@@ -25,7 +25,7 @@ script:
     - make
     - make test COVERAGE=yes
     - make validate
-    - make -C examples
+    - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:
   - coveralls --exclude tests --exclude googletest-release-1.8.0 --gcov-options '\-lp'
