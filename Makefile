@@ -126,23 +126,23 @@ static: build/$(LIBNAME).a
 
 # Object files
 $(BDIR)/%.o: src/%.cpp
-	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
+	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) mkdir -p $(BDIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 # Executable
 build/$(PROG): $(OBJS)
-	@echo $(COLOR_GREEN)"Linking executable '$@'"$(COLOR_END)
+	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
 
 # Static library
 build/$(LIBNAME).a: $(LIBOBJS)
-	@echo $(COLOR_GREEN)"Linking static library '$@'"$(COLOR_END)
+	@echo $(COLOR_GREEN)"Linking static library $@"$(COLOR_END)
 	$(AR) rcs build/$(LIBNAME).a $(LIBOBJS)
 
 build/%.1: %.pod
-	@echo $(COLOR_GREEN)"Constructing man-page '$@' from '$<'"$(COLOR_END)
+	@echo $(COLOR_GREEN)"Constructing man-page $@ from $<"$(COLOR_END)
 	$(QUIET) mkdir -p $(BDIR)
 	$(QUIET) pod2man $< > $@
 
@@ -160,8 +160,9 @@ TEST_OBJS := $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/argparse_test.o \
              $(TEST_DIR)/debug.o \
              $(TEST_DIR)/fastq.o \
-             $(TEST_DIR)/fastq_enc.o \
              $(TEST_DIR)/fastq_test.o \
+             $(TEST_DIR)/fastq_enc.o \
+             $(TEST_DIR)/fastq_enc_test.o \
              $(TEST_DIR)/strutils.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
@@ -186,7 +187,7 @@ $(TEST_DIR)/main: $(GTEST_LIB) $(TEST_OBJS)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LIBRARIES} $^ -o $@
 
 $(TEST_DIR)/libgtest.a: $(GTEST_OBJS)
-	@echo $(COLOR_GREEN)"Linking GTest library '$@'"$(COLOR_END)
+	@echo $(COLOR_GREEN)"Linking GTest library $@"$(COLOR_END)
 	$(QUIET) ar -rv $@ $^
 
 $(TEST_DIR)/%.o: tests/%.cpp
@@ -202,7 +203,7 @@ $(TEST_DIR)/%.o: src/%.cpp
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 $(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
-	@echo $(COLOR_CYAN)"Building '$@' from '$<'"$(COLOR_END)
+	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -c $< -o $@
 

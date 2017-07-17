@@ -322,7 +322,7 @@ public:
     /**
      * See consumer_base::consumer_base
      */
-    many(string_vec* sink = nullptr, const std::string& metavar = "", const std::string& help = "");
+    many(string_vec* sink, const std::string& metavar = "", const std::string& help = "");
 
     /** See consumer_base::consume */
     virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
@@ -336,10 +336,8 @@ public:
     many& operator=(const many&) = delete;
 
 private:
-    //! Optional pointer to storage for string value; if nullptr, m_value is used.
+    //! Pointer to storage for string value; if nullptr, m_value is used.
     string_vec* m_ptr;
-    //! Value sink used if a pointer to a sink is not provided.
-    string_vec m_sink;
 };
 
 

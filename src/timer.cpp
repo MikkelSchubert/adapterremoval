@@ -117,8 +117,8 @@ void timer::increment(size_t inc)
         const double seconds = current_time - m_counts.front().first;
 
         size_t current_total = 0;
-        for (time_count_deque::iterator it = m_counts.begin(); it != m_counts.end(); ++it) {
-            current_total += it->second;
+        for (const auto& time_block : m_counts) {
+            current_total += time_block.second;
         }
 
         do_print(static_cast<size_t>(current_total / seconds), current_time);

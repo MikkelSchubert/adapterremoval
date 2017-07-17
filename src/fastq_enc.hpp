@@ -85,19 +85,19 @@ public:
 
     virtual ~fastq_encoding();
 
-    /** Encodes a string of Phred+33/66 quality-scores in-place. */
-    virtual void encode_string(std::string::iterator it, const std::string::iterator& end) const;
+    /** Appends encoded Phred+33/66 quality-scores to dst. */
+    virtual void encode(const std::string& qualities, std::string& dst) const;
     /** Decodes a string of ASCII values in-place. */
-    virtual void decode_string(std::string::iterator it, const std::string::iterator& end) const;
+    virtual void decode(std::string& qualities) const;
 
     /** Returns the standard name for this encoding. */
-    virtual std::string name() const;
+    virtual const char* name() const;
 
     /**
      * Returns the maximum allowed quality score for input, and the range to
      * range to which output scores are truncated.
      */
-    virtual size_t max_score() const;
+    size_t max_score() const;
 
     //! Copy construction not supported
     fastq_encoding(const fastq_encoding&) = delete;
@@ -131,13 +131,13 @@ public:
      */
     fastq_encoding_solexa(unsigned max_score = MAX_PHRED_SCORE_DEFAULT);
 
-    /** Encodes a string of Phred+33/66 quality-scores in-place. */
-    virtual void encode_string(std::string::iterator it, const std::string::iterator& end) const;
+    /** Appends encoded Phred+33/66 quality-scores to dst. */
+    virtual void encode(const std::string& qualities, std::string& dst) const override;
     /** Decodes a string of ASCII values in-place. */
-    virtual void decode_string(std::string::iterator it, const std::string::iterator& end) const;
+    virtual void decode(std::string& qualities) const override;
 
     /** Returns the standard name for this encoding. */
-    std::string name() const;
+    const char* name() const;
 };
 
 

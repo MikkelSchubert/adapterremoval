@@ -228,10 +228,7 @@ bool check_barcodes_sequences(const fastq_pair_vec& barcodes,
 
 bool valid_sample_name(const std::string& name)
 {
-    std::string::const_iterator it = name.begin();
-    for (; it != name.end(); ++it) {
-        const char c = *it;
-
+    for (const char c : name) {
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
             (c >= '0' && c <= '9') || (c == '_')) {
             continue;
@@ -263,8 +260,8 @@ bool check_sample_names(const string_vec& names)
         return true;
     }
 
-    for (string_vec_citer it = names.begin(); it != names.end(); ++it) {
-        if (!valid_sample_name(*it)) {
+    for (const auto& name : names) {
+        if (!valid_sample_name(name)) {
             return false;
         }
     }
@@ -324,12 +321,12 @@ bool adapter_set::load_adapters(const std::string& filename, bool paired_end)
         return false;
     }
 
-    for (fastq_table_citer it = raw_adapters.begin(); it != raw_adapters.end(); ++it) {
-        fastq adapter_5p = it->second.at(0);
+    for (const auto& row : raw_adapters) {
+        fastq adapter_5p = row.second.at(0);
         fastq adapter_3p;
 
-        if (it->second.size() > 1) {
-            adapter_3p = it->second.at(1);
+        if (row.second.size() > 1) {
+            adapter_3p = row.second.at(1);
         }
 
         m_adapters.push_back(fastq_pair(adapter_5p, adapter_3p));
@@ -349,15 +346,15 @@ bool adapter_set::load_barcodes(const std::string& filename, bool paired_end)
     m_samples.clear();
     m_barcodes.clear();
 
-    for (fastq_table_citer it = raw_barcodes.begin(); it != raw_barcodes.end(); ++it) {
-        fastq barcode_5p = it->second.at(0);
+    for (const auto& row : raw_barcodes) {
+        fastq barcode_5p = row.second.at(0);
         fastq barcode_3p;
 
-        if (it->second.size() > 1) {
-            barcode_3p = it->second.at(1);
+        if (row.second.size() > 1) {
+            barcode_3p = row.second.at(1);
         }
 
-        m_samples.push_back(it->first);
+        m_samples.push_back(row.first);
         m_barcodes.push_back(fastq_pair(barcode_5p, barcode_3p));
     }
 
@@ -399,9 +396,9 @@ fastq_pair_vec adapter_set::get_adapter_set(size_t nth) const
     barcodes.second.reverse_complement();
 
     fastq_pair_vec adapters;
-    for (fastq_pair_vec::const_iterator it = m_adapters.begin(); it != m_adapters.end(); ++it) {
-        fastq adapter_1("adapter_1", barcodes.second.sequence() + it->first.sequence());
-        fastq adapter_2("adapter_2", it->second.sequence() + barcodes.first.sequence());
+    for (const auto& adapter_pair : m_adapters) {
+        fastq adapter_1("adapter_1", barcodes.second.sequence() + adapter_pair.first.sequence());
+        fastq adapter_2("adapter_2", adapter_pair.second.sequence() + barcodes.first.sequence());
 
         adapters.push_back(fastq_pair(adapter_1, adapter_2));
     }
@@ -421,9 +418,9 @@ string_pair_vec adapter_set::get_pretty_adapter_set(size_t nth) const
 
     string_pair_vec adapters;
     const fastq_pair_vec adapter_pairs = get_adapter_set(nth);
-    for (fastq_pair_vec::const_iterator it = adapter_pairs.begin(); it != adapter_pairs.end(); ++it) {
-        fastq adapter_1 = it->first;
-        fastq adapter_2 = it->second;
+    for (const auto& adapter_pair : adapter_pairs) {
+        fastq adapter_1 = adapter_pair.first;
+        fastq adapter_2 = adapter_pair.second;
         adapter_2.reverse_complement();
 
         std::string seq_1 = adapter_1.sequence();

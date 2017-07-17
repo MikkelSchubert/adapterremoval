@@ -326,8 +326,8 @@ alignment_info align_single_ended_sequence(const fastq& read,
 {
     size_t adapter_id = 0;
     alignment_info best_alignment;
-    for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
-        const fastq& adapter = it->first;
+    for (const auto& adapter_pair : adapters) {
+        const fastq& adapter = adapter_pair.first;
         const alignment_info alignment = pairwise_align_sequences(best_alignment,
                                                                   read.sequence(),
                                                                   adapter.sequence(),
@@ -338,6 +338,8 @@ alignment_info align_single_ended_sequence(const fastq& read,
             best_alignment = alignment;
             best_alignment.adapter_id = adapter_id;
         }
+
+        ++adapter_id;
     }
 
     return best_alignment;
@@ -351,9 +353,9 @@ alignment_info align_paired_ended_sequences(const fastq& read1,
 {
     size_t adapter_id = 0;
     alignment_info best_alignment;
-    for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
-        const fastq& adapter1 = it->first;
-        const fastq& adapter2 = it->second;
+    for (const auto& adapter_pair : adapters) {
+        const fastq& adapter1 = adapter_pair.first;
+        const fastq& adapter2 = adapter_pair.second;
 
         const std::string sequence1 = adapter2.sequence() + read1.sequence();
         const std::string sequence2 = read2.sequence() + adapter1.sequence();
@@ -374,6 +376,8 @@ alignment_info align_paired_ended_sequences(const fastq& read1,
             // Convert the alignment into an alignment between read 1 & 2 only
             best_alignment.offset -= adapter2.length();
         }
+
+        ++adapter_id;
     }
 
     return best_alignment;

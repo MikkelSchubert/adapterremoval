@@ -29,10 +29,15 @@
 #include <sstream>
 #include <iostream>
 
+#include "debug.hpp"
 #include "fastq_enc.hpp"
+
 
 namespace ar
 {
+
+void invalid_solexa(const char offset, const char max_score, const char raw) __attribute__((noreturn));
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // fastq_error
@@ -106,6 +111,8 @@ const std::string g_phred_to_solexa = calc_phred_to_solexa();
 void invalid_phred(const char offset, const char max_score, const char raw)
 {
     if (raw < offset) {
+        AR_DEBUG_ASSERT(offset == 33 || offset == 64);
+
         if (offset == 33) {
             throw fastq_error("ASCII value of quality score is less than 33 "
                               "(ASCII < '!'); input is corrupt or not in "
@@ -113,7 +120,7 @@ void invalid_phred(const char offset, const char max_score, const char raw)
         } else if (offset == 64) {
             if (raw < ';') {
                 throw fastq_error("Phred+64 encoded quality score is less than 0 "
-                                  "(ASCII < '@'); Are these FASTQ reads actually in "
+                                  "(ASCII < ';'); Are these FASTQ reads actually in "
                                   "Phred+33 format? If so, use the command-line "
                                   "option \"--qualitybase 33\"\n\n"
 
@@ -129,7 +136,7 @@ void invalid_phred(const char offset, const char max_score, const char raw)
                                   "See README for more information.");
             }
         } else {
-            throw std::logic_error("Unexpected offset in fastq_encoding::decode");
+            AR_DEBUG_FAIL("Unexpected offset in fastq_encoding::decode");
         }
     } else if (raw > max_score) {
         if (raw > '~') {
@@ -172,7 +179,7 @@ void invalid_phred(const char offset, const char max_score, const char raw)
 
             throw fastq_error(ss.str());
         } else {
-            throw std::logic_error("Unexpected offset in fastq_encoding::decode");
+            AR_DEBUG_FAIL("Unexpected offset in fastq_encoding::decode");
         }
     }
 }
@@ -191,28 +198,26 @@ void invalid_solexa(const char offset, const char max_score, const char raw)
                               "the '--qualitybase 33' command-line option.\n\n"
                               "See the README for more information.");
         }
-    } else if (raw > offset + max_score) {
-        if (raw > '~') {
-            throw fastq_error("ASCII value of quality score is greater than "
-                              "126 (ASCII > '~'); input is corrupt or not in "
-                              "FASTQ format!");
-        } else {
-            std::stringstream ss;
+    } else if (raw > '~') {
+        throw fastq_error("ASCII value of quality score is greater than "
+                        "126 (ASCII > '~'); input is corrupt or not in "
+                            "FASTQ format!");
+    } else {
+        std::stringstream ss;
 
-            ss << "Solaxa encoded quality score is greater than the "
-               << "expected maximum (" << max_score << " = "
-               << static_cast<char>(offset + max_score) << "). Please "
-               << "verify the format of these files.\n\n"
+        ss << "Solaxa encoded quality score is greater than the "
+            << "expected maximum (" << max_score << " = "
+            << static_cast<char>(offset + max_score) << "). Please "
+            << "verify the format of these files.\n\n"
 
-               << "If the quality scores are Solexa encoded, but includes "
-               << "scores in a greater range than expected, then use the "
-               << "'--maxquality' command-line option. Note that this option "
-               << "effects both reading and writing of FASTQ files.\n\n"
+            << "If the quality scores are Solexa encoded, but includes "
+            << "scores in a greater range than expected, then use the "
+            << "'--maxquality' command-line option. Note that this option "
+            << "effects both reading and writing of FASTQ files.\n\n"
 
-               << "See README for more information.";
+            << "See README for more information.";
 
-            throw fastq_error(ss.str());
-        }
+        throw fastq_error(ss.str());
     }
 }
 
@@ -239,42 +244,41 @@ fastq_encoding::~fastq_encoding()
 }
 
 
-void fastq_encoding::encode_string(std::string::iterator it,
-                                   const std::string::iterator& end) const
+void fastq_encoding::encode(const std::string& qualities,
+                            std::string& dst) const
 {
     const char ascii_max = m_offset + m_max_score;
     const char offset = m_offset - '!';
 
-    for (; it != end; ++it) {
-        *it = std::min<int>(ascii_max, *it + offset);
+    for (const auto& quality : qualities) {
+        dst.push_back(std::min<int>(ascii_max, quality + offset));
     }
 }
 
 
-void fastq_encoding::decode_string(std::string::iterator it,
-                                   const std::string::iterator& end) const
+void fastq_encoding::decode(std::string& qualities) const
 {
     const char max_score = m_offset + m_max_score;
-    for (; it != end; ++it) {
-        const char raw = *it;
+    const char offset = PHRED_OFFSET_33 - m_offset;
 
-        if (raw < m_offset || raw > max_score) {
-            invalid_phred(m_offset, m_max_score, raw);
+    for (auto& quality : qualities) {
+        if (quality < m_offset || quality > max_score) {
+            invalid_phred(m_offset, m_max_score, quality);
         }
 
-        *it = raw - m_offset + PHRED_OFFSET_33;
+        quality += offset;
     }
 }
 
 
-std::string fastq_encoding::name() const
+const char* fastq_encoding::name() const
 {
     if (m_offset == 33) {
         return "Phred+33";
     } else if (m_offset == 64) {
         return "Phred+64";
     } else {
-        throw std::logic_error("Unexpected offset in fastq_encoding::name");
+        AR_DEBUG_FAIL("Unexpected offset in fastq_encoding::name");
     }
 }
 
@@ -291,34 +295,31 @@ fastq_encoding_solexa::fastq_encoding_solexa(unsigned max_score)
 }
 
 
-void fastq_encoding_solexa::encode_string(std::string::iterator it,
-                                   const std::string::iterator& end) const
+void fastq_encoding_solexa::encode(const std::string& qualities,
+                                   std::string& dst) const
 {
     const char ascii_max = m_offset + m_max_score;
 
-    for (; it != end; ++it) {
-        *it = std::min<int>(ascii_max, g_phred_to_solexa.at(*it - '!') + '@');
+    for (const auto& quality : qualities) {
+        dst.push_back(std::min<int>(ascii_max, g_phred_to_solexa.at(quality - '!') + '@'));
     }
 }
 
 
-void fastq_encoding_solexa::decode_string(std::string::iterator it,
-                                   const std::string::iterator& end) const
+void fastq_encoding_solexa::decode(std::string& qualities) const
 {
     const char max_score = m_offset + m_max_score;
-    for (; it != end; ++it) {
-        const char raw = *it;
-
-        if (raw < ';' || raw > max_score) {
-            invalid_phred(m_offset, m_max_score, raw);
+    for (auto& quality : qualities) {
+        if (quality < ';' || quality > max_score) {
+            invalid_phred(m_offset, m_max_score, quality);
         }
 
-        *it = g_solexa_to_phred.at(raw - ';') + '!';
+        quality = g_solexa_to_phred.at(quality - ';') + '!';
     }
 }
 
 
-std::string fastq_encoding_solexa::name() const
+const char* fastq_encoding_solexa::name() const
 {
     return "Solexa";
 }

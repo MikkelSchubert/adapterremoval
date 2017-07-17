@@ -196,7 +196,7 @@ public:
 
         output_chunk_ptr encoded_reads(new fastq_output_chunk(read_chunk->eof));
 
-        for (auto const& read: read_chunk->reads_1) {
+        for (const auto& read : read_chunk->reads_1) {
             encoded_reads->add(*m_config.quality_output_fmt, read);
         }
 

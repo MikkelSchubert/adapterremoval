@@ -89,8 +89,8 @@ fastq_output_chunk::fastq_output_chunk(bool eof_)
 
 fastq_output_chunk::~fastq_output_chunk()
 {
-    for (buffer_vec::iterator it = buffers.begin(); it != buffers.end(); ++it) {
-        delete[] it->second;
+    for (auto& buffer : buffers) {
+        delete[] buffer.second;
     }
 }
 
@@ -333,15 +333,15 @@ void read_interleaved_fastq::finalize()
 std::pair<size_t, unsigned char*> build_input_buffer(const string_vec& lines)
 {
     size_t buffer_size = 0;
-    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
-        buffer_size += it->size();
+    for (const auto& line : lines) {
+        buffer_size += line.size();
     }
 
     unsigned char* input_buffer = new unsigned char[buffer_size];
     unsigned char* input_buffer_ptr = input_buffer;
-    for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
-        std::memcpy(input_buffer_ptr, it->data(), it->size());
-        input_buffer_ptr += it->size();
+    for (const auto& line : lines) {
+        std::memcpy(input_buffer_ptr, line.data(), line.size());
+        input_buffer_ptr += line.size();
     }
 
     return std::pair<size_t, unsigned char*>(buffer_size, input_buffer);
@@ -676,14 +676,14 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
 
     m_eof = file_chunk->eof;
     if (file_chunk->buffers.empty()) {
-        for (string_vec::const_iterator it = lines.begin(); it != lines.end(); ++it) {
-            m_output << *it;
+        for (const auto& line : lines) {
+            m_output << line;
         }
     } else {
         buffer_vec& buffers = file_chunk->buffers;
-        for (buffer_vec::iterator it = buffers.begin(); it != buffers.end(); ++it) {
-            if (it->first) {
-                m_output.write(reinterpret_cast<char*>(it->second), it->first);
+        for (const auto& buffer : buffers) {
+            if (buffer.first) {
+                m_output.write(reinterpret_cast<const char*>(buffer.second), buffer.first);
             }
         }
     }

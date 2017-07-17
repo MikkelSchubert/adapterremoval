@@ -55,8 +55,7 @@ struct mate_info
             case read_mate::unknown: return "unknown";
             case read_mate::mate_1: return "mate 1";
             case read_mate::mate_2: return "mate 2";
-            default:
-                throw std::invalid_argument("Invalid mate in mate_info::desc");
+            default: AR_DEBUG_FAIL("Invalid mate in mate_info::desc");
         }
     }
 
@@ -259,8 +258,8 @@ void fastq::reverse_complement()
 
     // Lookup table for complementary bases based only on the last 4 bits
     static const char complements[] = "-T-GA--C------N-";
-    for(std::string::iterator it = m_sequence.begin(); it != m_sequence.end(); ++it) {
-        *it = complements[*it & 0xf];
+    for (auto& nuc : m_sequence) {
+        nuc = complements[nuc & 0xf];
     }
 }
 
@@ -312,8 +311,8 @@ bool fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 
     if (!reader.getline(m_qualities)) {
         throw fastq_error("partial FASTQ record; cut off after separator");
-    } else if (m_sequence.empty()) {
-        throw fastq_error("sequence is empty");
+    } else if (m_qualities.empty()) {
+        throw fastq_error("no qualities");
     }
 
     process_record(encoding);
@@ -332,14 +331,8 @@ std::string fastq::to_str(const fastq_encoding& encoding) const
     result.push_back('\n');
     result.append(m_sequence);
     result.append("\n+\n", 3);
-    result.append(m_qualities);
+    encoding.encode(m_qualities, result);
     result.push_back('\n');
-
-    // Encode quality-scores in place
-    size_t quality_start = m_header.size() + m_sequence.size() + 5;
-    size_t quality_end = quality_start + m_sequence.size();
-    encoding.encode_string(result.begin() + quality_start,
-                           result.begin() + quality_end);
 
     return result;
 }
@@ -351,8 +344,8 @@ std::string fastq::to_str(const fastq_encoding& encoding) const
 
 void fastq::clean_sequence(std::string& sequence)
 {
-    for (std::string::iterator it = sequence.begin(); it != sequence.end(); ++it) {
-        switch (*it) {
+    for (char& nuc : sequence) {
+        switch (nuc) {
             case 'A':
             case 'C':
             case 'G':
@@ -365,11 +358,11 @@ void fastq::clean_sequence(std::string& sequence)
             case 'g':
             case 't':
             case 'n':
-                *it += 'A' - 'a';
+                nuc += 'A' - 'a';
                 break;
 
             case '.':
-                *it = 'N';
+                nuc = 'N';
                 break;
 
             default:
@@ -442,7 +435,7 @@ void fastq::process_record(const fastq_encoding& encoding)
     }
 
     clean_sequence(m_sequence);
-    encoding.decode_string(m_qualities.begin(), m_qualities.end());
+    encoding.decode(m_qualities);
 }
 
 

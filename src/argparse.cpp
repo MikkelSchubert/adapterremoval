@@ -83,14 +83,12 @@ parser::parser(const std::string& name,
 
 parser::~parser()
 {
-    // Collect set of unique pointers, to handle parsers assigned to multiple keys.
+    // Track set of unique pointers, to handle parsers assigned to multiple keys.
     consumer_set pointers;
-    for (consumer_map::iterator it = m_parsers.begin(); it != m_parsers.end(); ++it) {
-        pointers.insert(it->second);
-    }
-
-    for (consumer_set::iterator it = pointers.begin(); it != pointers.end(); ++it) {
-        delete *it;
+    for (const auto& parser : m_parsers) {
+        if (pointers.insert(parser.second).second) {
+            delete parser.second;
+        }
     }
 }
 
@@ -204,14 +202,12 @@ void parser::print_help() const
 
 void parser::print_arguments(const key_pair_vec& keys) const
 {
-    typedef key_pair_vec::const_iterator key_pair_citer;
-
     size_t indentation = 0;
-    for (key_pair_citer it = keys.begin(); it != keys.end(); ++it) {
-        if (it->first) {
-            const consumer_ptr ptr = m_parsers.at(it->second);
-            const std::string metavar = get_metavar_str(ptr, it->second);
-            size_t current_len = it->second.length();
+    for (const auto& key_pair : keys) {
+        if (key_pair.first) {
+            const consumer_ptr ptr = m_parsers.at(key_pair.second);
+            const std::string metavar = get_metavar_str(ptr, key_pair.second);
+            size_t current_len = key_pair.second.length();
 
             if (!metavar.empty()) {
                 current_len += metavar.length();
@@ -234,20 +230,20 @@ void parser::print_arguments(const key_pair_vec& keys) const
     fmt.set_indent_first_line(false);
     fmt.set_column_width(get_terminal_columns() - indentation - 3);
 
-    for (key_pair_citer it = keys.begin(); it != keys.end(); ++it) {
-        if (!it->first) {
-            std::cerr << it->second << "\n";
+    for (const auto& key_pair : keys) {
+        if (!key_pair.first) {
+            std::cerr << key_pair.second << "\n";
             continue;
         }
 
-        const consumer_ptr ptr = m_parsers.at(it->second);
+        const consumer_ptr ptr = m_parsers.at(key_pair.second);
         if (ptr->help() == "HIDDEN") {
             continue;
         }
 
-        const std::string metavar = get_metavar_str(ptr, it->second);
+        const std::string metavar = get_metavar_str(ptr, key_pair.second);
         std::cerr << std::left << std::setw(indentation)
-                  << ("  " + it->second + " " + metavar);
+                  << ("  " + key_pair.second + " " + metavar);
 
         std::string value = ptr->help();
         if (!value.empty()) {
@@ -420,8 +416,8 @@ std::string any::to_str() const
 many::many(string_vec* value, const std::string& metavar, const std::string& help)
     : consumer_base(metavar, help)
     , m_ptr(value)
-    , m_sink()
 {
+    AR_DEBUG_ASSERT(m_ptr);
 }
 
 
@@ -435,7 +431,7 @@ size_t many::consume(string_vec_citer start, const string_vec_citer& end)
         }
     }
 
-    (m_ptr ? *m_ptr : m_sink).assign(start, it);
+    m_ptr->assign(start, it);
 
     return static_cast<size_t>(it - start);
 }
@@ -443,13 +439,12 @@ size_t many::consume(string_vec_citer start, const string_vec_citer& end)
 
 std::string many::to_str() const
 {
-    const string_vec& result = m_ptr ? *m_ptr : m_sink;
-    if (result.empty()) {
+    if (m_ptr->empty()) {
         return "<not set>";
     } else {
         std::string output;
 
-        for (auto& s: result) {
+        for (const auto& s: *m_ptr) {
             if (!output.empty()) {
                 output.push_back(';');
             }

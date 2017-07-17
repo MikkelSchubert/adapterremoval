@@ -184,7 +184,8 @@ TEST(any, consume__with_sink__preset)
 
 TEST(many, defaults)
 {
-	consumer_autoptr ptr(new argparse::many());
+	string_vec sink;
+	consumer_autoptr ptr(new argparse::many(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ("", ptr->metavar());
 	ASSERT_EQ("", ptr->help());
@@ -209,7 +210,9 @@ TEST(many, consumes_one_argument)
 {
 	string_vec arguments;
 	arguments.push_back("foo");
-	consumer_autoptr ptr(new argparse::many());
+
+	string_vec sink;
+	consumer_autoptr ptr(new argparse::many(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
@@ -222,7 +225,9 @@ TEST(many, consumes_two_arguments)
 	string_vec arguments;
 	arguments.push_back("foo");
 	arguments.push_back("bar");
-	consumer_autoptr ptr(new argparse::many());
+
+	string_vec sink;
+	consumer_autoptr ptr(new argparse::many(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(2, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
@@ -236,7 +241,9 @@ TEST(many, consumes_until_next)
 	arguments.push_back("foo");
 	arguments.push_back("--zoo");
 	arguments.push_back("bar");
-	consumer_autoptr ptr(new argparse::many());
+
+	string_vec sink;
+	consumer_autoptr ptr(new argparse::many(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(1, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
@@ -246,8 +253,9 @@ TEST(many, consumes_until_next)
 
 TEST(many, consume_past_the_end)
 {
+	string_vec sink;
 	const string_vec arguments;
-	consumer_autoptr ptr(new argparse::many());
+	consumer_autoptr ptr(new argparse::many(&sink));
 	ASSERT_FALSE(ptr->is_set());
 	ASSERT_EQ(0, ptr->consume(arguments.begin(), arguments.end()));
 	ASSERT_TRUE(ptr->is_set());
@@ -306,10 +314,7 @@ TEST(knob, defaults)
 
 TEST(knob, defaults__sink_required)
 {
-	try {
-		argparse::knob knob(NULL);
-		FAIL();
-	} catch (const assert_failed&) {}
+	ASSERT_THROW(argparse::knob(NULL), assert_failed);
 }
 
 
@@ -445,10 +450,7 @@ TEST(floaty_knob, default_nan)
 
 TEST(floaty_knob, defaults__sink_required)
 {
-	try {
-		argparse::floaty_knob knob(NULL);
-		FAIL();
-	} catch (const assert_failed&) {}
+	ASSERT_THROW(argparse::floaty_knob(NULL), assert_failed);
 }
 
 

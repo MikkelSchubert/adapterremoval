@@ -167,8 +167,8 @@ void rec_lookup_sequence_no_mm(candidate_vec& candidates,
                                size_t mismatches = 0)
 {
     const demultiplexer_node& node = tree.at(parent);
-    for (int_vec::const_iterator it = node.barcodes.begin(); it != node.barcodes.end(); ++it) {
-        candidates.emplace_back(*it, mismatches);
+    for (const auto& barcode : node.barcodes) {
+        candidates.emplace_back(barcode, mismatches);
     }
 
     if (seq_pos < seq.length()) {
@@ -191,8 +191,8 @@ void rec_lookup_sequence(candidate_vec& candidates,
                          size_t mismatches = 0)
 {
     const demultiplexer_node& node = tree.at(parent);
-    for (int_vec::const_iterator it = node.barcodes.begin(); it != node.barcodes.end(); ++it) {
-        candidates.emplace_back(*it, mismatches);
+    for (const auto& barcode : node.barcodes) {
+        candidates.emplace_back(barcode, mismatches);
     }
 
     if (seq_pos < seq.length()) {
@@ -287,10 +287,10 @@ int demultiplex_reads::select_barcode(const fastq& read_r1, const fastq& read_r2
 
     int best_barcode = -1;
     size_t min_mismatches = m_max_mismatches + 1;
-    for (candidate_vec::iterator it = candidates.begin(); it != candidates.end(); ++it) {
+    for (auto& candidate : candidates) {
         if (m_config->paired_ended_mode) {
-            const std::string& barcode = m_barcodes.at(it->first).second.sequence();
-            const size_t max_mismatches_r2 = std::min(m_max_mismatches - it->second,
+            const std::string& barcode = m_barcodes.at(candidate.first).second.sequence();
+            const size_t max_mismatches_r2 = std::min(m_max_mismatches - candidate.second,
                                                       m_max_mismatches_r2);
 
             const size_t mismatches = count_mismatches(barcode,
@@ -301,13 +301,13 @@ int demultiplex_reads::select_barcode(const fastq& read_r1, const fastq& read_r2
                 continue;
             }
 
-            it->second += mismatches;
+            candidate.second += mismatches;
         }
 
-        if (it->second < min_mismatches) {
-            best_barcode = it->first;
-            min_mismatches = it->second;
-        } else if (it->second == min_mismatches) {
+        if (candidate.second < min_mismatches) {
+            best_barcode = candidate.first;
+            min_mismatches = candidate.second;
+        } else if (candidate.second == min_mismatches) {
             // Ambiguous results; multiple best matches
             best_barcode = -1;
         }
@@ -376,11 +376,11 @@ chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     const fastq empty_read;
-    for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
-        const int best_barcode = select_barcode(*it, empty_read);
+    for (const auto& read : read_chunk->reads_1) {
+        const int best_barcode = select_barcode(read, empty_read);
 
         if (best_barcode < 0) {
-            m_unidentified_1->add(*m_config->quality_output_fmt, *it);
+            m_unidentified_1->add(*m_config->quality_output_fmt, read);
 
             if (best_barcode == -1) {
                 m_statistics.unidentified += 1;
@@ -389,7 +389,7 @@ chunk_vec demultiplex_se_reads::process(analytical_chunk* chunk)
             }
         } else {
             read_chunk_ptr& dst = m_cache.at(best_barcode);
-            dst->reads_1.push_back(*it);
+            dst->reads_1.push_back(read);
             dst->reads_1.back().truncate(m_barcodes.at(best_barcode).first.length());
 
            m_statistics.barcodes.at(best_barcode) += 1;

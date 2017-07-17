@@ -105,7 +105,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
     if (nth == -1) {
         const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
         size_t adapter_id = 0;
-        for (fastq_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+        for (auto it = adapters.cbegin(); it != adapters.cend(); ++it, ++adapter_id) {
             output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first.sequence();
 
             fastq adapter_2 = it->second;
@@ -116,7 +116,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
     } else {
         const string_pair_vec adapters = config.adapters.get_pretty_adapter_set(nth);
         size_t adapter_id = 0;
-        for (string_pair_vec::const_iterator it = adapters.begin(); it != adapters.end(); ++it, ++adapter_id) {
+        for (auto it = adapters.cbegin(); it != adapters.cend(); ++it, ++adapter_id) {
             output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
             output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
         }
@@ -377,9 +377,7 @@ public:
         trimmed_reads chunks(m_config, offset, read_chunk->eof);
         stats_sink::pointer stats = m_stats.get_sink();
 
-        for (fastq_vec::iterator it = read_chunk->reads_1.begin(); it != read_chunk->reads_1.end(); ++it) {
-            fastq& read = *it;
-
+        for (auto& read : read_chunk->reads_1) {
             const alignment_info alignment = align_single_ended_sequence(read, m_adapters, m_config.shift);
 
             if (m_config.is_good_alignment(alignment)) {
@@ -468,8 +466,8 @@ public:
 
         AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
-        fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
-        fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
+        auto it_1 = read_chunk->reads_1.begin();
+        auto it_2 = read_chunk->reads_2.begin();
         while (it_1 != read_chunk->reads_1.end()) {
             fastq read_1 = *it_1++;
             fastq read_2 = *it_2++;

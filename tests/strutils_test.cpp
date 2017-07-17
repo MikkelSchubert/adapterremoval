@@ -32,6 +32,21 @@ namespace ar
 {
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for 'toupper'
+
+TEST(strutils_toupper, empty_input_empty_output)
+{
+    ASSERT_EQ("", toupper(""));
+}
+
+
+TEST(strutils_toupper, mixed_input)
+{
+    ASSERT_EQ("A1{2BZ`ZADEK", toupper("a1{2BZ`zAdeK"));
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for 'indent_lines'
 
 TEST(strutils_indent, empty_input_empty_output)
@@ -106,11 +121,7 @@ TEST(strutils_indent, empty_lines_trailing)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'columnize_'
-
-
-///////////////////////////////////////////////////////////////////////////////
-// Tests for 'indent_lines'
+// Tests for 'columnize_text'
 
 TEST(strutils_columnize, empty_lines)
 {

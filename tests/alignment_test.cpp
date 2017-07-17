@@ -71,6 +71,14 @@ std::ostream& operator<<(std::ostream& stream, const alignment_info& aln)
 }
 
 
+TEST(alignment, alignment_info) {
+    std::stringstream stream;
+    stream << new_aln(1, 2, 3, 4, 5, 6);
+
+    ASSERT_EQ(stream.str(), "alignment_info(1, 2, 3, 4, 5, 6)");
+}
+
+
 void ASSERT_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
                                       const fastq& record1,
                                       const fastq& record2)
@@ -672,6 +680,16 @@ TEST(alignment_pe, only_adadapter_sequence__missing_base__shift)
 }
 
 
+TEST(alignment_pe, invalid_alignment)
+{
+    fastq record1("Rec", "", "");
+    fastq record2("Rec", "", "");
+    const alignment_info alignment = new_aln(0, 1);
+
+    ASSERT_THROW(truncate_paired_ended_sequences(alignment, record1, record2), std::invalid_argument);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(alignment_pe, empty_mate_1)
@@ -1072,9 +1090,7 @@ void update_alignment(alignment_info& aln,
                       const std::string& b,
                       size_t nbases)
 {
-    if (a.length() != b.length()) {
-        throw std::invalid_argument("length does not match");
-    }
+    ASSERT_EQ(a.length(), b.length());
 
     for (size_t i = 0; i < nbases; ++i) {
         const char nt1 = a.at(i);
@@ -1137,14 +1153,7 @@ TEST(compare_subsequences, brute_force_validation)
                     current.length = seqlen;
                     compare_subsequences(best, current, mate1.c_str(), mate2.c_str());
 
-                    if (!(expected == current)) {
-                        std::cerr << "seqlen = " << seqlen << "\n"
-                                  << "pos    = " << pos << "\n"
-                                  << "nbases = " << nbases << "\n"
-                                  << "mate1  = " << mate1 << "\n"
-                                  << "mate2  = " << mate2 << std::endl;
-                        ASSERT_EQ(expected, current);
-                    }
+                    ASSERT_EQ(expected, current);
                 }
             }
         }

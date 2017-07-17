@@ -31,16 +31,14 @@ namespace ar
 
 std::string toupper(const std::string& str)
 {
-    std::string news = str;
-    for(size_t i = 0; i < news.length(); ++i) {
-        const char current = news.at(i);
+    std::string uppercased = str;
+    for (auto& current : uppercased) {
         if (current >= 'a' && current <= 'z') {
-            news.at(i) -= 32;
+            current -= 32;
         }
+    };
 
-    }
-
-    return news;
+    return uppercased;
 }
 
 

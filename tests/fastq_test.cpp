@@ -88,7 +88,7 @@ TEST(fastq, constructor_simple_record_phred_33_encoded)
     const fastq record("record_1", "ACGAGTCA", "!7BF8DGI");
     ASSERT_EQ("record_1", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
-    ASSERT_EQ(std::string("!7BF8DGI", 8), record.qualities());
+    ASSERT_EQ("!7BF8DGI", record.qualities());
 }
 
 
@@ -97,7 +97,7 @@ TEST(fastq, constructor_simple_record_phred_64_encoded)
     const fastq record("record_2", "ACGAGTCA", "@VaeWcfh", FASTQ_ENCODING_64);
     ASSERT_EQ("record_2", record.header());
     ASSERT_EQ("ACGAGTCA", record.sequence());
-    ASSERT_EQ(std::string("!7BF8DGI", 8), record.qualities());
+    ASSERT_EQ("!7BF8DGI", record.qualities());
 }
 
 
@@ -190,7 +190,36 @@ TEST(fastq, constructor_invalid_nucleotides)
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Constructor without qualities
+
+TEST(fastq, constructor_no_qualities)
+{
+    const fastq record("record_1", "ACGT");
+    ASSERT_EQ("record_1", record.header());
+    ASSERT_EQ("ACGT", record.sequence());
+    ASSERT_EQ("!!!!", record.qualities());
+}
+
+
+TEST(fastq, constructor_no_qualities_no_sequence)
+{
+    const fastq record("record_1", "");
+    ASSERT_EQ("record_1", record.header());
+    ASSERT_EQ("", record.sequence());
+    ASSERT_EQ("", record.qualities());
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // misc properties
+
+TEST(fastq, name)
+{
+    ASSERT_EQ("name", fastq("name", "", "").name());
+    ASSERT_EQ("name", fastq("name meta", "", "").name());
+    ASSERT_EQ("name", fastq("name meta more", "", "").name());
+}
+
 
 TEST(fastq, length)
 {
