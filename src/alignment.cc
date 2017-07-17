@@ -45,6 +45,8 @@ namespace ar
 const __m128i BIT_MASK_128 = _mm_set1_epi8(1);
 //! Zero'd 128b integer.
 const __m128i ZERO_128 = _mm_set1_epi8(0);
+//! A 0xffff... 128b integer.
+const __m128i ONES_128 = _mm_set1_epi8(-1);
 //! Mask of all Ns
 const __m128i N_MASK_128 = _mm_set1_epi8('N');
 
@@ -92,7 +94,11 @@ bool compare_subsequences(const alignment_info& best, alignment_info& current,
                                              _mm_cmpeq_epi8(s2, N_MASK_128));
 
         // Sets 0xFF for every byte where bytes differ, but neither is N
-        const __m128i mm_mask = ~_mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
+        const __m128i mm_mask = _mm_xor_si128(ONES_128, // This is a bitwise NOT
+                                              _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask));
+        // The oddity above is because SSE doesn't have a bitwise not operator, and
+        // `~(some __m128i)` doesn't work on Intel compilers. XOR(thing, 0xff)
+        // is the same, so we use that
 
         current.n_ambiguous += COUNT_BITS_128(_mm_and_si128(ns_mask, BIT_MASK_128));
         current.n_mismatches += COUNT_BITS_128(_mm_and_si128(mm_mask, BIT_MASK_128));
