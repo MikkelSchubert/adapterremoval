@@ -365,7 +365,7 @@ class TestCase(object):
         result = []
         for line in handle:
             line = re.sub(r"RNG seed: [0-9]+", "RNG seed: NA", line)
-            line = re.sub(r"AdapterRemoval ver. [0-9]+.[0-9]+.[0-9]+[a-z]*",
+            line = re.sub(r"AdapterRemoval ver. [0-9]+.[0-9]+.[0-9]+[a-zA-Z]?",
                           "AdapterRemoval ver. X.Y.Z", line)
             # Removed keyword to allow automatic interleaved tests
             line = re.sub(r" interleaved paired-end reads",
