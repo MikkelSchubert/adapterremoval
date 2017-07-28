@@ -677,7 +677,7 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
     m_eof = file_chunk->eof;
     if (file_chunk->buffers.empty()) {
         for (const auto& line : lines) {
-            m_output << line;
+            m_output.write(line.data(), line.size());
         }
     } else {
         buffer_vec& buffers = file_chunk->buffers;
