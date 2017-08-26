@@ -22,21 +22,22 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef TESTING_H
-#define TESTING_H
-
-#include <iostream>
-
+#include "testing.hpp"
 #include "fastq.hpp"
 
 
-namespace ar {
-    inline void PrintTo(const fastq& record, std::ostream* stream)
-    {
-        *stream << "'@" << record.header() << "\\n"
-                << record.sequence() << "\\n+\\n"
-                << record.qualities() << "\\n'";
-    }
+namespace ar
+{
+
+///////////////////////////////////////////////////////////////////////////////
+// Names (default objects)
+
+TEST_CASE("Global encodings have expected names", "[fastq_encoding]")
+{
+    REQUIRE(FASTQ_ENCODING_33.name() == "Phred+33");
+    REQUIRE(FASTQ_ENCODING_64.name() == "Phred+64");
+    REQUIRE(FASTQ_ENCODING_SAM.name() == "Phred+33");
+    REQUIRE(FASTQ_ENCODING_SOLEXA.name() == "Solexa");
 }
 
-#endif
+}

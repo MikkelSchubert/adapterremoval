@@ -22,27 +22,24 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <stdexcept>
-#include <gtest/gtest.h>
+#ifndef TESTING_H
+#define TESTING_H
 
-#include "testing.hpp"
-#include "debug.hpp"
+#include <iostream>
+
+#include "catch.hpp"
 #include "fastq.hpp"
 
 
-namespace ar
-{
+namespace ar {
 
-///////////////////////////////////////////////////////////////////////////////
-// Names (default objects)
-
-TEST(fastq_enc, global_objects__name)
+inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
 {
-    ASSERT_STREQ("Phred+33", FASTQ_ENCODING_33.name());
-    ASSERT_STREQ("Phred+64", FASTQ_ENCODING_64.name());
-    ASSERT_STREQ("Phred+33", FASTQ_ENCODING_SAM.name());
-    ASSERT_STREQ("Solexa", FASTQ_ENCODING_SOLEXA.name());
+    return stream << "'@" << record.header() << "\\n"
+                  << record.sequence() << "\\n+\\n"
+                  << record.qualities() << "\\n'";
 }
 
 }
+
+#endif

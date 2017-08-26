@@ -28,4 +28,4 @@ script:
     - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:
-  - coveralls --exclude tests --exclude googletest-release-1.8.0 --gcov-options '\-lp'
+  - coveralls --exclude tests --gcov-options '\-lp'

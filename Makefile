@@ -154,11 +154,12 @@ build/%.1: %.pod
 # Unit testing
 #
 TEST_DIR := build/tests
-TEST_OBJS := $(TEST_DIR)/alignment.o \
+TEST_OBJS := $(TEST_DIR)/main_test.o \
+			 $(TEST_DIR)/debug.o \
+             $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/alignment_test.o \
              $(TEST_DIR)/argparse.o \
              $(TEST_DIR)/argparse_test.o \
-             $(TEST_DIR)/debug.o \
              $(TEST_DIR)/fastq.o \
              $(TEST_DIR)/fastq_test.o \
              $(TEST_DIR)/fastq_enc.o \
@@ -167,30 +168,21 @@ TEST_OBJS := $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-GTEST_DIR := googletest-release-1.8.0/googletest
-GTEST_OBJS := $(TEST_DIR)/gtest-all.o $(TEST_DIR)/gtest_main.o
-GTEST_LIB := $(TEST_DIR)/libgtest.a
-
-TEST_CXXFLAGS := -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -Isrc -DAR_TEST_BUILD -g
-GTEST_CXXFLAGS := $(TEST_CXXFLAGS)
+TEST_CXXFLAGS := -Isrc -DAR_TEST_BUILD -g
 
 test: $(TEST_DIR)/main
 	@echo $(COLOR_GREEN)"Running tests"$(COLOR_END)
-	$(QUIET) $< --gtest_print_time=0 --gtest_shuffle
+	$(QUIET) $(TEST_DIR)/main
 
 clean_tests:
 	@echo $(COLOR_GREEN)"Cleaning tests ..."$(COLOR_END)
 	$(QUIET) rm -rvf $(TEST_DIR)
 
-$(TEST_DIR)/main: $(GTEST_LIB) $(TEST_OBJS)
+$(TEST_DIR)/main: $(TEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LIBRARIES} $^ -o $@
 
-$(TEST_DIR)/libgtest.a: $(GTEST_OBJS)
-	@echo $(COLOR_GREEN)"Linking GTest library $@"$(COLOR_END)
-	$(QUIET) ar -rv $@ $^
-
-$(TEST_DIR)/%.o: tests/%.cpp
+$(TEST_DIR)/%.o: tests/unit/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
@@ -201,34 +193,6 @@ $(TEST_DIR)/%.o: src/%.cpp
 	$(QUIET) mkdir -p $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
-
-$(TEST_DIR)/gtest%.o: $(GTEST_DIR)/src/gtest%.cc
-	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) mkdir -p $(TEST_DIR)
-	$(QUIET) $(CXX) $(GTEST_CXXFLAGS) -c $< -o $@
-
-.PRECIOUS: $(GTEST_DIR)/src/gtest%.cc
-$(GTEST_DIR)/src/gtest%.cc: googletest-release-1.8.0.zip
-	$(QUIET) if ! test -e "$@"; \
-	then \
-		echo $(COLOR_CYAN)"Unpacking Google Test library"$(COLOR_END); \
-		unzip -qo googletest-release-1.8.0.zip; \
-	fi
-
-googletest-release-1.8.0.zip:
-ifneq ("$(shell which wget)", "")
-	@echo $(COLOR_CYAN)"Fetching Google Test library using wget"$(COLOR_END)
-	$(QUIET) wget -q https://github.com/google/googletest/archive/release-1.8.0.zip -O googletest-release-1.8.0.zip
-else ifneq ("$(shell which curl)", "")
-	@echo $(COLOR_CYAN)"Fetching Google Test library using curl"$(COLOR_END)
-	$(QUIET) curl -L https://github.com/google/googletest/archive/release-1.8.0.zip -o googletest-release-1.8.0.zip
-else
-	@echo $(COLOR_YELLOW)"To run tests, first download and unpack GoogleTest 1.8.0 in this folder:"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ wget https://github.com/google/googletest/archive/release-1.8.0.zip -O googletest-release-1.8.0.zip"$(COLOR_END)
-	@echo $(COLOR_YELLOW)"  $$ unzip googletest-release-1.8.0.zip"$(COLOR_END)
-	@exit 1
-endif
-
 
 #
 # Validation
