@@ -1,0 +1,6 @@
+{
+	"arguments": ["--trim5p", "5", "7"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

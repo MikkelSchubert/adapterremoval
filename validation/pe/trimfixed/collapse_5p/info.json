@@ -1,0 +1,6 @@
+{
+	"arguments": ["--collapse", "--trim5p", "6"],
+	"return_code": 0,
+	"stderr": [
+	]
+}
