@@ -38,7 +38,7 @@ TEST_CASE("ASCII letters are uppercased", "[strutils::toupper]")
 {
     REQUIRE(toupper("") == "");
     REQUIRE(toupper("a1{2BZ`zAdeK") == "A1{2BZ`ZADEK");
-};
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
