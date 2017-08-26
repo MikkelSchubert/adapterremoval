@@ -86,17 +86,17 @@ OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)
 
 
-.PHONY: all install clean test clean_tests static validate validation
+.PHONY: all install clean test clean_tests static regression
 
 all: build/$(PROG) build/$(PROG).1
 
-everything: all static test validation
+everything: all static test regression
 
 # Clean
 clean: clean_tests
 	@echo $(COLOR_GREEN)"Cleaning ..."$(COLOR_END)
 	$(QUIET) rm -f build/$(PROG) build/$(PROG).1 build/$(LIBNAME).a
-	$(QUIET) rm -rvf build/validation
+	$(QUIET) rm -rvf build/regression
 	$(QUIET) rm -rvf $(BDIR)
 
 # Install
@@ -171,11 +171,11 @@ TEST_DEPS := $(TEST_OBJS:.o=.deps)
 TEST_CXXFLAGS := -Isrc -DAR_TEST_BUILD -g
 
 test: $(TEST_DIR)/main
-	@echo $(COLOR_GREEN)"Running tests"$(COLOR_END)
+	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
 	$(QUIET) $(TEST_DIR)/main
 
 clean_tests:
-	@echo $(COLOR_GREEN)"Cleaning tests ..."$(COLOR_END)
+	@echo $(COLOR_GREEN)"Cleaning unit tests ..."$(COLOR_END)
 	$(QUIET) rm -rvf $(TEST_DIR)
 
 $(TEST_DIR)/main: $(TEST_OBJS)
@@ -197,15 +197,13 @@ $(TEST_DIR)/%.o: src/%.cpp
 #
 # Validation
 #
-VALIDATION_BDIR=build/validation
-VALIDATION_SDIR=validation
+VALIDATION_BDIR=./build/regression
+VALIDATION_SDIR=./tests/regression
 
-validate: build/$(PROG)
-	@echo $(COLOR_CYAN)"Validating AdapterRemoval results"$(COLOR_END)
+regression: build/$(PROG)
+	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
 	@mkdir -p $(VALIDATION_BDIR)
-	@./validation/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
-
-validation: validate
+	@$(VALIDATION_SDIR)/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
 
 
 # Automatic header dependencies for tests

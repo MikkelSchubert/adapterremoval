@@ -24,7 +24,7 @@ install: true
 script:
     - make
     - make test COVERAGE=yes
-    - make validate
+    - make regression
     - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:
