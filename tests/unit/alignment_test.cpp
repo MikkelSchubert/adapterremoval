@@ -57,6 +57,8 @@ bool operator==(const alignment_info& first, const alignment_info& second)
 
 struct ALN
 {
+    ALN() : info() {}
+
     TEST_ALIGNMENT_SETTER(int, score);
     TEST_ALIGNMENT_SETTER(int, offset);
     TEST_ALIGNMENT_SETTER(size_t, length);

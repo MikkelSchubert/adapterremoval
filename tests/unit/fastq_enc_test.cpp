@@ -34,10 +34,10 @@ namespace ar
 
 TEST_CASE("Global encodings have expected names", "[fastq_encoding]")
 {
-    REQUIRE(FASTQ_ENCODING_33.name() == "Phred+33");
-    REQUIRE(FASTQ_ENCODING_64.name() == "Phred+64");
-    REQUIRE(FASTQ_ENCODING_SAM.name() == "Phred+33");
-    REQUIRE(FASTQ_ENCODING_SOLEXA.name() == "Solexa");
+    REQUIRE(FASTQ_ENCODING_33.name() == std::string("Phred+33"));
+    REQUIRE(FASTQ_ENCODING_64.name() == std::string("Phred+64"));
+    REQUIRE(FASTQ_ENCODING_SAM.name() == std::string("Phred+33"));
+    REQUIRE(FASTQ_ENCODING_SOLEXA.name() == std::string("Solexa"));
 }
 
 }
