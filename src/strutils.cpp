@@ -21,13 +21,43 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <sstream>
+#include <stdexcept>
+#include <limits>
+
+#include <sys/types.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+
 
 #include "strutils.hpp"
 
 namespace ar
 {
+
+
+unsigned str_to_unsigned(const std::string& s)
+{
+    std::stringstream stream(s);
+    int64_t temp = 0;
+
+    if (!(stream >> temp)) {
+        throw std::invalid_argument("value is not a valid number");
+    }
+
+    // Failing on trailing, non-numerical values
+    std::string trailing;
+    if (stream >> trailing) {
+        throw std::invalid_argument("value contains trailing text");
+    }
+
+    if (temp < 0 || temp > std::numeric_limits<unsigned>::max()) {
+        throw std::invalid_argument("numerical value overflows");
+    }
+
+    return static_cast<unsigned>(temp);
+}
+
 
 std::string toupper(const std::string& str)
 {

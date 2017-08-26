@@ -470,23 +470,12 @@ knob::knob(unsigned* value, const std::string& metavar, const std::string& help)
 size_t knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
     if (start != end) {
-        std::stringstream stream(*start);
-        int64_t temp = 0;
-
-        if (!(stream >> temp)) {
-            return static_cast<size_t>(-1);
-        }
-
-        // Failing on trailing, non-numerical values
-        std::string trailing;
-        if (stream >> trailing) {
-            return static_cast<size_t>(-1);
-        }
-
-        if (temp >= 0 && temp <= std::numeric_limits<unsigned>::max()) {
-            *m_ptr = static_cast<unsigned>(temp);
+        try {
+            *m_ptr = str_to_unsigned(*start);
             m_value_set = true;
             return 1;
+        } catch (const std::invalid_argument&) {
+            return static_cast<size_t>(-1);
         }
     }
 

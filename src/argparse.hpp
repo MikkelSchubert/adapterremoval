@@ -25,9 +25,10 @@
 #ifndef ARGPARSE_H
 #define ARGPARSE_H
 
-#include <sstream>
-#include <vector>
 #include <map>
+#include <sstream>
+#include <stdexcept>
+#include <vector>
 
 #include "commontypes.hpp"
 

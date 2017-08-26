@@ -35,6 +35,16 @@ const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
 
+/**
+ * Convert a string to an unsigned integer.
+ *
+ * Throws std::invalid_argument if the string does not contain a proper number,
+ * if it contains more than just a number, or if the number overflows a
+ * unsigned integer.
+ */
+unsigned str_to_unsigned(const std::string& s);
+
+
 /** Uppercases letters in the range a-z */
 std::string toupper(const std::string& str);
 
