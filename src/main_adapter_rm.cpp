@@ -48,6 +48,17 @@ namespace ar
 typedef std::unique_ptr<std::mt19937> mt19937_ptr;
 
 
+std::ostream& operator<<(std::ostream& stream, const fastq::ntrimmed& ntrim)
+{
+    stream << ntrim.first;
+    if (ntrim.first != ntrim.second) {
+        stream << " " << ntrim.second;
+    }
+
+    return stream;
+}
+
+
 void write_settings(const userconfig& config, std::ostream& output, int nth)
 {
     output << NAME << " " << VERSION
@@ -136,6 +147,8 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
            << "\nQuality format (output): " << config.quality_output_fmt->name()
            << "\nQuality score max (output): " << config.quality_output_fmt->max_score()
            << "\nMate-number separator (input): '" << config.mate_separator << "'"
+           << "\nTrimming 5p: " << config.trim_fixed_5p
+           << "\nTrimming 3p: " << config.trim_fixed_3p
            << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
            << "\nTrimming Phred scores <= " << config.low_quality_score
            << ": " << (config.trim_by_quality ? "Yes" : "No")
@@ -272,13 +285,69 @@ bool write_demux_settings(const userconfig& config,
 }
 
 
+/** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
+void trim_read_termini_if_enabled(const userconfig& config, fastq& read, read_type type)
+{
+    size_t trim_5p = 0;
+    size_t trim_3p = 0;
+
+    switch (type) {
+        case read_type::mate_1:
+            trim_5p = config.trim_fixed_5p.first;
+            trim_3p = config.trim_fixed_3p.first;
+            break;
+
+        case read_type::mate_2:
+            trim_5p = config.trim_fixed_5p.second;
+            trim_3p = config.trim_fixed_3p.second;
+            break;
+
+        case read_type::collapsed:
+            if (config.paired_ended_mode) {
+                trim_5p = config.trim_fixed_5p.first;
+                trim_3p = config.trim_fixed_5p.second;
+            } else {
+                trim_5p = config.trim_fixed_5p.first;
+                trim_3p = config.trim_fixed_3p.first;
+            }
+            break;
+
+        default:
+            throw std::invalid_argument("Invalid read type in trim_read_termini_if_enabled");
+    }
+
+    if (trim_5p || trim_3p) {
+        read.truncate(trim_5p, read.length() - std::min(read.length(), trim_5p + trim_3p));
+    }
+}
+
+
+/** Trims a read if enabled, returning the #bases removed from each end. */
+fastq::ntrimmed trim_sequence_by_quality_if_enabled(const userconfig& config, fastq& read)
+{
+    if (config.trim_window_length >= 0) {
+        return read.trim_windowed_bases(config.trim_ambiguous_bases,
+                                        config.low_quality_score,
+                                        config.trim_window_length);
+    } else if (config.trim_ambiguous_bases || config.trim_by_quality) {
+        const char quality_score = config.trim_by_quality ? config.low_quality_score : -1;
+
+        return read.trim_trailing_bases(config.trim_ambiguous_bases,
+                                        quality_score);
+    }
+
+    return fastq::ntrimmed();
+}
+
+
 void process_collapsed_read(const userconfig& config,
                             statistics& stats,
                             fastq& collapsed_read,
                             fastq* mate_read,
                             trimmed_reads& chunks)
 {
-    const fastq::ntrimmed trimmed = config.trim_sequence_by_quality_if_enabled(collapsed_read);
+    trim_read_termini_if_enabled(config, collapsed_read, read_type::collapsed);
+    const fastq::ntrimmed trimmed = trim_sequence_by_quality_if_enabled(config, collapsed_read);
 
     // If trimmed, the external coordinates are no longer reliable
     // for determining the size of the original template.
@@ -393,7 +462,8 @@ public:
                 stats->unaligned_reads++;
             }
 
-            m_config.trim_sequence_by_quality_if_enabled(read);
+            trim_read_termini_if_enabled(m_config, read, read_type::mate_1);
+            trim_sequence_by_quality_if_enabled(m_config, read);
             if (m_config.is_acceptable_read(read)) {
                 stats->keep1++;
                 stats->total_number_of_good_reads++;
@@ -510,9 +580,14 @@ public:
             // Undo reverse complementation (post truncation of adapters)
             read_2.reverse_complement();
 
+            // Trim fixed number of bases from 5' and/or 3' termini
+            trim_read_termini_if_enabled(m_config, read_1, read_type::mate_1);
+            trim_read_termini_if_enabled(m_config, read_2, read_type::mate_2);
+            // Sliding window trimming or single-base trimming
+            trim_sequence_by_quality_if_enabled(m_config, read_1);
+            trim_sequence_by_quality_if_enabled(m_config, read_2);
+
             // Are the reads good enough? Not too many Ns?
-            m_config.trim_sequence_by_quality_if_enabled(read_1);
-            m_config.trim_sequence_by_quality_if_enabled(read_2);
             const bool read_1_acceptable = m_config.is_acceptable_read(read_1);
             const bool read_2_acceptable = m_config.is_acceptable_read(read_2);
 

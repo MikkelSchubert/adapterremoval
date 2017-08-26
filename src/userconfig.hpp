@@ -27,6 +27,7 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 #include "adapterset.hpp"
 #include "argparse.hpp"
@@ -88,9 +89,6 @@ public:
     bool is_acceptable_read(const fastq& seq) const;
 
 
-    /** Trims a read if enabled, returning the #bases removed from each end. */
-    fastq::ntrimmed trim_sequence_by_quality_if_enabled(fastq& read) const;
-
     //! Type of run to execute; see command
     ar_command run_type;
 
@@ -131,6 +129,11 @@ public:
     fastq_encoding_ptr quality_input_fmt;
     //! Quality format to use when writing FASTQ records.
     fastq_encoding_ptr quality_output_fmt;
+
+    //! Fixed number of bases to trim from 5' for mate 1 and mate 2 reads
+    std::pair<unsigned, unsigned> trim_fixed_5p;
+    //! Fixed number of bases to trim from 3' for mate 1 and mate 2 reads
+    std::pair<unsigned, unsigned> trim_fixed_3p;
 
     //! If true, read termini are trimmed for low-quality bases.
     bool trim_by_quality;
@@ -215,8 +218,13 @@ private:
 
     //! Sink for --identify-adapters
     bool identify_adapters;
-    //! Sink for --identify-adapters
+    //! Sink for --demultiplex-sequences
     bool demultiplex_sequences;
+
+    //! Sink for --trim5p
+    string_vec trim5p;
+    //! Sink for --trim3p
+    string_vec trim3p;
 };
 
 } // namespace ar

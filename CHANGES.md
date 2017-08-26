@@ -1,3 +1,9 @@
+### Unpublished
+
+  * Added support for trimming reads by a fixed amount: --trim5p N --trim3p N.
+    Different values may be given for each mate: --trim5p N1 N2. Trimming is
+    carried out after adapters have been removed and reads have been collapsed,
+    if enabled, but before quality trimming (Ns and low qualities).
 
 
 ### Version 2.2.2 - 2017-07-17

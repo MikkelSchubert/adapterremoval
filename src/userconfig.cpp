@@ -72,6 +72,30 @@ fastq_encoding_ptr select_encoding(const std::string& name,
 }
 
 
+std::pair<unsigned, unsigned> parse_trim_argument(const string_vec& values)
+{
+    unsigned mate_1 = 0;
+    unsigned mate_2 = 0;
+
+    switch (values.size()) {
+        case 1:
+            mate_1 = str_to_unsigned(values.front());
+            mate_2 = mate_1;
+            break;
+
+        case 2:
+            mate_1 = str_to_unsigned(values.front());
+            mate_2 = str_to_unsigned(values.back());
+            break;
+
+        default:
+            throw std::invalid_argument("please specify exactly one or two values");
+    }
+
+    return std::pair<unsigned, unsigned>(mate_1, mate_2);
+}
+
+
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
@@ -91,6 +115,8 @@ userconfig::userconfig(const std::string& name,
     , mismatch_threshold(-1.0)
     , quality_input_fmt()
     , quality_output_fmt()
+    , trim_fixed_5p(0, 0)
+    , trim_fixed_3p(0, 0)
     , trim_by_quality(false)
     , trim_window_length(std::numeric_limits<double>::quiet_NaN())
     , low_quality_score(2)
@@ -120,6 +146,8 @@ userconfig::userconfig(const std::string& name,
     , interleaved(false)
     , identify_adapters(false)
     , demultiplex_sequences(false)
+    , trim5p()
+    , trim3p()
 {
     argparser["--file1"] =
         new argparse::many(&input_files_1, "FILE [FILE ...]",
@@ -274,6 +302,17 @@ userconfig::userconfig(const std::string& name,
             "the 5' termini [current: %default].");
 
     argparser.add_seperator();
+    argparser["--trim5p"] =
+        new argparse::many(&trim5p, "N [N]",
+            "Trim the 5' of reads by a fixed amount after removing adapters, "
+            "but before carrying out quality based trimming. Specify one "
+            "value to trim mate 1 and mate 2 reads the same amount, or two "
+            "values separated by a space to trim each mate different amounts "
+            "[defaults: no trimming].");
+    argparser["--trim3p"] =
+        new argparse::many(&trim3p, "N [N]",
+            "Trim the 3' of reads by a fixed amount. See --trim5p.");
+
     argparser["--trimns"] =
         new argparse::flag(&trim_ambiguous_bases,
             "If set, trim ambiguous bases (N) at 5'/3' termini "
@@ -357,8 +396,7 @@ userconfig::userconfig(const std::string& name,
     argparser["--demultiplex-only"] =
         new argparse::flag(&demultiplex_sequences,
             "Only carry out demultiplexing using the list of barcodes "
-            "supplied with --barcode-list; do not attempt to trim adapters "
-            "to carry out other processing.");
+            "supplied with --barcode-list. No other processing is done.");
 
     argparser.add_header("MISC:");
     argparser["--identify-adapters"] =
@@ -546,6 +584,30 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
                   << std::endl;
     }
 
+    try {
+        if (argparser.is_set("--trim5p")) {
+            trim_fixed_5p = parse_trim_argument(trim5p);
+        }
+    } catch (const std::invalid_argument& error) {
+        std::cerr << "Error: Could not parse --trim5p argument(s): "
+                  << error.what()
+                  << std::endl;
+
+        return argparse::parse_result::error;
+    }
+
+    try {
+        if (argparser.is_set("--trim3p")) {
+            trim_fixed_3p = parse_trim_argument(trim3p);
+        }
+    } catch (const std::invalid_argument& error) {
+        std::cerr << "Error: Could not parse --trim3p argument(s): "
+                  << error.what()
+                  << std::endl;
+
+        return argparse::parse_result::error;
+    }
+
     return argparse::parse_result::ok;
 }
 
@@ -698,23 +760,6 @@ std::string userconfig::get_output_filename(const std::string& key,
     }
 
     return filename;
-}
-
-
-fastq::ntrimmed userconfig::trim_sequence_by_quality_if_enabled(fastq& read) const
-{
-    if (trim_window_length >= 0) {
-        return read.trim_windowed_bases(trim_ambiguous_bases,
-                                        low_quality_score,
-                                        trim_window_length);
-    } else if (trim_ambiguous_bases || trim_by_quality) {
-        const char quality_score = trim_by_quality ? low_quality_score : -1;
-
-        return read.trim_trailing_bases(trim_ambiguous_bases,
-                                        quality_score);
-    }
-
-    return fastq::ntrimmed();
 }
 
 
