@@ -162,16 +162,16 @@ userconfig::userconfig(const std::string& name,
     argparser["--identify-adapters"] =
         new argparse::flag(&identify_adapters,
             "Attempt to identify the adapter pair of PE reads, by searching "
-            "for overlapping mate reads [current: %default].");
+            "for overlapping mate reads [default: %default].");
     argparser["--threads"] =
         new argparse::knob(&max_threads, "THREADS",
-            "Maximum number of threads [current: %default]");
+            "Maximum number of threads [default: %default]");
 
     argparser.add_header("FASTQ OPTIONS:");
     argparser["--qualitybase"] =
         new argparse::any(&quality_input_base, "BASE",
             "Quality base used to encode Phred scores in input; either 33, "
-            "64, or solexa [current: %default].");
+            "64, or solexa [default: %default].");
     argparser["--qualitybase-output"] =
         new argparse::any(&quality_output_base, "BASE",
             "Quality base used to encode Phred scores in output; either 33, "
@@ -192,31 +192,31 @@ userconfig::userconfig(const std::string& name,
     argparser["--interleaved"] =
         new argparse::flag(&interleaved,
             "This option enables both the --interleaved-input option and the "
-            "--interleaved-output option [current: %default].");
+            "--interleaved-output option [default: %default].");
     argparser["--interleaved-input"] =
         new argparse::flag(&interleaved_input,
             "The (single) input file provided contains both the mate 1 and "
             "mate 2 reads, one pair after the other, with one mate 1 reads "
             "followed by one mate 2 read. This option is implied by the "
-            "--interleaved option [current: %default].");
+            "--interleaved option [default: %default].");
     argparser["--interleaved-output"] =
         new argparse::flag(&interleaved_output,
             "If set, trimmed paired-end reads are written to a single file "
             "containing mate 1 and mate 2 reads, one pair after the other. "
-            "This option is implied by the --interleaved option [current: "
+            "This option is implied by the --interleaved option [default: "
             "%default].");
     argparser["--combined-output"] =
         new argparse::flag(&combined_output,
             "If set, all reads are written to the same file(s), specified by "
             "--output1 and --output2 (--output1 only if --interleaved-output "
             "is not set). Discarded reads are replaced with a single 'N' with "
-            "Phred score 0 [current: %default].");
+            "Phred score 0 [default: %default].");
 
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
         new argparse::any(&basename, "BASENAME",
             "Default prefix for all output files for which no filename was "
-            "explicitly set [current: %default].");
+            "explicitly set [default: %default].");
     argparser["--settings"] =
         new argparse::any(nullptr, "FILE",
             "Output file containing information on the parameters used in the "
@@ -257,17 +257,17 @@ userconfig::userconfig(const std::string& name,
     argparser.add_header("OUTPUT COMPRESSION:");
     argparser["--gzip"] =
         new argparse::flag(&gzip,
-            "Enable gzip compression [current: %default]");
+            "Enable gzip compression [default: %default]");
     argparser["--gzip-level"] =
         new argparse::knob(&gzip_level, "LEVEL",
-            "Compression level, 0 - 9 [current: %default]");
+            "Compression level, 0 - 9 [default: %default]");
 
     argparser["--bzip2"] =
         new argparse::flag(&bzip2,
-            "Enable bzip2 compression [current: %default]");
+            "Enable bzip2 compression [default: %default]");
     argparser["--bzip2-level"] =
         new argparse::knob(&bzip2_level, "LEVEL",
-            "Compression level, 0 - 9 [current: %default]");
+            "Compression level, 0 - 9 [default: %default]");
 
     argparser.add_header("TRIMMING SETTINGS:");
     // Backwards compatibility with AdapterRemoval v1; not recommended due to
@@ -280,17 +280,17 @@ userconfig::userconfig(const std::string& name,
     argparser["--adapter1"] =
         new argparse::any(&adapter_1, "SEQUENCE",
             "Adapter sequence expected to be found in mate 1 reads "
-            "[current: %default].");
+            "[default: %default].");
     argparser["--adapter2"] =
         new argparse::any(&adapter_2, "SEQUENCE",
             "Adapter sequence expected to be found in mate 2 reads "
-            "[current: %default].");
+            "[default: %default].");
     argparser["--adapter-list"] =
         new argparse::any(&adapter_list, "FILENAME",
             "Read table of white-space separated adapters pairs, used as if "
             "the first column was supplied to --adapter1, and the second "
             "column was supplied to --adapter2; only the first adapter in "
-            "each pair is required SE trimming mode [current: %default].");
+            "each pair is required SE trimming mode [default: %default].");
 
     argparser.add_seperator();
     argparser["--minadapteroverlap"] =
@@ -301,17 +301,17 @@ userconfig::userconfig(const std::string& name,
             "--minalignmentlength when using --collapse, allowing a "
             "conservative selection of putative complete inserts while "
             "ensuring that all possible adapter contamination is trimmed "
-            "[current: %default].");
+            "[default: %default].");
     argparser["--mm"]
         = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
             "Max error-rate when aligning reads and/or adapters. If > 1, the "
             "max error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults "
             "are used, otherwise the user-supplied value is used directly "
-            "[defaults: 1/3 for trimming; 1/10 when identifying adapters].");
+            "[default: 1/3 for trimming; 1/10 when identifying adapters].");
     argparser["--shift"] =
         new argparse::knob(&shift, "N",
             "Consider alignments where up to N nucleotides are missing from "
-            "the 5' termini [current: %default].");
+            "the 5' termini [default: %default].");
 
     argparser.add_seperator();
     argparser["--trim5p"] =
@@ -320,7 +320,7 @@ userconfig::userconfig(const std::string& name,
             "but before carrying out quality based trimming. Specify one "
             "value to trim mate 1 and mate 2 reads the same amount, or two "
             "values separated by a space to trim each mate different amounts "
-            "[defaults: no trimming].");
+            "[default: no trimming].");
     argparser["--trim3p"] =
         new argparse::many(&trim3p, "N [N]",
             "Trim the 3' of reads by a fixed amount. See --trim5p.");
@@ -328,15 +328,15 @@ userconfig::userconfig(const std::string& name,
     argparser["--trimns"] =
         new argparse::flag(&trim_ambiguous_bases,
             "If set, trim ambiguous bases (N) at 5'/3' termini "
-            "[current: %default]");
+            "[default: %default]");
     argparser["--maxns"] =
         new argparse::knob(&max_ambiguous_bases, "MAX",
             "Reads containing more ambiguous bases (N) than this number after "
-            "trimming are discarded [current: %default].");
+            "trimming are discarded [default: %default].");
     argparser["--trimqualities"] =
         new argparse::flag(&trim_by_quality,
             "If set, trim bases at 5'/3' termini with quality scores <= to "
-            "--minquality value [current: %default]");
+            "--minquality value [default: %default]");
     argparser["--trimwindows"] =
         new argparse::floaty_knob(&trim_window_length, "INT",
             "If set, quality trimming will be carried out using window based "
@@ -346,19 +346,19 @@ userconfig::userconfig(const std::string& name,
             "multiplied with the read length to determine a window size per "
             "read. If the resulting window size is 0 or larger than the read "
             "length, the read length is used as the window size. This option "
-            "implies --trimqualities [current: %default].");
+            "implies --trimqualities [default: %default].");
     argparser["--minquality"] =
         new argparse::knob(&low_quality_score, "PHRED",
             "Inclusive minimum; see --trimqualities for details "
-            "[current: %default]");
+            "[default: %default]");
     argparser["--minlength"] =
         new argparse::knob(&min_genomic_length, "LENGTH",
             "Reads shorter than this length are discarded "
-            "following trimming [current: %default].");
+            "following trimming [default: %default].");
     argparser["--maxlength"] =
         new argparse::knob(&max_genomic_length, "LENGTH",
             "Reads longer than this length are discarded "
-            "following trimming [current: %default].");
+            "following trimming [default: %default].");
 
     argparser.add_header("READ MERGING:");
     argparser["--collapse"] =
@@ -371,13 +371,13 @@ userconfig::userconfig(const std::string& name,
             "reads, putative complete inserts are identified as having at "
             "least --minalignmentlength bases overlap with the adapter "
             "sequence, and are written to the the same files "
-            "[current: %default].");
+            "[default: %default].");
     argparser["--minalignmentlength"] =
         new argparse::knob(&min_alignment_length, "LENGTH",
             "If --collapse is set, paired reads must overlap at least this "
             "number of bases to be collapsed, and single-ended reads must "
             "overlap at least this number of bases with the adapter to be "
-            "considered complete template molecules [current: %default].");
+            "considered complete template molecules [default: %default].");
     argparser["--seed"] =
         new argparse::knob(&seed, "SEED",
             "Sets the RNG seed used when choosing between bases with equal "
@@ -392,7 +392,7 @@ userconfig::userconfig(const std::string& name,
             "demultiplexing. Note that both indexes should be specified for "
             "both single-end and paired-end trimming, if double-indexed "
             "multiplexing was used, in order to ensure that the demultiplexed "
-            "reads can be trimmed correctly [current: %default].");
+            "reads can be trimmed correctly [default: %default].");
     argparser["--barcode-mm"] =
         new argparse::knob(&barcode_mm, "N",
             "Maximum number of mismatches allowed when counting mismatches in "
