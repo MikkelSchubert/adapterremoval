@@ -149,6 +149,7 @@ userconfig::userconfig(const std::string& name,
     , trim5p()
     , trim3p()
 {
+    argparser.add_header("OPTIONS:");
     argparser["--file1"] =
         new argparse::many(&input_files_1, "FILE [FILE ...]",
             "Input files containing mate 1 reads or single-ended reads; "
@@ -157,6 +158,14 @@ userconfig::userconfig(const std::string& name,
         new argparse::many(&input_files_2, "[FILE ...]",
             "Input files containing mate 2 reads; if used, then the same "
             "number of files as --file1 must be listed [OPTIONAL].");
+
+    argparser["--identify-adapters"] =
+        new argparse::flag(&identify_adapters,
+            "Attempt to identify the adapter pair of PE reads, by searching "
+            "for overlapping mate reads [current: %default].");
+    argparser["--threads"] =
+        new argparse::knob(&max_threads, "THREADS",
+            "Maximum number of threads [current: %default]");
 
     argparser.add_header("FASTQ OPTIONS:");
     argparser["--qualitybase"] =
@@ -200,10 +209,8 @@ userconfig::userconfig(const std::string& name,
         new argparse::flag(&combined_output,
             "If set, all reads are written to the same file(s), specified by "
             "--output1 and --output2 (--output1 only if --interleaved-output "
-            "is not set). Each read is further marked by either a \"PASSED\" "
-            "or a \"FAILED\" flag, and any read that has been FAILED "
-            "(including the mate for collapsed reads) are replaced with a "
-            "single 'N' with Phred score 0 [current: %default].");
+            "is not set). Discarded reads are replaced with a single 'N' with "
+            "Phred score 0 [current: %default].");
 
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
@@ -286,16 +293,21 @@ userconfig::userconfig(const std::string& name,
             "each pair is required SE trimming mode [current: %default].");
 
     argparser.add_seperator();
+    argparser["--minadapteroverlap"] =
+        new argparse::knob(&min_adapter_overlap, "LENGTH",
+            "In single-end mode, reads are only trimmed if the overlap "
+            "between read and the adapter is at least X bases long, not "
+            "counting ambiguous nucleotides (N); this is independent of the "
+            "--minalignmentlength when using --collapse, allowing a "
+            "conservative selection of putative complete inserts while "
+            "ensuring that all possible adapter contamination is trimmed "
+            "[current: %default].");
     argparser["--mm"]
         = new argparse::floaty_knob(&mismatch_threshold, "MISMATCH_RATE",
             "Max error-rate when aligning reads and/or adapters. If > 1, the "
             "max error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults "
             "are used, otherwise the user-supplied value is used directly "
             "[defaults: 1/3 for trimming; 1/10 when identifying adapters].");
-    argparser["--maxns"] =
-        new argparse::knob(&max_ambiguous_bases, "MAX",
-            "Reads containing more ambiguous bases (N) than this number after "
-            "trimming are discarded [current: %default].");
     argparser["--shift"] =
         new argparse::knob(&shift, "N",
             "Consider alignments where up to N nucleotides are missing from "
@@ -317,6 +329,10 @@ userconfig::userconfig(const std::string& name,
         new argparse::flag(&trim_ambiguous_bases,
             "If set, trim ambiguous bases (N) at 5'/3' termini "
             "[current: %default]");
+    argparser["--maxns"] =
+        new argparse::knob(&max_ambiguous_bases, "MAX",
+            "Reads containing more ambiguous bases (N) than this number after "
+            "trimming are discarded [current: %default].");
     argparser["--trimqualities"] =
         new argparse::flag(&trim_by_quality,
             "If set, trim bases at 5'/3' termini with quality scores <= to "
@@ -335,7 +351,6 @@ userconfig::userconfig(const std::string& name,
         new argparse::knob(&low_quality_score, "PHRED",
             "Inclusive minimum; see --trimqualities for details "
             "[current: %default]");
-
     argparser["--minlength"] =
         new argparse::knob(&min_genomic_length, "LENGTH",
             "Reads shorter than this length are discarded "
@@ -344,6 +359,8 @@ userconfig::userconfig(const std::string& name,
         new argparse::knob(&max_genomic_length, "LENGTH",
             "Reads longer than this length are discarded "
             "following trimming [current: %default].");
+
+    argparser.add_header("READ MERGING:");
     argparser["--collapse"] =
         new argparse::flag(&collapse,
             "When set, paired ended read alignments of --minalignmentlength "
@@ -361,15 +378,12 @@ userconfig::userconfig(const std::string& name,
             "number of bases to be collapsed, and single-ended reads must "
             "overlap at least this number of bases with the adapter to be "
             "considered complete template molecules [current: %default].");
-    argparser["--minadapteroverlap"] =
-        new argparse::knob(&min_adapter_overlap, "LENGTH",
-            "In single-end mode, reads are only trimmed if the overlap "
-            "between read and the adapter is at least X bases long, not "
-            "counting ambiguous nucleotides (N); this is independent of the "
-            "--minalignmentlength when using --collapse, allowing a "
-            "conservative selection of putative complete inserts while "
-            "ensuring that all possible adapter contamination is trimmed "
-            "[current: %default].");
+    argparser["--seed"] =
+        new argparse::knob(&seed, "SEED",
+            "Sets the RNG seed used when choosing between bases with equal "
+            "Phred scores when collapsing. Note that runs are not "
+            "deterministic if more than one thread is used. If not specified, "
+            "a seed is generated using the current time.");
 
     argparser.add_header("DEMULTIPLEXING:");
     argparser["--barcode-list"] =
@@ -397,21 +411,6 @@ userconfig::userconfig(const std::string& name,
         new argparse::flag(&demultiplex_sequences,
             "Only carry out demultiplexing using the list of barcodes "
             "supplied with --barcode-list. No other processing is done.");
-
-    argparser.add_header("MISC:");
-    argparser["--identify-adapters"] =
-        new argparse::flag(&identify_adapters,
-            "Attempt to identify the adapter pair of PE reads, by searching "
-            "for overlapping reads [current: %default].");
-    argparser["--seed"] =
-        new argparse::knob(&seed, "SEED",
-            "Sets the RNG seed used when choosing between bases with equal "
-            "Phred scores when collapsing. Note that runs are not "
-            "deterministic if more than one thread is used. If not specified, "
-            "a seed is generated using the current time.");
-    argparser["--threads"] =
-        new argparse::knob(&max_threads, "THREADS",
-            "Maximum number of threads [current: %default]");
 }
 
 
