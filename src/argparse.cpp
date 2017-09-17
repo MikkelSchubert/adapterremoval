@@ -202,33 +202,11 @@ void parser::print_help() const
 
 void parser::print_arguments(const key_pair_vec& keys) const
 {
-    size_t indentation = 0;
-    for (const auto& key_pair : keys) {
-        if (key_pair.first) {
-            const consumer_ptr ptr = m_parsers.at(key_pair.second);
-            const std::string metavar = get_metavar_str(ptr, key_pair.second);
-            size_t current_len = key_pair.second.length();
-
-            if (!metavar.empty()) {
-                current_len += metavar.length();
-            }
-
-            // For simplicity, we always include the space for the metavar
-            indentation = std::max<size_t>(indentation, current_len + 1);
-        }
-    }
-
-    // indentation + 4 space before description
-    indentation = 2 + indentation + 4;
-
-    std::cerr << std::left << std::setw(indentation)
-                  << "Arguments:" << "Description:\n";
+    const size_t indentation = 8;
 
     cli_formatter fmt;
-    fmt.set_ljust(2);  // Indent subsequent lines two spaces
     fmt.set_indent(indentation);
-    fmt.set_indent_first_line(false);
-    fmt.set_column_width(get_terminal_columns() - indentation - 3);
+    fmt.set_column_width(std::min<size_t>(80, get_terminal_columns()) - indentation - 3);
 
     for (const auto& key_pair : keys) {
         if (!key_pair.first) {
@@ -243,7 +221,8 @@ void parser::print_arguments(const key_pair_vec& keys) const
 
         const std::string metavar = get_metavar_str(ptr, key_pair.second);
         std::cerr << std::left << std::setw(indentation)
-                  << ("  " + key_pair.second + " " + metavar);
+                  << ("    " + key_pair.second + " " + metavar)
+                  << "\n";
 
         std::string value = ptr->help();
         if (!value.empty()) {
@@ -257,6 +236,8 @@ void parser::print_arguments(const key_pair_vec& keys) const
             // Format into columns and indent lines (except the first line)
             std::cerr << fmt.format(value) << "\n";
         }
+
+        std::cerr << "\n";
     }
 
     std::cerr << std::endl;
