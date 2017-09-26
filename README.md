@@ -268,7 +268,7 @@ Default adapter #2:
     rcTruSeq_Universal_Adapter (note no barcode is present in typical reverse reads)
     AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 
-Assuming the above show defaults were the adapters used to generate our data, we should therefore see these in the FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short), typically followed by a low-quality A-tail, when ignoring any difference in case and treating Ns as wildcards:
+Assuming the above shown defaults were the adapters used to generate our data, we should therefore see these in the FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short), typically followed by a low-quality A-tail, when ignoring any difference in case and treating Ns as wildcards:
 
     # let's search for forward, barcoded adapter TruSeq_Adapter_Index_NNNNNN
     $ grep -i "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
