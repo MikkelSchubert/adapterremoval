@@ -4,6 +4,11 @@
     Different values may be given for each mate: --trim5p N1 N2. Trimming is
     carried out after adapters have been removed and reads have been collapsed,
     if enabled, but before quality trimming (Ns and low qualities).
+  * Added option for determistic read merging (--collapse-deterministic). In
+    this mode AdapterRemoval will set a merged base to 'N' with quality 0 if
+    the corresponding bases on the two mates differ, and if both have the same
+    quality score. The default behavior is to select one of the two bases at
+    random.
 
 
 ### Version 2.2.2 - 2017-07-17

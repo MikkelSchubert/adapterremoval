@@ -242,7 +242,7 @@ string_pair collapse_sequence(const std::string& sequence1,
                               const std::string& sequence2,
                               const std::string& qualities1,
                               const std::string& qualities2,
-                              std::mt19937& rng)
+                              std::mt19937* rng)
 {
     AR_DEBUG_ASSERT(sequence1.length() == sequence2.length() &&
                      sequence1.length() == qualities1.length() &&
@@ -271,11 +271,15 @@ string_pair collapse_sequence(const std::string& sequence1,
                 collapsed_qual.at(i) = PHRED_OFFSET_33;
             }
         } else if (nt_1 != nt_2 && qual_1 == qual_2) {
-            const int shuffle = rng() & 1;
-            collapsed_seq.at(i) = shuffle ? nt_1 : nt_2;
+            if (rng) {
+                collapsed_seq.at(i) = ((*rng)() & 1) ? nt_1 : nt_2;
 
-            const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
-            collapsed_qual.at(i) = new_scores.different_nts;
+                const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+                collapsed_qual.at(i) = new_scores.different_nts;
+            } else {
+                collapsed_seq.at(i) = 'N';
+                collapsed_qual.at(i) = PHRED_OFFSET_33;
+            }
         } else {
             // Ensure that nt_1 / qual_1 always contains the preferred nt / score
             // This is an assumption of the g_updated_phred_scores cache.
@@ -451,7 +455,7 @@ std::string strip_mate_info(const std::string& header, const char mate_sep)
 fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                       const fastq& read1,
                                       const fastq& read2,
-                                      std::mt19937& rng,
+                                      std::mt19937* rng,
                                       const char mate_sep)
 {
     if (alignment.offset > static_cast<int>(read1.length())) {

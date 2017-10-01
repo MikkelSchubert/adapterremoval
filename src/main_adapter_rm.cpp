@@ -134,7 +134,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
     }
 
     output << "\n\n[Adapter trimming]";
-    if (config.max_threads > 1) {
+    if (config.max_threads > 1 || config.deterministic) {
         output << "\nRNG seed: NA";
     } else {
         output << "\nRNG seed: " << config.seed;
@@ -529,7 +529,11 @@ public:
         const size_t offset = m_nth * ai_analyses_offset;
         const char mate_separator = m_config.combined_output ? '\0' : m_config.mate_separator;
 
-        mt19937_ptr rng = m_rngs.get_sink();
+        mt19937_ptr rng;
+        if (!m_config.deterministic) {
+            rng = m_rngs.get_sink();
+        }
+
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
         trimmed_reads chunks(m_config, offset, read_chunk->eof);
         statistics_ptr stats = m_stats.get_sink();
@@ -556,7 +560,7 @@ public:
                 stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
 
                 if (m_config.is_alignment_collapsible(alignment)) {
-                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read_1, read_2, *rng,
+                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read_1, read_2, rng.get(),
                                                                            mate_separator);
                     process_collapsed_read(m_config,
                                            *stats,

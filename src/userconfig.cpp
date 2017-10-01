@@ -123,6 +123,7 @@ userconfig::userconfig(const std::string& name,
     , trim_ambiguous_bases(false)
     , max_ambiguous_bases(1000)
     , collapse(false)
+    , deterministic(false)
     , shift(2)
     , seed(get_seed())
     , max_threads(1)
@@ -372,6 +373,13 @@ userconfig::userconfig(const std::string& name,
             "least --minalignmentlength bases overlap with the adapter "
             "sequence, and are written to the the same files "
             "[default: %default].");
+    argparser["--collapse-deterministic"] =
+        new argparse::flag(&deterministic,
+            "In standard --collapse mode, AdapterRemoval will randomly select "
+            "one of two different overlapping bases if these have the same "
+            "quality (otherwise it picks the highest quality base). With "
+            "--collapse-deterministic, AdapterRemoval will instead set such "
+            "bases to N. This option implies --collapse [default: %default].");
     argparser["--minalignmentlength"] =
         new argparse::knob(&min_alignment_length, "LENGTH",
             "If --collapse is set, paired reads must overlap at least this "
@@ -381,9 +389,9 @@ userconfig::userconfig(const std::string& name,
     argparser["--seed"] =
         new argparse::knob(&seed, "SEED",
             "Sets the RNG seed used when choosing between bases with equal "
-            "Phred scores when collapsing. Note that runs are not "
-            "deterministic if more than one thread is used. If not specified, "
-            "a seed is generated using the current time.");
+            "Phred scores when --collapse is enabled. This option is not "
+            "available if more than one thread is used. If not specified, a"
+            "seed is generated using the current time.");
 
     argparser.add_header("DEMULTIPLEXING:");
     argparser["--barcode-list"] =
@@ -425,6 +433,9 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     if (result != argparse::parse_result::ok) {
         return result;
     }
+
+    // --collapse-deterministic implies --collapse
+    collapse |= deterministic;
 
     quality_input_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
     if (!quality_input_fmt.get()) {

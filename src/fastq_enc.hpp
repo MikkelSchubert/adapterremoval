@@ -137,7 +137,7 @@ public:
     virtual void decode(std::string& qualities) const override;
 
     /** Returns the standard name for this encoding. */
-    const char* name() const;
+    virtual const char* name() const override;
 };
 
 

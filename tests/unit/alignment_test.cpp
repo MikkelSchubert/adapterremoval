@@ -130,7 +130,8 @@ fastq_pair_vec create_adapter_vec(const fastq& pcr1, const fastq& pcr2 = fastq()
 
 
 std::random_device g_seed;
-std::mt19937 g_rng(g_seed());
+std::mt19937 g_rng_instance(g_seed());
+std::mt19937* g_rng(&g_rng_instance);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -868,7 +869,7 @@ TEST_CASE("Randomly select between different nucleotides with same quality #1", 
     std::mt19937 rng(seed);
 
     const fastq collapsed_expected = fastq("Rec1", "G", "#");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, rng);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, &rng);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
@@ -882,7 +883,21 @@ TEST_CASE("Randomly select between different nucleotides with same quality #2", 
     std::mt19937 rng(seed);
 
     const fastq collapsed_expected = fastq("Rec1", "T", "#");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, rng);
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, &rng);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Set conflicts to N/! if no RNG is provided", "[alignment::collapse]")
+{
+    const fastq record1("Rec1", "G", "1");
+    const fastq record2("Rec2", "T", "1");
+    const alignment_info alignment;
+    std::seed_seq seed{2};
+    std::mt19937 rng(seed);
+
+    const fastq collapsed_expected = fastq("Rec1", "N", "!");
+    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, nullptr);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 

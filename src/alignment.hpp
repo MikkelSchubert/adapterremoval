@@ -183,6 +183,8 @@ size_t truncate_paired_ended_sequences(const alignment_info& alignment,
  * a random base is selected. In both cases, the quality score is updated to
  * reflect the lower quality implied by these observations.
  *
+ * If rng is null, different bases with the same quality are set to N and !.
+ *
  * @return A single FASTQ record representing the collapsed sequence.
  *
  * Note that the sequences are assumed to have been trimmed using the
@@ -192,7 +194,7 @@ size_t truncate_paired_ended_sequences(const alignment_info& alignment,
 fastq collapse_paired_ended_sequences(const alignment_info& alignment,
                                       const fastq& read1,
                                       const fastq& read2,
-                                      std::mt19937& rng,
+                                      std::mt19937* rng,
                                       const char mate_sep=MATE_SEPARATOR);
 
 
