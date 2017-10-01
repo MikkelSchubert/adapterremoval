@@ -308,9 +308,7 @@ class TestCase(object):
                 if not filename.endswith(".settings"):
                     obs_filename += "." + compression
 
-            exp_data = exp_data
             obs_data = decompress(obs_filename)
-
             if filename.endswith(".settings"):
                 exp_data = self._mangle_settings(exp_data)
                 obs_data = self._mangle_settings(obs_data)
@@ -364,9 +362,9 @@ class TestCase(object):
     def _mangle_settings(cls, handle):
         result = []
         for line in handle:
-            line = re.sub(r"RNG seed: [0-9]+", "RNG seed: NA", line)
-            line = re.sub(r"AdapterRemoval ver. [0-9]+.[0-9]+.[0-9]+[a-zA-Z]?",
-                          "AdapterRemoval ver. X.Y.Z", line)
+            line = re.sub(r"RNG seed: [0-9]+", "RNG seed: Enabled", line)
+            line = re.sub(r"AdapterRemoval ver\. .*",
+                           "AdapterRemoval ver. X.Y.Z", line)
             # Removed keyword to allow automatic interleaved tests
             line = re.sub(r" interleaved paired-end reads",
                           r" paired-end reads",
