@@ -86,21 +86,21 @@ OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)
 
 
-.PHONY: all install clean test clean_tests static regression
+.PHONY: all install clean test clean_tests static regression docs
 
-all: build/$(PROG) build/$(PROG).1
+all: build/$(PROG)
 
-everything: all static test regression
+everything: all static test regression docs
 
 # Clean
-clean: clean_tests
+clean: clean_tests clean_docs
 	@echo $(COLOR_GREEN)"Cleaning ..."$(COLOR_END)
-	$(QUIET) rm -f build/$(PROG) build/$(PROG).1 build/$(LIBNAME).a
+	$(QUIET) rm -f build/$(PROG) build/$(LIBNAME).a
 	$(QUIET) rm -rvf build/regression
 	$(QUIET) rm -rvf $(BDIR)
 
 # Install
-install: build/$(PROG) build/$(PROG).1
+install: build/$(PROG)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
 	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
 	$(QUIET) mkdir -p ${PREFIX}/bin/
@@ -109,7 +109,7 @@ install: build/$(PROG) build/$(PROG).1
 
 	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
 	$(QUIET) mkdir -p ${PREFIX}/share/man/man1/
-	$(QUIET) mv -f build/$(PROG).1 ${PREFIX}/share/man/man1/
+	$(QUIET) cp -a $(PROG).1 ${PREFIX}/share/man/man1/
 	$(QUIET) chmod a+r ${PREFIX}/share/man/man1/$(PROG).1
 
 	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval/"$(COLOR_END)
@@ -141,11 +141,6 @@ build/$(LIBNAME).a: $(LIBOBJS)
 	@echo $(COLOR_GREEN)"Linking static library $@"$(COLOR_END)
 	$(AR) rcs build/$(LIBNAME).a $(LIBOBJS)
 
-build/%.1: %.pod
-	@echo $(COLOR_GREEN)"Constructing man-page $@ from $<"$(COLOR_END)
-	$(QUIET) mkdir -p $(BDIR)
-	$(QUIET) pod2man $< > $@
-
 # Automatic header depencencies
 -include $(DFILES)
 
@@ -155,7 +150,7 @@ build/%.1: %.pod
 #
 TEST_DIR := build/tests
 TEST_OBJS := $(TEST_DIR)/main_test.o \
-			 $(TEST_DIR)/debug.o \
+             $(TEST_DIR)/debug.o \
              $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/alignment_test.o \
              $(TEST_DIR)/argparse.o \
@@ -175,7 +170,7 @@ test: $(TEST_DIR)/main
 	$(QUIET) $(TEST_DIR)/main
 
 clean_tests:
-	@echo $(COLOR_GREEN)"Cleaning unit tests ..."$(COLOR_END)
+	@echo $(COLOR_GREEN)"Cleaning tests ..."$(COLOR_END)
 	$(QUIET) rm -rvf $(TEST_DIR)
 
 $(TEST_DIR)/main: $(TEST_OBJS)
@@ -194,6 +189,7 @@ $(TEST_DIR)/%.o: src/%.cpp
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
+
 #
 # Validation
 #
@@ -208,3 +204,19 @@ regression: build/$(PROG)
 
 # Automatic header dependencies for tests
 -include $(TEST_DEPS)
+
+
+#
+# Documentation
+#
+SPHINXOPTS  = -n -q
+SPHINXBUILD = sphinx-build
+
+docs:
+	$(QUIET) @$(SPHINXBUILD) -M html docs build/docs $(SPHINXOPTS)
+	$(QUIET) @$(SPHINXBUILD) -M man docs build/docs $(SPHINXOPTS)
+	$(QUIET) cp -v "build/docs/man/AdapterRemoval.1" .
+
+clean_docs:
+	@echo $(COLOR_GREEN)"Cleaning documentation ..."$(COLOR_END)
+	$(QUIET) rm -rvf build/docs
