@@ -40,6 +40,7 @@ namespace ar
 joined_line_readers::joined_line_readers(const string_vec& filenames)
   : m_filenames(filenames.rbegin(), filenames.rend())
   , m_reader()
+  , m_current_line(1)
 {
 }
 
@@ -55,6 +56,7 @@ bool joined_line_readers::getline(std::string& dst)
 
     while (dst.empty()) {
         if (m_reader && m_reader->getline(dst)) {
+            m_current_line++;
             break;
         } else if (!open_next_file()) {
             break;
@@ -75,7 +77,9 @@ bool joined_line_readers::open_next_file()
 
     {
         print_locker lock;
-        std::cerr << "Opening FASTQ file '" << filename << "'" << std::endl;
+        std::cerr << "Opening FASTQ file '" << filename
+                  << "', line numbers start at " << m_current_line
+                  << std::endl;
     }
 
     m_reader.reset(new line_reader(filename));

@@ -73,6 +73,8 @@ private:
     string_vec m_filenames;
     //! Currently open file, if any.
     std::unique_ptr<line_reader> m_reader;
+    //! Current line across all files.
+    size_t m_current_line;
 };
 
 
