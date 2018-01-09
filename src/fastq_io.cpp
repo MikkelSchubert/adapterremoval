@@ -58,7 +58,7 @@ size_t read_fastq_reads(fastq_vec& dst, joined_line_readers& reader,
         throw thread_abort();
     }
 
-    return dst.size();
+    return dst.size() * 4;
 }
 
 
