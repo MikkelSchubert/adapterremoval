@@ -51,7 +51,7 @@ size_t read_fastq_reads(fastq_vec& dst, joined_line_readers& reader,
     } catch (const fastq_error& error) {
         print_locker lock;
         std::cerr << "Error reading FASTQ record at line "
-                  << offset + dst.size()
+                  << offset + dst.size() * 4
                   << "; aborting:\n"
                   << cli_formatter::fmt(error.what()) << std::endl;
 
