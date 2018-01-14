@@ -17,7 +17,7 @@ addons:
       - libbz2-dev
 
 before_install:
-  - pip install --user cpp-coveralls
+  - pip3 install --user cpp-coveralls
 
 install: true
 
