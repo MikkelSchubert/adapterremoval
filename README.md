@@ -29,6 +29,16 @@ AdapterRemoval was originally published in Lindgreen 2012:
 
 ## Installation
 
+### Installation with [Conda](https://conda.io/docs/)  
+
+If you have Conda [installed on your system](https://conda.io/miniconda.html):
+
+```
+ conda install -c maxibor adapterremoval2
+```
+
+### Manual installation
+
 To install, first download and unpack the newest release from GitHub:
 
     $ wget -O adapterremoval-2.1.7.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.1.7.tar.gz
