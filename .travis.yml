@@ -15,17 +15,20 @@ addons:
     packages:
       - zlib1g-dev
       - libbz2-dev
+      - python3
+      - python3-pip
 
 before_install:
-  - pip3 install --user cpp-coveralls
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python3 -m pip install --user cpp-coveralls; fi
 
 install: true
 
 script:
     - make
-    - make test COVERAGE=yes
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make test COVERAGE=yes; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make test COVERAGE=no; fi
     - make regression
     - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:
-  - coveralls --exclude tests --gcov-options '\-lp'
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python3 -m coveralls --exclude tests --gcov-options '\-lp'; fi
