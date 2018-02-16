@@ -30,3 +30,4 @@ install:
 
 script:
   conda install -c maxibor adapterremoval2
+  AdaterRemoval
