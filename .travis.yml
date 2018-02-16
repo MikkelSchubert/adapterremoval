@@ -29,5 +29,5 @@ install:
   - source activate test-environment
 
 script:
-  conda install -c maxibor adapterremoval2
-  AdaterRemoval
+  - conda install -c maxibor adapterremoval2
+  - AdapterRemoval
