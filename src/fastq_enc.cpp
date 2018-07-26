@@ -156,7 +156,7 @@ void invalid_phred(const char offset, const char max_score, const char raw)
 
                << "If the quality scores are Phred+33 encoded, but includes "
                << "scores in a greater range than expected, then use the "
-               << "'--maxquality' option. Note that this option effects both "
+               << "'--qualitymax' option. Note that this option effects both "
                << "reading and writing of FASTQ files.\n\n"
 
                << "See README for more information.";
@@ -172,7 +172,7 @@ void invalid_phred(const char offset, const char max_score, const char raw)
 
                << "If the quality scores are Phred+64 encoded, but includes "
                << "scores in a greater range than expected, then use the "
-               << "'--maxquality' command-line option. Note that this option "
+               << "'--qualitymax' command-line option. Note that this option "
                << "effects both reading and writing of FASTQ files.\n\n"
 
                << "See README for more information.";
@@ -212,7 +212,7 @@ void invalid_solexa(const char offset, const char max_score, const char raw)
 
             << "If the quality scores are Solexa encoded, but includes "
             << "scores in a greater range than expected, then use the "
-            << "'--maxquality' command-line option. Note that this option "
+            << "'--qualitymax' command-line option. Note that this option "
             << "effects both reading and writing of FASTQ files.\n\n"
 
             << "See README for more information.";
