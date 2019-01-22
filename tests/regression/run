@@ -243,6 +243,10 @@ class TestCase(object):
             with open(os.path.join(root, 'barcodes.txt'), 'w') as handle:
                 handle.writelines(self._files['barcodes'])
 
+        if 'adapters' in self._files:
+            with open(os.path.join(root, 'adapters.txt'), 'w') as handle:
+                handle.writelines(self._files['adapters'])
+
         return final_files["input_1"], final_files["input_2"]
 
     def _do_call(self, root, input_1, input_2, compression, interleaved):
@@ -278,13 +282,14 @@ class TestCase(object):
 
     def _check_file_creation(self, root, input_1, input_2, compression):
         expected_files = set(self._files["output"])
-        if 'barcodes' in self._files:
-            expected_files.add('barcodes.txt')
+        for key in ('barcodes', 'adapters'):
+            if key in self._files:
+                expected_files.add(key + '.txt')
 
         if compression != UNCOMPRESSED:
             expected_files_ = set()
             for value in expected_files:
-                if not value.endswith(".settings") and value != 'barcodes.txt':
+                if not (value.endswith(".settings") or value.endswith(".txt")):
                     expected_files_.add(value + "." + compression)
                 else:
                     expected_files_.add(value)
@@ -391,10 +396,12 @@ class TestCase(object):
                 result["input_1"].append(os.path.join(abs_root, filename))
             elif filename.startswith("input_2"):
                 result["input_2"].append(os.path.join(abs_root, filename))
-            elif filename not in ('info.json', 'README', 'barcodes.txt'):
-                result["output"][filename] = read_lines(root, filename)
             elif filename == 'barcodes.txt':
                 result["barcodes"] = read_lines(root, filename)
+            elif filename == 'adapters.txt':
+                result["adapters"] = read_lines(root, filename)
+            elif filename not in ('info.json', 'README'):
+                result["output"][filename] = read_lines(root, filename)
 
         return result
 
