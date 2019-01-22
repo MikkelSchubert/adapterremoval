@@ -1,4 +1,4 @@
-### Unpublished
+### Version 2.2.3 - 2019-01-22
 
   * Added support for trimming reads by a fixed amount: --trim5p N --trim3p N.
     Different values may be given for each mate: --trim5p N1 N2. Trimming is
@@ -9,6 +9,12 @@
     the corresponding bases on the two mates differ, and if both have the same
     quality score. The default behavior is to select one of the two bases at
     random.
+  * Fixed reporting of line numbers in error messages.
+  * Added conda installation instructions, courtesy of Maxime Borry (maxibor).
+  * Fixed reading mate 2 adapters specified via --adapter-list. Adapters would
+    be used in the reverse orientation compared to --adapter2. Courtesy of
+    Karolis (KarolisM).
+  * Fixed various typos and improved help/error messages.
 
 
 ### Version 2.2.2 - 2017-07-17

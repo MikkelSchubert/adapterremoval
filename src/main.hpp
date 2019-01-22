@@ -31,7 +31,7 @@ namespace ar
 {
 
 const std::string NAME = "AdapterRemoval";
-const std::string VERSION = "ver. 2.2.2";
+const std::string VERSION = "ver. 2.2.3";
 const std::string HELPTEXT = \
     "This program searches for and removes remnant adapter sequences from\n"
     "your read data.  The program can analyze both single end and paired end\n"
