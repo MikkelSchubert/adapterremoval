@@ -36,9 +36,6 @@
 namespace ar
 {
 
-void invalid_solexa(const char offset, const char max_score, const char raw) __attribute__((noreturn));
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // fastq_error
 
@@ -108,7 +105,7 @@ const std::string g_phred_to_solexa = calc_phred_to_solexa();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void invalid_phred(const char offset, const char max_score, const char raw)
+[[noreturn]] void invalid_phred(const char offset, const char max_score, const char raw)
 {
     if (raw < offset) {
         AR_DEBUG_ASSERT(offset == 33 || offset == 64);
@@ -134,6 +131,8 @@ void invalid_phred(const char offset, const char max_score, const char raw)
                                   "\"--qualitybase solexa\"\n\n"
 
                                   "See README for more information.");
+            } else {
+                AR_DEBUG_FAIL("TODO");
             }
         } else {
             AR_DEBUG_FAIL("Unexpected offset in fastq_encoding::decode");
@@ -181,11 +180,13 @@ void invalid_phred(const char offset, const char max_score, const char raw)
         } else {
             AR_DEBUG_FAIL("Unexpected offset in fastq_encoding::decode");
         }
+    } else {
+        AR_DEBUG_FAIL("invalid_phred called on valid PHRED score");
     }
 }
 
 
-void invalid_solexa(const char offset, const char max_score, const char raw)
+[[noreturn]] void invalid_solexa(const char offset, const char max_score, const char raw)
 {
     if (raw < ';') {
         if (raw < '!') {
@@ -311,7 +312,7 @@ void fastq_encoding_solexa::decode(std::string& qualities) const
     const char max_score = m_offset + m_max_score;
     for (auto& quality : qualities) {
         if (quality < ';' || quality > max_score) {
-            invalid_phred(m_offset, m_max_score, quality);
+            invalid_solexa(m_offset, m_max_score, quality);
         }
 
         quality = g_solexa_to_phred.at(quality - ';') + '!';

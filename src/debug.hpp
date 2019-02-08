@@ -57,8 +57,8 @@ private:
  * Aborts after printing the filename, line-number, and message, plus
  * instructions for how to report the problem.
  */
-void debug_raise_assert(const char* filename, size_t lineno,
-                        const char* what) __attribute__ ((noreturn));
+[[noreturn]] void debug_raise_assert(const char* filename, size_t lineno,
+                                     const char* what);
 
 
 /** Custom assert which prints various information on failure; always enabled. */
