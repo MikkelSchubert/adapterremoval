@@ -588,7 +588,7 @@ TEST_CASE("truncate_pos_after_last_base", "[fastq::fastq]")
     // Same behavior as string::substr
     fastq current_record("Rec", "ACTTAG", "12I$12");
     REQUIRE_NOTHROW(current_record.truncate(6));
-    REQUIRE_THROWS_AS(current_record.truncate(7), std::out_of_range);
+    REQUIRE_THROWS_AS(current_record.truncate(7), assert_failed);
 }
 
 

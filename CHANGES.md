@@ -1,3 +1,9 @@
+### HEAD
+
+  * Fixed bug in --trim5p N which would AdapterRemoval to abort if N was greater
+    than the pre-trimmed read length.
+
+
 ### Version 2.2.3 - 2019-01-22
 
   * Added support for trimming reads by a fixed amount: --trim5p N --trim3p N.
