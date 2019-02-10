@@ -57,16 +57,17 @@ const char* assert_failed::what() const noexcept
 void debug_raise_assert(const char* filename, size_t lineno, const char* what)
 {
     std::stringstream message;
-    message << "\nFATAL ERROR:\n"
-            << "Debug assertion failed in '" << filename << "', line "
-            << lineno << ": " << what << "\n\n"
-            << "This should not happen! Please file a bug-report at\n    "
-            << "https://github.com/MikkelSchubert/adapterremoval/issues/new";
+    message << "Assertion failed in '" << filename << "', line "
+            << lineno << ": " << what;
 
 #ifdef AR_TEST_BUILD
     throw assert_failed(message.str());
 #else
-    std::cerr << message.str() << std::endl;
+    std::cerr << "\nFATAL ERROR:\n"
+              << message.str() << "\n\n"
+              << "This should not happen! Please file a bug-report at\n    "
+              << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
+              << std::endl;
 
     std::abort();
 #endif
