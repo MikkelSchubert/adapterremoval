@@ -29,6 +29,7 @@ import gzip
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -179,7 +180,7 @@ class TestCase(object):
                                   'info': self._info,
                                   'files': self._files})
 
-    def run(self, root):
+    def run(self, root, delete_folder):
         root = os.path.join(root, *self.path)
 
         interleaved_tests = [False]
@@ -196,9 +197,16 @@ class TestCase(object):
                     postfix = "%s_%s%s" % (in_compression,
                                            out_compression,
                                            "_intl" if interleaved else "")
+                    test_folder = os.path.join(root, postfix)
 
-                    self._do_run(os.path.join(root, postfix),
-                                 in_compression, out_compression, interleaved)
+                    self._do_run(root=test_folder,
+                                 in_compression=in_compression,
+                                 out_compression=out_compression,
+                                 interleaved=interleaved)
+
+                    if delete_folder:
+                        shutil.rmtree(test_folder)
+
 
     def _do_run(self, root, in_compression=UNCOMPRESSED,
                 out_compression=UNCOMPRESSED, interleaved=False):
@@ -271,14 +279,14 @@ class TestCase(object):
                     raise TestError("Expected value not found in output:\n"
                                     "  Searching for:\n%s\n  STDERR:\n%s"
                                     % (pretty_output(value, 4),
-                                       pretty_output(stderr, 4, 5)))
+                                       pretty_output(stderr, 4)))
 
             if proc.returncode != self._info["return_code"]:
                 raise TestError("ERROR: Expected return-code %i, but "
                                 "AdapterRemoval returned %i:\n%s"
                                 % (self._info["return_code"],
                                    proc.returncode,
-                                   pretty_output(stderr, 2, 5)))
+                                   pretty_output(stderr, 2)))
 
     def _check_file_creation(self, root, input_1, input_2, compression):
         expected_files = set(self._files["output"])
@@ -466,6 +474,9 @@ def parse_args(argv):
                         help="Directory in which to run test-cases.")
     parser.add_argument('source_dir',
                         help="Directory containing test-cases.")
+    parser.add_argument('--keep-all',
+                        help="Keep both completed and failed test folders, "
+                             "not just the folders of failed tests.")
 
     return parser.parse_args(argv)
 
@@ -492,7 +503,7 @@ def main(argv):
         label = 'unknown'
 
         try:
-            for label in test.run(args.work_dir):
+            for label in test.run(args.work_dir, delete_folder=not args.keep_all):
                 print_ok(".", end="")
                 sys.stdout.flush()
         except TestError, error:
