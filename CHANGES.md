@@ -1,4 +1,4 @@
-### HEAD
+### Version 2.2.4 - 2019-02-10
 
   * Fixed bug in --trim5p N which would AdapterRemoval to abort if N was greater
     than the pre-trimmed read length.
