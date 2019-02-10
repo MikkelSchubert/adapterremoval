@@ -2,6 +2,7 @@
 
   * Fixed bug in --trim5p N which would AdapterRemoval to abort if N was greater
     than the pre-trimmed read length.
+  * Fixed --identify-adapters not respecting the --mate-separator option.
 
 
 ### Version 2.2.3 - 2019-01-22
