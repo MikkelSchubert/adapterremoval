@@ -76,6 +76,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/main_adapter_id.o \
             $(BDIR)/main_adapter_rm.o \
             $(BDIR)/main_demultiplex.o \
+            $(BDIR)/managed_writer.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \

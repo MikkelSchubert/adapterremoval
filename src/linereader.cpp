@@ -29,7 +29,9 @@
 #include <sstream>
 
 #include "linereader.hpp"
+#include "managed_writer.hpp"
 #include "threads.hpp"
+
 
 namespace ar
 {
@@ -95,7 +97,7 @@ bzip2_error::bzip2_error(const std::string& message)
 // Implementations for 'line_reader'
 
 line_reader::line_reader(const std::string& fpath)
-  : m_file(fopen(fpath.c_str(), "rb"))
+  : m_file(managed_writer::fopen(fpath, "rb"))
   , m_gzip_stream(nullptr)
   , m_bzip2_stream(nullptr)
   , m_buffer(nullptr)
