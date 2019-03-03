@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "debug.hpp"
+#include "threads.hpp"
 #include "managed_writer.hpp"
 
 #include <iostream>
@@ -38,6 +39,7 @@ namespace ar
 static std::mutex g_writer_lock;
 managed_writer* managed_writer::s_head = nullptr;
 managed_writer* managed_writer::s_tail = nullptr;
+bool managed_writer::s_warning_printed = false;
 
 
 managed_writer::managed_writer(const std::string& filename)
@@ -211,6 +213,17 @@ void managed_writer::add_head_writer(managed_writer* ptr)
 void managed_writer::close_tail_writer()
 {
     AR_DEBUG_ASSERT(!s_head == !s_tail);
+    if (!s_warning_printed) {
+        print_locker lock;
+        std::cerr << "\n"
+                  << "WARNING: Number of available file-handles (ulimit -n) is too low.\n"
+                  << "         AdapterRemoval will dynamically close/re-open files as required,\n"
+                  << "         but performance may suffer as a result.\n"
+                  << std::endl;
+
+        s_warning_printed = true;
+    }
+
     if (s_tail) {
         AR_DEBUG_ASSERT(s_tail->m_stream.is_open());
 

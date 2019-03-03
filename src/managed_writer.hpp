@@ -94,6 +94,8 @@ private:
     static managed_writer* s_head;
     //! Least recently used managed_writer
     static managed_writer* s_tail;
+    //! Indicates if a performance warning has been printed
+    static bool s_warning_printed;
 };
 
 
