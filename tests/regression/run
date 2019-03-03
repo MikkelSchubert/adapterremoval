@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright (c) 2016 Mikkel Schubert <MikkelSch@gmail.com>
 #
@@ -23,9 +23,9 @@ from __future__ import print_function
 
 import argparse
 import bz2
-import cStringIO
 import difflib
 import gzip
+import io
 import json
 import os
 import re
@@ -33,7 +33,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import types
 
 
 #############################################################################
@@ -77,9 +76,8 @@ UNCOMPRESSED, GZIP, BZIP2 = "raw", "gz", "bz2"
 
 
 def compress(value, compression):
-    fileobj = cStringIO.StringIO()
-
     if compression == GZIP:
+        fileobj = io.BytesIO()
         handle = gzip.GzipFile('', 'w', 9, fileobj)
         handle.write(value)
         handle.close()
@@ -92,35 +90,36 @@ def compress(value, compression):
 
 
 def decompress(filename):
-    with open(filename) as handle:
+    with open(filename, "rb") as handle:
         value = handle.read()
 
     if value and filename.endswith(".bz2"):
-        if not value.startswith("BZ"):
+        if not value.startswith(b"BZ"):
             raise TestError("Expected bz2 file at %r, but header is %r"
                             % (filename, value[:2]))
 
         value = bz2.decompress(value)
     elif value and filename.endswith(".gz"):
-        if not value.startswith("\x1f\x8b"):
+        if not value.startswith(b"\x1f\x8b"):
             raise TestError("Expected gzip file at %r, but header is %r"
                             % (filename, value[:2]))
 
-        fileobj = cStringIO.StringIO(value)
+        fileobj = io.BytesIO(value)
         handle = gzip.GzipFile('', 'r', 9, fileobj)
 
         value = handle.read()
 
-    return cStringIO.StringIO(value).readlines()
+    value = value.decode("utf-8")
+    return io.StringIO(value).readlines()
 
 
 #############################################################################
 _EXEC = './build/AdapterRemoval'
 _INFO_FILE = "info.json"
 _INFO_FIELDS = {
-    'arguments': types.ListType,
-    'return_code': types.IntType,
-    'stderr': types.ListType,
+    'arguments': list,
+    'return_code': int,
+    'stderr': list,
 }
 
 
@@ -144,7 +143,7 @@ def interleave(texts_1, texts_2):
     for text_1, text_2 in zip(texts_1, texts_2):
         lines_1 = text_1.split("\n")
         lines_2 = text_2.split("\n")
-        iters = (iter(lines_1).next, iter(lines_2).next)
+        iters = (iter(lines_1).__next__, iter(lines_2).__next__)
 
         assert len(lines_1) == len(lines_2)
 
@@ -152,7 +151,7 @@ def interleave(texts_1, texts_2):
         while True:
             try:
                 for it in iters:
-                    for _ in xrange(4):
+                    for _ in range(4):
                         result.append(it())
             except StopIteration:
                 break
@@ -162,7 +161,7 @@ def interleave(texts_1, texts_2):
     return files
 
 
-class TestError(StandardError):
+class TestError(Exception):
     pass
 
 
@@ -232,15 +231,16 @@ class TestCase(object):
                            "input_2": []}
 
         final_files = {}
-        for key, values in input_files.iteritems():
+        for key, values in input_files.items():
             filenames = []
             for idx, value in enumerate(values):
+                value = value.encode("utf-8")
                 filename = '%s%s.fastq' % (key, chr(ord('a') + idx))
                 if compression != UNCOMPRESSED:
                     filename += "." + compression
                     value = compress(value, compression)
 
-                with open(os.path.join(root, filename), "w") as handle:
+                with open(os.path.join(root, filename), "wb") as handle:
                     handle.write(value)
 
                 filenames.append(filename)
@@ -261,7 +261,7 @@ class TestCase(object):
         command = self._build_command(root, input_1, input_2,
                                       compression, interleaved)
 
-        with open(os.devnull, "w") as dev_null:
+        with open(os.devnull, "wb") as dev_null:
             proc = subprocess.Popen(command,
                                     stdin=dev_null,
                                     stdout=subprocess.PIPE,
@@ -271,6 +271,9 @@ class TestCase(object):
                                     cwd=root)
 
             stdout, stderr = proc.communicate()
+            stdout = stdout.decode("utf-8")
+            stderr = stderr.decode("utf-8")
+
             if stdout:
                 raise TestError("Unexpected output to STDOUT: %r" % (stdout,))
 
@@ -315,7 +318,7 @@ class TestCase(object):
                             % (sorted(observed_files - expected_files)))
 
     def _check_file_contents(self, root, compression):
-        for filename, exp_data in sorted(self._files["output"].iteritems()):
+        for filename, exp_data in sorted(self._files["output"].items()):
             obs_filename = os.path.join(root, filename)
             if compression != UNCOMPRESSED:
                 if not filename.endswith(".settings"):
@@ -419,7 +422,7 @@ class TestCase(object):
             text = handle.read()
             raw_info = json.loads(text)
 
-        if not isinstance(raw_info, types.DictType):
+        if not isinstance(raw_info, dict):
             raise TestError('\'info.json\' does not contain dictionary.')
         elif set(raw_info) - set(_INFO_FIELDS):
             raise TestError('\'info.json\' does contains unexpected fields; '
@@ -436,9 +439,9 @@ class TestCase(object):
             if not isinstance(info[key], expected_type):
                 raise TestError('Type of %r in \'info.json\' is %s, not a %s.'
                                 % (key, type(info[key]), expected_type))
-            elif isinstance(info[key], types.ListType):
+            elif isinstance(info[key], list):
                 for value in info[key]:
-                    if not isinstance(value, types.StringTypes):
+                    if not isinstance(value, str):
                         raise TestError('Type of value in %r in \'info.json\' '
                                         'is %s, not a string.'
                                         % (key, type(value)))
@@ -457,7 +460,7 @@ class TestCase(object):
             elif filename == 'info.json':
                 try:
                     test = TestCase(root, path)
-                except StandardError, error:
+                except Exception as error:
                     print_err("ERROR: %s reading test %r: %s"
                               % (error.__class__.__name__,
                                  ' :: '.join(path), error))
@@ -506,7 +509,7 @@ def main(argv):
             for label in test.run(args.work_dir, delete_folder=not args.keep_all):
                 print_ok(".", end="")
                 sys.stdout.flush()
-        except TestError, error:
+        except TestError as error:
             n_failures += 1
             message = "\n    ".join(str(error).split("\n"))
             print_err(" %s for %s:\n    %s" % (error.__class__.__name__,
