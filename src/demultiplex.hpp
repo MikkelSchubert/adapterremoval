@@ -25,20 +25,16 @@
 #ifndef DEMULTIPLEX_H
 #define DEMULTIPLEX_H
 
+#include "barcode_table.hpp"
 #include "fastq.hpp"
+#include "fastq_io.hpp"
 #include "scheduler.hpp"
 #include "statistics.hpp"
-#include "fastq_io.hpp"
 
 namespace ar
 {
 
 class userconfig;
-struct demultiplexer_node;
-
-typedef std::vector<demultiplexer_node> demux_node_vec;
-
-
 
 /**
  * Baseclass for demultiplexing of reads; responsible for building the quad-tree
@@ -63,22 +59,10 @@ public:
     demultiplex_reads& operator=(const demultiplex_reads&) = delete;
 
 protected:
-    /**
-     * Returns the id of the best matching barcode(s), or -1 if no matches were
-     * found or if no single best match was found.
-     */
-    int select_barcode(const fastq& read_r1, const fastq& read_r2) const;
-
     //! List of barcode (pairs) supplied by caller
     const fastq_pair_vec& m_barcodes;
     //! Quad-tree representing all mate 1 adapters; for search with n mismatches
-    const demux_node_vec m_tree;
-    //! Maximum number of mismatches allowed between the mate 1 and mate 2 read
-    const size_t m_max_mismatches;
-    //! Maximum number of mismatches allowed for the mate 1 read
-    const size_t m_max_mismatches_r1;
-    //! Maximum number of mismatches allowed for the mate 2 read
-    const size_t m_max_mismatches_r2;
+    const barcode_table m_barcode_table;
     //! Pointer to user settings used for output format for unidentified reads
     const userconfig* m_config;
 

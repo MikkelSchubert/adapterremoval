@@ -66,6 +66,7 @@ LIBNAME  := libadapterremoval
 LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
             $(BDIR)/argparse.o \
+            $(BDIR)/barcode_table.o \
             $(BDIR)/debug.o \
             $(BDIR)/demultiplex.o \
             $(BDIR)/fastq.o \
@@ -156,6 +157,8 @@ TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/alignment_test.o \
              $(TEST_DIR)/argparse.o \
              $(TEST_DIR)/argparse_test.o \
+             $(TEST_DIR)/barcodes_test.o \
+             $(TEST_DIR)/barcode_table.o \
              $(TEST_DIR)/fastq.o \
              $(TEST_DIR)/fastq_test.o \
              $(TEST_DIR)/fastq_enc.o \
