@@ -26,6 +26,7 @@ import bz2
 import difflib
 import gzip
 import io
+import itertools
 import json
 import os
 import re
@@ -120,6 +121,7 @@ _INFO_FIELDS = {
     'arguments': list,
     'return_code': int,
     'stderr': list,
+    'exhaustive': bool,
 }
 
 
@@ -186,26 +188,32 @@ class TestCase(object):
         if self._is_properly_paired():
             interleaved_tests.append(True)
 
-        for in_compression in (UNCOMPRESSED, GZIP, BZIP2):
-            for out_compression in (UNCOMPRESSED, GZIP, BZIP2):
-                for interleaved in interleaved_tests:
-                    yield "%s>%s%s" % (in_compression,
-                                       out_compression,
-                                       ",intl" if interleaved else "")
+        parameters = itertools.product(
+            (UNCOMPRESSED, GZIP, BZIP2),
+            (UNCOMPRESSED, GZIP, BZIP2),
+            interleaved_tests,
+        )
 
-                    postfix = "%s_%s%s" % (in_compression,
-                                           out_compression,
-                                           "_intl" if interleaved else "")
-                    test_folder = os.path.join(root, postfix)
+        for in_compression, out_compression, interleaved in parameters:
+            yield "%s>%s%s" % (in_compression,
+                                out_compression,
+                                ",intl" if interleaved else "")
 
-                    self._do_run(root=test_folder,
-                                 in_compression=in_compression,
-                                 out_compression=out_compression,
-                                 interleaved=interleaved)
+            postfix = "%s_%s%s" % (in_compression,
+                                    out_compression,
+                                    "_intl" if interleaved else "")
+            test_folder = os.path.join(root, postfix)
 
-                    if delete_folder:
-                        shutil.rmtree(test_folder)
+            self._do_run(root=test_folder,
+                            in_compression=in_compression,
+                            out_compression=out_compression,
+                            interleaved=interleaved)
 
+            if delete_folder:
+                shutil.rmtree(test_folder)
+            
+            if not self._info['exhaustive']:
+                break
 
     def _do_run(self, root, in_compression=UNCOMPRESSED,
                 out_compression=UNCOMPRESSED, interleaved=False):
@@ -300,7 +308,7 @@ class TestCase(object):
         if compression != UNCOMPRESSED:
             expected_files_ = set()
             for value in expected_files:
-                if not (value.endswith(".settings") or value.endswith(".txt")):
+                if not (value.endswith("settings") or value.endswith(".txt")):
                     expected_files_.add(value + "." + compression)
                 else:
                     expected_files_.add(value)
@@ -321,11 +329,11 @@ class TestCase(object):
         for filename, exp_data in sorted(self._files["output"].items()):
             obs_filename = os.path.join(root, filename)
             if compression != UNCOMPRESSED:
-                if not filename.endswith(".settings"):
+                if not filename.endswith("settings"):
                     obs_filename += "." + compression
 
             obs_data = decompress(obs_filename)
-            if filename.endswith(".settings"):
+            if filename.endswith("settings"):
                 exp_data = self._mangle_settings(exp_data)
                 obs_data = self._mangle_settings(obs_data)
 
@@ -432,7 +440,8 @@ class TestCase(object):
 
         info = {"arguments": [],
                 "return_code": 0,
-                "stderr": []}
+                "stderr": [],
+                'exhaustive': True}
         info.update(raw_info)
 
         for key, expected_type in _INFO_FIELDS.items():
