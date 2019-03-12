@@ -3,5 +3,6 @@
 	"return_code": 1,
 	"stderr": [
 		"Cannot use --identify-adapters and --demultiplex-only at the same time!"
-	]
+	],
+	"exhaustive": false
 }
