@@ -1,3 +1,16 @@
+### Version 2.3.0 - 2019-03-12
+
+ * Fixed --collapse producing slightly different result on 32 bit and 64 bit
+   architectures. Courtesy of Andreas Tille.
+ * Added support for output files without a basename; to create such output
+   files, use an empty basename (--basename "") or a basename ending with a 
+   slash (--basename path/).
+ * Added support for managing file handles to allow AdapterRemoval to run
+   when the the number of output files exceeds the number of file handles, e.g.
+   when demultiplexing large numbers of samples.
+ * Reworked demultiplexing to improve performance for many paired barcodes.
+
+
 ### Version 2.2.4 - 2019-02-10
 
   * Fixed bug in --trim5p N which would AdapterRemoval to abort if N was greater
