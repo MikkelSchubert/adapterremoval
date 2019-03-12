@@ -65,6 +65,7 @@ PROG     := AdapterRemoval
 LIBNAME  := libadapterremoval
 LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
+            $(BDIR)/alignment_tables.o \
             $(BDIR)/argparse.o \
             $(BDIR)/barcode_table.o \
             $(BDIR)/debug.o \
@@ -154,6 +155,7 @@ TEST_DIR := build/tests
 TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/debug.o \
              $(TEST_DIR)/alignment.o \
+             $(TEST_DIR)/alignment_tables.o \
              $(TEST_DIR)/alignment_test.o \
              $(TEST_DIR)/argparse.o \
              $(TEST_DIR)/argparse_test.o \
