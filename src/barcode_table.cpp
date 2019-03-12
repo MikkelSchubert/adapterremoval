@@ -273,6 +273,10 @@ barcode_table::lookup(const char* seq, int parent,
 
 {
     for (; *seq && parent != no_match; ++seq) {
+        if (*seq == 'N') {
+            return candidate(no_match);
+        }
+
         const auto encoded_nuc = ACGT_TO_IDX(*seq);
         const auto& node = m_nodes.at(parent);
 
@@ -306,7 +310,6 @@ barcode_table::candidate barcode_table::lookup_with_mm(
     const auto nucleotide = *seq;
 
     if (nucleotide) {
-        const size_t encoded_nuc = ACGT_TO_IDX(nucleotide);
         candidate best_candidate;
 
         for (size_t encoded_i = 0; encoded_i < 4; ++encoded_i) {
@@ -315,7 +318,7 @@ barcode_table::candidate barcode_table::lookup_with_mm(
             if (child != -1) {
                 candidate current_candidate;
 
-                if (encoded_nuc == encoded_i) {
+                if (nucleotide == IDX_TO_ACGT(encoded_i)) {
                     current_candidate =
                         lookup_with_mm(seq + 1, child, max_global_mismatches,
                                        max_local_mismatches, next);

@@ -57,6 +57,34 @@ private:
 };
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions
+
+TEST_CASE("ACGT_TO_IDX", "[fastq::*]")
+{
+    // The exact encoding is unimportant, but it must be unique and 2 bit
+    REQUIRE(ACGT_TO_IDX('A') <= 3);
+    REQUIRE(ACGT_TO_IDX('C') <= 3);
+    REQUIRE(ACGT_TO_IDX('G') <= 3);
+    REQUIRE(ACGT_TO_IDX('T') <= 3);
+
+    REQUIRE(ACGT_TO_IDX('A') != ACGT_TO_IDX('C'));
+    REQUIRE(ACGT_TO_IDX('A') != ACGT_TO_IDX('G'));
+    REQUIRE(ACGT_TO_IDX('A') != ACGT_TO_IDX('T'));
+    REQUIRE(ACGT_TO_IDX('C') != ACGT_TO_IDX('G'));
+    REQUIRE(ACGT_TO_IDX('C') != ACGT_TO_IDX('T'));
+    REQUIRE(ACGT_TO_IDX('G') != ACGT_TO_IDX('T'));
+}
+
+
+TEST_CASE("IDX_TO_ACGT", "[fastq::*]")
+{
+    REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('A')) == 'A');
+    REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('C')) == 'C');
+    REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('G')) == 'G');
+    REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('T')) == 'T');
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default constructor

@@ -427,6 +427,7 @@ TEST_CASE("Exact matching reads with mismatches for SE barcodes", "[barcodes::ex
     REQUIRE(table.identify(fastq("A", "ACACA")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCTA")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCTT")) == -1);
+    REQUIRE(table.identify(fastq("A", "NCCCA")) == -1);
 
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCA"), fastq("B", "GTTTC")) == -1);
@@ -434,6 +435,7 @@ TEST_CASE("Exact matching reads with mismatches for SE barcodes", "[barcodes::ex
     REQUIRE(table.identify(fastq("A", "ACACA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCTA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCTT"), fastq("B", "GTTTC")) == -1);
+    REQUIRE(table.identify(fastq("A", "ANCCA"), fastq("B", "GTTTC")) == -1);
 }
 
 
@@ -449,11 +451,14 @@ TEST_CASE("Exact matching reads with mismatches for PE barcodes", "[barcodes::ex
     REQUIRE(table.identify(fastq("A", "ACACA")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCTA")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCTT")) == -1);
+    REQUIRE(table.identify(fastq("A", "NCCCA")) == -1);
 
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACTCA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTA")) == -1);
     REQUIRE(table.identify(fastq("A", "GCCCA"), fastq("B", "GATTC")) == -1);
+    REQUIRE(table.identify(fastq("A", "ANCCA"), fastq("B", "GTTTC")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTN")) == -1);
 }
 
 
@@ -468,6 +473,7 @@ TEST_CASE("Global limits override local limits for SE barcodes", "[barcodes::ine
     const barcode_table table(barcodes, 0, 1, 1);
     REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCA")) == -1);
+    REQUIRE(table.identify(fastq("A", "NCCCA")) == -1);
 
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACACA"), fastq("B", "GTTTC")) == -1);
@@ -482,10 +488,13 @@ TEST_CASE("Global limits override local limits for PE barcodes", "[barcodes::ine
     const barcode_table table(barcodes, 0, 1, 1);
     REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCA")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCNA")) == -1);
 
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACACA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTAG")) == -1);
+    REQUIRE(table.identify(fastq("A", "ANCCA"), fastq("B", "GTTTC")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "NTTTC")) == -1);
 }
 
 
@@ -498,11 +507,15 @@ TEST_CASE("Mismatches in R1 only with SE table", "[barcodes::inexact::se]")
     REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCT")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCCN")) == 0);
+    REQUIRE(table.identify(fastq("A", "ANCCN")) == -1);
 
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACTCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "GCTCA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCCT"), fastq("B", "GTTTG")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACCNA"), fastq("B", "GTTTC")) == 0);
+    REQUIRE(table.identify(fastq("A", "NCCNA"), fastq("B", "GTTTC")) == -1);
 }
 
 
@@ -515,11 +528,15 @@ TEST_CASE("Mismatches in R1 only with PE table", "[barcodes::inexact::se]")
     REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCT")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCCN")) == 0);
+    REQUIRE(table.identify(fastq("A", "ANCCN")) == -1);
 
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACTCA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "GCTCA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTG")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCCN"), fastq("B", "GTTTC")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "NTTTC")) == -1);
 }
 
 
@@ -533,6 +550,7 @@ TEST_CASE("Mismatches in R2 only with SE table", "[barcodes::inexact::pe]")
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "ATTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTT")) == 0);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "ATTTG")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "ANTTG")) == 0);
 }
 
 
@@ -546,6 +564,9 @@ TEST_CASE("Mismatches in R2 only with PE table", "[barcodes::inexact::pe]")
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "ATTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTT")) == 0);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "ATTTG")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTN")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACCCN"), fastq("B", "GTTTT")) == -1);
+    REQUIRE(table.identify(fastq("A", "ACTCA"), fastq("B", "GTNTT")) == -1);
 }
 
 
@@ -562,6 +583,9 @@ TEST_CASE("Mismatches in R1/R2 with PE table", "[barcodes::inexact::pe]")
     REQUIRE(table.identify(fastq("A", "ACCCT"), fastq("B", "GTTAC")) == -1);
     REQUIRE(table.identify(fastq("A", "TCCAA"), fastq("B", "GTTTC")) == -1);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GGTGC")) == -1);
+    REQUIRE(table.identify(fastq("A", "ANCCA"), fastq("B", "GTTTC")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTNC")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACTCA"), fastq("B", "GTNTC")) == -1);
 }
 
 
@@ -578,6 +602,9 @@ TEST_CASE("Multiple mismatches in R1/R2 with PE table", "[barcodes::inexact::pe]
     REQUIRE(table.identify(fastq("A", "TCCAA"), fastq("B", "GTTTC")) == 0);
     REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GGTGC")) == 0);
     REQUIRE(table.identify(fastq("A", "TCCCT"), fastq("B", "CTTTC")) == -1);
+    REQUIRE(table.identify(fastq("A", "TCCNA"), fastq("B", "GTTTC")) == 0);
+    REQUIRE(table.identify(fastq("A", "ACCCT"), fastq("B", "NTTTC")) == 0);
+    REQUIRE(table.identify(fastq("A", "NCCCN"), fastq("B", "GTTTA")) == -1);
 }
 
 
@@ -593,6 +620,7 @@ TEST_CASE("Ambigious matches in R1 for SE table", "[barcodes::inexact::se]")
     REQUIRE(table.identify(fastq("A", "TCCCA")) == 1);
     REQUIRE(table.identify(fastq("A", "CCCCA")) == -2);
     REQUIRE(table.identify(fastq("A", "ACCCC")) == -2);
+    REQUIRE(table.identify(fastq("A", "ACCCN")) == -2);
 }
 
 
@@ -607,6 +635,7 @@ TEST_CASE("Ambigious matches in SE R1 for PE table", "[barcodes::inexact::se]")
     REQUIRE(table.identify(fastq("A", "TCCCA")) == 1);
     REQUIRE(table.identify(fastq("A", "CCCCA")) == -2);
     REQUIRE(table.identify(fastq("A", "ACCCC")) == -2);
+    REQUIRE(table.identify(fastq("A", "ACCCN")) == -2);
 }
 
 
@@ -622,6 +651,5 @@ TEST_CASE("Mismatch resulting in apparent match", "[barcodes::inexact::se]")
     REQUIRE(table.identify(fastq("A", "TCCCA")) == 0);
     REQUIRE(table.identify(fastq("A", "ACCTT")) == 1);
 }
-
 
 } // namespace ar

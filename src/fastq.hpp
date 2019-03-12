@@ -231,6 +231,15 @@ inline size_t ACGT_TO_IDX(char nt)
 }
 
 
+/**
+ * Inverse of ACGT_TO_IDX. Only values in the range 0 to 3 are allowed.
+ */
+inline char IDX_TO_ACGT(size_t idx)
+{
+    return "ACTG"[idx];
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
