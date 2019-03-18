@@ -163,6 +163,13 @@ It is possible to trim data that contains multiple adapter pairs, by providing a
     GTTCATACGACGACGACCAATGGCACACTTATCCGGTACTTGCGTTTCAATGCGCATGCCCCAT    TAAGAAACTCGGAGTTTGGCCTGCGAGGTAGCTTGGGTGTTATGAAGAACGGCATGCG
     CCATGCCCCGAAGATTCCTATACCCTTAAGGTCGCAATTGTTCGAGTAAGCTGTACGCGCCCAT    GTTGCATTGACCCGAAGGGCTCGATGTTTAGGGAGGTCAGAAGTTGAGCGGGTTCAAA
 
+    The table could be translated to:
+    TruSeq_Adapter_Index_CACCTA                                         rcTruSeq_Universal_Adapter
+    ?                                                                   ?
+    ?                                                                   ?
+    ?                                                                   ?
+    ?                                                                   ? 
+
 This table is then specified using the --adapter-list option:
 
     $ AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_multi --trimns --trimqualities --collapse --adapter-list adapters.txt
@@ -263,18 +270,24 @@ It is important to use these, updated, adapter sequences when trimming the demul
 
 Please note that the --pcr1 and --pcr2 options used with AdapterRemoval v1.x have been deprecated in favor of options --adapter1 and --adapter2. For both --adapter1 and --adapter2 the adapter sequence are expected to be observed in the raw mate 1 and mate 2 reads respectively, exactly as specified on the command-line, which corresponds to the behavior of most adapter trimming programs.
 
-Default adapter #1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+Default adapter #1: 
+    TruSeq_Adapter_Index_NNNNNN (typical forward read in recent datasets)
+    AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
 
-Default adapter #2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+Default adapter #2:
+    rcTruSeq_Universal_Adapter (note no barcode is present in typical reverse reads)
+    AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 
-Assuming these were the adapters used to generate our data, we should therefore see these in the FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficently short), typically followed by a low-quality A-tail, when ignoring any difference in case and treating Ns as wildcards:
+Assuming the above shown defaults were the adapters used to generate our data, we should therefore see these in the FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short), typically followed by a low-quality A-tail, when ignoring any difference in case and treating Ns as wildcards:
 
+    # let's search for forward, barcoded adapter TruSeq_Adapter_Index_NNNNNN
     $ grep -i "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
     AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAACAAGAAT
     CTGGAGTTCAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAA
     GGAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGCAAATTGAAAACAC
     ...
 
+    # let's search for the reverse, non-barcoded adapter rcTruSeq_Universal_Adapter
     $ grep -i "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT" file2.fq
     CAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAGAAAAACATCTTG
     GAACTCCAGAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAATAGA
