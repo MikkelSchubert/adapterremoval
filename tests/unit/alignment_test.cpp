@@ -74,6 +74,12 @@ struct ALN
 };
 
 
+bool operator==(const alignment_info& first, const ALN& second)
+{
+    return first == second.info;
+}
+
+
 std::ostream& operator<<(std::ostream& stream, const alignment_info& aln)
 {
     std::vector<std::string> labels = { 

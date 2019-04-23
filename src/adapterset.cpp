@@ -327,6 +327,7 @@ bool adapter_set::load_adapters(const std::string& filename, bool paired_end)
 
         if (row.second.size() > 1) {
             adapter_3p = row.second.at(1);
+            adapter_3p.reverse_complement();
         }
 
         m_adapters.push_back(fastq_pair(adapter_5p, adapter_3p));

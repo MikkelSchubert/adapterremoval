@@ -1,0 +1,7 @@
+{
+	"arguments": ["--collapse", "--trimns", "--discarded", "disc", "--output1", "out1", "--outputcollapsed", "oc", "--outputcollapsedtruncated", "oct", "--settings", "out_settings", "--singleton", "singles"],
+	"return_code": 0,
+	"stderr": [
+	],
+	"exhaustive": false
+}

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright (c) 2016 Mikkel Schubert <MikkelSch@gmail.com>
 #
@@ -23,16 +23,17 @@ from __future__ import print_function
 
 import argparse
 import bz2
-import cStringIO
 import difflib
 import gzip
+import io
+import itertools
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
-import types
 
 
 #############################################################################
@@ -76,9 +77,8 @@ UNCOMPRESSED, GZIP, BZIP2 = "raw", "gz", "bz2"
 
 
 def compress(value, compression):
-    fileobj = cStringIO.StringIO()
-
     if compression == GZIP:
+        fileobj = io.BytesIO()
         handle = gzip.GzipFile('', 'w', 9, fileobj)
         handle.write(value)
         handle.close()
@@ -91,35 +91,37 @@ def compress(value, compression):
 
 
 def decompress(filename):
-    with open(filename) as handle:
+    with open(filename, "rb") as handle:
         value = handle.read()
 
     if value and filename.endswith(".bz2"):
-        if not value.startswith("BZ"):
+        if not value.startswith(b"BZ"):
             raise TestError("Expected bz2 file at %r, but header is %r"
                             % (filename, value[:2]))
 
         value = bz2.decompress(value)
     elif value and filename.endswith(".gz"):
-        if not value.startswith("\x1f\x8b"):
+        if not value.startswith(b"\x1f\x8b"):
             raise TestError("Expected gzip file at %r, but header is %r"
                             % (filename, value[:2]))
 
-        fileobj = cStringIO.StringIO(value)
+        fileobj = io.BytesIO(value)
         handle = gzip.GzipFile('', 'r', 9, fileobj)
 
         value = handle.read()
 
-    return cStringIO.StringIO(value).readlines()
+    value = value.decode("utf-8")
+    return io.StringIO(value).readlines()
 
 
 #############################################################################
 _EXEC = './build/AdapterRemoval'
 _INFO_FILE = "info.json"
 _INFO_FIELDS = {
-    'arguments': types.ListType,
-    'return_code': types.IntType,
-    'stderr': types.ListType,
+    'arguments': list,
+    'return_code': int,
+    'stderr': list,
+    'exhaustive': bool,
 }
 
 
@@ -143,7 +145,7 @@ def interleave(texts_1, texts_2):
     for text_1, text_2 in zip(texts_1, texts_2):
         lines_1 = text_1.split("\n")
         lines_2 = text_2.split("\n")
-        iters = (iter(lines_1).next, iter(lines_2).next)
+        iters = (iter(lines_1).__next__, iter(lines_2).__next__)
 
         assert len(lines_1) == len(lines_2)
 
@@ -151,7 +153,7 @@ def interleave(texts_1, texts_2):
         while True:
             try:
                 for it in iters:
-                    for _ in xrange(4):
+                    for _ in range(4):
                         result.append(it())
             except StopIteration:
                 break
@@ -161,7 +163,7 @@ def interleave(texts_1, texts_2):
     return files
 
 
-class TestError(StandardError):
+class TestError(Exception):
     pass
 
 
@@ -179,26 +181,39 @@ class TestCase(object):
                                   'info': self._info,
                                   'files': self._files})
 
-    def run(self, root):
+    def run(self, root, delete_folder):
         root = os.path.join(root, *self.path)
 
         interleaved_tests = [False]
         if self._is_properly_paired():
             interleaved_tests.append(True)
 
-        for in_compression in (UNCOMPRESSED, GZIP, BZIP2):
-            for out_compression in (UNCOMPRESSED, GZIP, BZIP2):
-                for interleaved in interleaved_tests:
-                    yield "%s>%s%s" % (in_compression,
-                                       out_compression,
-                                       ",intl" if interleaved else "")
+        parameters = itertools.product(
+            (UNCOMPRESSED, GZIP, BZIP2),
+            (UNCOMPRESSED, GZIP, BZIP2),
+            interleaved_tests,
+        )
 
-                    postfix = "%s_%s%s" % (in_compression,
-                                           out_compression,
-                                           "_intl" if interleaved else "")
+        for in_compression, out_compression, interleaved in parameters:
+            yield "%s>%s%s" % (in_compression,
+                                out_compression,
+                                ",intl" if interleaved else "")
 
-                    self._do_run(os.path.join(root, postfix),
-                                 in_compression, out_compression, interleaved)
+            postfix = "%s_%s%s" % (in_compression,
+                                    out_compression,
+                                    "_intl" if interleaved else "")
+            test_folder = os.path.join(root, postfix)
+
+            self._do_run(root=test_folder,
+                            in_compression=in_compression,
+                            out_compression=out_compression,
+                            interleaved=interleaved)
+
+            if delete_folder:
+                shutil.rmtree(test_folder)
+            
+            if not self._info['exhaustive']:
+                break
 
     def _do_run(self, root, in_compression=UNCOMPRESSED,
                 out_compression=UNCOMPRESSED, interleaved=False):
@@ -224,15 +239,16 @@ class TestCase(object):
                            "input_2": []}
 
         final_files = {}
-        for key, values in input_files.iteritems():
+        for key, values in input_files.items():
             filenames = []
             for idx, value in enumerate(values):
+                value = value.encode("utf-8")
                 filename = '%s%s.fastq' % (key, chr(ord('a') + idx))
                 if compression != UNCOMPRESSED:
                     filename += "." + compression
                     value = compress(value, compression)
 
-                with open(os.path.join(root, filename), "w") as handle:
+                with open(os.path.join(root, filename), "wb") as handle:
                     handle.write(value)
 
                 filenames.append(filename)
@@ -243,13 +259,17 @@ class TestCase(object):
             with open(os.path.join(root, 'barcodes.txt'), 'w') as handle:
                 handle.writelines(self._files['barcodes'])
 
+        if 'adapters' in self._files:
+            with open(os.path.join(root, 'adapters.txt'), 'w') as handle:
+                handle.writelines(self._files['adapters'])
+
         return final_files["input_1"], final_files["input_2"]
 
     def _do_call(self, root, input_1, input_2, compression, interleaved):
         command = self._build_command(root, input_1, input_2,
                                       compression, interleaved)
 
-        with open(os.devnull, "w") as dev_null:
+        with open(os.devnull, "wb") as dev_null:
             proc = subprocess.Popen(command,
                                     stdin=dev_null,
                                     stdout=subprocess.PIPE,
@@ -259,6 +279,9 @@ class TestCase(object):
                                     cwd=root)
 
             stdout, stderr = proc.communicate()
+            stdout = stdout.decode("utf-8")
+            stderr = stderr.decode("utf-8")
+
             if stdout:
                 raise TestError("Unexpected output to STDOUT: %r" % (stdout,))
 
@@ -267,24 +290,25 @@ class TestCase(object):
                     raise TestError("Expected value not found in output:\n"
                                     "  Searching for:\n%s\n  STDERR:\n%s"
                                     % (pretty_output(value, 4),
-                                       pretty_output(stderr, 4, 5)))
+                                       pretty_output(stderr, 4)))
 
             if proc.returncode != self._info["return_code"]:
                 raise TestError("ERROR: Expected return-code %i, but "
                                 "AdapterRemoval returned %i:\n%s"
                                 % (self._info["return_code"],
                                    proc.returncode,
-                                   pretty_output(stderr, 2, 5)))
+                                   pretty_output(stderr, 2)))
 
     def _check_file_creation(self, root, input_1, input_2, compression):
         expected_files = set(self._files["output"])
-        if 'barcodes' in self._files:
-            expected_files.add('barcodes.txt')
+        for key in ('barcodes', 'adapters'):
+            if key in self._files:
+                expected_files.add(key + '.txt')
 
         if compression != UNCOMPRESSED:
             expected_files_ = set()
             for value in expected_files:
-                if not value.endswith(".settings") and value != 'barcodes.txt':
+                if not (value.endswith("settings") or value.endswith(".txt")):
                     expected_files_.add(value + "." + compression)
                 else:
                     expected_files_.add(value)
@@ -302,14 +326,14 @@ class TestCase(object):
                             % (sorted(observed_files - expected_files)))
 
     def _check_file_contents(self, root, compression):
-        for filename, exp_data in sorted(self._files["output"].iteritems()):
+        for filename, exp_data in sorted(self._files["output"].items()):
             obs_filename = os.path.join(root, filename)
             if compression != UNCOMPRESSED:
-                if not filename.endswith(".settings"):
+                if not filename.endswith("settings"):
                     obs_filename += "." + compression
 
             obs_data = decompress(obs_filename)
-            if filename.endswith(".settings"):
+            if filename.endswith("settings"):
                 exp_data = self._mangle_settings(exp_data)
                 obs_data = self._mangle_settings(obs_data)
 
@@ -391,10 +415,12 @@ class TestCase(object):
                 result["input_1"].append(os.path.join(abs_root, filename))
             elif filename.startswith("input_2"):
                 result["input_2"].append(os.path.join(abs_root, filename))
-            elif filename not in ('info.json', 'README', 'barcodes.txt'):
-                result["output"][filename] = read_lines(root, filename)
             elif filename == 'barcodes.txt':
                 result["barcodes"] = read_lines(root, filename)
+            elif filename == 'adapters.txt':
+                result["adapters"] = read_lines(root, filename)
+            elif filename not in ('info.json', 'README'):
+                result["output"][filename] = read_lines(root, filename)
 
         return result
 
@@ -404,7 +430,7 @@ class TestCase(object):
             text = handle.read()
             raw_info = json.loads(text)
 
-        if not isinstance(raw_info, types.DictType):
+        if not isinstance(raw_info, dict):
             raise TestError('\'info.json\' does not contain dictionary.')
         elif set(raw_info) - set(_INFO_FIELDS):
             raise TestError('\'info.json\' does contains unexpected fields; '
@@ -414,16 +440,17 @@ class TestCase(object):
 
         info = {"arguments": [],
                 "return_code": 0,
-                "stderr": []}
+                "stderr": [],
+                'exhaustive': True}
         info.update(raw_info)
 
         for key, expected_type in _INFO_FIELDS.items():
             if not isinstance(info[key], expected_type):
                 raise TestError('Type of %r in \'info.json\' is %s, not a %s.'
                                 % (key, type(info[key]), expected_type))
-            elif isinstance(info[key], types.ListType):
+            elif isinstance(info[key], list):
                 for value in info[key]:
-                    if not isinstance(value, types.StringTypes):
+                    if not isinstance(value, str):
                         raise TestError('Type of value in %r in \'info.json\' '
                                         'is %s, not a string.'
                                         % (key, type(value)))
@@ -442,7 +469,7 @@ class TestCase(object):
             elif filename == 'info.json':
                 try:
                     test = TestCase(root, path)
-                except StandardError, error:
+                except Exception as error:
                     print_err("ERROR: %s reading test %r: %s"
                               % (error.__class__.__name__,
                                  ' :: '.join(path), error))
@@ -459,6 +486,9 @@ def parse_args(argv):
                         help="Directory in which to run test-cases.")
     parser.add_argument('source_dir',
                         help="Directory containing test-cases.")
+    parser.add_argument('--keep-all',
+                        help="Keep both completed and failed test folders, "
+                             "not just the folders of failed tests.")
 
     return parser.parse_args(argv)
 
@@ -485,10 +515,10 @@ def main(argv):
         label = 'unknown'
 
         try:
-            for label in test.run(args.work_dir):
+            for label in test.run(args.work_dir, delete_folder=not args.keep_all):
                 print_ok(".", end="")
                 sys.stdout.flush()
-        except TestError, error:
+        except TestError as error:
             n_failures += 1
             message = "\n    ".join(str(error).split("\n"))
             print_err(" %s for %s:\n    %s" % (error.__class__.__name__,

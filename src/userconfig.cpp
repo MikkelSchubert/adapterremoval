@@ -689,13 +689,16 @@ std::string userconfig::get_output_filename(const std::string& key,
                                             size_t nth) const
 {
     std::string filename = basename;
+    if (filename.length() && filename.back() != '/') {
+        filename.push_back('.');
+    }
 
     if (key == "demux_stats") {
-        return filename += ".settings";
+        return filename += "settings";
     } else if (key == "demux_unknown") {
-        filename += ".unidentified";
+        filename += "unidentified";
 
-        AR_DEBUG_ASSERT(nth <= 9);
+        AR_DEBUG_ASSERT(nth <= 2);
         if (!interleaved_output) {
             if (nth) {
                 filename.push_back('_');
@@ -704,55 +707,42 @@ std::string userconfig::get_output_filename(const std::string& key,
         } else {
             filename += ".paired";
         }
-
-        // Currently only when demultiplexing; for backwards compatibility
-        if (run_type == ar_command::demultiplex_sequences) {
-            filename += ".fastq";
-        }
-
-        if (gzip) {
-            filename += ".gz";
-        } else if (bzip2) {
-            filename += ".bz2";
-        }
-
-        return filename;
     } else if (adapters.barcode_count()) {
-        filename.push_back('.');
         filename.append(adapters.get_sample_name(nth));
+        filename.push_back('.');
     } else if (argparser.is_set(key)) {
         return argparser.at(key)->to_str();
     }
 
     if (key == "--settings") {
-        return filename + ".settings";
+        return filename + "settings";
     } else if (key == "--outputcollapsed") {
-        filename += ".collapsed";
+        filename += "collapsed";
     } else if (key == "--outputcollapsedtruncated") {
-        filename += ".collapsed.truncated";
+        filename += "collapsed.truncated";
     } else if (key == "--discarded") {
-        filename += ".discarded";
+        filename += "discarded";
     } else if (paired_ended_mode) {
         if (key == "--output1") {
             if (interleaved_output) {
-                filename += ".paired";
+                filename += "paired";
             } else {
-                filename += ".pair1";
+                filename += "pair1";
             }
         } else if (key == "--output2") {
-            filename += ".pair2";
+            filename += "pair2";
         } else if (key == "--singleton") {
-            filename += ".singleton";
-        } else {
+            filename += "singleton";
+        } else if (key != "demux_unknown") {
             throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
         }
 
-        if (run_type != ar_command::demultiplex_sequences) {
+        if (run_type != ar_command::demultiplex_sequences && key != "demux_unknown") {
             filename += ".truncated";
         }
     } else if (key == "--output1") {
         if (run_type != ar_command::demultiplex_sequences) {
-            filename += ".truncated";
+            filename += "truncated";
         }
     } else if (key != "demux_unknown") {
         throw std::invalid_argument("invalid read-type in userconfig::get_output_filename constructor: " + key);
@@ -760,7 +750,11 @@ std::string userconfig::get_output_filename(const std::string& key,
 
     // Currently only when demultiplexing; for backwards compatibility
     if (run_type == ar_command::demultiplex_sequences) {
-        filename += ".fastq";
+        if (filename.back() == '.') {
+            filename += "fastq";
+        } else {
+            filename += ".fastq";
+        }
     }
 
     if (gzip) {

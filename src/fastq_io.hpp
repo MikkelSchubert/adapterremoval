@@ -24,9 +24,6 @@
 #ifndef FASTQ_IO_H
 #define FASTQ_IO_H
 
-#include <vector>
-#include <fstream>
-
 #include <zlib.h>
 
 #include <bzlib.h>
@@ -38,6 +35,8 @@
 #include "scheduler.hpp"
 #include "strutils.hpp"
 #include "timer.hpp"
+#include "managed_writer.hpp"
+
 
 namespace ar
 {
@@ -48,8 +47,6 @@ class fastq_output_chunk;
 
 typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
 typedef std::unique_ptr<fastq_read_chunk> read_chunk_ptr;
-typedef std::pair<size_t, unsigned char*> buffer_pair;
-typedef std::vector<buffer_pair> buffer_vec;
 
 
 //! Number of FASTQ records to read for each data-chunk
@@ -349,8 +346,8 @@ public:
     virtual void finalize();
 
 private:
-    //! Pointer to output file opened using userconfig::open_with_default_filename.
-    std::ofstream m_output;
+    //! Lazily opened / automatically closed handle
+    managed_writer m_output;
 
     //! Used to track whether an EOF block has been received.
     bool m_eof;

@@ -93,7 +93,9 @@ struct nt_counts
 
     /** Increment count of a nucleotide A, C, G, or T (uppercase only). */
     void increment(char nt) {
-        ++counts.at(ACGT_TO_IDX(nt));
+        if (nt != 'N') {
+            ++counts.at(ACGT_TO_IDX(nt));
+        }
     }
 
     /** Merge count objects. */
@@ -204,28 +206,27 @@ std::string compare_consensus_with_ref(const std::string& ref,
  */
 std::pair<char, char> get_consensus_nt(const nt_counts& nts)
 {
-    const char* NTs = "ACGT";
-
     // Always assume one non-consensus observation; this is more reasonable
     // than allowing an error-rate of 0, especially for few observations.
     size_t total_count = 1;
 
-    char best_nt = 'N';
+    char best_nt_i = -1;
     size_t best_count = 0;
-    for (size_t nt_i = 0; nt_i < 4; ++nt_i) {
-        const size_t cur_count = nts.counts.at(ACGT_TO_IDX(NTs[nt_i]));
+    for (char nt_i = 0; nt_i < 4; ++nt_i) {
+        const size_t cur_count = nts.counts.at(nt_i);
         total_count += cur_count;
 
         if (cur_count > best_count) {
-            best_nt = NTs[nt_i];
+            best_nt_i = nt_i;
             best_count = cur_count;
         } else if (cur_count == best_count) {
-            best_nt = 'N';
+            best_nt_i = -1;
         }
     }
 
     const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
     const char phred = fastq::p_to_phred_33(pvalue);
+    const char best_nt = (best_nt_i == -1) ? 'N' : IDX_TO_ACGT(best_nt_i);
 
     return std::pair<char, char>(best_nt, phred);
 }
@@ -414,7 +415,7 @@ private:
                        fastq& read2)
     {
         // Throws if read-names or mate numbering does not match
-        fastq::validate_paired_reads(read1, read2);
+        fastq::validate_paired_reads(read1, read2, m_config.mate_separator);
 
         // Reverse complement to match the orientation of read1
         read2.reverse_complement();

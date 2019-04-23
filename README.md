@@ -176,7 +176,7 @@ Note that in the case of paired-end adapters, AdapterRemoval considers only the 
 
 If we did not know the adapter sequences for the 'reads\_*.fq' files, AdapterRemoval may be used to generate a consensus adapter sequence based on fragments identified as belonging to the adapters through pairwise alignments of the reads, provided that the data set contains only a single adapter sequence (not counting differences in index sequences).
 
-In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not necessary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represented the phred-encoded fraction of bases identical to the consensus base, with adapter 1 containing the index CACCTA:
+In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not necessary to specify this tail when using the --adapter1 or --adapter2 command-line options. The characters shown under each of the consensus sequences represent the Phred-encoded fraction of bases that differ from the consensus base, such that a high Phred score indicates a strong consensus. In the examples below, adapter 1 is observed to contain the index CACCTA:
 
     $ AdapterRemoval --identify-adapters --file1 reads_1.fq --file2 reads_2.fq
 

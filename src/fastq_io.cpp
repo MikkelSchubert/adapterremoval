@@ -428,6 +428,7 @@ chunk_vec bzip2_fastq::process(analytical_chunk* chunk)
     std::pair<size_t, unsigned char*> output_buffer;
     try {
         input_buffer = build_input_buffer(file_chunk->reads);
+        file_chunk->reads.clear();
 
         m_stream.avail_in = input_buffer.first;
         m_stream.next_in = reinterpret_cast<char*>(input_buffer.second);
@@ -651,16 +652,10 @@ static bool s_finalized = false;
 
 write_fastq::write_fastq(const std::string& filename)
   : analytical_step(analytical_step::ordering::ordered, true)
-  , m_output(filename.c_str(), std::ofstream::out | std::ofstream::binary)
+  , m_output(filename)
   , m_eof(false)
   , m_lock()
 {
-    if (!m_output.is_open()) {
-        std::string message = std::string("Failed to open file '") + filename + "': ";
-        throw std::ofstream::failure(message + std::strerror(errno));
-    }
-
-    m_output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 }
 
 
@@ -668,7 +663,6 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
 {
     AR_DEBUG_LOCK(m_lock);
     output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
-    const string_vec& lines = file_chunk->reads;
 
     if (m_eof) {
         throw thread_error("write_fastq::process: received data after EOF");
@@ -676,20 +670,11 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
 
     m_eof = file_chunk->eof;
     if (file_chunk->buffers.empty()) {
-        for (const auto& line : lines) {
-            m_output.write(line.data(), line.size());
-        }
+        m_output.write_strings(file_chunk->reads, m_eof);
     } else {
-        buffer_vec& buffers = file_chunk->buffers;
-        for (const auto& buffer : buffers) {
-            if (buffer.first) {
-                m_output.write(reinterpret_cast<const char*>(buffer.second), buffer.first);
-            }
-        }
-    }
+        AR_DEBUG_ASSERT(file_chunk->reads.empty());
 
-    if (m_eof) {
-        m_output.flush();
+        m_output.write_buffers(file_chunk->buffers, m_eof);
     }
 
     std::lock_guard<std::mutex> lock(s_timer_lock);

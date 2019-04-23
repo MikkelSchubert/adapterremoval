@@ -1,0 +1,6 @@
+{
+	"arguments": ["--collapse", "--trimns", "--basename", ""],
+	"return_code": 0,
+	"stderr": [
+	]
+}

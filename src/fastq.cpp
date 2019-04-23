@@ -244,6 +244,8 @@ fastq::ntrimmed fastq::trim_windowed_bases(const bool trim_ns,
 
 void fastq::truncate(size_t pos, size_t len)
 {
+    AR_DEBUG_ASSERT(pos == 0 || pos <= length());
+
     if (pos || len < length()) {
         m_sequence = m_sequence.substr(pos, len);
         m_qualities = m_qualities.substr(pos, len);

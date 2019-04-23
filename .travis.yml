@@ -1,5 +1,6 @@
 dist: trusty
 
+<<<<<<< HEAD
 language: python
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
@@ -31,3 +32,35 @@ install:
 script:
   - conda install -c maxibor adapterremoval2
   - AdapterRemoval --help
+=======
+compiler:
+  - clang
+  - gcc
+
+os:
+ - linux
+ - osx
+
+addons:
+  apt:
+    packages:
+      - zlib1g-dev
+      - libbz2-dev
+      - python3
+      - python3-pip
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python3 -m pip install --user cpp-coveralls; fi
+
+install: true
+
+script:
+    - make
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make test COVERAGE=yes; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make test COVERAGE=no; fi
+    - make regression
+    - PATH=$PATH:$PWD/build/ make -C examples
+
+after_success:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then python3 -m coveralls --exclude tests --gcov-options '\-lp'; fi
+>>>>>>> dbfdf00ba697b23bb7a3c3ce263d3b154d4dcda7

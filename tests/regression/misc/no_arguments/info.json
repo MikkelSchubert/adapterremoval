@@ -3,5 +3,6 @@
 	"return_code": 1,
 	"stderr": [
 		"This program searches for"
-	]
+	],
+	"exhaustive": false
 }

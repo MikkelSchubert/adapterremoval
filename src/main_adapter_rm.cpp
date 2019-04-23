@@ -317,7 +317,11 @@ void trim_read_termini_if_enabled(const userconfig& config, fastq& read, read_ty
     }
 
     if (trim_5p || trim_3p) {
-        read.truncate(trim_5p, read.length() - std::min(read.length(), trim_5p + trim_3p));
+        if (trim_5p + trim_3p < read.length()) {
+            read.truncate(trim_5p, read.length() - std::min(read.length(), trim_5p + trim_3p));
+        } else {
+            read.truncate(0, 0);
+        }
     }
 }
 

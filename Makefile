@@ -65,7 +65,9 @@ PROG     := AdapterRemoval
 LIBNAME  := libadapterremoval
 LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
+            $(BDIR)/alignment_tables.o \
             $(BDIR)/argparse.o \
+            $(BDIR)/barcode_table.o \
             $(BDIR)/debug.o \
             $(BDIR)/demultiplex.o \
             $(BDIR)/fastq.o \
@@ -76,6 +78,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/main_adapter_id.o \
             $(BDIR)/main_adapter_rm.o \
             $(BDIR)/main_demultiplex.o \
+            $(BDIR)/managed_writer.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \
@@ -152,9 +155,12 @@ TEST_DIR := build/tests
 TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/debug.o \
              $(TEST_DIR)/alignment.o \
+             $(TEST_DIR)/alignment_tables.o \
              $(TEST_DIR)/alignment_test.o \
              $(TEST_DIR)/argparse.o \
              $(TEST_DIR)/argparse_test.o \
+             $(TEST_DIR)/barcodes_test.o \
+             $(TEST_DIR)/barcode_table.o \
              $(TEST_DIR)/fastq.o \
              $(TEST_DIR)/fastq_test.o \
              $(TEST_DIR)/fastq_enc.o \

@@ -1,4 +1,24 @@
-### Unpublished
+### Version 2.3.0 - 2019-03-12
+
+ * Fixed --collapse producing slightly different result on 32 bit and 64 bit
+   architectures. Courtesy of Andreas Tille.
+ * Added support for output files without a basename; to create such output
+   files, use an empty basename (--basename "") or a basename ending with a 
+   slash (--basename path/).
+ * Added support for managing file handles to allow AdapterRemoval to run
+   when the the number of output files exceeds the number of file handles, e.g.
+   when demultiplexing large numbers of samples.
+ * Reworked demultiplexing to improve performance for many paired barcodes.
+
+
+### Version 2.2.4 - 2019-02-10
+
+  * Fixed bug in --trim5p N which would AdapterRemoval to abort if N was greater
+    than the pre-trimmed read length.
+  * Fixed --identify-adapters not respecting the --mate-separator option.
+
+
+### Version 2.2.3 - 2019-01-22
 
   * Added support for trimming reads by a fixed amount: --trim5p N --trim3p N.
     Different values may be given for each mate: --trim5p N1 N2. Trimming is
@@ -9,6 +29,12 @@
     the corresponding bases on the two mates differ, and if both have the same
     quality score. The default behavior is to select one of the two bases at
     random.
+  * Fixed reporting of line numbers in error messages.
+  * Added conda installation instructions, courtesy of Maxime Borry (maxibor).
+  * Fixed reading mate 2 adapters specified via --adapter-list. Adapters would
+    be used in the reverse orientation compared to --adapter2. Courtesy of
+    Karolis (KarolisM).
+  * Fixed various typos and improved help/error messages.
 
 
 ### Version 2.2.2 - 2017-07-17

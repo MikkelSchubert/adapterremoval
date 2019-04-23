@@ -1,0 +1,6 @@
+{
+	"arguments": ["--adapter-list", "adapters.txt"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

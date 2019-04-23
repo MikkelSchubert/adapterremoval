@@ -31,6 +31,7 @@
 #include <cstring>
 
 #include "alignment.hpp"
+#include "alignment_tables.hpp"
 #include "debug.hpp"
 #include "fastq.hpp"
 
@@ -165,9 +166,9 @@ alignment_info pairwise_align_sequences(const alignment_info& best_alignment,
 
 struct phred_scores
 {
-    phred_scores()
-      : identical_nts(std::numeric_limits<char>::min())
-      , different_nts(std::numeric_limits<char>::min())
+    explicit phred_scores(size_t index)
+      : identical_nts(IDENTICAL_NTS[index])
+      , different_nts(DIFFERENT_NTS[index])
     {
     }
 
@@ -178,63 +179,17 @@ struct phred_scores
 };
 
 
-/**
- * Calculates the phred scores to be assigned to a consensus base based on two
- * bases, depending on the Phred scores assigned two these two bases. A phred
- * score is calculated for both the case where the two bases are identical, and
- * the case where they differ.
- *
- * The returned vector is inded by (phred1 * MAX_PHRED_SCORE) + phred2, where
- * phred1 is assumed to be >= phred2. This is because we always select the base
- * with the higher Phred score.
- */
-std::vector<phred_scores> calculate_phred_score()
-{
-    std::vector<double> Perror(MAX_PHRED_SCORE + 1, 0.0);
-    std::vector<double> Ptrue(MAX_PHRED_SCORE + 1, 0.0);
-    for (int i = 0; i <= MAX_PHRED_SCORE; ++i) {
-        const double p_err = std::min<double>(0.75, std::pow(10, static_cast<double>(i) / -10.0));
-
-        Perror.at(i) = std::log(p_err / 3.0);
-        Ptrue.at(i) = std::log(1.0 - p_err);
-    }
-
-    std::vector<phred_scores> new_scores((MAX_PHRED_SCORE + 1) * (MAX_PHRED_SCORE + 1));
-    for (int i = 0; i <= MAX_PHRED_SCORE; ++i) {
-        for (int j = 0; j <= i; ++j) {
-            const int index = (i * MAX_PHRED_SCORE) + j;
-            phred_scores& scores = new_scores.at(index);
-
-            {   // When two nucleotides are identical
-                const double ptrue = Ptrue.at(i) + Ptrue.at(j);
-                const double perror = Perror.at(i) + Perror.at(j);
-                const double normconstant = 1.0 + 3.0 * std::exp(perror - ptrue);
-                scores.identical_nts = fastq::p_to_phred_33(1.0 - 1.0 / normconstant);
-            }
-
-            {   // When two nucleotides differ
-                const double ptrue = Ptrue.at(i) + Perror.at(j);
-                const double perror_one = Perror.at(i) + Ptrue.at(j);
-                const double perror_both = Perror.at(i) + Perror.at(j);
-                const double normconstant = 1.0 + 2.0 * std::exp(perror_both - ptrue) + std::exp(perror_one - ptrue);
-                scores.different_nts = fastq::p_to_phred_33(1.0 - 1.0 / normconstant);
-            }
-        }
-    }
-
-    return new_scores;
-}
-
-
-const phred_scores& get_updated_phred_scores(char qual_1, char qual_2)
+phred_scores get_updated_phred_scores(char qual_1, char qual_2)
 {
     AR_DEBUG_ASSERT(qual_1 >= qual_2);
 
-    // Cache of pre-calculated Phred scores for consensus bases; see above.
-    static const std::vector<phred_scores> updated_phred_scores = calculate_phred_score();
+    const size_t phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_33);
+    const size_t phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_33);
+    const size_t index = (phred_1 * (MAX_PHRED_SCORE + 1)) + phred_2;
 
-    const size_t index = (static_cast<size_t>(qual_1 - PHRED_OFFSET_33) * MAX_PHRED_SCORE) + static_cast<size_t>(qual_2 - PHRED_OFFSET_33);
-    return updated_phred_scores.at(index);
+    AR_DEBUG_ASSERT(index < PHRED_TABLE_SIZE);
+
+    return phred_scores(index);
 }
 
 

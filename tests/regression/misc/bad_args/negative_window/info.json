@@ -3,5 +3,6 @@
 	"return_code": 1,
 	"stderr": [
 		"Error: Invalid value for --trimwindows"
-	]
+	],
+	"exhaustive": false
 }
