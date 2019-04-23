@@ -34,7 +34,7 @@ AdapterRemoval was originally published in Lindgreen 2012:
 If you have Conda [installed on your system](https://conda.io/miniconda.html):
 
 ```
- conda install -c maxibor adapterremoval2
+ conda install -c bioconda adapterremoval
 ```
 
 ### Manual installation
