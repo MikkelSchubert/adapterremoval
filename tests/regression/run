@@ -143,8 +143,8 @@ def interleave(texts_1, texts_2):
     files = []
 
     for text_1, text_2 in zip(texts_1, texts_2):
-        lines_1 = text_1.split("\n")
-        lines_2 = text_2.split("\n")
+        lines_1 = text_1.rstrip().split("\n")
+        lines_2 = text_2.rstrip().split("\n")
         iters = (iter(lines_1).__next__, iter(lines_2).__next__)
 
         assert len(lines_1) == len(lines_2)
