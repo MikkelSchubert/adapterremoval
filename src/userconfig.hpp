@@ -148,6 +148,9 @@ public:
     //! this number following trimming (optionally) are discarded.
     unsigned max_ambiguous_bases;
 
+    //! If true, only the 3p is trimmed for low quality bases (if enabled)
+    bool preserve5p;
+
     //! If true, PE reads overlapping at least 'min_alignment_length' are
     //! collapsed to generate a higher quality consensus sequence.
     bool collapse;

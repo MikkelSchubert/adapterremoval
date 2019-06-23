@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "ADAPTERREMOVAL" "1" "Mar 12, 2019" "2.3.0" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Jun 23, 2019" "2.3.0" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .
@@ -251,6 +251,11 @@ Trim low quality bases using a sliding window based approach inspired by \fBsick
 .TP
 .B \-\-minquality minimum
 Set the threshold for trimming low quality bases using \fB\-\-trimqualities\fP and \fB\-\-trimwindows\fP\&. Default is 2.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-preserve5p
+If set, bases at the 5p will not be trimmed by \fB\-\-trimns\fP, \fB\-\-trimqualities\fP, and \fB\-\-trimwindows\fP\&. Collapsed reads will not be quality trimmed when this option is enabled.
 .UNINDENT
 .INDENT 0.0
 .TP

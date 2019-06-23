@@ -122,6 +122,7 @@ userconfig::userconfig(const std::string& name,
     , low_quality_score(2)
     , trim_ambiguous_bases(false)
     , max_ambiguous_bases(1000)
+    , preserve5p(false)
     , collapse(false)
     , deterministic(false)
     , shift(2)
@@ -352,6 +353,14 @@ userconfig::userconfig(const std::string& name,
         new argparse::knob(&low_quality_score, "PHRED",
             "Inclusive minimum; see --trimqualities for details "
             "[default: %default]");
+    argparser["--preserve5p"] =
+        new argparse::flag(&preserve5p,
+            "If set, bases at the 5p will not be trimmed by --trimns, "
+            "--trimqualities, and --trimwindows. Collapsed reads will "
+            "not be quality trimmed when this option is enabled "
+            "[default: 5p bases are trimmed]");
+
+    argparser.add_seperator();
     argparser["--minlength"] =
         new argparse::knob(&min_genomic_length, "LENGTH",
             "Reads shorter than this length are discarded "

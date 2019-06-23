@@ -139,7 +139,9 @@ size_t fastq::count_ns() const
 }
 
 
-fastq::ntrimmed fastq::trim_trailing_bases(const bool trim_ns, char low_quality)
+fastq::ntrimmed fastq::trim_trailing_bases(const bool trim_ns,
+                                           char low_quality,
+                                           const bool preserve5p)
 {
     low_quality += PHRED_OFFSET_33;
     auto is_quality_base = [&] (size_t i) {
@@ -156,7 +158,7 @@ fastq::ntrimmed fastq::trim_trailing_bases(const bool trim_ns, char low_quality)
     }
 
     size_t left_inclusive = 0;
-    for (size_t i = 0; i < right_exclusive; ++i) {
+    for (size_t i = 0; !preserve5p && i < right_exclusive; ++i) {
         if (is_quality_base(i)) {
             left_inclusive = i;
             break;
@@ -188,7 +190,8 @@ size_t calculate_winlen(const size_t read_length, const double window_size)
 
 fastq::ntrimmed fastq::trim_windowed_bases(const bool trim_ns,
                                            char low_quality,
-                                           const double window_size)
+                                           const double window_size,
+                                           const bool preserve5p)
 {
     AR_DEBUG_ASSERT(window_size >= 0.0);
     if (m_sequence.empty()) {
@@ -235,6 +238,8 @@ fastq::ntrimmed fastq::trim_windowed_bases(const bool trim_ns,
     if (left_inclusive == std::string::npos) {
         // No starting window found. Trim all bases starting from start.
         return trim_sequence_and_qualities(length(), length());
+    } else if (preserve5p) {
+        left_inclusive = 0;
     }
 
     AR_DEBUG_ASSERT(right_exclusive != std::string::npos);

@@ -332,12 +332,14 @@ fastq::ntrimmed trim_sequence_by_quality_if_enabled(const userconfig& config, fa
     if (config.trim_window_length >= 0) {
         return read.trim_windowed_bases(config.trim_ambiguous_bases,
                                         config.low_quality_score,
-                                        config.trim_window_length);
+                                        config.trim_window_length,
+                                        config.preserve5p);
     } else if (config.trim_ambiguous_bases || config.trim_by_quality) {
         const char quality_score = config.trim_by_quality ? config.low_quality_score : -1;
 
         return read.trim_trailing_bases(config.trim_ambiguous_bases,
-                                        quality_score);
+                                        quality_score,
+                                        config.preserve5p);
     }
 
     return fastq::ntrimmed();
@@ -351,7 +353,13 @@ void process_collapsed_read(const userconfig& config,
                             trimmed_reads& chunks)
 {
     trim_read_termini_if_enabled(config, collapsed_read, read_type::collapsed);
-    const fastq::ntrimmed trimmed = trim_sequence_by_quality_if_enabled(config, collapsed_read);
+
+    fastq::ntrimmed trimmed;
+    if (!config.preserve5p) {
+        // A collapsed read essentially consists of two 5p termini, both
+        // informative for PCR duplicate removal.
+        trimmed = trim_sequence_by_quality_if_enabled(config, collapsed_read);
+    }
 
     // If trimmed, the external coordinates are no longer reliable
     // for determining the size of the original template.
@@ -731,9 +739,12 @@ int remove_adapter_sequences_se(const userconfig& config)
                 if (config.collapse) {
                     add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
                                    new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
-                    add_write_step(config, sch, offset + ai_write_collapsed_truncated,
-                                   sample + "_collapsed_truncated",
-                                   new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+
+                    if (!config.preserve5p) {
+                        add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                                       sample + "_collapsed_truncated",
+                                       new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                    }
                 }
             }
         }
@@ -819,9 +830,12 @@ int remove_adapter_sequences_pe(const userconfig& config)
                 if (config.collapse) {
                     add_write_step(config, sch, offset + ai_write_collapsed, sample + "_collapsed",
                                    new write_fastq(config.get_output_filename("--outputcollapsed", nth)));
-                    add_write_step(config, sch, offset + ai_write_collapsed_truncated,
-                                   sample + "_collapsed_truncated",
-                                   new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+
+                    if (!config.preserve5p) {
+                        add_write_step(config, sch, offset + ai_write_collapsed_truncated,
+                                       sample + "_collapsed_truncated",
+                                       new write_fastq(config.get_output_filename("--outputcollapsedtruncated", nth)));
+                    }
                 }
             }
         }

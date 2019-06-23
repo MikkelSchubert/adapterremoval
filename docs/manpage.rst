@@ -199,6 +199,10 @@ FASTQ trimming options
 
 	Set the threshold for trimming low quality bases using ``--trimqualities`` and ``--trimwindows``. Default is 2.
 
+.. option:: --preserve5p
+
+	If set, bases at the 5p will not be trimmed by ``--trimns``, ``--trimqualities``, and ``--trimwindows``. Collapsed reads will not be quality trimmed when this option is enabled.
+
 .. option:: --minlength length
 
 	Reads shorter than this length are discarded following trimming. Defaults to 15.

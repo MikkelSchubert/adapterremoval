@@ -63,7 +63,10 @@ trimmed_reads::trimmed_reads(const userconfig& config, size_t offset, bool eof)
 
         if (config.collapse) {
             m_collapsed.reset(new fastq_output_chunk(eof));
-            m_collapsed_truncated.reset(new fastq_output_chunk(eof));
+
+            if (!config.preserve5p) {
+                m_collapsed_truncated.reset(new fastq_output_chunk(eof));
+            }
         }
     }
 }

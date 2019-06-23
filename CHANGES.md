@@ -1,3 +1,10 @@
+### Version 2.3.1 - 2019-06-23
+
+ * Added --preserve5p option. This option prevents AdapterRemoval from trimming
+   the 5p of reads when the --trimqualities, --trimns, and --trimwindows options
+   are used. Neither end of collapsed reads are trimmed when this option is used.
+
+
 ### Version 2.3.0 - 2019-03-12
 
  * Fixed --collapse producing slightly different result on 32 bit and 64 bit

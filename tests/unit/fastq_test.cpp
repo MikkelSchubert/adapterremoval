@@ -346,6 +346,27 @@ TEST_CASE("trim_trailing_bases__trim_everything", "[fastq::fastq]")
 }
 
 
+TEST_CASE("trim_trailing_bases__trim_3p__trim_ns", "[fastq::fastq]")
+{
+    fastq record("Rec", "NNATN", "23456");
+    const fastq expected_record("Rec", "NNAT", "2345");
+    const fastq::ntrimmed expected_ntrim(0, 1);
+
+    REQUIRE(record.trim_trailing_bases(true, -1, true) == expected_ntrim);
+    REQUIRE(record == expected_record);
+}
+
+
+TEST_CASE("trim_trailing_bases__trim_3p__trim_trailing_bases", "[fastq::fastq]")
+{
+    const fastq expected_record("Rec", "TN", "!$");
+    const fastq::ntrimmed expected_ntrim(0, 3);
+    fastq record("Rec", "TNANT", "!$#!\"");
+
+    REQUIRE(record.trim_trailing_bases(false, 2, true) == expected_ntrim);
+    REQUIRE(record == expected_record);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // trim_windowed_bases
 
@@ -542,6 +563,36 @@ TEST_CASE("trim_windowed_bases__trim_window", "[fastq::fastq]")
     const fastq expected_record = fastq("Rec", "AAAAAAAAAT", "EEEEEEEEEE");
     const fastq::ntrimmed expected_ntrim(2, 8);
     REQUIRE(record.trim_windowed_bases(true, 10, 5) == expected_ntrim);
+    REQUIRE(record == expected_record);
+}
+
+
+TEST_CASE("trim_windowed_bases__trim_3p", "[fastq::fastq]")
+{
+    fastq record("Rec", "NNAAAAAAAAATNNNNNNN", "##EEEEEEEEEE#######");
+    const fastq expected_record = fastq("Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE");
+    const fastq::ntrimmed expected_ntrim(0, 7);
+    REQUIRE(record.trim_windowed_bases(false, 10, 5, true) == expected_ntrim);
+    REQUIRE(record == expected_record);
+}
+
+
+TEST_CASE("trim_windowed_bases__trim_3p__trim_ns", "[fastq::fastq]")
+{
+    fastq record("Rec", "NNAAAAAAAAATNNNNNNN", "##EEEEEEEEEE#######");
+    const fastq expected_record = fastq("Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE");
+    const fastq::ntrimmed expected_ntrim(0, 7);
+    REQUIRE(record.trim_windowed_bases(true, 10, 5, true) == expected_ntrim);
+    REQUIRE(record == expected_record);
+}
+
+
+TEST_CASE("trim_windowed_bases__trim_3p__reversed", "[fastq::fastq]")
+{
+    fastq record("Rec", "NNNNNNNTAAAAAAAAANN", "#######EEEEEEEEEE##");
+    const fastq expected_record = fastq("Rec", "NNNNNNNTAAAAAAAAA", "#######EEEEEEEEEE");
+    const fastq::ntrimmed expected_ntrim(0, 2);
+    REQUIRE(record.trim_windowed_bases(true, 10, 5, true) == expected_ntrim);
     REQUIRE(record == expected_record);
 }
 
