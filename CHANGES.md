@@ -3,6 +3,8 @@
  * Added --preserve5p option. This option prevents AdapterRemoval from trimming
    the 5p of reads when the --trimqualities, --trimns, and --trimwindows options
    are used. Neither end of collapsed reads are trimmed when this option is used.
+ * Fixed Ns being miscounted as As when constructing consensus adapter sequences
+   using --identify-adapters.
 
 
 ### Version 2.3.0 - 2019-03-12
