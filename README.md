@@ -71,12 +71,11 @@ Note that AdapterRemoval requires that the zlib library and headers (www.zlib.ne
 
 ## Documentation
 
-For detailed program usage, please refer to the manual page.
+For detailed program usage, please refer to the manual:
 
-If AdapterRemoval has been installed, this may be accessed using the command "man AdapterRemoval". If AdapterRemoval has not been installed, the manual page may be read using the command "man build/AdapterRemoval.1" in the source folder once "make" has been run. Alternatively, the manual may be read online:
+https://adapterremoval.readthedocs.io/
 
-https://github.com/MikkelSchubert/adapterremoval/blob/master/AdapterRemoval.pod
-
+A summary of command-line options may also be found in the manual page, accessible via "man AdapterRemoval" once AdapterRemoval has been installed.
 
 
 ## Examples
