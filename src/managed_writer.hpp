@@ -65,6 +65,8 @@ public:
 
     void close();
 
+    const std::string& filename() const;
+
     managed_writer(const managed_writer&) = delete;
     managed_writer& operator=(const managed_writer&) = delete;
 

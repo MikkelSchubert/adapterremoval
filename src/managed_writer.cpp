@@ -125,6 +125,12 @@ void managed_writer::close()
 }
 
 
+const std::string& managed_writer::filename() const
+{
+    return m_filename;
+}
+
+
 void managed_writer::open_writer(managed_writer* ptr)
 {
     const std::ios_base::openmode mode =

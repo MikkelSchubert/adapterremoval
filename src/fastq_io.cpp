@@ -668,13 +668,18 @@ chunk_vec write_fastq::process(analytical_chunk* chunk)
         throw thread_error("write_fastq::process: received data after EOF");
     }
 
-    m_eof = file_chunk->eof;
-    if (file_chunk->buffers.empty()) {
-        m_output.write_strings(file_chunk->reads, m_eof);
-    } else {
-        AR_DEBUG_ASSERT(file_chunk->reads.empty());
+    try {
+        m_eof = file_chunk->eof;
+        if (file_chunk->buffers.empty()) {
+            m_output.write_strings(file_chunk->reads, m_eof);
+        } else {
+            AR_DEBUG_ASSERT(file_chunk->reads.empty());
 
-        m_output.write_buffers(file_chunk->buffers, m_eof);
+            m_output.write_buffers(file_chunk->buffers, m_eof);
+        }
+    } catch (const std::ios_base::failure&) {
+        const std::string message = std::string("Error writing FASTQ file '") + m_output.filename() + "': ";
+        throw std::ofstream::failure(message + std::strerror(errno));
     }
 
     std::lock_guard<std::mutex> lock(s_timer_lock);
@@ -698,7 +703,12 @@ void write_fastq::finalize()
     }
 
     // Close file to trigger any exceptions due to badbit / failbit
-    m_output.close();
+    try {
+        m_output.close();
+    } catch (const std::ios_base::failure&) {
+        const std::string message = std::string("Error closing FASTQ file '") + m_output.filename() + "': ";
+        throw std::ofstream::failure(message + std::strerror(errno));
+    }
 }
 
 } // namespace ar
