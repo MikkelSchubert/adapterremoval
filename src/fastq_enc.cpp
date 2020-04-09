@@ -146,7 +146,7 @@ const std::string g_phred_to_solexa = calc_phred_to_solexa();
             std::stringstream ss;
 
             ss << "Phred+33 encoded quality score is greater than the "
-               << "expected maximum (" << max_score << " = "
+               << "expected maximum of " << static_cast<int>(max_score) << " ("
                << static_cast<char>(offset + max_score) << "). Please "
                << "verify the format of these files.\n\n"
 
@@ -165,7 +165,7 @@ const std::string g_phred_to_solexa = calc_phred_to_solexa();
             std::stringstream ss;
 
             ss << "Phred+64 encoded quality score is greater than the "
-               << "expected maximum (" << max_score << " = "
+               << "expected maximum of " << static_cast<int>(max_score) << " ("
                << static_cast<char>(offset + max_score) << "). Please "
                << "verify the format of these files.\n\n"
 
@@ -207,7 +207,7 @@ const std::string g_phred_to_solexa = calc_phred_to_solexa();
         std::stringstream ss;
 
         ss << "Solaxa encoded quality score is greater than the "
-            << "expected maximum (" << max_score << " = "
+            << "expected maximum of " << static_cast<int>(max_score) << " ("
             << static_cast<char>(offset + max_score) << "). Please "
             << "verify the format of these files.\n\n"
 
