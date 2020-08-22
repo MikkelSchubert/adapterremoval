@@ -1,3 +1,11 @@
+### Unreleased
+
+ * Improved error messages when AdapterRemoval failed to open or write FASTQ
+   files (issue #42).
+ * Fix build on some architectures. Courtesy of Andreas Tille/the Debian build team.
+ * Fix display of max Phred scores in FASTQ validation error messages.
+ * Removed deprecated --pcr1 and --pcr2 command-line options.
+
 ### Version 2.3.1 - 2019-06-23
 
  * Added --preserve5p option. This option prevents AdapterRemoval from trimming
@@ -12,7 +20,7 @@
  * Fixed --collapse producing slightly different result on 32 bit and 64 bit
    architectures. Courtesy of Andreas Tille.
  * Added support for output files without a basename; to create such output
-   files, use an empty basename (--basename "") or a basename ending with a 
+   files, use an empty basename (--basename "") or a basename ending with a
    slash (--basename path/).
  * Added support for managing file handles to allow AdapterRemoval to run
    when the the number of output files exceeds the number of file handles, e.g.
