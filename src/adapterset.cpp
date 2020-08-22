@@ -300,15 +300,11 @@ adapter_set::adapter_set()
 
 
 void adapter_set::add_adapters(const std::string& adapter1,
-                               const std::string& adapter2,
-                               bool adapter2_read_orientation)
+                               const std::string& adapter2)
 {
     fastq adapter1_fq("adapter1", adapter1);
     fastq adapter2_fq("adapter2", adapter2);
-
-    if (adapter2_read_orientation) {
-        adapter2_fq.reverse_complement();
-    }
+    adapter2_fq.reverse_complement();
 
     m_adapters.push_back(fastq_pair(adapter1_fq, adapter2_fq));
 }

@@ -44,13 +44,10 @@ public:
     adapter_set();
 
     /**
-     * Adds a pair of adapters to the set; by default it is assumed that
-     * the adapter 2 sequence is in read orientation (e.g. can be found as is
-     * in the raw mate 2 reads).
+     * Adds a pair of adapters to the set; it is assumed that the adapter 2 sequence is * in read orientation (e.g. can be found as is in the raw mate 2 reads.
      */
     void add_adapters(const std::string& adapter1,
-                      const std::string& adapter2,
-                      bool adapter2_read_orientation = true);
+                      const std::string& adapter2);
 
     /**
      * Loads barcodes from a table, returning true on success. The value of
