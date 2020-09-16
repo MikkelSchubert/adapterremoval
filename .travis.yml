@@ -5,10 +5,13 @@ dist: trusty
 compiler:
   - clang
   - gcc
-arch: ppc64le
+  
 os:
  - linux
  - osx
+ 
+ #power_jobs
+arch: ppc64le
 
 addons:
   apt:
