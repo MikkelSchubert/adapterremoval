@@ -10,8 +10,9 @@ os:
  - linux
  - osx
  
- #power_jobs
-arch: ppc64le
+arch: 
+  - AMD64
+  - ppc64le
 
 addons:
   apt:
