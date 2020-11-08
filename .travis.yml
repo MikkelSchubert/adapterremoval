@@ -5,10 +5,14 @@ dist: trusty
 compiler:
   - clang
   - gcc
-
+  
 os:
  - linux
  - osx
+ 
+arch: 
+  - AMD64
+  - ppc64le
 
 addons:
   apt:
