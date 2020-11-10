@@ -25,6 +25,11 @@ COVERAGE := no
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
 
+INSTALLEXE = install -m 0755
+INSTALLDAT = install -m 0644
+INSTALLDOC = install -m 0644
+MKDIR      = install -d  # act as mkdir -p
+
 # Libraries required by AdapterRemoval
 LIBRARIES := -pthread -lz -lbz2
 
@@ -106,31 +111,27 @@ clean: clean_tests clean_docs
 install: build/$(PROG)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
 	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
-	$(QUIET) mkdir -p ${PREFIX}/bin/
-	$(QUIET) mv -f build/$(PROG) ${PREFIX}/bin/
-	$(QUIET) chmod a+x ${PREFIX}/bin/$(PROG)
+	$(QUIET) $(MKDIR) ${PREFIX}/bin/
+	$(QUIET) $(INSTALLEXE) build/$(PROG) ${PREFIX}/bin/
 
 	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
-	$(QUIET) mkdir -p ${PREFIX}/share/man/man1/
-	$(QUIET) cp -a $(PROG).1 ${PREFIX}/share/man/man1/
-	$(QUIET) chmod a+r ${PREFIX}/share/man/man1/$(PROG).1
+	$(QUIET) $(MKDIR) ${PREFIX}/share/man/man1/
+	$(QUIET) $(INSTALLDOC) $(PROG).1 ${PREFIX}/share/man/man1/
 
 	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval/"$(COLOR_END)
-	$(QUIET) mkdir -p ${PREFIX}/share/adapterremoval/
-	$(QUIET) cp -a README.md ${PREFIX}/share/adapterremoval/
-	$(QUIET) chmod a+r ${PREFIX}/share/adapterremoval/README.md
+	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/
+	$(QUIET) $(INSTALLDOC) README.md ${PREFIX}/share/adapterremoval/
 
 	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
-	$(QUIET) mkdir -p ${PREFIX}/share/adapterremoval/examples/
-	$(QUIET) cp -a examples/*.* ${PREFIX}/share/adapterremoval/examples/
-	$(QUIET) chmod a+r ${PREFIX}/share/adapterremoval/examples/*.*
+	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/examples/
+	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval/examples/
 
 static: build/$(LIBNAME).a
 
 # Object files
 $(BDIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) mkdir -p $(BDIR)
+	$(QUIET) $(MKDIR) $(BDIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
@@ -185,13 +186,13 @@ $(TEST_DIR)/main: $(TEST_OBJS)
 
 $(TEST_DIR)/%.o: tests/unit/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) mkdir -p $(TEST_DIR)
+	$(QUIET) $(MKDIR) $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 $(TEST_DIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) mkdir -p $(TEST_DIR)
+	$(QUIET) $(MKDIR) $(TEST_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
@@ -204,7 +205,7 @@ VALIDATION_SDIR=./tests/regression
 
 regression: build/$(PROG)
 	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
-	@mkdir -p $(VALIDATION_BDIR)
+	@$(MKDIR) $(VALIDATION_BDIR)
 	@$(VALIDATION_SDIR)/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
 
 
