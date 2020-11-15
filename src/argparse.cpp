@@ -68,6 +68,8 @@ parser::parser(const std::string& name,
     , m_version(version)
     , m_help(help)
 {
+    add_header("OPTIONS:");
+
     // Built-in arguments (aliases are not shown!)
     (*this)["--help"] = new flag(nullptr, "Display this message.");
     create_alias("--help", "-help");
@@ -196,7 +198,7 @@ void parser::print_version() const
 void parser::print_help() const
 {
     print_version();
-    std::cerr <<"\n" << m_help << "\n\n";
+    std::cerr <<"\n" << m_help << "\n";
 
     print_arguments(m_keys);
 }

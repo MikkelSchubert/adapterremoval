@@ -151,7 +151,6 @@ userconfig::userconfig(const std::string& name,
     , trim5p()
     , trim3p()
 {
-    argparser.add_header("OPTIONS:");
     argparser["--file1"] =
         new argparse::many(&input_files_1, "FILE [FILE ...]",
             "Input files containing mate 1 reads or single-ended reads; "
