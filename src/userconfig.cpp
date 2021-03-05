@@ -641,7 +641,7 @@ bool userconfig::is_good_alignment(const alignment_info& alignment) const
     const size_t n_aligned = static_cast<size_t>(alignment.length - alignment.n_ambiguous);
     size_t mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
 
-    if (n_aligned < min_adapter_overlap) {
+    if (n_aligned < min_adapter_overlap && !paired_ended_mode) {
         return false;
     }
 
