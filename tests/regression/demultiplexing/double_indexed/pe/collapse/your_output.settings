@@ -36,6 +36,7 @@ Trimming using sliding windows: No
 Minimum genomic length: 15
 Maximum genomic length: 4294967295
 Collapse overlapping reads: Yes
+Deterministic collapse: No
 Minimum overlap (in case of collapse): 11
 
 
