@@ -43,7 +43,7 @@ Options
 
 .. option:: --file2 filename [filenames...]
 
-	Read one or more FASTQ files containing mate 2 reads for a paired-end run. If specified, ``--file1`` must also be set. 
+	Read one or more FASTQ files containing mate 2 reads for a paired-end run. If specified, ``--file1`` must also be set.
 
 .. option:: --identify-adapters
 
@@ -228,7 +228,7 @@ FASTQ merging options
 
 	When collaping reads at positions where the two reads differ, and the quality of the bases are identical, AdapterRemoval will select a random base. This option specifies the seed used for the random number generator used by AdapterRemoval. This value is also written to the settings file. Note that setting the seed is not reliable in multithreaded mode, since the order of operations is non-deterministic.
 
-.. option:: --deterministic
+.. option:: --collapse-deterministic
 
 	Enable deterministic mode; currently only affects --collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled.
 
