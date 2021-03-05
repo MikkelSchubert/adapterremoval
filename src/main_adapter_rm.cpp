@@ -542,9 +542,14 @@ public:
         const size_t offset = m_nth * ai_analyses_offset;
         const char mate_separator = m_config.combined_output ? '\0' : m_config.mate_separator;
 
+        sequence_merger merger;
+        merger.set_mate_separator(mate_separator);
+        merger.set_conservative(m_config.collapse_conservatively);
+
         mt19937_ptr rng;
-        if (!m_config.deterministic) {
+        if (!m_config.deterministic && !m_config.collapse_conservatively) {
             rng = m_rngs.get_sink();
+            merger.set_rng(rng.get());
         }
 
         read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
@@ -573,8 +578,8 @@ public:
                 stats->number_of_reads_with_adapter.at(alignment.adapter_id) += n_adapters;
 
                 if (m_config.is_alignment_collapsible(alignment)) {
-                    fastq collapsed_read = collapse_paired_ended_sequences(alignment, read_1, read_2, rng.get(),
-                                                                           mate_separator);
+                    fastq collapsed_read = merger.merge(alignment, read_1, read_2);
+
                     process_collapsed_read(m_config,
                                            *stats,
                                            collapsed_read,

@@ -176,26 +176,65 @@ size_t truncate_paired_ended_sequences(const alignment_info& alignment,
 
 
 /**
- * Collapses two overlapping PE mates into a single sequence, recalculating the
- * quality scores to reflect the added support offered by two reads at the same
- * nucleotides. In the case of different bases at the same position, the
- * highest quality base is selected; if each base have the same quality score,
- * a random base is selected. In both cases, the quality score is updated to
- * reflect the lower quality implied by these observations.
- *
- * If rng is null, different bases with the same quality are set to N and !.
- *
- * @return A single FASTQ record representing the collapsed sequence.
- *
- * Note that the sequences are assumed to have been trimmed using the
- * truncate_paired_ended_sequences function, and will produce undefined
- * results if this is not the case!
+ * Class for merging two sequence fragments into a single sequence, either picking the
+ * highest quality base and its assosiated quality score, or recalulating the quality
+ * score of matching/mismatching bases using the original AR methodology.
  */
-fastq collapse_paired_ended_sequences(const alignment_info& alignment,
-                                      const fastq& read1,
-                                      const fastq& read2,
-                                      std::mt19937* rng,
-                                      const char mate_sep=MATE_SEPARATOR);
+class sequence_merger
+{
+public:
+    sequence_merger(std::mt19937* rng=nullptr);
+
+    /**
+     * Sets the expected mate separator. This is used to trim mate numbers from merged
+     * reads.
+     */
+    void set_mate_separator(char sep=MATE_SEPARATOR);
+
+    /**
+     * If enabled, the sequence merger performs a more conservative merging inspired by
+     * fastq-join and NGmerge, with the added caveat that mismatches without a higher
+     * quality choice are assigned 'N'.
+     */
+    void set_conservative(bool enabled=false);
+
+    /**
+     * Set RNG used for picking a base when performing non-conservative merging of
+     * mismatching bases with the same quality score. If set to NULL, mismatching bases
+     * with identical quality scores are set to N with quality '!';
+     */
+    void set_rng(std::mt19937* rng=nullptr);
+
+    /**
+     * Merges two overlapping reads into a single sequence, recalculating the quality
+     * in one of two ways. If `conservative` mode is enabled, the highest quality score
+     * of the two bases is used for matches, and the difference is used for matches.
+     * Otherwise an updated score is caculated bases on the original quality scores
+     * using the original algorithm implemented in AdapterRemoval.
+     *
+     * @return A single FASTQ record representing the collapsed sequence.
+     *
+     * Note that the sequences are assumed to have been trimmed using the function, and
+     * this function will produce undefined results if this is not the case!
+     */
+    fastq merge(const alignment_info& alignment,
+                const fastq& read1,
+                const fastq& read2);
+
+private:
+    /** The original merging algorithm implemented in AdapterRemoval. */
+    void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+
+    /** Alternative merging algorithm added in 2.4.0. */
+    void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+
+    //! Mate separator used in read names
+    char m_mate_sep;
+    //! Whether or not to recalculate scores using the conservative or the standard mode
+    bool m_conservative;
+    //! Optional RNG for picking bases at random for mismatches with the same quality
+    std::mt19937* m_rng;
+};
 
 
 /**

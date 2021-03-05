@@ -154,6 +154,9 @@ public:
     //! If true, PE reads overlapping at least 'min_alignment_length' are
     //! collapsed to generate a higher quality consensus sequence.
     bool collapse;
+    //! If true, merging is done using the alternative, more conservative merging
+    //! algorithm inspired by fastq-join.
+    bool collapse_conservatively;
     //! Deterministic collapse; set equal-quality conflicting bases to N.
     bool deterministic;
     // Allow for slipping basepairs by allowing missing bases in adapter

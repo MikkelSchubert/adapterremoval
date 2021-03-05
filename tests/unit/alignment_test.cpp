@@ -82,7 +82,7 @@ bool operator==(const alignment_info& first, const ALN& second)
 
 std::ostream& operator<<(std::ostream& stream, const alignment_info& aln)
 {
-    std::vector<std::string> labels = { 
+    std::vector<std::string> labels = {
         "score", "offset", "length",
         "n_mismatches", "n_ambiguous",
         "adapter_id"
@@ -171,7 +171,7 @@ TEST_CASE("SE: Random sequences yields suboptimal alignment", "[alignment::singl
 {
     const fastq record("Rec",  "ACGTAGTA",  "!!!!!!!!");
     const fastq_pair_vec adapters = create_adapter_vec(fastq("Rec", "TGAGACGGT", "!!!!!!!!!"));
-    
+
     REQUIRE(align_single_ended_sequence(record, adapters, 0) == ALN().offset(6)
                                                                      .length(2)
                                                                      .n_mismatches(1));
@@ -719,7 +719,7 @@ TEST_CASE("Adapter only sequences, with missing base", "[alignment::paired_end]"
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 
 TEST_CASE("Invalid alignment", "[alignment::paired_end]")
 {
@@ -732,136 +732,147 @@ TEST_CASE("Invalid alignment", "[alignment::paired_end]")
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Collapsing of reads
+// Merging of reads using the original method implemented in AdapterRemoval
 
 TEST_CASE("Collapse partial overlap", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "ATATTATA", "01234567");
     fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = ALN().offset(4);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Collapse complete overlap", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1",  "ATATTATAA", "JJJJJJJJJ");
     fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
     const alignment_info alignment = ALN().offset(-1);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 2);
     const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Collapse complete overlap for mate 1", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
     fastq record2("Rec2", "ATATTATA",  "JJJJJJJJ");
     const alignment_info alignment = ALN();
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
     const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Collapse complete overlap for mate 2", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1",  "ATATTATA", "JJJJJJJJ");
     fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
     const alignment_info alignment = ALN().offset(-1);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
     const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Unequal sequence lengths, mate 1 shorter", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "ATA", "012");
     fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = ALN().offset(3);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "ATA", "012");
     fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
     const alignment_info alignment = ALN().offset(-2);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
     const fastq collapsed_expected = fastq("Rec1", "ATANACGT", "012DEFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Unequal sequence lengths, mate 2 shorter", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "ATATTATA", "01234567");
     fastq record2("Rec2", "ACG", "EFG");
     const alignment_info alignment = ALN().offset(8);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Ambiguous sites are filled from mate", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "NNNNNNTATA", "0123456789");
     fastq record2("Rec2", "ACGTNNNNNN", "ABCDEFGHIJ");
     const alignment_info alignment;
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "ACGTNNTATA", "ABCD!!6789");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Identical nucleotides gets higher qualities", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "GCATGATATA", "012345!0:A");
     fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
     const alignment_info alignment = ALN().offset(6);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "GCATGATATATACAAC", "012345(FBcEFGHIJ", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Identical nucleotides gets higher qualities, no more than 41", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "GCATGATATA", "0123456789");
     fastq record2("Rec2", "TATATACAAC", "ABCDEFGHIJ");
     const alignment_info alignment = ALN().offset(6);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "GCATGATATATACAAC", "012345Z\\^`EFGHIJ", FASTQ_ENCODING_SAM);
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Higher quality nucleotide is selected", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     fastq record1("Rec1", "GCATGAGCAT", "012345!0:A");
     fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
     const alignment_info alignment = ALN().offset(6);
     REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
     const fastq collapsed_expected = fastq("Rec1", "GCATGATAATTACAAC", "012345(%5%EFGHIJ");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
@@ -873,9 +884,10 @@ TEST_CASE("Randomly select between different nucleotides with same quality #1", 
     const alignment_info alignment;
     std::seed_seq seed{1};
     std::mt19937 rng(seed);
+    sequence_merger merger(&rng);
 
     const fastq collapsed_expected = fastq("Rec1", "G", "#");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, &rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
@@ -887,9 +899,10 @@ TEST_CASE("Randomly select between different nucleotides with same quality #2", 
     const alignment_info alignment;
     std::seed_seq seed{2};
     std::mt19937 rng(seed);
+    sequence_merger merger(&rng);
 
     const fastq collapsed_expected = fastq("Rec1", "T", "#");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, &rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
@@ -899,31 +912,32 @@ TEST_CASE("Set conflicts to N/! if no RNG is provided", "[alignment::collapse]")
     const fastq record1("Rec1", "G", "1");
     const fastq record2("Rec2", "T", "1");
     const alignment_info alignment;
-    std::seed_seq seed{2};
-    std::mt19937 rng(seed);
+    sequence_merger merger;
 
     const fastq collapsed_expected = fastq("Rec1", "N", "!");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, nullptr);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
 
 TEST_CASE("Offsets past the end throws", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     const fastq record1("Rec1", "G", "1");
     const fastq record2("Rec2", "T", "1");
     const alignment_info alignment = ALN().offset(2);
-    REQUIRE_THROWS_AS(collapse_paired_ended_sequences(alignment, record1, record2, g_rng), std::invalid_argument);
+    REQUIRE_THROWS_AS(merger.merge(alignment, record1, record2), std::invalid_argument);
 }
 
 
 TEST_CASE("Mate numbering is removed", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     const fastq record1("Read/1", "ATATTATA", "01234567");
     const fastq record2("Read/2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = ALN().offset(4);
     const fastq collapsed_expected = fastq("Read", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
 
     REQUIRE(collapsed_result == collapsed_expected);
 }
@@ -931,11 +945,12 @@ TEST_CASE("Mate numbering is removed", "[alignment::collapse]")
 
 TEST_CASE("Mate numbering removed, meta from 1 kept", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     const fastq record1("Read/1 Meta1", "ATATTATA", "01234567");
     const fastq record2("Read/2 Meta2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = ALN().offset(4);
     const fastq collapsed_expected = fastq("Read Meta1", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
 
     REQUIRE(collapsed_result == collapsed_expected);
 }
@@ -943,11 +958,14 @@ TEST_CASE("Mate numbering removed, meta from 1 kept", "[alignment::collapse]")
 
 TEST_CASE("Mate numbering removed, non-standard separator", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
+    merger.set_mate_separator(':');
+
     const fastq record1("Read:1", "ATATTATA", "01234567");
     const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = ALN().offset(4);
     const fastq collapsed_expected = fastq("Read", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng, ':');
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
 
     REQUIRE(collapsed_result == collapsed_expected);
 }
@@ -955,15 +973,168 @@ TEST_CASE("Mate numbering removed, non-standard separator", "[alignment::collaps
 
 TEST_CASE("Mate numbering removed, non-standard separator, not set", "[alignment::collapse]")
 {
+    sequence_merger merger(g_rng);
     const fastq record1("Read:1", "ATATTATA", "01234567");
     const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
     const alignment_info alignment = ALN().offset(4);
     const fastq collapsed_expected = fastq("Read:1", "ATATTATAACGT", "01234567EFGH");
-    const fastq collapsed_result = collapse_paired_ended_sequences(alignment, record1, record2, g_rng);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
 
     REQUIRE(collapsed_result == collapsed_expected);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Merging of reads using the newer, more conservative method
+
+TEST_CASE("Conservative merge partial overlap", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "ATATTATA", "01234567");
+    fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
+    const alignment_info alignment = ALN().offset(4);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+    const fastq collapsed_expected = fastq("Rec1", "ATATTATAACGT", "01234567EFGH");
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge complete overlap", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1",  "ATATTATAA", "JJJJJJJJJ");
+    fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
+    const alignment_info alignment = ALN().offset(-1);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 2);
+    const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "JJJJJJJJ", FASTQ_ENCODING_SAM);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge complete overlap for mate 1", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
+    fastq record2("Rec2", "ATATTATA",  "JJJJJJJJ");
+    const alignment_info alignment = ALN();
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+    const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "JJJJJJJJ", FASTQ_ENCODING_SAM);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge complete overlap for mate 2", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1",  "ATATTATA", "JJJJJJJJ");
+    fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
+    const alignment_info alignment = ALN().offset(-1);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+    const fastq collapsed_expected = fastq("Rec1", "ATATTATA", "JJJJJJJJ", FASTQ_ENCODING_SAM);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge of unequal sequence lengths, mate 1 shorter", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "ATA", "012");
+    fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
+    const alignment_info alignment = ALN().offset(3);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+    const fastq collapsed_expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge of unequal sequence lengths, mate 1 shorter, mate 2 extends past", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "ATA", "012");
+    fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
+    const alignment_info alignment = ALN().offset(-2);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+    const fastq collapsed_expected = fastq("Rec1", "ATANACGT", "012DEFGH");
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge of unequal sequence lengths, mate 2 shorter", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "ATATTATA", "01234567");
+    fastq record2("Rec2", "ACG", "EFG");
+    const alignment_info alignment = ALN().offset(8);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+    const fastq collapsed_expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge of ambiguous sites filled from mate", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "NNNNNNTATA", "0123456789");
+    fastq record2("Rec2", "ACGTNNNNNN", "ABCDEFGHIJ");
+    const alignment_info alignment;
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+    const fastq collapsed_expected = fastq("Rec1", "ACGTNNTATA", "ABCD!!6789");
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge of identical nucleotides, gets highest quality", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "GCATGATATA", "012345!0:A");
+    fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
+    const alignment_info alignment = ALN().offset(6);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+    const fastq collapsed_expected = fastq("Rec1", "GCATGATATATACAAC", "012345(3:AEFGHIJ", FASTQ_ENCODING_SAM);
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
+
+
+TEST_CASE("Conservative merge of selects higher quality nucleotide", "[alignment::merge::conservative]")
+{
+    sequence_merger merger;
+    merger.set_conservative(true);
+
+    fastq record1("Rec1", "GCATGAGCAT", "012345!0:A");
+    fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
+    const alignment_info alignment = ALN().offset(6);
+    REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+    const fastq collapsed_expected = fastq("Rec1", "GCATGATAATTACAAC", "012345($5#EFGHIJ");
+    const fastq collapsed_result = merger.merge(alignment, record1, record2);
+    REQUIRE(collapsed_result == collapsed_expected);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Adapter extraction

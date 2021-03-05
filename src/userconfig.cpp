@@ -124,6 +124,7 @@ userconfig::userconfig(const std::string& name,
     , max_ambiguous_bases(1000)
     , preserve5p(false)
     , collapse(false)
+    , collapse_conservatively(false)
     , deterministic(false)
     , shift(2)
     , seed(get_seed())
@@ -381,6 +382,13 @@ userconfig::userconfig(const std::string& name,
             "quality (otherwise it picks the highest quality base). With "
             "--collapse-deterministic, AdapterRemoval will instead set such "
             "bases to N. This option implies --collapse [default: %default].");
+    argparser["--collapse-conservatively"] =
+        new argparse::flag(&collapse_conservatively,
+            "Enables a more conservative merging algorithm inspired by fastq-join, "
+            "in which the higher quality score is picked for matching bases and the "
+            "max score minus the min score is picked for mismatching bases. For more "
+            "details, see the documentation. --seed and --collapse-deterministic "
+            "have no effect when this is enabled [default: %default].");
     argparser["--minalignmentlength"] =
         new argparse::knob(&min_alignment_length, "LENGTH",
             "If --collapse is set, paired reads must overlap at least this "

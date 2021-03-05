@@ -193,67 +193,6 @@ phred_scores get_updated_phred_scores(char qual_1, char qual_2)
 }
 
 
-string_pair collapse_sequence(const std::string& sequence1,
-                              const std::string& sequence2,
-                              const std::string& qualities1,
-                              const std::string& qualities2,
-                              std::mt19937* rng)
-{
-    AR_DEBUG_ASSERT(sequence1.length() == sequence2.length() &&
-                     sequence1.length() == qualities1.length() &&
-                     sequence1.length() == qualities2.length());
-
-    std::string collapsed_seq(sequence1.length(), 'X');
-    std::string collapsed_qual(sequence1.length(), '\0');
-
-    for (size_t i = 0; i < collapsed_seq.size(); ++i) {
-        char nt_1 = sequence1.at(i);
-        char nt_2 = sequence2.at(i);
-        char qual_1 = qualities1.at(i);
-        char qual_2 = qualities2.at(i);
-
-        if (nt_1 == 'N' || nt_2 == 'N') {
-            // If one of the bases are N, then we suppose that we just have (at
-            // most) a single read at that site and choose that.
-            if (nt_1 != 'N') {
-                collapsed_seq.at(i) = nt_1;
-                collapsed_qual.at(i) = qual_1;
-            } else if (nt_2 != 'N') {
-                collapsed_seq.at(i) = nt_2;
-                collapsed_qual.at(i) = qual_2;
-            } else {
-                collapsed_seq.at(i) = 'N';
-                collapsed_qual.at(i) = PHRED_OFFSET_33;
-            }
-        } else if (nt_1 != nt_2 && qual_1 == qual_2) {
-            if (rng) {
-                collapsed_seq.at(i) = ((*rng)() & 1) ? nt_1 : nt_2;
-
-                const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
-                collapsed_qual.at(i) = new_scores.different_nts;
-            } else {
-                collapsed_seq.at(i) = 'N';
-                collapsed_qual.at(i) = PHRED_OFFSET_33;
-            }
-        } else {
-            // Ensure that nt_1 / qual_1 always contains the preferred nt / score
-            // This is an assumption of the g_updated_phred_scores cache.
-            if (qual_1 < qual_2) {
-                std::swap(nt_1, nt_2);
-                std::swap(qual_1, qual_2);
-            }
-
-            const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
-
-            collapsed_seq.at(i) = nt_1;
-            collapsed_qual.at(i) = (nt_1 == nt_2) ? new_scores.identical_nts : new_scores.different_nts;
-        }
-    }
-
-    return string_pair(collapsed_seq, collapsed_qual);
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
 
@@ -407,11 +346,35 @@ std::string strip_mate_info(const std::string& header, const char mate_sep)
 }
 
 
-fastq collapse_paired_ended_sequences(const alignment_info& alignment,
-                                      const fastq& read1,
-                                      const fastq& read2,
-                                      std::mt19937* rng,
-                                      const char mate_sep)
+sequence_merger::sequence_merger(std::mt19937* rng)
+    : m_mate_sep(MATE_SEPARATOR)
+    , m_conservative(false)
+    , m_rng(rng)
+{
+}
+
+
+void sequence_merger::set_mate_separator(char sep)
+{
+    m_mate_sep = sep;
+}
+
+
+void sequence_merger::set_conservative(bool enabled)
+{
+    m_conservative = enabled;
+}
+
+
+void sequence_merger::set_rng(std::mt19937* rng)
+{
+    m_rng = rng;
+}
+
+
+fastq sequence_merger::merge(const alignment_info& alignment,
+                             const fastq& read1,
+                             const fastq& read2)
 {
     if (alignment.offset > static_cast<int>(read1.length())) {
         // Gap between the two reads is not allowed
@@ -420,26 +383,99 @@ fastq collapse_paired_ended_sequences(const alignment_info& alignment,
 
     // Offset to the first base overlapping read 2
     const size_t read_1_offset = static_cast<size_t>(std::max(0, alignment.offset));
-    const std::string read_1_seq = read1.sequence().substr(0, read_1_offset);
-    const std::string read_1_qual = read1.qualities().substr(0, read_1_offset);
-
     // Offset to the last base overlapping read 1
     const size_t read_2_offset = static_cast<int>(read1.length()) - std::max(0, alignment.offset);
-    const std::string read_2_seq = read2.sequence().substr(read_2_offset);
-    const std::string read_2_qual = read2.qualities().substr(read_2_offset);
 
-    // Collapse only the overlapping parts
-    string_pair collapsed = collapse_sequence(read1.sequence().substr(read_1_offset),
-                                              read2.sequence().substr(0, read_2_offset),
-                                              read1.qualities().substr(read_1_offset),
-                                              read2.qualities().substr(0, read_2_offset),
-                                              rng);
+    AR_DEBUG_ASSERT(read1.length() - read_1_offset == read_2_offset);
+
+    // Produce draft by merging seq 1 and the parts of seq 2 that extend past seq 1
+    std::string merged_seq = read1.sequence();
+    merged_seq.append(read2.sequence(), read_2_offset);
+    std::string merged_qual = read1.qualities();
+    merged_qual.append(read2.qualities(), read_2_offset);
+
+    // Pick the best bases for the overlapping part of the reads
+    for (size_t i = 0; i < read_2_offset; ++i) {
+        char& nt_1 = merged_seq.at(i + read_1_offset);
+        char& qual_1 = merged_qual.at(i + read_1_offset);
+        const char nt_2 = read2.sequence().at(i);
+        const char qual_2 = read2.qualities().at(i);
+
+        if (m_conservative) {
+            conservative_merge(nt_1, qual_1, nt_2, qual_2);
+        } else {
+            original_merge(nt_1, qual_1, nt_2, qual_2);
+        }
+    }
 
     // Remove mate number from read, if present, when building new record
-    return fastq(mate_sep ? strip_mate_info(read1.header(), mate_sep) : read1.header(),
-                 read_1_seq + collapsed.first + read_2_seq,
-                 read_1_qual + collapsed.second + read_2_qual,
+    return fastq(m_mate_sep ? strip_mate_info(read1.header(), m_mate_sep) : read1.header(),
+                 merged_seq,
+                 merged_qual,
                  FASTQ_ENCODING_SAM);
+}
+
+
+void sequence_merger::original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2)
+{
+    if (nt_1 == 'N' || nt_2 == 'N') {
+        // If one of the bases are N, then we suppose that we just have (at
+        // most) a single read at that site and choose that.
+        if (nt_1 == 'N' && nt_2 == 'N') {
+            qual_1 = PHRED_OFFSET_33;
+        } else if (nt_1 == 'N') {
+            nt_1 = nt_2;
+            qual_1 = qual_2;
+        }
+    } else if (nt_1 != nt_2 && qual_1 == qual_2) {
+        if (m_rng) {
+            nt_1 = ((*m_rng)() & 1) ? nt_1 : nt_2;
+
+            const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+            qual_1 = new_scores.different_nts;
+        } else {
+            nt_1 = 'N';
+            qual_1 = PHRED_OFFSET_33;
+        }
+    } else {
+        // Ensure that nt_1 / qual_1 always contains the preferred nt / score
+        // This is an assumption of the g_updated_phred_scores cache.
+        if (qual_1 < qual_2) {
+            std::swap(nt_1, nt_2);
+            std::swap(qual_1, qual_2);
+        }
+
+        const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+
+        qual_1 = (nt_1 == nt_2) ? new_scores.identical_nts : new_scores.different_nts;
+    }
+}
+
+
+void sequence_merger::conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2)
+{
+
+    if (nt_2 == 'N' || nt_1 == 'N') {
+        if (nt_1 == 'N' && nt_2 == 'N') {
+            qual_1 = PHRED_OFFSET_33;
+        } else if (nt_1 == 'N') {
+            nt_1 = nt_2;
+            qual_1 = qual_2;
+        }
+    } else if (nt_1 == nt_2) {
+        qual_1 = std::max(qual_1, qual_2);
+    } else {
+        if (qual_1 < qual_2) {
+            nt_1 = nt_2;
+            qual_1 = qual_2 - qual_1 + PHRED_OFFSET_33;
+        } else if (qual_1 > qual_2) {
+            qual_1 = qual_1 - qual_2 + PHRED_OFFSET_33;
+        } else {
+            // No way to reasonably pick a base
+            nt_1 = 'N';
+            qual_1 = PHRED_OFFSET_33;
+        }
+    }
 }
 
 
