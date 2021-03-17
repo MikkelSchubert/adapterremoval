@@ -390,9 +390,9 @@ fastq sequence_merger::merge(const alignment_info& alignment,
 
     // Produce draft by merging seq 1 and the parts of seq 2 that extend past seq 1
     std::string merged_seq = read1.sequence();
-    merged_seq.append(read2.sequence(), read_2_offset);
+    merged_seq.append(read2.sequence(), read_2_offset, std::string::npos);
     std::string merged_qual = read1.qualities();
-    merged_qual.append(read2.qualities(), read_2_offset);
+    merged_qual.append(read2.qualities(), read_2_offset, std::string::npos);
 
     // Pick the best bases for the overlapping part of the reads
     for (size_t i = 0; i < read_2_offset; ++i) {
