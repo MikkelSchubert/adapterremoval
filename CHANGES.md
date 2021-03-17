@@ -1,10 +1,17 @@
-### Unreleased
+### Version 2.3.2 - 2021-03-17
 
  * Improved error messages when AdapterRemoval failed to open or write FASTQ
    files (issue #42).
- * Fix build on some architectures. Courtesy of Andreas Tille/the Debian build team.
- * Fix display of max Phred scores in FASTQ validation error messages.
- * Removed deprecated --pcr1 and --pcr2 command-line options.
+ * Fixed build on some architectures. Patch courtesy of Andreas Tille/the Debian
+   build team.
+ * Fixed display of max Phred scores in FASTQ validation error messages.
+ * Removed benchmarking scripts which were included in the repo for the sake of
+   making Schubert et al. 2016 reproducible. This is no longer relevant.
+ * Use 'install' in the Makefile; patch courtesy of Eric DEVEAUD.
+ * Added --collapse-deterministic to .settings file.
+ * Fixed --minadapteroverlap being misapplied in PE mode.
+ * Added --collapse-conservatively merge algorithm based on FASTQ-join. See
+   the man-page for more information
 
 ### Version 2.3.1 - 2019-06-23
 
