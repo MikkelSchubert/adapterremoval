@@ -286,7 +286,12 @@ When collaping reads at positions where the two reads differ, and the quality of
 .INDENT 0.0
 .TP
 .B \-\-collapse\-deterministic
-Enable deterministic mode; currently only affects \-\-collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled.
+Enable deterministic mode; currently only affects \-\-collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets \-\-collapse.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-collapse\-conservatively
+Alternative merging algorithm inspired by FASTQ\-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred\-score between the two bases. For mismatching bases with identical quality scores, the base is set to \(aqN\(aq and the quality score to 0 (Phred\-encoded). Setting this option also sets \-\-collapse.
 .UNINDENT
 .SS FASTQ demultiplexing options
 .INDENT 0.0

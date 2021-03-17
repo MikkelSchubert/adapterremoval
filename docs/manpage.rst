@@ -230,7 +230,11 @@ FASTQ merging options
 
 .. option:: --collapse-deterministic
 
-	Enable deterministic mode; currently only affects --collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled.
+	Enable deterministic mode; currently only affects --collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets --collapse.
+
+.. option:: --collapse-conservatively
+
+	Alternative merging algorithm inspired by FASTQ-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred-score between the two bases. For mismatching bases with identical quality scores, the base is set to 'N' and the quality score to 0 (Phred-encoded). Setting this option also sets --collapse.
 
 
 FASTQ demultiplexing options
