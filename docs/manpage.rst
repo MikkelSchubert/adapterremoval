@@ -21,7 +21,7 @@ If you use this program, please cite the paper:
 
 For detailed documentation, please see
 
-	http://adapterremoval.readthedocs.io/en/v2.2.3/
+	http://adapterremoval.readthedocs.io/
 
 
 Options
