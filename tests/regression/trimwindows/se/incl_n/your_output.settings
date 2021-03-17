@@ -25,6 +25,7 @@ Minimum genomic length: 15
 Maximum genomic length: 4294967295
 Collapse overlapping reads: No
 Deterministic collapse: No
+Conservative collapse: No
 Minimum overlap (in case of collapse): 11
 Minimum adapter overlap: 0
 

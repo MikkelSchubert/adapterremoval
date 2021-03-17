@@ -166,6 +166,7 @@ void write_settings(const userconfig& config, std::ostream& output, int nth)
            << "\nMaximum genomic length: " << config.max_genomic_length
            << "\nCollapse overlapping reads: " << ((config.collapse) ? "Yes" : "No")
            << "\nDeterministic collapse: " << (config.deterministic ? "Yes" : "No")
+           << "\nConservative collapse: " << (config.collapse_conservatively ? "Yes" : "No")
            << "\nMinimum overlap (in case of collapse): " << config.min_alignment_length;
 
     if (!config.paired_ended_mode) {
