@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "ADAPTERREMOVAL" "1" "Jun 23, 2019" "2.3.0" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Mar 17, 2021" "2.3.0" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .
@@ -32,10 +32,10 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .SH SYNOPSIS
 .sp
-\fBAdapterRemoval\fP [\fIoptions\fP…] –file1 <\fIfilenames\fP> [–file2 <\fIfilenames\fP>]
+\fBAdapterRemoval\fP [\fIoptions\fP\&...] \-\-file1 <\fIfilenames\fP> [\-\-file2 <\fIfilenames\fP>]
 .SH DESCRIPTION
 .sp
-\fBAdapterRemoval\fP removes residual adapter sequences from single\-end (SE) or paired\-end (PE) FASTQ reads, optionally trimming Ns and low qualities bases and/or collapsing overlapping paired\-end mates into one read. Low quality reads are filtered based on the resulting length and the number of ambigious nucleotides (‘N’) present following trimming. These operations may be combined with simultaneous demultiplexing using 5’ barcode sequences. Alternatively, \fBAdapterRemoval\fP may attempt to reconstruct a consensus adapter sequences from paired\-end data, in order to allow the identification of the adapter sequences originally used.
+\fBAdapterRemoval\fP removes residual adapter sequences from single\-end (SE) or paired\-end (PE) FASTQ reads, optionally trimming Ns and low qualities bases and/or collapsing overlapping paired\-end mates into one read. Low quality reads are filtered based on the resulting length and the number of ambigious nucleotides (\(aqN\(aq) present following trimming. These operations may be combined with simultaneous demultiplexing using 5\(aq barcode sequences. Alternatively, \fBAdapterRemoval\fP may attempt to reconstruct a consensus adapter sequences from paired\-end data, in order to allow the identification of the adapter sequences originally used.
 .sp
 If you use this program, please cite the paper:
 .INDENT 0.0
@@ -87,12 +87,12 @@ Maximum number of threads. Defaults to 1.
 .INDENT 0.0
 .TP
 .B \-\-qualitybase base
-The Phred quality scores encoding used in input reads \- either ‘64’ for Phred+64 (Illumina 1.3+ and 1.5+) or ‘33’ for Phred+33 (Illumina 1.8+). In addition, the value ‘solexa’ may be used to specify reads with Solexa encoded scores. Default is 33.
+The Phred quality scores encoding used in input reads \- either \(aq64\(aq for Phred+64 (Illumina 1.3+ and 1.5+) or \(aq33\(aq for Phred+33 (Illumina 1.8+). In addition, the value \(aqsolexa\(aq may be used to specify reads with Solexa encoded scores. Default is 33.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-qualitybase\-output base
-The base of the quality score for reads written by AdapterRemoval \- either ‘64’ for Phred+64 (i.e., Illumina 1.3+ and 1.5+) or ‘33’ for Phred+33 (Illumina 1.8+). In addition, the value ‘solexa’ may be used to specify reads with Solexa encoded scores. However, note that quality scores are represented using Phred scores internally, and conversion to and from Solexa scores therefore result in a loss of information. The default corresponds to the value given for \fB\-\-qualitybase\fP\&.
+The base of the quality score for reads written by AdapterRemoval \- either \(aq64\(aq for Phred+64 (i.e., Illumina 1.3+ and 1.5+) or \(aq33\(aq for Phred+33 (Illumina 1.8+). In addition, the value \(aqsolexa\(aq may be used to specify reads with Solexa encoded scores. However, note that quality scores are represented using Phred scores internally, and conversion to and from Solexa scores therefore result in a loss of information. The default corresponds to the value given for \fB\-\-qualitybase\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -102,7 +102,7 @@ Specifies the maximum Phred score expected in input files, and used when writing
 .INDENT 0.0
 .TP
 .B \-\-mate\-separator separator
-Character separating the mate number (1 or 2) from the read name in FASTQ records. Defaults to ‘/’.
+Character separating the mate number (1 or 2) from the read name in FASTQ records. Defaults to \(aq/\(aq.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -122,7 +122,7 @@ Write paired\-end reads to a single file, interleaving mate 1 and mate 2 reads. 
 .INDENT 0.0
 .TP
 .B \-\-combined\-output
-Write all reads into the files specified by \fB\-\-output1\fP and \fB\-\-output2\fP\&. The sequences of reads discarded due to quality filters or read merging are replaced with a single ‘N’ with Phred score 0. This option can be combined with \fB\-\-interleaved\-output\fP to write PE reads to a single output file specified with \fB\-\-output1\fP\&.
+Write all reads into the files specified by \fB\-\-output1\fP and \fB\-\-output2\fP\&. The sequences of reads discarded due to quality filters or read merging are replaced with a single \(aqN\(aq with Phred score 0. This option can be combined with \fB\-\-interleaved\-output\fP to write PE reads to a single output file specified with \fB\-\-output1\fP\&.
 .UNINDENT
 .SS Output file options
 .INDENT 0.0
@@ -133,74 +133,74 @@ Prefix used for the naming output files, unless these names have been overridden
 .INDENT 0.0
 .TP
 .B \-\-settings file
-Output file containing information on the parameters used in the run as well as overall statistics on the reads after trimming. Default filename is ‘basename.settings’.
+Output file containing information on the parameters used in the run as well as overall statistics on the reads after trimming. Default filename is \(aqbasename.settings\(aq.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-output1 file
-Output file containing trimmed mate1 reads. Default filename is ‘basename.pair1.truncated’ for paired\-end reads, ‘basename.truncated’ for single\-end reads, and ‘basename.paired.truncated’ for interleaved paired\-end reads.
+Output file containing trimmed mate1 reads. Default filename is \(aqbasename.pair1.truncated\(aq for paired\-end reads, \(aqbasename.truncated\(aq for single\-end reads, and \(aqbasename.paired.truncated\(aq for interleaved paired\-end reads.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-output2 file
-Output file containing trimmed mate 2 reads when \fB\-\-interleaved\-output\fP is not enabled. Default filename is ‘basename.pair2.truncated’ in paired\-end mode.
+Output file containing trimmed mate 2 reads when \fB\-\-interleaved\-output\fP is not enabled. Default filename is \(aqbasename.pair2.truncated\(aq in paired\-end mode.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-singleton file
-Output file to which containing paired reads for which the mate has been discarded. Default filename is ‘basename.singleton.truncated’.
+Output file to which containing paired reads for which the mate has been discarded. Default filename is \(aqbasename.singleton.truncated\(aq.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-outputcollapsed file
-If –collapsed is set, contains overlapping mate\-pairs which have been merged into a single read (PE mode) or reads for which the adapter was identified by a minimum overlap, indicating that the entire template molecule is present. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is ‘basename.collapsed’
+If \-\-collapsed is set, contains overlapping mate\-pairs which have been merged into a single read (PE mode) or reads for which the adapter was identified by a minimum overlap, indicating that the entire template molecule is present. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed\(aq
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-outputcollapsedtruncated file
-Collapsed reads (see –outputcollapsed) which were trimmed due the presence of low\-quality or ambiguous nucleotides. Default filename is ‘basename.collapsed.truncated’.
+Collapsed reads (see \-\-outputcollapsed) which were trimmed due the presence of low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed.truncated\(aq.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-discarded file
-Contains reads discarded due to the –minlength, –maxlength or –maxns options. Default filename is ‘basename.discarded’.
+Contains reads discarded due to the \-\-minlength, \-\-maxlength or \-\-maxns options. Default filename is \(aqbasename.discarded\(aq.
 .UNINDENT
 .SS Output compression options
 .INDENT 0.0
 .TP
 .B \-\-gzip
-If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using \fB\-\-gzip\-level\fP\&. The extension “.gz” is added to files for which no filename was given on the command\-line. Defaults to off.
+If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using \fB\-\-gzip\-level\fP\&. The extension ".gz" is added to files for which no filename was given on the command\-line. Defaults to off.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-gzip\-level level
-Determines the compression level used when gzip’ing FASTQ files. Must be a value in the range 0 to 9, with 0 disabling compression and 9 being the best compression. Defaults to 6.
+Determines the compression level used when gzip\(aqing FASTQ files. Must be a value in the range 0 to 9, with 0 disabling compression and 9 being the best compression. Defaults to 6.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-bzip2
-If set, all FASTQ files written by AdapterRemoval will be bzip2 compressed using the compression level specified using \fB\-\-bzip2\-level\fP\&. The extension “.bz2” is added to files for which no filename was given on the command\-line. Defaults to off.
+If set, all FASTQ files written by AdapterRemoval will be bzip2 compressed using the compression level specified using \fB\-\-bzip2\-level\fP\&. The extension ".bz2" is added to files for which no filename was given on the command\-line. Defaults to off.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-bzip2\-level level
-Determines the compression level used when bzip2’ing FASTQ files. Must be a value in the range 1 to 9, with 9 being the best compression. Defaults to 9.
+Determines the compression level used when bzip2\(aqing FASTQ files. Must be a value in the range 1 to 9, with 9 being the best compression. Defaults to 9.
 .UNINDENT
 .SS FASTQ trimming options
 .INDENT 0.0
 .TP
 .B \-\-adapter1 adapter
-Adapter sequence expected to be found in mate 1 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the “Adapters” section of the online documentation. Default is AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG.
+Adapter sequence expected to be found in mate 1 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-adapter2 adapter
-Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the “Adapters” section of the online documentation. Default is AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT.
+Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-adapter\-list filename
-Read one or more adapter sequences from a table. The first two columns (separated by whitespace) of each line in the file are expected to correspond to values passed to –adapter1 and –adapter2. In single\-end mode, only column one is required. Lines starting with ‘#’ are ignored. When multiple rows are found in the table, AdapterRemoval will try each adapter (pair), and select the best aligning adapters for each FASTQ read processed.
+Read one or more adapter sequences from a table. The first two columns (separated by whitespace) of each line in the file are expected to correspond to values passed to \-\-adapter1 and \-\-adapter2. In single\-end mode, only column one is required. Lines starting with \(aq#\(aq are ignored. When multiple rows are found in the table, AdapterRemoval will try each adapter (pair), and select the best aligning adapters for each FASTQ read processed.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -215,37 +215,37 @@ The allowed fraction of mismatches allowed in the aligned region. If the value i
 .INDENT 0.0
 .TP
 .B \-\-shift n
-To allow for missing bases in the 5’ end of the read, the program can let the alignment slip \fB\-\-shift\fP bases in the 5’ end. This corresponds to starting the alignment maximum \fB\-\-shift\fP nucleotides into read2 (for paired\-end) or the adapter (for single\-end). The default is 2.
+To allow for missing bases in the 5\(aq end of the read, the program can let the alignment slip \fB\-\-shift\fP bases in the 5\(aq end. This corresponds to starting the alignment maximum \fB\-\-shift\fP nucleotides into read2 (for paired\-end) or the adapter (for single\-end). The default is 2.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-trim5p n [n]
-Trim the 5’ of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. Specify one value to trim mate 1 and mate 2 reads the same amount, or two values separated by a space to trim each mate different amounts. Off by default.
+Trim the 5\(aq of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. Specify one value to trim mate 1 and mate 2 reads the same amount, or two values separated by a space to trim each mate different amounts. Off by default.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-trim3p n [n]
-Trim the 3’ of reads by a fixed amount. See \fB\-\-trim5p\fP\&.
+Trim the 3\(aq of reads by a fixed amount. See \fB\-\-trim5p\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-trimns
-Trim consecutive Ns from the 5’ and 3’ termini. If quality trimming is also enabled (\fB\-\-trimqualities\fP), then stretches of mixed low\-quality bases and/or Ns are trimmed.
+Trim consecutive Ns from the 5\(aq and 3\(aq termini. If quality trimming is also enabled (\fB\-\-trimqualities\fP), then stretches of mixed low\-quality bases and/or Ns are trimmed.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-maxns n
-Discard reads containing more than \fB\-\-max\fP ambiguous bases (‘N’) after trimming. Default is 1000.
+Discard reads containing more than \fB\-\-max\fP ambiguous bases (\(aqN\(aq) after trimming. Default is 1000.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-trimqualities
-Trim consecutive stretches of low quality bases (threshold set by \fB\-\-minquality\fP) from the 5’ and 3’ termini. If trimming of Ns is also enabled (\fB\-\-trimns\fP), then stretches of mixed low\-quality bases and Ns are trimmed.
+Trim consecutive stretches of low quality bases (threshold set by \fB\-\-minquality\fP) from the 5\(aq and 3\(aq termini. If trimming of Ns is also enabled (\fB\-\-trimns\fP), then stretches of mixed low\-quality bases and Ns are trimmed.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-trimwindows window_size
-Trim low quality bases using a sliding window based approach inspired by \fBsickle\fP with the given window size. See the “Window based quality trimming” section of the manual page for a description of this algorithm.
+Trim low quality bases using a sliding window based approach inspired by \fBsickle\fP with the given window size. See the "Window based quality trimming" section of the manual page for a description of this algorithm.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -271,7 +271,7 @@ Reads longer than this length are discarded following trimming. Defaults to 4294
 .INDENT 0.0
 .TP
 .B \-\-collapse
-In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. In single\-end mode, attempt to identify templates for which the entire sequence is available. In both cases, complete “collapsed” reads are written with a ‘M_’ name prefix, and “collapsed” reads which are trimmed due to quality settings are written with a ‘MT_’ name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&.
+In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. In single\-end mode, attempt to identify templates for which the entire sequence is available. In both cases, complete "collapsed" reads are written with a \(aqM_\(aq name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -285,14 +285,14 @@ When collaping reads at positions where the two reads differ, and the quality of
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-deterministic
-Enable deterministic mode; currently only affects –collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled.
+.B \-\-collapse\-deterministic
+Enable deterministic mode; currently only affects \-\-collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled.
 .UNINDENT
 .SS FASTQ demultiplexing options
 .INDENT 0.0
 .TP
 .B \-\-barcode\-list filename
-Perform demultiplxing using table of one or two fixed\-length barcodes for SE or PE reads. The table is expected to contain 2 or 3 columns, the first of which represent the name of a given sample, and the second and third of which represent the mate 1 and (optionally) the mate 2 barcode sequence. For a detailed description, see the “Demultiplexing” section of the online documentation.
+Perform demultiplxing using table of one or two fixed\-length barcodes for SE or PE reads. The table is expected to contain 2 or 3 columns, the first of which represent the name of a given sample, and the second and third of which represent the mate 1 and (optionally) the mate 2 barcode sequence. For a detailed description, see the "Demultiplexing" section of the online documentation.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -313,7 +313,7 @@ Maximum number of mismatches allowed for the mate 2 barcode; if not set, this va
 .INDENT 0.0
 .TP
 .B \-\-demultiplex\-only
-Only carry out demultiplexing using the list of barcodes supplied with –barcode\-list. No other processing is done.
+Only carry out demultiplexing using the list of barcodes supplied with \-\-barcode\-list. No other processing is done.
 .UNINDENT
 .SH WINDOW BASED QUALITY TRIMMING
 .sp
@@ -324,11 +324,11 @@ Reads are trimmed as follows for a given window size:
 .INDENT 3.5
 .INDENT 0.0
 .IP 1. 3
-The new 5’ is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than \fB\-\-minquality\fP\&.
+The new 5\(aq is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than \fB\-\-minquality\fP\&.
 .IP 2. 3
-The new 3’ is located by sliding the first window right, until the average quality becomes less than or equal to \fB\-\-minquality\fP\&. The new 3’ is placed at the last base in that window where the quality is greater than or equal to \fB\-\-minquality\fP\&.
+The new 3\(aq is located by sliding the first window right, until the average quality becomes less than or equal to \fB\-\-minquality\fP\&. The new 3\(aq is placed at the last base in that window where the quality is greater than or equal to \fB\-\-minquality\fP\&.
 .IP 3. 3
-If no 5’ position could be determined, the read is discarded.
+If no 5\(aq position could be determined, the read is discarded.
 .UNINDENT
 .UNINDENT
 .UNINDENT

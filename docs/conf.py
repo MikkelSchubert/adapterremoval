@@ -168,4 +168,5 @@ texinfo_documents = [
 ]
 
 
-
+# Prevent conversion of -- to emdashes
+smartquotes = False
