@@ -381,14 +381,16 @@ userconfig::userconfig(const std::string& name,
             "one of two different overlapping bases if these have the same "
             "quality (otherwise it picks the highest quality base). With "
             "--collapse-deterministic, AdapterRemoval will instead set such "
-            "bases to N. This option implies --collapse [default: %default].");
+            "bases to N. Setting this option also sets--collapse "
+            "[default: %default].");
     argparser["--collapse-conservatively"] =
         new argparse::flag(&collapse_conservatively,
             "Enables a more conservative merging algorithm inspired by fastq-join, "
             "in which the higher quality score is picked for matching bases and the "
             "max score minus the min score is picked for mismatching bases. For more "
             "details, see the documentation. --seed and --collapse-deterministic "
-            "have no effect when this is enabled [default: %default].");
+            "have no effect when this is enabled. Setting this option also sets "
+            "--collapse [default: %default].");
     argparser["--minalignmentlength"] =
         new argparse::knob(&min_alignment_length, "LENGTH",
             "If --collapse is set, paired reads must overlap at least this "
@@ -445,6 +447,8 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
 
     // --collapse-deterministic implies --collapse
     collapse |= deterministic;
+    // --collapse-conservatively implies --collapse
+    collapse |= collapse_conservatively;
 
     quality_input_fmt = select_encoding("--qualitybase", quality_input_base, quality_max);
     if (!quality_input_fmt.get()) {
