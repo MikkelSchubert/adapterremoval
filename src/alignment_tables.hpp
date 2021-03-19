@@ -26,8 +26,7 @@
 
 #include <sys/types.h>
 
-namespace ar
-{
+namespace ar {
 
 const size_t PHRED_TABLE_SIZE = 8836;
 
@@ -40,13 +39,13 @@ const size_t PHRED_TABLE_SIZE = 8836;
 extern const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE];
 
 /**
- * Table of Phred scores to assigned for mismatching positions during collapsing.
+ * Table of Phred scores to assigned for mismatching positions during
+ * collapsing.
  *
  * Position is calculated as phred_1 * (MAX_PHRED_SCORE + 1) + phred_2,
  * assuming that phred_1 >= phred_2.
  */
 extern const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE];
-
 
 } // namespace ar
 

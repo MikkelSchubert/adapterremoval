@@ -31,8 +31,7 @@
 #include "scheduler.hpp"
 #include "statistics.hpp"
 
-namespace ar
-{
+namespace ar {
 
 class userconfig;
 
@@ -44,82 +43,80 @@ class userconfig;
 class demultiplex_reads : public analytical_step
 {
 public:
-    /** Setup demultiplexer; keeps pointer to config object. */
-    demultiplex_reads(const userconfig* config);
+  /** Setup demultiplexer; keeps pointer to config object. */
+  demultiplex_reads(const userconfig* config);
 
-    /** Frees any unflushed caches. */
-    virtual ~demultiplex_reads();
+  /** Frees any unflushed caches. */
+  virtual ~demultiplex_reads();
 
-    /** Returns a statistics object summarizing the results up till now. */
-    demux_statistics statistics() const;
+  /** Returns a statistics object summarizing the results up till now. */
+  demux_statistics statistics() const;
 
-    //! Copy construction not supported
-    demultiplex_reads(const demultiplex_reads&) = delete;
-    //! Assignment not supported
-    demultiplex_reads& operator=(const demultiplex_reads&) = delete;
+  //! Copy construction not supported
+  demultiplex_reads(const demultiplex_reads&) = delete;
+  //! Assignment not supported
+  demultiplex_reads& operator=(const demultiplex_reads&) = delete;
 
 protected:
-    //! List of barcode (pairs) supplied by caller
-    const fastq_pair_vec& m_barcodes;
-    //! Quad-tree representing all mate 1 adapters; for search with n mismatches
-    const barcode_table m_barcode_table;
-    //! Pointer to user settings used for output format for unidentified reads
-    const userconfig* m_config;
+  //! List of barcode (pairs) supplied by caller
+  const fastq_pair_vec& m_barcodes;
+  //! Quad-tree representing all mate 1 adapters; for search with n mismatches
+  const barcode_table m_barcode_table;
+  //! Pointer to user settings used for output format for unidentified reads
+  const userconfig* m_config;
 
-    //! Returns a chunk-list with any set of reads exceeding the max cache size
-    //! If 'eof' is true, all chunks are returned, and the 'eof' values in the
-    //! chunks are set to true.
-    chunk_vec flush_cache(bool eof = false);
+  //! Returns a chunk-list with any set of reads exceeding the max cache size
+  //! If 'eof' is true, all chunks are returned, and the 'eof' values in the
+  //! chunks are set to true.
+  chunk_vec flush_cache(bool eof = false);
 
-    typedef std::vector<read_chunk_ptr> demultiplexed_cache;
+  typedef std::vector<read_chunk_ptr> demultiplexed_cache;
 
-    //! Cache of demultiplex reads; used to reduce the number of output chunks
-    //! generated from each processed chunk, which would otherwise increase
-    //! linearly with the number of barcodes.
-    demultiplexed_cache m_cache;
-    //! Cache of unidentified mate 1 reads
-    output_chunk_ptr m_unidentified_1;
-    //! Cache of unidentified mate 2 reads
-    output_chunk_ptr m_unidentified_2;
+  //! Cache of demultiplex reads; used to reduce the number of output chunks
+  //! generated from each processed chunk, which would otherwise increase
+  //! linearly with the number of barcodes.
+  demultiplexed_cache m_cache;
+  //! Cache of unidentified mate 1 reads
+  output_chunk_ptr m_unidentified_1;
+  //! Cache of unidentified mate 2 reads
+  output_chunk_ptr m_unidentified_2;
 
-    //! Sink for demultiplexing statistics; used by subclasses.
-    demux_statistics m_statistics;
+  //! Sink for demultiplexing statistics; used by subclasses.
+  demux_statistics m_statistics;
 
-    //! Lock used to verify that the analytical_step is only run sequentially.
-    std::mutex m_lock;
+  //! Lock used to verify that the analytical_step is only run sequentially.
+  std::mutex m_lock;
 };
-
 
 /** Demultiplexer for single-end reads. */
 class demultiplex_se_reads : public demultiplex_reads
 {
 public:
-    /** See demultiplex_reads::demultiplex_reads. */
-    demultiplex_se_reads(const userconfig* config);
+  /** See demultiplex_reads::demultiplex_reads. */
+  demultiplex_se_reads(const userconfig* config);
 
-    /**
-     * Processes a read chunk, and forwards chunks to downstream steps, with
-     * the IDs corresponding to ai_analyses_offset * (nth + 1) for the nth
-     * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1.
-     */
-    chunk_vec process(analytical_chunk* chunk);
+  /**
+   * Processes a read chunk, and forwards chunks to downstream steps, with
+   * the IDs corresponding to ai_analyses_offset * (nth + 1) for the nth
+   * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1.
+   */
+  chunk_vec process(analytical_chunk* chunk);
 };
-
 
 /** Demultiplexer for paired-end reads. */
 class demultiplex_pe_reads : public demultiplex_reads
 {
 public:
-    /** See demultiplex_reads::demultiplex_reads. */
-    demultiplex_pe_reads(const userconfig* config);
+  /** See demultiplex_reads::demultiplex_reads. */
+  demultiplex_pe_reads(const userconfig* config);
 
-    /**
-     * Processes a read chunk, and forwards chunks to downstream steps, with
-     * the IDs corresponding to ai_analyses_offset * (nth + 1) for the nth
-     * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1
-     * and ai_write_unidentified_2.
-     */
-    chunk_vec process(analytical_chunk* chunk);
+  /**
+   * Processes a read chunk, and forwards chunks to downstream steps, with
+   * the IDs corresponding to ai_analyses_offset * (nth + 1) for the nth
+   * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1
+   * and ai_write_unidentified_2.
+   */
+  chunk_vec process(analytical_chunk* chunk);
 };
 
 } // namespace ar

@@ -25,11 +25,10 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include <string>
 #include <deque>
+#include <string>
 
-namespace ar
-{
+namespace ar {
 
 /**
  * Simply class for reporting current progress of a run.
@@ -44,33 +43,33 @@ namespace ar
 class timer
 {
 public:
-    /* Constructor.
-     *
-     * @param what Short name of what is being processed, for use in reports.
-     */
-    timer(const std::string& what);
+  /* Constructor.
+   *
+   * @param what Short name of what is being processed, for use in reports.
+   */
+  timer(const std::string& what);
 
-    /** Increment the progress, and (possibly) print a status report. */
-    void increment(size_t inc = 1);
+  /** Increment the progress, and (possibly) print a status report. */
+  void increment(size_t inc = 1);
 
-    /** Print final summary based on the number of increments. */
-    void finalize() const;
+  /** Print final summary based on the number of increments. */
+  void finalize() const;
 
 private:
-    typedef std::pair<double, size_t> time_count_pair;
-    typedef std::deque<time_count_pair> time_count_deque;
+  typedef std::pair<double, size_t> time_count_pair;
+  typedef std::deque<time_count_pair> time_count_deque;
 
-    /** Print summary based on current rate; finalize to end with newline. */
-    void do_print(size_t rate, double current_time, bool finalize = false) const;
+  /** Print summary based on current rate; finalize to end with newline. */
+  void do_print(size_t rate, double current_time, bool finalize = false) const;
 
-    //! Description of what is being processed.
-    std::string m_what;
-    //! Total number of items processed
-    size_t m_total;
-    //! Starting time (in seconds) of the timer.
-    double m_first_time;
-    //! Counts for last N updates, for calculating running mean rate.
-    time_count_deque m_counts;
+  //! Description of what is being processed.
+  std::string m_what;
+  //! Total number of items processed
+  size_t m_total;
+  //! Starting time (in seconds) of the timer.
+  double m_first_time;
+  //! Counts for last N updates, for calculating running mean rate.
+  time_count_deque m_counts;
 };
 
 } // namespace ar

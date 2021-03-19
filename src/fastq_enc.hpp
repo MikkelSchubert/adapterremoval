@@ -27,8 +27,7 @@
 
 #include <string>
 
-namespace ar
-{
+namespace ar {
 
 //! Offset used by Phred+33 and SAM encodings
 const int PHRED_OFFSET_33 = '!';
@@ -44,7 +43,6 @@ const int MAX_PHRED_SCORE_DEFAULT = 41;
 //! character '~', when using an offset of 33.
 const int MAX_PHRED_SCORE = 93;
 
-
 //! Minimum Solexa score allowed; encodes to ';' with an offset of 64
 const int MIN_SOLEXA_SCORE = -5;
 //! Maximum Solexa score allowed; encodes to 'h' with an offset of 64
@@ -53,64 +51,61 @@ const int MAX_SOLEXA_SCORE = 40;
 //! Default character used to separate mate number
 const char MATE_SEPARATOR = '/';
 
-
 /** Exception raised for FASTQ parsing and validation errors. */
 class fastq_error : public std::exception
 {
 public:
-    fastq_error(const std::string& message);
-    fastq_error(const fastq_error& error);
+  fastq_error(const std::string& message);
+  fastq_error(const fastq_error& error);
 
-    virtual ~fastq_error() noexcept;
+  virtual ~fastq_error() noexcept;
 
-    /** Returns error message; string is owned by exception. */
-    virtual const char* what() const noexcept;
+  /** Returns error message; string is owned by exception. */
+  virtual const char* what() const noexcept;
 
 private:
-    //! Error message associated with exception.
-    std::string m_message;
+  //! Error message associated with exception.
+  std::string m_message;
 };
-
 
 class fastq_encoding
 {
 public:
-    /**
-     * Create FASTQ encoding with a given offset (33 or 64), allowing for
-     * quality-scores up to a given value (0 - N). Input with higher scores
-     * is rejected, and output is truncated to this score.
-     */
-    fastq_encoding(char offset = PHRED_OFFSET_33,
-                   char max_score = MAX_PHRED_SCORE_DEFAULT);
+  /**
+   * Create FASTQ encoding with a given offset (33 or 64), allowing for
+   * quality-scores up to a given value (0 - N). Input with higher scores
+   * is rejected, and output is truncated to this score.
+   */
+  fastq_encoding(char offset = PHRED_OFFSET_33,
+                 char max_score = MAX_PHRED_SCORE_DEFAULT);
 
-    virtual ~fastq_encoding();
+  virtual ~fastq_encoding();
 
-    /** Appends encoded Phred+33/66 quality-scores to dst. */
-    virtual void encode(const std::string& qualities, std::string& dst) const;
-    /** Decodes a string of ASCII values in-place. */
-    virtual void decode(std::string& qualities) const;
+  /** Appends encoded Phred+33/66 quality-scores to dst. */
+  virtual void encode(const std::string& qualities, std::string& dst) const;
+  /** Decodes a string of ASCII values in-place. */
+  virtual void decode(std::string& qualities) const;
 
-    /** Returns the standard name for this encoding. */
-    virtual const char* name() const;
+  /** Returns the standard name for this encoding. */
+  virtual const char* name() const;
 
-    /**
-     * Returns the maximum allowed quality score for input, and the range to
-     * range to which output scores are truncated.
-     */
-    size_t max_score() const;
+  /**
+   * Returns the maximum allowed quality score for input, and the range to
+   * range to which output scores are truncated.
+   */
+  size_t max_score() const;
 
-    //! Copy construction not supported
-    fastq_encoding(const fastq_encoding&) = delete;
-    //! Assignment not supported
-    fastq_encoding& operator=(const fastq_encoding&) = delete;
+  //! Copy construction not supported
+  fastq_encoding(const fastq_encoding&) = delete;
+  //! Assignment not supported
+  fastq_encoding& operator=(const fastq_encoding&) = delete;
 
 protected:
-    //! Character offset for Phred encoded scores (33 or 64)
-    const char m_offset;
-    //! Maximum allowed score; used for checking input / truncating output
-    const char m_max_score;
+  //! Character offset for Phred encoded scores (33 or 64)
+  const char m_offset;
+  //! Maximum allowed score; used for checking input / truncating output
+  const char m_max_score;
 };
-
 
 /**
  * Solexa scores encoding by adding '@'; max score is 40.
@@ -124,26 +119,27 @@ protected:
 class fastq_encoding_solexa : public fastq_encoding
 {
 public:
-    /**
-     * Create FASTQ Solexa encoding with offset 64, allowing for quality-scores
-     * up to a given value (0 - N). Input with higher scores is rejected, and
-     * output is truncated to this score.
-     */
-    fastq_encoding_solexa(unsigned max_score = MAX_PHRED_SCORE_DEFAULT);
+  /**
+   * Create FASTQ Solexa encoding with offset 64, allowing for quality-scores
+   * up to a given value (0 - N). Input with higher scores is rejected, and
+   * output is truncated to this score.
+   */
+  fastq_encoding_solexa(unsigned max_score = MAX_PHRED_SCORE_DEFAULT);
 
-    /** Appends encoded Phred+33/66 quality-scores to dst. */
-    virtual void encode(const std::string& qualities, std::string& dst) const override;
-    /** Decodes a string of ASCII values in-place. */
-    virtual void decode(std::string& qualities) const override;
+  /** Appends encoded Phred+33/66 quality-scores to dst. */
+  virtual void encode(const std::string& qualities,
+                      std::string& dst) const override;
+  /** Decodes a string of ASCII values in-place. */
+  virtual void decode(std::string& qualities) const override;
 
-    /** Returns the standard name for this encoding. */
-    virtual const char* name() const override;
+  /** Returns the standard name for this encoding. */
+  virtual const char* name() const override;
 };
-
 
 static const fastq_encoding FASTQ_ENCODING_33(PHRED_OFFSET_33);
 static const fastq_encoding FASTQ_ENCODING_64(PHRED_OFFSET_64);
-static const fastq_encoding FASTQ_ENCODING_SAM(PHRED_OFFSET_33, MAX_PHRED_SCORE);
+static const fastq_encoding FASTQ_ENCODING_SAM(PHRED_OFFSET_33,
+                                               MAX_PHRED_SCORE);
 static const fastq_encoding_solexa FASTQ_ENCODING_SOLEXA;
 
 } // namespace ar

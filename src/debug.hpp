@@ -27,61 +27,55 @@
 #include <stdexcept>
 #include <string>
 
-namespace ar
-{
+namespace ar {
 
 #ifdef AR_TEST_BUILD
 /** Exception explaining 'abort' calls when running unit-tests. */
 class assert_failed : public std::exception
 {
 public:
-    /** Copy constructor. */
-    assert_failed(const assert_failed& errror);
-    /** Creates exception with the specified error message. */
-    assert_failed(const std::string& what);
+  /** Copy constructor. */
+  assert_failed(const assert_failed& errror);
+  /** Creates exception with the specified error message. */
+  assert_failed(const std::string& what);
 
-    /** Does nothing. */
-    virtual ~assert_failed() noexcept;
+  /** Does nothing. */
+  virtual ~assert_failed() noexcept;
 
-    /** Returns user supplied error message; owned by object. */
-    virtual const char* what() const noexcept;
+  /** Returns user supplied error message; owned by object. */
+  virtual const char* what() const noexcept;
 
 private:
-    //! User supplied error message
-    const std::string m_what;
+  //! User supplied error message
+  const std::string m_what;
 };
 #endif
-
 
 /**
  * Aborts after printing the filename, line-number, and message, plus
  * instructions for how to report the problem.
  */
-[[noreturn]] void debug_raise_assert(const char* filename, size_t lineno,
-                                     const char* what);
+[[noreturn]] void
+debug_raise_assert(const char* filename, size_t lineno, const char* what);
 
-
-/** Custom assert which prints various information on failure; always enabled. */
-#define AR_DEBUG_ASSERT(test) \
-    do { \
-        if (!(test)) { \
-            debug_raise_assert(__FILE__, __LINE__, #test); \
-        } \
-    } while (0)
-
+/** Custom assert which prints various information on failure; always enabled.
+ */
+#define AR_DEBUG_ASSERT(test)                                                  \
+  do {                                                                         \
+    if (!(test)) {                                                             \
+      debug_raise_assert(__FILE__, __LINE__, #test);                           \
+    }                                                                          \
+  } while (0)
 
 /** Raise an assert failure with a user-specified message. */
-#define AR_DEBUG_FAIL(msg) \
-    debug_raise_assert(__FILE__, __LINE__, msg)
-
+#define AR_DEBUG_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, msg)
 
 /** Raise a failure if a scope is accessed more than once at the same time. */
-#define AR_DEBUG_LOCK(lock) \
-    std::unique_lock<std::mutex> locker(lock, std::defer_lock); \
-    if (!locker.try_lock()) { \
-        AR_DEBUG_FAIL("race condition detected"); \
-    };
-
+#define AR_DEBUG_LOCK(lock)                                                    \
+  std::unique_lock<std::mutex> locker(lock, std::defer_lock);                  \
+  if (!locker.try_lock()) {                                                    \
+    AR_DEBUG_FAIL("race condition detected");                                  \
+  };
 
 } // namespace ar
 

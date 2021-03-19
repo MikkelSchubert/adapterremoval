@@ -24,13 +24,12 @@
 #ifndef ALIGNMENT_H
 #define ALIGNMENT_H
 
-#include <string>
 #include <random>
+#include <string>
 
 #include "fastq.hpp"
 
-namespace ar
-{
+namespace ar {
 
 /**
  * Summarizes an alignment.
@@ -81,38 +80,36 @@ namespace ar
  */
 struct alignment_info
 {
-    /** Defaults to unaligned (len = 0), for adapter_id -1. **/
-    alignment_info();
+  /** Defaults to unaligned (len = 0), for adapter_id -1. **/
+  alignment_info();
 
-    /**
-     * Returns true if this is a better alignment than other.
-     *
-     * When selecting among multiple alignments, the follow criteria are used:
-     * 1. The alignment with the highest score is preferred.
-     * 2. If score is equal, the longest alignment is preferred.
-     * 3. If score and length is equal, the alignment with fewest Ns is preferred.
-     */
-    bool is_better_than(const alignment_info& other) const;
+  /**
+   * Returns true if this is a better alignment than other.
+   *
+   * When selecting among multiple alignments, the follow criteria are used:
+   * 1. The alignment with the highest score is preferred.
+   * 2. If score is equal, the longest alignment is preferred.
+   * 3. If score and length is equal, the alignment with fewest Ns is preferred.
+   */
+  bool is_better_than(const alignment_info& other) const;
 
-
-    //! Alignment score; equal to length - n_ambiguous - 2 * n_mismatches;
-    int score;
-    //! Zero based id of the adapter which offered the best alignment. Is less
-    //! than zero if no alignment was found.
-    int offset;
-    //! The number of base-pairs included in the alignment. This number
-    //! includes both bases aligned between the two mates (in PE mode) and the
-    //! number of bases aligned between mates and adapter sequences.
-    size_t length;
-    //! Number of positions in the alignment in which the two sequences were
-    //! both called (not N) but differed
-    size_t n_mismatches;
-    //! Number of positions in the alignment where one or both bases were N.
-    size_t n_ambiguous;
-    //! Offset describing the alignment between the two sequences (see above).
-    int adapter_id;
+  //! Alignment score; equal to length - n_ambiguous - 2 * n_mismatches;
+  int score;
+  //! Zero based id of the adapter which offered the best alignment. Is less
+  //! than zero if no alignment was found.
+  int offset;
+  //! The number of base-pairs included in the alignment. This number
+  //! includes both bases aligned between the two mates (in PE mode) and the
+  //! number of bases aligned between mates and adapter sequences.
+  size_t length;
+  //! Number of positions in the alignment in which the two sequences were
+  //! both called (not N) but differed
+  size_t n_mismatches;
+  //! Number of positions in the alignment where one or both bases were N.
+  size_t n_ambiguous;
+  //! Offset describing the alignment between the two sequences (see above).
+  int adapter_id;
 };
-
 
 /**
  * Attempts to align adapters sequences against a SE read.
@@ -125,10 +122,10 @@ struct alignment_info
  *
  * The best alignment is selected using alignment_info::is_better_than.
  */
-alignment_info align_single_ended_sequence(const fastq& read,
-                                           const fastq_pair_vec& adapters,
-                                           int max_shift);
-
+alignment_info
+align_single_ended_sequence(const fastq& read,
+                            const fastq_pair_vec& adapters,
+                            int max_shift);
 
 /**
  * Attempts to align PE mates, along with any adapter pairs.
@@ -149,20 +146,19 @@ alignment_info align_single_ended_sequence(const fastq& read,
  * Note the returned offset is relative read1, not to adapter2 + read1,
  * and can be used to directly infer the alignment between read1 and read2.
  */
-alignment_info align_paired_ended_sequences(const fastq& read1,
-                                            const fastq& read2,
-                                            const fastq_pair_vec& adapters,
-                                            int max_shift);
-
+alignment_info
+align_paired_ended_sequences(const fastq& read1,
+                             const fastq& read2,
+                             const fastq_pair_vec& adapters,
+                             int max_shift);
 
 /**
  * Truncates a SE read according to the alignment, such that the second read
  * used in the alignment (assumed to represent adapter sequence) is excluded
  * from the read passed to this function.
  */
-void truncate_single_ended_sequence(const alignment_info& alignment,
-                                    fastq& read);
-
+void
+truncate_single_ended_sequence(const alignment_info& alignment, fastq& read);
 
 /**
  * Truncate a pair of PE reads, such that any adapter sequence inferred from
@@ -170,72 +166,76 @@ void truncate_single_ended_sequence(const alignment_info& alignment,
  *
  * @return The number of sequences (0 .. 2) which contained adapter sequence.
  */
-size_t truncate_paired_ended_sequences(const alignment_info& alignment,
-                                       fastq& read1,
-                                       fastq& read2);
-
+size_t
+truncate_paired_ended_sequences(const alignment_info& alignment,
+                                fastq& read1,
+                                fastq& read2);
 
 /**
- * Class for merging two sequence fragments into a single sequence, either picking the
- * highest quality base and its assosiated quality score, or recalulating the quality
- * score of matching/mismatching bases using the original AR methodology.
+ * Class for merging two sequence fragments into a single sequence, either
+ * picking the highest quality base and its assosiated quality score, or
+ * recalulating the quality score of matching/mismatching bases using the
+ * original AR methodology.
  */
 class sequence_merger
 {
 public:
-    sequence_merger(std::mt19937* rng=nullptr);
+  sequence_merger(std::mt19937* rng = nullptr);
 
-    /**
-     * Sets the expected mate separator. This is used to trim mate numbers from merged
-     * reads.
-     */
-    void set_mate_separator(char sep=MATE_SEPARATOR);
+  /**
+   * Sets the expected mate separator. This is used to trim mate numbers from
+   * merged reads.
+   */
+  void set_mate_separator(char sep = MATE_SEPARATOR);
 
-    /**
-     * If enabled, the sequence merger performs a more conservative merging inspired by
-     * fastq-join and NGmerge, with the added caveat that mismatches without a higher
-     * quality choice are assigned 'N'.
-     */
-    void set_conservative(bool enabled=false);
+  /**
+   * If enabled, the sequence merger performs a more conservative merging
+   * inspired by fastq-join and NGmerge, with the added caveat that mismatches
+   * without a higher quality choice are assigned 'N'.
+   */
+  void set_conservative(bool enabled = false);
 
-    /**
-     * Set RNG used for picking a base when performing non-conservative merging of
-     * mismatching bases with the same quality score. If set to NULL, mismatching bases
-     * with identical quality scores are set to N with quality '!';
-     */
-    void set_rng(std::mt19937* rng=nullptr);
+  /**
+   * Set RNG used for picking a base when performing non-conservative merging of
+   * mismatching bases with the same quality score. If set to NULL, mismatching
+   * bases with identical quality scores are set to N with quality '!';
+   */
+  void set_rng(std::mt19937* rng = nullptr);
 
-    /**
-     * Merges two overlapping reads into a single sequence, recalculating the quality
-     * in one of two ways. If `conservative` mode is enabled, the highest quality score
-     * of the two bases is used for matches, and the difference is used for matches.
-     * Otherwise an updated score is caculated bases on the original quality scores
-     * using the original algorithm implemented in AdapterRemoval.
-     *
-     * @return A single FASTQ record representing the collapsed sequence.
-     *
-     * Note that the sequences are assumed to have been trimmed using the function, and
-     * this function will produce undefined results if this is not the case!
-     */
-    fastq merge(const alignment_info& alignment,
-                const fastq& read1,
-                const fastq& read2);
+  /**
+   * Merges two overlapping reads into a single sequence, recalculating the
+   * quality in one of two ways. If `conservative` mode is enabled, the highest
+   * quality score of the two bases is used for matches, and the difference is
+   * used for matches. Otherwise an updated score is caculated bases on the
+   * original quality scores using the original algorithm implemented in
+   * AdapterRemoval.
+   *
+   * @return A single FASTQ record representing the collapsed sequence.
+   *
+   * Note that the sequences are assumed to have been trimmed using the
+   * function, and this function will produce undefined results if this is not
+   * the case!
+   */
+  fastq merge(const alignment_info& alignment,
+              const fastq& read1,
+              const fastq& read2);
 
 private:
-    /** The original merging algorithm implemented in AdapterRemoval. */
-    void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+  /** The original merging algorithm implemented in AdapterRemoval. */
+  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
 
-    /** Alternative merging algorithm added in 2.4.0. */
-    void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+  /** Alternative merging algorithm added in 2.4.0. */
+  void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
 
-    //! Mate separator used in read names
-    char m_mate_sep;
-    //! Whether or not to recalculate scores using the conservative or the standard mode
-    bool m_conservative;
-    //! Optional RNG for picking bases at random for mismatches with the same quality
-    std::mt19937* m_rng;
+  //! Mate separator used in read names
+  char m_mate_sep;
+  //! Whether or not to recalculate scores using the conservative or the
+  //! standard mode
+  bool m_conservative;
+  //! Optional RNG for picking bases at random for mismatches with the same
+  //! quality
+  std::mt19937* m_rng;
 };
-
 
 /**
  * Truncates reads such that only adapter sequence remains.
@@ -245,9 +245,10 @@ private:
  * Reads that do not contain any adapter sequence are completely truncated,
  * such no bases remain of the original sequence.
  */
-bool extract_adapter_sequences(const alignment_info& alignment,
-                               fastq& pcr1,
-                               fastq& pcr2);
+bool
+extract_adapter_sequences(const alignment_info& alignment,
+                          fastq& pcr1,
+                          fastq& pcr2);
 
 } // namespace ar
 

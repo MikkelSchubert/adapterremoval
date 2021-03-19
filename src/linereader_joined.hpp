@@ -29,10 +29,7 @@
 #include "commontypes.hpp"
 #include "linereader.hpp"
 
-
-namespace ar
-{
-
+namespace ar {
 
 /**
  * Multi-file line-reader
@@ -44,39 +41,38 @@ namespace ar
 class joined_line_readers : public line_reader_base
 {
 public:
-    /** Creates line-reader over multiple files in the specified order. */
-    joined_line_readers(const string_vec& filenames);
+  /** Creates line-reader over multiple files in the specified order. */
+  joined_line_readers(const string_vec& filenames);
 
-    /** Closes any still open files. */
-    ~joined_line_readers();
+  /** Closes any still open files. */
+  ~joined_line_readers();
 
-    /**
-     * Reads a line from the currently open file; if EOF is encountered, the
-     * currently open file is closed and the next file is opened. Returns true
-     * if a line was successfully read, or false if no files remain.
-     */
-    bool getline(std::string& dst);
+  /**
+   * Reads a line from the currently open file; if EOF is encountered, the
+   * currently open file is closed and the next file is opened. Returns true
+   * if a line was successfully read, or false if no files remain.
+   */
+  bool getline(std::string& dst);
 
-    //! Copy construction not supported
-    joined_line_readers(const joined_line_readers&) = delete;
-    //! Assignment not supported
-    joined_line_readers& operator=(const joined_line_readers&) = delete;
+  //! Copy construction not supported
+  joined_line_readers(const joined_line_readers&) = delete;
+  //! Assignment not supported
+  joined_line_readers& operator=(const joined_line_readers&) = delete;
 
 private:
-    /**
-     * Open the next file, removes it from the queue, and returns true; returns
-     * false if no files remain to be processed.
-     */
-    bool open_next_file();
+  /**
+   * Open the next file, removes it from the queue, and returns true; returns
+   * false if no files remain to be processed.
+   */
+  bool open_next_file();
 
-    //! Files left to read; stored in reverse order.
-    string_vec m_filenames;
-    //! Currently open file, if any.
-    std::unique_ptr<line_reader> m_reader;
-    //! Current line across all files.
-    size_t m_current_line;
+  //! Files left to read; stored in reverse order.
+  string_vec m_filenames;
+  //! Currently open file, if any.
+  std::unique_ptr<line_reader> m_reader;
+  //! Current line across all files.
+  size_t m_current_line;
 };
-
 
 } // namespace ar
 

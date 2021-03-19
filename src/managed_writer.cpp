@@ -27,219 +27,217 @@
 #include <vector>
 
 #include "debug.hpp"
-#include "threads.hpp"
 #include "managed_writer.hpp"
+#include "threads.hpp"
 
 #include <iostream>
 
-
-namespace ar
-{
+namespace ar {
 
 static std::mutex g_writer_lock;
 managed_writer* managed_writer::s_head = nullptr;
 managed_writer* managed_writer::s_tail = nullptr;
 bool managed_writer::s_warning_printed = false;
 
-
 managed_writer::managed_writer(const std::string& filename)
-    : m_filename(filename)
-    , m_stream()
-    , m_created(false)
-    , m_prev(nullptr)
-    , m_next(nullptr)
+  : m_filename(filename)
+  , m_stream()
+  , m_created(false)
+  , m_prev(nullptr)
+  , m_next(nullptr)
 {
-    m_stream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+  m_stream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 }
-
 
 managed_writer::~managed_writer()
 {
-    close();
+  close();
 }
 
-
-FILE* managed_writer::fopen(const std::string& filename, const char* mode)
+FILE*
+managed_writer::fopen(const std::string& filename, const char* mode)
 {
-    AR_DEBUG_ASSERT(mode);
+  AR_DEBUG_ASSERT(mode);
 
-    while (true) {
-        FILE* handle = ::fopen(filename.c_str(), mode);
+  while (true) {
+    FILE* handle = ::fopen(filename.c_str(), mode);
 
-        if (handle) {
-            return handle;
-        } else if (errno == EMFILE) {
-            std::lock_guard<std::mutex> lock(g_writer_lock);
-            managed_writer::close_tail_writer();
-        } else {
-            return nullptr;
-        }
+    if (handle) {
+      return handle;
+    } else if (errno == EMFILE) {
+      std::lock_guard<std::mutex> lock(g_writer_lock);
+      managed_writer::close_tail_writer();
+    } else {
+      return nullptr;
     }
+  }
 }
 
-
-void managed_writer::write_buffers(const buffer_vec& buffers, bool flush)
+void
+managed_writer::write_buffers(const buffer_vec& buffers, bool flush)
 {
-    std::lock_guard<std::mutex> lock(g_writer_lock);
-    if (buffers.size() || flush) {
-        managed_writer::open_writer(this);
+  std::lock_guard<std::mutex> lock(g_writer_lock);
+  if (buffers.size() || flush) {
+    managed_writer::open_writer(this);
 
-        for (auto& buf : buffers) {
-            if (buf.first) {
-                m_stream.write(reinterpret_cast<char*>(buf.second), buf.first);
-            }
-        }
-
-        if (flush) {
-            m_stream.flush();
-        }
+    for (auto& buf : buffers) {
+      if (buf.first) {
+        m_stream.write(reinterpret_cast<char*>(buf.second), buf.first);
+      }
     }
+
+    if (flush) {
+      m_stream.flush();
+    }
+  }
 }
 
-
-void managed_writer::write_strings(const string_vec& strings, bool flush)
+void
+managed_writer::write_strings(const string_vec& strings, bool flush)
 {
-    std::lock_guard<std::mutex> lock(g_writer_lock);
-    if (strings.size() || flush) {
-        managed_writer::open_writer(this);
+  std::lock_guard<std::mutex> lock(g_writer_lock);
+  if (strings.size() || flush) {
+    managed_writer::open_writer(this);
 
-        for (const auto& str : strings) {
-            m_stream.write(str.data(), str.length());
-        }
-
-        if (flush) {
-            m_stream.flush();
-        }
+    for (const auto& str : strings) {
+      m_stream.write(str.data(), str.length());
     }
+
+    if (flush) {
+      m_stream.flush();
+    }
+  }
 }
 
-
-void managed_writer::close()
+void
+managed_writer::close()
 {
-    std::lock_guard<std::mutex> lock(g_writer_lock);
+  std::lock_guard<std::mutex> lock(g_writer_lock);
 
-    managed_writer::remove_writer(this);
-    if (m_stream.is_open()) {
-        m_stream.close();
-    }
+  managed_writer::remove_writer(this);
+  if (m_stream.is_open()) {
+    m_stream.close();
+  }
 }
 
-
-const std::string& managed_writer::filename() const
+const std::string&
+managed_writer::filename() const
 {
-    return m_filename;
+  return m_filename;
 }
 
-
-void managed_writer::open_writer(managed_writer* ptr)
+void
+managed_writer::open_writer(managed_writer* ptr)
 {
-    const std::ios_base::openmode mode =
-        ptr->m_created ? std::ofstream::app : std::ofstream::trunc;
+  const std::ios_base::openmode mode =
+    ptr->m_created ? std::ofstream::app : std::ofstream::trunc;
 
-    while (!ptr->m_stream.is_open()) {
-        try {
-            ptr->m_stream.open(ptr->m_filename, std::ofstream::binary | mode);
-            break;
-        } catch (const std::ofstream::failure&) {
-            if (errno != int(std::errc::too_many_files_open)) {
-                throw;
-            }
-        }
-
-        managed_writer::close_tail_writer();
+  while (!ptr->m_stream.is_open()) {
+    try {
+      ptr->m_stream.open(ptr->m_filename, std::ofstream::binary | mode);
+      break;
+    } catch (const std::ofstream::failure&) {
+      if (errno != int(std::errc::too_many_files_open)) {
+        throw;
+      }
     }
 
-    if (ptr != s_head) {
-        managed_writer::remove_writer(ptr);
-        managed_writer::add_head_writer(ptr);
-    }
+    managed_writer::close_tail_writer();
+  }
 
-    ptr->m_created = true;
+  if (ptr != s_head) {
+    managed_writer::remove_writer(ptr);
+    managed_writer::add_head_writer(ptr);
+  }
+
+  ptr->m_created = true;
 }
 
-
-void managed_writer::remove_writer(managed_writer* ptr)
+void
+managed_writer::remove_writer(managed_writer* ptr)
 {
-    AR_DEBUG_ASSERT(!s_head == !s_tail);
-    AR_DEBUG_ASSERT(!s_head || !s_head->m_prev);
-    AR_DEBUG_ASSERT(!s_tail || !s_tail->m_next);
+  AR_DEBUG_ASSERT(!s_head == !s_tail);
+  AR_DEBUG_ASSERT(!s_head || !s_head->m_prev);
+  AR_DEBUG_ASSERT(!s_tail || !s_tail->m_next);
 
-    if (ptr == s_head) {
-        s_head = ptr->m_next;
-    }
+  if (ptr == s_head) {
+    s_head = ptr->m_next;
+  }
 
-    if (ptr == s_tail) {
-        s_tail = ptr->m_prev;
-    }
+  if (ptr == s_tail) {
+    s_tail = ptr->m_prev;
+  }
 
-    AR_DEBUG_ASSERT(!s_head == !s_tail);
+  AR_DEBUG_ASSERT(!s_head == !s_tail);
 
-    if (ptr->m_prev) {
-        ptr->m_prev->m_next = ptr->m_next;
-    }
+  if (ptr->m_prev) {
+    ptr->m_prev->m_next = ptr->m_next;
+  }
 
-    if (ptr->m_next) {
-        ptr->m_next->m_prev = ptr->m_prev;
-    }
+  if (ptr->m_next) {
+    ptr->m_next->m_prev = ptr->m_prev;
+  }
 
-    ptr->m_prev = nullptr;
-    ptr->m_next = nullptr;
+  ptr->m_prev = nullptr;
+  ptr->m_next = nullptr;
 
-    AR_DEBUG_ASSERT(ptr != s_head);
-    AR_DEBUG_ASSERT(ptr != s_tail);
-    AR_DEBUG_ASSERT(!ptr->m_prev);
-    AR_DEBUG_ASSERT(!ptr->m_next);
-    AR_DEBUG_ASSERT(!s_head || !s_head->m_prev);
-    AR_DEBUG_ASSERT(!s_tail || !s_tail->m_next);
+  AR_DEBUG_ASSERT(ptr != s_head);
+  AR_DEBUG_ASSERT(ptr != s_tail);
+  AR_DEBUG_ASSERT(!ptr->m_prev);
+  AR_DEBUG_ASSERT(!ptr->m_next);
+  AR_DEBUG_ASSERT(!s_head || !s_head->m_prev);
+  AR_DEBUG_ASSERT(!s_tail || !s_tail->m_next);
 }
 
-
-void managed_writer::add_head_writer(managed_writer* ptr)
+void
+managed_writer::add_head_writer(managed_writer* ptr)
 {
-    AR_DEBUG_ASSERT(!ptr->m_prev);
-    AR_DEBUG_ASSERT(!ptr->m_next);
-    AR_DEBUG_ASSERT(!s_head == !s_tail);
-    if (s_head) {
-        ptr->m_next = s_head;
-        s_head->m_prev = ptr;
-    }
+  AR_DEBUG_ASSERT(!ptr->m_prev);
+  AR_DEBUG_ASSERT(!ptr->m_next);
+  AR_DEBUG_ASSERT(!s_head == !s_tail);
+  if (s_head) {
+    ptr->m_next = s_head;
+    s_head->m_prev = ptr;
+  }
 
-    s_head = ptr;
+  s_head = ptr;
 
-    if (!s_tail) {
-        s_tail = ptr;
-    }
+  if (!s_tail) {
+    s_tail = ptr;
+  }
 
-    AR_DEBUG_ASSERT(s_head && s_tail);
-    AR_DEBUG_ASSERT(!s_head->m_prev);
-    AR_DEBUG_ASSERT(!s_tail->m_next);
+  AR_DEBUG_ASSERT(s_head && s_tail);
+  AR_DEBUG_ASSERT(!s_head->m_prev);
+  AR_DEBUG_ASSERT(!s_tail->m_next);
 }
 
-
-void managed_writer::close_tail_writer()
+void
+managed_writer::close_tail_writer()
 {
-    AR_DEBUG_ASSERT(!s_head == !s_tail);
-    if (!s_warning_printed) {
-        print_locker lock;
-        std::cerr << "\n"
-                  << "WARNING: Number of available file-handles (ulimit -n) is too low.\n"
-                  << "         AdapterRemoval will dynamically close/re-open files as required,\n"
-                  << "         but performance may suffer as a result.\n"
-                  << std::endl;
+  AR_DEBUG_ASSERT(!s_head == !s_tail);
+  if (!s_warning_printed) {
+    print_locker lock;
+    std::cerr
+      << "\n"
+      << "WARNING: Number of available file-handles (ulimit -n) is too low.\n"
+      << "         AdapterRemoval will dynamically close/re-open files as "
+         "required,\n"
+      << "         but performance may suffer as a result.\n"
+      << std::endl;
 
-        s_warning_printed = true;
-    }
+    s_warning_printed = true;
+  }
 
-    if (s_tail) {
-        AR_DEBUG_ASSERT(s_tail->m_stream.is_open());
+  if (s_tail) {
+    AR_DEBUG_ASSERT(s_tail->m_stream.is_open());
 
-        s_tail->m_stream.close();
-        managed_writer::remove_writer(s_tail);
-        return;
-    }
+    s_tail->m_stream.close();
+    managed_writer::remove_writer(s_tail);
+    return;
+  }
 
-    throw std::runtime_error(
-        "available number of file-handles too low; could not open any files");
+  throw std::runtime_error(
+    "available number of file-handles too low; could not open any files");
 }
 
 } // namespace ar

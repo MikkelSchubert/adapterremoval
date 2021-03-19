@@ -26,46 +26,47 @@
 
 #include <vector>
 
-namespace ar
-{
+namespace ar {
 
 /**
  * Merge two vectors by adding each value in src to each value in 'dst'.
  *
  * If 'dst' is shorter than 'src', it is resized to the same length as 'src'.
  */
-template <typename T>
-void merge_vectors(std::vector<T>& dst, const std::vector<T>& src)
+template<typename T>
+void
+merge_vectors(std::vector<T>& dst, const std::vector<T>& src)
 {
-    if (dst.size() < src.size()) {
-        dst.resize(src.size());
-    }
+  if (dst.size() < src.size()) {
+    dst.resize(src.size());
+  }
 
-    typename std::vector<T>::iterator dst_it = dst.begin();
-    typename std::vector<T>::const_iterator src_it = src.begin();
-    while (src_it != src.end()) {
-        *dst_it++ += *src_it++;
-    }
+  typename std::vector<T>::iterator dst_it = dst.begin();
+  typename std::vector<T>::const_iterator src_it = src.begin();
+  while (src_it != src.end()) {
+    *dst_it++ += *src_it++;
+  }
 }
-
 
 /**
  * Merge each pair of value in vectors of vectors using merge_vector.
  *
  * If 'dst' is shorter than 'src', it is resized to the same length as 'src'.
  */
-template <typename T>
-void merge_sub_vectors(std::vector<std::vector<T> >& dst, const std::vector<std::vector<T> >& src)
+template<typename T>
+void
+merge_sub_vectors(std::vector<std::vector<T>>& dst,
+                  const std::vector<std::vector<T>>& src)
 {
-    if (dst.size() < src.size()) {
-        dst.resize(src.size());
-    }
+  if (dst.size() < src.size()) {
+    dst.resize(src.size());
+  }
 
-    typename std::vector<std::vector<T> >::iterator dst_it = dst.begin();
-    typename std::vector<std::vector<T> >::const_iterator src_it = src.begin();
-    while (src_it != src.end()) {
-        merge_vectors(*dst_it++, *src_it++);
-    }
+  typename std::vector<std::vector<T>>::iterator dst_it = dst.begin();
+  typename std::vector<std::vector<T>>::const_iterator src_it = src.begin();
+  while (src_it != src.end()) {
+    merge_vectors(*dst_it++, *src_it++);
+  }
 }
 
 } // namespace ar

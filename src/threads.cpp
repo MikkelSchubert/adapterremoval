@@ -33,42 +33,32 @@
 
 #include <ctime>
 
-namespace ar
-{
+namespace ar {
 
 ///////////////////////////////////////////////////////////////////////////////
 // exceptions
 
 thread_error::thread_error(const std::string& message)
-    : std::exception()
-    , m_message(message)
-{
-}
-
+  : std::exception()
+  , m_message(message)
+{}
 
 thread_error::thread_error(const thread_error& error)
-    : std::exception()
-    , m_message(error.m_message)
+  : std::exception()
+  , m_message(error.m_message)
+{}
+
+thread_error::~thread_error() noexcept {}
+
+const char*
+thread_error::what() const noexcept
 {
+  return m_message.c_str();
 }
-
-
-thread_error::~thread_error() noexcept
-{
-}
-
-
-const char* thread_error::what() const noexcept
-{
-    return m_message.c_str();
-}
-
 
 thread_abort::thread_abort()
   : thread_error("abort thread")
-{
-}
-
+{}
 
 ///////////////////////////////////////////////////////////////////////////////
 // print_locker
@@ -79,25 +69,21 @@ static std::mutex s_print_mutex;
 //! Shared bool indicating if STDERR contains a partial line.
 static bool s_stderr_is_incomplete = false;
 
-
 print_locker::print_locker(bool flush_stderr)
   : m_lock(s_print_mutex)
 {
-    if (flush_stderr && s_stderr_is_incomplete) {
-        s_stderr_is_incomplete = false;
-        std::cerr << std::endl;
-    }
+  if (flush_stderr && s_stderr_is_incomplete) {
+    s_stderr_is_incomplete = false;
+    std::cerr << std::endl;
+  }
 }
 
+print_locker::~print_locker() {}
 
-print_locker::~print_locker()
+void
+print_locker::partial_stderr_output()
 {
+  s_stderr_is_incomplete = true;
 }
-
-
-void print_locker::partial_stderr_output() {
-    s_stderr_is_incomplete = true;
-}
-
 
 } // namespace ar

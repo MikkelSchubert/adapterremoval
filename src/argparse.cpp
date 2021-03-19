@@ -29,495 +29,481 @@
 #include <set>
 #include <stdexcept>
 
-#include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "argparse.hpp"
 #include "debug.hpp"
 #include "strutils.hpp"
 
-
-namespace ar
-{
-namespace argparse
-{
+namespace ar {
+namespace argparse {
 
 typedef std::set<consumer_ptr> consumer_set;
 
-
 /** Returns the number of columns available in the terminal. */
-size_t get_terminal_columns()
+size_t
+get_terminal_columns()
 {
-    struct winsize params;
-    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params)) {
-        // Default to 80 columns if the parameters could not be retrieved.
-        return 80;
-    }
+  struct winsize params;
+  if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params)) {
+    // Default to 80 columns if the parameters could not be retrieved.
+    return 80;
+  }
 
-    return std::min<size_t>(120, std::max<size_t>(80, params.ws_col));
+  return std::min<size_t>(120, std::max<size_t>(80, params.ws_col));
 }
-
 
 parser::parser(const std::string& name,
                const std::string& version,
                const std::string& help)
-    : m_keys()
-    , m_parsers()
-    , m_name(name)
-    , m_version(version)
-    , m_help(help)
+  : m_keys()
+  , m_parsers()
+  , m_name(name)
+  , m_version(version)
+  , m_help(help)
 {
-    add_header("OPTIONS:");
+  add_header("OPTIONS:");
 
-    // Built-in arguments (aliases are not shown!)
-    (*this)["--help"] = new flag(nullptr, "Display this message.");
-    create_alias("--help", "-help");
-    create_alias("--help", "-h");
+  // Built-in arguments (aliases are not shown!)
+  (*this)["--help"] = new flag(nullptr, "Display this message.");
+  create_alias("--help", "-help");
+  create_alias("--help", "-h");
 
-    (*this)["--version"] = new flag(nullptr, "Print the version string.");
-    create_alias("--version", "-version");
-    create_alias("--version", "-v");
+  (*this)["--version"] = new flag(nullptr, "Print the version string.");
+  create_alias("--version", "-version");
+  create_alias("--version", "-v");
 
-    add_seperator();
+  add_seperator();
 }
-
 
 parser::~parser()
 {
-    // Track set of unique pointers, to handle parsers assigned to multiple keys.
-    consumer_set pointers;
-    for (const auto& parser : m_parsers) {
-        if (pointers.insert(parser.second).second) {
-            delete parser.second;
-        }
+  // Track set of unique pointers, to handle parsers assigned to multiple keys.
+  consumer_set pointers;
+  for (const auto& parser : m_parsers) {
+    if (pointers.insert(parser.second).second) {
+      delete parser.second;
     }
+  }
 }
 
-
-consumer_ptr& parser::operator[](const std::string& key)
+consumer_ptr&
+parser::operator[](const std::string& key)
 {
-    AR_DEBUG_ASSERT(!key.empty());
-    if (m_parsers.find(key) == m_parsers.end()) {
-        m_keys.push_back(key_pair(true, key));
-    }
+  AR_DEBUG_ASSERT(!key.empty());
+  if (m_parsers.find(key) == m_parsers.end()) {
+    m_keys.push_back(key_pair(true, key));
+  }
 
-    return m_parsers[key];
+  return m_parsers[key];
 }
 
-
-const consumer_ptr& parser::at(const std::string& key) const
+const consumer_ptr&
+parser::at(const std::string& key) const
 {
-    return m_parsers.at(key);
+  return m_parsers.at(key);
 }
 
-
-parse_result parser::parse_args(int argc, char* argv[])
+parse_result
+parser::parse_args(int argc, char* argv[])
 {
-    const string_vec argvec(argv + 1, argv + argc);
-    for (const auto& arg : argvec) {
-        if (arg == "--help" || arg == "-h") {
-            print_help();
-            return parse_result::exit;
-        } else if (arg == "--version") {
-            print_version();
-            return parse_result::exit;
-        }
+  const string_vec argvec(argv + 1, argv + argc);
+  for (const auto& arg : argvec) {
+    if (arg == "--help" || arg == "-h") {
+      print_help();
+      return parse_result::exit;
+    } else if (arg == "--version") {
+      print_version();
+      return parse_result::exit;
     }
+  }
 
-    string_vec_citer it = argvec.begin();
-    while (it != argvec.end()) {
-        consumer_map::iterator parser = m_parsers.end();
-        if (find_argument(parser, *it)) {
-            if (parser->second->is_set()) {
-                std::cerr << "WARNING: Command-line option " << parser->first
-                          << " has been specified more than once."
-                          << std::endl;
-            }
+  string_vec_citer it = argvec.begin();
+  while (it != argvec.end()) {
+    consumer_map::iterator parser = m_parsers.end();
+    if (find_argument(parser, *it)) {
+      if (parser->second->is_set()) {
+        std::cerr << "WARNING: Command-line option " << parser->first
+                  << " has been specified more than once." << std::endl;
+      }
 
-            const size_t consumed = parser->second->consume(++it, argvec.end());
+      const size_t consumed = parser->second->consume(++it, argvec.end());
 
-            if (consumed == static_cast<size_t>(-1)) {
-                if (it != argvec.end()) {
-                    std::cerr << "ERROR: Invalid value for " << *(it - 1) << ": '"
-                              << *it << "'; aborting ..." << std::endl;
-                } else {
-                    std::cerr << "ERROR: No value supplied for " << *(it - 1)
-                              << "; aborting ..." << std::endl;
-                }
-
-                return parse_result::error;
-            }
-
-            it += static_cast<consumer_map::iterator::difference_type>(consumed);
+      if (consumed == static_cast<size_t>(-1)) {
+        if (it != argvec.end()) {
+          std::cerr << "ERROR: Invalid value for " << *(it - 1) << ": '" << *it
+                    << "'; aborting ..." << std::endl;
         } else {
-            return parse_result::error;
+          std::cerr << "ERROR: No value supplied for " << *(it - 1)
+                    << "; aborting ..." << std::endl;
         }
+
+        return parse_result::error;
+      }
+
+      it += static_cast<consumer_map::iterator::difference_type>(consumed);
+    } else {
+      return parse_result::error;
+    }
+  }
+
+  return parse_result::ok;
+}
+
+bool
+parser::is_set(const std::string& key) const
+{
+  const consumer_map::const_iterator it = m_parsers.find(key);
+  AR_DEBUG_ASSERT(it != m_parsers.end());
+
+  return it->second->is_set();
+}
+
+void
+parser::add_seperator()
+{
+  m_keys.push_back(key_pair(false, std::string()));
+}
+
+void
+parser::add_header(const std::string& header)
+{
+  add_seperator();
+  m_keys.push_back(key_pair(false, header));
+}
+
+void
+parser::create_alias(const std::string& key, const std::string& alias)
+{
+  AR_DEBUG_ASSERT(m_parsers.find(alias) == m_parsers.end());
+
+  m_parsers[alias] = m_parsers.at(key);
+}
+
+void
+parser::print_version() const
+{
+  std::cerr << m_name << " " << m_version << std::endl;
+}
+
+void
+parser::print_help() const
+{
+  print_version();
+  std::cerr << "\n" << m_help << "\n";
+
+  print_arguments(m_keys);
+}
+
+void
+parser::print_arguments(const key_pair_vec& keys) const
+{
+  const size_t indentation = 8;
+
+  cli_formatter fmt;
+  fmt.set_indent(indentation);
+  fmt.set_column_width(std::min<size_t>(80, get_terminal_columns()) -
+                       indentation - 3);
+
+  for (const auto& key_pair : keys) {
+    if (!key_pair.first) {
+      std::cerr << key_pair.second << "\n";
+      continue;
     }
 
-    return parse_result::ok;
-}
-
-
-bool parser::is_set(const std::string& key) const
-{
-    const consumer_map::const_iterator it = m_parsers.find(key);
-    AR_DEBUG_ASSERT(it != m_parsers.end());
-
-    return it->second->is_set();
-}
-
-
-void parser::add_seperator()
-{
-    m_keys.push_back(key_pair(false, std::string()));
-}
-
-
-void parser::add_header(const std::string& header)
-{
-    add_seperator();
-    m_keys.push_back(key_pair(false, header));
-}
-
-
-void parser::create_alias(const std::string& key, const std::string& alias)
-{
-    AR_DEBUG_ASSERT(m_parsers.find(alias) == m_parsers.end());
-
-    m_parsers[alias] = m_parsers.at(key);
-}
-
-
-void parser::print_version() const
-{
-    std::cerr << m_name << " " << m_version << std::endl;
-}
-
-
-void parser::print_help() const
-{
-    print_version();
-    std::cerr <<"\n" << m_help << "\n";
-
-    print_arguments(m_keys);
-}
-
-
-void parser::print_arguments(const key_pair_vec& keys) const
-{
-    const size_t indentation = 8;
-
-    cli_formatter fmt;
-    fmt.set_indent(indentation);
-    fmt.set_column_width(std::min<size_t>(80, get_terminal_columns()) - indentation - 3);
-
-    for (const auto& key_pair : keys) {
-        if (!key_pair.first) {
-            std::cerr << key_pair.second << "\n";
-            continue;
-        }
-
-        const consumer_ptr ptr = m_parsers.at(key_pair.second);
-        if (ptr->help() == "HIDDEN") {
-            continue;
-        }
-
-        const std::string metavar = get_metavar_str(ptr, key_pair.second);
-        std::cerr << std::left << std::setw(indentation)
-                  << ("    " + key_pair.second + " " + metavar)
-                  << "\n";
-
-        std::string value = ptr->help();
-        if (!value.empty()) {
-            // Replace "%default" with string representation of current value.
-            size_t index = value.find("%default");
-            if (index != std::string::npos) {
-                const std::string default_value = ptr->to_str();
-                value.replace(index, 8, default_value);
-            }
-
-            // Format into columns and indent lines (except the first line)
-            std::cerr << fmt.format(value) << "\n";
-        }
-
-        std::cerr << "\n";
+    const consumer_ptr ptr = m_parsers.at(key_pair.second);
+    if (ptr->help() == "HIDDEN") {
+      continue;
     }
 
-    std::cerr << std::endl;
+    const std::string metavar = get_metavar_str(ptr, key_pair.second);
+    std::cerr << std::left << std::setw(indentation)
+              << ("    " + key_pair.second + " " + metavar) << "\n";
+
+    std::string value = ptr->help();
+    if (!value.empty()) {
+      // Replace "%default" with string representation of current value.
+      size_t index = value.find("%default");
+      if (index != std::string::npos) {
+        const std::string default_value = ptr->to_str();
+        value.replace(index, 8, default_value);
+      }
+
+      // Format into columns and indent lines (except the first line)
+      std::cerr << fmt.format(value) << "\n";
+    }
+
+    std::cerr << "\n";
+  }
+
+  std::cerr << std::endl;
 }
 
-
-bool parser::find_argument(consumer_map::iterator& it, const std::string& str)
+bool
+parser::find_argument(consumer_map::iterator& it, const std::string& str)
 {
-    it = m_parsers.find(str);
-    if (it != m_parsers.end()) {
-        return true;
+  it = m_parsers.find(str);
+  if (it != m_parsers.end()) {
+    return true;
+  }
+
+  // Locate partial arguments by finding arguments with 'str' as prefix
+  if (str != "-" && str != "--") {
+    key_pair_vec matches;
+    consumer_map::iterator cit = m_parsers.begin();
+    for (; cit != m_parsers.end(); ++cit) {
+      if (cit->first.substr(0, str.size()) == str) {
+        matches.push_back(key_pair(true, cit->first));
+      }
     }
 
-    // Locate partial arguments by finding arguments with 'str' as prefix
-    if (str != "-" && str != "--") {
-        key_pair_vec matches;
-        consumer_map::iterator cit = m_parsers.begin();
-        for (; cit != m_parsers.end(); ++cit) {
-            if (cit->first.substr(0, str.size()) == str) {
-                matches.push_back(key_pair(true, cit->first));
-            }
-        }
+    if (matches.size() == 1) {
+      it = m_parsers.find(matches.front().second);
+      return true;
+    } else if (matches.size() > 1) {
+      std::cerr << "ERROR: Ambiguous argument '" << str << "'; "
+                << "Candidate arguments are\n\n";
 
-        if (matches.size() == 1) {
-            it = m_parsers.find(matches.front().second);
-            return true;
-        } else if (matches.size() > 1) {
-            std::cerr << "ERROR: Ambiguous argument '" << str << "'; "
-                      << "Candidate arguments are\n\n";
+      print_arguments(matches);
 
-            print_arguments(matches);
-
-            return false;
-        }
+      return false;
     }
+  }
 
-    std::cerr << "ERROR: Unknown argument: '" << str << "'" << std::endl;
+  std::cerr << "ERROR: Unknown argument: '" << str << "'" << std::endl;
 
-    return false;
+  return false;
 }
 
-
-std::string parser::get_metavar_str(const consumer_ptr ptr,
-                                    const std::string& key) const
+std::string
+parser::get_metavar_str(const consumer_ptr ptr, const std::string& key) const
 {
-    if (!ptr->metavar().empty()) {
-        return ptr->metavar();
-    }
+  if (!ptr->metavar().empty()) {
+    return ptr->metavar();
+  }
 
-    std::string metavar = key;
-    metavar.erase(0, metavar.find_first_not_of("-"));
-    std::replace(metavar.begin(), metavar.end(), '-', '_');
+  std::string metavar = key;
+  metavar.erase(0, metavar.find_first_not_of("-"));
+  std::replace(metavar.begin(), metavar.end(), '-', '_');
 
-    return toupper(metavar);
+  return toupper(metavar);
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
 consumer_base::consumer_base(const std::string& metavar,
                              const std::string& help)
-    : m_value_set(false)
-    , m_metavar(metavar)
-    , m_help(help)
+  : m_value_set(false)
+  , m_metavar(metavar)
+  , m_help(help)
+{}
+
+consumer_base::~consumer_base() {}
+
+bool
+consumer_base::is_set() const
 {
+  return m_value_set;
 }
 
-
-consumer_base::~consumer_base()
+const std::string&
+consumer_base::metavar() const
 {
+  return m_metavar;
 }
 
-
-bool consumer_base::is_set() const
+const std::string&
+consumer_base::help() const
 {
-    return m_value_set;
+  return m_help;
 }
-
-
-const std::string& consumer_base::metavar() const
-{
-    return m_metavar;
-}
-
-
-const std::string& consumer_base::help() const
-{
-    return m_help;
-}
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
 flag::flag(bool* value, const std::string& help)
-    // Non-empty metavar to avoid auto-generated metavar
-    : consumer_base(" ", help)
-    , m_ptr(value)
+  // Non-empty metavar to avoid auto-generated metavar
+  : consumer_base(" ", help)
+  , m_ptr(value)
 {
-    m_value_set = m_ptr ? *value : false;
+  m_value_set = m_ptr ? *value : false;
 }
 
-
-size_t flag::consume(string_vec_citer, const string_vec_citer&)
+size_t
+flag::consume(string_vec_citer, const string_vec_citer&)
 {
-    if (m_ptr) {
-        *m_ptr = true;
-    }
-    m_value_set = true;
+  if (m_ptr) {
+    *m_ptr = true;
+  }
+  m_value_set = true;
 
-    return 0;
+  return 0;
 }
 
-
-std::string flag::to_str() const
+std::string
+flag::to_str() const
 {
-    return std::string(m_value_set ? "on" : "off");
+  return std::string(m_value_set ? "on" : "off");
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
-any::any(std::string* value, const std::string& metavar, const std::string& help)
-    : consumer_base(metavar, help)
-    , m_ptr(value)
-    , m_sink()
+any::any(std::string* value,
+         const std::string& metavar,
+         const std::string& help)
+  : consumer_base(metavar, help)
+  , m_ptr(value)
+  , m_sink()
+{}
+
+size_t
+any::consume(string_vec_citer start, const string_vec_citer& end)
 {
+  if (start != end) {
+    m_value_set = true;
+    (m_ptr ? *m_ptr : m_sink) = *start;
+
+    return 1;
+  }
+
+  return static_cast<size_t>(-1);
 }
 
-
-size_t any::consume(string_vec_citer start, const string_vec_citer& end)
+std::string
+any::to_str() const
 {
-    if (start != end) {
-        m_value_set = true;
-        (m_ptr ? *m_ptr : m_sink) = *start;
-
-        return 1;
-    }
-
-    return static_cast<size_t>(-1);
+  const std::string& result = m_ptr ? *m_ptr : m_sink;
+  if (result.empty()) {
+    return "<not set>";
+  } else {
+    return result;
+  }
 }
-
-
-std::string any::to_str() const
-{
-    const std::string& result = m_ptr ? *m_ptr : m_sink;
-    if (result.empty()) {
-        return "<not set>";
-    } else {
-        return result;
-    }
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
-many::many(string_vec* value, const std::string& metavar, const std::string& help)
-    : consumer_base(metavar, help)
-    , m_ptr(value)
+many::many(string_vec* value,
+           const std::string& metavar,
+           const std::string& help)
+  : consumer_base(metavar, help)
+  , m_ptr(value)
 {
-    AR_DEBUG_ASSERT(m_ptr);
+  AR_DEBUG_ASSERT(m_ptr);
 }
 
-
-size_t many::consume(string_vec_citer start, const string_vec_citer& end)
+size_t
+many::consume(string_vec_citer start, const string_vec_citer& end)
 {
-    m_value_set = true;
-    string_vec_citer it = start;
-    for (; it != end; ++it) {
-        if (!it->empty() && it->front() == '-') {
-            break;
-        }
+  m_value_set = true;
+  string_vec_citer it = start;
+  for (; it != end; ++it) {
+    if (!it->empty() && it->front() == '-') {
+      break;
+    }
+  }
+
+  m_ptr->assign(start, it);
+
+  return static_cast<size_t>(it - start);
+}
+
+std::string
+many::to_str() const
+{
+  if (m_ptr->empty()) {
+    return "<not set>";
+  } else {
+    std::string output;
+
+    for (const auto& s : *m_ptr) {
+      if (!output.empty()) {
+        output.push_back(';');
+      }
+
+      output.append(s);
     }
 
-    m_ptr->assign(start, it);
-
-    return static_cast<size_t>(it - start);
+    return output;
+  }
 }
-
-
-std::string many::to_str() const
-{
-    if (m_ptr->empty()) {
-        return "<not set>";
-    } else {
-        std::string output;
-
-        for (const auto& s: *m_ptr) {
-            if (!output.empty()) {
-                output.push_back(';');
-            }
-
-            output.append(s);
-        }
-
-        return output;
-    }
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
 knob::knob(unsigned* value, const std::string& metavar, const std::string& help)
-    : consumer_base(metavar, help)
-    , m_ptr(value)
+  : consumer_base(metavar, help)
+  , m_ptr(value)
 {
-    AR_DEBUG_ASSERT(m_ptr);
+  AR_DEBUG_ASSERT(m_ptr);
 }
 
-
-size_t knob::consume(string_vec_citer start, const string_vec_citer& end)
+size_t
+knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
-    if (start != end) {
-        try {
-            *m_ptr = str_to_unsigned(*start);
-            m_value_set = true;
-            return 1;
-        } catch (const std::invalid_argument&) {
-            return static_cast<size_t>(-1);
-        }
+  if (start != end) {
+    try {
+      *m_ptr = str_to_unsigned(*start);
+      m_value_set = true;
+      return 1;
+    } catch (const std::invalid_argument&) {
+      return static_cast<size_t>(-1);
     }
+  }
 
-    return static_cast<size_t>(-1);
+  return static_cast<size_t>(-1);
 }
 
-
-std::string knob::to_str() const
+std::string
+knob::to_str() const
 {
-    std::stringstream stream;
-    stream << *m_ptr;
-    return stream.str();
+  std::stringstream stream;
+  stream << *m_ptr;
+  return stream.str();
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
-floaty_knob::floaty_knob(double* value, const std::string& metavar, const std::string& help)
-    : consumer_base(metavar, help)
-    , m_ptr(value)
+floaty_knob::floaty_knob(double* value,
+                         const std::string& metavar,
+                         const std::string& help)
+  : consumer_base(metavar, help)
+  , m_ptr(value)
 {
-    AR_DEBUG_ASSERT(m_ptr);
+  AR_DEBUG_ASSERT(m_ptr);
 }
 
-
-size_t floaty_knob::consume(string_vec_citer start, const string_vec_citer& end)
+size_t
+floaty_knob::consume(string_vec_citer start, const string_vec_citer& end)
 {
-    if (start != end) {
-        std::stringstream stream(*start);
-        if (!(stream >> *m_ptr)) {
-            return static_cast<size_t>(-1);
-        }
-
-        // Failing on trailing, non-numerical values
-        std::string trailing;
-        if (stream >> trailing) {
-            return static_cast<size_t>(-1);
-        }
-
-        m_value_set = true;
-        return 1;
+  if (start != end) {
+    std::stringstream stream(*start);
+    if (!(stream >> *m_ptr)) {
+      return static_cast<size_t>(-1);
     }
 
-    return static_cast<size_t>(-1);
+    // Failing on trailing, non-numerical values
+    std::string trailing;
+    if (stream >> trailing) {
+      return static_cast<size_t>(-1);
+    }
 
+    m_value_set = true;
+    return 1;
+  }
+
+  return static_cast<size_t>(-1);
 }
 
-
-std::string floaty_knob::to_str() const
+std::string
+floaty_knob::to_str() const
 {
-    if (std::isnan(*m_ptr)) {
-        return "<not set>";
-    } else {
-        std::stringstream stream;
-        stream << *m_ptr;
-        return stream.str();
-    }
+  if (std::isnan(*m_ptr)) {
+    return "<not set>";
+  } else {
+    std::stringstream stream;
+    stream << *m_ptr;
+    return stream.str();
+  }
 }
 
 } // namespace argparse

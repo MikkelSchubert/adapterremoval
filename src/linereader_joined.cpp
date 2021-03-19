@@ -24,8 +24,8 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -33,59 +33,52 @@
 #include "linereader_joined.hpp"
 #include "threads.hpp"
 
-
-namespace ar
-{
+namespace ar {
 
 joined_line_readers::joined_line_readers(const string_vec& filenames)
   : m_filenames(filenames.rbegin(), filenames.rend())
   , m_reader()
   , m_current_line(1)
+{}
+
+joined_line_readers::~joined_line_readers() {}
+
+bool
+joined_line_readers::getline(std::string& dst)
 {
+  dst.clear();
+
+  while (dst.empty()) {
+    if (m_reader && m_reader->getline(dst)) {
+      m_current_line++;
+      break;
+    } else if (!open_next_file()) {
+      break;
+    }
+  }
+
+  return !dst.empty();
 }
 
-
-joined_line_readers::~joined_line_readers()
+bool
+joined_line_readers::open_next_file()
 {
-}
+  if (m_filenames.empty()) {
+    return false;
+  }
 
+  auto filename = m_filenames.back();
 
-bool joined_line_readers::getline(std::string& dst)
-{
-    dst.clear();
+  {
+    print_locker lock;
+    std::cerr << "Opening FASTQ file '" << filename
+              << "', line numbers start at " << m_current_line << std::endl;
+  }
 
-    while (dst.empty()) {
-        if (m_reader && m_reader->getline(dst)) {
-            m_current_line++;
-            break;
-        } else if (!open_next_file()) {
-            break;
-        }
-    }
+  m_reader.reset(new line_reader(filename));
+  m_filenames.pop_back();
 
-    return !dst.empty();
-}
-
-
-bool joined_line_readers::open_next_file()
-{
-    if (m_filenames.empty()) {
-        return false;
-    }
-
-    auto filename = m_filenames.back();
-
-    {
-        print_locker lock;
-        std::cerr << "Opening FASTQ file '" << filename
-                  << "', line numbers start at " << m_current_line
-                  << std::endl;
-    }
-
-    m_reader.reset(new line_reader(filename));
-    m_filenames.pop_back();
-
-    return true;
+  return true;
 }
 
 }

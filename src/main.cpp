@@ -28,69 +28,70 @@
 #include "main.hpp"
 #include "userconfig.hpp"
 
-namespace ar
-{
+namespace ar {
 
 // See main_adapter_rm.cpp
-int remove_adapter_sequences(const userconfig& config);
+int
+remove_adapter_sequences(const userconfig& config);
 // See main_adapter_id.cpp
-int identify_adapter_sequences(const userconfig& config);
+int
+identify_adapter_sequences(const userconfig& config);
 // See main_demultiplex.cpp
-int demultiplex_sequences(const userconfig& config);
+int
+demultiplex_sequences(const userconfig& config);
 
 } // namespace ar
 
-
-int main(int argc, char *argv[])
+int
+main(int argc, char* argv[])
 {
-    using namespace ar;
-    std::ios_base::sync_with_stdio(false);
+  using namespace ar;
+  std::ios_base::sync_with_stdio(false);
 
-    userconfig config(NAME, VERSION, HELPTEXT);
-    switch (config.parse_args(argc, argv)) {
-        case argparse::parse_result::error: {
-            return 1;
-        }
-
-        case argparse::parse_result::exit: {
-            // --version, --help, or similar used.
-            return 0;
-        }
-
-        default: {
-            // Ok
-        }
+  userconfig config(NAME, VERSION, HELPTEXT);
+  switch (config.parse_args(argc, argv)) {
+    case argparse::parse_result::error: {
+      return 1;
     }
 
-    auto returncode = 0;
-    switch (config.run_type) {
-        case ar_command::trim_adapters: {
-            returncode = remove_adapter_sequences(config);
-            break;
-        }
-
-        case ar_command::demultiplex_sequences: {
-            returncode = demultiplex_sequences(config);
-            break;
-        }
-
-        case ar_command::identify_adapters: {
-            return identify_adapter_sequences(config);
-        }
-
-        default: {
-            std::cerr << "ERROR: Unknown run-type: "
-                      << static_cast<size_t>(config.run_type)
-                      << std::endl;
-            return 1;
-        }
+    case argparse::parse_result::exit: {
+      // --version, --help, or similar used.
+      return 0;
     }
 
-    if (returncode) {
-        std::cerr << "ERROR: AdapterRemoval did not run to completion;\n"
-                  << "       do NOT make use of resulting trimmed reads!"
-                  << std::endl;
+    default: {
+      // Ok
+    }
+  }
+
+  auto returncode = 0;
+  switch (config.run_type) {
+    case ar_command::trim_adapters: {
+      returncode = remove_adapter_sequences(config);
+      break;
     }
 
-    return returncode;
+    case ar_command::demultiplex_sequences: {
+      returncode = demultiplex_sequences(config);
+      break;
+    }
+
+    case ar_command::identify_adapters: {
+      return identify_adapter_sequences(config);
+    }
+
+    default: {
+      std::cerr << "ERROR: Unknown run-type: "
+                << static_cast<size_t>(config.run_type) << std::endl;
+      return 1;
+    }
+  }
+
+  if (returncode) {
+    std::cerr << "ERROR: AdapterRemoval did not run to completion;\n"
+              << "       do NOT make use of resulting trimmed reads!"
+              << std::endl;
+  }
+
+  return returncode;
 }

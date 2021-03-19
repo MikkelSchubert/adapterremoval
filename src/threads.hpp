@@ -24,13 +24,11 @@
 #ifndef THREADS_H
 #define THREADS_H
 
+#include <mutex>
 #include <string>
 #include <thread>
-#include <mutex>
 
-
-namespace ar
-{
+namespace ar {
 
 /**
  * Exception thrown for threading related errors, including errors with
@@ -39,21 +37,20 @@ namespace ar
 class thread_error : public std::exception
 {
 public:
-    /** Constructor; takes an error-message. */
-    thread_error(const std::string& message);
-    /** Copy-constructor; takes an exiting error. */
-    thread_error(const thread_error& error);
-    /** Destructor; does nothing. */
-    ~thread_error() noexcept;
+  /** Constructor; takes an error-message. */
+  thread_error(const std::string& message);
+  /** Copy-constructor; takes an exiting error. */
+  thread_error(const thread_error& error);
+  /** Destructor; does nothing. */
+  ~thread_error() noexcept;
 
-    /** Returns error message; lifetime is the same as the object. */
-    virtual const char* what() const noexcept;
+  /** Returns error message; lifetime is the same as the object. */
+  virtual const char* what() const noexcept;
 
 private:
-    //! User provided error message
-    std::string m_message;
+  //! User provided error message
+  std::string m_message;
 };
-
 
 /**
  * This exception may be thrown by a task to abort the thread; error-messages
@@ -63,9 +60,8 @@ private:
 class thread_abort : public thread_error
 {
 public:
-    thread_abort();
+  thread_abort();
 };
-
 
 /**
  * Locker for using stdout / stderr.
@@ -77,28 +73,27 @@ public:
 class print_locker
 {
 public:
-    /*
-     * Locks the mutex (blocking). If flush_stderr is true, and
-     * partial_stderr_output has been called, then a newline is first
-     * written to stderr.
-     */
-    print_locker(bool flush_stderr=true);
+  /*
+   * Locks the mutex (blocking). If flush_stderr is true, and
+   * partial_stderr_output has been called, then a newline is first
+   * written to stderr.
+   */
+  print_locker(bool flush_stderr = true);
 
-    //! Unlocks the mutex
-    ~print_locker();
+  //! Unlocks the mutex
+  ~print_locker();
 
-    //! Call to indicate that a partial line has been written to STDERR.
-    void partial_stderr_output();
+  //! Call to indicate that a partial line has been written to STDERR.
+  void partial_stderr_output();
 
-    //! Copy construction not supported
-    print_locker(const print_locker&) = delete;
-    //! Assignment not supported
-    print_locker& operator=(const print_locker&) = delete;
+  //! Copy construction not supported
+  print_locker(const print_locker&) = delete;
+  //! Assignment not supported
+  print_locker& operator=(const print_locker&) = delete;
 
 private:
-    std::lock_guard<std::mutex> m_lock;
+  std::lock_guard<std::mutex> m_lock;
 };
-
 
 } // namespace ar
 

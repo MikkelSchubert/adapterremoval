@@ -32,45 +32,42 @@
 #include "scheduler.hpp"
 #include "statistics.hpp"
 
-namespace ar
-{
+namespace ar {
 
 class userconfig;
 struct next_subsequence;
-
 
 /** Exception raised for FASTQ parsing and validation errors. */
 class barcode_error : public std::exception
 {
 public:
-    barcode_error(const std::string& message);
-    barcode_error(const barcode_error& error);
+  barcode_error(const std::string& message);
+  barcode_error(const barcode_error& error);
 
-    virtual ~barcode_error() noexcept;
+  virtual ~barcode_error() noexcept;
 
-    /** Returns error message; string is owned by exception. */
-    virtual const char* what() const noexcept;
+  /** Returns error message; string is owned by exception. */
+  virtual const char* what() const noexcept;
 
 private:
-    //! Error message associated with exception.
-    std::string m_message;
+  //! Error message associated with exception.
+  std::string m_message;
 };
-
 
 /**
  * Struct representing node in quad-tree; children are referenced using the
  * corresponding indice in the vector representing the tree; -1 is used to
  * represent unassigned children.
  */
-struct demultiplexer_node {
-    demultiplexer_node();
+struct demultiplexer_node
+{
+  demultiplexer_node();
 
-    std::array<int, 4> children;
-    int value;
+  std::array<int, 4> children;
+  int value;
 };
 
 typedef std::vector<demultiplexer_node> demux_node_vec;
-
 
 /**
  *
@@ -78,41 +75,45 @@ typedef std::vector<demultiplexer_node> demux_node_vec;
 class barcode_table
 {
 public:
-    barcode_table(const fastq_pair_vec& barcodes, size_t max_mm,
-                  size_t max_mm_r1, size_t max_mm_r2);
+  barcode_table(const fastq_pair_vec& barcodes,
+                size_t max_mm,
+                size_t max_mm_r1,
+                size_t max_mm_r2);
 
-    int identify(const fastq& read_r1) const;
-    int identify(const fastq& read_r1, const fastq& read_r2) const;
+  int identify(const fastq& read_r1) const;
+  int identify(const fastq& read_r1, const fastq& read_r2) const;
 
-    static const int no_match = -1;
-    static const int ambigious = -2;
+  static const int no_match = -1;
+  static const int ambigious = -2;
 
 protected:
-    struct candidate {
-        explicit candidate(int barcode = barcode_table::no_match,
-                           size_t mismatches = -1);
+  struct candidate
+  {
+    explicit candidate(int barcode = barcode_table::no_match,
+                       size_t mismatches = -1);
 
-        int barcode;
-        size_t mismatches;
-    };
+    int barcode;
+    size_t mismatches;
+  };
 
-    candidate lookup(const char* seq, int parent,
-                     const size_t max_global_mismatches,
-                     const next_subsequence* next) const;
+  candidate lookup(const char* seq,
+                   int parent,
+                   const size_t max_global_mismatches,
+                   const next_subsequence* next) const;
 
-    candidate lookup_with_mm(const char* seq, int parent,
-                             const size_t max_global_mismatches,
-                             const size_t max_local_mismatches,
-                             const next_subsequence* next) const;
+  candidate lookup_with_mm(const char* seq,
+                           int parent,
+                           const size_t max_global_mismatches,
+                           const size_t max_local_mismatches,
+                           const next_subsequence* next) const;
 
-    demux_node_vec m_nodes;
-    size_t m_max_mismatches;
-    size_t m_max_mismatches_r1;
-    size_t m_max_mismatches_r2;
-    size_t m_barcode_1_len;
-    size_t m_barcode_2_len;
+  demux_node_vec m_nodes;
+  size_t m_max_mismatches;
+  size_t m_max_mismatches_r1;
+  size_t m_max_mismatches_r2;
+  size_t m_barcode_1_len;
+  size_t m_barcode_2_len;
 };
-
 
 } // namespace ar
 

@@ -29,14 +29,10 @@
 
 #include "commontypes.hpp"
 
-
-namespace ar
-{
-
+namespace ar {
 
 typedef std::pair<size_t, unsigned char*> buffer_pair;
 typedef std::vector<buffer_pair> buffer_vec;
-
 
 /**
  * Writer that manages open handles if open files exceeds ulimits.
@@ -49,57 +45,56 @@ typedef std::vector<buffer_pair> buffer_vec;
 class managed_writer
 {
 public:
-    managed_writer(const std::string& filename);
-    ~managed_writer();
+  managed_writer(const std::string& filename);
+  ~managed_writer();
 
-    /**
-     * Opens a file using fopen and returns the handle.
-     *
-     * If too many handles are used, this funtion will close writers until
-     * the file can be succesfully opened.
-     */
-    static FILE* fopen(const std::string& filename, const char* mode);
+  /**
+   * Opens a file using fopen and returns the handle.
+   *
+   * If too many handles are used, this funtion will close writers until
+   * the file can be succesfully opened.
+   */
+  static FILE* fopen(const std::string& filename, const char* mode);
 
-    void write_buffers(const buffer_vec& buffers, bool flush);
-    void write_strings(const string_vec& strings, bool flush);
+  void write_buffers(const buffer_vec& buffers, bool flush);
+  void write_strings(const string_vec& strings, bool flush);
 
-    void close();
+  void close();
 
-    const std::string& filename() const;
+  const std::string& filename() const;
 
-    managed_writer(const managed_writer&) = delete;
-    managed_writer& operator=(const managed_writer&) = delete;
+  managed_writer(const managed_writer&) = delete;
+  managed_writer& operator=(const managed_writer&) = delete;
 
 private:
-    /* Ensure that the writer is open, closing existing files if nessesary. */
-    static void open_writer(managed_writer* ptr);
-    /* Removes the writer from the list of open writers. */
-    static void remove_writer(managed_writer* ptr);
-    /* Sets the writer as the most recently used writer. */
-    static void add_head_writer(managed_writer* ptr);
-    /* Close the least recently used writer. */
-    static void close_tail_writer();
+  /* Ensure that the writer is open, closing existing files if nessesary. */
+  static void open_writer(managed_writer* ptr);
+  /* Removes the writer from the list of open writers. */
+  static void remove_writer(managed_writer* ptr);
+  /* Sets the writer as the most recently used writer. */
+  static void add_head_writer(managed_writer* ptr);
+  /* Close the least recently used writer. */
+  static void close_tail_writer();
 
-    //! Destination filename; is created lazily.
-    std::string m_filename;
-    //! Lazily opened, managed handle; may be closed to free up handles.
-    std::ofstream m_stream;
-    //! Indicates if the file has been created
-    bool m_created;
+  //! Destination filename; is created lazily.
+  std::string m_filename;
+  //! Lazily opened, managed handle; may be closed to free up handles.
+  std::ofstream m_stream;
+  //! Indicates if the file has been created
+  bool m_created;
 
-    //! Previous managed_writer; used more recently than this.
-    managed_writer* m_prev;
-    //! Next managed_writer; used before this.
-    managed_writer* m_next;
+  //! Previous managed_writer; used more recently than this.
+  managed_writer* m_prev;
+  //! Next managed_writer; used before this.
+  managed_writer* m_next;
 
-    //! Most recently used managed_writer
-    static managed_writer* s_head;
-    //! Least recently used managed_writer
-    static managed_writer* s_tail;
-    //! Indicates if a performance warning has been printed
-    static bool s_warning_printed;
+  //! Most recently used managed_writer
+  static managed_writer* s_head;
+  //! Least recently used managed_writer
+  static managed_writer* s_tail;
+  //! Indicates if a performance warning has been printed
+  static bool s_warning_printed;
 };
-
 
 } // namespace ar
 

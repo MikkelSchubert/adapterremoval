@@ -28,8 +28,7 @@
 #include "commontypes.hpp"
 #include "fastq.hpp"
 
-namespace ar
-{
+namespace ar {
 
 /**
  * Class for reading sets of adapters and barcodes, and for generating
@@ -40,62 +39,63 @@ namespace ar
 class adapter_set
 {
 public:
-    /** Initialize empty adapter list. */
-    adapter_set();
+  /** Initialize empty adapter list. */
+  adapter_set();
 
-    /**
-     * Adds a pair of adapters to the set; it is assumed that the adapter 2 sequence is * in read orientation (e.g. can be found as is in the raw mate 2 reads.
-     */
-    void add_adapters(const std::string& adapter1,
-                      const std::string& adapter2);
+  /**
+   * Adds a pair of adapters to the set; it is assumed that the adapter 2
+   * sequence is * in read orientation (e.g. can be found as is in the raw mate
+   * 2 reads.
+   */
+  void add_adapters(const std::string& adapter1, const std::string& adapter2);
 
-    /**
-     * Loads barcodes from a table, returning true on success. The value of
-     * 'paired_end_mode' is used to set the expected number of values.
-     */
-    bool load_adapters(const std::string& filename, bool paired_end_mode);
+  /**
+   * Loads barcodes from a table, returning true on success. The value of
+   * 'paired_end_mode' is used to set the expected number of values.
+   */
+  bool load_adapters(const std::string& filename, bool paired_end_mode);
 
-    /**
-     * Loads barcodes from a table, returning true on success. The value of
-     * 'paired_end_mode' to correctly identify duplicate sequences.
-     */
-    bool load_barcodes(const std::string& filename, bool paired_end_mode);
+  /**
+   * Loads barcodes from a table, returning true on success. The value of
+   * 'paired_end_mode' to correctly identify duplicate sequences.
+   */
+  bool load_barcodes(const std::string& filename, bool paired_end_mode);
 
-    /** Returns the number of adapters per set. */
-    size_t adapter_count() const;
+  /** Returns the number of adapters per set. */
+  size_t adapter_count() const;
 
-    /** Returns the number of adapter sets; namely 1 or barcode_count() */
-    size_t adapter_set_count() const;
+  /** Returns the number of adapter sets; namely 1 or barcode_count() */
+  size_t adapter_set_count() const;
 
-    /** Returns the number of barcodes. */
-    size_t barcode_count() const;
+  /** Returns the number of barcodes. */
+  size_t barcode_count() const;
 
-    /**
-     * Returns the nth set of adapters; when barcodes are specified, the
-     * raw adapters are merged with the 'nth' barcodes. If no barcodes are
-     * set, the get_adapters(0) == get_raw_adapters().
-     */
-    fastq_pair_vec get_adapter_set(size_t nth) const;
+  /**
+   * Returns the nth set of adapters; when barcodes are specified, the
+   * raw adapters are merged with the 'nth' barcodes. If no barcodes are
+   * set, the get_adapters(0) == get_raw_adapters().
+   */
+  fastq_pair_vec get_adapter_set(size_t nth) const;
 
-    /** Returns get_adapter_set(nth) formatted for printing. */
-    string_pair_vec get_pretty_adapter_set(size_t nth) const;
+  /** Returns get_adapter_set(nth) formatted for printing. */
+  string_pair_vec get_pretty_adapter_set(size_t nth) const;
 
-    /** Returns adapter sequences absent of any barcodes. */
-    const fastq_pair_vec& get_raw_adapters() const;
+  /** Returns adapter sequences absent of any barcodes. */
+  const fastq_pair_vec& get_raw_adapters() const;
 
-    /** Returns the (pairs of) barcodes. */
-    const fastq_pair_vec& get_barcodes() const;
+  /** Returns the (pairs of) barcodes. */
+  const fastq_pair_vec& get_barcodes() const;
 
-    /** Returns the name associated with the nth set of barcodes. */
-    const std::string& get_sample_name(size_t nth) const;
+  /** Returns the name associated with the nth set of barcodes. */
+  const std::string& get_sample_name(size_t nth) const;
 
 private:
-    //! Names associated with barcodes
-    string_vec m_samples;
-    //! User-supplied barcodes
-    fastq_pair_vec m_barcodes;
-    //! User-supplied adapter sequences, without barcodes added
-    fastq_pair_vec m_adapters;
+  //! Names associated with barcodes
+  string_vec m_samples;
+  //! User-supplied barcodes
+  fastq_pair_vec m_barcodes;
+  //! User-supplied adapter sequences, without barcodes added
+  fastq_pair_vec m_adapters;
 };
 
 } // namespace ar

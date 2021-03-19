@@ -27,49 +27,43 @@
 #include <iostream>
 #include <sstream>
 
-namespace ar
-{
+namespace ar {
 
 #ifdef AR_TEST_BUILD
 assert_failed::assert_failed(const assert_failed& errror)
-    : m_what(errror.m_what)
-{
-}
-
+  : m_what(errror.m_what)
+{}
 
 assert_failed::assert_failed(const std::string& what)
-    : m_what(what)
-{
-}
+  : m_what(what)
+{}
 
+assert_failed::~assert_failed() noexcept {}
 
-assert_failed::~assert_failed() noexcept
+const char*
+assert_failed::what() const noexcept
 {
-}
-
-const char* assert_failed::what() const noexcept
-{
-    return m_what.c_str();
+  return m_what.c_str();
 }
 #endif
 
-
-void debug_raise_assert(const char* filename, size_t lineno, const char* what)
+void
+debug_raise_assert(const char* filename, size_t lineno, const char* what)
 {
-    std::stringstream message;
-    message << "Assertion failed in '" << filename << "', line "
-            << lineno << ": " << what;
+  std::stringstream message;
+  message << "Assertion failed in '" << filename << "', line " << lineno << ": "
+          << what;
 
 #ifdef AR_TEST_BUILD
-    throw assert_failed(message.str());
+  throw assert_failed(message.str());
 #else
-    std::cerr << "\nFATAL ERROR:\n"
-              << message.str() << "\n\n"
-              << "This should not happen! Please file a bug-report at\n    "
-              << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
-              << std::endl;
+  std::cerr << "\nFATAL ERROR:\n"
+            << message.str() << "\n\n"
+            << "This should not happen! Please file a bug-report at\n    "
+            << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
+            << std::endl;
 
-    std::abort();
+  std::abort();
 #endif
 }
 

@@ -27,23 +27,23 @@
 
 #include <string>
 
-namespace ar
-{
+namespace ar {
 
 const std::string NAME = "AdapterRemoval";
 const std::string VERSION = "ver. 2.3.2";
-const std::string HELPTEXT = \
-    "This program searches for and removes remnant adapter sequences from\n"
-    "your read data.  The program can analyze both single end and paired end\n"
-    "data.  For detailed explanation of the parameters, please refer to the\n"
-    "man page.  For comments, suggestions  and feedback please contact Stinus\n"
-    "Lindgreen (stinus@binf.ku.dk) and Mikkel Schubert (MikkelSch@gmail.com).\n"
-    "\n"
-    "If you use the program, please cite the paper:\n"
-    "    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
-    "    adapter trimming, identification, and read merging.\n"
-    "    BMC Research Notes, 12;9(1):88.\n\n"
-    "    http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n";
+const std::string HELPTEXT =
+  "This program searches for and removes remnant adapter sequences from\n"
+  "your read data.  The program can analyze both single end and paired end\n"
+  "data.  For detailed explanation of the parameters, please refer to the\n"
+  "man page.  For comments, suggestions  and feedback please contact Stinus\n"
+  "Lindgreen (stinus@binf.ku.dk) and Mikkel Schubert (MikkelSch@gmail.com).\n"
+  "\n"
+  "If you use the program, please cite the paper:\n"
+  "    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
+  "    adapter trimming, identification, and read merging.\n"
+  "    BMC Research Notes, 12;9(1):88.\n\n"
+  "    "
+  "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n";
 
 } // namespace ar
 

@@ -30,14 +30,14 @@
 #include "catch.hpp"
 #include "fastq.hpp"
 
-
 namespace ar {
 
-inline std::ostream& operator<<(std::ostream& stream, const fastq& record)
+inline std::ostream&
+operator<<(std::ostream& stream, const fastq& record)
 {
-    return stream << "'@" << record.header() << "\\n"
-                  << record.sequence() << "\\n+\\n"
-                  << record.qualities() << "\\n'";
+  return stream << "'@" << record.header() << "\\n"
+                << record.sequence() << "\\n+\\n"
+                << record.qualities() << "\\n'";
 }
 
 }

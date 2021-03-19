@@ -22,22 +22,20 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "testing.hpp"
 #include "fastq.hpp"
+#include "testing.hpp"
 
-
-namespace ar
-{
+namespace ar {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Names (default objects)
 
 TEST_CASE("Global encodings have expected names", "[fastq_encoding]")
 {
-    REQUIRE(FASTQ_ENCODING_33.name() == std::string("Phred+33"));
-    REQUIRE(FASTQ_ENCODING_64.name() == std::string("Phred+64"));
-    REQUIRE(FASTQ_ENCODING_SAM.name() == std::string("Phred+33"));
-    REQUIRE(FASTQ_ENCODING_SOLEXA.name() == std::string("Solexa"));
+  REQUIRE(FASTQ_ENCODING_33.name() == std::string("Phred+33"));
+  REQUIRE(FASTQ_ENCODING_64.name() == std::string("Phred+64"));
+  REQUIRE(FASTQ_ENCODING_SAM.name() == std::string("Phred+33"));
+  REQUIRE(FASTQ_ENCODING_SOLEXA.name() == std::string("Solexa"));
 }
 
 }
