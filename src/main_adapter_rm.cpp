@@ -395,7 +395,6 @@ process_collapsed_read(const userconfig& config,
     mate_read->add_prefix_to_header(was_trimmed ? "MT_" : "M_");
   }
 
-  const size_t read_count = config.paired_ended_mode ? 2 : 1;
   if (config.is_acceptable_read(collapsed_read)) {
     stats.total_number_of_nucleotides += collapsed_read.length();
     stats.total_number_of_good_reads++;
@@ -405,11 +404,10 @@ process_collapsed_read(const userconfig& config,
 
     if (was_trimmed) {
       chunks.add_collapsed_truncated_read(
-        collapsed_read, read_status::passed, read_count);
+        collapsed_read, read_status::passed, 2);
       stats.number_of_truncated_collapsed++;
     } else {
-      chunks.add_collapsed_read(
-        collapsed_read, read_status::passed, read_count);
+      chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
       stats.number_of_full_length_collapsed++;
     }
   } else {
@@ -419,10 +417,9 @@ process_collapsed_read(const userconfig& config,
 
     if (was_trimmed) {
       chunks.add_collapsed_truncated_read(
-        collapsed_read, read_status::failed, read_count);
+        collapsed_read, read_status::failed, 2);
     } else {
-      chunks.add_collapsed_read(
-        collapsed_read, read_status::failed, read_count);
+      chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
     }
   }
 }
@@ -488,11 +485,6 @@ public:
         truncate_single_ended_sequence(alignment, read);
         stats->number_of_reads_with_adapter.at(alignment.adapter_id)++;
         stats->well_aligned_reads++;
-
-        if (m_config.is_alignment_collapsible(alignment)) {
-          process_collapsed_read(m_config, *stats, read, nullptr, chunks);
-          continue;
-        }
       } else {
         stats->unaligned_reads++;
       }

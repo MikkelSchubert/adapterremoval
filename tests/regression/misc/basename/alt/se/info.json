@@ -1,6 +1,9 @@
 {
-	"arguments": ["--collapse", "--trimns", "--basename", "alternative"],
+	"arguments": [
+		"--trimns",
+		"--basename",
+		"alternative"
+	],
 	"return_code": 0,
-	"stderr": [
-	]
+	"stderr": []
 }

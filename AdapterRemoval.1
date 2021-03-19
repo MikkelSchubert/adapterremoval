@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "ADAPTERREMOVAL" "1" "Apr 28, 2021" "2.3.2" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Mar 19, 2021" "2.3.2" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .
@@ -87,12 +87,7 @@ Maximum number of threads. Defaults to 1.
 .INDENT 0.0
 .TP
 .B \-\-qualitybase base
-The Phred quality scores encoding used in input reads \- either \(aq64\(aq for Phred+64 (Illumina 1.3+ and 1.5+) or \(aq33\(aq for Phred+33 (Illumina 1.8+). In addition, the value \(aqsolexa\(aq may be used to specify reads with Solexa encoded scores. Default is 33.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-qualitybase\-output base
-The base of the quality score for reads written by AdapterRemoval \- either \(aq64\(aq for Phred+64 (i.e., Illumina 1.3+ and 1.5+) or \(aq33\(aq for Phred+33 (Illumina 1.8+). In addition, the value \(aqsolexa\(aq may be used to specify reads with Solexa encoded scores. However, note that quality scores are represented using Phred scores internally, and conversion to and from Solexa scores therefore result in a loss of information. The default corresponds to the value given for \fB\-\-qualitybase\fP\&.
+The Phred quality scores encoding used in input reads \- either \(aq64\(aq for Phred+64 (Illumina 1.3+ and 1.5+) or \(aq33\(aq for Phred+33 (Illumina 1.8+). In addition, the value \(aqsolexa\(aq may be used to specify reads with Solexa encoded scores. Output is always written as Phred+33. Default is 33.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -153,7 +148,7 @@ Output file to which containing paired reads for which the mate has been discard
 .INDENT 0.0
 .TP
 .B \-\-outputcollapsed file
-If \-\-collapsed is set, contains overlapping mate\-pairs which have been merged into a single read (PE mode) or reads for which the adapter was identified by a minimum overlap, indicating that the entire template molecule is present. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed\(aq
+If \-\-collapsed is set, contains overlapping mate\-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed\(aq
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -255,7 +250,7 @@ Set the threshold for trimming low quality bases using \fB\-\-trimqualities\fP a
 .INDENT 0.0
 .TP
 .B \-\-preserve5p
-If set, bases at the 5p will not be trimmed by \fB\-\-trimns\fP, \fB\-\-trimqualities\fP, and \fB\-\-trimwindows\fP\&. Collapsed reads will not be quality trimmed when this option is enabled.
+If set, bases at the 5p will not be trimmed by \fB\-\-trimns\fP, \fB\-\-trimqualities\fP, and \fB\-\-trimwindows\fP\&. Collapsed reads will not be quality/N trimmed when this option is enabled.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -271,7 +266,7 @@ Reads longer than this length are discarded following trimming. Defaults to 4294
 .INDENT 0.0
 .TP
 .B \-\-collapse
-In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. In single\-end mode, attempt to identify templates for which the entire sequence is available. In both cases, complete "collapsed" reads are written with a \(aqM_\(aq name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&.
+In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "collapsed" reads are written with a \(aqM_\(aq name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&. This option has no effect in single\-end mode.
 .UNINDENT
 .INDENT 0.0
 .TP

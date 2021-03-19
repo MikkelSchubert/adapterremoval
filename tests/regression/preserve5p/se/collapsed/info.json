@@ -1,6 +1,0 @@
-{
-	"arguments": ["--trimns", "--trimqualities", "--preserve5p", "--collapse"],
-	"return_code": 0,
-	"stderr": [
-	]
-}

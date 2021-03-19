@@ -378,19 +378,15 @@ userconfig::userconfig(const std::string& name,
     "or more bases are combined into a single consensus sequence, "
     "representing the complete insert, and written to either "
     "basename.collapsed or basename.collapsed.truncated (if trimmed "
-    "due to low-quality bases following collapse); for single-ended "
-    "reads, putative complete inserts are identified as having at "
-    "least --minalignmentlength bases overlap with the adapter "
-    "sequence, and are written to the the same files "
-    "[default: %default].");
+    "due to low-quality bases following collapse) has no effect in single-end "
+    "mode [default: %default].");
   argparser["--collapse-deterministic"] = new argparse::flag(
     &deterministic,
     "In standard --collapse mode, AdapterRemoval will randomly select "
     "one of two different overlapping bases if these have the same "
     "quality (otherwise it picks the highest quality base). With "
     "--collapse-deterministic, AdapterRemoval will instead set such "
-    "bases to N. Setting this option also sets--collapse "
-    "[default: %default].");
+    "bases to N. Setting this also sets --collapse [default: %default].");
   argparser["--collapse-conservatively"] = new argparse::flag(
     &collapse_conservatively,
     "Enables a more conservative merging algorithm inspired by fastq-join, "
@@ -458,11 +454,6 @@ userconfig::parse_args(int argc, char* argv[])
   if (result != argparse::parse_result::ok) {
     return result;
   }
-
-  // --collapse-deterministic implies --collapse
-  collapse |= deterministic;
-  // --collapse-conservatively implies --collapse
-  collapse |= collapse_conservatively;
 
   if (!(quality_input_fmt = select_encoding(quality_input_base, quality_max))) {
     return argparse::parse_result::error;
@@ -538,7 +529,6 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   } else if (!input_files_2.empty()) {
     paired_ended_mode = true;
-    min_adapter_overlap = 0;
   }
 
   interleaved_input |= interleaved;
@@ -556,6 +546,18 @@ userconfig::parse_args(int argc, char* argv[])
     // Enable paired end mode .. other than the FASTQ reader, all other
     // parts of the pipeline simply run in paired-end mode.
     paired_ended_mode = true;
+  }
+
+  if (paired_ended_mode) {
+    min_adapter_overlap = 0;
+    // --collapse-deterministic implies --collapse
+    collapse |= deterministic;
+    // --collapse-conservatively implies --collapse
+    collapse |= collapse_conservatively;
+  } else {
+    collapse = false;
+    collapse_conservatively = false;
+    deterministic = false;
   }
 
   if (identify_adapters && !paired_ended_mode) {

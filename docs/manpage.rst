@@ -109,7 +109,7 @@ Output file options
 
 .. option:: --outputcollapsed file
 
-	If --collapsed is set, contains overlapping mate-pairs which have been merged into a single read (PE mode) or reads for which the adapter was identified by a minimum overlap, indicating that the entire template molecule is present. This does not include which have subsequently been trimmed due to low-quality or ambiguous nucleotides. Default filename is 'basename.collapsed'
+	If --collapsed is set, contains overlapping mate-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low-quality or ambiguous nucleotides. Default filename is 'basename.collapsed'
 
 .. option:: --outputcollapsedtruncated file
 
@@ -197,7 +197,7 @@ FASTQ trimming options
 
 .. option:: --preserve5p
 
-	If set, bases at the 5p will not be trimmed by ``--trimns``, ``--trimqualities``, and ``--trimwindows``. Collapsed reads will not be quality trimmed when this option is enabled.
+	If set, bases at the 5p will not be trimmed by ``--trimns``, ``--trimqualities``, and ``--trimwindows``. Collapsed reads will not be quality/N trimmed when this option is enabled.
 
 .. option:: --minlength length
 
@@ -214,7 +214,7 @@ FASTQ merging options
 
 .. option:: --collapse
 
-	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. In single-end mode, attempt to identify templates for which the entire sequence is available. In both cases, complete "collapsed" reads are written with a 'M\_' name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a 'MT\_' name prefix. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``.
+	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "collapsed" reads are written with a 'M\_' name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a 'MT\_' name prefix. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
 
 .. option:: --minalignmentlength length
 
