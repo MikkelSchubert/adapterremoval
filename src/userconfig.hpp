@@ -209,8 +209,6 @@ private:
 
   //! Sink for user-supplied quality score formats; use quality_input_fmt.
   std::string quality_input_base;
-  //! Sink for user-supplied quality score formats; use quality_output_fmt.
-  std::string quality_output_base;
   //! Sink for maximum quality score for input / output
   unsigned quality_max;
   //! Sink for the mate separator character; use mate separator

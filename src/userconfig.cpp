@@ -48,9 +48,7 @@ get_seed()
 }
 
 fastq_encoding_ptr
-select_encoding(const std::string& name,
-                const std::string& value,
-                size_t quality_max = MAX_PHRED_SCORE_DEFAULT)
+select_encoding(const std::string& value, size_t quality_max)
 {
   fastq_encoding_ptr ptr;
 
@@ -62,7 +60,7 @@ select_encoding(const std::string& name,
   } else if (uppercase_value == "SOLEXA") {
     ptr.reset(new fastq_encoding_solexa(quality_max));
   } else {
-    std::cerr << "Error: Invalid value for " << name << ": '" << value << "'\n"
+    std::cerr << "Error: Invalid value for --qualitybase: '" << value << "'\n"
               << "   expected values 33, 64, or solexa." << std::endl;
   }
 
@@ -140,7 +138,6 @@ userconfig::userconfig(const std::string& name,
   , adapter_list()
   , barcode_list()
   , quality_input_base("33")
-  , quality_output_base("33")
   , quality_max(MAX_PHRED_SCORE_DEFAULT)
   , mate_separator_str(1, MATE_SEPARATOR)
   , interleaved(false)
@@ -173,12 +170,6 @@ userconfig::userconfig(const std::string& name,
     "BASE",
     "Quality base used to encode Phred scores in input; either 33, "
     "64, or solexa [default: %default].");
-  argparser["--qualitybase-output"] = new argparse::any(
-    &quality_output_base,
-    "BASE",
-    "Quality base used to encode Phred scores in output; either 33, "
-    "64, or solexa. By default, reads will be written in the same "
-    "format as the that specified using --qualitybase.");
   argparser["--qualitymax"] = new argparse::knob(
     &quality_max,
     "BASE",
@@ -473,26 +464,11 @@ userconfig::parse_args(int argc, char* argv[])
   // --collapse-conservatively implies --collapse
   collapse |= collapse_conservatively;
 
-  quality_input_fmt =
-    select_encoding("--qualitybase", quality_input_base, quality_max);
-  if (!quality_input_fmt.get()) {
+  if (!(quality_input_fmt = select_encoding(quality_input_base, quality_max))) {
     return argparse::parse_result::error;
   }
 
-  if (argparser.is_set("--qualitybase-output")) {
-    quality_output_fmt =
-      select_encoding("--qualitybase-out", quality_output_base, quality_max);
-    if (!quality_output_fmt.get()) {
-      return argparse::parse_result::error;
-    }
-  } else {
-    // Default to using the same output encoding as the input
-    quality_output_fmt =
-      select_encoding("--qualitybase", quality_input_base, quality_max);
-    if (!quality_output_fmt.get()) {
-      return argparse::parse_result::error;
-    }
-  }
+  quality_output_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, quality_max));
 
   if (mate_separator_str.size() != 1) {
     std::cerr << "Error: The argument for --mate-separator must be "
@@ -503,8 +479,8 @@ userconfig::parse_args(int argc, char* argv[])
     mate_separator = mate_separator_str.at(0);
   }
 
-  // Previous settings are overwritten; this ensures that bad arguments are
-  // still caught
+  // --qualitybase is not used for adapter identification, but are still
+  // checked above in order to catch invalid argument.
   if (identify_adapters) {
     // By default quality scores are ignored when inferring adapter
     // sequences. However, arguments are still checked above.

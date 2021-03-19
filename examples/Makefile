@@ -1,5 +1,5 @@
 
-TARGETS := single_end paired_end phred_64_encoded phred_33_encoded \
+TARGETS := single_end paired_end phred_64_encoded \
 	collapsed_q50 multiple_adapters identify_adapters \
 	interleaved_input interleaved_output interleaved_input_and_output \
 	demultiplexing demultiplexing_only
@@ -27,9 +27,6 @@ interleaved_input_and_output:
 phred_64_encoded:
 	AdapterRemoval --qualitybase 64 --file1 reads_q64.fq --basename output_phred_64
 
-phred_33_encoded:
-	AdapterRemoval --qualitybase 64 --qualitybase-output 33 --file1 reads_q64.fq --basename output_phred_33
-
 collapsed_q50:
 	AdapterRemoval --qualitymax 50 --file1 reads_1.fq --file2 reads_2.fq --collapse --basename output_collapsed_q50
 
@@ -44,4 +41,3 @@ demultiplexing:
 
 demultiplexing_only:
 	AdapterRemoval --file1 demux_1.fq --file2 demux_2.fq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
-

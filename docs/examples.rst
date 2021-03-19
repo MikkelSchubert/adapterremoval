@@ -68,9 +68,7 @@ By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred
 
     AdapterRemoval --qualitybase 64 --file1 reads_q64.fq --basename output_phred_64
 
-By default, reads are written using the *same* encoding as the input. If a different encoding is desired, this may be accomplished using the ``--qualitybase-output`` option::
-
-    AdapterRemoval --qualitybase 64 --qualitybase-output 33 --file1 reads_q64.fq --basename output_phred_33
+Output is always saved as Phred+33.
 
 Note furthermore that AdapterRemoval by default only expects quality scores in the range 0 - 41 (or -5 to 41 in the case of Solexa encoded scores). If input data using a different maximum quality score is to be processed, or if the desired maximum quality score of collapsed reads is greater than 41, then this limit may be increased using the ``--qualitymax`` option::
 

@@ -58,11 +58,7 @@ FASTQ options
 ~~~~~~~~~~~~~
 .. option:: --qualitybase base
 
-	The Phred quality scores encoding used in input reads - either '64' for Phred+64 (Illumina 1.3+ and 1.5+) or '33' for Phred+33 (Illumina 1.8+). In addition, the value 'solexa' may be used to specify reads with Solexa encoded scores. Default is 33.
-
-.. option:: --qualitybase-output base
-
-	The base of the quality score for reads written by AdapterRemoval - either '64' for Phred+64 (i.e., Illumina 1.3+ and 1.5+) or '33' for Phred+33 (Illumina 1.8+). In addition, the value 'solexa' may be used to specify reads with Solexa encoded scores. However, note that quality scores are represented using Phred scores internally, and conversion to and from Solexa scores therefore result in a loss of information. The default corresponds to the value given for ``--qualitybase``.
+	The Phred quality scores encoding used in input reads - either '64' for Phred+64 (Illumina 1.3+ and 1.5+) or '33' for Phred+33 (Illumina 1.8+). In addition, the value 'solexa' may be used to specify reads with Solexa encoded scores. Output is always written as Phred+33. Default is 33.
 
 .. option:: --qualitymax base
 
