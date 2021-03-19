@@ -272,13 +272,6 @@ userconfig::userconfig(const std::string& name,
             "Compression level, 0 - 9 [default: %default]");
 
     argparser.add_header("TRIMMING SETTINGS:");
-    // Backwards compatibility with AdapterRemoval v1; not recommended due to
-    // schematicts that differ from most other adapter trimming programs,
-    // namely requiring that the --pcr2 sequence is that which is observed in
-    // the reverse complement of mate 2, rather than in the raw reads.
-    argparser["--pcr1"] = new argparse::any(&adapter_1, "SEQUENCE", "HIDDEN");
-    argparser["--pcr2"] = new argparse::any(&adapter_2, "SEQUENCE", "HIDDEN");
-
     argparser["--adapter1"] =
         new argparse::any(&adapter_1, "SEQUENCE",
             "Adapter sequence expected to be found in mate 1 reads "
@@ -808,27 +801,11 @@ bool check_and_set_barcode_mm(const argparse::parser& argparser,
 
 bool userconfig::setup_adapter_sequences()
 {
-    const bool pcr_is_set
-        = argparser.is_set("--pcr1") || argparser.is_set("--pcr2");
     const bool adapters_is_set
         = argparser.is_set("--adapter1") || argparser.is_set("--adapter2");
     const bool adapter_list_is_set = argparser.is_set("--adapter-list");
 
-    if (pcr_is_set) {
-        std::cerr << "WARNING: Command-line options --pcr1 and --pcr2 are deprecated.\n"
-                  << "         Using --adapter1 and --adapter2 is recommended.\n"
-                  << "         Please see documentation for more information.\n"
-                  << std::endl;
-    }
-
-    if (pcr_is_set && (adapters_is_set || adapter_list_is_set)) {
-        std::cerr << "ERROR: "
-                  << "Either use --pcr1 and --pcr2, or use --adapter1 and "
-                  << "--adapter2 / --adapter-list, not both!\n\n"
-                  << std::endl;
-
-        return false;
-    } else if (adapters_is_set && adapter_list_is_set) {
+    if (adapters_is_set && adapter_list_is_set) {
         std::cerr << "ERROR: "
                   << "Use either --adapter1 and --adapter2, or "
                   << "--adapter-list, not both!"
@@ -850,7 +827,7 @@ bool userconfig::setup_adapter_sequences()
         }
     } else {
         try {
-            adapters.add_adapters(adapter_1, adapter_2, !pcr_is_set);
+            adapters.add_adapters(adapter_1, adapter_2);
         } catch (const fastq_error& error) {
             std::cerr << "Error parsing adapter sequence(s):\n"
                       << "   " << error.what() << std::endl;
