@@ -21,23 +21,23 @@ A note on specifying adapters
 
 AdapterRemoval relies on the user specifying the adapter sequences to be trimmed, using the ``--adapter1`` and ``--adapter2`` command-line options. By default, AdapterRemoval is setup to trim Illumina Truseq adapters, corresponding to the following command-line options::
 
-    --adapter1 AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
-    --adapter2 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+    --adapter1 AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+    --adapter2 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
 
 It is therefore extremely important to specify the correct adapter sequences when running AdapterRemoval on a dataset that does not make use of these adapters. Failure to do so will result in the wrong sequences being trimmed, and actual adapter sequences being left in the resulting "trimmed" reads.
 
 Adapter sequences are specified in the read orientation when using the ``--adapter1`` and ``--adapter2`` command-line options, directly corresponding to the sequence that is observed in the FASTQ files produced by the base calling software. If we were processing data generated using the above TrueSeq adapters, then we would therefore expect to find those sequences as-is in our FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short), typically followed by a low-quality A-tail::
 
-    $ grep "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC......ATCTCGTATGCCGTCTTCTGCTTG" file1.fq
+    $ grep "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA" file1.fq
     AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAACAAGAAT
     CTGGAGTTCAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAA
     GGAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGCAAATTGAAAACAC
 
-    $ grep "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT" file2.fq
+    $ grep "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT" file2.fq
     CAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAGAAAAACATCTTG
     GAACTCCAGAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAATAGA
     GAACTAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAACATAAGACCTA
 
-The ambiguous bases representing the mate 1 barcode (the six Ns) have been replaced by single-character wildcards (dots) in the above grep commands, corresponding to how AdapterRemoval itself treats such characters.
-
 For paired-end data, the ``--identify-adapters`` mode may be used to verify the choice of adapters, by attempting to reconstruct the adapter sequence directly from the FASTQ reads. See the :doc:`examples` section for a demonstration of this functionality.
+
+An 'N' in an adapter sequence is treated as a wildcard. An N will align against any other base, including Ns, but do not affect the score of the resulting alignment and are not counted as for the purpose of filters such as `--minadapteroverlap`.

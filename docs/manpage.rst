@@ -149,11 +149,11 @@ FASTQ trimming options
 
 .. option:: --adapter1 adapter
 
-	Adapter sequence expected to be found in mate 1 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG.
+	Adapter sequence expected to be found in mate 1 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCACACGTCTGAACTCCAGTCA.
 
 .. option:: --adapter2 adapter
 
-	Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT.
+	Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT.
 
 .. option:: --adapter-list filename
 

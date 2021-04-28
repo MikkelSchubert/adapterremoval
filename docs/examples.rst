@@ -116,8 +116,8 @@ In the following example, the identified adapters corresponds to the default ada
        Of which 119 contained adapter sequence(s) ...
 
     Printing adapter sequences, including poly-A tails:
-      --adapter1:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
-                   ||||||||||||||||||||||||||||||||||******||||||||||||||||||||||||
+      --adapter1:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+                   |||||||||||||||||||||||||||||||||
        Consensus:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCACCTAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAAAAAAAAAAAAAAAAA
          Quality:  55200522544444/4411330333330222222/1.1.1.1111100-00000///..+....--*-)),,+++++++**(('%%%$
 
@@ -129,8 +129,8 @@ In the following example, the identified adapters corresponds to the default ada
                 5: AGATCGGGA =  1.00% (1)
 
 
-      --adapter2:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
-                   ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+      --adapter2:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+                   |||||||||||||||||||||||||||||||||
        Consensus:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
          Quality:  525555555144141441430333303.2/22-2/-1..11111110--00000///..+....--*-),,,+++++++**(%'%%%$
 
