@@ -440,6 +440,14 @@ userconfig::userconfig(const std::string& name,
     &demultiplex_sequences,
     "Only carry out demultiplexing using the list of barcodes "
     "supplied with --barcode-list. No other processing is done.");
+
+  // Required options
+  argparser.option_requires("--demultiplex-only", "--barcode-list");
+
+  // Probibited combinations
+  argparser.option_prohibits("--demultiplex-only", "--identify-adapters");
+  argparser.option_prohibits("--interleaved", "--file2");
+  argparser.option_prohibits("--interleaved-input", "--file2");
 }
 
 argparse::parse_result
@@ -483,18 +491,6 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   if (demultiplex_sequences) {
-    if (identify_adapters) {
-      std::cerr << "Error: Cannot use --identify-adapters and "
-                << "--demultiplex-only at the same time!" << std::endl;
-
-      return argparse::parse_result::error;
-    } else if (!argparser.is_set("--barcode-list")) {
-      std::cerr << "Error: Cannot use --demultiplex-only without specifying "
-                << "a list of barcodes using --barcode-list!" << std::endl;
-
-      return argparse::parse_result::error;
-    }
-
     run_type = ar_command::demultiplex_sequences;
   }
 
@@ -535,14 +531,6 @@ userconfig::parse_args(int argc, char* argv[])
   interleaved_output |= interleaved;
 
   if (interleaved_input) {
-    if (!input_files_2.empty()) {
-      std::cerr << "Error: The options --interleaved and "
-                << "--interleaved-input cannot be used "
-                << "together with the --file2 option; only --file1 must "
-                << "be specified!" << std::endl;
-      return argparse::parse_result::error;
-    }
-
     // Enable paired end mode .. other than the FASTQ reader, all other
     // parts of the pipeline simply run in paired-end mode.
     paired_ended_mode = true;

@@ -60,6 +60,8 @@ parser::parser(const std::string& name,
                const std::string& help)
   : m_keys()
   , m_parsers()
+  , m_key_requires()
+  , m_key_prohibits()
   , m_name(name)
   , m_version(version)
   , m_help(help)
@@ -149,7 +151,25 @@ parser::parse_args(int argc, char* argv[])
     }
   }
 
-  return parse_result::ok;
+  parse_result result = parse_result::ok;
+  for (const auto& pair : m_key_requires) {
+    if (is_set(pair.first) && !is_set(pair.second)) {
+      result = parse_result::error;
+      std::cerr << "ERROR: Option " << pair.second << " is required when using "
+                << pair.first << std::endl;
+    }
+  }
+
+  for (const auto& pair : m_key_prohibits) {
+    if (is_set(pair.first) && is_set(pair.second)) {
+      result = parse_result::error;
+      std::cerr << "ERROR: Option " << pair.second
+                << " cannot be used together with option " << pair.first
+                << std::endl;
+    }
+  }
+
+  return result;
 }
 
 bool
@@ -180,6 +200,23 @@ parser::create_alias(const std::string& key, const std::string& alias)
   AR_DEBUG_ASSERT(m_parsers.find(alias) == m_parsers.end());
 
   m_parsers[alias] = m_parsers.at(key);
+}
+
+void
+parser::option_requires(const std::string& key, const std::string& required)
+{
+  AR_DEBUG_ASSERT(m_parsers.find(key) != m_parsers.end());
+  AR_DEBUG_ASSERT(m_parsers.find(required) != m_parsers.end());
+
+  m_key_requires.push_back(str_pair(key, required));
+}
+void
+parser::option_prohibits(const std::string& key, const std::string& prohibited)
+{
+  AR_DEBUG_ASSERT(m_parsers.find(key) != m_parsers.end());
+  AR_DEBUG_ASSERT(m_parsers.find(prohibited) != m_parsers.end());
+
+  m_key_prohibits.push_back(str_pair(key, prohibited));
 }
 
 void
@@ -327,7 +364,7 @@ flag::flag(bool* value, const std::string& help)
   : consumer_base(" ", help)
   , m_ptr(value)
 {
-  m_value_set = m_ptr ? *value : false;
+  AR_DEBUG_ASSERT(!(m_ptr && *m_ptr));
 }
 
 size_t
@@ -344,7 +381,12 @@ flag::consume(string_vec_citer, const string_vec_citer&)
 std::string
 flag::to_str() const
 {
-  return std::string(m_value_set ? "on" : "off");
+  bool is_set = m_value_set;
+  if (m_ptr) {
+    is_set = *m_ptr;
+  }
+
+  return std::string(is_set ? "on" : "off");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

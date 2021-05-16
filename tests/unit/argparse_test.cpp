@@ -71,16 +71,10 @@ TEST_CASE("Flag may be called on end of arguments", "[argparse::flag]")
   CHECK(ptr->is_set());
 }
 
-TEST_CASE("Flag uses sink with true", "[argparse::flag]")
+TEST_CASE("Flag prohibits sink with true", "[argparse::flag]")
 {
   bool sink = true;
-  consumer_autoptr ptr(new argparse::flag(&sink));
-  REQUIRE(ptr->to_str() == "on");
-  const string_vec arguments;
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 0);
-  CHECK(ptr->is_set());
-  CHECK(sink);
-  REQUIRE(ptr->to_str() == "on");
+  REQUIRE_THROWS_AS(argparse::flag(&sink), assert_failed);
 }
 
 TEST_CASE("Flag uses sink with false", "[argparse::flag]")

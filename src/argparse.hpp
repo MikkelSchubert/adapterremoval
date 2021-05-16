@@ -125,6 +125,11 @@ public:
   /** Create alias for key with name alias. */
   void create_alias(const std::string& key, const std::string& alias);
 
+  /** Option `requires` must be set if `key` is set on the CLI. */
+  void option_requires(const std::string& key, const std::string& required);
+  /** Option `prohibited` must NOT be set if `key` is set on the CLI. */
+  void option_prohibits(const std::string& key, const std::string& prohibited);
+
   /** Helper function; prints the program name and version string. */
   void print_version() const;
   /** Helper functions; prints the full set of help-text. */
@@ -138,6 +143,8 @@ public:
 private:
   typedef std::pair<bool, std::string> key_pair;
   typedef std::vector<key_pair> key_pair_vec;
+  typedef std::pair<std::string, std::string> str_pair;
+  typedef std::vector<str_pair> str_pair_vec;
 
   /** Pretty-print the listed arguments. */
   void print_arguments(const key_pair_vec& keys) const;
@@ -165,6 +172,11 @@ private:
   //! Map of keys (command-line args) to parser pointers; multiple
   //! keys may be associated with the same pointer.
   consumer_map m_parsers;
+
+  //! Vector of options required by other options
+  str_pair_vec m_key_requires;
+  //! Vector of options prohibited by other options
+  str_pair_vec m_key_prohibits;
 
   //! Name of the program
   std::string m_name;
