@@ -110,19 +110,6 @@ public:
    * Note that 'read' may be modified (truncated) depending on user options.
    */
   void add_collapsed_read(fastq& read, read_status, size_t read_count = 1);
-  /**
-   * Encodes and caches the specified collapsed, truncated read.
-   *
-   * @param read Processed FASTQ read.
-   * @param state FAILED or PASSED; determines destination file.
-   * @param read_count Number of actual reads represented by 'read'; for
-   *                   merged sequences this may be > 1.
-   *
-   * Note that 'read' may be modified (truncated) depending on user options.
-   */
-  void add_collapsed_truncated_read(fastq& read,
-                                    read_status state,
-                                    size_t read_count = 1);
 
   /** Returns vector of chunks from all cached reads. */
   chunk_vec finalize();
@@ -164,8 +151,6 @@ private:
   output_chunk_ptr m_singleton;
   //! Pointer to cached collapsed reads; may be nullptr.
   output_chunk_ptr m_collapsed;
-  //! Pointer to cached collapsed, truncated reads; may be nullptr.
-  output_chunk_ptr m_collapsed_truncated;
   //! Pointer to cached discarded reads; may be nullptr.
   output_chunk_ptr m_discarded;
 };

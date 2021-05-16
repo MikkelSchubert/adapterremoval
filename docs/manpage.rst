@@ -111,10 +111,6 @@ Output file options
 
 	If --collapsed is set, contains overlapping mate-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low-quality or ambiguous nucleotides. Default filename is 'basename.collapsed'
 
-.. option:: --outputcollapsedtruncated file
-
-	Collapsed reads (see --outputcollapsed) which were trimmed due the presence of low-quality or ambiguous nucleotides. Default filename is 'basename.collapsed.truncated'.
-
 .. option:: --discarded file
 
 	Contains reads discarded due to the --minlength, --maxlength or --maxns options. Default filename is 'basename.discarded'.

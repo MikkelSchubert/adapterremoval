@@ -215,10 +215,7 @@ write_trimming_settings(const userconfig& config,
   }
 
   if (config.collapse) {
-    settings << "\nNumber of full-length collapsed pairs: "
-             << stats.number_of_full_length_collapsed
-             << "\nNumber of truncated collapsed pairs: "
-             << stats.number_of_truncated_collapsed;
+    settings << "\nNumber of collapsed pairs: " << stats.number_of_collapsed;
   }
 
   settings << "\nNumber of retained reads: " << stats.total_number_of_good_reads
@@ -237,7 +234,7 @@ write_trimming_settings(const userconfig& config,
   }
 
   if (config.collapse) {
-    settings << "Collapsed\tCollapsedTruncated\t";
+    settings << "Collapsed\t";
   }
 
   settings << "Discarded\tAll\n";
@@ -255,10 +252,7 @@ write_trimming_settings(const userconfig& config,
     }
 
     if (config.collapse) {
-      settings << '\t' << lengths.at(static_cast<size_t>(read_type::collapsed))
-               << '\t'
-               << lengths.at(
-                    static_cast<size_t>(read_type::collapsed_truncated));
+      settings << '\t' << lengths.at(static_cast<size_t>(read_type::collapsed));
     }
 
     settings << '\t' << lengths.at(static_cast<size_t>(read_type::discarded))
@@ -398,29 +392,16 @@ process_collapsed_read(const userconfig& config,
   if (config.is_acceptable_read(collapsed_read)) {
     stats.total_number_of_nucleotides += collapsed_read.length();
     stats.total_number_of_good_reads++;
-    stats.inc_length_count(was_trimmed ? read_type::collapsed_truncated
-                                       : read_type::collapsed,
-                           collapsed_read.length());
+    stats.inc_length_count(read_type::collapsed, collapsed_read.length());
 
-    if (was_trimmed) {
-      chunks.add_collapsed_truncated_read(
-        collapsed_read, read_status::passed, 2);
-      stats.number_of_truncated_collapsed++;
-    } else {
-      chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
-      stats.number_of_full_length_collapsed++;
-    }
+    chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
+    stats.number_of_collapsed++;
   } else {
     stats.discard1++;
     stats.discard2++;
     stats.inc_length_count(read_type::discarded, collapsed_read.length());
 
-    if (was_trimmed) {
-      chunks.add_collapsed_truncated_read(
-        collapsed_read, read_status::failed, 2);
-    } else {
-      chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
-    }
+    chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
   }
 }
 
@@ -793,15 +774,6 @@ remove_adapter_sequences_se(const userconfig& config)
                          sample + "_collapsed",
                          new write_fastq(config.get_output_filename(
                            "--outputcollapsed", nth)));
-
-          if (!config.preserve5p) {
-            add_write_step(config,
-                           sch,
-                           offset + ai_write_collapsed_truncated,
-                           sample + "_collapsed_truncated",
-                           new write_fastq(config.get_output_filename(
-                             "--outputcollapsedtruncated", nth)));
-          }
         }
       }
     }
@@ -918,15 +890,6 @@ remove_adapter_sequences_pe(const userconfig& config)
                          sample + "_collapsed",
                          new write_fastq(config.get_output_filename(
                            "--outputcollapsed", nth)));
-
-          if (!config.preserve5p) {
-            add_write_step(config,
-                           sch,
-                           offset + ai_write_collapsed_truncated,
-                           sample + "_collapsed_truncated",
-                           new write_fastq(config.get_output_filename(
-                             "--outputcollapsedtruncated", nth)));
-          }
         }
       }
     }

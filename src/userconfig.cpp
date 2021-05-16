@@ -245,12 +245,6 @@ userconfig::userconfig(const std::string& name,
     "the entire template molecule is present. This does not include "
     "which have subsequently been trimmed due to low-quality or "
     "ambiguous nucleotides [default: BASENAME.collapsed]");
-  argparser["--outputcollapsedtruncated"] = new argparse::any(
-    nullptr,
-    "FILE",
-    "Collapsed reads (see --outputcollapsed) which were trimmed due "
-    "the presence of low-quality or ambiguous nucleotides "
-    "[default: BASENAME.collapsed.truncated]");
   argparser["--discarded"] = new argparse::any(
     nullptr,
     "FILE",
@@ -374,11 +368,9 @@ userconfig::userconfig(const std::string& name,
   argparser.add_header("READ MERGING:");
   argparser["--collapse"] = new argparse::flag(
     &collapse,
-    "When set, paired ended read alignments of --minalignmentlength "
-    "or more bases are combined into a single consensus sequence, "
-    "representing the complete insert, and written to either "
-    "basename.collapsed or basename.collapsed.truncated (if trimmed "
-    "due to low-quality bases following collapse) has no effect in single-end "
+    "When set, paired ended read alignments of --minalignmentlength or more "
+    "bases are merged into a single consensus sequence. Merged reads are "
+    "written to basename.collapsed by default. Has no effect in single-end "
     "mode [default: %default].");
   argparser["--collapse-deterministic"] = new argparse::flag(
     &deterministic,
@@ -720,8 +712,6 @@ userconfig::get_output_filename(const std::string& key, size_t nth) const
     return filename + "settings";
   } else if (key == "--outputcollapsed") {
     filename += "collapsed";
-  } else if (key == "--outputcollapsedtruncated") {
-    filename += "collapsed.truncated";
   } else if (key == "--discarded") {
     filename += "discarded";
   } else if (paired_ended_mode) {

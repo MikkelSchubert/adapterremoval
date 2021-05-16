@@ -1,8 +1,5 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "ADAPTERREMOVAL" "1" "Mar 19, 2021" "2.3.2" "AdapterRemoval"
-.SH NAME
-AdapterRemoval \- Fast short-read adapter trimming and processing
 .
 .nr rst2man-indent-level 0
 .
@@ -30,6 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
+.TH "ADAPTERREMOVAL" "1" "May 17, 2021" "2.3.2" "AdapterRemoval"
+.SH NAME
+AdapterRemoval \- Fast short-read adapter trimming and processing
 .SH SYNOPSIS
 .sp
 \fBAdapterRemoval\fP [\fIoptions\fP\&...] \-\-file1 <\fIfilenames\fP> [\-\-file2 <\fIfilenames\fP>]
@@ -149,11 +149,6 @@ Output file to which containing paired reads for which the mate has been discard
 .TP
 .B \-\-outputcollapsed file
 If \-\-collapsed is set, contains overlapping mate\-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed\(aq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-outputcollapsedtruncated file
-Collapsed reads (see \-\-outputcollapsed) which were trimmed due the presence of low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed.truncated\(aq.
 .UNINDENT
 .INDENT 0.0
 .TP

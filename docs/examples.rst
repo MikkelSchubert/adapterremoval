@@ -26,7 +26,7 @@ The following command removes adapters from a paired-end reads, where the mate 1
 
     AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_paired --trimns --trimqualities --collapse
 
-This command generates the files *output_paired.pair1.truncated* and *output_paired.pair2.truncated*, which contain trimmed pairs of reads which were not collapsed, *output_paired.singleton.truncated* containing reads where one mate was discarded, *output_paired.collapsed* containing merged reads, and *output_paired.collapsed.truncated* containing merged reads that have been trimmed due to the ``--trimns`` or ``--trimqualities`` options. Finally, the *output_paired.discarded* and *output_paired.settings* files correspond to those of the single-end run.
+This command generates the files *output_paired.pair1.truncated* and *output_paired.pair2.truncated*, which contain trimmed pairs of reads which were not collapsed, *output_paired.singleton.truncated* containing reads where one mate was discarded, and *output_paired.collapsed* containing merged reads. Finally, the *output_paired.discarded* and *output_paired.settings* files correspond to those of the single-end run.
 
 
 Multiple input FASTQ files

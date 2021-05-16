@@ -43,7 +43,6 @@ trimmed_reads::trimmed_reads(const userconfig& config, size_t offset, bool eof)
   , m_mate_2()
   , m_singleton()
   , m_collapsed()
-  , m_collapsed_truncated()
   , m_discarded()
 {
   m_mate_1.reset(new fastq_output_chunk(eof));
@@ -60,10 +59,6 @@ trimmed_reads::trimmed_reads(const userconfig& config, size_t offset, bool eof)
 
     if (config.collapse) {
       m_collapsed.reset(new fastq_output_chunk(eof));
-
-      if (!config.preserve5p) {
-        m_collapsed_truncated.reset(new fastq_output_chunk(eof));
-      }
     }
   }
 }
@@ -111,19 +106,6 @@ trimmed_reads::add_collapsed_read(fastq& read,
     destination, destination, read, state, read_status::passed, read_count);
 }
 
-void
-trimmed_reads::add_collapsed_truncated_read(fastq& read,
-                                            read_status state,
-                                            size_t read_count)
-{
-  output_chunk_ptr& destination =
-    m_config.combined_output ? m_mate_1 : m_collapsed_truncated;
-
-  // Collapsed tr. reads may go into the mate 1, mate 2, or discard file
-  distribute_read(
-    destination, destination, read, state, read_status::passed, read_count);
-}
-
 chunk_vec
 trimmed_reads::finalize()
 {
@@ -133,9 +115,6 @@ trimmed_reads::finalize()
   add_chunk(chunks, m_offset + ai_write_mate_2, std::move(m_mate_2));
   add_chunk(chunks, m_offset + ai_write_singleton, std::move(m_singleton));
   add_chunk(chunks, m_offset + ai_write_collapsed, std::move(m_collapsed));
-  add_chunk(chunks,
-            m_offset + ai_write_collapsed_truncated,
-            std::move(m_collapsed_truncated));
   add_chunk(chunks, m_offset + ai_write_discarded, std::move(m_discarded));
 
   return chunks;

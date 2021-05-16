@@ -37,8 +37,7 @@ namespace ar {
 struct statistics
 {
   statistics()
-    : number_of_full_length_collapsed(0)
-    , number_of_truncated_collapsed(0)
+    : number_of_collapsed(0)
     , total_number_of_nucleotides(0)
     , total_number_of_good_reads(0)
     , number_of_reads_with_adapter()
@@ -53,10 +52,8 @@ struct statistics
     , read_lengths()
   {}
 
-  //! Number of collapsed reads which (likely) represent full inserts
-  size_t number_of_full_length_collapsed;
-  //! Number of collapsed reads which were truncated due to low-quality bases
-  size_t number_of_truncated_collapsed;
+  //! Number of collapsed reads
+  size_t number_of_collapsed;
   //! Total number of nucleotides left after trimming, collapsing, filtering
   size_t total_number_of_nucleotides;
   //! Total number of reads left after trimming, collapsing, filtering
@@ -99,8 +96,7 @@ struct statistics
   /** Combine statistics objects, e.g. those used by different threads. */
   statistics& operator+=(const statistics& other)
   {
-    number_of_full_length_collapsed += other.number_of_full_length_collapsed;
-    number_of_truncated_collapsed += other.number_of_truncated_collapsed;
+    number_of_collapsed += other.number_of_collapsed;
     total_number_of_nucleotides += other.total_number_of_nucleotides;
     total_number_of_good_reads += other.total_number_of_good_reads;
 

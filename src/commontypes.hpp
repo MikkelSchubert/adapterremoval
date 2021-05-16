@@ -51,8 +51,6 @@ enum class read_type
   singleton,
   /** Overlapping PE reads merged into a single sequence. */
   collapsed,
-  /** Collapsed reads truncated due to trimming of low-quality bases. */
-  collapsed_truncated,
   /** Discarded reads; e.g. too short reads. */
   discarded,
   //! End value; not to be used as an argument.
@@ -94,8 +92,7 @@ enum analyses_id
   ai_write_mate_2 = 22,
   ai_write_singleton = 23,
   ai_write_collapsed = 24,
-  ai_write_collapsed_truncated = 25,
-  ai_write_discarded = 26
+  ai_write_discarded = 25
 };
 
 } // namespace ar
