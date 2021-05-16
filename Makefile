@@ -78,6 +78,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/fastq.o \
             $(BDIR)/fastq_enc.o \
             $(BDIR)/fastq_io.o \
+            $(BDIR)/json.o \
             $(BDIR)/linereader.o \
             $(BDIR)/linereader_joined.o \
             $(BDIR)/main_adapter_id.o \
@@ -166,6 +167,8 @@ TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/fastq_test.o \
              $(TEST_DIR)/fastq_enc.o \
              $(TEST_DIR)/fastq_enc_test.o \
+             $(TEST_DIR)/json.o \
+             $(TEST_DIR)/json_test.o \
              $(TEST_DIR)/strutils.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
