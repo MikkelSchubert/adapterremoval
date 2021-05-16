@@ -1,8 +1,11 @@
 {
-	"arguments": ["--identify-adapters", "--demultiplex-only"],
+	"arguments": [
+		"--identify-adapters",
+		"--demultiplex-only"
+	],
 	"return_code": 1,
 	"stderr": [
-		"Cannot use --identify-adapters and --demultiplex-only at the same time!"
+		"ERROR: Option --identify-adapters cannot be used together with option --demultiplex-only"
 	],
 	"exhaustive": false
 }

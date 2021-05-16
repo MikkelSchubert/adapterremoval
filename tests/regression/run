@@ -389,6 +389,8 @@ class TestCase(object):
             line = re.sub(r"RNG seed: [0-9]+", "RNG seed: Enabled", line)
             line = re.sub(r"AdapterRemoval ver\. .*",
                            "AdapterRemoval ver. X.Y.Z", line)
+            line = re.sub(r"AdapterRemoval v.*",
+                           "AdapterRemoval ver. X.Y.Z", line)
             # Removed keyword to allow automatic interleaved tests
             line = re.sub(r" interleaved paired-end reads",
                           r" paired-end reads",
