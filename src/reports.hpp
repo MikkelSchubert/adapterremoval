@@ -26,11 +26,13 @@
 #define REPORTS_H
 
 #include <cstdlib>
+#include <ostream>
 #include <vector>
 
 class demultiplex_reads;
-class userconfig;
 class reads_processor;
+class statistics;
+class userconfig;
 
 void
 write_trimming_settings(const userconfig& config,
