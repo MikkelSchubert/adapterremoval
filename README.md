@@ -8,8 +8,9 @@ into (longer) consensus sequences. Additionally, AdapterRemoval can construct a
 consensus adapter sequence for paired-ended reads, if which this information is
 not available.
 
-For comments, suggestions  and feedback please contact Mikkel Schubert
-(MikkelSch@gmail.com) and Stinus Lindgreen (stinus@binf.ku.dk).
+For questions, bug reports, and/or suggestions, please use the
+[GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/)
+or contact Mikkel Schubert at [MikkelSch@gmail.com](mailto:MikkelSch@gmail.com).
 
 If you use AdapterRemoval v2, then please cite the paper:
 
@@ -55,13 +56,6 @@ If you have `Conda`_ installed on your system:
     conda install -c bioconda adapterremoval
 
 
-### Installing on OSX
-
-MacOSX users may install AdapterRemoval using [Homebrew](https://brew.sh/):
-
-    brew install homebrew/science/adapterremoval
-
-
 ### Installing from sources
 
 Installing AdapterRemoval from sources requires libz and libbz2.
@@ -94,4 +88,3 @@ directly, using filenames starting with 'your_output'.
 More examples of common usage may be found in the
 [Examples](https://adapterremoval.readthedocs.io/en/latest/examples.html)
 section of the online documentation:
-
