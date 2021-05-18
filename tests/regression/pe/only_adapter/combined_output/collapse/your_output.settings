@@ -38,13 +38,12 @@ Number of singleton mate 1 reads: 0
 Number of discarded mate 2 reads: 1
 Number of singleton mate 2 reads: 0
 Number of reads with adapters[1]: 2
-Number of full-length collapsed pairs: 0
-Number of truncated collapsed pairs: 0
+Number of collapsed pairs: 0
 Number of retained reads: 0
 Number of retained nucleotides: 0
 Average length of retained reads: 0
 
 
 [Length distribution]
-Length	Mate1	Mate2	Singleton	Collapsed	CollapsedTruncated	Discarded	All
-0	0	0	0	0	0	1	1
+Length	Mate1	Mate2	Singleton	Collapsed	Discarded	All
+0	0	0	0	0	1	1
