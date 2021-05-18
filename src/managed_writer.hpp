@@ -29,8 +29,6 @@
 
 #include "commontypes.hpp"
 
-namespace ar {
-
 typedef std::pair<size_t, unsigned char*> buffer_pair;
 typedef std::vector<buffer_pair> buffer_vec;
 
@@ -95,7 +93,5 @@ private:
   //! Indicates if a performance warning has been printed
   static bool s_warning_printed;
 };
-
-} // namespace ar
 
 #endif

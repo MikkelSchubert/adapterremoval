@@ -21,7 +21,6 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
@@ -32,8 +31,6 @@
 #include "debug.hpp"
 #include "scheduler.hpp"
 #include "strutils.hpp"
-
-namespace ar {
 
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_chunk
@@ -410,5 +407,3 @@ scheduler::queue_analytical_step(const step_ptr& step, size_t current)
     m_condition.notify_one();
   }
 }
-
-} // namespace ar

@@ -26,8 +26,6 @@
 
 #include "json.hpp"
 
-namespace ar {
-
 std::string
 _escape(const std::string& value)
 {
@@ -198,5 +196,3 @@ json_writer::_write(const std::string& key, const std::string& value)
            << ": " << value;
   m_values = true;
 }
-
-} // namespace ar

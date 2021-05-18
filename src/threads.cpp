@@ -33,8 +33,6 @@
 
 #include <ctime>
 
-namespace ar {
-
 ///////////////////////////////////////////////////////////////////////////////
 // exceptions
 
@@ -85,5 +83,3 @@ print_locker::partial_stderr_output()
 {
   s_stderr_is_incomplete = true;
 }
-
-} // namespace ar

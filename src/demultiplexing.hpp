@@ -31,8 +31,6 @@
 #include "scheduler.hpp"
 #include "statistics.hpp"
 
-namespace ar {
-
 class userconfig;
 
 /**
@@ -118,7 +116,5 @@ public:
    */
   chunk_vec process(analytical_chunk* chunk);
 };
-
-} // namespace ar
 
 #endif

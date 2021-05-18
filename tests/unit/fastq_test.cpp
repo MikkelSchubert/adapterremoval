@@ -30,8 +30,6 @@
 #include "linereader.hpp"
 #include "testing.hpp"
 
-namespace ar {
-
 class vec_reader : public line_reader_base
 {
 public:
@@ -1166,5 +1164,3 @@ TEST_CASE("validate_paired_reads__throws_if_name_differs", "[fastq::fastq]")
   fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
   REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
 }
-
-} // namespace ar

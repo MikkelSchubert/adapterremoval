@@ -31,8 +31,6 @@
 #include "commontypes.hpp"
 #include "vecutils.hpp"
 
-namespace ar {
-
 class demultiplex_reads;
 class userconfig;
 class reads_processor;
@@ -94,7 +92,5 @@ struct demux_statistics
   //! Number of reads / pairs with no single best hit
   size_t ambiguous;
 };
-
-} // namespace ar
 
 #endif

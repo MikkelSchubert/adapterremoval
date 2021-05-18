@@ -28,8 +28,6 @@
 #include <deque>
 #include <string>
 
-namespace ar {
-
 /**
  * Simply class for reporting current progress of a run.
  *
@@ -71,7 +69,5 @@ private:
   //! Counts for last N updates, for calculating running mean rate.
   time_count_deque m_counts;
 };
-
-} // namespace ar
 
 #endif

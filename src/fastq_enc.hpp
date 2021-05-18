@@ -27,8 +27,6 @@
 
 #include <string>
 
-namespace ar {
-
 //! Offset used by Phred+33 and SAM encodings
 const int PHRED_OFFSET_33 = '!';
 //! Offset used by Phred+64 and Solexa encodings
@@ -141,7 +139,5 @@ static const fastq_encoding FASTQ_ENCODING_64(PHRED_OFFSET_64);
 static const fastq_encoding FASTQ_ENCODING_SAM(PHRED_OFFSET_33,
                                                MAX_PHRED_SCORE);
 static const fastq_encoding_solexa FASTQ_ENCODING_SOLEXA;
-
-} // namespace ar
 
 #endif

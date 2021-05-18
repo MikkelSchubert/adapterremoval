@@ -32,7 +32,6 @@
 
 #include "commontypes.hpp"
 
-namespace ar {
 namespace argparse {
 
 class consumer_base;
@@ -407,6 +406,5 @@ private:
 };
 
 } // namespace argparse
-} // namespace ar
 
 #endif

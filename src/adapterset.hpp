@@ -28,8 +28,6 @@
 #include "commontypes.hpp"
 #include "fastq.hpp"
 
-namespace ar {
-
 /**
  * Class for reading sets of adapters and barcodes, and for generating
  * per-barcode sets of adapter sequences as needed. The class further checks
@@ -97,7 +95,5 @@ private:
   //! User-supplied adapter sequences, without barcodes added
   fastq_pair_vec m_adapters;
 };
-
-} // namespace ar
 
 #endif

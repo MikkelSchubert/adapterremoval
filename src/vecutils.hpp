@@ -26,8 +26,6 @@
 
 #include <vector>
 
-namespace ar {
-
 /**
  * Merge two vectors by adding each value in src to each value in 'dst'.
  *
@@ -68,7 +66,5 @@ merge_sub_vectors(std::vector<std::vector<T>>& dst,
     merge_vectors(*dst_it++, *src_it++);
   }
 }
-
-} // namespace ar
 
 #endif

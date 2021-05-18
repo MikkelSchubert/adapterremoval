@@ -29,8 +29,6 @@
 
 #include "fastq.hpp"
 
-namespace ar {
-
 /**
  * Summarizes an alignment.
  *
@@ -249,7 +247,5 @@ bool
 extract_adapter_sequences(const alignment_info& alignment,
                           fastq& pcr1,
                           fastq& pcr2);
-
-} // namespace ar
 
 #endif

@@ -31,8 +31,6 @@
 #include "scheduler.hpp"
 #include "statistics.hpp"
 
-namespace ar {
-
 class userconfig;
 
 typedef std::unique_ptr<statistics> statistics_ptr;
@@ -102,7 +100,5 @@ public:
 private:
   rng_sink m_rngs;
 };
-
-}
 
 #endif

@@ -28,8 +28,6 @@
 #include "json.hpp"
 #include "testing.hpp"
 
-namespace ar {
-
 TEST_CASE("empty_json", "[json::json]")
 {
   std::stringstream ss;
@@ -206,5 +204,3 @@ TEST_CASE("nested_dict", "[json::json]")
     ss.str() ==
     "{\n  \"value1\": \"foo\",\n  \"value2\": {\n    \"bar\": 1234\n  }\n}");
 }
-
-} // namespace ar

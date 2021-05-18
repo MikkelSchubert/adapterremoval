@@ -32,8 +32,6 @@
 #include "strutils.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 typedef std::pair<std::string, size_t> barcode_pair;
 typedef std::vector<barcode_pair> barcode_vec;
 
@@ -354,5 +352,3 @@ barcode_table::lookup_with_mm(const char* seq,
     return candidate(node.value, m_max_mismatches - max_global_mismatches);
   }
 }
-
-} // namespace ar

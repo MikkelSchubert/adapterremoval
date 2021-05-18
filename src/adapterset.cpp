@@ -31,8 +31,6 @@
 #include "linereader.hpp"
 #include "strutils.hpp"
 
-namespace ar {
-
 typedef std::pair<std::string, fastq_vec> named_fastq_row;
 typedef std::vector<named_fastq_row> fastq_table;
 typedef fastq_table::const_iterator fastq_table_citer;
@@ -465,5 +463,3 @@ adapter_set::get_sample_name(size_t nth) const
 {
   return m_samples.at(nth);
 }
-
-} // namespace ar

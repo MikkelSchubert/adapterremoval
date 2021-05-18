@@ -32,8 +32,6 @@
 #include "debug.hpp"
 #include "fastq_enc.hpp"
 
-namespace ar {
-
 ///////////////////////////////////////////////////////////////////////////////
 // fastq_error
 
@@ -311,5 +309,3 @@ fastq_encoding_solexa::name() const
 {
   return "Solexa";
 }
-
-} // namespace ar

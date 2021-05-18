@@ -37,7 +37,6 @@
 #include "debug.hpp"
 #include "strutils.hpp"
 
-namespace ar {
 namespace argparse {
 
 typedef std::set<consumer_ptr> consumer_set;
@@ -549,4 +548,3 @@ floaty_knob::to_str() const
 }
 
 } // namespace argparse
-} // namespace ar

@@ -28,8 +28,6 @@
 #include <cstdlib>
 #include <vector>
 
-namespace ar {
-
 class demultiplex_reads;
 class userconfig;
 class reads_processor;
@@ -53,7 +51,5 @@ void
 write_demultiplex_statistics(const userconfig& config,
                              std::ofstream& output,
                              const demultiplex_reads* step);
-
-} // namespace ar
 
 #endif

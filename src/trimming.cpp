@@ -29,8 +29,6 @@
 #include "trimming.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 /** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
 void
 trim_read_termini_if_enabled(const userconfig& config,
@@ -357,5 +355,3 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
   return chunks.finalize();
 }
-
-} // namespace ar

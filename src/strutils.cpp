@@ -31,8 +31,6 @@
 
 #include "strutils.hpp"
 
-namespace ar {
-
 unsigned
 str_to_unsigned(const std::string& s)
 {
@@ -233,5 +231,3 @@ cli_formatter::fmt(const std::string& prefix, const std::string& value)
 
   return prefix + value;
 }
-
-} // namespace ar

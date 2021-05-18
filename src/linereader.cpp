@@ -32,8 +32,6 @@
 #include "managed_writer.hpp"
 #include "threads.hpp"
 
-namespace ar {
-
 //! Size of compressed and uncompressed buffers.
 const int BUF_SIZE = 10 * BUFSIZ;
 
@@ -464,5 +462,3 @@ line_reader::close_buffers_bzip2()
     m_buffer = nullptr;
   }
 }
-
-} // namespace ar

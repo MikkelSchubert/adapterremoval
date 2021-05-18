@@ -34,8 +34,6 @@
 class fastq;
 class userconfig;
 
-namespace ar {
-
 //! Enum representing the possible states of read processing
 enum class read_status
 {
@@ -154,7 +152,5 @@ private:
   //! Pointer to cached discarded reads; may be nullptr.
   output_chunk_ptr m_discarded;
 };
-
-} // namespace ar
 
 #endif

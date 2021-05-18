@@ -1,6 +1,5 @@
 ###############################################################################
 # Makefile options: Edit / comment / uncomment to change build behavior
-#
 
 # Installation destinations
 PREFIX := /usr/local
@@ -22,9 +21,9 @@ DEBUG_BUILD := no
 # Include coverage instrumentation in build
 COVERAGE := no
 
+
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
-
 INSTALLEXE = install -m 0755
 INSTALLDAT = install -m 0644
 INSTALLDOC = install -m 0644
@@ -67,7 +66,6 @@ $(info Building AdapterRemoval with debug information: no)
 endif
 
 PROG     := AdapterRemoval
-LIBNAME  := libadapterremoval
 LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/alignment.o \
             $(BDIR)/alignment_tables.o \
@@ -107,7 +105,7 @@ everything: all static test regression docs
 # Clean
 clean: clean_tests clean_docs
 	@echo $(COLOR_GREEN)"Cleaning ..."$(COLOR_END)
-	$(QUIET) rm -f build/$(PROG) build/$(LIBNAME).a
+	$(QUIET) rm -f build/$(PROG)
 	$(QUIET) rm -rvf build/regression
 	$(QUIET) rm -rvf $(BDIR)
 
@@ -130,8 +128,6 @@ install: build/$(PROG)
 	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/examples/
 	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval/examples/
 
-static: build/$(LIBNAME).a
-
 # Object files
 $(BDIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
@@ -144,18 +140,12 @@ build/$(PROG): $(OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
 
-# Static library
-build/$(LIBNAME).a: $(LIBOBJS)
-	@echo $(COLOR_GREEN)"Linking static library $@"$(COLOR_END)
-	$(AR) rcs build/$(LIBNAME).a $(LIBOBJS)
-
 # Automatic header depencencies
 -include $(DFILES)
 
 
-#
+###############################################################################
 # Unit testing
-#
 TEST_DIR := build/tests
 TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/debug.o \
@@ -203,9 +193,8 @@ $(TEST_DIR)/%.o: src/%.cpp
 	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
 
 
-#
+###############################################################################
 # Validation
-#
 VALIDATION_BDIR=./build/regression
 VALIDATION_SDIR=./tests/regression
 
@@ -219,9 +208,8 @@ regression: build/$(PROG)
 -include $(TEST_DEPS)
 
 
-#
+###############################################################################
 # Documentation
-#
 SPHINXOPTS  = -n -q
 SPHINXBUILD = sphinx-build
 

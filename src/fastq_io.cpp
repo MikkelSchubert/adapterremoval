@@ -30,8 +30,6 @@
 #include "fastq_io.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 size_t
 read_fastq_reads(fastq_vec& dst,
                  joined_line_readers& reader,
@@ -697,5 +695,3 @@ write_fastq::finalize()
     throw std::ofstream::failure(message + std::strerror(errno));
   }
 }
-
-} // namespace ar

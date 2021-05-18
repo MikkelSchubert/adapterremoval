@@ -34,8 +34,6 @@
 #include "trimming.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 std::ostream&
 operator<<(std::ostream& stream, const fastq::ntrimmed& ntrim)
 {
@@ -366,5 +364,3 @@ write_demultiplex_settings(const userconfig& config,
     }
   }
 }
-
-} // namespace ar

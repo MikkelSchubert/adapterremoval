@@ -36,8 +36,6 @@
 #include "strutils.hpp"
 #include "timer.hpp"
 
-namespace ar {
-
 class userconfig;
 class fastq_read_chunk;
 class fastq_output_chunk;
@@ -344,7 +342,5 @@ private:
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
 };
-
-} // namespace ar
 
 #endif

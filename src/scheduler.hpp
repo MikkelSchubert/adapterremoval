@@ -34,8 +34,6 @@
 
 #include "threads.hpp"
 
-namespace ar {
-
 struct data_chunk;
 struct scheduler_step;
 
@@ -349,7 +347,5 @@ scheduler::set_errors_occured()
 {
   m_errors.store(true);
 }
-
-} // namespace ar
 
 #endif

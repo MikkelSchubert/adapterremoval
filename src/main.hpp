@@ -27,8 +27,6 @@
 
 #include <string>
 
-namespace ar {
-
 const std::string NAME = "AdapterRemoval";
 const std::string VERSION = "v3.0.0-pre";
 const std::string HELPTEXT =
@@ -44,7 +42,5 @@ const std::string HELPTEXT =
   "    BMC Research Notes, 12;9(1):88.\n\n"
   "    "
   "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n";
-
-} // namespace ar
 
 #endif

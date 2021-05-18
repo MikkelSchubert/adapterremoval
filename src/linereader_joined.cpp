@@ -33,8 +33,6 @@
 #include "linereader_joined.hpp"
 #include "threads.hpp"
 
-namespace ar {
-
 joined_line_readers::joined_line_readers(const string_vec& filenames)
   : m_filenames(filenames.rbegin(), filenames.rend())
   , m_reader()
@@ -79,6 +77,4 @@ joined_line_readers::open_next_file()
   m_filenames.pop_back();
 
   return true;
-}
-
 }

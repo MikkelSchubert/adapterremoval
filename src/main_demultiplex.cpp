@@ -36,8 +36,6 @@
 #include "reports.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 //! Implemented in main_adapter_rm.cpp
 void
 add_write_step(const userconfig& config,
@@ -328,5 +326,3 @@ demultiplex_sequences(const userconfig& config)
     return demultiplex_sequences_se(config);
   }
 }
-
-} // namespace ar

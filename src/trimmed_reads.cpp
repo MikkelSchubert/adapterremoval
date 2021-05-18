@@ -25,8 +25,6 @@
 #include "trimmed_reads.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 inline void
 add_chunk(chunk_vec& chunks, size_t target, output_chunk_ptr chunk)
 {
@@ -150,5 +148,3 @@ trimmed_reads::distribute_read(output_chunk_ptr& regular,
     m_discarded->add(m_encoding, read, read_count);
   }
 }
-
-} // namespace ar

@@ -32,8 +32,6 @@
 #include "strutils.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 demultiplex_reads::demultiplex_reads(const userconfig* config)
@@ -183,5 +181,3 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
 
   return flush_cache(read_chunk->eof);
 }
-
-} // namespace ar

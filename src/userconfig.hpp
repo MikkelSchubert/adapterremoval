@@ -36,8 +36,6 @@
 #include "fastq.hpp"
 #include "statistics.hpp"
 
-namespace ar {
-
 struct alignment_info;
 
 typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
@@ -226,7 +224,5 @@ private:
   //! Sink for --trim3p
   string_vec trim3p;
 };
-
-} // namespace ar
 
 #endif

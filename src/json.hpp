@@ -30,8 +30,6 @@
 
 #include "debug.hpp"
 
-namespace ar {
-
 /**
  * Writes pretty-printed JSON to a stream.
  *
@@ -76,7 +74,5 @@ private:
   size_t m_indent;
   bool m_values;
 };
-
-} // namespace ar
 
 #endif

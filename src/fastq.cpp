@@ -32,8 +32,6 @@
 #include "fastq.hpp"
 #include "linereader.hpp"
 
-namespace ar {
-
 enum class read_mate
 {
   unknown,
@@ -458,5 +456,3 @@ fastq::trim_sequence_and_qualities(const size_t left_inclusive,
 
   return summary;
 }
-
-} // namespace ar

@@ -27,8 +27,6 @@
 #include <stdexcept>
 #include <string>
 
-namespace ar {
-
 #ifdef AR_TEST_BUILD
 /** Exception explaining 'abort' calls when running unit-tests. */
 class assert_failed : public std::exception
@@ -76,7 +74,5 @@ debug_raise_assert(const char* filename, size_t lineno, const char* what);
   if (!locker.try_lock()) {                                                    \
     AR_DEBUG_FAIL("race condition detected");                                  \
   };
-
-} // namespace ar
 
 #endif

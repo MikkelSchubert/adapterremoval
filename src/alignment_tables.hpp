@@ -26,8 +26,6 @@
 
 #include <sys/types.h>
 
-namespace ar {
-
 const size_t PHRED_TABLE_SIZE = 8836;
 
 /**
@@ -46,7 +44,5 @@ extern const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE];
  * assuming that phred_1 >= phred_2.
  */
 extern const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE];
-
-} // namespace ar
 
 #endif

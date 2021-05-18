@@ -35,8 +35,6 @@
 #include "debug.hpp"
 #include "fastq.hpp"
 
-namespace ar {
-
 #if defined(__SSE__) && defined(__SSE2__)
 #include <xmmintrin.h>
 
@@ -513,5 +511,3 @@ extract_adapter_sequences(const alignment_info& alignment,
 
   return read1.sequence().length() || read2.sequence().length();
 }
-
-} // namespace ar

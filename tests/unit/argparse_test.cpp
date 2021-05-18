@@ -30,8 +30,6 @@
 #include "debug.hpp"
 #include "testing.hpp"
 
-namespace ar {
-
 typedef std::unique_ptr<argparse::consumer_base> consumer_autoptr;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -467,5 +465,3 @@ TEST_CASE("Floaty knob rejects trailing garbage", "[argparse::floaty_knob]")
 
 ///////////////////////////////////////////////////////////////////////////////
 // parser
-
-} // namespace ar

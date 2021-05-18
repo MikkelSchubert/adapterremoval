@@ -38,8 +38,6 @@
 #include "timer.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 ///////////////////////////////////////////////////////////////////////////////
 // KMer related functions and constants
 
@@ -502,5 +500,3 @@ identify_adapter_sequences(const userconfig& config)
 
   return 0;
 }
-
-} // namespace ar

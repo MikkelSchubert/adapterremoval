@@ -32,8 +32,6 @@
 #include "commontypes.hpp"
 #include "fastq_enc.hpp"
 
-namespace ar {
-
 class line_reader_base;
 struct mate_info;
 
@@ -274,7 +272,5 @@ fastq::length() const
 {
   return m_sequence.length();
 }
-
-} // namespace ar
 
 #endif

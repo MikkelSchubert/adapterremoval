@@ -28,8 +28,6 @@
 #include "main.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 // See main_adapter_rm.cpp
 int
 remove_adapter_sequences(const userconfig& config);
@@ -40,12 +38,9 @@ identify_adapter_sequences(const userconfig& config);
 int
 demultiplex_sequences(const userconfig& config);
 
-} // namespace ar
-
 int
 main(int argc, char* argv[])
 {
-  using namespace ar;
   std::ios_base::sync_with_stdio(false);
 
   userconfig config(NAME, VERSION, HELPTEXT);

@@ -32,8 +32,6 @@
 #include "scheduler.hpp"
 #include "statistics.hpp"
 
-namespace ar {
-
 class userconfig;
 struct next_subsequence;
 
@@ -114,7 +112,5 @@ protected:
   size_t m_barcode_1_len;
   size_t m_barcode_2_len;
 };
-
-} // namespace ar
 
 #endif

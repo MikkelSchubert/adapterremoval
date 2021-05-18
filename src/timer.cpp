@@ -32,8 +32,6 @@
 #include "threads.hpp"
 #include "timer.hpp"
 
-namespace ar {
-
 //! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
 //! Number of blocks to store for calculating mean rate
@@ -165,5 +163,3 @@ timer::do_print(size_t rate, double current_time, bool finalize) const
     lock.partial_stderr_output();
   }
 }
-
-} // namespace ar

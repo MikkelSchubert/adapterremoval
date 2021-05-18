@@ -37,8 +37,6 @@
 #include "trimming.hpp"
 #include "userconfig.hpp"
 
-namespace ar {
-
 bool
 write_trimming_and_demultiplexing_report(const userconfig& config,
                                          const demultiplex_reads* step)
@@ -335,5 +333,3 @@ remove_adapter_sequences(const userconfig& config)
     return remove_adapter_sequences_se(config);
   }
 }
-
-} // namespace ar

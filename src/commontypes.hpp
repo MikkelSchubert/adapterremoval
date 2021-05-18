@@ -28,8 +28,6 @@
 #include <string>
 #include <vector>
 
-namespace ar {
-
 class fastq;
 
 typedef std::vector<std::string> string_vec;
@@ -94,7 +92,5 @@ enum analyses_id
   ai_write_collapsed = 24,
   ai_write_discarded = 25
 };
-
-} // namespace ar
 
 #endif

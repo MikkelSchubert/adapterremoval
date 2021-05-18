@@ -28,8 +28,6 @@
 #include "strutils.hpp"
 #include "testing.hpp"
 
-namespace ar {
-
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for 'toupper'
 
@@ -175,5 +173,3 @@ TEST_CASE("Base 10 is assumed", "[strutils::str_to_unsigned]")
 {
   REQUIRE(str_to_unsigned("010") == 10);
 }
-
-} // namespace ar

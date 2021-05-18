@@ -28,8 +28,6 @@
 #include <sstream>
 #include <string>
 
-namespace ar {
-
 const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
@@ -112,7 +110,5 @@ private:
   //! The number of spaces to indent each line (see also m_indent_first_line)
   size_t m_indentation;
 };
-
-} // namespace ar
 
 #endif

@@ -29,8 +29,6 @@
 #include "commontypes.hpp"
 #include "linereader.hpp"
 
-namespace ar {
-
 /**
  * Multi-file line-reader
  *
@@ -73,7 +71,5 @@ private:
   //! Current line across all files.
   size_t m_current_line;
 };
-
-} // namespace ar
 
 #endif

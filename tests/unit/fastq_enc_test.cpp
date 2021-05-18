@@ -25,8 +25,6 @@
 #include "fastq.hpp"
 #include "testing.hpp"
 
-namespace ar {
-
 ///////////////////////////////////////////////////////////////////////////////
 // Names (default objects)
 
@@ -36,6 +34,4 @@ TEST_CASE("Global encodings have expected names", "[fastq_encoding]")
   REQUIRE(FASTQ_ENCODING_64.name() == std::string("Phred+64"));
   REQUIRE(FASTQ_ENCODING_SAM.name() == std::string("Phred+33"));
   REQUIRE(FASTQ_ENCODING_SOLEXA.name() == std::string("Solexa"));
-}
-
 }

@@ -38,8 +38,6 @@
     return *this;                                                              \
   }
 
-namespace ar {
-
 bool
 operator==(const alignment_info& first, const alignment_info& second)
 {
@@ -1419,5 +1417,3 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
     }
   }
 }
-
-} // namespace ar

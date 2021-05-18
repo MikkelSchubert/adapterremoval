@@ -29,8 +29,6 @@
 
 #include "statistics.hpp"
 
-namespace ar {
-
 statistics::statistics()
   : number_of_collapsed(0)
   , total_number_of_nucleotides(0)
@@ -98,5 +96,3 @@ demux_statistics::total() const
 
   return total;
 }
-
-} // namespace ar
