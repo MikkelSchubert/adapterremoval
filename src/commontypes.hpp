@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef COMMONTYPES_H
-#define COMMONTYPES_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -92,5 +91,3 @@ enum analyses_id
   ai_write_collapsed = 24,
   ai_write_discarded = 25
 };
-
-#endif

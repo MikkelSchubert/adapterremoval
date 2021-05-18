@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef ALIGNMENT_TABLES_H
-#define ALIGNMENT_TABLES_H
+#pragma once
 
 #include <sys/types.h>
 
@@ -44,5 +43,3 @@ extern const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE];
  * assuming that phred_1 >= phred_2.
  */
 extern const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE];
-
-#endif

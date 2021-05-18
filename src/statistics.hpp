@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef STATISTICS_H
-#define STATISTICS_H
+#pragma once
 
 #include <cstdlib>
 #include <vector>
@@ -92,5 +91,3 @@ struct demux_statistics
   //! Number of reads / pairs with no single best hit
   size_t ambiguous;
 };
-
-#endif

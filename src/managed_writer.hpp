@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef WRITER_HPP
-#define WRITER_HPP
+#pragma once
 
 #include <fstream>
 #include <vector>
@@ -93,5 +92,3 @@ private:
   //! Indicates if a performance warning has been printed
   static bool s_warning_printed;
 };
-
-#endif

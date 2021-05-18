@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef TRIMMED_READS_H
-#define TRIMMED_READS_H
+#pragma once
 
 #include <string>
 
@@ -152,5 +151,3 @@ private:
   //! Pointer to cached discarded reads; may be nullptr.
   output_chunk_ptr m_discarded;
 };
-
-#endif

@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <vector>
 
@@ -66,5 +65,3 @@ merge_sub_vectors(std::vector<std::vector<T>>& dst,
     merge_vectors(*dst_it++, *src_it++);
   }
 }
-
-#endif

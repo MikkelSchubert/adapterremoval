@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef ALIGNMENT_H
-#define ALIGNMENT_H
+#pragma once
 
 #include <random>
 #include <string>
@@ -247,5 +246,3 @@ bool
 extract_adapter_sequences(const alignment_info& alignment,
                           fastq& pcr1,
                           fastq& pcr2);
-
-#endif

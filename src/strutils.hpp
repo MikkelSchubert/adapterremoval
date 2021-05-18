@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef STRUTILS_H
-#define STRUTILS_H
+#pragma once
 
 #include <iomanip>
 #include <sstream>
@@ -110,5 +109,3 @@ private:
   //! The number of spaces to indent each line (see also m_indent_first_line)
   size_t m_indentation;
 };
-
-#endif

@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef TIMER_H
-#define TIMER_H
+#pragma once
 
 #include <deque>
 #include <string>
@@ -69,5 +68,3 @@ private:
   //! Counts for last N updates, for calculating running mean rate.
   time_count_deque m_counts;
 };
-
-#endif

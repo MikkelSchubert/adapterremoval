@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef DEMULTIPLEX_H
-#define DEMULTIPLEX_H
+#pragma once
 
 #include "barcode_table.hpp"
 #include "fastq.hpp"
@@ -116,5 +115,3 @@ public:
    */
   chunk_vec process(analytical_chunk* chunk);
 };
-
-#endif

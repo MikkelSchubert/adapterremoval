@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef LINEREADER_JOINED_H
-#define LINEREADER_JOINED_H
+#pragma once
 
 #include <memory>
 
@@ -71,5 +70,3 @@ private:
   //! Current line across all files.
   size_t m_current_line;
 };
-
-#endif

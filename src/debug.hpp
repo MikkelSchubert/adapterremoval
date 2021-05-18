@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef AR_DEBUG_H
-#define AR_DEBUG_H
+#pragma once
 
 #include <stdexcept>
 #include <string>
@@ -74,5 +73,3 @@ debug_raise_assert(const char* filename, size_t lineno, const char* what);
   if (!locker.try_lock()) {                                                    \
     AR_DEBUG_FAIL("race condition detected");                                  \
   };
-
-#endif

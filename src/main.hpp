@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef MAIN_H
-#define MAIN_H
+#pragma once
 
 #include <string>
 
@@ -42,5 +41,3 @@ const std::string HELPTEXT =
   "    BMC Research Notes, 12;9(1):88.\n\n"
   "    "
   "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n";
-
-#endif

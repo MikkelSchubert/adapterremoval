@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef THREADS_H
-#define THREADS_H
+#pragma once
 
 #include <mutex>
 #include <string>
@@ -92,5 +91,3 @@ public:
 private:
   std::lock_guard<std::mutex> m_lock;
 };
-
-#endif

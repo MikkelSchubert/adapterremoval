@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef AR_ADAPTERS_H
-#define AR_ADAPTERS_H
+#pragma once
 
 #include "commontypes.hpp"
 #include "fastq.hpp"
@@ -95,5 +94,3 @@ private:
   //! User-supplied adapter sequences, without barcodes added
   fastq_pair_vec m_adapters;
 };
-
-#endif

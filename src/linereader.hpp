@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef GZFILE_H
-#define GZFILE_H
+#pragma once
 
 #include <cstdio>
 #include <ios>
@@ -149,5 +148,3 @@ private:
 inline line_reader_base::line_reader_base() {}
 
 inline line_reader_base::~line_reader_base() {}
-
-#endif

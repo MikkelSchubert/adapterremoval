@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef REPORTS_H
-#define REPORTS_H
+#pragma once
 
 #include <cstdlib>
 #include <ostream>
@@ -53,5 +52,3 @@ void
 write_demultiplex_statistics(const userconfig& config,
                              std::ofstream& output,
                              const demultiplex_reads* step);
-
-#endif

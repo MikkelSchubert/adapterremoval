@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef BARCODE_TABLE_H
-#define BARCODE_TABLE_H
+#pragma once
 
 #include <array>
 
@@ -112,5 +111,3 @@ protected:
   size_t m_barcode_1_len;
   size_t m_barcode_2_len;
 };
-
-#endif

@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef SCHEDULER_H
-#define SCHEDULER_H
+#pragma once
 
 #include <atomic>
 #include <condition_variable>
@@ -347,5 +346,3 @@ scheduler::set_errors_occured()
 {
   m_errors.store(true);
 }
-
-#endif

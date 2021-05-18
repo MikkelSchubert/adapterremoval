@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef FASTQ_IO_H
-#define FASTQ_IO_H
+#pragma once
 
 #include <zlib.h>
 
@@ -342,5 +341,3 @@ private:
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
 };
-
-#endif

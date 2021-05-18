@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef FASTQ_ENC_H
-#define FASTQ_ENC_H
+#pragma once
 
 #include <string>
 
@@ -139,5 +138,3 @@ static const fastq_encoding FASTQ_ENCODING_64(PHRED_OFFSET_64);
 static const fastq_encoding FASTQ_ENCODING_SAM(PHRED_OFFSET_33,
                                                MAX_PHRED_SCORE);
 static const fastq_encoding_solexa FASTQ_ENCODING_SOLEXA;
-
-#endif

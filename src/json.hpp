@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#ifndef JSON_H
-#define JSON_H
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -74,5 +73,3 @@ private:
   size_t m_indent;
   bool m_values;
 };
-
-#endif
