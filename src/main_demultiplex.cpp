@@ -29,11 +29,11 @@
 #include <string>
 
 #include "debug.hpp"
-#include "demultiplex.hpp"
+#include "demultiplexing.hpp"
 #include "fastq.hpp"
 #include "fastq_io.hpp"
 #include "main.hpp"
-//#include "strutils.hpp"
+#include "reports.hpp"
 #include "userconfig.hpp"
 
 namespace ar {
@@ -46,45 +46,10 @@ add_write_step(const userconfig& config,
                const std::string& name,
                analytical_step* step);
 
-void
-write_demultiplex_statistics(std::ofstream& output,
-                             const userconfig& config,
-                             const demultiplex_reads* step)
-{
-  const demux_statistics stats = step->statistics();
-  const size_t total = stats.total();
-
-  output.precision(3);
-  output << std::fixed << std::setw(3) << "\n\n[Demultiplexing statistics]"
-         << "\nName\tBarcode_1\tBarcode_2\tHits\tFraction\n"
-         << "unidentified\tNA\tNA\t" << stats.unidentified << "\t"
-         << stats.unidentified / static_cast<double>(total) << "\n"
-         << "ambiguous\tNA\tNA\t" << stats.ambiguous << "\t"
-         << stats.ambiguous / static_cast<double>(total) << "\n";
-
-  const fastq_pair_vec barcodes = config.adapters.get_barcodes();
-  for (size_t nth = 0; nth < barcodes.size(); ++nth) {
-    const fastq_pair& current = barcodes.at(nth);
-
-    output << config.adapters.get_sample_name(nth) << "\t"
-           << current.first.sequence() << "\t";
-    if (current.second.length()) {
-      output << current.second.sequence() << "\t";
-    } else {
-      output << "*\t";
-    }
-
-    output << stats.barcodes.at(nth) << "\t"
-           << stats.barcodes.at(nth) / static_cast<double>(total) << "\n";
-  }
-
-  output << "*\t*\t*\t" << total << "\t" << 1.0 << std::endl;
-}
-
 bool
-write_demultiplex_settings(const userconfig& config,
-                           const demultiplex_reads* step,
-                           int nth = -1)
+write_demultiplexing_report(const userconfig& config,
+                            const demultiplex_reads* step,
+                            int nth = -1)
 {
   const std::string filename =
     config.get_output_filename(nth == -1 ? "demux_stats" : "--settings", nth);
@@ -100,82 +65,9 @@ write_demultiplex_settings(const userconfig& config,
 
     output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
-    output << NAME << " " << VERSION << "\nDemultiplexing of ";
-
-    if (config.adapters.barcode_count()) {
-      if (config.adapters.get_barcodes().front().second.length()) {
-        output << "double-indexed ";
-      } else {
-        output << "single-indexed ";
-      }
-    }
-
-    if (config.paired_ended_mode) {
-      if (config.interleaved_input) {
-        output << "interleaved ";
-      }
-
-      output << "paired-end reads";
-    } else {
-      output << "single-end reads";
-    }
-
-    output << "\n\n\n[Demultiplexing]"
-           << "\nMaximum mismatches (total): " << config.barcode_mm;
-
-    if (config.paired_ended_mode) {
-      output << "\nMaximum mate 1 mismatches: " << config.barcode_mm_r1;
-      output << "\nMaximum mate 2 mismatches: " << config.barcode_mm_r2;
-    }
-
-    output << "\n\n\n[Demultiplexing samples]"
-           << "\nName\tBarcode_1\tBarcode_2\n";
-
-    const fastq_pair_vec barcodes = config.adapters.get_barcodes();
-    for (size_t idx = 0; idx < barcodes.size(); ++idx) {
-      output << config.adapters.get_sample_name(idx);
-      if (static_cast<size_t>(nth) == idx) {
-        output << "*";
-      }
-
-      const fastq_pair& current = barcodes.at(idx);
-      output << "\t" << current.first.sequence();
-
-      if (current.second.length()) {
-        output << "\t" << current.second.sequence() << "\n";
-      } else {
-        output << "\t*\n";
-      }
-    }
-
-    output << "\n\n[Adapter sequences]";
+    write_demultiplex_settings(config, output, nth);
     if (nth == -1) {
-      const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
-      size_t adapter_id = 0;
-      for (fastq_pair_vec::const_iterator it = adapters.begin();
-           it != adapters.end();
-           ++it, ++adapter_id) {
-        output << "\nAdapter1[" << adapter_id + 1
-               << "]: " << it->first.sequence();
-
-        fastq adapter_2 = it->second;
-        adapter_2.reverse_complement();
-        output << "\nAdapter2[" << adapter_id + 1
-               << "]: " << adapter_2.sequence() << "\n";
-      }
-
-      write_demultiplex_statistics(output, config, step);
-    } else {
-      const string_pair_vec adapters =
-        config.adapters.get_pretty_adapter_set(nth);
-      size_t adapter_id = 0;
-      for (string_pair_vec::const_iterator it = adapters.begin();
-           it != adapters.end();
-           ++it, ++adapter_id) {
-        output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
-        output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second
-               << "\n";
-      }
+      write_demultiplex_statistics(config, output, step);
     }
   } catch (const std::ios_base::failure& error) {
     std::cerr << "IO error writing settings file; aborting:\n"
@@ -322,12 +214,12 @@ demultiplex_sequences_se(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!write_demultiplex_settings(config, demultiplexer)) {
+  } else if (!write_demultiplexing_report(config, demultiplexer)) {
     return 1;
   }
 
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    if (!write_demultiplex_settings(config, demultiplexer, nth)) {
+    if (!write_demultiplexing_report(config, demultiplexer, nth)) {
       return 1;
     }
   }
@@ -414,12 +306,12 @@ demultiplex_sequences_pe(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!write_demultiplex_settings(config, demultiplexer)) {
+  } else if (!write_demultiplexing_report(config, demultiplexer)) {
     return 1;
   }
 
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    if (!write_demultiplex_settings(config, demultiplexer, nth)) {
+    if (!write_demultiplexing_report(config, demultiplexer, nth)) {
       return 1;
     }
   }

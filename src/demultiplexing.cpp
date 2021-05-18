@@ -27,7 +27,7 @@
 
 #include "commontypes.hpp"
 #include "debug.hpp"
-#include "demultiplex.hpp"
+#include "demultiplexing.hpp"
 #include "fastq_io.hpp"
 #include "strutils.hpp"
 #include "userconfig.hpp"

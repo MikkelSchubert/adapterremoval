@@ -74,7 +74,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/argparse.o \
             $(BDIR)/barcode_table.o \
             $(BDIR)/debug.o \
-            $(BDIR)/demultiplex.o \
+            $(BDIR)/demultiplexing.o \
             $(BDIR)/fastq.o \
             $(BDIR)/fastq_enc.o \
             $(BDIR)/fastq_io.o \
@@ -86,10 +86,13 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/main_demultiplex.o \
             $(BDIR)/managed_writer.o \
             $(BDIR)/scheduler.o \
+            $(BDIR)/statistics.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \
             $(BDIR)/timer.o \
             $(BDIR)/trimmed_reads.o \
+            $(BDIR)/trimming.o \
+            $(BDIR)/reports.o \
             $(BDIR)/userconfig.o
 OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)

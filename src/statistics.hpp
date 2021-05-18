@@ -33,24 +33,14 @@
 
 namespace ar {
 
+class demultiplex_reads;
+class userconfig;
+class reads_processor;
+
 /** Object used to collect summary statistics for trimming and other tasks. */
 struct statistics
 {
-  statistics()
-    : number_of_collapsed(0)
-    , total_number_of_nucleotides(0)
-    , total_number_of_good_reads(0)
-    , number_of_reads_with_adapter()
-    , unaligned_reads(0)
-    , well_aligned_reads(0)
-    , poorly_aligned_reads(0)
-    , keep1(0)
-    , discard1(0)
-    , keep2(0)
-    , discard2(0)
-    , records(0)
-    , read_lengths()
-  {}
+  statistics();
 
   //! Number of collapsed reads
   size_t number_of_collapsed;
@@ -80,64 +70,24 @@ struct statistics
   size_t records;
 
   /** Increment the number of reads with of a given type / length. */
-  void inc_length_count(read_type type, size_t length)
-  {
-    if (length >= read_lengths.size()) {
-      read_lengths.resize(
-        length + 1, std::vector<size_t>(static_cast<size_t>(read_type::max)));
-    }
-
-    ++read_lengths.at(length).at(static_cast<size_t>(type));
-  }
+  void inc_length_count(read_type type, size_t length);
 
   //! Per read-type length distributions of reads
   std::vector<std::vector<size_t>> read_lengths;
 
   /** Combine statistics objects, e.g. those used by different threads. */
-  statistics& operator+=(const statistics& other)
-  {
-    number_of_collapsed += other.number_of_collapsed;
-    total_number_of_nucleotides += other.total_number_of_nucleotides;
-    total_number_of_good_reads += other.total_number_of_good_reads;
-
-    unaligned_reads += other.unaligned_reads;
-    well_aligned_reads += other.well_aligned_reads;
-    poorly_aligned_reads += other.poorly_aligned_reads;
-    keep1 += other.keep1;
-    discard1 += other.discard1;
-    keep2 += other.keep2;
-    discard2 += other.discard2;
-
-    records += other.records;
-
-    merge_vectors(number_of_reads_with_adapter,
-                  other.number_of_reads_with_adapter);
-    merge_sub_vectors(read_lengths, other.read_lengths);
-
-    return *this;
-  }
+  statistics& operator+=(const statistics& other);
 };
 
 /** Object used to collect summary statistics for demultiplexing. */
 struct demux_statistics
 {
-  demux_statistics(const size_t n_barcodes)
-    : barcodes(n_barcodes)
-    , unidentified(0)
-    , ambiguous(0)
-  {}
+  demux_statistics(const size_t n_barcodes);
 
-  size_t total() const
-  {
-    size_t total = unidentified + ambiguous;
-    for (size_t i = 0; i < barcodes.size(); ++i) {
-      total += barcodes.at(i);
-    }
+  size_t total() const;
 
-    return total;
-  }
-
-  //! Number of reads / pairs identified for a given barcode / pair of barcodes
+  //! Number of reads / pairs identified for a given barcode / pair of
+  //! barcodes
   std::vector<size_t> barcodes;
   //! Number of reads / pairs with no hits
   size_t unidentified;
