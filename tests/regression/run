@@ -58,7 +58,7 @@ def _do_print_color(*vargs, **kwargs):
 
     print(*vargs, file=destination, **kwargs)
 
-    if '\n' in kwargs.get('end', '\n'):
+    if "\n" in kwargs.get("end", "\n"):
         destination.flush()
 
 
@@ -79,7 +79,7 @@ UNCOMPRESSED, GZIP, BZIP2 = "raw", "gz", "bz2"
 def compress(value, compression):
     if compression == GZIP:
         fileobj = io.BytesIO()
-        handle = gzip.GzipFile('', 'w', 9, fileobj)
+        handle = gzip.GzipFile("", "w", 9, fileobj)
         handle.write(value)
         handle.close()
 
@@ -96,17 +96,19 @@ def decompress(filename):
 
     if value and filename.endswith(".bz2"):
         if not value.startswith(b"BZ"):
-            raise TestError("Expected bz2 file at %r, but header is %r"
-                            % (filename, value[:2]))
+            raise TestError(
+                "Expected bz2 file at %r, but header is %r" % (filename, value[:2])
+            )
 
         value = bz2.decompress(value)
     elif value and filename.endswith(".gz"):
         if not value.startswith(b"\x1f\x8b"):
-            raise TestError("Expected gzip file at %r, but header is %r"
-                            % (filename, value[:2]))
+            raise TestError(
+                "Expected gzip file at %r, but header is %r" % (filename, value[:2])
+            )
 
         fileobj = io.BytesIO(value)
-        handle = gzip.GzipFile('', 'r', 9, fileobj)
+        handle = gzip.GzipFile("", "r", 9, fileobj)
 
         value = handle.read()
 
@@ -115,13 +117,13 @@ def decompress(filename):
 
 
 #############################################################################
-_EXEC = './build/AdapterRemoval'
+_EXEC = "./build/AdapterRemoval"
 _INFO_FILE = "info.json"
 _INFO_FIELDS = {
-    'arguments': list,
-    'return_code': int,
-    'stderr': list,
-    'exhaustive': bool,
+    "arguments": list,
+    "return_code": int,
+    "stderr": list,
+    "exhaustive": bool,
 }
 
 
@@ -176,10 +178,14 @@ class TestCase(object):
         self._info = self._read_info(os.path.join(root, _INFO_FILE))
 
     def __repr__(self):
-        return "TestCase(%r)" % ({'root': self.root,
-                                  'name': self.name,
-                                  'info': self._info,
-                                  'files': self._files})
+        return "TestCase(%r)" % (
+            {
+                "root": self.root,
+                "name": self.name,
+                "info": self._info,
+                "files": self._files,
+            }
+        )
 
     def run(self, root, delete_folder):
         root = os.path.join(root, *self.path)
@@ -195,28 +201,39 @@ class TestCase(object):
         )
 
         for in_compression, out_compression, interleaved in parameters:
-            yield "%s>%s%s" % (in_compression,
-                                out_compression,
-                                ",intl" if interleaved else "")
+            yield "%s>%s%s" % (
+                in_compression,
+                out_compression,
+                ",intl" if interleaved else "",
+            )
 
-            postfix = "%s_%s%s" % (in_compression,
-                                    out_compression,
-                                    "_intl" if interleaved else "")
+            postfix = "%s_%s%s" % (
+                in_compression,
+                out_compression,
+                "_intl" if interleaved else "",
+            )
             test_folder = os.path.join(root, postfix)
 
-            self._do_run(root=test_folder,
-                            in_compression=in_compression,
-                            out_compression=out_compression,
-                            interleaved=interleaved)
+            self._do_run(
+                root=test_folder,
+                in_compression=in_compression,
+                out_compression=out_compression,
+                interleaved=interleaved,
+            )
 
             if delete_folder:
                 shutil.rmtree(test_folder)
-            
-            if not self._info['exhaustive']:
+
+            if not self._info["exhaustive"]:
                 break
 
-    def _do_run(self, root, in_compression=UNCOMPRESSED,
-                out_compression=UNCOMPRESSED, interleaved=False):
+    def _do_run(
+        self,
+        root,
+        in_compression=UNCOMPRESSED,
+        out_compression=UNCOMPRESSED,
+        interleaved=False,
+    ):
         assert in_compression in (UNCOMPRESSED, BZIP2, GZIP)
         assert out_compression in (UNCOMPRESSED, BZIP2, GZIP)
         os.makedirs(root)
@@ -230,20 +247,20 @@ class TestCase(object):
     def _setup_input(self, root, compression, interleaved):
         input_files = {}
         for key in ("input_1", "input_2"):
-            input_files[key] = [open(filename).read()
-                                for filename in self._files[key]]
+            input_files[key] = [open(filename).read() for filename in self._files[key]]
 
         if interleaved:
-            input_files = {"input_1": interleave(input_files["input_1"],
-                                                 input_files["input_2"]),
-                           "input_2": []}
+            input_files = {
+                "input_1": interleave(input_files["input_1"], input_files["input_2"]),
+                "input_2": [],
+            }
 
         final_files = {}
         for key, values in input_files.items():
             filenames = []
             for idx, value in enumerate(values):
                 value = value.encode("utf-8")
-                filename = '%s%s.fastq' % (key, chr(ord('a') + idx))
+                filename = "%s%s.fastq" % (key, chr(ord("a") + idx))
                 if compression != UNCOMPRESSED:
                     filename += "." + compression
                     value = compress(value, compression)
@@ -255,28 +272,29 @@ class TestCase(object):
 
             final_files[key] = filenames
 
-        if 'barcodes' in self._files:
-            with open(os.path.join(root, 'barcodes.txt'), 'w') as handle:
-                handle.writelines(self._files['barcodes'])
+        if "barcodes" in self._files:
+            with open(os.path.join(root, "barcodes.txt"), "w") as handle:
+                handle.writelines(self._files["barcodes"])
 
-        if 'adapters' in self._files:
-            with open(os.path.join(root, 'adapters.txt'), 'w') as handle:
-                handle.writelines(self._files['adapters'])
+        if "adapters" in self._files:
+            with open(os.path.join(root, "adapters.txt"), "w") as handle:
+                handle.writelines(self._files["adapters"])
 
         return final_files["input_1"], final_files["input_2"]
 
     def _do_call(self, root, input_1, input_2, compression, interleaved):
-        command = self._build_command(root, input_1, input_2,
-                                      compression, interleaved)
+        command = self._build_command(root, input_1, input_2, compression, interleaved)
 
         with open(os.devnull, "wb") as dev_null:
-            proc = subprocess.Popen(command,
-                                    stdin=dev_null,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    close_fds=True,
-                                    preexec_fn=os.setsid,
-                                    cwd=root)
+            proc = subprocess.Popen(
+                command,
+                stdin=dev_null,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True,
+                preexec_fn=os.setsid,
+                cwd=root,
+            )
 
             stdout, stderr = proc.communicate()
             stdout = stdout.decode("utf-8")
@@ -287,23 +305,28 @@ class TestCase(object):
 
             for value in self._info["stderr"]:
                 if re.search(value, stderr) is None:
-                    raise TestError("Expected value not found in output:\n"
-                                    "  Searching for:\n%s\n  STDERR:\n%s"
-                                    % (pretty_output(value, 4),
-                                       pretty_output(stderr, 4)))
+                    raise TestError(
+                        "Expected value not found in output:\n"
+                        "  Searching for:\n%s\n  STDERR:\n%s"
+                        % (pretty_output(value, 4), pretty_output(stderr, 4))
+                    )
 
             if proc.returncode != self._info["return_code"]:
-                raise TestError("ERROR: Expected return-code %i, but "
-                                "AdapterRemoval returned %i:\n%s"
-                                % (self._info["return_code"],
-                                   proc.returncode,
-                                   pretty_output(stderr, 2)))
+                raise TestError(
+                    "ERROR: Expected return-code %i, but "
+                    "AdapterRemoval returned %i:\n%s"
+                    % (
+                        self._info["return_code"],
+                        proc.returncode,
+                        pretty_output(stderr, 2),
+                    )
+                )
 
     def _check_file_creation(self, root, input_1, input_2, compression):
         expected_files = set(self._files["output"])
-        for key in ('barcodes', 'adapters'):
+        for key in ("barcodes", "adapters"):
             if key in self._files:
-                expected_files.add(key + '.txt')
+                expected_files.add(key + ".txt")
 
         if compression != UNCOMPRESSED:
             expected_files_ = set()
@@ -314,16 +337,21 @@ class TestCase(object):
                     expected_files_.add(value)
             expected_files = expected_files_
 
-        observed_files = frozenset(os.listdir(root)) \
-            - frozenset(input_1) - frozenset(input_2)
+        observed_files = (
+            frozenset(os.listdir(root)) - frozenset(input_1) - frozenset(input_2)
+        )
 
         if expected_files - observed_files:
-            raise TestError("ERROR: Expected output file(s) not created:\n"
-                            "  Expected: %r\n  Observed: %r"
-                            % (sorted(expected_files), sorted(observed_files)))
+            raise TestError(
+                "ERROR: Expected output file(s) not created:\n"
+                "  Expected: %r\n  Observed: %r"
+                % (sorted(expected_files), sorted(observed_files))
+            )
         elif observed_files - expected_files:
-            raise TestError("ERROR: Unexpected output file(s) created: %r"
-                            % (sorted(observed_files - expected_files)))
+            raise TestError(
+                "ERROR: Unexpected output file(s) created: %r"
+                % (sorted(observed_files - expected_files))
+            )
 
     def _check_file_contents(self, root, compression):
         for filename, exp_data in sorted(self._files["output"].items()):
@@ -337,27 +365,32 @@ class TestCase(object):
                 exp_data = self._mangle_settings(exp_data)
                 obs_data = self._mangle_settings(obs_data)
 
-            self._diff_file_pair_contents(os.path.join(self.root, filename),
-                                          os.path.join(root, filename),
-                                          exp_data, obs_data)
+            self._diff_file_pair_contents(
+                os.path.join(self.root, filename),
+                os.path.join(root, filename),
+                exp_data,
+                obs_data,
+            )
 
     def _diff_file_pair_contents(self, exp_filename, obs_filename, exp_data, obs_data):
         if exp_data != obs_data:
-            lines = "".join(difflib.unified_diff(exp_data, obs_data,
-                                                 "expected", "observed"))
+            lines = "".join(
+                difflib.unified_diff(exp_data, obs_data, "expected", "observed")
+            )
 
-            raise TestError("ERROR: Output file(s) differ:\n"
-                            "  Expected: %r\n  Observed: %r\n  Diff:\n%s"
-                            % (exp_filename, obs_filename,
-                               pretty_output(lines, 4)))
+            raise TestError(
+                "ERROR: Output file(s) differ:\n"
+                "  Expected: %r\n  Observed: %r\n  Diff:\n%s"
+                % (exp_filename, obs_filename, pretty_output(lines, 4))
+            )
 
     def _build_command(self, root, input_1, input_2, compression, interleaved):
         command = [os.path.abspath(_EXEC)]
         if interleaved:
             command.append("--interleaved-input")
 
-        if 'barcodes' in self._files:
-            command.extend(('--barcode-list', 'barcodes.txt'))
+        if "barcodes" in self._files:
+            command.extend(("--barcode-list", "barcodes.txt"))
 
         if input_1 or input_2:
             if compression == BZIP2:
@@ -366,13 +399,13 @@ class TestCase(object):
                 command.append("--gzip")
 
         if input_1:
-            command.append('--file1')
+            command.append("--file1")
             command.extend(input_1)
         if input_2:
-            command.append('--file2')
+            command.append("--file2")
             command.extend(input_2)
 
-        command.extend(self._info['arguments'])
+        command.extend(self._info["arguments"])
 
         return [field % {"ROOT": root} for field in command]
 
@@ -387,14 +420,10 @@ class TestCase(object):
         result = []
         for line in handle:
             line = re.sub(r"RNG seed: [0-9]+", "RNG seed: Enabled", line)
-            line = re.sub(r"AdapterRemoval ver\. .*",
-                           "AdapterRemoval ver. X.Y.Z", line)
-            line = re.sub(r"AdapterRemoval v.*",
-                           "AdapterRemoval ver. X.Y.Z", line)
+            line = re.sub(r"AdapterRemoval ver\. .*", "AdapterRemoval ver. X.Y.Z", line)
+            line = re.sub(r"AdapterRemoval v.*", "AdapterRemoval ver. X.Y.Z", line)
             # Removed keyword to allow automatic interleaved tests
-            line = re.sub(r" interleaved paired-end reads",
-                          r" paired-end reads",
-                          line)
+            line = re.sub(r" interleaved paired-end reads", r" paired-end reads", line)
 
             result.append(line)
 
@@ -417,11 +446,11 @@ class TestCase(object):
                 result["input_1"].append(os.path.join(abs_root, filename))
             elif filename.startswith("input_2"):
                 result["input_2"].append(os.path.join(abs_root, filename))
-            elif filename == 'barcodes.txt':
+            elif filename == "barcodes.txt":
                 result["barcodes"] = read_lines(root, filename)
-            elif filename == 'adapters.txt':
+            elif filename == "adapters.txt":
                 result["adapters"] = read_lines(root, filename)
-            elif filename not in ('info.json', 'README'):
+            elif filename not in ("info.json", "README"):
                 result["output"][filename] = read_lines(root, filename)
 
         return result
@@ -433,29 +462,30 @@ class TestCase(object):
             raw_info = json.loads(text)
 
         if not isinstance(raw_info, dict):
-            raise TestError('\'info.json\' does not contain dictionary.')
+            raise TestError("'info.json' does not contain dictionary.")
         elif set(raw_info) - set(_INFO_FIELDS):
-            raise TestError('\'info.json\' does contains unexpected fields; '
-                            'expected keys %r, but found keys unknown keys %r.'
-                            % (sorted(_INFO_FIELDS),
-                               sorted(set(raw_info) - set(_INFO_FIELDS))))
+            raise TestError(
+                "'info.json' does contains unexpected fields; "
+                "expected keys %r, but found keys unknown keys %r."
+                % (sorted(_INFO_FIELDS), sorted(set(raw_info) - set(_INFO_FIELDS)))
+            )
 
-        info = {"arguments": [],
-                "return_code": 0,
-                "stderr": [],
-                'exhaustive': True}
+        info = {"arguments": [], "return_code": 0, "stderr": [], "exhaustive": True}
         info.update(raw_info)
 
         for key, expected_type in _INFO_FIELDS.items():
             if not isinstance(info[key], expected_type):
-                raise TestError('Type of %r in \'info.json\' is %s, not a %s.'
-                                % (key, type(info[key]), expected_type))
+                raise TestError(
+                    "Type of %r in 'info.json' is %s, not a %s."
+                    % (key, type(info[key]), expected_type)
+                )
             elif isinstance(info[key], list):
                 for value in info[key]:
                     if not isinstance(value, str):
-                        raise TestError('Type of value in %r in \'info.json\' '
-                                        'is %s, not a string.'
-                                        % (key, type(value)))
+                        raise TestError(
+                            "Type of value in %r in 'info.json' "
+                            "is %s, not a string." % (key, type(value))
+                        )
 
         return info
 
@@ -468,13 +498,14 @@ class TestCase(object):
 
             if os.path.isdir(filepath):
                 tests.extend(cls.collect(filepath, path + (filename,)))
-            elif filename == 'info.json':
+            elif filename == "info.json":
                 try:
                     test = TestCase(root, path)
                 except Exception as error:
-                    print_err("ERROR: %s reading test %r: %s"
-                              % (error.__class__.__name__,
-                                 ' :: '.join(path), error))
+                    print_err(
+                        "ERROR: %s reading test %r: %s"
+                        % (error.__class__.__name__, " :: ".join(path), error)
+                    )
                     continue
 
                 tests.append(test)
@@ -484,13 +515,13 @@ class TestCase(object):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('work_dir',
-                        help="Directory in which to run test-cases.")
-    parser.add_argument('source_dir',
-                        help="Directory containing test-cases.")
-    parser.add_argument('--keep-all',
-                        help="Keep both completed and failed test folders, "
-                             "not just the folders of failed tests.")
+    parser.add_argument("work_dir", help="Directory in which to run test-cases.")
+    parser.add_argument("source_dir", help="Directory containing test-cases.")
+    parser.add_argument(
+        "--keep-all",
+        help="Keep both completed and failed test folders, "
+        "not just the folders of failed tests.",
+    )
 
     return parser.parse_args(argv)
 
@@ -501,20 +532,20 @@ def main(argv):
         print_err("ERROR: Executable does not exist: %r" % (_EXEC,))
         return 1
 
-    print('Reading test-cases from %r' % (args.source_dir,))
+    print("Reading test-cases from %r" % (args.source_dir,))
     tests = TestCase.collect(args.source_dir)
 
     if not os.path.exists(args.work_dir):
         os.makedirs(args.work_dir)
 
     args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
-    print('Writing test-cases results to %r' % (args.work_dir,))
+    print("Writing test-cases results to %r" % (args.work_dir,))
 
     n_failures = 0
-    print('\nRunning tests:')
+    print("\nRunning tests:")
     for idx, test in enumerate(tests, start=1):
-        print("  %i of %i: %s " % (idx, len(tests), test.name), end='')
-        label = 'unknown'
+        print("  %i of %i: %s " % (idx, len(tests), test.name), end="")
+        label = "unknown"
 
         try:
             for label in test.run(args.work_dir, delete_folder=not args.keep_all):
@@ -523,8 +554,9 @@ def main(argv):
         except TestError as error:
             n_failures += 1
             message = "\n    ".join(str(error).split("\n"))
-            print_err(" %s for %s:\n    %s" % (error.__class__.__name__,
-                                               label, message))
+            print_err(
+                " %s for %s:\n    %s" % (error.__class__.__name__, label, message)
+            )
         else:
             print_ok(" [OK]")
 
@@ -536,5 +568,5 @@ def main(argv):
     return n_failures
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
