@@ -24,6 +24,7 @@ from __future__ import print_function
 import argparse
 import bz2
 import difflib
+import errno
 import gzip
 import io
 import itertools
@@ -513,6 +514,26 @@ class TestCase(object):
         return tests
 
 
+def try_rmdir(dirpath):
+    try:
+        os.rmdir(dirpath)
+
+        return True
+    except OSError as error:
+        if error.errno != errno.ENOTEMPTY:
+            raise
+
+    return False
+
+
+def cleanup_dirs(root, last, current):
+    while last and last != current[: len(last)]:
+        if not try_rmdir(os.path.join(root, *last)):
+            break
+
+        last = last[:-1]
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("work_dir", help="Directory in which to run test-cases.")
@@ -534,6 +555,7 @@ def main(argv):
 
     print("Reading test-cases from %r" % (args.source_dir,))
     tests = TestCase.collect(args.source_dir)
+    tests.sort(key=lambda it: it.path)
 
     if not os.path.exists(args.work_dir):
         os.makedirs(args.work_dir)
@@ -541,9 +563,14 @@ def main(argv):
     args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
     print("Writing test-cases results to %r" % (args.work_dir,))
 
+    last_path = ()
     n_failures = 0
     print("\nRunning tests:")
     for idx, test in enumerate(tests, start=1):
+        # Cleanup as many dirs as possible from last test
+        cleanup_dirs(args.work_dir, last_path, test.path)
+        last_path = test.path
+
         print("  %i of %i: %s " % (idx, len(tests), test.name), end="")
         label = "unknown"
 
@@ -559,6 +586,9 @@ def main(argv):
             )
         else:
             print_ok(" [OK]")
+
+    cleanup_dirs(args.work_dir, last_path, ())
+    try_rmdir(args.work_dir)
 
     if n_failures:
         print_err("\n%i of %i tests failed .." % (n_failures, len(tests)))
