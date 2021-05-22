@@ -36,6 +36,8 @@ import subprocess
 import sys
 import tempfile
 
+from shlex import quote
+
 
 #############################################################################
 _COLORS_ENABLED = True
@@ -240,10 +242,20 @@ class TestCase(object):
         os.makedirs(root)
 
         input_1, input_2 = self._setup_input(root, in_compression, interleaved)
-        self._do_call(root, input_1, input_2, out_compression, interleaved)
+        command = self._build_command(
+            root, input_1, input_2, out_compression, interleaved
+        )
 
-        self._check_file_creation(root, input_1, input_2, out_compression)
-        self._check_file_contents(root, out_compression)
+        try:
+            self._do_call(root, command)
+
+            self._check_file_creation(root, input_1, input_2, out_compression)
+            self._check_file_contents(root, out_compression)
+        except TestError as error:
+            raise TestError(
+                "Command = %s\nDirectory = %s\n%s"
+                % (" ".join(quote(value) for value in command), quote(root), error)
+            )
 
     def _setup_input(self, root, compression, interleaved):
         input_files = {}
@@ -283,9 +295,7 @@ class TestCase(object):
 
         return final_files["input_1"], final_files["input_2"]
 
-    def _do_call(self, root, input_1, input_2, compression, interleaved):
-        command = self._build_command(root, input_1, input_2, compression, interleaved)
-
+    def _do_call(self, root, command):
         with open(os.devnull, "wb") as dev_null:
             proc = subprocess.Popen(
                 command,
@@ -314,8 +324,7 @@ class TestCase(object):
 
             if proc.returncode != self._info["return_code"]:
                 raise TestError(
-                    "ERROR: Expected return-code %i, but "
-                    "AdapterRemoval returned %i:\n%s"
+                    "Expected return-code %i, but AdapterRemoval returned %i:\n%s"
                     % (
                         self._info["return_code"],
                         proc.returncode,
@@ -342,17 +351,18 @@ class TestCase(object):
             frozenset(os.listdir(root)) - frozenset(input_1) - frozenset(input_2)
         )
 
-        if expected_files - observed_files:
-            raise TestError(
-                "ERROR: Expected output file(s) not created:\n"
-                "  Expected: %r\n  Observed: %r"
-                % (sorted(expected_files), sorted(observed_files))
-            )
-        elif observed_files - expected_files:
-            raise TestError(
-                "ERROR: Unexpected output file(s) created: %r"
-                % (sorted(observed_files - expected_files))
-            )
+        if expected_files != observed_files:
+            message = ["Output files do not match expectations"]
+
+            unexpected_files = sorted(observed_files - expected_files)
+            if unexpected_files:
+                message.append("  Unexpected files: {}".format(unexpected_files))
+
+            missing_files = sorted(expected_files - observed_files)
+            if missing_files:
+                message.append("  Missing files:    {}".format(missing_files))
+
+            raise TestError("\n".join(message))
 
     def _check_file_contents(self, root, compression):
         for filename, exp_data in sorted(self._files["output"].items()):
@@ -380,7 +390,7 @@ class TestCase(object):
             )
 
             raise TestError(
-                "ERROR: Output file(s) differ:\n"
+                "Output file(s) differ:\n"
                 "  Expected: %r\n  Observed: %r\n  Diff:\n%s"
                 % (exp_filename, obs_filename, pretty_output(lines, 4))
             )
@@ -582,7 +592,7 @@ def main(argv):
             n_failures += 1
             message = "\n    ".join(str(error).split("\n"))
             print_err(
-                " %s for %s:\n    %s" % (error.__class__.__name__, label, message)
+                "\n  %s for %s:\n    %s" % (error.__class__.__name__, label, message)
             )
         else:
             print_ok(" [OK]")
