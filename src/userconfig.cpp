@@ -26,6 +26,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <sys/time.h>
@@ -93,9 +94,17 @@ userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
   : run_type(ar_command::trim_adapters)
-  , basename("your_output")
   , input_files_1()
   , input_files_2()
+  , out_basename("your_output")
+  , out_settings("{basename}{.sample}.settings")
+  , out_interleaved("{basename}{.sample}.fastq")
+  , out_pair_1("{basename}{.sample}.r1.fastq")
+  , out_pair_2("{basename}{.sample}.r2.fastq")
+  , out_merged("{basename}{.sample}.merged.fastq")
+  , out_discarded("{basename}{.sample}.discarded.fastq")
+  // FIXME: Support both .1 and .2
+  , out_singleton("{basename}{.sample}.singleton.fastq")
   , paired_ended_mode(false)
   , interleaved_input(false)
   , interleaved_output(false)
@@ -207,47 +216,43 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add_header("OUTPUT FILES:");
   argparser["--basename"] = new argparse::any(
-    &basename,
+    &out_basename,
     "BASENAME",
     "Default prefix for all output files for which no filename was "
     "explicitly set [default: %default].");
   argparser["--settings"] = new argparse::any(
-    nullptr,
+    &out_settings,
     "FILE",
     "Output file containing information on the parameters used in the "
     "run as well as overall statistics on the reads after trimming "
-    "[default: BASENAME.settings]");
+    "[default: %default]");
   argparser["--output1"] = new argparse::any(
-    nullptr,
+    &out_pair_1,
     "FILE",
-    "Output file containing trimmed mate1 reads [default: "
-    "BASENAME.pair1.truncated (PE), BASENAME.truncated (SE), or "
-    "BASENAME.paired.truncated (interleaved PE)]");
+    "Output file containing trimmed mate1 reads [default: %default]");
   argparser["--output2"] = new argparse::any(
-    nullptr,
+    &out_pair_2,
     "FILE",
-    "Output file containing trimmed mate 2 reads [default: "
-    "BASENAME.pair2.truncated (only used in PE mode, but not if "
-    "--interleaved-output is enabled)]");
+    "Output file containing trimmed mate 2 reads [default: %default]");
   argparser["--singleton"] = new argparse::any(
-    nullptr,
+    &out_singleton,
     "FILE",
     "Output file to which containing paired reads for which the mate "
-    "has been discarded [default: BASENAME.singleton.truncated]");
+    "has been discarded [default: %default]");
   argparser["--outputcollapsed"] = new argparse::any(
-    nullptr,
+    &out_merged,
     "FILE",
     "If --collapsed is set, contains overlapping mate-pairs which "
     "have been merged into a single read (PE mode) or reads for which "
     "the adapter was identified by a minimum overlap, indicating that "
     "the entire template molecule is present. This does not include "
     "which have subsequently been trimmed due to low-quality or "
-    "ambiguous nucleotides [default: BASENAME.collapsed]");
+    "ambiguous nucleotides [default: %default]");
   argparser["--discarded"] = new argparse::any(
-    nullptr,
+    &out_discarded,
     "FILE",
     "Contains reads discarded due to the --minlength, --maxlength or "
-    "--maxns options [default: BASENAME.discarded]");
+    "--maxns options [default: %default]");
 
   argparser.add_header("OUTPUT COMPRESSION:");
   argparser["--gzip"] =
@@ -678,85 +683,61 @@ userconfig::is_acceptable_read(const fastq& seq) const
 }
 
 std::string
-userconfig::get_output_filename(const std::string& key, size_t nth) const
+userconfig::get_output_filename(const std::string& key_, size_t nth) const
 {
-  std::string filename = basename;
-  if (filename.length() && filename.back() != '/') {
-    filename.push_back('.');
-  }
+  std::string filename;
+  std::string sample;
+  std::string key = key_;
 
   if (key == "demux_stats") {
-    return filename += "settings";
-  } else if (key == "demux_unknown") {
-    filename += "unidentified";
+    // Demulitplexing summary statistics
+    filename = out_settings;
+  } else {
+    if (key == "demux_unknown") {
+      // Demulitplexing unidentified reads
+      AR_DEBUG_ASSERT(nth == 1 || nth == 2);
+      key = "--output";
+      key.push_back('0' + nth);
 
-    AR_DEBUG_ASSERT(nth <= 2);
-    if (!interleaved_output) {
-      if (nth) {
-        filename.push_back('_');
-        filename.push_back('0' + nth);
-      }
-    } else {
-      filename += ".paired";
+      sample = "$1unidentified$2";
+    } else if (adapters.barcode_count()) {
+      sample = "$1" + adapters.get_sample_name(nth) + "$2";
     }
-  } else if (adapters.barcode_count()) {
-    filename.append(adapters.get_sample_name(nth));
-    filename.push_back('.');
-  } else if (argparser.is_set(key)) {
-    return argparser.at(key)->to_str();
-  }
 
-  if (key == "--settings") {
-    return filename + "settings";
-  } else if (key == "--outputcollapsed") {
-    filename += "collapsed";
-  } else if (key == "--discarded") {
-    filename += "discarded";
-  } else if (paired_ended_mode) {
-    if (key == "--output1") {
+    if (key == "--settings") {
+      filename = out_settings;
+    } else if (key == "--outputcollapsed") {
+      filename = out_merged;
+    } else if (key == "--discarded") {
+      filename = out_discarded;
+    } else if (key == "--output1") {
       if (interleaved_output) {
-        filename += "paired";
+        filename = out_interleaved;
       } else {
-        filename += "pair1";
+        filename = out_pair_1;
       }
     } else if (key == "--output2") {
-      filename += "pair2";
+      filename = out_pair_2;
     } else if (key == "--singleton") {
-      filename += "singleton";
-    } else if (key != "demux_unknown") {
-      throw std::invalid_argument(
-        "invalid read-type in userconfig::get_output_filename constructor: " +
-        key);
-    }
-
-    if (run_type != ar_command::demultiplex_sequences &&
-        key != "demux_unknown") {
-      filename += ".truncated";
-    }
-  } else if (key == "--output1") {
-    if (run_type != ar_command::demultiplex_sequences) {
-      filename += "truncated";
-    }
-  } else if (key != "demux_unknown") {
-    throw std::invalid_argument(
-      "invalid read-type in userconfig::get_output_filename constructor: " +
-      key);
-  }
-
-  // Currently only when demultiplexing; for backwards compatibility
-  if (run_type == ar_command::demultiplex_sequences) {
-    if (filename.back() == '.') {
-      filename += "fastq";
+      filename = out_singleton;
     } else {
-      filename += ".fastq";
+      std::cerr << key << std::endl;
+      AR_DEBUG_FAIL("unknown key");
+    }
+
+    if (!(key == "--settings" || argparser.is_set(key))) {
+      if (gzip) {
+        filename += ".gz";
+      } else if (bzip2) {
+        filename += ".bz2";
+      }
     }
   }
 
-  if (gzip) {
-    filename += ".gz";
-  } else if (bzip2) {
-    filename += ".bz2";
-  }
+  filename =
+    std::regex_replace(filename, std::regex("\\{basename\\}"), out_basename);
+  filename =
+    std::regex_replace(filename, std::regex("\\{(.?)sample(.?)\\}"), sample);
 
   return filename;
 }

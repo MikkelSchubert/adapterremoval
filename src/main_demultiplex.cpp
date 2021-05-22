@@ -186,7 +186,7 @@ demultiplex_sequences_se(const userconfig& config)
       sch,
       ai_write_unidentified_1,
       "unidentified",
-      new write_fastq(config.get_output_filename("demux_unknown")));
+      new write_fastq(config.get_output_filename("demux_unknown", 1)));
 
     // Step 3 - N: Trim and write demultiplexed reads
     for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {

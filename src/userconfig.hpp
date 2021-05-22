@@ -83,12 +83,26 @@ public:
   //! Type of run to execute; see command
   ar_command run_type;
 
-  //! Prefix used for output files for which no filename was explicitly set
-  std::string basename;
   //! Path to input file containing mate 1 reads (required)
   string_vec input_files_1;
   //! Path to input file containing mate 2 reads (for PE reads)
   string_vec input_files_2;
+  //! Prefix used for output files for which no filename was explicitly set
+  std::string out_basename;
+  //! FIXME:
+  std::string out_settings;
+  //! FIXME:
+  std::string out_interleaved;
+  //! FIXME:
+  std::string out_pair_1;
+  //! FIXME:
+  std::string out_pair_2;
+  //! FIXME:
+  std::string out_merged;
+  //! FIXME:
+  std::string out_discarded;
+  //! FIXME:
+  std::string out_singleton;
 
   //! Set to true if both --input1 and --input2 are set, or if either of
   //! --interleaved or --interleaved-input are set.

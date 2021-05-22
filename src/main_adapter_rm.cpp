@@ -149,7 +149,7 @@ remove_adapter_sequences_se(const userconfig& config)
         sch,
         ai_write_unidentified_1,
         "unidentified",
-        new write_fastq(config.get_output_filename("demux_unknown")));
+        new write_fastq(config.get_output_filename("demux_unknown", 1)));
     } else {
       sch.add_step(ai_read_fastq,
                    "read_fastq",
