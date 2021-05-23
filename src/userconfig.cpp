@@ -734,12 +734,16 @@ userconfig::get_output_filename(const std::string& key_, size_t nth) const
     }
   }
 
-  filename =
+  std::string result =
     std::regex_replace(filename, std::regex("\\{basename\\}"), out_basename);
-  filename =
-    std::regex_replace(filename, std::regex("\\{(.?)sample(.?)\\}"), sample);
+  result =
+    std::regex_replace(result, std::regex("\\{(.?)sample(.?)\\}"), sample);
 
-  return filename;
+  std::cerr << "Writing " << key << " to " << result << " (tmpl = " << filename
+            << ", basename = " << out_basename << ", sample = " << sample << ")"
+            << std::endl;
+
+  return result;
 }
 
 bool
