@@ -549,6 +549,12 @@ def parse_args(argv):
     parser.add_argument("work_dir", help="Directory in which to run test-cases.")
     parser.add_argument("source_dir", help="Directory containing test-cases.")
     parser.add_argument(
+        "--max-failures",
+        type=int,
+        default=10,
+        help="Maximum number of failures to report. Set to zero or less for no limit",
+    )
+    parser.add_argument(
         "--keep-all",
         help="Keep both completed and failed test folders, "
         "not just the folders of failed tests.",
@@ -563,6 +569,9 @@ def main(argv):
         print_err("ERROR: Executable does not exist: %r" % (_EXEC,))
         return 1
 
+    if args.max_failures <= 0:
+        args.max_failures = float("inf")
+
     print("Reading test-cases from %r" % (args.source_dir,))
     tests = TestCase.collect(args.source_dir)
     tests.sort(key=lambda it: it.path)
@@ -575,6 +584,7 @@ def main(argv):
 
     last_path = ()
     n_failures = 0
+    n_successes = 0
     print("\nRunning tests:")
     for idx, test in enumerate(tests, start=1):
         # Cleanup as many dirs as possible from last test
@@ -588,22 +598,27 @@ def main(argv):
             for label in test.run(args.work_dir, delete_folder=not args.keep_all):
                 print_ok(".", end="")
                 sys.stdout.flush()
+            n_successes += 1
         except TestError as error:
             n_failures += 1
             message = "\n    ".join(str(error).split("\n"))
             print_err(
                 "\n  %s for %s:\n    %s" % (error.__class__.__name__, label, message)
             )
+            if n_failures >= args.max_failures:
+                break
         else:
             print_ok(" [OK]")
 
     cleanup_dirs(args.work_dir, last_path, ())
     try_rmdir(args.work_dir)
 
-    if n_failures:
-        print_err("\n%i of %i tests failed .." % (n_failures, len(tests)))
+    if n_failures >= args.max_failures:
+        print_err("\nAborted after %i of %i tests failed." % (n_failures, n_successes))
+    elif n_failures:
+        print_err("\n%i of %i tests failed." % (n_failures, len(tests)))
     else:
-        print_ok("\nAll %i tests succeeded .." % (len(tests),))
+        print_ok("\nAll %i tests succeeded." % (len(tests),))
 
     return n_failures
 
