@@ -49,6 +49,19 @@ std::string
 indent_lines(const std::string& lines, size_t identation = DEFAULT_INDENTATION);
 
 /**
+ * Replaces a "{needle}" template in a string with a given value.
+ *
+ * The template may contain any one character before and after `needle`, in
+ * which case that character is included in the result at the specified
+ * position. If the given value is an empty string, then no extra characters are
+ * added.
+ */
+std::string
+template_replace(const std::string& haystack,
+                 const std::string& needle,
+                 const std::string& value);
+
+/**
  * Formats text into fixed-width columns.
  *
  * @param value Text representing a single paragraph to be formatted.

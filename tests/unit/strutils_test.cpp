@@ -173,3 +173,52 @@ TEST_CASE("Base 10 is assumed", "[strutils::str_to_unsigned]")
 {
   REQUIRE(str_to_unsigned("010") == 10);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'template_replace'
+
+TEST_CASE("Empty target", "[strutils::template_replace]")
+{
+  REQUIRE(template_replace("", "tmpl", "abc") == "");
+  REQUIRE(template_replace("", "tmpl", "") == "");
+}
+
+TEST_CASE("Simple replace", "[strutils::template_replace]")
+{
+  REQUIRE(template_replace("{tmpl}", "tmpl", "abc") == "abc");
+  REQUIRE(template_replace("{.tmpl}", "tmpl", "abc") == ".abc");
+  REQUIRE(template_replace("{tmpl.}", "tmpl", "abc") == "abc.");
+  REQUIRE(template_replace("{.tmpl.}", "tmpl", "abc") == ".abc.");
+  REQUIRE(template_replace("{tmpl}", "tmpl", "") == "");
+}
+
+TEST_CASE("Replace once in string", "[strutils::template_replace]")
+{
+  REQUIRE(template_replace("foo.{tmpl}.gz", "tmpl", "abc") == "foo.abc.gz");
+  REQUIRE(template_replace("foo{.tmpl}.gz", "tmpl", "abc") == "foo.abc.gz");
+  REQUIRE(template_replace("foo.{tmpl.}gz", "tmpl", "abc") == "foo.abc.gz");
+  REQUIRE(template_replace("foo{.tmpl.}gz", "tmpl", "abc") == "foo.abc.gz");
+  REQUIRE(template_replace("foo{.tmpl}.gz", "tmpl", "") == "foo.gz");
+}
+
+TEST_CASE("Replace twice in string", "[strutils::template_replace]")
+{
+  REQUIRE(template_replace("{tmpl}/foo.{tmpl}.gz", "tmpl", "abc") ==
+          "abc/foo.abc.gz");
+  REQUIRE(template_replace("{tmpl}/foo{.tmpl}.gz", "tmpl", "abc") ==
+          "abc/foo.abc.gz");
+  REQUIRE(template_replace("{tmpl}/foo.{tmpl.}gz", "tmpl", "abc") ==
+          "abc/foo.abc.gz");
+  REQUIRE(template_replace("{tmpl}/foo{.tmpl.}gz", "tmpl", "abc") ==
+          "abc/foo.abc.gz");
+  REQUIRE(template_replace("{tmpl}/foo{.tmpl}.gz", "tmpl", "") == "/foo.gz");
+}
+
+TEST_CASE("Partials ignored", "[strutils::template_replace]")
+{
+  REQUIRE(template_replace("tmpl}", "tmpl", "abc") == "tmpl}");
+  REQUIRE(template_replace(".tmpl}", "tmpl", "abc") == ".tmpl}");
+  REQUIRE(template_replace("{tmpl", "tmpl", "abc") == "{tmpl");
+  REQUIRE(template_replace("{tmpl.", "tmpl", "abc") == "{tmpl.");
+  REQUIRE(template_replace("tmpl", "tmpl", "") == "tmpl");
+}

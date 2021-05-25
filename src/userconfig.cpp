@@ -26,7 +26,6 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
-#include <regex>
 #include <stdexcept>
 #include <string>
 #include <sys/time.h>
@@ -699,9 +698,9 @@ userconfig::get_output_filename(const std::string& key_, size_t nth) const
       key = "--output";
       key.push_back('0' + nth);
 
-      sample = "$1unidentified$2";
+      sample = "unidentified";
     } else if (adapters.barcode_count()) {
-      sample = "$1" + adapters.get_sample_name(nth) + "$2";
+      sample = adapters.get_sample_name(nth);
     }
 
     if (key == "--settings") {
@@ -734,16 +733,10 @@ userconfig::get_output_filename(const std::string& key_, size_t nth) const
     }
   }
 
-  std::string result =
-    std::regex_replace(filename, std::regex("\\{basename\\}"), out_basename);
-  result =
-    std::regex_replace(result, std::regex("\\{(.?)sample(.?)\\}"), sample);
+  filename = template_replace(filename, "basename", out_basename);
+  filename = template_replace(filename, "sample", sample);
 
-  std::cerr << "Writing " << key << " to " << result << " (tmpl = " << filename
-            << ", basename = " << out_basename << ", sample = " << sample << ")"
-            << std::endl;
-
-  return result;
+  return filename;
 }
 
 bool
