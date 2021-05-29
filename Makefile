@@ -94,7 +94,7 @@ OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)
 
 
-.PHONY: all install clean test clean_tests static regression docs
+.PHONY: all install clean test clean_tests static regression docs examples
 
 all: build/$(PROG)
 
@@ -106,6 +106,11 @@ clean: clean_tests clean_docs
 	$(QUIET) rm -f build/$(PROG) build/$(LIBNAME).a
 	$(QUIET) rm -rvf build/regression
 	$(QUIET) rm -rvf $(BDIR)
+	$(QUIET) $(MAKE) -C examples clean
+
+examples: $(EXECUTABLE)
+	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
+	$(QUIET) $(MAKE) -j1 -C examples EXE=$(shell realpath $(EXECUTABLE))
 
 # Install
 install: build/$(PROG)
