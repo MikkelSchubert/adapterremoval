@@ -79,7 +79,10 @@ struct statistics
 /** Object used to collect summary statistics for demultiplexing. */
 struct demux_statistics
 {
-  demux_statistics(const size_t n_barcodes);
+  demux_statistics();
+
+  bool empty() const;
+  void resize(size_t n);
 
   size_t total() const;
 

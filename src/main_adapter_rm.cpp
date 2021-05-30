@@ -39,9 +39,9 @@
 
 bool
 write_trimming_and_demultiplexing_report(const userconfig& config,
-                                         const demultiplex_reads* step)
+                                         const demux_statistics stats)
 {
-  if (!step) {
+  if (stats.empty()) {
     // Demultiplexing not enabled; nothing to do
     return true;
   }
@@ -60,7 +60,7 @@ write_trimming_and_demultiplexing_report(const userconfig& config,
 
     write_trimming_settings(config, output, -1);
     output << "\n";
-    write_demultiplex_statistics(config, output, step);
+    write_demultiplex_statistics(config, output, stats);
   } catch (const std::ios_base::failure& error) {
     std::cerr << "IO error writing demultiplexing statistics; aborting:\n"
               << cli_formatter::fmt(error.what()) << std::endl;
@@ -128,7 +128,7 @@ remove_adapter_sequences_se(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  demultiplex_reads* demultiplexer = nullptr;
+  demux_statistics demux_stats;
 
   try {
     if (config.adapters.barcode_count()) {
@@ -142,7 +142,7 @@ remove_adapter_sequences_se(const userconfig& config)
       // Step 2: Parse and demultiplex reads based on single or double indices
       sch.add_step(ai_demultiplex,
                    "demultiplex_se",
-                   demultiplexer = new demultiplex_se_reads(&config));
+                   new demultiplex_se_reads(&config, &demux_stats));
 
       add_write_step(
         config,
@@ -201,7 +201,7 @@ remove_adapter_sequences_se(const userconfig& config)
     return 1;
   } else if (!write_trimming_report(config, processors)) {
     return 1;
-  } else if (!write_trimming_and_demultiplexing_report(config, demultiplexer)) {
+  } else if (!write_trimming_and_demultiplexing_report(config, demux_stats)) {
     return 1;
   }
 
@@ -215,7 +215,7 @@ remove_adapter_sequences_pe(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  demultiplex_reads* demultiplexer = nullptr;
+  demux_statistics demux_stats;
 
   try {
     // Step 1: Read input file
@@ -240,7 +240,7 @@ remove_adapter_sequences_pe(const userconfig& config)
       // Step 2: Parse and demultiplex reads based on single or double indices
       sch.add_step(ai_demultiplex,
                    "demultiplex_pe",
-                   demultiplexer = new demultiplex_pe_reads(&config));
+                   new demultiplex_pe_reads(&config, &demux_stats));
 
       add_write_step(
         config,
@@ -317,7 +317,7 @@ remove_adapter_sequences_pe(const userconfig& config)
     return 1;
   } else if (!write_trimming_report(config, processors)) {
     return 1;
-  } else if (!write_trimming_and_demultiplexing_report(config, demultiplexer)) {
+  } else if (!write_trimming_and_demultiplexing_report(config, demux_stats)) {
     return 1;
   }
 

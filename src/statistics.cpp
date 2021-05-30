@@ -80,11 +80,23 @@ statistics::operator+=(const statistics& other)
   return *this;
 }
 
-demux_statistics::demux_statistics(const size_t n_barcodes)
-  : barcodes(n_barcodes)
+demux_statistics::demux_statistics()
+  : barcodes()
   , unidentified(0)
   , ambiguous(0)
 {}
+
+bool
+demux_statistics::empty() const
+{
+  return barcodes.empty();
+}
+
+void
+demux_statistics::resize(size_t n)
+{
+  barcodes.resize(n);
+}
 
 size_t
 demux_statistics::total() const

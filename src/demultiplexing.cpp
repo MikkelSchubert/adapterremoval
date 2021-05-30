@@ -34,7 +34,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_reads::demultiplex_reads(const userconfig* config)
+demultiplex_reads::demultiplex_reads(const userconfig* config,
+                                     demux_statistics* statistics)
   : analytical_step(analytical_step::ordering::ordered)
   , m_barcodes(config->adapters.get_barcodes())
   , m_barcode_table(m_barcodes,
@@ -45,10 +46,13 @@ demultiplex_reads::demultiplex_reads(const userconfig* config)
   , m_cache()
   , m_unidentified_1(new fastq_output_chunk())
   , m_unidentified_2()
-  , m_statistics(m_barcodes.size())
+  , m_statistics(statistics)
   , m_lock()
 {
   AR_DEBUG_ASSERT(!m_barcodes.empty());
+  AR_DEBUG_ASSERT(m_statistics);
+  AR_DEBUG_ASSERT(m_statistics->empty());
+  m_statistics->resize(m_barcodes.size());
 
   if (!config->interleaved_output) {
     m_unidentified_2.reset(new fastq_output_chunk());
@@ -95,16 +99,11 @@ demultiplex_reads::flush_cache(bool eof)
   return output;
 }
 
-demux_statistics
-demultiplex_reads::statistics() const
-{
-  return m_statistics;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_se_reads::demultiplex_se_reads(const userconfig* config)
-  : demultiplex_reads(config)
+demultiplex_se_reads::demultiplex_se_reads(const userconfig* config,
+                                           demux_statistics* statistics)
+  : demultiplex_reads(config, statistics)
 {}
 
 chunk_vec
@@ -120,16 +119,16 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
       m_unidentified_1->add(*m_config->quality_output_fmt, read);
 
       if (best_barcode == -1) {
-        m_statistics.unidentified += 1;
+        m_statistics->unidentified += 1;
       } else {
-        m_statistics.ambiguous += 1;
+        m_statistics->ambiguous += 1;
       }
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
       dst->reads_1.push_back(read);
       dst->reads_1.back().truncate(m_barcodes.at(best_barcode).first.length());
 
-      m_statistics.barcodes.at(best_barcode) += 1;
+      m_statistics->barcodes.at(best_barcode) += 1;
     }
   }
 
@@ -138,8 +137,9 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_pe_reads::demultiplex_pe_reads(const userconfig* config)
-  : demultiplex_reads(config)
+demultiplex_pe_reads::demultiplex_pe_reads(const userconfig* config,
+                                           demux_statistics* statistics)
+  : demultiplex_reads(config, statistics)
 {}
 
 chunk_vec
@@ -163,9 +163,9 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
       }
 
       if (best_barcode == -1) {
-        m_statistics.unidentified += 1;
+        m_statistics->unidentified += 1;
       } else {
-        m_statistics.ambiguous += 1;
+        m_statistics->ambiguous += 1;
       }
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
@@ -175,7 +175,7 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
       it_2->truncate(m_barcodes.at(best_barcode).second.length());
       dst->reads_2.push_back(*it_2);
 
-      m_statistics.barcodes.at(best_barcode) += 1;
+      m_statistics->barcodes.at(best_barcode) += 1;
     }
   }
 

@@ -28,7 +28,7 @@
 #include <ostream>
 #include <vector>
 
-class demultiplex_reads;
+class demux_statistics;
 class reads_processor;
 class statistics;
 class userconfig;
@@ -51,4 +51,4 @@ write_demultiplex_settings(const userconfig& config,
 void
 write_demultiplex_statistics(const userconfig& config,
                              std::ofstream& output,
-                             const demultiplex_reads* step);
+                             const demux_statistics& stats);

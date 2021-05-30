@@ -46,7 +46,7 @@ add_write_step(const userconfig& config,
 
 bool
 write_demultiplexing_report(const userconfig& config,
-                            const demultiplex_reads* step,
+                            const demux_statistics& demux_stats,
                             int nth = -1)
 {
   const std::string filename =
@@ -65,7 +65,7 @@ write_demultiplexing_report(const userconfig& config,
 
     write_demultiplex_settings(config, output, nth);
     if (nth == -1) {
-      write_demultiplex_statistics(config, output, step);
+      write_demultiplex_statistics(config, output, demux_stats);
     }
   } catch (const std::ios_base::failure& error) {
     std::cerr << "IO error writing settings file; aborting:\n"
@@ -166,7 +166,7 @@ demultiplex_sequences_se(const userconfig& config)
   std::cerr << "Demultiplexing single ended reads ..." << std::endl;
 
   scheduler sch;
-  demultiplex_reads* demultiplexer = nullptr;
+  demux_statistics demux_stats;
 
   try {
     // Step 1: Read input file
@@ -179,7 +179,7 @@ demultiplex_sequences_se(const userconfig& config)
     // Step 2: Parse and demultiplex reads based on single or double indices
     sch.add_step(ai_demultiplex,
                  "demultiplex_se",
-                 demultiplexer = new demultiplex_se_reads(&config));
+                 new demultiplex_se_reads(&config, &demux_stats));
 
     add_write_step(
       config,
@@ -212,12 +212,12 @@ demultiplex_sequences_se(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!write_demultiplexing_report(config, demultiplexer)) {
+  } else if (!write_demultiplexing_report(config, demux_stats)) {
     return 1;
   }
 
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    if (!write_demultiplexing_report(config, demultiplexer, nth)) {
+    if (!write_demultiplexing_report(config, demux_stats, nth)) {
       return 1;
     }
   }
@@ -231,7 +231,7 @@ demultiplex_sequences_pe(const userconfig& config)
   std::cerr << "Demultiplexing paired end reads ..." << std::endl;
 
   scheduler sch;
-  demultiplex_reads* demultiplexer = nullptr;
+  demux_statistics demux_stats;
 
   try {
     // Step 1: Read input file
@@ -253,7 +253,7 @@ demultiplex_sequences_pe(const userconfig& config)
     // Step 2: Parse and demultiplex reads based on single or double indices
     sch.add_step(ai_demultiplex,
                  "demultiplex_pe",
-                 demultiplexer = new demultiplex_pe_reads(&config));
+                 new demultiplex_pe_reads(&config, &demux_stats));
 
     add_write_step(
       config,
@@ -304,12 +304,12 @@ demultiplex_sequences_pe(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!write_demultiplexing_report(config, demultiplexer)) {
+  } else if (!write_demultiplexing_report(config, demux_stats)) {
     return 1;
   }
 
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    if (!write_demultiplexing_report(config, demultiplexer, nth)) {
+    if (!write_demultiplexing_report(config, demux_stats, nth)) {
       return 1;
     }
   }

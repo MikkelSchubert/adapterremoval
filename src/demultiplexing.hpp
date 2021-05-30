@@ -41,13 +41,10 @@ class demultiplex_reads : public analytical_step
 {
 public:
   /** Setup demultiplexer; keeps pointer to config object. */
-  demultiplex_reads(const userconfig* config);
+  demultiplex_reads(const userconfig* config, demux_statistics* statistics);
 
   /** Frees any unflushed caches. */
   virtual ~demultiplex_reads();
-
-  /** Returns a statistics object summarizing the results up till now. */
-  demux_statistics statistics() const;
 
   //! Copy construction not supported
   demultiplex_reads(const demultiplex_reads&) = delete;
@@ -79,7 +76,7 @@ protected:
   output_chunk_ptr m_unidentified_2;
 
   //! Sink for demultiplexing statistics; used by subclasses.
-  demux_statistics m_statistics;
+  demux_statistics* m_statistics;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
@@ -90,7 +87,7 @@ class demultiplex_se_reads : public demultiplex_reads
 {
 public:
   /** See demultiplex_reads::demultiplex_reads. */
-  demultiplex_se_reads(const userconfig* config);
+  demultiplex_se_reads(const userconfig* config, demux_statistics* statistics);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with
@@ -105,7 +102,7 @@ class demultiplex_pe_reads : public demultiplex_reads
 {
 public:
   /** See demultiplex_reads::demultiplex_reads. */
-  demultiplex_pe_reads(const userconfig* config);
+  demultiplex_pe_reads(const userconfig* config, demux_statistics* statistics);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with

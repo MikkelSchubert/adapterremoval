@@ -251,9 +251,8 @@ write_trimming_statistics(const userconfig& config,
 void
 write_demultiplex_statistics(const userconfig& config,
                              std::ofstream& output,
-                             const demultiplex_reads* step)
+                             const demux_statistics& stats)
 {
-  const demux_statistics stats = step->statistics();
   const size_t total = stats.total();
 
   output.precision(3);
