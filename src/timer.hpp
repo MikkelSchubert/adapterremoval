@@ -24,6 +24,7 @@
 \*************************************************************************/
 #pragma once
 
+#include <chrono>
 #include <deque>
 #include <string>
 
@@ -37,14 +38,14 @@
  * A final summary is printed using the 'finalize' function:
  *   "Processed a total of 4,000,000 reads in 31.9s ..."
  */
-class timer
+class progress_timer
 {
 public:
   /* Constructor.
    *
    * @param what Short name of what is being processed, for use in reports.
    */
-  timer(const std::string& what);
+  progress_timer(const std::string& what);
 
   /** Increment the progress, and (possibly) print a status report. */
   void increment(size_t inc = 1);
@@ -67,4 +68,24 @@ private:
   double m_first_time;
   //! Counts for last N updates, for calculating running mean rate.
   time_count_deque m_counts;
+};
+
+/**
+ * High-resolution timer for measuring durations.
+ */
+class highres_timer
+{
+  typedef std::chrono::high_resolution_clock highres_clock;
+  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
+
+public:
+  /** Constructor. */
+  highres_timer();
+
+  /** Returns the duration in seconds since the timer was created. */
+  double duration() const;
+
+private:
+  //! Starting time of the timer.
+  time_point m_start_time;
 };

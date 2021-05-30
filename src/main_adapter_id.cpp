@@ -459,7 +459,7 @@ private:
 
   const userconfig& m_config;
 
-  timer m_timer;
+  progress_timer m_timer;
   adapter_sink m_sinks;
 };
 

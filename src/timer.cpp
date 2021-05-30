@@ -93,7 +93,7 @@ format_time(double seconds)
   return stream.str();
 }
 
-timer::timer(const std::string& what)
+progress_timer::progress_timer(const std::string& what)
   : m_what(what)
   , m_total(0)
   , m_first_time(get_current_time())
@@ -103,7 +103,7 @@ timer::timer(const std::string& what)
 }
 
 void
-timer::increment(size_t inc)
+progress_timer::increment(size_t inc)
 {
   m_total += inc;
   m_counts.back().second += inc;
@@ -128,7 +128,7 @@ timer::increment(size_t inc)
 }
 
 void
-timer::finalize() const
+progress_timer::finalize() const
 {
   const double current_time = get_current_time();
   const double seconds = current_time - m_first_time;
@@ -137,7 +137,7 @@ timer::finalize() const
 }
 
 void
-timer::do_print(size_t rate, double current_time, bool finalize) const
+progress_timer::do_print(size_t rate, double current_time, bool finalize) const
 {
   print_locker lock(false);
 
@@ -162,4 +162,17 @@ timer::do_print(size_t rate, double current_time, bool finalize) const
     std::cerr.flush();
     lock.partial_stderr_output();
   }
+}
+
+highres_timer::highres_timer()
+  : m_start_time(highres_clock::now())
+{}
+
+double
+highres_timer::duration() const
+{
+  const auto end = highres_clock::now();
+  const std::chrono::duration<double> diff = end - m_start_time;
+
+  return diff.count();
 }

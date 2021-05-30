@@ -630,7 +630,7 @@ gzip_fastq::process(analytical_chunk* chunk)
 //! Mutex used to control access to s_timer and s_finalized;
 static std::mutex s_timer_lock;
 //! Timer used to track trimming progress; accessed by all instances
-static timer s_timer = timer("reads");
+static progress_timer s_timer = progress_timer("reads");
 //! Indicates if 'timer::finalize' has been called.
 static bool s_finalized = false;
 
