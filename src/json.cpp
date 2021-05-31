@@ -21,6 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 
@@ -172,7 +173,11 @@ json_writer::write_int_vector(const std::string& key,
 void
 json_writer::write_float(const std::string& key, const double value)
 {
+  if (std::isnan(value)) {
+    _write(key, "NaN");
+  } else {
   _write(key, std::to_string(value));
+}
 }
 
 void
