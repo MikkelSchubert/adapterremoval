@@ -76,7 +76,7 @@ private:
 class highres_timer
 {
   typedef std::chrono::high_resolution_clock highres_clock;
-  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
+  typedef std::chrono::time_point<highres_clock> time_point;
 
 public:
   /** Constructor. */
