@@ -24,6 +24,7 @@
 \*************************************************************************/
 #include <sstream>
 
+#include "counts.hpp"
 #include "debug.hpp"
 #include "json.hpp"
 #include "testing.hpp"
@@ -66,7 +67,7 @@ TEST_CASE("write_vector([])", "[json::write_vector]")
   {
     json_writer json(ss);
     std::vector<std::string> vector;
-    json.write_vector("value", vector);
+    json.write("value", vector);
   }
 
   REQUIRE(ss.str() == "{\n  \"value\": []\n}");
@@ -79,10 +80,10 @@ TEST_CASE("write_vector([1])", "[json::write_vector]")
     json_writer json(ss);
     std::vector<std::string> vector;
     vector.push_back("foo");
-    json.write_vector("value", vector);
+    json.write("value", vector);
   }
 
-  REQUIRE(ss.str() == "{\n  \"value\": [\n    \"foo\"\n  ]\n}");
+  REQUIRE(ss.str() == "{\n  \"value\": [\"foo\"]\n}");
 }
 
 TEST_CASE("write_vector([2])", "[json::write_vector]")
@@ -93,10 +94,10 @@ TEST_CASE("write_vector([2])", "[json::write_vector]")
     std::vector<std::string> vector;
     vector.push_back("foo");
     vector.push_back("bar");
-    json.write_vector("value", vector);
+    json.write("value", vector);
   }
 
-  REQUIRE(ss.str() == "{\n  \"value\": [\n    \"foo\",\n    \"bar\"\n  ]\n}");
+  REQUIRE(ss.str() == "{\n  \"value\": [\"foo\", \"bar\"]\n}");
 }
 
 TEST_CASE("write_int", "[json::write_int]")
@@ -115,8 +116,13 @@ TEST_CASE("write_int_vector", "[json::write_int_vector]")
   std::stringstream ss;
   {
     json_writer json(ss);
-    std::vector<int64_t> values = { 7, 9, 13 };
-    json.write_int_vector("value", values);
+
+    counts values;
+    values.inc(0, 7);
+    values.inc(1, 9);
+    values.inc(2, 13);
+
+    json.write("value", values);
   }
 
   REQUIRE(ss.str() == "{\n  \"value\": [7, 9, 13]\n}");

@@ -24,9 +24,11 @@
 #pragma once
 
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include "counts.hpp"
 #include "debug.hpp"
 
 /**
@@ -49,16 +51,15 @@ public:
 
   /** Write key with string value. */
   void write(const std::string& key, const std::string& value);
+  /** Write key with integer value array. */
+  template<typename T>
+  void write(const std::string& key, const counts_tmpl<T>& value);
+
   /** Write key with string value array. */
-  void write_vector(const std::string& key,
-                    const std::vector<std::string>& value);
+  void write(const std::string& key, const std::vector<std::string>& value);
 
   /** Write key with integer value. */
   void write_int(const std::string& key, const int64_t value);
-  /** Write key with integer value array. */
-  void write_int_vector(const std::string& key,
-                        const std::vector<int64_t>& value);
-
   /** Write key with floating point value. */
   void write_float(const std::string& key, const double value);
   /** Write key with boolean value (true/false). */
@@ -73,3 +74,22 @@ private:
   size_t m_indent;
   bool m_values;
 };
+
+template<typename T>
+void
+json_writer::write(const std::string& key, const counts_tmpl<T>& value)
+{
+  std::stringstream ss;
+  ss << "[";
+  for (size_t i = 0; i < value.size(); ++i) {
+    if (i) {
+      ss << ", ";
+    }
+
+    ss << value.get(i);
+  }
+
+  ss << "]";
+
+  _write(key, ss.str());
+}

@@ -116,25 +116,20 @@ json_writer::write(const std::string& key, const std::string& value)
 }
 
 void
-json_writer::write_vector(const std::string& key,
-                          const std::vector<std::string>& value)
+json_writer::write(const std::string& key,
+                   const std::vector<std::string>& value)
 {
   std::stringstream ss;
   ss << "[";
   for (size_t i = 0; i < value.size(); ++i) {
     if (i) {
-      ss << ",";
+      ss << ", ";
     }
 
-    const auto escaped = _escape(value.at(i));
-    ss << "\n" << std::setw(2 * (m_indent + 1) + escaped.size()) << escaped;
+    ss << _escape(value.at(i));
   }
 
-  if (value.size()) {
-    ss << "\n" << std::setw(2 * m_indent + 1) << "]";
-  } else {
-    ss << "]";
-  }
+  ss << "]";
 
   _write(key, ss.str());
 }
@@ -152,32 +147,13 @@ json_writer::write_int(const std::string& key, const int64_t value)
 }
 
 void
-json_writer::write_int_vector(const std::string& key,
-                              const std::vector<int64_t>& value)
-{
-  std::stringstream ss;
-  ss << "[";
-  for (size_t i = 0; i < value.size(); ++i) {
-    if (i) {
-      ss << ", ";
-    }
-
-    ss << value.at(i);
-  }
-
-  ss << "]";
-
-  _write(key, ss.str());
-}
-
-void
 json_writer::write_float(const std::string& key, const double value)
 {
   if (std::isnan(value)) {
     _write(key, "NaN");
   } else {
-  _write(key, std::to_string(value));
-}
+    _write(key, std::to_string(value));
+  }
 }
 
 void
