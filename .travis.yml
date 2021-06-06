@@ -31,7 +31,7 @@ script:
     - make
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make test COVERAGE=yes; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make test COVERAGE=no; fi
-    - make regression
+    # - make regression
     - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:
