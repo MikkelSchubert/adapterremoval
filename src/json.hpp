@@ -86,7 +86,11 @@ json_writer::write(const std::string& key, const counts_tmpl<T>& value)
       ss << ", ";
     }
 
+    if (std::isnan(value.get(i))) {
+      ss << "NaN";
+    } else {
     ss << value.get(i);
+  }
   }
 
   ss << "]";
