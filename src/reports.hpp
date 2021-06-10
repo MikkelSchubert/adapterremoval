@@ -24,31 +24,11 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstdlib>
-#include <ostream>
 #include <vector>
 
-class demux_statistics;
-class reads_processor;
+class ar_statistics;
 class statistics;
 class userconfig;
 
-void
-write_trimming_settings(const userconfig& config,
-                        std::ostream& output,
-                        int nth);
-
-void
-write_trimming_statistics(const userconfig& config,
-                          std::ostream& output,
-                          const statistics& stats);
-
-void
-write_demultiplex_settings(const userconfig& config,
-                           std::ostream& output,
-                           int nth = -1);
-
-void
-write_demultiplex_statistics(const userconfig& config,
-                             std::ofstream& output,
-                             const demux_statistics& stats);
+bool
+write_report(const userconfig& config, const ar_statistics& stats);

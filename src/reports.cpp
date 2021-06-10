@@ -27,339 +27,294 @@
 #include <iostream>
 #include <numeric>
 
-#include "demultiplexing.hpp"
-#include "fastq.hpp"
+#include "json.hpp"
 #include "main.hpp"
 #include "strutils.hpp"
-#include "trimming.hpp"
 #include "userconfig.hpp"
 
-std::ostream&
-operator<<(std::ostream& stream, const fastq::ntrimmed& ntrim)
-{
-  stream << ntrim.first;
-  if (ntrim.first != ntrim.second) {
-    stream << " " << ntrim.second;
-  }
+#define WITH_SECTION(writer, key)                                              \
+  if (const auto section##__LINE__ = writer.start(key))
 
-  return stream;
+void
+write_report_meta(const userconfig& config, json_writer& writer)
+{
+  WITH_SECTION(writer, "meta")
+  {
+    writer.write("version", NAME + " " + VERSION);
+    writer.write("command", config.args);
+    writer.write_float("runtime", config.runtime());
+  }
 }
 
 void
-write_trimming_settings(const userconfig& config, std::ostream& output, int nth)
+write_report_summary_stats(json_writer& writer,
+                           const std::vector<const fastq_statistics*>& stats)
 {
-  output << NAME << " " << VERSION << "\nTrimming of ";
+  size_t n_reads = 0;
+  size_t n_bases = 0;
+  size_t n_g = 0;
+  size_t n_c = 0;
+  size_t n_n = 0;
+  size_t n_q20 = 0;
+  size_t n_q30 = 0;
 
-  if (config.adapters.barcode_count()) {
-    if (config.adapters.get_barcodes().front().second.length()) {
-      output << "double-indexed ";
-    } else {
-      output << "single-indexed ";
-    }
+  for (const auto& it : stats) {
+    n_reads += it->length_dist().sum();
+    n_bases += it->length_dist().product();
+    n_g += it->nucleotides_pos('G').sum();
+    n_c += it->nucleotides_pos('C').sum();
+    n_n += it->uncalled_pos().sum();
+    n_q20 += it->quality_dist().sum(20);
+    n_q30 += it->quality_dist().sum(30);
   }
 
-  if (config.paired_ended_mode) {
-    if (config.interleaved_input) {
-      output << "interleaved ";
+  writer.write_int("reads", n_reads);
+  writer.write_int("bases", n_bases);
+  writer.write_float("mean_length", static_cast<double>(n_bases) / n_reads);
+  writer.write_int("q20_bases", n_q20);
+  writer.write_int("q30_bases", n_q30);
+  writer.write_float("q20_rate", static_cast<double>(n_q20) / n_bases);
+  writer.write_float("q30_rate", static_cast<double>(n_q30) / n_bases);
+  writer.write_int("uncalled_bases", n_n);
+  writer.write_float("uncalled_rate", static_cast<double>(n_n) / n_bases);
+  writer.write_float("gc_content", static_cast<double>(n_g + n_c) / n_bases);
+}
+
+void
+write_read_length(json_writer& writer,
+                  const std::string& label,
+                  size_t reads,
+                  size_t bases)
+{
+  writer.write_int(label + "_reads", reads);
+  writer.write_float(label + "_mean_length",
+                     static_cast<double>(bases) / reads);
+}
+
+void
+write_report_summary(const userconfig& config,
+                     json_writer& writer,
+                     const ar_statistics& stats)
+{
+  WITH_SECTION(writer, "summary")
+  {
+    WITH_SECTION(writer, "input")
+    {
+      std::vector<const fastq_statistics*> input = { &stats.input_1,
+                                                     &stats.input_2 };
+      write_report_summary_stats(writer, input);
     }
 
-    output << "paired-end reads\n";
-  } else {
-    output << "single-end reads\n";
-  }
+    if (config.adapters.barcode_count()) {
+      WITH_SECTION(writer, "demultiplexing")
+      {
 
-  if (config.adapters.barcode_count()) {
-    output << "\n\n[Demultiplexing]"
-           << "\nMaximum mismatches (total): " << config.barcode_mm;
-
-    if (config.paired_ended_mode) {
-      output << "\nMaximum mate 1 mismatches: " << config.barcode_mm_r1;
-      output << "\nMaximum mate 2 mismatches: " << config.barcode_mm_r2;
+#warning TODO: Write demultiplexing summary
+      }
     }
 
-    output << "\n\n\n[Demultiplexing samples]"
-           << "\nName\tBarcode_1\tBarcode_2\n";
-
-    const fastq_pair_vec barcodes = config.adapters.get_barcodes();
-    for (size_t idx = 0; idx < barcodes.size(); ++idx) {
-      output << config.adapters.get_sample_name(idx);
-      if (static_cast<int>(idx) == nth) {
-        output << "*";
+    WITH_SECTION(writer, "output")
+    {
+      std::vector<const fastq_statistics*> output;
+      for (const auto& it : stats.trimming) {
+        output.push_back(&it.read_1);
+        output.push_back(&it.read_2);
+        output.push_back(&it.merged);
       }
 
-      const fastq_pair& current = barcodes.at(idx);
-      output << "\t" << current.first.sequence();
+      write_report_summary_stats(writer, output);
+    }
 
-      if (current.second.length()) {
-        output << "\t" << current.second.sequence() << "\n";
-      } else {
-        output << "\t*\n";
+    WITH_SECTION(writer, "discarded")
+    {
+      std::vector<const fastq_statistics*> discarded;
+      for (const auto& it : stats.trimming) {
+        discarded.push_back(&it.discarded);
       }
+
+      write_report_summary_stats(writer, discarded);
     }
-  }
-
-  output << "\n\n[Adapter sequences]";
-  if (nth == -1) {
-    const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
-    size_t adapter_id = 0;
-    for (auto it = adapters.cbegin(); it != adapters.cend();
-         ++it, ++adapter_id) {
-      output << "\nAdapter1[" << adapter_id + 1
-             << "]: " << it->first.sequence();
-
-      fastq adapter_2 = it->second;
-      adapter_2.reverse_complement();
-
-      output << "\nAdapter2[" << adapter_id + 1 << "]: " << adapter_2.sequence()
-             << "\n";
-    }
-  } else {
-    const string_pair_vec adapters =
-      config.adapters.get_pretty_adapter_set(nth);
-    size_t adapter_id = 0;
-    for (auto it = adapters.cbegin(); it != adapters.cend();
-         ++it, ++adapter_id) {
-      output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
-      output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
-    }
-  }
-
-  output << "\n\n[Adapter trimming]";
-  if (config.max_threads > 1 || config.deterministic) {
-    output << "\nRNG seed: NA";
-  } else {
-    output << "\nRNG seed: " << config.seed;
-  }
-
-  output << "\nAlignment shift value: " << config.shift
-         << "\nGlobal mismatch threshold: " << config.mismatch_threshold
-         << "\nQuality format (input): " << config.quality_input_fmt->name()
-         << "\nQuality score max (input): "
-         << config.quality_input_fmt->max_score()
-         << "\nQuality format (output): " << config.quality_output_fmt->name()
-         << "\nQuality score max (output): "
-         << config.quality_output_fmt->max_score()
-         << "\nMate-number separator (input): '" << config.mate_separator << "'"
-         << "\nTrimming 5p: " << config.trim_fixed_5p
-         << "\nTrimming 3p: " << config.trim_fixed_3p
-         << "\nTrimming Ns: " << ((config.trim_ambiguous_bases) ? "Yes" : "No")
-         << "\nTrimming Phred scores <= " << config.low_quality_score << ": "
-         << (config.trim_by_quality ? "Yes" : "No")
-         << "\nTrimming using sliding windows: ";
-
-  if (config.trim_window_length >= 1) {
-    output << static_cast<size_t>(config.trim_window_length);
-  } else if (config.trim_window_length >= 0) {
-    output << config.trim_window_length;
-  } else {
-    output << "No";
-  }
-
-  output << "\nMinimum genomic length: " << config.min_genomic_length
-         << "\nMaximum genomic length: " << config.max_genomic_length
-         << "\nCollapse overlapping reads: "
-         << ((config.collapse) ? "Yes" : "No") << "\nDeterministic collapse: "
-         << (config.deterministic ? "Yes" : "No") << "\nConservative collapse: "
-         << (config.collapse_conservatively ? "Yes" : "No")
-         << "\nMinimum overlap (in case of collapse): "
-         << config.min_alignment_length;
-
-  if (!config.paired_ended_mode) {
-    output << "\nMinimum adapter overlap: " << config.min_adapter_overlap;
   }
 }
 
 void
-write_trimming_statistics(const userconfig& config,
-                          std::ostream& settings,
-                          const statistics& stats)
+write_io_section(const std::string& key,
+                 json_writer& writer,
+                 const fastq_statistics& stats)
 {
-  const std::string reads_type =
-    (config.paired_ended_mode ? "read pairs: " : "reads: ");
-  settings << "\n\n\n[Trimming statistics]"
-           << "\nTotal number of " << reads_type << stats.records
-           << "\nNumber of unaligned " << reads_type << stats.unaligned_reads
-           << "\nNumber of well aligned " << reads_type
-           << stats.well_aligned_reads
-           << "\nNumber of discarded mate 1 reads: " << stats.discard1
-           << "\nNumber of singleton mate 1 reads: " << stats.keep1;
+  WITH_SECTION(writer, key)
+  {
+    const std::vector<const fastq_statistics*> read_1 = { &stats };
 
-  if (config.paired_ended_mode) {
-    settings << "\nNumber of discarded mate 2 reads: " << stats.discard2
-             << "\nNumber of singleton mate 2 reads: " << stats.keep2;
+    auto total_bases = stats.uncalled_pos();
+    auto total_quality = stats.uncalled_quality_pos();
+
+    writer.write("lengths", stats.length_dist());
+
+    WITH_SECTION(writer, "quality_curves")
+    {
+      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+        const auto nuc = IDX_TO_ACGT(nuc_i);
+        const auto& nucleotides = stats.nucleotides_pos(nuc);
+        const auto& quality = stats.qualities_pos(nuc);
+
+        total_bases += nucleotides;
+        total_quality += quality;
+
+        writer.write(std::string(1, nuc), quality / nucleotides);
+      }
+
+      writer.write("Mean", total_quality / total_bases);
+    }
+
+    WITH_SECTION(writer, "content_curves")
+    {
+      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+        const auto nuc = IDX_TO_ACGT(nuc_i);
+        const auto& bases = stats.nucleotides_pos(nuc);
+
+        writer.write(std::string(1, nuc), bases / total_bases);
+      }
+
+      writer.write("N", stats.uncalled_quality_pos() / total_bases);
+      writer.write("GC",
+                   (stats.nucleotides_pos('G') + stats.nucleotides_pos('C')) /
+                     total_bases);
+    }
   }
+}
 
-  for (size_t adapter_id = 0;
-       adapter_id < stats.number_of_reads_with_adapter.size();
-       ++adapter_id) {
-    const size_t count = stats.number_of_reads_with_adapter.at(adapter_id);
-    // Value between 0 and stats.records for SE, and 0 and 2*stats.records
-    // for N PE pairs. For PE reads, mate 1 and mate 2 reads being of
-    // unequal length can cause uneven numbers.
-    settings << "\nNumber of reads with adapters[" << adapter_id + 1
-             << "]: " << count;
-  }
-
-  if (config.collapse) {
-    settings << "\nNumber of collapsed pairs: " << stats.number_of_collapsed;
-  }
-
-  settings << "\nNumber of retained reads: " << stats.total_number_of_good_reads
-           << "\nNumber of retained nucleotides: "
-           << stats.total_number_of_nucleotides
-           << "\nAverage length of retained reads: "
-           << (stats.total_number_of_good_reads
-                 ? (static_cast<double>(stats.total_number_of_nucleotides) /
-                    stats.total_number_of_good_reads)
-                 : 0);
-
-  settings << "\n\n\n[Length distribution]"
-           << "\nLength\tMate1\t";
-  if (config.paired_ended_mode) {
-    settings << "Mate2\tSingleton\t";
-  }
-
-  if (config.collapse) {
-    settings << "Collapsed\t";
-  }
-
-  settings << "Discarded\tAll\n";
-
-  for (size_t length = 0; length < stats.read_lengths.size(); ++length) {
-    const std::vector<size_t>& lengths = stats.read_lengths.at(length);
-    const size_t total = std::accumulate(lengths.begin(), lengths.end(), 0);
-
-    settings << length << '\t'
-             << lengths.at(static_cast<size_t>(read_type::mate_1));
+void
+write_report_input(const userconfig& config,
+                   json_writer& writer,
+                   const ar_statistics& stats)
+{
+  WITH_SECTION(writer, "input")
+  {
+    write_io_section("read1", writer, stats.input_1);
 
     if (config.paired_ended_mode) {
-      settings << '\t' << lengths.at(static_cast<size_t>(read_type::mate_2))
-               << '\t' << lengths.at(static_cast<size_t>(read_type::singleton));
+      write_io_section("read2", writer, stats.input_2);
     }
-
-    if (config.collapse) {
-      settings << '\t' << lengths.at(static_cast<size_t>(read_type::collapsed));
-    }
-
-    settings << '\t' << lengths.at(static_cast<size_t>(read_type::discarded))
-             << '\t' << total << '\n';
   }
-
-  settings.flush();
 }
 
 void
-write_demultiplex_statistics(const userconfig& config,
-                             std::ofstream& output,
-                             const demux_statistics& stats)
+write_report_demultiplexing(const userconfig& config,
+                            json_writer& writer,
+                            const ar_statistics& stats)
 {
-  const size_t total = stats.total();
-
-  output.precision(3);
-  output << std::fixed << std::setw(3) << "\n\n[Demultiplexing statistics]"
-         << "\nName\tBarcode_1\tBarcode_2\tHits\tFraction\n"
-         << "unidentified\tNA\tNA\t" << stats.unidentified << "\t"
-         << stats.unidentified / static_cast<double>(total) << "\n"
-         << "ambiguous\tNA\tNA\t" << stats.ambiguous << "\t"
-         << stats.ambiguous / static_cast<double>(total) << "\n";
-
-  const fastq_pair_vec barcodes = config.adapters.get_barcodes();
-  for (size_t nth = 0; nth < barcodes.size(); ++nth) {
-    const fastq_pair& current = barcodes.at(nth);
-
-    output << config.adapters.get_sample_name(nth) << "\t"
-           << current.first.sequence() << "\t";
-    if (current.second.length()) {
-      output << current.second.sequence() << "\t";
-    } else {
-      output << "*\t";
-    }
-
-    output << stats.barcodes.at(nth) << "\t"
-           << stats.barcodes.at(nth) / static_cast<double>(total) << "\n";
-  }
-
-  output << "*\t*\t*\t" << total << "\t" << 1.0 << std::endl;
-}
-
-void
-write_demultiplex_settings(const userconfig& config,
-                           std::ostream& output,
-                           int nth)
-{
-  output << NAME << " " << VERSION << "\nDemultiplexing of ";
-
   if (config.adapters.barcode_count()) {
-    if (config.adapters.get_barcodes().front().second.length()) {
-      output << "double-indexed ";
-    } else {
-      output << "single-indexed ";
-    }
-  }
+    if (const auto _ = writer.start("demultiplexing")) {
 
-  if (config.paired_ended_mode) {
-    if (config.interleaved_input) {
-      output << "interleaved ";
-    }
+      size_t assigned_reads = 0;
+      const auto& demux = stats.demultiplexing;
+      for (size_t it : demux.barcodes) {
+        assigned_reads += it;
+      }
 
-    output << "paired-end reads";
+      writer.write_int("assigned_reads", assigned_reads);
+      writer.write_int("ambiguous_reads", demux.ambiguous);
+      writer.write_int("unassigned_reads", demux.unidentified);
+
+      if (const auto _ = writer.start("samples")) {
+        for (size_t i = 0; i < demux.barcodes.size(); ++i) {
+          writer.start(config.adapters.get_sample_name(i));
+          writer.write_int("reads", demux.barcodes.at(i));
+
+          if (const auto _ = writer.start("output")) {
+            write_io_section("read1", writer, stats.trimming.at(i).read_1);
+
+            if (config.paired_ended_mode) {
+              write_io_section("read2", writer, stats.trimming.at(i).read_2);
+
+              if (config.collapse) {
+                write_io_section("merged", writer, stats.trimming.at(i).merged);
+              }
+            }
+
+            write_io_section(
+              "discarded", writer, stats.trimming.at(i).discarded);
+          }
+        }
+      }
+    }
   } else {
-    output << "single-end reads";
+    writer.write_null("demultiplexing");
+  }
+}
+
+void
+write_report_trimming(const userconfig& config,
+                      json_writer& writer,
+                      const ar_statistics& stats)
+{
+  auto _ = writer.start("trimming_and_filtering");
+
+#warning TODO: Trimming/Filtering statistics
+}
+
+void
+write_report_output(const userconfig& config,
+                    json_writer& writer,
+                    const ar_statistics& stats)
+{
+  fastq_statistics output_1;
+  fastq_statistics output_2;
+  fastq_statistics merged;
+  fastq_statistics discarded;
+
+  for (const auto& it : stats.trimming) {
+    output_1 += it.read_1;
+    output_2 += it.read_2;
+    merged += it.merged;
+    discarded += it.discarded;
   }
 
-  output << "\n\n\n[Demultiplexing]"
-         << "\nMaximum mismatches (total): " << config.barcode_mm;
+  if (const auto _ = writer.start("output")) {
+    write_io_section("read1", writer, output_1);
 
-  if (config.paired_ended_mode) {
-    output << "\nMaximum mate 1 mismatches: " << config.barcode_mm_r1;
-    output << "\nMaximum mate 2 mismatches: " << config.barcode_mm_r2;
+    if (config.paired_ended_mode) {
+      write_io_section("read2", writer, output_2);
+
+      if (config.collapse) {
+        write_io_section("merged", writer, merged);
+      }
+    }
+
+    write_io_section("discarded", writer, discarded);
+  }
+}
+
+bool
+write_report(const userconfig& config, const ar_statistics& stats)
+{
+  const auto filename = config.get_output_filename("--settings");
+
+  try {
+    std::ofstream output(filename, std::ofstream::out);
+    if (!output.is_open()) {
+      throw std::ofstream::failure(std::strerror(errno));
+    }
+
+    output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+
+    {
+      json_writer writer(output);
+      write_report_meta(config, writer);
+      write_report_summary(config, writer, stats);
+      write_report_input(config, writer, stats);
+      write_report_demultiplexing(config, writer, stats);
+      write_report_trimming(config, writer, stats);
+      write_report_output(config, writer, stats);
+    }
+
+    output << std::endl;
+  } catch (const std::ios_base::failure& error) {
+    std::cerr << "Error writing JSON report to '" << filename << "':\n"
+              << cli_formatter::fmt(error.what()) << std::endl;
+    return false;
   }
 
-  output << "\n\n\n[Demultiplexing samples]"
-         << "\nName\tBarcode_1\tBarcode_2\n";
-
-  const fastq_pair_vec barcodes = config.adapters.get_barcodes();
-  for (size_t idx = 0; idx < barcodes.size(); ++idx) {
-    output << config.adapters.get_sample_name(idx);
-    if (static_cast<size_t>(nth) == idx) {
-      output << "*";
-    }
-
-    const fastq_pair& current = barcodes.at(idx);
-    output << "\t" << current.first.sequence();
-
-    if (current.second.length()) {
-      output << "\t" << current.second.sequence() << "\n";
-    } else {
-      output << "\t*\n";
-    }
-  }
-
-  output << "\n\n[Adapter sequences]";
-  if (nth == -1) {
-    const fastq_pair_vec adapters = config.adapters.get_raw_adapters();
-    size_t adapter_id = 0;
-    for (fastq_pair_vec::const_iterator it = adapters.begin();
-         it != adapters.end();
-         ++it, ++adapter_id) {
-      output << "\nAdapter1[" << adapter_id + 1
-             << "]: " << it->first.sequence();
-
-      fastq adapter_2 = it->second;
-      adapter_2.reverse_complement();
-      output << "\nAdapter2[" << adapter_id + 1 << "]: " << adapter_2.sequence()
-             << "\n";
-    }
-
-  } else {
-    const string_pair_vec adapters =
-      config.adapters.get_pretty_adapter_set(nth);
-    size_t adapter_id = 0;
-    for (string_pair_vec::const_iterator it = adapters.begin();
-         it != adapters.end();
-         ++it, ++adapter_id) {
-      output << "\nAdapter1[" << adapter_id + 1 << "]: " << it->first;
-      output << "\nAdapter2[" << adapter_id + 1 << "]: " << it->second << "\n";
-    }
-  }
+  return true;
 }

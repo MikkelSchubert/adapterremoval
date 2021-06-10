@@ -268,23 +268,27 @@ print_consensus_adapter(const nt_count_vec& counts,
 struct adapter_stats
 {
 public:
-  adapter_stats(const userconfig& config)
+  adapter_stats()
     : pcr1_counts()
     , pcr2_counts()
     , pcr1_kmers(N_KMERS, 0)
     , pcr2_kmers(N_KMERS, 0)
-    , stats(config.create_stats())
+    , aligned_pairs(0)
+    , unaligned_pairs(0)
+    , pairs_with_adapters(0)
   {}
 
-  /** Merge overall statistics, consensus, and k-mer counts. */
+  /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   adapter_stats& operator+=(const adapter_stats& other)
   {
-    *stats += *other.stats;
-
     merge_vectors(pcr1_counts, other.pcr1_counts);
     merge_vectors(pcr2_counts, other.pcr2_counts);
     merge_vectors(pcr1_kmers, other.pcr1_kmers);
     merge_vectors(pcr2_kmers, other.pcr2_kmers);
+
+    aligned_pairs += other.aligned_pairs;
+    unaligned_pairs += other.unaligned_pairs;
+    pairs_with_adapters += other.pairs_with_adapters;
 
     return *this;
   }
@@ -297,8 +301,12 @@ public:
   kmer_map pcr1_kmers;
   //! 5' KMer frequencies of putative adapter 2 fragments
   kmer_map pcr2_kmers;
-  //! Statistics object for (number of) processed reads
-  statistics_ptr stats;
+  //! Number of properly aligned reads
+  size_t aligned_pairs;
+  //! Number of reads that could not be aligned
+  size_t unaligned_pairs;
+  //! Number of reads with adapter fragments
+  size_t pairs_with_adapters;
 
   //! Copy construction not supported
   adapter_stats(const adapter_stats&) = delete;
@@ -310,15 +318,10 @@ public:
 class adapter_sink : public statistics_sink<adapter_stats>
 {
 public:
-  adapter_sink(const userconfig& config)
-    : m_config(config)
-  {}
+  adapter_sink() {}
 
 protected:
-  virtual pointer new_sink() const
-  {
-    return pointer(new adapter_stats(m_config));
-  }
+  virtual pointer new_sink() const { return pointer(new adapter_stats()); }
 
   virtual void reduce(pointer& dst, const pointer& src) const
   {
@@ -329,9 +332,6 @@ protected:
   adapter_sink(const adapter_sink&) = delete;
   //! Assignment not supported
   adapter_sink& operator=(const adapter_sink&) = delete;
-
-private:
-  const userconfig& m_config;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -344,7 +344,7 @@ public:
     : analytical_step(analytical_step::ordering::unordered)
     , m_config(config)
     , m_timer("reads")
-    , m_sinks(config)
+    , m_sinks()
   {}
 
   chunk_vec process(analytical_chunk* chunk)
@@ -360,14 +360,13 @@ public:
     read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     adapter_sink::pointer sink = m_sinks.get_sink();
-    statistics& stats = *sink->stats;
 
     AR_DEBUG_ASSERT(file_chunk->reads_1.size() == file_chunk->reads_2.size());
     fastq_vec::iterator read_1 = file_chunk->reads_1.begin();
     fastq_vec::iterator read_2 = file_chunk->reads_2.begin();
 
     while (read_1 != file_chunk->reads_1.end()) {
-      process_reads(adapters, stats, *sink, *read_1++, *read_2++);
+      process_reads(adapters, *sink, *read_1++, *read_2++);
     }
 
     m_sinks.return_sink(std::move(sink));
@@ -383,10 +382,9 @@ public:
 
     std::unique_ptr<adapter_stats> sink(m_sinks.finalize());
 
-    std::cout << "   Found " << sink->stats->well_aligned_reads
+    std::cout << "   Found " << sink->aligned_pairs
               << " overlapping pairs ...\n"
-              << "   Of which "
-              << sink->stats->number_of_reads_with_adapter.at(0)
+              << "   Of which " << sink->pairs_with_adapters
               << " contained adapter sequence(s) ...\n\n"
               << "Printing adapter sequences, including poly-A tails:"
               << std::endl;
@@ -406,7 +404,6 @@ public:
 
 private:
   void process_reads(const fastq_pair_vec& adapters,
-                     statistics& stats,
                      adapter_stats& sink,
                      fastq& read1,
                      fastq& read2)
@@ -421,10 +418,10 @@ private:
       align_paired_ended_sequences(read1, read2, adapters, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
-      stats.well_aligned_reads++;
+      sink.aligned_pairs++;
       if (m_config.is_alignment_collapsible(alignment)) {
         if (extract_adapter_sequences(alignment, read1, read2)) {
-          stats.number_of_reads_with_adapter.at(0)++;
+          sink.pairs_with_adapters++;
 
           process_adapter(read1.sequence(), sink.pcr1_counts, sink.pcr1_kmers);
 
@@ -433,7 +430,7 @@ private:
         }
       }
     } else {
-      stats.unaligned_reads++;
+      sink.unaligned_pairs++;
     }
   }
 

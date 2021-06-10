@@ -34,7 +34,8 @@ size_t
 read_fastq_reads(fastq_vec& dst,
                  joined_line_readers& reader,
                  size_t offset,
-                 const fastq_encoding& encoding)
+                 const fastq_encoding& encoding,
+                 fastq_statistics* stats)
 {
   dst.reserve(FASTQ_CHUNK_SIZE);
 
@@ -42,6 +43,10 @@ read_fastq_reads(fastq_vec& dst,
     fastq record;
     for (size_t i = 0; i < FASTQ_CHUNK_SIZE; ++i) {
       if (record.read(reader, encoding)) {
+        if (stats) {
+          stats->process(record);
+        }
+
         dst.push_back(record);
       } else {
         break;
@@ -101,11 +106,13 @@ fastq_output_chunk::add(const fastq_encoding& encoding,
 
 read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
                                      const string_vec& filenames,
-                                     size_t next_step)
+                                     size_t next_step,
+                                     fastq_statistics* statistics)
   : analytical_step(analytical_step::ordering::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
   , m_io_input(filenames)
+  , m_statistics(statistics)
   , m_next_step(next_step)
   , m_eof(false)
   , m_lock()
@@ -125,7 +132,7 @@ read_single_fastq::process(analytical_chunk* chunk)
   read_chunk_ptr file_chunk(new fastq_read_chunk());
 
   const size_t n_read = read_fastq_reads(
-    file_chunk->reads_1, m_io_input, m_line_offset, *m_encoding);
+    file_chunk->reads_1, m_io_input, m_line_offset, *m_encoding, m_statistics);
 
   if (!n_read) {
     // EOF is detected by failure to read any lines, not line_reader::eof,
@@ -157,12 +164,16 @@ read_single_fastq::finalize()
 read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
                                      const string_vec& filenames_1,
                                      const string_vec& filenames_2,
-                                     size_t next_step)
+                                     size_t next_step,
+                                     fastq_statistics* statistics_1,
+                                     fastq_statistics* statistics_2)
   : analytical_step(analytical_step::ordering::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
   , m_io_input_1(filenames_1)
   , m_io_input_2(filenames_2)
+  , m_statistics_1(statistics_1)
+  , m_statistics_2(statistics_2)
   , m_next_step(next_step)
   , m_eof(false)
   , m_lock()
@@ -181,10 +192,16 @@ read_paired_fastq::process(analytical_chunk* chunk)
 
   read_chunk_ptr file_chunk(new fastq_read_chunk());
 
-  const size_t n_read_1 = read_fastq_reads(
-    file_chunk->reads_1, m_io_input_1, m_line_offset, *m_encoding);
-  const size_t n_read_2 = read_fastq_reads(
-    file_chunk->reads_2, m_io_input_2, m_line_offset, *m_encoding);
+  const size_t n_read_1 = read_fastq_reads(file_chunk->reads_1,
+                                           m_io_input_1,
+                                           m_line_offset,
+                                           *m_encoding,
+                                           m_statistics_1);
+  const size_t n_read_2 = read_fastq_reads(file_chunk->reads_2,
+                                           m_io_input_2,
+                                           m_line_offset,
+                                           *m_encoding,
+                                           m_statistics_2);
 
   if (n_read_1 != n_read_2) {
     print_locker lock;
@@ -222,11 +239,15 @@ read_paired_fastq::finalize()
 
 read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
                                                const string_vec& filenames,
-                                               size_t next_step)
+                                               size_t next_step,
+                                               fastq_statistics* statistics_1,
+                                               fastq_statistics* statistics_2)
   : analytical_step(analytical_step::ordering::ordered, true)
   , m_encoding(encoding)
   , m_line_offset(1)
   , m_io_input(filenames)
+  , m_statistics_1(statistics_1)
+  , m_statistics_2(statistics_2)
   , m_next_step(next_step)
   , m_eof(false)
   , m_lock()
@@ -253,6 +274,10 @@ read_interleaved_fastq::process(analytical_chunk* chunk)
     for (size_t i = 0; i < FASTQ_CHUNK_SIZE; ++i) {
       // Mate 1 reads
       if (record.read(m_io_input, *m_encoding)) {
+        if (m_statistics_1) {
+          m_statistics_1->process(record);
+        }
+
         file_chunk->reads_1.push_back(record);
       } else {
         break;
@@ -260,6 +285,10 @@ read_interleaved_fastq::process(analytical_chunk* chunk)
 
       // Mate 2 reads
       if (record.read(m_io_input, *m_encoding)) {
+        if (m_statistics_2) {
+          m_statistics_2->process(record);
+        }
+
         file_chunk->reads_2.push_back(record);
       } else {
         break;

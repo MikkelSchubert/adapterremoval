@@ -92,11 +92,12 @@ parse_trim_argument(const string_vec& values)
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
                        const std::string& help)
-  : run_type(ar_command::trim_adapters)
+  : args()
+  , run_type(ar_command::trim_adapters)
   , input_files_1()
   , input_files_2()
   , out_basename("your_output")
-  , out_settings("{basename}{.sample}.settings")
+  , out_settings("{basename}{.sample}.json")
   , out_interleaved("{basename}{.sample}.fastq")
   , out_pair_1("{basename}{.sample}.r1.fastq")
   , out_pair_2("{basename}{.sample}.r2.fastq")
@@ -151,6 +152,7 @@ userconfig::userconfig(const std::string& name,
   , demultiplex_sequences(false)
   , trim5p()
   , trim3p()
+  , m_runtime()
 {
   argparser["--file1"] = new argparse::many(
     &input_files_1,
@@ -452,6 +454,7 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   }
 
+  args = string_vec(argv, argv + argc);
   const argparse::parse_result result = argparser.parse_args(argc, argv);
   if (result != argparse::parse_result::ok) {
     return result;
@@ -621,8 +624,7 @@ userconfig::parse_args(int argc, char* argv[])
 statistics_ptr
 userconfig::create_stats() const
 {
-  statistics_ptr stats(new statistics());
-  stats->number_of_reads_with_adapter.resize(adapters.adapter_count());
+  statistics_ptr stats(new trimming_statistics());
   return stats;
 }
 
@@ -688,48 +690,45 @@ userconfig::get_output_filename(const std::string& key_, size_t nth) const
   std::string sample;
   std::string key = key_;
 
-  if (key == "demux_stats") {
-    // Demulitplexing summary statistics
+  if (key == "demux_unknown") {
+    // Demulitplexing unidentified reads
+    AR_DEBUG_ASSERT(nth == 1 || nth == 2);
+    key = "--output";
+    key.push_back('0' + nth);
+
+    sample = "unidentified";
+  } else if (adapters.barcode_count()) {
+    sample = adapters.get_sample_name(nth);
+  }
+
+  if (key == "--settings") {
+    AR_DEBUG_ASSERT(!nth);
     filename = out_settings;
-  } else {
-    if (key == "demux_unknown") {
-      // Demulitplexing unidentified reads
-      AR_DEBUG_ASSERT(nth == 1 || nth == 2);
-      key = "--output";
-      key.push_back('0' + nth);
-
-      sample = "unidentified";
-    } else if (adapters.barcode_count()) {
-      sample = adapters.get_sample_name(nth);
-    }
-
-    if (key == "--settings") {
-      filename = out_settings;
-    } else if (key == "--outputcollapsed") {
-      filename = out_merged;
-    } else if (key == "--discarded") {
-      filename = out_discarded;
-    } else if (key == "--output1") {
-      if (interleaved_output) {
-        filename = out_interleaved;
-      } else {
-        filename = out_pair_1;
-      }
-    } else if (key == "--output2") {
-      filename = out_pair_2;
-    } else if (key == "--singleton") {
-      filename = out_singleton;
+    sample.clear();
+  } else if (key == "--outputcollapsed") {
+    filename = out_merged;
+  } else if (key == "--discarded") {
+    filename = out_discarded;
+  } else if (key == "--output1") {
+    if (interleaved_output) {
+      filename = out_interleaved;
     } else {
-      std::cerr << key << std::endl;
-      AR_DEBUG_FAIL("unknown key");
+      filename = out_pair_1;
     }
+  } else if (key == "--output2") {
+    filename = out_pair_2;
+  } else if (key == "--singleton") {
+    filename = out_singleton;
+  } else {
+    std::cerr << key << std::endl;
+    AR_DEBUG_FAIL("unknown key");
+  }
 
-    if (!(key == "--settings" || argparser.is_set(key))) {
-      if (gzip) {
-        filename += ".gz";
-      } else if (bzip2) {
-        filename += ".bz2";
-      }
+  if (!(key == "--settings" || argparser.is_set(key))) {
+    if (gzip) {
+      filename += ".gz";
+    } else if (bzip2) {
+      filename += ".bz2";
     }
   }
 
@@ -825,4 +824,10 @@ userconfig::setup_adapter_sequences()
   }
 
   return true;
+}
+
+double
+userconfig::runtime() const
+{
+  return m_runtime.duration();
 }

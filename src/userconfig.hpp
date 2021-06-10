@@ -34,11 +34,12 @@
 #include "commontypes.hpp"
 #include "fastq.hpp"
 #include "statistics.hpp"
+#include "timer.hpp"
 
 struct alignment_info;
 
 typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
-typedef std::unique_ptr<statistics> statistics_ptr;
+typedef std::unique_ptr<trimming_statistics> statistics_ptr;
 
 enum class ar_command
 {
@@ -79,6 +80,12 @@ public:
 
   /** Returns true if the read matches the quality criteria set by the user. **/
   bool is_acceptable_read(const fastq& seq) const;
+
+  /** Returns runtime in seconds. */
+  double runtime() const;
+
+  //! Command-line arguments
+  string_vec args;
 
   //! Type of run to execute; see command
   ar_command run_type;
@@ -236,4 +243,7 @@ private:
   string_vec trim5p;
   //! Sink for --trim3p
   string_vec trim3p;
+
+  //! Measures runtime since the program was started
+  highres_timer m_runtime;
 };

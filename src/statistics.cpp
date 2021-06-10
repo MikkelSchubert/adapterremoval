@@ -27,79 +27,102 @@
 #include <iostream>
 #include <numeric>
 
+#include "debug.hpp"
+#include "fastq.hpp"
 #include "statistics.hpp"
 
-statistics::statistics()
-  : number_of_collapsed(0)
-  , total_number_of_nucleotides(0)
-  , total_number_of_good_reads(0)
-  , number_of_reads_with_adapter()
-  , unaligned_reads(0)
-  , well_aligned_reads(0)
-  , poorly_aligned_reads(0)
-  , keep1(0)
-  , discard1(0)
-  , keep2(0)
-  , discard2(0)
-  , records(0)
-  , read_lengths()
+fastq_statistics::fastq_statistics()
+  : m_length_dist()
+  , m_quality_dist()
+  , m_uncalled_pos()
+  , m_uncalled_quality_pos()
+  , m_called_pos(4)
+  , m_quality_pos(4)
 {}
 
 void
-statistics::inc_length_count(read_type type, size_t length)
+fastq_statistics::process(const fastq& read)
 {
-  if (length >= read_lengths.size()) {
-    read_lengths.resize(
-      length + 1, std::vector<size_t>(static_cast<size_t>(read_type::max)));
-  }
+  m_length_dist.inc(read.length());
 
-  ++read_lengths.at(length).at(static_cast<size_t>(type));
+  const std::string& sequence = read.sequence();
+  const std::string& qualities = read.qualities();
+
+  for (size_t i = 0; i < sequence.length(); ++i) {
+    const auto nuc = sequence.at(i);
+    if (nuc == 'N') {
+      m_uncalled_pos.inc(i);
+      m_uncalled_quality_pos.inc(i, qualities.at(i));
+    } else {
+      const auto nuc_i = ACGT_TO_IDX(nuc);
+
+      m_called_pos.at(nuc_i).inc(i);
+      m_quality_pos.at(nuc_i).inc(i, qualities.at(i) - PHRED_OFFSET_33);
+    }
+
+    m_quality_dist.inc(qualities.at(i) - PHRED_OFFSET_33);
+  }
 }
 
-statistics&
-statistics::operator+=(const statistics& other)
+fastq_statistics&
+fastq_statistics::operator+=(const fastq_statistics& other)
 {
-  number_of_collapsed += other.number_of_collapsed;
-  total_number_of_nucleotides += other.total_number_of_nucleotides;
-  total_number_of_good_reads += other.total_number_of_good_reads;
+  m_length_dist += other.m_length_dist;
+  m_quality_dist += other.m_quality_dist;
+  m_uncalled_pos += other.m_uncalled_pos;
+  m_uncalled_quality_pos += other.m_uncalled_quality_pos;
 
-  unaligned_reads += other.unaligned_reads;
-  well_aligned_reads += other.well_aligned_reads;
-  poorly_aligned_reads += other.poorly_aligned_reads;
-  keep1 += other.keep1;
-  discard1 += other.discard1;
-  keep2 += other.keep2;
-  discard2 += other.discard2;
-
-  records += other.records;
-
-  merge_vectors(number_of_reads_with_adapter,
-                other.number_of_reads_with_adapter);
-  merge_sub_vectors(read_lengths, other.read_lengths);
+  for (size_t i = 0; i < 4; ++i) {
+    m_called_pos.at(i) += other.m_called_pos.at(i);
+    m_quality_pos.at(i) += other.m_quality_pos.at(i);
+  }
 
   return *this;
 }
 
-demux_statistics::demux_statistics()
+trimming_statistics::trimming_statistics()
+  : read_1()
+  , read_2()
+  , merged()
+  , discarded()
+  , number_of_merged_reads()
+  , number_of_reads_with_adapter()
+{}
+
+trimming_statistics&
+trimming_statistics::operator+=(const trimming_statistics& other)
+{
+  read_1 += other.read_1;
+  read_2 += other.read_2;
+  merged += other.merged;
+  discarded += other.discarded;
+
+  number_of_merged_reads += other.number_of_merged_reads;
+  number_of_reads_with_adapter += other.number_of_reads_with_adapter;
+
+  return *this;
+}
+
+demultiplexing_statistics::demultiplexing_statistics()
   : barcodes()
   , unidentified(0)
   , ambiguous(0)
 {}
 
 bool
-demux_statistics::empty() const
+demultiplexing_statistics::empty() const
 {
   return barcodes.empty();
 }
 
 void
-demux_statistics::resize(size_t n)
+demultiplexing_statistics::resize(size_t n)
 {
   barcodes.resize(n);
 }
 
 size_t
-demux_statistics::total() const
+demultiplexing_statistics::total() const
 {
   size_t total = unidentified + ambiguous;
   for (size_t i = 0; i < barcodes.size(); ++i) {

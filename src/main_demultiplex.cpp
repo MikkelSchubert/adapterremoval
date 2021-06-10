@@ -45,35 +45,9 @@ add_write_step(const userconfig& config,
                analytical_step* step);
 
 bool
-write_demultiplexing_report(const userconfig& config,
-                            const demux_statistics& demux_stats,
-                            int nth = -1)
+demux_write_report(const userconfig& config, const ar_statistics& stats)
 {
-  const std::string filename =
-    config.get_output_filename(nth == -1 ? "demux_stats" : "--settings", nth);
-
-  try {
-    std::ofstream output(filename.c_str(), std::ofstream::out);
-
-    if (!output.is_open()) {
-      std::string message =
-        std::string("Failed to open file '") + filename + "': ";
-      throw std::ofstream::failure(message + std::strerror(errno));
-    }
-
-    output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-
-    write_demultiplex_settings(config, output, nth);
-    if (nth == -1) {
-      write_demultiplex_statistics(config, output, demux_stats);
-    }
-  } catch (const std::ios_base::failure& error) {
-    std::cerr << "IO error writing settings file; aborting:\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
-    return false;
-  }
-
-  return true;
+  return write_report(config, stats);
 }
 
 class se_demultiplexed_reads_processor : public analytical_step
@@ -166,7 +140,7 @@ demultiplex_sequences_se(const userconfig& config)
   std::cerr << "Demultiplexing single ended reads ..." << std::endl;
 
   scheduler sch;
-  demux_statistics demux_stats;
+  ar_statistics stats;
 
   try {
     // Step 1: Read input file
@@ -174,12 +148,13 @@ demultiplex_sequences_se(const userconfig& config)
                  "read_fastq",
                  new read_single_fastq(config.quality_input_fmt.get(),
                                        config.input_files_1,
-                                       ai_demultiplex));
+                                       ai_demultiplex,
+                                       &stats.input_1));
 
     // Step 2: Parse and demultiplex reads based on single or double indices
     sch.add_step(ai_demultiplex,
                  "demultiplex_se",
-                 new demultiplex_se_reads(&config, &demux_stats));
+                 new demultiplex_se_reads(&config, &stats.demultiplexing));
 
     add_write_step(
       config,
@@ -212,14 +187,8 @@ demultiplex_sequences_se(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!write_demultiplexing_report(config, demux_stats)) {
+  } else if (!demux_write_report(config, stats)) {
     return 1;
-  }
-
-  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    if (!write_demultiplexing_report(config, demux_stats, nth)) {
-      return 1;
-    }
   }
 
   return 0;
@@ -231,7 +200,7 @@ demultiplex_sequences_pe(const userconfig& config)
   std::cerr << "Demultiplexing paired end reads ..." << std::endl;
 
   scheduler sch;
-  demux_statistics demux_stats;
+  ar_statistics stats;
 
   try {
     // Step 1: Read input file
@@ -240,20 +209,24 @@ demultiplex_sequences_pe(const userconfig& config)
                    "read_interleaved_fastq",
                    new read_interleaved_fastq(config.quality_input_fmt.get(),
                                               config.input_files_1,
-                                              ai_demultiplex));
+                                              ai_demultiplex,
+                                              &stats.input_1,
+                                              &stats.input_2));
     } else {
       sch.add_step(ai_read_fastq,
                    "read_paired_fastq",
                    new read_paired_fastq(config.quality_input_fmt.get(),
                                          config.input_files_1,
                                          config.input_files_2,
-                                         ai_demultiplex));
+                                         ai_demultiplex,
+                                         &stats.input_1,
+                                         &stats.input_2));
     }
 
     // Step 2: Parse and demultiplex reads based on single or double indices
     sch.add_step(ai_demultiplex,
                  "demultiplex_pe",
-                 new demultiplex_pe_reads(&config, &demux_stats));
+                 new demultiplex_pe_reads(&config, &stats.demultiplexing));
 
     add_write_step(
       config,
@@ -304,14 +277,8 @@ demultiplex_sequences_pe(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!write_demultiplexing_report(config, demux_stats)) {
+  } else if (!demux_write_report(config, stats)) {
     return 1;
-  }
-
-  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    if (!write_demultiplexing_report(config, demux_stats, nth)) {
-      return 1;
-    }
   }
 
   return 0;

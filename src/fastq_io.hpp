@@ -38,6 +38,7 @@
 class userconfig;
 class fastq_read_chunk;
 class fastq_output_chunk;
+class fastq_statistics;
 
 typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
 typedef std::unique_ptr<fastq_read_chunk> read_chunk_ptr;
@@ -120,7 +121,8 @@ public:
    */
   read_single_fastq(const fastq_encoding* encoding,
                     const string_vec& filenames,
-                    size_t next_step);
+                    size_t next_step,
+                    fastq_statistics* statistics = nullptr);
 
   /** Reads N lines from the input file and saves them in an fastq_read_chunk.
    */
@@ -141,6 +143,8 @@ private:
   size_t m_line_offset;
   //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
   joined_line_readers m_io_input;
+  //! Statistics collected from raw input data
+  fastq_statistics* m_statistics;
   //! The analytical step following this step
   const size_t m_next_step;
   //! Used to track whether an EOF block has been received.
@@ -165,7 +169,9 @@ public:
   read_paired_fastq(const fastq_encoding* encoding,
                     const string_vec& filenames_1,
                     const string_vec& filenames_2,
-                    size_t next_step);
+                    size_t next_step,
+                    fastq_statistics* statistics_1 = nullptr,
+                    fastq_statistics* statistics_2 = nullptr);
 
   /** Reads N lines from the input file and saves them in an fastq_file_chunk.
    */
@@ -188,6 +194,10 @@ private:
   joined_line_readers m_io_input_1;
   //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
   joined_line_readers m_io_input_2;
+  //! Statistics collected from raw mate 1 reads
+  fastq_statistics* m_statistics_1;
+  //! Statistics collected from raw mate 2 reads
+  fastq_statistics* m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
   //! Used to track whether an EOF block has been received.
@@ -211,7 +221,9 @@ public:
    */
   read_interleaved_fastq(const fastq_encoding* encoding,
                          const string_vec& filenames,
-                         size_t next_step);
+                         size_t next_step,
+                         fastq_statistics* statistics_1 = nullptr,
+                         fastq_statistics* statistics_2 = nullptr);
 
   /** Reads N lines from the input file and saves them in an fastq_file_chunk.
    */
@@ -232,6 +244,10 @@ private:
   size_t m_line_offset;
   //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
   joined_line_readers m_io_input;
+  //! Statistics collected from raw mate 1 reads
+  fastq_statistics* m_statistics_1;
+  //! Statistics collected from raw mate 2 reads
+  fastq_statistics* m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
   //! Used to track whether an EOF block has been received.

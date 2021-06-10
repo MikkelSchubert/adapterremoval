@@ -28,58 +28,83 @@
 #include <vector>
 
 #include "commontypes.hpp"
+#include "counts.hpp"
 #include "vecutils.hpp"
 
 class demultiplex_reads;
-class userconfig;
+class fastq;
 class reads_processor;
+class userconfig;
 
-/** Object used to collect summary statistics for trimming and other tasks. */
-struct statistics
+/** Class used to collect statistics about pre/post-processed FASTQ reads. */
+class fastq_statistics
 {
-  statistics();
+public:
+  fastq_statistics();
 
-  //! Number of collapsed reads
-  size_t number_of_collapsed;
-  //! Total number of nucleotides left after trimming, collapsing, filtering
-  size_t total_number_of_nucleotides;
-  //! Total number of reads left after trimming, collapsing, filtering
-  size_t total_number_of_good_reads;
+  void process(const fastq& read);
 
+  inline const counts& length_dist() const { return m_length_dist; }
+  inline const counts& quality_dist() const { return m_quality_dist; }
+  inline const counts& uncalled_pos() const { return m_uncalled_pos; }
+  inline const counts& uncalled_quality_pos() const
+  {
+    return m_uncalled_quality_pos;
+  }
+  inline const counts& nucleotides_pos(char nuc) const
+  {
+    return m_called_pos.at(ACGT_TO_IDX(nuc));
+  }
+  inline const counts& qualities_pos(char nuc) const
+  {
+    return m_quality_pos.at(ACGT_TO_IDX(nuc));
+  }
+
+  /** Sum statistics, e.g. those used by different threads. */
+  fastq_statistics& operator+=(const fastq_statistics& other);
+
+private:
+  /** Length distribution. */
+  counts m_length_dist;
+  /** Quality distribution. */
+  counts m_quality_dist;
+  /** Count of uncalled bases per position. */
+  counts m_uncalled_pos;
+  /** Sum of qualities of Ns per position. */
+  counts m_uncalled_quality_pos;
+  /** Count of A/C/G/T per position; indexed using ACGT_TO_IDX. */
+  std::vector<counts> m_called_pos;
+  /** Sum of qualities of A/C/G/Ts per position; indexed using ACGT_TO_IDX. */
+  std::vector<counts> m_quality_pos;
+};
+
+/** Object used to collect summary statistics for trimming. */
+struct trimming_statistics
+{
+  trimming_statistics();
+
+  //! Statistics for first reads
+  fastq_statistics read_1;
+  //! Statistics for second reads
+  fastq_statistics read_2;
+  //! Statistics for discarded reads
+  fastq_statistics merged;
+  //! Statistics for discarded reads
+  fastq_statistics discarded;
+
+  //! Number of reads merged (incl. discarded reads)
+  size_t number_of_merged_reads;
   //! Number of reads / pairs with adapters trimmed
-  std::vector<size_t> number_of_reads_with_adapter;
-
-  //! Number of unaligned reads; not enough bases, too many mismatches, etc.
-  size_t unaligned_reads;
-  //! Number of alignments with enough aligned bases, not too many mismatches
-  size_t well_aligned_reads;
-  //! Number of alignments with a zero or lower score
-  size_t poorly_aligned_reads;
-  //! Number of retained mate 1 reads
-  size_t keep1;
-  //! Number of discarded mate 1 reads
-  size_t discard1;
-  //! Number of retained mate 2 reads
-  size_t keep2;
-  //! Number of discarded mate 2 reads
-  size_t discard2;
-  //! Total number of reads / pairs processed
-  size_t records;
-
-  /** Increment the number of reads with of a given type / length. */
-  void inc_length_count(read_type type, size_t length);
-
-  //! Per read-type length distributions of reads
-  std::vector<std::vector<size_t>> read_lengths;
+  counts number_of_reads_with_adapter;
 
   /** Combine statistics objects, e.g. those used by different threads. */
-  statistics& operator+=(const statistics& other);
+  trimming_statistics& operator+=(const trimming_statistics& other);
 };
 
 /** Object used to collect summary statistics for demultiplexing. */
-struct demux_statistics
+struct demultiplexing_statistics
 {
-  demux_statistics();
+  demultiplexing_statistics();
 
   bool empty() const;
   void resize(size_t n);
@@ -93,4 +118,21 @@ struct demux_statistics
   size_t unidentified;
   //! Number of reads / pairs with no single best hit
   size_t ambiguous;
+};
+
+// FIXME: Rename to ... something better
+struct ar_statistics
+{
+  inline ar_statistics()
+    : input_1()
+    , input_2()
+    , demultiplexing()
+    , trimming()
+  {}
+
+  fastq_statistics input_1;
+  fastq_statistics input_2;
+
+  demultiplexing_statistics demultiplexing;
+  std::vector<trimming_statistics> trimming;
 };

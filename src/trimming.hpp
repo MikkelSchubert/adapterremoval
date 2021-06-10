@@ -32,7 +32,7 @@
 
 class userconfig;
 
-typedef std::unique_ptr<statistics> statistics_ptr;
+typedef std::unique_ptr<trimming_statistics> statistics_ptr;
 
 class reads_processor : public analytical_step
 {
@@ -42,7 +42,7 @@ public:
   statistics_ptr get_final_statistics();
 
 protected:
-  class stats_sink : public statistics_sink<statistics>
+  class stats_sink : public statistics_sink<trimming_statistics>
   {
   public:
     stats_sink(const userconfig& config);

@@ -94,46 +94,6 @@ trim_sequence_by_quality_if_enabled(const userconfig& config, fastq& read)
   return fastq::ntrimmed();
 }
 
-void
-process_collapsed_read(const userconfig& config,
-                       statistics& stats,
-                       fastq& collapsed_read,
-                       fastq* mate_read,
-                       trimmed_reads& chunks)
-{
-  trim_read_termini_if_enabled(config, collapsed_read, read_type::collapsed);
-
-  fastq::ntrimmed trimmed;
-  if (!config.preserve5p) {
-    // A collapsed read essentially consists of two 5p termini, both
-    // informative for PCR duplicate removal.
-    trimmed = trim_sequence_by_quality_if_enabled(config, collapsed_read);
-  }
-
-  // If trimmed, the external coordinates are no longer reliable
-  // for determining the size of the original template.
-  const bool was_trimmed = trimmed.first || trimmed.second;
-  collapsed_read.add_prefix_to_header(was_trimmed ? "MT_" : "M_");
-  if (mate_read) {
-    mate_read->add_prefix_to_header(was_trimmed ? "MT_" : "M_");
-  }
-
-  if (config.is_acceptable_read(collapsed_read)) {
-    stats.total_number_of_nucleotides += collapsed_read.length();
-    stats.total_number_of_good_reads++;
-    stats.inc_length_count(read_type::collapsed, collapsed_read.length());
-
-    chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
-    stats.number_of_collapsed++;
-  } else {
-    stats.discard1++;
-    stats.discard2++;
-    stats.inc_length_count(read_type::discarded, collapsed_read.length());
-
-    chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
-  }
-}
-
 reads_processor::reads_processor(const userconfig& config, size_t nth)
   : analytical_step(analytical_step::ordering::unordered)
   , m_config(config)
@@ -183,30 +143,20 @@ se_reads_processor::process(analytical_chunk* chunk)
 
     if (m_config.is_good_alignment(alignment)) {
       truncate_single_ended_sequence(alignment, read);
-      stats->number_of_reads_with_adapter.at(alignment.adapter_id)++;
-      stats->well_aligned_reads++;
-    } else {
-      stats->unaligned_reads++;
+      stats->number_of_reads_with_adapter.inc(alignment.adapter_id);
     }
 
     trim_read_termini_if_enabled(m_config, read, read_type::mate_1);
     trim_sequence_by_quality_if_enabled(m_config, read);
     if (m_config.is_acceptable_read(read)) {
-      stats->keep1++;
-      stats->total_number_of_good_reads++;
-      stats->total_number_of_nucleotides += read.length();
-
+      stats->read_1.process(read);
       chunks.add_mate_1_read(read, read_status::passed);
-      stats->inc_length_count(read_type::mate_1, read.length());
     } else {
-      stats->discard1++;
-      stats->inc_length_count(read_type::discarded, read.length());
-
+      stats->discarded.process(read);
       chunks.add_mate_1_read(read, read_status::failed);
     }
   }
 
-  stats->records += read_chunk->reads_1.size();
   m_stats.return_sink(std::move(stats));
 
   return chunks.finalize();
@@ -272,31 +222,48 @@ pe_reads_processor::process(analytical_chunk* chunk)
       align_paired_ended_sequences(read_1, read_2, m_adapters, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
-      stats->well_aligned_reads++;
       const size_t n_adapters =
         truncate_paired_ended_sequences(alignment, read_1, read_2);
-      stats->number_of_reads_with_adapter.at(alignment.adapter_id) +=
-        n_adapters;
+      stats->number_of_reads_with_adapter.inc(alignment.adapter_id, n_adapters);
 
       if (m_config.is_alignment_collapsible(alignment)) {
+        stats->number_of_merged_reads++;
         fastq collapsed_read = merger.merge(alignment, read_1, read_2);
 
-        process_collapsed_read(m_config,
-                               *stats,
-                               collapsed_read,
-                               // Make sure read_2 header is updated, if needed
-                               m_config.combined_output ? &read_2 : nullptr,
-                               chunks);
+        trim_read_termini_if_enabled(
+          m_config, collapsed_read, read_type::collapsed);
+
+        fastq::ntrimmed trimmed;
+        if (!m_config.preserve5p) {
+          // A collapsed read essentially consists of two 5p termini, both
+          // informative for PCR duplicate removal.
+          trimmed =
+            trim_sequence_by_quality_if_enabled(m_config, collapsed_read);
+        }
+
+        // If trimmed, the external coordinates are no longer reliable
+        // for determining the size of the original template.
+        const bool was_trimmed = trimmed.first || trimmed.second;
+        collapsed_read.add_prefix_to_header(was_trimmed ? "MT_" : "M_");
+
+        if (m_config.is_acceptable_read(collapsed_read)) {
+          stats->merged.process(collapsed_read);
+          chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
+        } else {
+          stats->discarded.process(collapsed_read);
+          chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
+        }
 
         if (m_config.combined_output) {
+          // FIXME: Does this make sense?
           // Dummy read with read-count of zero; both mates have
           // already been accounted for in process_collapsed_read
+          stats->discarded.process(read_2);
+          read_2.add_prefix_to_header(was_trimmed ? "MT_" : "M_");
           chunks.add_mate_2_read(read_2, read_status::failed, 0);
         }
         continue;
       }
-    } else {
-      stats->unaligned_reads++;
     }
 
     // Reads were not aligned or collapsing is not enabled
@@ -311,45 +278,26 @@ pe_reads_processor::process(analytical_chunk* chunk)
     trim_sequence_by_quality_if_enabled(m_config, read_2);
 
     // Are the reads good enough? Not too many Ns?
-    const bool read_1_acceptable = m_config.is_acceptable_read(read_1);
-    const bool read_2_acceptable = m_config.is_acceptable_read(read_2);
-
-    stats->total_number_of_nucleotides +=
-      read_1_acceptable ? read_1.length() : 0u;
-    stats->total_number_of_nucleotides +=
-      read_2_acceptable ? read_2.length() : 0u;
-    stats->total_number_of_good_reads += read_1_acceptable;
-    stats->total_number_of_good_reads += read_2_acceptable;
-
-    const read_status state_1 =
-      read_1_acceptable ? read_status::passed : read_status::failed;
-    const read_status state_2 =
-      read_2_acceptable ? read_status::passed : read_status::failed;
-
-    if (read_1_acceptable && read_2_acceptable) {
-      stats->inc_length_count(read_type::mate_1, read_1.length());
-      stats->inc_length_count(read_type::mate_2, read_2.length());
+    read_status state_1 = read_status::passed;
+    if (m_config.is_acceptable_read(read_1)) {
+      stats->read_1.process(read_1);
     } else {
-      // Count singleton reads
-      stats->keep1 += read_1_acceptable && !read_2_acceptable;
-      stats->keep2 += read_2_acceptable && !read_1_acceptable;
+      stats->discarded.process(read_1);
+      state_1 = read_status::failed;
+    }
 
-      stats->discard1 += !read_1_acceptable;
-      stats->discard2 += !read_2_acceptable;
-
-      stats->inc_length_count(read_1_acceptable ? read_type::singleton
-                                                : read_type::discarded,
-                              read_1.length());
-      stats->inc_length_count(read_2_acceptable ? read_type::singleton
-                                                : read_type::discarded,
-                              read_2.length());
+    read_status state_2 = read_status::passed;
+    if (m_config.is_acceptable_read(read_2)) {
+      stats->read_2.process(read_2);
+    } else {
+      stats->discarded.process(read_2);
+      state_2 = read_status::failed;
     }
 
     // Queue reads last, since this result in modifications to lengths
     chunks.add_pe_reads(read_1, state_1, read_2, state_2);
   }
 
-  stats->records += read_chunk->reads_1.size();
   m_stats.return_sink(std::move(stats));
   m_rngs.return_sink(std::move(rng));
 

@@ -35,7 +35,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 demultiplex_reads::demultiplex_reads(const userconfig* config,
-                                     demux_statistics* statistics)
+                                     demultiplexing_statistics* statistics)
   : analytical_step(analytical_step::ordering::ordered)
   , m_barcodes(config->adapters.get_barcodes())
   , m_barcode_table(m_barcodes,
@@ -101,8 +101,9 @@ demultiplex_reads::flush_cache(bool eof)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_se_reads::demultiplex_se_reads(const userconfig* config,
-                                           demux_statistics* statistics)
+demultiplex_se_reads::demultiplex_se_reads(
+  const userconfig* config,
+  demultiplexing_statistics* statistics)
   : demultiplex_reads(config, statistics)
 {}
 
@@ -137,8 +138,9 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_pe_reads::demultiplex_pe_reads(const userconfig* config,
-                                           demux_statistics* statistics)
+demultiplex_pe_reads::demultiplex_pe_reads(
+  const userconfig* config,
+  demultiplexing_statistics* statistics)
   : demultiplex_reads(config, statistics)
 {}
 
@@ -163,9 +165,9 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
       }
 
       if (best_barcode == -1) {
-        m_statistics->unidentified += 1;
+        m_statistics->unidentified += 2;
       } else {
-        m_statistics->ambiguous += 1;
+        m_statistics->ambiguous += 2;
       }
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
@@ -175,7 +177,7 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
       it_2->truncate(m_barcodes.at(best_barcode).second.length());
       dst->reads_2.push_back(*it_2);
 
-      m_statistics->barcodes.at(best_barcode) += 1;
+      m_statistics->barcodes.at(best_barcode) += 2;
     }
   }
 
