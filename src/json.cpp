@@ -72,6 +72,22 @@ _escape(const std::string& value)
   return stream.str();
 }
 
+json_section::json_section(json_writer& parent, const std::string& key)
+  : m_parent(parent)
+  , m_token(new bool())
+{
+  m_parent._write(key, "{");
+  m_parent.m_values = false;
+  m_parent.m_indent++;
+}
+
+json_section::~json_section()
+{
+  if (m_token.unique()) {
+    m_parent.end();
+  }
+}
+
 json_writer::json_writer(std::ostream& stream)
   : m_stream(stream)
   , m_indent(1)
@@ -87,12 +103,10 @@ json_writer::~json_writer()
   }
 }
 
-void
+json_section
 json_writer::start(const std::string& key)
 {
-  _write(key, "{");
-  m_values = false;
-  m_indent++;
+  return json_section(*this, key);
 }
 
 void

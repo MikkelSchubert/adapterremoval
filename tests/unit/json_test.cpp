@@ -202,8 +202,9 @@ TEST_CASE("nested_dict", "[json::json]")
     json_writer json(ss);
     json.write("value1", "foo");
 
-    json.start("value2");
-    json.write_int("bar", 1234);
+    if (auto _ = json.start("value2")) {
+      json.write_int("bar", 1234);
+    }
   }
 
   REQUIRE(

@@ -23,6 +23,8 @@
 \*************************************************************************/
 #pragma once
 
+#include <cmath>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -30,6 +32,21 @@
 
 #include "counts.hpp"
 #include "debug.hpp"
+
+class json_writer;
+
+class json_section
+{
+public:
+  explicit json_section(json_writer& parent, const std::string& key);
+  ~json_section();
+
+  inline operator bool() const { return true; }
+
+private:
+  json_writer& m_parent;
+  std::shared_ptr<bool> m_token;
+};
 
 /**
  * Writes pretty-printed JSON to a stream.
@@ -45,9 +62,7 @@ public:
   ~json_writer();
 
   /** Start new sub-section. */
-  void start(const std::string& key);
-  /** End current sub-section. */
-  void end();
+  json_section start(const std::string& key);
 
   /** Write key with string value. */
   void write(const std::string& key, const std::string& value);
@@ -68,11 +83,16 @@ public:
   void write_null(const std::string& key);
 
 private:
+  /** End current sub-section. */
+  void end();
+  /** Writes a key and value. The value is assumed to be a valid JSON value. */
   void _write(const std::string& key, const std::string& value);
 
   std::ostream& m_stream;
   size_t m_indent;
   bool m_values;
+
+  friend class json_section;
 };
 
 template<typename T>
@@ -89,8 +109,8 @@ json_writer::write(const std::string& key, const counts_tmpl<T>& value)
     if (std::isnan(value.get(i))) {
       ss << "NaN";
     } else {
-    ss << value.get(i);
-  }
+      ss << value.get(i);
+    }
   }
 
   ss << "]";
