@@ -33,7 +33,7 @@
 #include "userconfig.hpp"
 
 #define WITH_SECTION(writer, key)                                              \
-  if (const auto section##__LINE__ = writer.start(key))
+  if (const auto section##__LINE__ = (writer).start(key))
 
 void
 write_report_meta(const userconfig& config, json_writer& writer)
