@@ -29,6 +29,7 @@
 
 #include "commontypes.hpp"
 #include "counts.hpp"
+#include "fastq.hpp"
 #include "vecutils.hpp"
 
 class demultiplex_reads;
@@ -42,8 +43,12 @@ class fastq_statistics
 public:
   fastq_statistics();
 
-  void process(const fastq& read);
+  void process(const fastq& read, size_t num_input_reads = 1);
 
+  inline size_t number_of_input_reads() const
+  {
+    return m_number_of_input_reads;
+  }
   inline const counts& length_dist() const { return m_length_dist; }
   inline const counts& quality_dist() const { return m_quality_dist; }
   inline const counts& uncalled_pos() const { return m_uncalled_pos; }
@@ -64,6 +69,9 @@ public:
   fastq_statistics& operator+=(const fastq_statistics& other);
 
 private:
+  //! Number of input reads used to produce thesetrimming_statistics
+  size_t m_number_of_input_reads;
+
   /** Length distribution. */
   counts m_length_dist;
   /** Quality distribution. */
@@ -87,15 +95,34 @@ struct trimming_statistics
   fastq_statistics read_1;
   //! Statistics for second reads
   fastq_statistics read_2;
-  //! Statistics for discarded reads
+  //! Statistics for merged reads
   fastq_statistics merged;
   //! Statistics for discarded reads
   fastq_statistics discarded;
 
-  //! Number of reads merged (incl. discarded reads)
-  size_t number_of_merged_reads;
-  //! Number of reads / pairs with adapters trimmed
-  counts number_of_reads_with_adapter;
+  //! Number of reads with adapters trimmed
+  counts adapter_trimmed_reads;
+  //! Number of bases trimmed for a given adapter (pair)
+  counts adapter_trimmed_bases;
+
+  //! Number of paired reads merged
+  size_t overlapping_reads_merged;
+
+  //! Number of bases 5p/3p bases trimmed with --trim5p/3p
+  size_t terminal_bases_trimmed;
+
+  //! Number of reads/bases trimmed for low quality bases
+  size_t low_quality_trimmed_reads;
+  size_t low_quality_trimmed_bases;
+
+  //! Number of reads/bases filtered due to length (min)
+  size_t filtered_min_length_reads;
+  size_t filtered_min_length_bases;
+  size_t filtered_max_length_reads;
+  size_t filtered_max_length_bases;
+
+  size_t filtered_ambiguous_reads;
+  size_t filtered_ambiguous_bases;
 
   /** Combine statistics objects, e.g. those used by different threads. */
   trimming_statistics& operator+=(const trimming_statistics& other);
@@ -111,12 +138,11 @@ struct demultiplexing_statistics
 
   size_t total() const;
 
-  //! Number of reads / pairs identified for a given barcode / pair of
-  //! barcodes
+  //! Number of reads identified for for each barcode (pair)
   std::vector<size_t> barcodes;
-  //! Number of reads / pairs with no hits
+  //! Number of reads with no hits
   size_t unidentified;
-  //! Number of reads / pairs with no single best hit
+  //! Number of reads with no single best hit
   size_t ambiguous;
 };
 

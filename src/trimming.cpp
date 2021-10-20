@@ -25,15 +25,17 @@
 #include <random>
 
 #include "debug.hpp"
+#include "statistics.hpp"
 #include "trimmed_reads.hpp"
 #include "trimming.hpp"
 #include "userconfig.hpp"
 
 /** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
 void
-trim_read_termini_if_enabled(const userconfig& config,
-                             fastq& read,
-                             read_type type)
+trim_read_termini(const userconfig& config,
+                  trimming_statistics& stats,
+                  fastq& read,
+                  read_type type)
 {
   size_t trim_5p = 0;
   size_t trim_3p = 0;
@@ -60,10 +62,10 @@ trim_read_termini_if_enabled(const userconfig& config,
       break;
 
     default:
-      throw std::invalid_argument(
-        "Invalid read type in trim_read_termini_if_enabled");
+      throw std::invalid_argument("Invalid read type in trim_read_termini");
   }
 
+  const auto length = read.length();
   if (trim_5p || trim_3p) {
     if (trim_5p + trim_3p < read.length()) {
       read.truncate(trim_5p,
@@ -71,27 +73,68 @@ trim_read_termini_if_enabled(const userconfig& config,
     } else {
       read.truncate(0, 0);
     }
+
+    stats.terminal_bases_trimmed += length - read.length();
   }
 }
 
-/** Trims a read if enabled, returning the #bases removed from each end. */
-fastq::ntrimmed
-trim_sequence_by_quality_if_enabled(const userconfig& config, fastq& read)
+/** Trims a read if enabled, returning the total number of bases removed. */
+bool
+trim_sequence_by_quality(const userconfig& config,
+                         trimming_statistics& stats,
+                         fastq& read)
 {
+  fastq::ntrimmed trimmed;
   if (config.trim_window_length >= 0) {
-    return read.trim_windowed_bases(config.trim_ambiguous_bases,
-                                    config.low_quality_score,
-                                    config.trim_window_length,
-                                    config.preserve5p);
+    trimmed = read.trim_windowed_bases(config.trim_ambiguous_bases,
+                                       config.low_quality_score,
+                                       config.trim_window_length,
+                                       config.preserve5p);
   } else if (config.trim_ambiguous_bases || config.trim_by_quality) {
     const char quality_score =
       config.trim_by_quality ? config.low_quality_score : -1;
 
-    return read.trim_trailing_bases(
+    trimmed = read.trim_trailing_bases(
       config.trim_ambiguous_bases, quality_score, config.preserve5p);
   }
 
-  return fastq::ntrimmed();
+  if (trimmed.first || trimmed.second) {
+    stats.low_quality_trimmed_reads++;
+    stats.low_quality_trimmed_bases += trimmed.first + trimmed.second;
+
+    return true;
+  }
+
+  return false;
+}
+
+bool
+is_acceptable_read(const userconfig& config,
+                   trimming_statistics& stats,
+                   const fastq& seq)
+{
+  const auto length = seq.length();
+
+  if (length < config.min_genomic_length) {
+    stats.filtered_min_length_reads++;
+    stats.filtered_min_length_bases += length;
+
+    return false;
+  } else if (length > config.max_genomic_length) {
+    stats.filtered_max_length_reads++;
+    stats.filtered_max_length_bases += length;
+
+    return false;
+  }
+
+  const auto max_n = config.max_ambiguous_bases;
+  if (max_n < length && seq.count_ns() > max_n) {
+    stats.filtered_ambiguous_reads++;
+    stats.filtered_ambiguous_bases += length;
+    return false;
+  }
+
+  return true;
 }
 
 reads_processor::reads_processor(const userconfig& config, size_t nth)
@@ -142,13 +185,17 @@ se_reads_processor::process(analytical_chunk* chunk)
       align_single_ended_sequence(read, m_adapters, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
+      const auto length = read.length();
       truncate_single_ended_sequence(alignment, read);
-      stats->number_of_reads_with_adapter.inc(alignment.adapter_id);
+
+      stats->adapter_trimmed_reads.inc(alignment.adapter_id);
+      stats->adapter_trimmed_bases.inc(alignment.adapter_id,
+                                       length - read.length());
     }
 
-    trim_read_termini_if_enabled(m_config, read, read_type::mate_1);
-    trim_sequence_by_quality_if_enabled(m_config, read);
-    if (m_config.is_acceptable_read(read)) {
+    trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    trim_sequence_by_quality(m_config, *stats, read);
+    if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1.process(read);
       chunks.add_mate_1_read(read, read_status::passed);
     } else {
@@ -222,35 +269,36 @@ pe_reads_processor::process(analytical_chunk* chunk)
       align_paired_ended_sequences(read_1, read_2, m_adapters, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
+      const size_t length = read_1.length() + read_2.length();
       const size_t n_adapters =
         truncate_paired_ended_sequences(alignment, read_1, read_2);
-      stats->number_of_reads_with_adapter.inc(alignment.adapter_id, n_adapters);
+      stats->adapter_trimmed_reads.inc(alignment.adapter_id, n_adapters);
+      stats->adapter_trimmed_bases.inc(
+        alignment.adapter_id, length - read_1.length() - read_2.length());
 
       if (m_config.is_alignment_collapsible(alignment)) {
-        stats->number_of_merged_reads++;
+        stats->overlapping_reads_merged += 2;
         fastq collapsed_read = merger.merge(alignment, read_1, read_2);
 
-        trim_read_termini_if_enabled(
-          m_config, collapsed_read, read_type::collapsed);
+        trim_read_termini(
+          m_config, *stats, collapsed_read, read_type::collapsed);
 
-        fastq::ntrimmed trimmed;
+        bool trimmed = false;
         if (!m_config.preserve5p) {
           // A collapsed read essentially consists of two 5p termini, both
           // informative for PCR duplicate removal.
-          trimmed =
-            trim_sequence_by_quality_if_enabled(m_config, collapsed_read);
+          trimmed = trim_sequence_by_quality(m_config, *stats, collapsed_read);
         }
 
         // If trimmed, the external coordinates are no longer reliable
         // for determining the size of the original template.
-        const bool was_trimmed = trimmed.first || trimmed.second;
-        collapsed_read.add_prefix_to_header(was_trimmed ? "MT_" : "M_");
+        collapsed_read.add_prefix_to_header(trimmed ? "MT_" : "M_");
 
-        if (m_config.is_acceptable_read(collapsed_read)) {
-          stats->merged.process(collapsed_read);
+        if (is_acceptable_read(m_config, *stats, collapsed_read)) {
+          stats->merged.process(collapsed_read, 2);
           chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
         } else {
-          stats->discarded.process(collapsed_read);
+          stats->discarded.process(collapsed_read, 2);
           chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
         }
 
@@ -258,8 +306,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
           // FIXME: Does this make sense?
           // Dummy read with read-count of zero; both mates have
           // already been accounted for in process_collapsed_read
-          stats->discarded.process(read_2);
-          read_2.add_prefix_to_header(was_trimmed ? "MT_" : "M_");
+          read_2.add_prefix_to_header(trimmed ? "MT_" : "M_");
           chunks.add_mate_2_read(read_2, read_status::failed, 0);
         }
         continue;
@@ -271,15 +318,16 @@ pe_reads_processor::process(analytical_chunk* chunk)
     read_2.reverse_complement();
 
     // Trim fixed number of bases from 5' and/or 3' termini
-    trim_read_termini_if_enabled(m_config, read_1, read_type::mate_1);
-    trim_read_termini_if_enabled(m_config, read_2, read_type::mate_2);
+    trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
+    trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
+
     // Sliding window trimming or single-base trimming
-    trim_sequence_by_quality_if_enabled(m_config, read_1);
-    trim_sequence_by_quality_if_enabled(m_config, read_2);
+    trim_sequence_by_quality(m_config, *stats, read_1);
+    trim_sequence_by_quality(m_config, *stats, read_2);
 
     // Are the reads good enough? Not too many Ns?
     read_status state_1 = read_status::passed;
-    if (m_config.is_acceptable_read(read_1)) {
+    if (is_acceptable_read(m_config, *stats, read_1)) {
       stats->read_1.process(read_1);
     } else {
       stats->discarded.process(read_1);
@@ -287,7 +335,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
     }
 
     read_status state_2 = read_status::passed;
-    if (m_config.is_acceptable_read(read_2)) {
+    if (is_acceptable_read(m_config, *stats, read_2)) {
       stats->read_2.process(read_2);
     } else {
       stats->discarded.process(read_2);

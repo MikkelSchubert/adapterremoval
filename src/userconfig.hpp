@@ -78,9 +78,6 @@ public:
   /** Returns true if the alignment is sufficient for collapsing. */
   bool is_alignment_collapsible(const alignment_info& alignment) const;
 
-  /** Returns true if the read matches the quality criteria set by the user. **/
-  bool is_acceptable_read(const fastq& seq) const;
-
   /** Returns runtime in seconds. */
   double runtime() const;
 

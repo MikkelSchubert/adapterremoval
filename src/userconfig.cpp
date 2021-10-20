@@ -673,16 +673,6 @@ userconfig::is_alignment_collapsible(const alignment_info& alignment) const
   return collapse || identify_adapters;
 }
 
-bool
-userconfig::is_acceptable_read(const fastq& seq) const
-{
-  const size_t seq_len = seq.length();
-
-  return seq_len >= min_genomic_length && seq_len <= max_genomic_length &&
-         (max_ambiguous_bases >= seq_len ||
-          seq.count_ns() <= max_ambiguous_bases);
-}
-
 std::string
 userconfig::get_output_filename(const std::string& key_, size_t nth) const
 {

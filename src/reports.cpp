@@ -81,6 +81,61 @@ write_report_summary_stats(json_writer& writer,
 }
 
 void
+write_report_trimming(const userconfig& config,
+                      json_writer& writer,
+                      const ar_statistics& stats)
+{
+  trimming_statistics totals;
+  for (const auto& it : stats.trimming) {
+    totals += it;
+  }
+
+  WITH_SECTION(writer, "trimming_and_filtering")
+  {
+    writer.write_int("adapter_trimmed_reads",
+                     totals.adapter_trimmed_reads.sum());
+    writer.write_int("adapter_trimmed_bases",
+                     totals.adapter_trimmed_bases.sum());
+
+    if (config.adapters.adapter_count() > 1) {
+      WITH_SECTION(writer, "adapters")
+      {
+        for (size_t i = 0; i < config.adapters.adapter_count(); ++i) {
+          const auto& adapters = config.adapters.get_raw_adapters();
+
+          writer.write("adapter_sequence_1", adapters.at(i).first.sequence());
+          writer.write("adapter_sequence_2", adapters.at(i).second.sequence());
+          writer.write_int("adapter_trimmed_reads",
+                           totals.adapter_trimmed_reads.get(i));
+          writer.write_int("adapter_trimmed_bases",
+                           totals.adapter_trimmed_bases.get(i));
+        }
+      }
+    }
+
+    writer.write_int("overlapping_reads_merged",
+                     totals.overlapping_reads_merged);
+    writer.write_int("terminal_bases_trimmed", totals.terminal_bases_trimmed);
+    writer.write_int("low_quality_trimmed_reads",
+                     totals.low_quality_trimmed_reads);
+    writer.write_int("low_quality_trimmed_bases",
+                     totals.low_quality_trimmed_bases);
+    writer.write_int("filtered_min_length_reads",
+                     totals.filtered_min_length_reads);
+    writer.write_int("filtered_min_length_bases",
+                     totals.filtered_min_length_bases);
+    writer.write_int("filtered_max_length_reads",
+                     totals.filtered_max_length_reads);
+    writer.write_int("filtered_max_length_bases",
+                     totals.filtered_max_length_bases);
+    writer.write_int("filtered_ambiguous_reads",
+                     totals.filtered_ambiguous_reads);
+    writer.write_int("filtered_ambiguous_bases",
+                     totals.filtered_ambiguous_bases);
+  }
+}
+
+void
 write_read_length(json_writer& writer,
                   const std::string& label,
                   size_t reads,
@@ -127,6 +182,8 @@ write_report_summary(const userconfig& config,
       }
     }
 
+    write_report_trimming(config, writer, stats);
+
     WITH_SECTION(writer, "output")
     {
       std::vector<const fastq_statistics*> output;
@@ -160,10 +217,11 @@ write_io_section(const std::string& key,
   {
     const std::vector<const fastq_statistics*> read_1 = { &stats };
 
+    writer.write_int("reads", stats.number_of_input_reads());
+    writer.write("lengths", stats.length_dist());
+
     auto total_bases = stats.uncalled_pos();
     auto total_quality = stats.uncalled_quality_pos();
-
-    writer.write("lengths", stats.length_dist());
 
     WITH_SECTION(writer, "quality_curves")
     {
@@ -264,17 +322,6 @@ write_report_demultiplexing(const userconfig& config,
 }
 
 void
-write_report_trimming(const userconfig& config,
-                      json_writer& writer,
-                      const ar_statistics& stats)
-{
-  WITH_SECTION(writer, "trimming_and_filtering")
-  {
-#warning TODO: Trimming/Filtering statistics
-  }
-}
-
-void
 write_report_output(const userconfig& config,
                     json_writer& writer,
                     const ar_statistics& stats)
@@ -326,7 +373,6 @@ write_report(const userconfig& config, const ar_statistics& stats)
       write_report_summary(config, writer, stats);
       write_report_input(config, writer, stats);
       write_report_demultiplexing(config, writer, stats);
-      write_report_trimming(config, writer, stats);
       write_report_output(config, writer, stats);
     }
 

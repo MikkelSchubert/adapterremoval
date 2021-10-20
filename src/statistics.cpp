@@ -32,7 +32,8 @@
 #include "statistics.hpp"
 
 fastq_statistics::fastq_statistics()
-  : m_length_dist()
+  : m_number_of_input_reads()
+  , m_length_dist()
   , m_quality_dist()
   , m_uncalled_pos()
   , m_uncalled_quality_pos()
@@ -41,8 +42,9 @@ fastq_statistics::fastq_statistics()
 {}
 
 void
-fastq_statistics::process(const fastq& read)
+fastq_statistics::process(const fastq& read, size_t num_input_reads)
 {
+  m_number_of_input_reads += num_input_reads;
   m_length_dist.inc(read.length());
 
   const std::string& sequence = read.sequence();
@@ -67,6 +69,7 @@ fastq_statistics::process(const fastq& read)
 fastq_statistics&
 fastq_statistics::operator+=(const fastq_statistics& other)
 {
+  m_number_of_input_reads += other.m_number_of_input_reads;
   m_length_dist += other.m_length_dist;
   m_quality_dist += other.m_quality_dist;
   m_uncalled_pos += other.m_uncalled_pos;
@@ -85,8 +88,18 @@ trimming_statistics::trimming_statistics()
   , read_2()
   , merged()
   , discarded()
-  , number_of_merged_reads()
-  , number_of_reads_with_adapter()
+  , adapter_trimmed_reads()
+  , adapter_trimmed_bases()
+  , overlapping_reads_merged()
+  , terminal_bases_trimmed()
+  , low_quality_trimmed_reads()
+  , low_quality_trimmed_bases()
+  , filtered_min_length_reads()
+  , filtered_min_length_bases()
+  , filtered_max_length_reads()
+  , filtered_max_length_bases()
+  , filtered_ambiguous_reads()
+  , filtered_ambiguous_bases()
 {}
 
 trimming_statistics&
@@ -97,8 +110,18 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   merged += other.merged;
   discarded += other.discarded;
 
-  number_of_merged_reads += other.number_of_merged_reads;
-  number_of_reads_with_adapter += other.number_of_reads_with_adapter;
+  adapter_trimmed_reads += other.adapter_trimmed_reads;
+  adapter_trimmed_bases += other.adapter_trimmed_bases;
+  overlapping_reads_merged += other.overlapping_reads_merged;
+  terminal_bases_trimmed += other.terminal_bases_trimmed;
+  low_quality_trimmed_reads += other.low_quality_trimmed_reads;
+  low_quality_trimmed_bases += other.low_quality_trimmed_bases;
+  filtered_min_length_reads += other.filtered_min_length_reads;
+  filtered_min_length_bases += other.filtered_min_length_bases;
+  filtered_max_length_reads += other.filtered_max_length_reads;
+  filtered_max_length_bases += other.filtered_max_length_bases;
+  filtered_ambiguous_reads += other.filtered_ambiguous_reads;
+  filtered_ambiguous_bases += other.filtered_ambiguous_bases;
 
   return *this;
 }
