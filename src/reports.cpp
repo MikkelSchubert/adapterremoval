@@ -108,8 +108,22 @@ write_report_summary(const userconfig& config,
     if (config.adapters.barcode_count()) {
       WITH_SECTION(writer, "demultiplexing")
       {
+        const auto& demux = stats.demultiplexing;
+        const auto total = demux.total();
 
-#warning TODO: Write demultiplexing summary
+        writer.write_int("total_reads", total);
+        writer.write_int("identified_reads",
+                         total - demux.unidentified - demux.ambiguous);
+        writer.write_int("unidentified_reads", demux.unidentified);
+        writer.write_int("ambiguous_reads", demux.ambiguous);
+
+        WITH_SECTION(writer, "samples")
+        {
+          for (size_t i = 0; i < demux.barcodes.size(); ++i) {
+            writer.write_int(config.adapters.get_sample_name(i),
+                             demux.barcodes.at(i));
+          }
+        }
       }
     }
 
