@@ -107,7 +107,7 @@ json_writer::write(const std::string& key, const counts_tmpl<T>& value)
     }
 
     if (std::isnan(value.get(i))) {
-      ss << "NaN";
+      ss << "null";
     } else {
       ss << value.get(i);
     }

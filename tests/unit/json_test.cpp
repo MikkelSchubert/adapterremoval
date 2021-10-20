@@ -100,6 +100,22 @@ TEST_CASE("write_vector([2])", "[json::write_vector]")
   REQUIRE(ss.str() == "{\n  \"value\": [\"foo\", \"bar\"]\n}");
 }
 
+TEST_CASE("write_vector([3])", "[json::write_vector]")
+{
+  rates r;
+  r.inc(0, 0);
+  r.inc(1, std::nan(""));
+  r.inc(2, 0.5);
+
+  std::stringstream ss;
+  {
+    json_writer json(ss);
+    json.write("value", r);
+  }
+
+  REQUIRE(ss.str() == "{\n  \"value\": [0, null, 0.5]\n}");
+}
+
 TEST_CASE("write_int", "[json::write_int]")
 {
   std::stringstream ss;
@@ -137,6 +153,17 @@ TEST_CASE("write_float", "[json::write_float]")
   }
 
   REQUIRE(ss.str() == "{\n  \"value\": 1.300000\n}");
+}
+
+TEST_CASE("write_nan", "[json::write_nan]")
+{
+  std::stringstream ss;
+  {
+    json_writer json(ss);
+    json.write_float("value", std::nan(""));
+  }
+
+  REQUIRE(ss.str() == "{\n  \"value\": null\n}");
 }
 
 TEST_CASE("write_bool(true)", "[json::write_bool]")
