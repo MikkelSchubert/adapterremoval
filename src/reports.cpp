@@ -112,10 +112,10 @@ write_report_summary(const userconfig& config,
         const auto total = demux.total();
 
         writer.write_int("total_reads", total);
-        writer.write_int("identified_reads",
+        writer.write_int("assigned_reads",
                          total - demux.unidentified - demux.ambiguous);
-        writer.write_int("unidentified_reads", demux.unidentified);
         writer.write_int("ambiguous_reads", demux.ambiguous);
+        writer.write_int("unassigned_reads", demux.unidentified);
 
         WITH_SECTION(writer, "samples")
         {
