@@ -219,8 +219,8 @@ write_report_demultiplexing(const userconfig& config,
                             const ar_statistics& stats)
 {
   if (config.adapters.barcode_count()) {
-    if (const auto _ = writer.start("demultiplexing")) {
-
+    WITH_SECTION(writer, "demultiplexing")
+    {
       size_t assigned_reads = 0;
       const auto& demux = stats.demultiplexing;
       for (size_t it : demux.barcodes) {
@@ -231,24 +231,29 @@ write_report_demultiplexing(const userconfig& config,
       writer.write_int("ambiguous_reads", demux.ambiguous);
       writer.write_int("unassigned_reads", demux.unidentified);
 
-      if (const auto _ = writer.start("samples")) {
+      WITH_SECTION(writer, "samples")
+      {
         for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-          writer.start(config.adapters.get_sample_name(i));
-          writer.write_int("reads", demux.barcodes.at(i));
+          WITH_SECTION(writer, config.adapters.get_sample_name(i))
+          {
+            writer.write_int("reads", demux.barcodes.at(i));
 
-          if (const auto _ = writer.start("output")) {
-            write_io_section("read1", writer, stats.trimming.at(i).read_1);
+            WITH_SECTION(writer, "output")
+            {
+              write_io_section("read1", writer, stats.trimming.at(i).read_1);
 
-            if (config.paired_ended_mode) {
-              write_io_section("read2", writer, stats.trimming.at(i).read_2);
+              if (config.paired_ended_mode) {
+                write_io_section("read2", writer, stats.trimming.at(i).read_2);
 
-              if (config.collapse) {
-                write_io_section("merged", writer, stats.trimming.at(i).merged);
+                if (config.collapse) {
+                  write_io_section(
+                    "merged", writer, stats.trimming.at(i).merged);
+                }
               }
-            }
 
-            write_io_section(
-              "discarded", writer, stats.trimming.at(i).discarded);
+              write_io_section(
+                "discarded", writer, stats.trimming.at(i).discarded);
+            }
           }
         }
       }
@@ -263,9 +268,10 @@ write_report_trimming(const userconfig& config,
                       json_writer& writer,
                       const ar_statistics& stats)
 {
-  auto _ = writer.start("trimming_and_filtering");
-
+  WITH_SECTION(writer, "trimming_and_filtering")
+  {
 #warning TODO: Trimming/Filtering statistics
+  }
 }
 
 void
@@ -285,7 +291,8 @@ write_report_output(const userconfig& config,
     discarded += it.discarded;
   }
 
-  if (const auto _ = writer.start("output")) {
+  WITH_SECTION(writer, "output")
+  {
     write_io_section("read1", writer, output_1);
 
     if (config.paired_ended_mode) {
