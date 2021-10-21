@@ -111,6 +111,8 @@ write_report_trimming(const userconfig& config,
                            totals.adapter_trimmed_bases.get(i));
         }
       }
+    } else {
+      writer.write_null("adapters");
     }
 
     writer.write_int("overlapping_reads_merged",
@@ -151,6 +153,8 @@ write_report_summary(const userconfig& config,
                      json_writer& writer,
                      const ar_statistics& stats)
 {
+  const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+
   WITH_SECTION(writer, "summary")
   {
     WITH_SECTION(writer, "input")
@@ -180,6 +184,8 @@ write_report_summary(const userconfig& config,
           }
         }
       }
+    } else {
+      writer.write_null("demultiplexing");
     }
 
     write_report_trimming(config, writer, stats);
@@ -210,14 +216,18 @@ write_report_summary(const userconfig& config,
       writer.write_null("unidentified");
     }
 
-    WITH_SECTION(writer, "discarded")
-    {
-      std::vector<const fastq_statistics*> discarded;
-      for (const auto& it : stats.trimming) {
-        discarded.push_back(&it.discarded);
-      }
+    if (demux_only) {
+      writer.write_null("discarded");
+    } else {
+      WITH_SECTION(writer, "discarded")
+      {
+        std::vector<const fastq_statistics*> discarded;
+        for (const auto& it : stats.trimming) {
+          discarded.push_back(&it.discarded);
+        }
 
-      write_report_summary_stats(writer, discarded);
+        write_report_summary_stats(writer, discarded);
+      }
     }
   }
 }
@@ -281,6 +291,8 @@ write_report_input(const userconfig& config,
 
     if (config.paired_ended_mode) {
       write_io_section("read2", writer, stats.input_2);
+    } else {
+      writer.write_null("read2");
     }
   }
 }
@@ -290,6 +302,8 @@ write_report_demultiplexing(const userconfig& config,
                             json_writer& writer,
                             const ar_statistics& stats)
 {
+  const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+
   if (config.adapters.barcode_count()) {
     WITH_SECTION(writer, "demultiplexing")
     {
@@ -317,14 +331,23 @@ write_report_demultiplexing(const userconfig& config,
               if (config.paired_ended_mode) {
                 write_io_section("read2", writer, stats.trimming.at(i).read_2);
 
-                if (config.collapse) {
+                if (config.collapse && !demux_only) {
                   write_io_section(
                     "merged", writer, stats.trimming.at(i).merged);
+                } else {
+                  writer.write_null("merged");
                 }
+              } else {
+                writer.write_null("read2");
+                writer.write_null("merged");
               }
 
-              write_io_section(
-                "discarded", writer, stats.trimming.at(i).discarded);
+              if (demux_only) {
+                writer.write_null("discarded");
+              } else {
+                write_io_section(
+                  "discarded", writer, stats.trimming.at(i).discarded);
+              }
             }
           }
         }
@@ -352,6 +375,8 @@ write_report_output(const userconfig& config,
     discarded += it.discarded;
   }
 
+  const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+
   WITH_SECTION(writer, "output")
   {
     write_io_section("read1", writer, output_1);
@@ -359,9 +384,14 @@ write_report_output(const userconfig& config,
     if (config.paired_ended_mode) {
       write_io_section("read2", writer, output_2);
 
-      if (config.collapse) {
+      if (config.collapse && !demux_only) {
         write_io_section("merged", writer, merged);
+      } else {
+        writer.write_null("merged");
       }
+    } else {
+      writer.write_null("read2");
+      writer.write_null("merged");
     }
 
     if (config.adapters.barcode_count()) {
@@ -371,7 +401,11 @@ write_report_output(const userconfig& config,
       writer.write_null("unidentified");
     }
 
-    write_io_section("discarded", writer, discarded);
+    if (demux_only) {
+      writer.write_null("discarded");
+    } else {
+      write_io_section("discarded", writer, discarded);
+    }
   }
 }
 
