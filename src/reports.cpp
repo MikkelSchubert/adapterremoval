@@ -192,41 +192,44 @@ write_report_summary(const userconfig& config,
 
     WITH_SECTION(writer, "output")
     {
-      std::vector<const fastq_statistics*> output;
-      for (const auto& it : stats.trimming) {
-        output.push_back(&it.read_1);
-        output.push_back(&it.read_2);
-        output.push_back(&it.merged);
-      }
-
-      write_report_summary_stats(writer, output);
-    }
-
-    if (config.adapters.barcode_count()) {
-      const std::vector<const fastq_statistics*> output = {
-        &stats.demultiplexing.unidentified_stats
-      };
-
-      WITH_SECTION(writer, "unidentified")
+      WITH_SECTION(writer, "passed")
       {
+        std::vector<const fastq_statistics*> output;
+        for (const auto& it : stats.trimming) {
+          output.push_back(&it.read_1);
+          output.push_back(&it.read_2);
+          output.push_back(&it.merged);
+        }
+
         write_report_summary_stats(writer, output);
       }
 
-    } else {
-      writer.write_null("unidentified");
-    }
+      if (config.adapters.barcode_count()) {
+        const std::vector<const fastq_statistics*> output = {
+          &stats.demultiplexing.unidentified_stats
+        };
 
-    if (demux_only) {
-      writer.write_null("discarded");
-    } else {
-      WITH_SECTION(writer, "discarded")
-      {
-        std::vector<const fastq_statistics*> discarded;
-        for (const auto& it : stats.trimming) {
-          discarded.push_back(&it.discarded);
+        WITH_SECTION(writer, "unidentified")
+        {
+          write_report_summary_stats(writer, output);
         }
 
-        write_report_summary_stats(writer, discarded);
+      } else {
+        writer.write_null("unidentified");
+      }
+
+      if (demux_only) {
+        writer.write_null("discarded");
+      } else {
+        WITH_SECTION(writer, "discarded")
+        {
+          std::vector<const fastq_statistics*> discarded;
+          for (const auto& it : stats.trimming) {
+            discarded.push_back(&it.discarded);
+          }
+
+          write_report_summary_stats(writer, discarded);
+        }
       }
     }
   }
