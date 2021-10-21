@@ -59,7 +59,7 @@ write_report_summary_stats(json_writer& writer,
   size_t n_q30 = 0;
 
   for (const auto& it : stats) {
-    n_reads += it->length_dist().sum();
+    n_reads += it->number_of_input_reads();
     n_bases += it->length_dist().product();
     n_g += it->nucleotides_pos('G').sum();
     n_c += it->nucleotides_pos('C').sum();
