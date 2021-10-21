@@ -196,6 +196,20 @@ write_report_summary(const userconfig& config,
       write_report_summary_stats(writer, output);
     }
 
+    if (config.adapters.barcode_count()) {
+      const std::vector<const fastq_statistics*> output = {
+        &stats.demultiplexing.unidentified_stats
+      };
+
+      WITH_SECTION(writer, "unidentified")
+      {
+        write_report_summary_stats(writer, output);
+      }
+
+    } else {
+      writer.write_null("unidentified");
+    }
+
     WITH_SECTION(writer, "discarded")
     {
       std::vector<const fastq_statistics*> discarded;
