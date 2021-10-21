@@ -113,7 +113,7 @@ TEST_CASE("write_vector([3])", "[json::write_vector]")
     json.write("value", r);
   }
 
-  REQUIRE(ss.str() == "{\n  \"value\": [0, null, 0.5]\n}");
+  REQUIRE(ss.str() == "{\n  \"value\": [0.000, null, 0.500]\n}");
 }
 
 TEST_CASE("write_int", "[json::write_int]")
@@ -152,7 +152,7 @@ TEST_CASE("write_float", "[json::write_float]")
     json.write_float("value", 1.3);
   }
 
-  REQUIRE(ss.str() == "{\n  \"value\": 1.300000\n}");
+  REQUIRE(ss.str() == "{\n  \"value\": 1.300\n}");
 }
 
 TEST_CASE("write_nan", "[json::write_nan]")
@@ -208,7 +208,7 @@ TEST_CASE("multiple_values", "[json::json]")
     json.write_float("value2", 13.7);
   }
 
-  REQUIRE(ss.str() == "{\n  \"value1\": true,\n  \"value2\": 13.700000\n}");
+  REQUIRE(ss.str() == "{\n  \"value1\": true,\n  \"value2\": 13.700\n}");
 }
 
 TEST_CASE("empty_nested_dict", "[json::json]")

@@ -100,7 +100,8 @@ void
 json_writer::write(const std::string& key, const counts_tmpl<T>& value)
 {
   std::stringstream ss;
-  ss << "[";
+  ss.precision(3);
+  ss << std::fixed << "[";
   for (size_t i = 0; i < value.size(); ++i) {
     if (i) {
       ss << ", ";

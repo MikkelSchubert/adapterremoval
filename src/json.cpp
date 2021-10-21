@@ -166,7 +166,11 @@ json_writer::write_float(const std::string& key, const double value)
   if (std::isnan(value)) {
     _write(key, "null");
   } else {
-    _write(key, std::to_string(value));
+    std::ostringstream out;
+    out.precision(3);
+    out << std::fixed << value;
+
+    _write(key, out.str());
   }
 }
 
