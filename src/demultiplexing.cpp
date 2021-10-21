@@ -124,6 +124,8 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
       } else {
         m_statistics->ambiguous += 1;
       }
+
+      m_statistics->unidentified_stats.process(read);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
       dst->reads_1.push_back(read);
@@ -169,6 +171,9 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
       } else {
         m_statistics->ambiguous += 2;
       }
+
+      m_statistics->unidentified_stats.process(*it_1);
+      m_statistics->unidentified_stats.process(*it_2);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
 

@@ -130,6 +130,7 @@ demultiplexing_statistics::demultiplexing_statistics()
   : barcodes()
   , unidentified(0)
   , ambiguous(0)
+  , unidentified_stats()
 {}
 
 bool

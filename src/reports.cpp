@@ -350,6 +350,13 @@ write_report_output(const userconfig& config,
       }
     }
 
+    if (config.adapters.barcode_count()) {
+      write_io_section(
+        "unidentified", writer, stats.demultiplexing.unidentified_stats);
+    } else {
+      writer.write_null("unidentified");
+    }
+
     write_io_section("discarded", writer, discarded);
   }
 }

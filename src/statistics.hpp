@@ -144,6 +144,9 @@ struct demultiplexing_statistics
   size_t unidentified;
   //! Number of reads with no single best hit
   size_t ambiguous;
+
+  //! Statistics for unidentified reads
+  fastq_statistics unidentified_stats;
 };
 
 // FIXME: Rename to ... something better
