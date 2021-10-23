@@ -38,6 +38,7 @@ class json_writer;
 class json_section
 {
 public:
+  explicit json_section(json_writer& parent);
   explicit json_section(json_writer& parent, const std::string& key);
   ~json_section();
 
@@ -61,7 +62,13 @@ public:
   ~json_writer();
 
   /** Start new sub-section. */
+  json_section start();
   json_section start(const std::string& key);
+
+  /** Start new list. */
+  void start_list(const std::string& key);
+  /** Terminate a list. */
+  void end_list();
 
   /** Write key with string value. */
   void write(const std::string& key, const std::string& value);
@@ -83,7 +90,9 @@ public:
 
 private:
   /** End current sub-section. */
-  void end();
+  void end(char c);
+  /** Writes a (assumed to be) valid JSON value. */
+  void _write(const std::string& value);
   /** Writes a key and value. The value is assumed to be a valid JSON value. */
   void _write(const std::string& key, const std::string& value);
 

@@ -72,6 +72,14 @@ _escape(const std::string& value)
   return stream.str();
 }
 
+json_section::json_section(json_writer& parent)
+  : m_parent(parent)
+{
+  m_parent._write("{");
+  m_parent.m_values = false;
+  m_parent.m_indent++;
+}
+
 json_section::json_section(json_writer& parent, const std::string& key)
   : m_parent(parent)
 {
@@ -82,7 +90,7 @@ json_section::json_section(json_writer& parent, const std::string& key)
 
 json_section::~json_section()
 {
-  m_parent.end();
+  m_parent.end('}');
 }
 
 json_writer::json_writer(std::ostream& stream)
@@ -96,8 +104,14 @@ json_writer::json_writer(std::ostream& stream)
 json_writer::~json_writer()
 {
   while (m_indent) {
-    end();
+    end('}');
   }
+}
+
+json_section
+json_writer::start()
+{
+  return json_section(*this);
 }
 
 json_section
@@ -107,17 +121,31 @@ json_writer::start(const std::string& key)
 }
 
 void
-json_writer::end()
+json_writer::end(char c)
 {
   AR_DEBUG_ASSERT(m_indent);
   if (m_values) {
-    m_stream << "\n" << std::setw(2 * m_indent - 1) << "}";
+    m_stream << "\n" << std::setw(2 * m_indent - 1) << c;
   } else {
-    m_stream << "}";
+    m_stream << c;
   }
 
   m_values = true;
   m_indent--;
+}
+
+void
+json_writer::start_list(const std::string& key)
+{
+  _write(key, "[");
+  m_values = false;
+  m_indent++;
+}
+
+void
+json_writer::end_list()
+{
+  end(']');
 }
 
 void
@@ -178,17 +206,22 @@ json_writer::write_null(const std::string& key)
 }
 
 void
-json_writer::_write(const std::string& key, const std::string& value)
+json_writer::_write(const std::string& value)
 {
   AR_DEBUG_ASSERT(m_indent);
   if (m_values) {
     m_stream << ",";
   }
 
-  const auto escaped_key = _escape(key);
-
-  m_stream << "\n"
-           << std::setw(2 * m_indent + escaped_key.size()) << escaped_key
-           << ": " << value;
+  m_stream << "\n" << std::setw(2 * m_indent + value.size()) << value;
   m_values = true;
+}
+
+void
+json_writer::_write(const std::string& key, const std::string& value)
+{
+  AR_DEBUG_ASSERT(m_indent);
+  _write(_escape(key));
+
+  m_stream << ": " << value;
 }
