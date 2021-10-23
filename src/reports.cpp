@@ -83,11 +83,11 @@ write_report_summary_stats(json_writer& writer,
 void
 write_report_trimming(const userconfig& config,
                       json_writer& writer,
-                      const ar_statistics& stats)
+                      const trimming_statistics& totals)
 {
-  trimming_statistics totals;
-  for (const auto& it : stats.trimming) {
-    totals += it;
+  if (config.run_type == ar_command::demultiplex_sequences) {
+    writer.write_null("trimming_and_filtering");
+    return;
   }
 
   WITH_SECTION(writer, "trimming_and_filtering")
@@ -188,7 +188,14 @@ write_report_summary(const userconfig& config,
       writer.write_null("demultiplexing");
     }
 
-    write_report_trimming(config, writer, stats);
+    {
+      trimming_statistics totals;
+      for (const auto& it : stats.trimming) {
+        totals += it;
+      }
+
+      write_report_trimming(config, writer, totals);
+    }
 
     WITH_SECTION(writer, "output")
     {
@@ -325,18 +332,21 @@ write_report_demultiplexing(const userconfig& config,
         for (size_t i = 0; i < demux.barcodes.size(); ++i) {
           WITH_SECTION(writer, config.adapters.get_sample_name(i))
           {
+            const auto& sample_stats = stats.trimming.at(i);
+
             writer.write_int("reads", demux.barcodes.at(i));
+
+            write_report_trimming(config, writer, sample_stats);
 
             WITH_SECTION(writer, "output")
             {
-              write_io_section("read1", writer, stats.trimming.at(i).read_1);
+              write_io_section("read1", writer, sample_stats.read_1);
 
               if (config.paired_ended_mode) {
-                write_io_section("read2", writer, stats.trimming.at(i).read_2);
+                write_io_section("read2", writer, sample_stats.read_2);
 
                 if (config.collapse && !demux_only) {
-                  write_io_section(
-                    "merged", writer, stats.trimming.at(i).merged);
+                  write_io_section("merged", writer, sample_stats.merged);
                 } else {
                   writer.write_null("merged");
                 }
@@ -348,8 +358,7 @@ write_report_demultiplexing(const userconfig& config,
               if (demux_only) {
                 writer.write_null("discarded");
               } else {
-                write_io_section(
-                  "discarded", writer, stats.trimming.at(i).discarded);
+                write_io_section("discarded", writer, sample_stats.discarded);
               }
             }
           }
