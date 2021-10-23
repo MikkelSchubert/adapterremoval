@@ -45,7 +45,6 @@ public:
 
 private:
   json_writer& m_parent;
-  std::shared_ptr<bool> m_token;
 };
 
 /**

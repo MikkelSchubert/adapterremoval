@@ -74,7 +74,6 @@ _escape(const std::string& value)
 
 json_section::json_section(json_writer& parent, const std::string& key)
   : m_parent(parent)
-  , m_token(new bool())
 {
   m_parent._write(key, "{");
   m_parent.m_values = false;
@@ -83,9 +82,7 @@ json_section::json_section(json_writer& parent, const std::string& key)
 
 json_section::~json_section()
 {
-  if (m_token.unique()) {
-    m_parent.end();
-  }
+  m_parent.end();
 }
 
 json_writer::json_writer(std::ostream& stream)
