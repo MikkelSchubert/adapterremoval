@@ -97,22 +97,30 @@ write_report_trimming(const userconfig& config,
     writer.write_int("adapter_trimmed_bases",
                      totals.adapter_trimmed_bases.sum());
 
-    if (config.adapters.adapter_count() > 1) {
-      WITH_SECTION(writer, "adapters")
-      {
-        for (size_t i = 0; i < config.adapters.adapter_count(); ++i) {
-          const auto& adapters = config.adapters.get_raw_adapters();
+    const auto& adapters = config.adapters.get_raw_adapters();
+    if (adapters.size() == 1) {
+      writer.write("adapter_sequence_1", adapters.front().first.sequence());
+      writer.write("adapter_sequence_2", adapters.front().second.sequence());
 
-          writer.write("adapter_sequence_1", adapters.at(i).first.sequence());
-          writer.write("adapter_sequence_2", adapters.at(i).second.sequence());
-          writer.write_int("adapter_trimmed_reads",
-                           totals.adapter_trimmed_reads.get(i));
-          writer.write_int("adapter_trimmed_bases",
-                           totals.adapter_trimmed_bases.get(i));
-        }
-      }
+      writer.write_null("adapter_sequences");
     } else {
-      writer.write_null("adapters");
+      writer.write_null("adapter_sequence_1");
+      writer.write_null("adapter_sequence_2");
+
+      writer.start_list("adapter_sequences");
+
+      for (size_t i = 0; i < adapters.size(); ++i) {
+        const auto _section = writer.start();
+
+        writer.write("adapter_sequence_1", adapters.at(i).first.sequence());
+        writer.write("adapter_sequence_2", adapters.at(i).second.sequence());
+        writer.write_int("adapter_trimmed_reads",
+                         totals.adapter_trimmed_reads.get(i));
+        writer.write_int("adapter_trimmed_bases",
+                         totals.adapter_trimmed_bases.get(i));
+      }
+
+      writer.end_list();
     }
 
     writer.write_int("overlapping_reads_merged",
