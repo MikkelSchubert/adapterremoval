@@ -92,10 +92,10 @@ private:
   friend class split_fastq;
   friend class gzip_split_fastq;
 
-  //! Lines read from the mate 1 and mate 2 files
-  string_vec reads;
+  //! Encoded FASTQ reads
+  std::string reads;
 
-  //! Buffers of compressed lines
+  //! Buffers of (compressed) FASTQ reads
   buffer_vec buffers;
 };
 

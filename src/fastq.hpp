@@ -163,7 +163,8 @@ public:
    * quality bases are truncated to 0 .. 40, while phred_33 supports quality
    * scores in the range 0 .. 41.
    */
-  std::string to_str(const fastq_encoding& encoding = FASTQ_ENCODING_33) const;
+  void into_string(std::string& dst,
+                   const fastq_encoding& encoding = FASTQ_ENCODING_33) const;
 
   /** Converts an error-probability to a Phred+33 encoded quality score. **/
   static char p_to_phred_33(double p);

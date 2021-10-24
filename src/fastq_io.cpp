@@ -165,7 +165,7 @@ fastq_output_chunk::add(const fastq_encoding& encoding,
                         size_t count_)
 {
   count += count_;
-  reads.push_back(read.to_str(encoding));
+  read.into_string(reads, encoding);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -400,30 +400,6 @@ read_interleaved_fastq::finalize()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Utility function used by both gzip and bzip compression steps
-
-/**
- * Writes a set of lines into a buffer, and returns the size of the buffer and
- * the buffer itself as a pair. */
-buffer_pair
-build_input_buffer(const string_vec& lines)
-{
-  size_t buffer_size = 0;
-  for (const auto& line : lines) {
-    buffer_size += line.size();
-  }
-
-  buffer_ptr input_buffer(new unsigned char[buffer_size]);
-  unsigned char* input_buffer_ptr = input_buffer.get();
-  for (const auto& line : lines) {
-    std::memcpy(input_buffer_ptr, line.data(), line.size());
-    input_buffer_ptr += line.size();
-  }
-
-  return buffer_pair(buffer_size, std::move(input_buffer));
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'bzip2_fastq'
 
 bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
@@ -494,11 +470,8 @@ bzip2_fastq::process(analytical_chunk* chunk)
     return chunk_vec();
   }
 
-  buffer_pair input_buffer = build_input_buffer(file_chunk->reads);
-  file_chunk->reads.clear();
-
-  m_stream.avail_in = input_buffer.first;
-  m_stream.next_in = reinterpret_cast<char*>(input_buffer.second.get());
+  m_stream.avail_in = file_chunk->reads.size();
+  m_stream.next_in = const_cast<char*>(file_chunk->reads.data());
 
   if (m_stream.avail_in || m_eof) {
     int errorcode = -1;
@@ -537,6 +510,8 @@ bzip2_fastq::process(analytical_chunk* chunk)
       }
     } while (m_stream.avail_in || errorcode == BZ_FINISH_OK);
   }
+
+  file_chunk->reads.clear();
 
   chunk_vec chunks;
   if (!file_chunk->buffers.empty() || m_eof) {
@@ -586,30 +561,29 @@ gzip_fastq::process(analytical_chunk* chunk)
     return chunk_vec();
   }
 
-  buffer_pair input_buffer = build_input_buffer(file_chunk->reads);
   buffer_pair output_buffer;
+
+  m_stream.avail_in = file_chunk->reads.size();
+  m_stream.next_in = reinterpret_cast<unsigned char*>(
+    const_cast<char*>(file_chunk->reads.data()));
+
+  int returncode = -1;
+  do {
+    output_buffer.first = FASTQ_COMPRESSED_CHUNK;
+    output_buffer.second.reset(new unsigned char[FASTQ_COMPRESSED_CHUNK]);
+
+    m_stream.avail_out = output_buffer.first;
+    m_stream.next_out = output_buffer.second.get();
+
+    returncode = checked_deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
+
+    output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
+    if (output_buffer.first) {
+      file_chunk->buffers.push_back(std::move(output_buffer));
+    }
+  } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
+
   file_chunk->reads.clear();
-
-  if (input_buffer.first || m_eof) {
-    m_stream.avail_in = input_buffer.first;
-    m_stream.next_in = input_buffer.second.get();
-    int returncode = -1;
-
-    do {
-      output_buffer.first = FASTQ_COMPRESSED_CHUNK;
-      output_buffer.second.reset(new unsigned char[FASTQ_COMPRESSED_CHUNK]);
-
-      m_stream.avail_out = output_buffer.first;
-      m_stream.next_out = output_buffer.second.get();
-
-      returncode = checked_deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
-
-      output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
-      if (output_buffer.first) {
-        file_chunk->buffers.push_back(std::move(output_buffer));
-      }
-    } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
-  }
 
   chunk_vec chunks;
   if (!file_chunk->buffers.empty() || m_eof) {
@@ -657,30 +631,31 @@ split_fastq::process(analytical_chunk* chunk)
   m_eof = file_chunk->eof;
 
   chunk_vec chunks;
-  for (const auto& line : file_chunk->reads) {
-    size_t line_offset = 0;
-    do {
-      const auto n = std::min(line.size() - line_offset, BLOCK_SIZE - m_offset);
-      std::memcpy(m_buffer.get() + m_offset, line.data() + line_offset, n);
+  const auto& src = file_chunk->reads;
+  for (size_t src_offset = 0; src_offset < src.size();) {
+    const auto n = std::min(src.size() - src_offset, BLOCK_SIZE - m_offset);
+    std::memcpy(m_buffer.get() + m_offset, src.data() + src_offset, n);
 
-      line_offset += n;
-      m_offset += n;
+    src_offset += n;
+    m_offset += n;
 
-      if (m_offset == BLOCK_SIZE) {
-        output_chunk_ptr block(new fastq_output_chunk());
-        block->buffers.emplace_back(BLOCK_SIZE, std::move(m_buffer));
-        block->count = m_count;
+    if (m_offset == BLOCK_SIZE) {
+      output_chunk_ptr block(new fastq_output_chunk());
+      block->buffers.emplace_back(BLOCK_SIZE, std::move(m_buffer));
+      block->count = m_count;
 
-        chunks.emplace_back(m_next_step, std::move(block));
+      chunks.emplace_back(m_next_step, std::move(block));
 
-        m_buffer.reset(new unsigned char[BLOCK_SIZE]);
-        m_offset = 0;
-        m_count = 0;
-      }
-    } while (line_offset < line.size());
-
-    m_count++;
+      m_buffer.reset(new unsigned char[BLOCK_SIZE]);
+      m_offset = 0;
+      m_count = 0;
+    }
   }
+
+  // The next chunk will contain the last of these reads; incrementing the timer
+  // then is easier than trying to figure out how many reads are in each buffer.
+  // We ignore the case were m_buffer is currently empty to keep things simple.
+  m_count += file_chunk->count;
 
   if (m_eof) {
     output_chunk_ptr block(new fastq_output_chunk(true));
@@ -772,7 +747,7 @@ write_fastq::process(analytical_chunk* chunk)
   try {
     m_eof = file_chunk->eof;
     if (file_chunk->buffers.empty()) {
-      m_output.write_strings(file_chunk->reads, m_eof);
+      m_output.write_string(file_chunk->reads, m_eof);
     } else {
       AR_DEBUG_ASSERT(file_chunk->reads.empty());
 

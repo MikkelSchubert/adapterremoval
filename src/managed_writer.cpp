@@ -91,16 +91,13 @@ managed_writer::write_buffers(const buffer_vec& buffers, bool flush)
 }
 
 void
-managed_writer::write_strings(const string_vec& strings, bool flush)
+managed_writer::write_string(const std::string& str, bool flush)
 {
   std::lock_guard<std::mutex> lock(g_writer_lock);
-  if (strings.size() || flush) {
+  if (str.size() || flush) {
     managed_writer::open_writer(this);
 
-    for (const auto& str : strings) {
-      m_stream.write(str.data(), str.length());
-    }
-
+    m_stream.write(str.data(), str.length());
     if (flush) {
       m_stream.flush();
     }

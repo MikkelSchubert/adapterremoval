@@ -323,22 +323,16 @@ fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
   return true;
 }
 
-std::string
-fastq::to_str(const fastq_encoding& encoding) const
+void
+fastq::into_string(std::string& dst, const fastq_encoding& encoding) const
 {
-  std::string result;
-  // Size of header, sequence, qualities, 4 new-lines, '@' and '+'
-  result.reserve(m_header.size() + m_sequence.size() * 2 + 6);
-
-  result.push_back('@');
-  result.append(m_header);
-  result.push_back('\n');
-  result.append(m_sequence);
-  result.append("\n+\n", 3);
-  encoding.encode(m_qualities, result);
-  result.push_back('\n');
-
-  return result;
+  dst.push_back('@');
+  dst.append(m_header);
+  dst.push_back('\n');
+  dst.append(m_sequence);
+  dst.append("\n+\n", 3);
+  encoding.encode(m_qualities, dst);
+  dst.push_back('\n');
 }
 
 ///////////////////////////////////////////////////////////////////////////////
