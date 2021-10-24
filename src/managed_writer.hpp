@@ -24,11 +24,13 @@
 #pragma once
 
 #include <fstream>
+#include <memory>
 #include <vector>
 
 #include "commontypes.hpp"
 
-typedef std::pair<size_t, unsigned char*> buffer_pair;
+typedef std::unique_ptr<unsigned char[]> buffer_ptr;
+typedef std::pair<size_t, buffer_ptr> buffer_pair;
 typedef std::vector<buffer_pair> buffer_vec;
 
 /**

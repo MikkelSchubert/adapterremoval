@@ -75,9 +75,6 @@ public:
   /** Constructor; does nothing. */
   fastq_output_chunk(bool eof_ = false);
 
-  /** Destructor; frees buffers. */
-  ~fastq_output_chunk();
-
   /** Add FASTQ read, accounting for one or more input reads. */
   void add(const fastq_encoding& encoding, const fastq& read, size_t count = 1);
 
@@ -345,7 +342,7 @@ private:
   //! The analytical step following this step
   const size_t m_next_step;
   //! Buffer used to store partial blocks
-  unsigned char* m_buffer;
+  buffer_ptr m_buffer;
   //! Offset in current buffer
   size_t m_offset;
   //! Number of reads written to current buffer
