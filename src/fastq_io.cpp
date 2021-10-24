@@ -65,6 +65,82 @@ read_fastq_reads(fastq_vec& dst,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Helper functions for 'zlib'
+
+void
+checked_deflate_init2(z_streamp stream, unsigned int level)
+{
+  AR_DEBUG_ASSERT(stream);
+  stream->zalloc = nullptr;
+  stream->zfree = nullptr;
+  stream->opaque = nullptr;
+
+  const int errorcode = deflateInit2(/* strm       = */ stream,
+                                     /* level      = */ level,
+                                     /* method     = */ Z_DEFLATED,
+                                     /* windowBits = */ 15 + 16,
+                                     /* memLevel   = */ 8,
+                                     /* strategy   = */ Z_DEFAULT_STRATEGY);
+
+  switch (errorcode) {
+    case Z_OK:
+      break;
+
+    case Z_MEM_ERROR:
+      throw thread_error("gzip deflateInit2: not enough memory");
+
+    case Z_STREAM_ERROR:
+      throw thread_error("gzip deflateInit2: invalid parameters");
+
+    case Z_VERSION_ERROR:
+      throw thread_error("gzip deflateInit2: incompatible zlib version");
+
+    default:
+      throw thread_error("gzip deflateInit2: unknown error");
+  }
+}
+
+int
+checked_deflate(z_streamp stream, int flush)
+{
+  const int errorcode = deflate(stream, flush);
+  switch (errorcode) {
+    case Z_OK:
+    case Z_STREAM_END:
+      break;
+
+    case Z_BUF_ERROR:
+      throw thread_error("gzip deflate: buf error");
+
+    case Z_STREAM_ERROR:
+      throw thread_error("gzip deflate: stream error");
+
+    default:
+      throw thread_error("gzip deflate: unknown error");
+  }
+
+  return errorcode;
+}
+
+void
+checked_deflate_end(z_streamp stream)
+{
+  switch (deflateEnd(stream)) {
+    case Z_OK:
+      break;
+
+    case Z_STREAM_ERROR:
+      throw thread_error("gzip deflateEnd: stream error");
+
+    case Z_DATA_ERROR:
+      throw thread_error("gzip deflateEnd: data error");
+
+    default:
+      throw thread_error("gzip deflateEnd: unknown error");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_read_chunk'
 
 fastq_read_chunk::fastq_read_chunk(bool eof_)
@@ -519,33 +595,7 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   , m_eof(false)
   , m_lock()
 {
-  m_stream.zalloc = nullptr;
-  m_stream.zfree = nullptr;
-  m_stream.opaque = nullptr;
-
-  const int errorcode = deflateInit2(/* strm       = */ &m_stream,
-                                     /* level      = */ config.gzip_level,
-                                     /* method     = */ Z_DEFLATED,
-                                     /* windowBits = */ 15 + 16,
-                                     /* memLevel   = */ 8,
-                                     /* strategy   = */ Z_DEFAULT_STRATEGY);
-
-  switch (errorcode) {
-    case Z_OK:
-      break;
-
-    case Z_MEM_ERROR:
-      throw thread_error("gzip_fastq: not enough memory");
-
-    case Z_STREAM_ERROR:
-      throw thread_error("gzip_fastq: invalid parameters");
-
-    case Z_VERSION_ERROR:
-      throw thread_error("gzip_fastq: incompatible zlib version");
-
-    default:
-      throw thread_error("gzip_fastq: unknown error");
-  }
+  checked_deflate_init2(&m_stream, config.gzip_level);
 }
 
 void
@@ -556,20 +606,7 @@ gzip_fastq::finalize()
     throw thread_error("gzip_fastq::finalize: terminated before EOF");
   }
 
-  const int errorcode = deflateEnd(&m_stream);
-  if (errorcode != Z_OK) {
-    print_locker lock;
-    switch (errorcode) {
-      case Z_STREAM_ERROR:
-        throw thread_error("gzip_fastq::finalize: stream error");
-
-      case Z_DATA_ERROR:
-        throw thread_error("gzip_fastq::finalize: data error");
-
-      default:
-        throw thread_error("Unknown error in gzip_fastq::finalize");
-    }
-  }
+  checked_deflate_end(&m_stream);
 }
 
 chunk_vec
@@ -606,21 +643,7 @@ gzip_fastq::process(analytical_chunk* chunk)
         m_stream.avail_out = output_buffer.first;
         m_stream.next_out = output_buffer.second;
 
-        returncode = deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
-        switch (returncode) {
-          case Z_OK:
-          case Z_STREAM_END:
-            break;
-
-          case Z_BUF_ERROR:
-            throw thread_error("gzip_fastq::process: buf error");
-
-          case Z_STREAM_ERROR:
-            throw thread_error("gzip_fastq::process: stream error");
-
-          default:
-            throw thread_error("gzip_fastq::process: unknown error");
-        }
+        returncode = checked_deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
 
         output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
         if (output_buffer.first) {
@@ -748,33 +771,7 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   AR_DEBUG_ASSERT(input_chunk->buffers.size() == 1);
 
   z_stream stream;
-  stream.zalloc = nullptr;
-  stream.zfree = nullptr;
-  stream.opaque = nullptr;
-
-  int errorcode = deflateInit2(/* strm       = */ &stream,
-                               /* level      = */ m_config.gzip_level,
-                               /* method     = */ Z_DEFLATED,
-                               /* windowBits = */ 15 + 16,
-                               /* memLevel   = */ 8,
-                               /* strategy   = */ Z_DEFAULT_STRATEGY);
-
-  switch (errorcode) {
-    case Z_OK:
-      break;
-
-    case Z_MEM_ERROR:
-      throw thread_error("gzip_split_fastq: not enough memory");
-
-    case Z_STREAM_ERROR:
-      throw thread_error("gzip_split_fastq: invalid parameters");
-
-    case Z_VERSION_ERROR:
-      throw thread_error("gzip_split_fastq: incompatible zlib version");
-
-    default:
-      throw thread_error("gzip_split_fastq: unknown error");
-  }
+  checked_deflate_init2(&stream, m_config.gzip_level);
 
   chunk_vec chunks;
   buffer_pair input_buffer = input_chunk->buffers.front();
@@ -782,7 +779,6 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   try {
     stream.avail_in = input_buffer.first;
     stream.next_in = input_buffer.second;
-    errorcode = -1;
 
     output_buffer.first = BLOCK_SIZE;
     output_buffer.second = new unsigned char[BLOCK_SIZE];
@@ -790,24 +786,9 @@ gzip_split_fastq::process(analytical_chunk* chunk)
     stream.avail_out = output_buffer.first;
     stream.next_out = output_buffer.second;
 
-    errorcode = deflate(&stream, Z_FINISH);
-    switch (errorcode) {
-      case Z_OK:
-      case Z_STREAM_END:
-        break;
-
-      case Z_BUF_ERROR:
-        throw thread_error("gzip_split_fastq::process: buf error");
-
-      case Z_STREAM_ERROR:
-        throw thread_error("gzip_split_fastq::process: stream error");
-
-      default:
-        throw thread_error("gzip_split_fastq::process: unknown error");
-    }
-
     // The easily compressible input should fit in a single output block
-    AR_DEBUG_ASSERT(stream.avail_out && errorcode == Z_STREAM_END);
+    const int returncode = checked_deflate(&stream, Z_FINISH);
+    AR_DEBUG_ASSERT(stream.avail_out && returncode == Z_STREAM_END);
 
     output_chunk_ptr block(new fastq_output_chunk(input_chunk->eof));
     output_buffer.first = BLOCK_SIZE - stream.avail_out;
@@ -821,19 +802,7 @@ gzip_split_fastq::process(analytical_chunk* chunk)
     throw;
   }
 
-  errorcode = deflateEnd(&stream);
-  if (errorcode != Z_OK) {
-    switch (errorcode) {
-      case Z_STREAM_ERROR:
-        throw thread_error("gzip_split_fastq::finalize: stream error");
-
-      case Z_DATA_ERROR:
-        throw thread_error("gzip_split_fastq::finalize: data error");
-
-      default:
-        throw thread_error("Unknown error in gzip_split_fastq::finalize");
-    }
-  }
+  checked_deflate_end(&stream);
 
   return chunks;
 }
