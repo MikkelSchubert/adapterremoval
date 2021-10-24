@@ -157,10 +157,7 @@ fastq_output_chunk::fastq_output_chunk(bool eof_)
   , count(0)
   , reads()
   , buffers()
-{
-  reads.reserve(FASTQ_CHUNK_SIZE);
-}
-
+{}
 fastq_output_chunk::~fastq_output_chunk()
 {
   for (auto& buffer : buffers) {
