@@ -364,7 +364,7 @@ build_input_buffer(const string_vec& lines)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'gzip_fastq'
+// Implementations for 'bzip2_fastq'
 
 bzip2_fastq::bzip2_fastq(const userconfig& config, size_t next_step)
   : analytical_step(analytical_step::ordering::ordered, false)
@@ -648,6 +648,191 @@ gzip_fastq::process(analytical_chunk* chunk)
     m_buffered_reads = 0;
   } else {
     m_buffered_reads += file_chunk->count;
+  }
+
+  return chunks;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'split_fastq'
+
+const size_t BLOCK_SIZE = 64 * 1024;
+
+split_fastq::split_fastq(size_t next_step)
+  : analytical_step(analytical_step::ordering::ordered, false)
+  , m_next_step(next_step)
+  , m_buffer(new unsigned char[BLOCK_SIZE])
+  , m_offset()
+  , m_count()
+  , m_eof(false)
+  , m_lock()
+{}
+
+void
+split_fastq::finalize()
+{
+  AR_DEBUG_LOCK(m_lock);
+  if (!m_eof) {
+    throw thread_error("split_fastq::finalize: terminated before EOF");
+  }
+
+  AR_DEBUG_ASSERT(!m_buffer);
+}
+
+chunk_vec
+split_fastq::process(analytical_chunk* chunk)
+{
+  output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+
+  AR_DEBUG_LOCK(m_lock);
+  if (m_eof) {
+    throw thread_error("split_fastq::process: received data after EOF");
+  }
+
+  m_eof = file_chunk->eof;
+
+  chunk_vec chunks;
+  for (const auto& line : file_chunk->reads) {
+    size_t line_offset = 0;
+    do {
+      const auto n = std::min(line.size() - line_offset, BLOCK_SIZE - m_offset);
+      std::memcpy(m_buffer + m_offset, line.data() + line_offset, n);
+
+      line_offset += n;
+      m_offset += n;
+
+      if (m_offset == BLOCK_SIZE) {
+        output_chunk_ptr block(new fastq_output_chunk());
+        block->buffers.push_back(buffer_pair(BLOCK_SIZE, m_buffer));
+        block->count = m_count;
+
+        chunks.push_back(chunk_pair(m_next_step, std::move(block)));
+
+        m_buffer = new unsigned char[BLOCK_SIZE];
+        m_offset = 0;
+        m_count = 0;
+      }
+    } while (line_offset < line.size());
+
+    m_count++;
+  }
+
+  if (m_eof) {
+    output_chunk_ptr block(new fastq_output_chunk(true));
+    block->buffers.push_back(buffer_pair(m_offset, m_buffer));
+    block->count = m_count;
+
+    chunks.push_back(chunk_pair(m_next_step, std::move(block)));
+
+    m_buffer = NULL;
+    m_offset = 0;
+    m_count = 0;
+  }
+
+  return chunks;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'gzip_split_fastq'
+
+gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
+  : analytical_step(analytical_step::ordering::unordered, false)
+  , m_config(config)
+  , m_next_step(next_step)
+{}
+
+chunk_vec
+gzip_split_fastq::process(analytical_chunk* chunk)
+{
+  output_chunk_ptr input_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+  AR_DEBUG_ASSERT(input_chunk->buffers.size() == 1);
+
+  z_stream stream;
+  stream.zalloc = nullptr;
+  stream.zfree = nullptr;
+  stream.opaque = nullptr;
+
+  int errorcode = deflateInit2(/* strm       = */ &stream,
+                               /* level      = */ m_config.gzip_level,
+                               /* method     = */ Z_DEFLATED,
+                               /* windowBits = */ 15 + 16,
+                               /* memLevel   = */ 8,
+                               /* strategy   = */ Z_DEFAULT_STRATEGY);
+
+  switch (errorcode) {
+    case Z_OK:
+      break;
+
+    case Z_MEM_ERROR:
+      throw thread_error("gzip_split_fastq: not enough memory");
+
+    case Z_STREAM_ERROR:
+      throw thread_error("gzip_split_fastq: invalid parameters");
+
+    case Z_VERSION_ERROR:
+      throw thread_error("gzip_split_fastq: incompatible zlib version");
+
+    default:
+      throw thread_error("gzip_split_fastq: unknown error");
+  }
+
+  chunk_vec chunks;
+  buffer_pair input_buffer = input_chunk->buffers.front();
+  buffer_pair output_buffer;
+  try {
+    stream.avail_in = input_buffer.first;
+    stream.next_in = input_buffer.second;
+    errorcode = -1;
+
+    output_buffer.first = BLOCK_SIZE;
+    output_buffer.second = new unsigned char[BLOCK_SIZE];
+
+    stream.avail_out = output_buffer.first;
+    stream.next_out = output_buffer.second;
+
+    errorcode = deflate(&stream, Z_FINISH);
+    switch (errorcode) {
+      case Z_OK:
+      case Z_STREAM_END:
+        break;
+
+      case Z_BUF_ERROR:
+        throw thread_error("gzip_split_fastq::process: buf error");
+
+      case Z_STREAM_ERROR:
+        throw thread_error("gzip_split_fastq::process: stream error");
+
+      default:
+        throw thread_error("gzip_split_fastq::process: unknown error");
+    }
+
+    // The easily compressible input should fit in a single output block
+    AR_DEBUG_ASSERT(stream.avail_out && errorcode == Z_STREAM_END);
+
+    output_chunk_ptr block(new fastq_output_chunk(input_chunk->eof));
+    output_buffer.first = BLOCK_SIZE - stream.avail_out;
+    block->buffers.push_back(output_buffer);
+    block->count = input_chunk->count;
+    output_buffer.second = nullptr;
+
+    chunks.push_back(chunk_pair(m_next_step, std::move(block)));
+  } catch (...) {
+    delete[] output_buffer.second;
+    throw;
+  }
+
+  errorcode = deflateEnd(&stream);
+  if (errorcode != Z_OK) {
+    switch (errorcode) {
+      case Z_STREAM_ERROR:
+        throw thread_error("gzip_split_fastq::finalize: stream error");
+
+      case Z_DATA_ERROR:
+        throw thread_error("gzip_split_fastq::finalize: data error");
+
+      default:
+        throw thread_error("Unknown error in gzip_split_fastq::finalize");
+    }
   }
 
   return chunks;

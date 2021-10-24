@@ -57,9 +57,19 @@ add_write_step(const userconfig& config,
                analytical_step* step)
 {
   if (config.gzip) {
+    if (config.gzip_blocks) {
+      sch.add_step(
+        offset, "split_" + name, new split_fastq(offset + ai_split_offset));
+
+      sch.add_step(offset + ai_split_offset,
+                   "gzip_" + name,
+                   new gzip_split_fastq(config, offset + ai_zip_offset));
+    } else {
+      sch.add_step(
+        offset, "gzip_" + name, new gzip_fastq(config, offset + ai_zip_offset));
+    }
+
     sch.add_step(offset + ai_zip_offset, "write_gzip_" + name, step);
-    sch.add_step(
-      offset, "gzip_" + name, new gzip_fastq(config, offset + ai_zip_offset));
   } else if (config.bzip2) {
     sch.add_step(offset + ai_zip_offset, "write_bzip2_" + name, step);
     sch.add_step(

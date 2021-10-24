@@ -81,13 +81,17 @@ enum analyses_id
   //! Step for trimming of SE reads
   ai_trim_se = 20,
 
-  //! Offset added to write steps when zipping
-  ai_zip_offset = 10,
-
   //! Steps for writing of trimmed reads
   ai_write_mate_1 = 21,
   ai_write_mate_2 = 22,
   ai_write_singleton = 23,
   ai_write_collapsed = 24,
-  ai_write_discarded = 25
+  ai_write_discarded = 25,
+
+  //! Offset added to write steps when splitting
+  ai_split_offset = 10,
+
+  //! Offset added to write steps when zipping
+  ai_zip_offset = 20,
+
 };

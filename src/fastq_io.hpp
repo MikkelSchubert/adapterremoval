@@ -92,6 +92,8 @@ private:
   friend class gzip_fastq;
   friend class bzip2_fastq;
   friend class write_fastq;
+  friend class split_fastq;
+  friend class gzip_split_fastq;
 
   //! Lines read from the mate 1 and mate 2 files
   string_vec reads;
@@ -320,6 +322,62 @@ private:
   bool m_eof;
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
+};
+
+/**
+ * Splits input into chunks that can be GZipped in parallel.
+ */
+class split_fastq : public analytical_step
+{
+public:
+  /** Constructor; 'next_step' sets the destination of compressed chunks. */
+  split_fastq(size_t next_step);
+
+  virtual chunk_vec process(analytical_chunk* chunk);
+  virtual void finalize();
+
+  //! Copy construction not supported
+  split_fastq(const split_fastq&) = delete;
+  //! Assignment not supported
+  split_fastq& operator=(const split_fastq&) = delete;
+
+private:
+  //! The analytical step following this step
+  const size_t m_next_step;
+  //! Buffer used to store partial blocks
+  unsigned char* m_buffer;
+  //! Offset in current buffer
+  size_t m_offset;
+  //! Number of reads written to current buffer
+  size_t m_count;
+
+  //! Used to track whether an EOF block has been received.
+  bool m_eof;
+  //! Lock used to verify that the analytical_step is only run sequentially.
+  std::mutex m_lock;
+};
+
+/**
+ * GZip compression step; takes any lines in the input chunk, compresses them,
+ * and adds them to the buffer list of the chunk, before forwarding it. */
+class gzip_split_fastq : public analytical_step
+{
+public:
+  /** Constructor; 'next_step' sets the destination of compressed chunks. */
+  gzip_split_fastq(const userconfig& config, size_t next_step);
+
+  /** Compresses input lines, saving compressed chunks to chunk->buffers. */
+  virtual chunk_vec process(analytical_chunk* chunk);
+
+  //! Copy construction not supported
+  gzip_split_fastq(const gzip_split_fastq&) = delete;
+  //! Assignment not supported
+  gzip_split_fastq& operator=(const gzip_split_fastq&) = delete;
+
+private:
+  const userconfig& m_config;
+  //! The analytical step following this step
+  const size_t m_next_step;
 };
 
 /**
