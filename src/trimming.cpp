@@ -167,7 +167,7 @@ se_reads_processor::se_reads_processor(const userconfig& config, size_t nth)
 chunk_vec
 se_reads_processor::process(analytical_chunk* chunk)
 {
-  const size_t offset = m_nth * ai_analyses_offset;
+  const size_t offset = (m_nth + 1) * ai_analyses_offset;
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, offset, read_chunk->eof);
@@ -215,7 +215,7 @@ pe_reads_processor::pe_reads_processor(const userconfig& config, size_t nth)
 chunk_vec
 pe_reads_processor::process(analytical_chunk* chunk)
 {
-  const size_t offset = m_nth * ai_analyses_offset;
+  const size_t offset = (m_nth + 1) * ai_analyses_offset;
   const char mate_separator =
     m_config.combined_output ? '\0' : m_config.mate_separator;
 

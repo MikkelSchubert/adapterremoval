@@ -120,7 +120,7 @@ remove_adapter_sequences_se(const userconfig& config)
 
     // Step 3 - N: Trim and write demultiplexed reads
     for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-      const size_t offset = nth * ai_analyses_offset;
+      const size_t offset = (nth + 1) * ai_analyses_offset;
       const std::string& sample = config.adapters.get_sample_name(nth);
 
       processors.push_back(new se_reads_processor(config, nth));
@@ -223,7 +223,7 @@ remove_adapter_sequences_pe(const userconfig& config)
 
     // Step 3 - N: Trim and write demultiplexed reads
     for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-      const size_t offset = nth * ai_analyses_offset;
+      const size_t offset = (nth + 1) * ai_analyses_offset;
       const std::string& sample = config.adapters.get_sample_name(nth);
 
       processors.push_back(new pe_reads_processor(config, nth));

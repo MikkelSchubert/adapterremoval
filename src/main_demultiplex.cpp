@@ -66,7 +66,7 @@ public:
 
   chunk_vec process(analytical_chunk* chunk)
   {
-    const size_t offset = m_nth * ai_analyses_offset;
+    const size_t offset = (m_nth + 1) * ai_analyses_offset;
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     auto stats = m_stats.acquire();
@@ -96,7 +96,7 @@ public:
 
   chunk_vec process(analytical_chunk* chunk)
   {
-    const size_t offset = m_nth * ai_analyses_offset;
+    const size_t offset = (m_nth + 1) * ai_analyses_offset;
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
@@ -171,7 +171,7 @@ demultiplex_sequences_se(const userconfig& config)
 
     // Step 3 - N: Trim and write demultiplexed reads
     for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-      const size_t offset = nth * ai_analyses_offset;
+      const size_t offset = (nth + 1) * ai_analyses_offset;
       const std::string& sample = config.adapters.get_sample_name(nth);
 
       processors.push_back(new se_demultiplexed_reads_processor(config, nth));
@@ -253,7 +253,7 @@ demultiplex_sequences_pe(const userconfig& config)
 
     // Step 3 - N: Write demultiplexed reads
     for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-      const size_t offset = nth * ai_analyses_offset;
+      const size_t offset = (nth + 1) * ai_analyses_offset;
       const std::string& sample = config.adapters.get_sample_name(nth);
 
       processors.push_back(new pe_demultiplexed_reads_processor(config, nth));

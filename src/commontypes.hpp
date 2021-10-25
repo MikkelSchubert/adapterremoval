@@ -61,37 +61,36 @@ enum analyses_id
   ai_read_fastq = 0,
 
   //! Step for demultiplexing SE or PE reads
-  ai_demultiplex,
+  ai_demultiplex = 1,
 
   //! Step for writing mate 1 reads which were not identified
-  ai_write_unidentified_1,
+  ai_write_unidentified_1 = 2,
   //! Step for writing mate 2 reads which were not identified
-  ai_write_unidentified_2,
+  ai_write_unidentified_2 = 5,
 
   //! Offset for post-demultiplexing analytical steps
   //! If enabled, the demultiplexing step will forward reads to the
-  //! nth * ai_analyses_offset analytical step, corresponding to the
+  //! (nth + 1) * ai_analyses_offset analytical step, corresponding to the
   //! barcode number.
-  ai_analyses_offset = 20,
+  ai_analyses_offset = 16,
 
   //! Step for reading adapter identification
-  ai_identify_adapters = 20,
+  ai_identify_adapters = 0,
   //! Step for trimming of PE reads
-  ai_trim_pe = 20,
+  ai_trim_pe = 0,
   //! Step for trimming of SE reads
-  ai_trim_se = 20,
+  ai_trim_se = 0,
 
   //! Steps for writing of trimmed reads
-  ai_write_mate_1 = 21,
-  ai_write_mate_2 = 22,
-  ai_write_singleton = 23,
-  ai_write_collapsed = 24,
-  ai_write_discarded = 25,
+  ai_write_mate_1 = 1,
+  ai_write_mate_2 = 4,
+  ai_write_singleton = 7,
+  ai_write_collapsed = 10,
+  ai_write_discarded = 13,
 
   //! Offset added to write steps when splitting
-  ai_split_offset = 10,
+  ai_split_offset = 1,
 
   //! Offset added to write steps when zipping
-  ai_zip_offset = 20,
-
+  ai_zip_offset = 2,
 };
