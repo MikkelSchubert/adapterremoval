@@ -145,7 +145,7 @@ reads_processor::reads_processor(const userconfig& config, size_t nth)
   , m_nth(nth)
 {
   for (size_t i = 0; i < m_config.max_threads; ++i) {
-    m_stats.emplace_back();
+    m_stats.emplace_back(m_config.report_sample_rate);
   }
 }
 

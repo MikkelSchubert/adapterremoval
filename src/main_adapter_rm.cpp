@@ -86,7 +86,7 @@ remove_adapter_sequences_se(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  ar_statistics stats;
+  ar_statistics stats(config.report_sample_rate);
 
   try {
     if (config.adapters.barcode_count()) {
@@ -173,7 +173,7 @@ remove_adapter_sequences_pe(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  ar_statistics stats;
+  ar_statistics stats(config.report_sample_rate);
 
   try {
     // Step 1: Read input file

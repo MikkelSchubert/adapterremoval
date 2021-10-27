@@ -140,6 +140,7 @@ userconfig::userconfig(const std::string& name,
   , barcode_mm_r1(0)
   , barcode_mm_r2(0)
   , adapters()
+  , report_sample_rate(0.1)
   , argparser(name, version, help)
   , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCA")
   , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
@@ -444,6 +445,14 @@ userconfig::userconfig(const std::string& name,
     "Only carry out demultiplexing using the list of barcodes "
     "supplied with --barcode-list. No other processing is done.");
 
+  argparser.add_header("REPORTS:");
+  argparser["--report-sample-rate"] = new argparse::floaty_knob(
+    &report_sample_rate,
+    "X",
+    "Fraction of reads to use when generating base quality/composition curves "
+    "for trimming reports. Using all data (--report-sample-nth 1.0) results in "
+    "an about 10-30% decrease in throughput depending on settings [%default]");
+
   // Required options
   argparser.option_requires("--demultiplex-only", "--barcode-list");
 
@@ -628,13 +637,6 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   return argparse::parse_result::ok;
-}
-
-statistics_ptr
-userconfig::create_stats() const
-{
-  statistics_ptr stats(new trimming_statistics());
-  return stats;
 }
 
 bool

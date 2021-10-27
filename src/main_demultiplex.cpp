@@ -146,7 +146,7 @@ demultiplex_sequences_se(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  ar_statistics stats;
+  ar_statistics stats(config.report_sample_rate);
 
   try {
     // Step 1: Read input file
@@ -207,7 +207,7 @@ demultiplex_sequences_pe(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  ar_statistics stats;
+  ar_statistics stats(config.report_sample_rate);
 
   try {
     // Step 1: Read input file

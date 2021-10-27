@@ -22,6 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -30,9 +31,13 @@
 #include "debug.hpp"
 #include "fastq.hpp"
 #include "statistics.hpp"
+#include "utilities.hpp"
 
-fastq_statistics::fastq_statistics()
-  : m_number_of_input_reads()
+fastq_statistics::fastq_statistics(double sample_rate)
+  : m_sample_rate(sample_rate)
+  , m_rng(prng_seed())
+  , m_number_of_input_reads()
+  , m_number_of_sampled_reads()
   , m_length_dist()
   , m_quality_dist()
   , m_uncalled_pos()
@@ -47,22 +52,26 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
   m_number_of_input_reads += num_input_reads;
   m_length_dist.inc(read.length());
 
-  const std::string& sequence = read.sequence();
-  const std::string& qualities = read.qualities();
+  if (std::generate_canonical<float, 32>(m_rng) <= m_sample_rate) {
+    m_number_of_sampled_reads += num_input_reads;
 
-  for (size_t i = 0; i < sequence.length(); ++i) {
-    const auto nuc = sequence.at(i);
-    if (nuc == 'N') {
-      m_uncalled_pos.inc(i);
-      m_uncalled_quality_pos.inc(i, qualities.at(i));
-    } else {
-      const auto nuc_i = ACGT_TO_IDX(nuc);
+    const std::string& sequence = read.sequence();
+    const std::string& qualities = read.qualities();
 
-      m_called_pos.at(nuc_i).inc(i);
-      m_quality_pos.at(nuc_i).inc(i, qualities.at(i) - PHRED_OFFSET_33);
+    for (size_t i = 0; i < sequence.length(); ++i) {
+      const auto nuc = sequence.at(i);
+      if (nuc == 'N') {
+        m_uncalled_pos.inc(i);
+        m_uncalled_quality_pos.inc(i, qualities.at(i));
+      } else {
+        const auto nuc_i = ACGT_TO_IDX(nuc);
+
+        m_called_pos.at(nuc_i).inc(i);
+        m_quality_pos.at(nuc_i).inc(i, qualities.at(i) - PHRED_OFFSET_33);
+      }
+
+      m_quality_dist.inc(qualities.at(i) - PHRED_OFFSET_33);
     }
-
-    m_quality_dist.inc(qualities.at(i) - PHRED_OFFSET_33);
   }
 }
 
@@ -70,6 +79,7 @@ fastq_statistics&
 fastq_statistics::operator+=(const fastq_statistics& other)
 {
   m_number_of_input_reads += other.m_number_of_input_reads;
+  m_number_of_sampled_reads += other.m_number_of_sampled_reads;
   m_length_dist += other.m_length_dist;
   m_quality_dist += other.m_quality_dist;
   m_uncalled_pos += other.m_uncalled_pos;
@@ -83,11 +93,11 @@ fastq_statistics::operator+=(const fastq_statistics& other)
   return *this;
 }
 
-trimming_statistics::trimming_statistics()
-  : read_1()
-  , read_2()
-  , merged()
-  , discarded()
+trimming_statistics::trimming_statistics(double sample_rate)
+  : read_1(sample_rate)
+  , read_2(sample_rate)
+  , merged(sample_rate)
+  , discarded(sample_rate)
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
   , overlapping_reads_merged()
@@ -126,11 +136,11 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   return *this;
 }
 
-demultiplexing_statistics::demultiplexing_statistics()
+demultiplexing_statistics::demultiplexing_statistics(double sample_rate)
   : barcodes()
   , unidentified(0)
   , ambiguous(0)
-  , unidentified_stats()
+  , unidentified_stats(sample_rate)
 {}
 
 bool

@@ -83,6 +83,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/main_adapter_rm.o \
             $(BDIR)/main_demultiplex.o \
             $(BDIR)/managed_writer.o \
+            $(BDIR)/reports.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/statistics.o \
             $(BDIR)/strutils.o \
@@ -90,8 +91,8 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/timer.o \
             $(BDIR)/trimmed_reads.o \
             $(BDIR)/trimming.o \
-            $(BDIR)/reports.o \
-            $(BDIR)/userconfig.o
+            $(BDIR)/userconfig.o \
+            $(BDIR)/utilities.o
 OBJS     := ${LIBOBJS} $(BDIR)/main.o
 DFILES   := $(OBJS:.o=.deps)
 

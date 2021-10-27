@@ -67,9 +67,6 @@ public:
   /** Parses a set of commandline arguments. */
   argparse::parse_result parse_args(int argc, char* argv[]);
 
-  /** Returns new statistics object, initialized using usersettings. */
-  statistics_ptr create_stats() const;
-
   std::string get_output_filename(const std::string& key, size_t nth = 0) const;
 
   /** Characterize an alignment based on user settings. */
@@ -198,6 +195,9 @@ public:
   unsigned barcode_mm_r2;
 
   adapter_set adapters;
+
+  //! Fraction of reads used for quality/content curves, etc.
+  double report_sample_rate;
 
   //! Copy construction not supported
   userconfig(const userconfig&) = delete;

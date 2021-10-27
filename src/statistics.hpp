@@ -25,6 +25,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <random>
 #include <vector>
 
 #include "commontypes.hpp"
@@ -41,7 +42,7 @@ class userconfig;
 class fastq_statistics
 {
 public:
-  fastq_statistics();
+  explicit fastq_statistics(double sample_rate = 1.0);
 
   void process(const fastq& read, size_t num_input_reads = 1);
 
@@ -49,6 +50,12 @@ public:
   {
     return m_number_of_input_reads;
   }
+
+  inline size_t number_of_sampled_reads() const
+  {
+    return m_number_of_sampled_reads;
+  }
+
   inline const counts& length_dist() const { return m_length_dist; }
   inline const counts& quality_dist() const { return m_quality_dist; }
   inline const counts& uncalled_pos() const { return m_uncalled_pos; }
@@ -69,8 +76,15 @@ public:
   fastq_statistics& operator+=(const fastq_statistics& other);
 
 private:
-  //! Number of input reads used to produce thesetrimming_statistics
+  //! Sample every nth read for statistics.
+  double m_sample_rate;
+  //! RNG used to downsample sample reads for curves
+  std::mt19937 m_rng;
+
+  //! Number of input reads used to produce these statistics
   size_t m_number_of_input_reads;
+  //! Number of reads sampled for computationally expensive stats
+  size_t m_number_of_sampled_reads;
 
   /** Length distribution. */
   counts m_length_dist;
@@ -89,7 +103,7 @@ private:
 /** Object used to collect summary statistics for trimming. */
 struct trimming_statistics
 {
-  trimming_statistics();
+  trimming_statistics(double sample_rate = 1.0);
 
   //! Statistics for first reads
   fastq_statistics read_1;
@@ -131,7 +145,7 @@ struct trimming_statistics
 /** Object used to collect summary statistics for demultiplexing. */
 struct demultiplexing_statistics
 {
-  demultiplexing_statistics();
+  demultiplexing_statistics(double sample_rate = 1.0);
 
   bool empty() const;
   void resize(size_t n);
@@ -152,10 +166,10 @@ struct demultiplexing_statistics
 // FIXME: Rename to ... something better
 struct ar_statistics
 {
-  inline ar_statistics()
-    : input_1()
-    , input_2()
-    , demultiplexing()
+  inline ar_statistics(double sample_rate = 1.0)
+    : input_1(sample_rate)
+    , input_2(sample_rate)
+    , demultiplexing(sample_rate)
     , trimming()
   {}
 
