@@ -314,26 +314,6 @@ public:
   adapter_stats& operator=(const adapter_stats&) = delete;
 };
 
-/** Class for building (and merging) adapter_stats objects on demand. */
-class adapter_sink : public statistics_sink<adapter_stats>
-{
-public:
-  adapter_sink() {}
-
-protected:
-  virtual pointer new_sink() const { return pointer(new adapter_stats()); }
-
-  virtual void reduce(pointer& dst, const pointer& src) const
-  {
-    (*dst) += (*src);
-  }
-
-  //! Copy construction not supported
-  adapter_sink(const adapter_sink&) = delete;
-  //! Assignment not supported
-  adapter_sink& operator=(const adapter_sink&) = delete;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 // Threaded adapter identification step
 
@@ -344,8 +324,12 @@ public:
     : analytical_step(analytical_step::ordering::unordered)
     , m_config(config)
     , m_timer("reads")
-    , m_sinks()
-  {}
+    , m_stats()
+  {
+    for (size_t i = 0; i < m_config.max_threads; ++i) {
+      m_stats.emplace_back();
+    }
+  }
 
   chunk_vec process(analytical_chunk* chunk)
   {
@@ -359,17 +343,17 @@ public:
 
     read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-    adapter_sink::pointer sink = m_sinks.get_sink();
+    auto stats = m_stats.acquire();
 
     AR_DEBUG_ASSERT(file_chunk->reads_1.size() == file_chunk->reads_2.size());
     fastq_vec::iterator read_1 = file_chunk->reads_1.begin();
     fastq_vec::iterator read_2 = file_chunk->reads_2.begin();
 
     while (read_1 != file_chunk->reads_1.end()) {
-      process_reads(adapters, *sink, *read_1++, *read_2++);
+      process_reads(adapters, *stats, *read_1++, *read_2++);
     }
 
-    m_sinks.return_sink(std::move(sink));
+    m_stats.release(stats);
     m_timer.increment(file_chunk->reads_1.size() * 2);
 
     return chunk_vec();
@@ -380,18 +364,21 @@ public:
   {
     m_timer.finalize();
 
-    std::unique_ptr<adapter_stats> sink(m_sinks.finalize());
+    auto stats = m_stats.acquire();
+    while (!m_stats.empty()) {
+      *stats += *m_stats.acquire();
+    }
 
-    std::cout << "   Found " << sink->aligned_pairs
+    std::cout << "   Found " << stats->aligned_pairs
               << " overlapping pairs ...\n"
-              << "   Of which " << sink->pairs_with_adapters
+              << "   Of which " << stats->pairs_with_adapters
               << " contained adapter sequence(s) ...\n\n"
               << "Printing adapter sequences, including poly-A tails:"
               << std::endl;
 
     print_consensus_adapter(
-      sink->pcr1_counts,
-      sink->pcr1_kmers,
+      stats->pcr1_counts,
+      stats->pcr1_kmers,
       "--adapter1",
       m_config.adapters.get_raw_adapters().front().first.sequence());
     std::cout << "\n\n";
@@ -399,12 +386,12 @@ public:
     fastq adapter2 = m_config.adapters.get_raw_adapters().front().second;
     adapter2.reverse_complement();
     print_consensus_adapter(
-      sink->pcr2_counts, sink->pcr2_kmers, "--adapter2", adapter2.sequence());
+      stats->pcr2_counts, stats->pcr2_kmers, "--adapter2", adapter2.sequence());
   }
 
 private:
   void process_reads(const fastq_pair_vec& adapters,
-                     adapter_stats& sink,
+                     adapter_stats& stats,
                      fastq& read1,
                      fastq& read2)
   {
@@ -418,19 +405,21 @@ private:
       align_paired_ended_sequences(read1, read2, adapters, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
-      sink.aligned_pairs++;
+      stats.aligned_pairs++;
       if (m_config.is_alignment_collapsible(alignment)) {
         if (extract_adapter_sequences(alignment, read1, read2)) {
-          sink.pairs_with_adapters++;
+          stats.pairs_with_adapters++;
 
-          process_adapter(read1.sequence(), sink.pcr1_counts, sink.pcr1_kmers);
+          process_adapter(
+            read1.sequence(), stats.pcr1_counts, stats.pcr1_kmers);
 
           read2.reverse_complement();
-          process_adapter(read2.sequence(), sink.pcr2_counts, sink.pcr2_kmers);
+          process_adapter(
+            read2.sequence(), stats.pcr2_counts, stats.pcr2_kmers);
         }
       }
     } else {
-      sink.unaligned_pairs++;
+      stats.unaligned_pairs++;
     }
   }
 
@@ -457,7 +446,7 @@ private:
   const userconfig& m_config;
 
   progress_timer m_timer;
-  adapter_sink m_sinks;
+  threadstate<adapter_stats> m_stats;
 };
 
 int

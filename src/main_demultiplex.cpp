@@ -69,7 +69,7 @@ public:
     const size_t offset = m_nth * ai_analyses_offset;
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-    statistics_ptr stats = m_stats.get_sink();
+    auto stats = m_stats.acquire();
     output_chunk_ptr encoded_reads(new fastq_output_chunk(read_chunk->eof));
 
     for (const auto& read : read_chunk->reads_1) {
@@ -81,7 +81,7 @@ public:
     chunks.push_back(
       chunk_pair(offset + ai_write_mate_1, std::move(encoded_reads)));
 
-    m_stats.return_sink(std::move(stats));
+    m_stats.release(stats);
 
     return chunks;
   }
@@ -100,7 +100,7 @@ public:
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
-    statistics_ptr stats = m_stats.get_sink();
+    statistics_ptr stats = m_stats.acquire();
     output_chunk_ptr encoded_reads_1(new fastq_output_chunk(read_chunk->eof));
     output_chunk_ptr encoded_reads_2;
     if (!m_config.interleaved_output) {
@@ -133,7 +133,7 @@ public:
         chunk_pair(offset + ai_write_mate_2, std::move(encoded_reads_2)));
     }
 
-    m_stats.return_sink(std::move(stats));
+    m_stats.release(stats);
 
     return chunks;
   }

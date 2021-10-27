@@ -141,30 +141,23 @@ reads_processor::reads_processor(const userconfig& config, size_t nth)
   : analytical_step(analytical_step::ordering::unordered)
   , m_config(config)
   , m_adapters(config.adapters.get_adapter_set(nth))
-  , m_stats(config)
+  , m_stats()
   , m_nth(nth)
-{}
+{
+  for (size_t i = 0; i < m_config.max_threads; ++i) {
+    m_stats.emplace_back();
+  }
+}
 
 statistics_ptr
 reads_processor::get_final_statistics()
 {
-  return m_stats.finalize();
-}
+  auto stats = m_stats.acquire();
+  while (!m_stats.empty()) {
+    *stats += *m_stats.acquire();
+  }
 
-reads_processor::stats_sink::stats_sink(const userconfig& config)
-  : m_config(config)
-{}
-
-reads_processor::stats_sink::pointer
-reads_processor::stats_sink::new_sink() const
-{
-  return m_config.create_stats();
-}
-
-void
-reads_processor::stats_sink::reduce(pointer& dst, const pointer& src) const
-{
-  (*dst) += (*src);
+  return stats;
 }
 
 se_reads_processor::se_reads_processor(const userconfig& config, size_t nth)
@@ -178,7 +171,7 @@ se_reads_processor::process(analytical_chunk* chunk)
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, offset, read_chunk->eof);
-  stats_sink::pointer stats = m_stats.get_sink();
+  auto stats = m_stats.acquire();
 
   for (auto& read : read_chunk->reads_1) {
     const alignment_info alignment =
@@ -204,31 +197,20 @@ se_reads_processor::process(analytical_chunk* chunk)
     }
   }
 
-  m_stats.return_sink(std::move(stats));
+  m_stats.release(stats);
 
   return chunks.finalize();
 }
 
-rng_sink::rng_sink(unsigned seed)
-  : m_seed(seed)
-{}
-
-rng_sink::pointer
-rng_sink::new_sink() const
-{
-  return pointer(new std::mt19937(m_seed()));
-}
-
-void
-rng_sink::reduce(pointer&, const pointer&) const
-{
-  // Intentionally left empty
-}
-
 pe_reads_processor::pe_reads_processor(const userconfig& config, size_t nth)
   : reads_processor(config, nth)
-  , m_rngs(config.seed)
-{}
+  , m_rngs()
+{
+  std::mt19937 seed(config.seed);
+  for (size_t i = 0; i < m_config.max_threads; ++i) {
+    m_rngs.emplace_back(seed());
+  }
+}
 
 chunk_vec
 pe_reads_processor::process(analytical_chunk* chunk)
@@ -243,13 +225,13 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
   std::unique_ptr<std::mt19937> rng;
   if (!m_config.deterministic && !m_config.collapse_conservatively) {
-    rng = m_rngs.get_sink();
+    rng = m_rngs.acquire();
     merger.set_rng(rng.get());
   }
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, offset, read_chunk->eof);
-  statistics_ptr stats = m_stats.get_sink();
+  statistics_ptr stats = m_stats.acquire();
 
   AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
@@ -346,8 +328,8 @@ pe_reads_processor::process(analytical_chunk* chunk)
     chunks.add_pe_reads(read_1, state_1, read_2, state_2);
   }
 
-  m_stats.return_sink(std::move(stats));
-  m_rngs.return_sink(std::move(rng));
+  m_stats.release(stats);
+  m_rngs.release(rng);
 
   return chunks.finalize();
 }

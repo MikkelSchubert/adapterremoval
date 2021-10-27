@@ -42,22 +42,9 @@ public:
   statistics_ptr get_final_statistics();
 
 protected:
-  class stats_sink : public statistics_sink<trimming_statistics>
-  {
-  public:
-    stats_sink(const userconfig& config);
-
-  protected:
-    virtual pointer new_sink() const;
-
-    virtual void reduce(pointer& dst, const pointer& src) const;
-
-    const userconfig& m_config;
-  };
-
   const userconfig& m_config;
   const fastq_pair_vec m_adapters;
-  stats_sink m_stats;
+  threadstate<trimming_statistics> m_stats;
   const size_t m_nth;
 };
 
@@ -69,26 +56,6 @@ public:
   chunk_vec process(analytical_chunk* chunk);
 };
 
-/** Class for building RNGs on demand. */
-class rng_sink : public statistics_sink<std::mt19937>
-{
-public:
-  rng_sink(unsigned seed);
-
-protected:
-  virtual pointer new_sink() const;
-
-  virtual void reduce(pointer&, const pointer&) const;
-
-  //! Copy construction not supported
-  rng_sink(const rng_sink&) = delete;
-  //! Assignment not supported
-  rng_sink& operator=(const rng_sink&) = delete;
-
-private:
-  mutable std::mt19937 m_seed;
-};
-
 class pe_reads_processor : public reads_processor
 {
 public:
@@ -97,5 +64,5 @@ public:
   chunk_vec process(analytical_chunk* chunk);
 
 private:
-  rng_sink m_rngs;
+  threadstate<std::mt19937> m_rngs;
 };
