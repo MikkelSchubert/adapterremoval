@@ -530,6 +530,8 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
+    // --collapse-deterministic implies --collapse
+    collapse |= argparser.is_set("--collapse-deterministic");
     // --collapse-conservatively implies --collapse
     collapse |= collapse_conservatively;
   } else {
