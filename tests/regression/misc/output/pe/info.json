@@ -1,4 +1,5 @@
 {
+	"skip": true,
 	"arguments": [
 		"--collapse",
 		"--trimns",

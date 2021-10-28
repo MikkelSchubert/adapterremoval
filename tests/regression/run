@@ -70,6 +70,11 @@ def print_ok(*vargs, **kwargs):
     _do_print_color(*vargs, colorcode=32, **kwargs)
 
 
+def print_warn(*vargs, **kwargs):
+    """Equivalent to print, but prints using shell colorcodes (green)."""
+    _do_print_color(*vargs, colorcode=33, **kwargs)
+
+
 def print_err(*vargs, **kwargs):
     """Equivalent to print, but prints using shell colorcodes (red)."""
     _do_print_color(*vargs, colorcode=31, **kwargs)
@@ -81,12 +86,7 @@ UNCOMPRESSED, GZIP, BZIP2 = "raw", "gz", "bz2"
 
 def compress(value, compression):
     if compression == GZIP:
-        fileobj = io.BytesIO()
-        handle = gzip.GzipFile("", "w", 9, fileobj)
-        handle.write(value)
-        handle.close()
-
-        return fileobj.getvalue()
+        return gzip.compress(value)
     elif compression == BZIP2:
         return bz2.compress(value)
     else:
@@ -97,23 +97,17 @@ def decompress(filename):
     with open(filename, "rb") as handle:
         value = handle.read()
 
-    if value and filename.endswith(".bz2"):
-        if not value.startswith(b"BZ"):
-            raise TestError(
-                "Expected bz2 file at %r, but header is %r" % (filename, value[:2])
-            )
+    header = value[:2]
+    if filename.endswith(".bz2"):
+        if header != b"BZ":
+            raise TestError(f"{filename} has .bz2 extension, but header is {header!r}")
 
         value = bz2.decompress(value)
-    elif value and filename.endswith(".gz"):
-        if not value.startswith(b"\x1f\x8b"):
-            raise TestError(
-                "Expected gzip file at %r, but header is %r" % (filename, value[:2])
-            )
+    elif filename.endswith(".gz"):
+        if header != b"\x1f\x8b":
+            raise TestError(f"{filename} has .gz extension, but header is {header!r}")
 
-        fileobj = io.BytesIO(value)
-        handle = gzip.GzipFile("", "r", 9, fileobj)
-
-        value = handle.read()
+        value = gzip.decompress(value)
 
     value = value.decode("utf-8")
     return io.StringIO(value).readlines()
@@ -127,6 +121,7 @@ _INFO_FIELDS = {
     "return_code": int,
     "stderr": list,
     "exhaustive": bool,
+    "skip": bool,
 }
 
 
@@ -179,6 +174,7 @@ class TestCase(object):
         self.name = " :: ".join(path)
         self._files = self._collect_files(root)
         self._info = self._read_info(os.path.join(root, _INFO_FILE))
+        self.skip = bool(self._info.get("skip"))
 
     def __repr__(self):
         return "TestCase(%r)" % (
@@ -296,41 +292,40 @@ class TestCase(object):
         return final_files["input_1"], final_files["input_2"]
 
     def _do_call(self, root, command):
-        with open(os.devnull, "wb") as dev_null:
-            proc = subprocess.Popen(
-                command,
-                stdin=dev_null,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                close_fds=True,
-                preexec_fn=os.setsid,
-                cwd=root,
-            )
+        proc = subprocess.Popen(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            close_fds=True,
+            preexec_fn=os.setsid,
+            cwd=root,
+        )
 
-            stdout, stderr = proc.communicate()
-            stdout = stdout.decode("utf-8")
-            stderr = stderr.decode("utf-8")
+        stdout, stderr = proc.communicate()
+        stdout = stdout.decode("utf-8")
+        stderr = stderr.decode("utf-8")
 
-            if stdout:
-                raise TestError("Unexpected output to STDOUT: %r" % (stdout,))
+        if stdout:
+            raise TestError("Unexpected output to STDOUT: %r" % (stdout,))
 
-            for value in self._info["stderr"]:
-                if re.search(value, stderr) is None:
-                    raise TestError(
-                        "Expected value not found in output:\n"
-                        "  Searching for:\n%s\n  STDERR:\n%s"
-                        % (pretty_output(value, 4), pretty_output(stderr, 4))
-                    )
-
-            if proc.returncode != self._info["return_code"]:
+        for value in self._info["stderr"]:
+            if re.search(value, stderr) is None:
                 raise TestError(
-                    "Expected return-code %i, but AdapterRemoval returned %i:\n%s"
-                    % (
-                        self._info["return_code"],
-                        proc.returncode,
-                        pretty_output(stderr, 2),
-                    )
+                    "Expected value not found in output:\n"
+                    "  Searching for:\n%s\n  STDERR:\n%s"
+                    % (pretty_output(value, 4), pretty_output(stderr, 4))
                 )
+
+        if proc.returncode != self._info["return_code"]:
+            raise TestError(
+                "Expected return-code %i, but AdapterRemoval returned %i:\n%s"
+                % (
+                    self._info["return_code"],
+                    proc.returncode,
+                    pretty_output(stderr, 2),
+                )
+            )
 
     def _check_file_creation(self, root, input_1, input_2, compression):
         expected_files = set(self._files["output"])
@@ -351,6 +346,14 @@ class TestCase(object):
             frozenset(os.listdir(root)) - frozenset(input_1) - frozenset(input_2)
         )
 
+        # FIXME: To be cleaned up once JSON format has stabalized
+        expected_files = set(
+            fname for fname in expected_files if not fname.endswith(".settings")
+        )
+        observed_files = set(
+            fname for fname in observed_files if not fname.endswith(".json")
+        )
+
         if expected_files != observed_files:
             message = ["Output files do not match expectations"]
 
@@ -366,13 +369,17 @@ class TestCase(object):
 
     def _check_file_contents(self, root, compression):
         for filename, exp_data in sorted(self._files["output"].items()):
+            # FIXME: To be removed once old setting files have been cleaned up
+            if filename.endswith(".settings"):
+                continue
+
             obs_filename = os.path.join(root, filename)
             if compression != UNCOMPRESSED:
-                if not filename.endswith("settings"):
+                if not filename.endswith(".json"):
                     obs_filename += "." + compression
 
             obs_data = decompress(obs_filename)
-            if filename.endswith("settings"):
+            if filename.endswith(".json"):
                 exp_data = self._mangle_settings(exp_data)
                 obs_data = self._mangle_settings(obs_data)
 
@@ -391,8 +398,8 @@ class TestCase(object):
 
             raise TestError(
                 "Output file(s) differ:\n"
-                "  Expected: %r\n  Observed: %r\n  Diff:\n%s"
-                % (exp_filename, obs_filename, pretty_output(lines, 4))
+                "  Test:      %s\n  Expected: %r\n  Observed: %r\n  Diff:\n%s"
+                % (self.root, exp_filename, obs_filename, pretty_output(lines, 4))
             )
 
     def _build_command(self, root, input_1, input_2, compression, interleaved):
@@ -428,15 +435,8 @@ class TestCase(object):
 
     @classmethod
     def _mangle_settings(cls, handle):
-        result = []
-        for line in handle:
-            line = re.sub(r"RNG seed: [0-9]+", "RNG seed: Enabled", line)
-            line = re.sub(r"AdapterRemoval ver\. .*", "AdapterRemoval ver. X.Y.Z", line)
-            line = re.sub(r"AdapterRemoval v.*", "AdapterRemoval ver. X.Y.Z", line)
-            # Removed keyword to allow automatic interleaved tests
-            line = re.sub(r" interleaved paired-end reads", r" paired-end reads", line)
-
-            result.append(line)
+        result = json.loads("".join(handle))
+        result.pop("meta")
 
         return result
 
@@ -481,7 +481,14 @@ class TestCase(object):
                 % (sorted(_INFO_FIELDS), sorted(set(raw_info) - set(_INFO_FIELDS)))
             )
 
-        info = {"arguments": [], "return_code": 0, "stderr": [], "exhaustive": True}
+        info = {
+            "arguments": [],
+            "return_code": 0,
+            "stderr": [],
+            "exhaustive": True,
+            "skip": False,
+        }
+
         info.update(raw_info)
 
         for key, expected_type in _INFO_FIELDS.items():
@@ -551,7 +558,7 @@ def parse_args(argv):
     parser.add_argument(
         "--max-failures",
         type=int,
-        default=10,
+        default=1,
         help="Maximum number of failures to report. Set to zero or less for no limit",
     )
     parser.add_argument(
@@ -585,13 +592,18 @@ def main(argv):
     last_path = ()
     n_failures = 0
     n_successes = 0
+    n_skipped = 0
     print("\nRunning tests:")
     for idx, test in enumerate(tests, start=1):
+        print("  %i of %i: %s " % (idx, len(tests), test.name), end="")
+        if test.skip:
+            print_warn("[SKIPPED]")
+            n_skipped += 1
+            continue
+
         # Cleanup as many dirs as possible from last test
         cleanup_dirs(args.work_dir, last_path, test.path)
         last_path = test.path
-
-        print("  %i of %i: %s " % (idx, len(tests), test.name), end="")
         label = "unknown"
 
         try:
@@ -619,6 +631,9 @@ def main(argv):
         print_err("\n%i of %i tests failed." % (n_failures, len(tests)))
     else:
         print_ok("\nAll %i tests succeeded." % (len(tests),))
+
+    if n_skipped:
+        print_warn(f"Skipped {n_skipped} tests!")
 
     return n_failures
 
