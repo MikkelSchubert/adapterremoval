@@ -971,20 +971,28 @@ TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
 TEST_CASE("Writing_to_stream_phred_33", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  REQUIRE(record.to_str() == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
+  std::string str;
+  record.into_string(str);
+
+  REQUIRE(str == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
 }
 
 TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  REQUIRE(record.to_str() == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
+  std::string str;
+  record.into_string(str);
+
+  REQUIRE(str == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
 }
 
 TEST_CASE("Writing_to_stream_phred_64_explicit", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  REQUIRE(record.to_str(FASTQ_ENCODING_64) ==
-          "@record_1\nACGTACGATA\n+\n@CBCIUWbfi\n");
+  std::string str;
+  record.into_string(str, FASTQ_ENCODING_64);
+
+  REQUIRE(str == "@record_1\nACGTACGATA\n+\n@CBCIUWbfi\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
