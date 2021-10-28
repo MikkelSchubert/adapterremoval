@@ -163,14 +163,8 @@ public:
   //! If true, merging is done using the alternative, more conservative merging
   //! algorithm inspired by fastq-join.
   bool collapse_conservatively;
-  //! Deterministic collapse; set equal-quality conflicting bases to N.
-  bool deterministic;
   // Allow for slipping basepairs by allowing missing bases in adapter
   unsigned shift;
-
-  //! RNG seed for randomly selecting between to bases with the same quality
-  //! when collapsing overllapping PE reads.
-  unsigned seed;
 
   //! The maximum number of threads used by the program
   unsigned max_threads;
@@ -245,4 +239,9 @@ private:
 
   //! Measures runtime since the program was started
   highres_timer m_runtime;
+
+  //! Sink for deprecated knobs
+  unsigned m_deprecated_knobs;
+  //! Sink for deprecated flags
+  bool m_deprecated_flags;
 };

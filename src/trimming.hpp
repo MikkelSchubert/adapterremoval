@@ -24,8 +24,6 @@
 \*************************************************************************/
 #pragma once
 
-#include <random>
-
 #include "fastq.hpp"
 #include "scheduler.hpp"
 #include "statistics.hpp"
@@ -62,7 +60,4 @@ public:
   pe_reads_processor(const userconfig& config, size_t nth);
 
   chunk_vec process(analytical_chunk* chunk);
-
-private:
-  threadstate<std::mt19937> m_rngs;
 };

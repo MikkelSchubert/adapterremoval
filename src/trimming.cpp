@@ -204,13 +204,7 @@ se_reads_processor::process(analytical_chunk* chunk)
 
 pe_reads_processor::pe_reads_processor(const userconfig& config, size_t nth)
   : reads_processor(config, nth)
-  , m_rngs()
-{
-  std::mt19937 seed(config.seed);
-  for (size_t i = 0; i < m_config.max_threads; ++i) {
-    m_rngs.emplace_back(seed());
-  }
-}
+{}
 
 chunk_vec
 pe_reads_processor::process(analytical_chunk* chunk)
@@ -222,12 +216,6 @@ pe_reads_processor::process(analytical_chunk* chunk)
   sequence_merger merger;
   merger.set_mate_separator(mate_separator);
   merger.set_conservative(m_config.collapse_conservatively);
-
-  std::unique_ptr<std::mt19937> rng;
-  if (!m_config.deterministic && !m_config.collapse_conservatively) {
-    rng = m_rngs.acquire();
-    merger.set_rng(rng.get());
-  }
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, offset, read_chunk->eof);
@@ -329,7 +317,6 @@ pe_reads_processor::process(analytical_chunk* chunk)
   }
 
   m_stats.release(stats);
-  m_rngs.release(rng);
 
   return chunks.finalize();
 }

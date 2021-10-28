@@ -177,7 +177,7 @@ truncate_paired_ended_sequences(const alignment_info& alignment,
 class sequence_merger
 {
 public:
-  sequence_merger(std::mt19937* rng = nullptr);
+  sequence_merger();
 
   /**
    * Sets the expected mate separator. This is used to trim mate numbers from
@@ -191,13 +191,6 @@ public:
    * without a higher quality choice are assigned 'N'.
    */
   void set_conservative(bool enabled = false);
-
-  /**
-   * Set RNG used for picking a base when performing non-conservative merging of
-   * mismatching bases with the same quality score. If set to NULL, mismatching
-   * bases with identical quality scores are set to N with quality '!';
-   */
-  void set_rng(std::mt19937* rng = nullptr);
 
   /**
    * Merges two overlapping reads into a single sequence, recalculating the
@@ -229,9 +222,6 @@ private:
   //! Whether or not to recalculate scores using the conservative or the
   //! standard mode
   bool m_conservative;
-  //! Optional RNG for picking bases at random for mismatches with the same
-  //! quality
-  std::mt19937* m_rng;
 };
 
 /**

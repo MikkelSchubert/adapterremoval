@@ -126,10 +126,6 @@ create_adapter_vec(const fastq& pcr1, const fastq& pcr2 = fastq())
   return adapters;
 }
 
-std::random_device g_seed;
-std::mt19937 g_rng_instance(g_seed());
-std::mt19937* g_rng(&g_rng_instance);
-
 ///////////////////////////////////////////////////////////////////////////////
 // Cases for SE alignments (a = read 1, b = adapter, o = overlap):
 //  1. No overlap = aaaaaa bbbbbb
@@ -768,7 +764,7 @@ TEST_CASE("Invalid alignment", "[alignment::paired_end]")
 
 TEST_CASE("Collapse partial overlap", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -781,7 +777,7 @@ TEST_CASE("Collapse partial overlap", "[alignment::collapse]")
 
 TEST_CASE("Collapse complete overlap", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATATTATAA", "JJJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
@@ -794,7 +790,7 @@ TEST_CASE("Collapse complete overlap", "[alignment::collapse]")
 
 TEST_CASE("Collapse complete overlap for mate 1", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
   fastq record2("Rec2", "ATATTATA", "JJJJJJJJ");
   const alignment_info alignment = ALN();
@@ -807,7 +803,7 @@ TEST_CASE("Collapse complete overlap for mate 1", "[alignment::collapse]")
 
 TEST_CASE("Collapse complete overlap for mate 2", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATATTATA", "JJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
@@ -820,7 +816,7 @@ TEST_CASE("Collapse complete overlap for mate 2", "[alignment::collapse]")
 
 TEST_CASE("Unequal sequence lengths, mate 1 shorter", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(3);
@@ -833,7 +829,7 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter", "[alignment::collapse]")
 TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past",
           "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
   const alignment_info alignment = ALN().offset(-2);
@@ -845,7 +841,7 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past",
 
 TEST_CASE("Unequal sequence lengths, mate 2 shorter", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "ACG", "EFG");
   const alignment_info alignment = ALN().offset(8);
@@ -857,7 +853,7 @@ TEST_CASE("Unequal sequence lengths, mate 2 shorter", "[alignment::collapse]")
 
 TEST_CASE("Ambiguous sites are filled from mate", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "NNNNNNTATA", "0123456789");
   fastq record2("Rec2", "ACGTNNNNNN", "ABCDEFGHIJ");
   const alignment_info alignment;
@@ -870,7 +866,7 @@ TEST_CASE("Ambiguous sites are filled from mate", "[alignment::collapse]")
 TEST_CASE("Identical nucleotides gets higher qualities",
           "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "GCATGATATA", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
@@ -884,7 +880,7 @@ TEST_CASE("Identical nucleotides gets higher qualities",
 TEST_CASE("Identical nucleotides gets higher qualities, no more than 41",
           "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "GCATGATATA", "0123456789");
   fastq record2("Rec2", "TATATACAAC", "ABCDEFGHIJ");
   const alignment_info alignment = ALN().offset(6);
@@ -897,7 +893,7 @@ TEST_CASE("Identical nucleotides gets higher qualities, no more than 41",
 
 TEST_CASE("Higher quality nucleotide is selected", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   fastq record1("Rec1", "GCATGAGCAT", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
@@ -908,37 +904,7 @@ TEST_CASE("Higher quality nucleotide is selected", "[alignment::collapse]")
   REQUIRE(collapsed_result == collapsed_expected);
 }
 
-TEST_CASE("Randomly select between different nucleotides with same quality #1",
-          "[alignment::collapse]")
-{
-  const fastq record1("Rec1", "G", "1");
-  const fastq record2("Rec2", "T", "1");
-  const alignment_info alignment;
-  std::seed_seq seed{ 1 };
-  std::mt19937 rng(seed);
-  sequence_merger merger(&rng);
-
-  const fastq collapsed_expected = fastq("Rec1", "G", "#");
-  const fastq collapsed_result = merger.merge(alignment, record1, record2);
-  REQUIRE(collapsed_result == collapsed_expected);
-}
-
-TEST_CASE("Randomly select between different nucleotides with same quality #2",
-          "[alignment::collapse]")
-{
-  const fastq record1("Rec1", "G", "1");
-  const fastq record2("Rec2", "T", "1");
-  const alignment_info alignment;
-  std::seed_seq seed{ 2 };
-  std::mt19937 rng(seed);
-  sequence_merger merger(&rng);
-
-  const fastq collapsed_expected = fastq("Rec1", "T", "#");
-  const fastq collapsed_result = merger.merge(alignment, record1, record2);
-  REQUIRE(collapsed_result == collapsed_expected);
-}
-
-TEST_CASE("Set conflicts to N/! if no RNG is provided", "[alignment::collapse]")
+TEST_CASE("Set conflicts to N/!", "[alignment::collapse]")
 {
   const fastq record1("Rec1", "G", "1");
   const fastq record2("Rec2", "T", "1");
@@ -952,7 +918,7 @@ TEST_CASE("Set conflicts to N/! if no RNG is provided", "[alignment::collapse]")
 
 TEST_CASE("Offsets past the end throws", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   const fastq record1("Rec1", "G", "1");
   const fastq record2("Rec2", "T", "1");
   const alignment_info alignment = ALN().offset(2);
@@ -962,7 +928,7 @@ TEST_CASE("Offsets past the end throws", "[alignment::collapse]")
 
 TEST_CASE("Mate numbering is removed", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   const fastq record1("Read/1", "ATATTATA", "01234567");
   const fastq record2("Read/2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -975,7 +941,7 @@ TEST_CASE("Mate numbering is removed", "[alignment::collapse]")
 
 TEST_CASE("Mate numbering removed, meta from 1 kept", "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   const fastq record1("Read/1 Meta1", "ATATTATA", "01234567");
   const fastq record2("Read/2 Meta2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -989,7 +955,7 @@ TEST_CASE("Mate numbering removed, meta from 1 kept", "[alignment::collapse]")
 TEST_CASE("Mate numbering removed, non-standard separator",
           "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   merger.set_mate_separator(':');
 
   const fastq record1("Read:1", "ATATTATA", "01234567");
@@ -1005,7 +971,7 @@ TEST_CASE("Mate numbering removed, non-standard separator",
 TEST_CASE("Mate numbering removed, non-standard separator, not set",
           "[alignment::collapse]")
 {
-  sequence_merger merger(g_rng);
+  sequence_merger merger;
   const fastq record1("Read:1", "ATATTATA", "01234567");
   const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);

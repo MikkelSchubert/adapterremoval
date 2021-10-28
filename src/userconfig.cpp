@@ -36,15 +36,6 @@
 #include "strutils.hpp"
 #include "userconfig.hpp"
 
-size_t
-get_seed()
-{
-  struct timeval timestamp;
-  gettimeofday(&timestamp, nullptr);
-
-  return (timestamp.tv_sec << 20) | timestamp.tv_usec;
-}
-
 fastq_encoding_ptr
 select_encoding(const std::string& value, size_t quality_max)
 {
@@ -127,9 +118,7 @@ userconfig::userconfig(const std::string& name,
   , preserve5p(false)
   , collapse(false)
   , collapse_conservatively(false)
-  , deterministic(false)
   , shift(2)
-  , seed(get_seed())
   , max_threads(1)
   , gzip(false)
   , gzip_blocks(false)
@@ -155,6 +144,8 @@ userconfig::userconfig(const std::string& name,
   , trim5p()
   , trim3p()
   , m_runtime()
+  , m_deprecated_knobs()
+  , m_deprecated_flags()
 {
   argparser["--file1"] = new argparse::many(
     &input_files_1,
@@ -384,21 +375,15 @@ userconfig::userconfig(const std::string& name,
     "bases are merged into a single consensus sequence. Merged reads are "
     "written to basename.collapsed by default. Has no effect in single-end "
     "mode [default: %default].");
-  argparser["--collapse-deterministic"] = new argparse::flag(
-    &deterministic,
-    "In standard --collapse mode, AdapterRemoval will randomly select "
-    "one of two different overlapping bases if these have the same "
-    "quality (otherwise it picks the highest quality base). With "
-    "--collapse-deterministic, AdapterRemoval will instead set such "
-    "bases to N. Setting this also sets --collapse [default: %default].");
+  argparser["--collapse-deterministic"] =
+    new argparse::flag(&m_deprecated_flags, "HIDDEN");
   argparser["--collapse-conservatively"] = new argparse::flag(
     &collapse_conservatively,
     "Enables a more conservative merging algorithm inspired by fastq-join, "
     "in which the higher quality score is picked for matching bases and the "
     "max score minus the min score is picked for mismatching bases. For more "
-    "details, see the documentation. --seed and --collapse-deterministic "
-    "have no effect when this is enabled. Setting this option also sets "
-    "--collapse [default: %default].");
+    "details, see the documentation. Setting this option also sets --collapse "
+    "[default: %default].");
   argparser["--minalignmentlength"] = new argparse::knob(
     &min_alignment_length,
     "LENGTH",
@@ -406,13 +391,7 @@ userconfig::userconfig(const std::string& name,
     "number of bases to be collapsed, and single-ended reads must "
     "overlap at least this number of bases with the adapter to be "
     "considered complete template molecules [default: %default].");
-  argparser["--seed"] = new argparse::knob(
-    &seed,
-    "SEED",
-    "Sets the RNG seed used when choosing between bases with equal "
-    "Phred scores when --collapse is enabled. This option is not "
-    "available if more than one thread is used. If not specified, a"
-    "seed is generated using the current time.");
+  argparser["--seed"] = new argparse::knob(&m_deprecated_knobs, "", "HIDDEN");
 
   argparser.add_header("DEMULTIPLEXING:");
   argparser["--barcode-list"] = new argparse::any(
@@ -551,14 +530,11 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
-    // --collapse-deterministic implies --collapse
-    collapse |= deterministic;
     // --collapse-conservatively implies --collapse
     collapse |= collapse_conservatively;
   } else {
     collapse = false;
     collapse_conservatively = false;
-    deterministic = false;
   }
 
   if (identify_adapters && !paired_ended_mode) {
@@ -608,10 +584,6 @@ userconfig::parse_args(int argc, char* argv[])
   if (!max_threads) {
     std::cerr << "Error: --threads must be at least 1!" << std::endl;
     return argparse::parse_result::error;
-  } else if (max_threads > 1 && argparser.is_set("--seed")) {
-    std::cerr << "Warning: The option --seed should not be used when "
-              << "using multiple threads; multi-threaded behavior is not "
-              << "deterministic even with a fixed seed!" << std::endl;
   }
 
   try {

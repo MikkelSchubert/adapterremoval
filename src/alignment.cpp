@@ -352,10 +352,9 @@ strip_mate_info(const std::string& header, const char mate_sep)
   return header;
 }
 
-sequence_merger::sequence_merger(std::mt19937* rng)
+sequence_merger::sequence_merger()
   : m_mate_sep(MATE_SEPARATOR)
   , m_conservative(false)
-  , m_rng(rng)
 {}
 
 void
@@ -368,12 +367,6 @@ void
 sequence_merger::set_conservative(bool enabled)
 {
   m_conservative = enabled;
-}
-
-void
-sequence_merger::set_rng(std::mt19937* rng)
-{
-  m_rng = rng;
 }
 
 fastq
@@ -440,15 +433,8 @@ sequence_merger::original_merge(char& nt_1,
       qual_1 = qual_2;
     }
   } else if (nt_1 != nt_2 && qual_1 == qual_2) {
-    if (m_rng) {
-      nt_1 = ((*m_rng)() & 1) ? nt_1 : nt_2;
-
-      const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
-      qual_1 = new_scores.different_nts;
-    } else {
-      nt_1 = 'N';
-      qual_1 = PHRED_OFFSET_33;
-    }
+    nt_1 = 'N';
+    qual_1 = PHRED_OFFSET_33;
   } else {
     // Ensure that nt_1 / qual_1 always contains the preferred nt / score
     // This is an assumption of the g_updated_phred_scores cache.
