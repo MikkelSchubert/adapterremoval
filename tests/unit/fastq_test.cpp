@@ -965,6 +965,55 @@ TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
   REQUIRE_THROWS_AS(record.read(reader), fastq_error);
 }
 
+TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
+{
+  string_vec lines;
+  lines.push_back("");
+  lines.push_back("@record_1");
+  lines.push_back("ACGTA");
+  lines.push_back("+");
+  lines.push_back("!!!!!");
+  lines.push_back("");
+  lines.push_back("");
+  vec_reader reader(lines);
+
+  fastq record;
+  CHECK(record.read(reader, FASTQ_ENCODING_33));
+  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.sequence() == "ACGTA");
+  REQUIRE(record.qualities() == "!!!!!");
+  REQUIRE_NOTHROW(!record.read(reader));
+}
+
+TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
+{
+  string_vec lines;
+  lines.push_back("");
+  lines.push_back("@record_1");
+  lines.push_back("ACGAGTCA");
+  lines.push_back("+");
+  lines.push_back("!7BF8DGI");
+  lines.push_back("");
+  lines.push_back("");
+  lines.push_back("@record_2");
+  lines.push_back("GTCAGGAT");
+  lines.push_back("+");
+  lines.push_back("D7BIG!F8");
+  lines.push_back("");
+  vec_reader reader(lines);
+
+  fastq record;
+  CHECK(record.read(reader, FASTQ_ENCODING_33));
+  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.sequence() == "ACGAGTCA");
+  REQUIRE(record.qualities() == "!7BF8DGI");
+  CHECK(record.read(reader, FASTQ_ENCODING_33));
+  REQUIRE(record.header() == "record_2");
+  REQUIRE(record.sequence() == "GTCAGGAT");
+  REQUIRE(record.qualities() == "D7BIG!F8");
+  CHECK(!record.read(reader, FASTQ_ENCODING_33));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Writing to stream
 

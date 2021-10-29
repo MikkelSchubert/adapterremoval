@@ -291,10 +291,12 @@ bool
 fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {
   std::string line;
-  if (!reader.getline(line)) {
-    // End of file; terminate gracefully
-    return false;
-  }
+  do {
+    if (!reader.getline(line)) {
+      // End of file; terminate gracefully
+      return false;
+    }
+  } while (line.empty());
 
   m_header = line.substr(1);
   if (m_header.empty() || line.at(0) != '@') {
