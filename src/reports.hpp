@@ -26,7 +26,7 @@
 
 #include <vector>
 
-class ar_statistics;
+struct ar_statistics;
 class statistics;
 class userconfig;
 
