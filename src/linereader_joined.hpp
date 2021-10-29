@@ -51,6 +51,11 @@ public:
    */
   bool getline(std::string& dst);
 
+  /** Currently open file; empty if no file is open. */
+  const std::string& filename() const;
+  /** Line number in the current file (1-based); 0 if no file is open. */
+  size_t linenumber() const;
+
   //! Copy construction not supported
   joined_line_readers(const joined_line_readers&) = delete;
   //! Assignment not supported
@@ -67,6 +72,8 @@ private:
   string_vec m_filenames;
   //! Currently open file, if any.
   std::unique_ptr<line_reader> m_reader;
+  //! The currently open file
+  std::string m_filename;
   //! Current line across all files.
   size_t m_current_line;
 };

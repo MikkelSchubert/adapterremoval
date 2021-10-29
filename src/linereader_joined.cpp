@@ -31,12 +31,12 @@
 
 #include "debug.hpp"
 #include "linereader_joined.hpp"
-#include "threads.hpp"
 
 joined_line_readers::joined_line_readers(const string_vec& filenames)
   : m_filenames(filenames.rbegin(), filenames.rend())
   , m_reader()
-  , m_current_line(1)
+  , m_filename()
+  , m_current_line(0)
 {}
 
 joined_line_readers::~joined_line_readers() {}
@@ -54,22 +54,30 @@ joined_line_readers::getline(std::string& dst)
   }
 }
 
+const std::string&
+joined_line_readers::filename() const
+{
+  return m_filename;
+}
+
+size_t
+joined_line_readers::linenumber() const
+{
+  return m_current_line;
+}
+
 bool
 joined_line_readers::open_next_file()
 {
   if (m_filenames.empty()) {
+    m_reader.reset();
     return false;
   }
 
-  auto filename = m_filenames.back();
+  m_reader.reset(new line_reader(m_filenames.back()));
+  m_filename = m_filenames.back();
+  m_current_line = 1;
 
-  {
-    print_locker lock;
-    std::cerr << "Opening FASTQ file '" << filename
-              << "', line numbers start at " << m_current_line << std::endl;
-  }
-
-  m_reader.reset(new line_reader(filename));
   m_filenames.pop_back();
 
   return true;
