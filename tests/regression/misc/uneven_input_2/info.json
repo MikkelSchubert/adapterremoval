@@ -1,0 +1,5 @@
+{
+	"arguments": [],
+	"return_code": 1,
+	"stderr": ["More mate 2 reads than mate 1 reads"]
+}
