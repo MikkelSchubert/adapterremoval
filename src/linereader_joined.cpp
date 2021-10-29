@@ -44,18 +44,14 @@ joined_line_readers::~joined_line_readers() {}
 bool
 joined_line_readers::getline(std::string& dst)
 {
-  dst.clear();
-
-  while (dst.empty()) {
+  while (true) {
     if (m_reader && m_reader->getline(dst)) {
       m_current_line++;
-      break;
+      return true;
     } else if (!open_next_file()) {
-      break;
+      return false;
     }
   }
-
-  return !dst.empty();
 }
 
 bool

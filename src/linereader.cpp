@@ -125,7 +125,7 @@ line_reader::getline(std::string& dst)
 {
   dst.clear();
 
-  while (m_file && !m_eof) {
+  while (!m_eof) {
     const char* start = m_buffer_ptr;
     char* end = m_buffer_ptr;
 
