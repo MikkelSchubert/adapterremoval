@@ -70,7 +70,7 @@ demultiplex_reads::flush_cache(bool eof)
 {
   chunk_vec output;
 
-  if (eof || m_unidentified_1->count >= FASTQ_CHUNK_SIZE) {
+  if (eof || m_unidentified_1->nucleotides >= INPUT_BLOCK_SIZE) {
     m_unidentified_1->eof = eof;
     output.push_back(
       chunk_pair(ai_write_unidentified_1, std::move(m_unidentified_1)));
@@ -78,7 +78,7 @@ demultiplex_reads::flush_cache(bool eof)
   }
 
   if (m_config->paired_ended_mode && !m_config->interleaved_output &&
-      (eof || m_unidentified_2->count >= FASTQ_CHUNK_SIZE)) {
+      (eof || m_unidentified_2->nucleotides >= INPUT_BLOCK_SIZE)) {
     m_unidentified_2->eof = eof;
     output.push_back(
       chunk_pair(ai_write_unidentified_2, std::move(m_unidentified_2)));
@@ -87,7 +87,7 @@ demultiplex_reads::flush_cache(bool eof)
 
   for (size_t nth = 0; nth < m_cache.size(); ++nth) {
     read_chunk_ptr& chunk = m_cache.at(nth);
-    if (eof || chunk->reads_1.size() >= FASTQ_CHUNK_SIZE) {
+    if (eof || chunk->nucleotides >= INPUT_BLOCK_SIZE) {
       chunk->eof = eof;
 
       const size_t step_id = (nth + 1) * ai_analyses_offset;
@@ -113,7 +113,7 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
   AR_DEBUG_LOCK(m_lock);
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-  for (const auto& read : read_chunk->reads_1) {
+  for (auto& read : read_chunk->reads_1) {
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
@@ -128,8 +128,9 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
       m_statistics->unidentified_stats.process(read);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
+      read.truncate(m_barcodes.at(best_barcode).first.length());
+      dst->nucleotides += read.length();
       dst->reads_1.push_back(read);
-      dst->reads_1.back().truncate(m_barcodes.at(best_barcode).first.length());
 
       m_statistics->barcodes.at(best_barcode) += 1;
     }
@@ -178,8 +179,10 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
       read_chunk_ptr& dst = m_cache.at(best_barcode);
 
       it_1->truncate(m_barcodes.at(best_barcode).first.length());
+      dst->nucleotides += it_1->length();
       dst->reads_1.push_back(*it_1);
       it_2->truncate(m_barcodes.at(best_barcode).second.length());
+      dst->nucleotides += it_2->length();
       dst->reads_2.push_back(*it_2);
 
       m_statistics->barcodes.at(best_barcode) += 2;

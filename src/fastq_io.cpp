@@ -30,40 +30,6 @@
 #include "fastq_io.hpp"
 #include "userconfig.hpp"
 
-size_t
-read_fastq_reads(fastq_vec& dst,
-                 joined_line_readers& reader,
-                 size_t offset,
-                 const fastq_encoding& encoding,
-                 fastq_statistics* stats)
-{
-  dst.reserve(FASTQ_CHUNK_SIZE);
-
-  try {
-    fastq record;
-    for (size_t i = 0; i < FASTQ_CHUNK_SIZE; ++i) {
-      if (record.read(reader, encoding)) {
-        if (stats) {
-          stats->process(record);
-        }
-
-        dst.push_back(record);
-      } else {
-        break;
-      }
-    }
-  } catch (const fastq_error& error) {
-    print_locker lock;
-    std::cerr << "Error reading FASTQ record at line "
-              << offset + dst.size() * 4 << "; aborting:\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
-
-    throw thread_abort();
-  }
-
-  return dst.size() * 4;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions for 'zlib'
 
@@ -145,6 +111,7 @@ checked_deflate_end(z_streamp stream)
 
 fastq_read_chunk::fastq_read_chunk(bool eof_)
   : eof(eof_)
+  , nucleotides()
   , reads_1()
   , reads_2()
 {}
@@ -155,6 +122,7 @@ fastq_read_chunk::fastq_read_chunk(bool eof_)
 fastq_output_chunk::fastq_output_chunk(bool eof_)
   : eof(eof_)
   , count(0)
+  , nucleotides()
   , reads()
   , buffers()
 {}
@@ -165,226 +133,128 @@ fastq_output_chunk::add(const fastq_encoding& encoding,
                         size_t count_)
 {
   count += count_;
+  nucleotides += read.length();
   read.into_string(reads, encoding);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'read_single_fastq'
+// Implementations for 'read_fastq'
 
-read_single_fastq::read_single_fastq(const fastq_encoding* encoding,
-                                     const string_vec& filenames,
-                                     size_t next_step,
-                                     fastq_statistics* statistics)
-  : analytical_step(analytical_step::ordering::ordered, true)
-  , m_encoding(encoding)
-  , m_line_offset(1)
-  , m_io_input(filenames)
-  , m_statistics(statistics)
-  , m_next_step(next_step)
-  , m_eof(false)
-  , m_lock()
+bool
+read_record(joined_line_readers& reader,
+            const fastq_encoding& encoding,
+            fastq_statistics* stats,
+            fastq_vec* chunk,
+            fastq& record,
+            size_t& n_nucleotides)
 {
-  AR_DEBUG_ASSERT(!filenames.empty());
-}
-
-chunk_vec
-read_single_fastq::process(analytical_chunk* chunk)
-{
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(chunk == nullptr);
-  if (m_eof) {
-    return chunk_vec();
-  }
-
-  read_chunk_ptr file_chunk(new fastq_read_chunk());
-
-  const size_t n_read = read_fastq_reads(
-    file_chunk->reads_1, m_io_input, m_line_offset, *m_encoding, m_statistics);
-
-  if (!n_read) {
-    // EOF is detected by failure to read any lines, not line_reader::eof,
-    // so that unbalanced files can be caught in all cases.
-    file_chunk->eof = true;
-    m_eof = true;
-  }
-
-  m_line_offset += n_read;
-
-  chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(file_chunk));
-
-  return chunks;
-}
-
-void
-read_single_fastq::finalize()
-{
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'read_paired_fastq'
-
-read_paired_fastq::read_paired_fastq(const fastq_encoding* encoding,
-                                     const string_vec& filenames_1,
-                                     const string_vec& filenames_2,
-                                     size_t next_step,
-                                     fastq_statistics* statistics_1,
-                                     fastq_statistics* statistics_2)
-  : analytical_step(analytical_step::ordering::ordered, true)
-  , m_encoding(encoding)
-  , m_line_offset(1)
-  , m_io_input_1(filenames_1)
-  , m_io_input_2(filenames_2)
-  , m_statistics_1(statistics_1)
-  , m_statistics_2(statistics_2)
-  , m_next_step(next_step)
-  , m_eof(false)
-  , m_lock()
-{
-  AR_DEBUG_ASSERT(filenames_1.size() == filenames_2.size());
-}
-
-chunk_vec
-read_paired_fastq::process(analytical_chunk* chunk)
-{
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(chunk == nullptr);
-  if (m_eof) {
-    return chunk_vec();
-  }
-
-  read_chunk_ptr file_chunk(new fastq_read_chunk());
-
-  const size_t n_read_1 = read_fastq_reads(file_chunk->reads_1,
-                                           m_io_input_1,
-                                           m_line_offset,
-                                           *m_encoding,
-                                           m_statistics_1);
-  const size_t n_read_2 = read_fastq_reads(file_chunk->reads_2,
-                                           m_io_input_2,
-                                           m_line_offset,
-                                           *m_encoding,
-                                           m_statistics_2);
-
-  if (n_read_1 != n_read_2) {
-    print_locker lock;
-    std::cerr << "ERROR: Input --file1 and --file2 contains different "
-              << "numbers of lines; one or the other file may have been "
-              << "truncated. Please correct before continuing!" << std::endl;
-
-    throw thread_abort();
-  } else if (!n_read_1) {
-    // EOF is detected by failure to read any lines, not line_reader::eof,
-    // so that unbalanced files can be caught in all cases.
-    file_chunk->eof = true;
-    m_eof = true;
-  }
-
-  m_line_offset += n_read_1;
-
-  chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(file_chunk));
-
-  return chunks;
-}
-
-void
-read_paired_fastq::finalize()
-{
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'read_interleaved_fastq'
-
-read_interleaved_fastq::read_interleaved_fastq(const fastq_encoding* encoding,
-                                               const string_vec& filenames,
-                                               size_t next_step,
-                                               fastq_statistics* statistics_1,
-                                               fastq_statistics* statistics_2)
-  : analytical_step(analytical_step::ordering::ordered, true)
-  , m_encoding(encoding)
-  , m_line_offset(1)
-  , m_io_input(filenames)
-  , m_statistics_1(statistics_1)
-  , m_statistics_2(statistics_2)
-  , m_next_step(next_step)
-  , m_eof(false)
-  , m_lock()
-{
-  AR_DEBUG_ASSERT(!filenames.empty());
-}
-
-chunk_vec
-read_interleaved_fastq::process(analytical_chunk* chunk)
-{
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(chunk == nullptr);
-  if (m_eof) {
-    return chunk_vec();
-  }
-
-  read_chunk_ptr file_chunk(new fastq_read_chunk());
-
-  file_chunk->reads_1.reserve(FASTQ_CHUNK_SIZE);
-  file_chunk->reads_2.reserve(FASTQ_CHUNK_SIZE);
-
   try {
-    fastq record;
-    for (size_t i = 0; i < FASTQ_CHUNK_SIZE; ++i) {
-      // Mate 1 reads
-      if (record.read(m_io_input, *m_encoding)) {
-        if (m_statistics_1) {
-          m_statistics_1->process(record);
-        }
-
-        file_chunk->reads_1.push_back(record);
-      } else {
-        break;
+    if (record.read(reader, encoding)) {
+      if (stats) {
+        stats->process(record);
       }
 
-      // Mate 2 reads
-      if (record.read(m_io_input, *m_encoding)) {
-        if (m_statistics_2) {
-          m_statistics_2->process(record);
-        }
+      chunk->push_back(record);
+      n_nucleotides += record.length();
 
-        file_chunk->reads_2.push_back(record);
-      } else {
-        break;
-      }
+      return true;
+    } else {
+      return false;
     }
   } catch (const fastq_error& error) {
-    const size_t offset = m_line_offset + file_chunk->reads_1.size() * 4 +
-                          file_chunk->reads_2.size() * 4;
-
     print_locker lock;
-    std::cerr << "Error reading FASTQ record starting at line " << offset
-              << ":\n"
+    std::cerr << "Error reading FASTQ record from '" << reader.filename()
+              << "' at line " << reader.linenumber() << "; aborting:\n"
               << cli_formatter::fmt(error.what()) << std::endl;
 
     throw thread_abort();
   }
+}
 
-  const size_t n_read_1 = file_chunk->reads_1.size();
-  const size_t n_read_2 = file_chunk->reads_2.size();
+read_fastq::read_fastq(const fastq_encoding* encoding,
+                       const string_vec& filenames_1,
+                       const string_vec& filenames_2,
+                       size_t next_step,
+                       bool interleaved,
+                       fastq_statistics* statistics_1,
+                       fastq_statistics* statistics_2)
+  : analytical_step(analytical_step::ordering::ordered, true)
+  , m_encoding(encoding)
+  , m_io_input_1_base(filenames_1)
+  , m_io_input_2_base(filenames_2)
+  , m_io_input_1(&m_io_input_1_base)
+  , m_io_input_2(&m_io_input_2_base)
+  , m_statistics_1(statistics_1)
+  , m_statistics_2(statistics_2)
+  , m_next_step(next_step)
+  , m_eof(false)
+  , m_lock()
+{
+  if (interleaved) {
+    AR_DEBUG_ASSERT(filenames_2.empty());
 
-  if (n_read_1 != n_read_2) {
-    print_locker lock;
-    std::cerr << "ERROR: Interleaved FASTQ file contains uneven number of "
-              << "reads; file may have been truncated! Please correct "
-              << "before continuing!" << std::endl;
+    m_io_input_2 = &m_io_input_1_base;
+  } else if (filenames_2.empty()) {
+    m_io_input_2 = &m_io_input_1_base;
+    m_statistics_2 = statistics_1;
+  } else {
+    AR_DEBUG_ASSERT(filenames_1.size() == filenames_2.size());
+  }
+}
 
-    throw thread_abort();
-  } else if (!n_read_1) {
-    file_chunk->eof = true;
-    m_eof = true;
+chunk_vec
+read_fastq::process(analytical_chunk* chunk)
+{
+  AR_DEBUG_LOCK(m_lock);
+  AR_DEBUG_ASSERT(chunk == nullptr);
+  if (m_eof) {
+    return chunk_vec();
   }
 
-  m_line_offset += (n_read_1 + n_read_2) * 4;
+  read_chunk_ptr file_chunk(new fastq_read_chunk());
+  const bool single_end = m_statistics_1 == m_statistics_2;
+  auto reads_1 = &file_chunk->reads_1;
+  auto reads_2 = single_end ? reads_1 : &file_chunk->reads_2;
+
+  fastq record;
+  bool eof = false;
+  size_t n_nucleotides = 0;
+  while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && !eof) {
+    eof = !read_record(*m_io_input_1,
+                       *m_encoding,
+                       m_statistics_1,
+                       reads_1,
+                       record,
+                       n_nucleotides);
+
+    bool eof_2 = !read_record(*m_io_input_2,
+                              *m_encoding,
+                              m_statistics_2,
+                              reads_2,
+                              record,
+                              n_nucleotides);
+
+    if (eof && !eof_2) {
+      print_locker lock;
+      std::cerr << "ERROR: More mate 2 reads than mate 1 reads found in '"
+                << m_io_input_1->filename() << "'; file may be truncated. "
+                << "Please fix before continuing." << std::endl;
+
+      throw thread_abort();
+    } else if (eof_2 && !(eof || single_end)) {
+      print_locker lock;
+      std::cerr << "ERROR: More mate 1 reads than mate 2 reads found in '"
+                << m_io_input_2->filename() << "'; file may be truncated. "
+                << "Please fix before continuing." << std::endl;
+
+      throw thread_abort();
+    }
+
+    eof |= eof_2;
+  }
+
+  file_chunk->eof = eof;
+  m_eof = eof;
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(file_chunk));
@@ -393,7 +263,7 @@ read_interleaved_fastq::process(analytical_chunk* chunk)
 }
 
 void
-read_interleaved_fastq::finalize()
+read_fastq::finalize()
 {
   AR_DEBUG_LOCK(m_lock);
   AR_DEBUG_ASSERT(m_eof);
@@ -478,8 +348,8 @@ bzip2_fastq::process(analytical_chunk* chunk)
 
     do {
       buffer_pair output_buffer;
-      output_buffer.first = FASTQ_COMPRESSED_CHUNK;
-      output_buffer.second.reset(new unsigned char[FASTQ_COMPRESSED_CHUNK]);
+      output_buffer.first = OUTPUT_BLOCK_SIZE;
+      output_buffer.second.reset(new unsigned char[OUTPUT_BLOCK_SIZE]);
 
       m_stream.avail_out = output_buffer.first;
       m_stream.next_out = reinterpret_cast<char*>(output_buffer.second.get());
@@ -504,7 +374,7 @@ bzip2_fastq::process(analytical_chunk* chunk)
           throw thread_error("bzip2_fastq::process: unknown error");
       }
 
-      output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
+      output_buffer.first = OUTPUT_BLOCK_SIZE - m_stream.avail_out;
       if (output_buffer.first) {
         file_chunk->buffers.push_back(std::move(output_buffer));
       }
@@ -569,15 +439,15 @@ gzip_fastq::process(analytical_chunk* chunk)
 
   int returncode = -1;
   do {
-    output_buffer.first = FASTQ_COMPRESSED_CHUNK;
-    output_buffer.second.reset(new unsigned char[FASTQ_COMPRESSED_CHUNK]);
+    output_buffer.first = OUTPUT_BLOCK_SIZE;
+    output_buffer.second.reset(new unsigned char[OUTPUT_BLOCK_SIZE]);
 
     m_stream.avail_out = output_buffer.first;
     m_stream.next_out = output_buffer.second.get();
 
     returncode = checked_deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
 
-    output_buffer.first = FASTQ_COMPRESSED_CHUNK - m_stream.avail_out;
+    output_buffer.first = OUTPUT_BLOCK_SIZE - m_stream.avail_out;
     if (output_buffer.first) {
       file_chunk->buffers.push_back(std::move(output_buffer));
     }
@@ -600,12 +470,10 @@ gzip_fastq::process(analytical_chunk* chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'split_fastq'
 
-const size_t BLOCK_SIZE = 64 * 1024;
-
 split_fastq::split_fastq(size_t next_step)
   : analytical_step(analytical_step::ordering::ordered, false)
   , m_next_step(next_step)
-  , m_buffer(new unsigned char[BLOCK_SIZE])
+  , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
   , m_count()
   , m_eof(false)
@@ -633,28 +501,30 @@ split_fastq::process(analytical_chunk* chunk)
   chunk_vec chunks;
   const auto& src = file_chunk->reads;
   for (size_t src_offset = 0; src_offset < src.size();) {
-    const auto n = std::min(src.size() - src_offset, BLOCK_SIZE - m_offset);
+    const auto n =
+      std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_offset);
     std::memcpy(m_buffer.get() + m_offset, src.data() + src_offset, n);
 
     src_offset += n;
     m_offset += n;
 
-    if (m_offset == BLOCK_SIZE) {
+    if (m_offset == GZIP_BLOCK_SIZE) {
       output_chunk_ptr block(new fastq_output_chunk());
-      block->buffers.emplace_back(BLOCK_SIZE, std::move(m_buffer));
+      block->buffers.emplace_back(GZIP_BLOCK_SIZE, std::move(m_buffer));
       block->count = m_count;
 
       chunks.emplace_back(m_next_step, std::move(block));
 
-      m_buffer.reset(new unsigned char[BLOCK_SIZE]);
+      m_buffer.reset(new unsigned char[GZIP_BLOCK_SIZE]);
       m_offset = 0;
       m_count = 0;
     }
   }
 
-  // The next chunk will contain the last of these reads; incrementing the timer
-  // then is easier than trying to figure out how many reads are in each buffer.
-  // We ignore the case were m_buffer is currently empty to keep things simple.
+  // The next chunk will contain the last of these reads; incrementing the
+  // timer then is easier than trying to figure out how many reads are in each
+  // buffer. We ignore the case were m_buffer is currently empty to keep
+  // things simple.
   m_count += file_chunk->count;
 
   if (m_eof) {
@@ -695,8 +565,8 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   stream.avail_in = input_buffer.first;
   stream.next_in = input_buffer.second.get();
 
-  output_buffer.first = BLOCK_SIZE;
-  output_buffer.second.reset(new unsigned char[BLOCK_SIZE]);
+  output_buffer.first = OUTPUT_BLOCK_SIZE;
+  output_buffer.second.reset(new unsigned char[OUTPUT_BLOCK_SIZE]);
 
   stream.avail_out = output_buffer.first;
   stream.next_out = output_buffer.second.get();
@@ -706,7 +576,7 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   AR_DEBUG_ASSERT(stream.avail_out && returncode == Z_STREAM_END);
 
   output_chunk_ptr block(new fastq_output_chunk(input_chunk->eof));
-  output_buffer.first = BLOCK_SIZE - stream.avail_out;
+  output_buffer.first = OUTPUT_BLOCK_SIZE - stream.avail_out;
   block->buffers.emplace_back(std::move(output_buffer));
   block->count = input_chunk->count;
   output_buffer.second = nullptr;

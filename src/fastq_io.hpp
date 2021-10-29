@@ -43,10 +43,12 @@ class fastq_statistics;
 typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
 typedef std::unique_ptr<fastq_read_chunk> read_chunk_ptr;
 
-//! Number of FASTQ records to read for each data-chunk
-const size_t FASTQ_CHUNK_SIZE = 2 * 1024;
-//! Size of compressed chunks used to transport compressed data
-const size_t FASTQ_COMPRESSED_CHUNK = 40 * 1024;
+//! Rough number of nucleotides to read every cycle
+const size_t INPUT_BLOCK_SIZE = 4 * 64 * 1024;
+//! Size of chunks of when performing block compression
+const size_t GZIP_BLOCK_SIZE = 64 * 1024;
+//! Size of blocks to generate before writing to output
+const size_t OUTPUT_BLOCK_SIZE = 4 * 64 * 1024;
 
 /**
  * Container object for (demultiplexed) reads.
@@ -59,6 +61,9 @@ public:
 
   //! Indicates that EOF has been reached.
   bool eof;
+
+    //! Total number of nucleotides in this chunk
+  size_t nucleotides;
 
   //! Lines read from the mate 1 files
   fastq_vec reads_1;
@@ -85,12 +90,8 @@ public:
   //! the number of reads, in the case of collapsed reads.
   size_t count;
 
-private:
-  friend class gzip_fastq;
-  friend class bzip2_fastq;
-  friend class write_fastq;
-  friend class split_fastq;
-  friend class gzip_split_fastq;
+  //! Total number of nucleotides in this chunk
+  size_t nucleotides;
 
   //! Encoded FASTQ reads
   std::string reads;
@@ -102,97 +103,46 @@ private:
 /**
  * Simple file reading step.
  *
- * Reads from a single FASTQ file, storing the reads in a fastq_file_chunk.
- * Once the EOF has been reached, a single empty chunk will be returned,
- * marked using the 'eof' property.
- */
-class read_single_fastq : public analytical_step
-{
-public:
-  /**
-   * Constructor.
-   *
-   * @param encoding FASTQ encoding for reading quality scores.
-   * @param filename Path to FASTQ file containing mate 1 / 2 reads.
-   * @param next_step ID of analytical step to which data is forwarded.
-   *
-   * Opens the input file corresponding to the specified mate.
-   */
-  read_single_fastq(const fastq_encoding* encoding,
-                    const string_vec& filenames,
-                    size_t next_step,
-                    fastq_statistics* statistics = nullptr);
-
-  /** Reads N lines from the input file and saves them in an fastq_read_chunk.
-   */
-  virtual chunk_vec process(analytical_chunk* chunk);
-
-  /** Finalizer; checks that all input has been processed. */
-  virtual void finalize();
-
-  //! Copy construction not supported
-  read_single_fastq(const read_single_fastq&) = delete;
-  //! Assignment not supported
-  read_single_fastq& operator=(const read_single_fastq&) = delete;
-
-private:
-  //! Encoding used to parse FASTQ reads.
-  const fastq_encoding* m_encoding;
-  //! Current line in the input file (1-based)
-  size_t m_line_offset;
-  //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-  joined_line_readers m_io_input;
-  //! Statistics collected from raw input data
-  fastq_statistics* m_statistics;
-  //! The analytical step following this step
-  const size_t m_next_step;
-  //! Used to track whether an EOF block has been received.
-  bool m_eof;
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
-};
-
-/**
- * Simple file reading step.
- *
  * Reads from the mate 1 and the mate 2 files, storing the reads in a
  * fastq_file_chunk. Once the EOF has been reached, a single empty chunk will
  * be returned, marked using the 'eof' property.
  */
-class read_paired_fastq : public analytical_step
+class read_fastq : public analytical_step
 {
 public:
   /**
    * Constructor.
    */
-  read_paired_fastq(const fastq_encoding* encoding,
-                    const string_vec& filenames_1,
-                    const string_vec& filenames_2,
-                    size_t next_step,
-                    fastq_statistics* statistics_1 = nullptr,
-                    fastq_statistics* statistics_2 = nullptr);
+  read_fastq(const fastq_encoding* encoding,
+             const string_vec& filenames_1,
+             const string_vec& filenames_2,
+             size_t next_step,
+             bool interleaved = false,
+             fastq_statistics* statistics_1 = nullptr,
+             fastq_statistics* statistics_2 = nullptr);
 
-  /** Reads N lines from the input file and saves them in an fastq_file_chunk.
-   */
+  /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   virtual chunk_vec process(analytical_chunk* chunk);
 
   /** Finalizer; checks that all input has been processed. */
   virtual void finalize();
 
   //! Copy construction not supported
-  read_paired_fastq(const read_paired_fastq&) = delete;
+  read_fastq(const read_fastq&) = delete;
   //! Assignment not supported
-  read_paired_fastq& operator=(const read_paired_fastq&) = delete;
+  read_fastq& operator=(const read_fastq&) = delete;
 
 private:
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding* m_encoding;
-  //! Current line in the input file (1-based)
-  size_t m_line_offset;
+  //!
+  joined_line_readers m_io_input_1_base;
+  //!
+  joined_line_readers m_io_input_2_base;
   //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-  joined_line_readers m_io_input_1;
+  joined_line_readers* m_io_input_1;
   //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-  joined_line_readers m_io_input_2;
+  joined_line_readers* m_io_input_2;
   //! Statistics collected from raw mate 1 reads
   fastq_statistics* m_statistics_1;
   //! Statistics collected from raw mate 2 reads
@@ -201,56 +151,7 @@ private:
   const size_t m_next_step;
   //! Used to track whether an EOF block has been received.
   bool m_eof;
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
-};
 
-/**
- * Simple file reading step.
- *
- * Reads from an FASTQ file containing interleaved FASTQ reads, storing the
- * reads in a fastq_file_chunk. Once the EOF has been reached, a single empty
- * chunk will be returned, marked using the 'eof' property.
- */
-class read_interleaved_fastq : public analytical_step
-{
-public:
-  /**
-   * Constructor.
-   */
-  read_interleaved_fastq(const fastq_encoding* encoding,
-                         const string_vec& filenames,
-                         size_t next_step,
-                         fastq_statistics* statistics_1 = nullptr,
-                         fastq_statistics* statistics_2 = nullptr);
-
-  /** Reads N lines from the input file and saves them in an fastq_file_chunk.
-   */
-  virtual chunk_vec process(analytical_chunk* chunk);
-
-  /** Finalizer; checks that all input has been processed. */
-  virtual void finalize();
-
-  //! Copy construction not supported
-  read_interleaved_fastq(const read_interleaved_fastq&) = delete;
-  //! Assignment not supported
-  read_interleaved_fastq& operator=(const read_interleaved_fastq&) = delete;
-
-private:
-  //! Encoding used to parse FASTQ reads.
-  const fastq_encoding* m_encoding;
-  //! Current line in the input file (1-based)
-  size_t m_line_offset;
-  //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
-  joined_line_readers m_io_input;
-  //! Statistics collected from raw mate 1 reads
-  fastq_statistics* m_statistics_1;
-  //! Statistics collected from raw mate 2 reads
-  fastq_statistics* m_statistics_2;
-  //! The analytical step following this step
-  const size_t m_next_step;
-  //! Used to track whether an EOF block has been received.
-  bool m_eof;
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
 };

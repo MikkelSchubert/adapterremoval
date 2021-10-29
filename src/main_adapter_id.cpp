@@ -455,26 +455,13 @@ identify_adapter_sequences(const userconfig& config)
   std::cout << "Attempting to identify adapter sequences ..." << std::endl;
 
   scheduler sch;
-  try {
-    if (config.interleaved_input) {
-      sch.add_step(ai_read_fastq,
-                   "read_interleaved_fastq",
-                   new read_interleaved_fastq(config.quality_input_fmt.get(),
-                                              config.input_files_1,
-                                              ai_identify_adapters));
-    } else {
-      sch.add_step(ai_read_fastq,
-                   "read_paired_fastq",
-                   new read_paired_fastq(config.quality_input_fmt.get(),
-                                         config.input_files_1,
-                                         config.input_files_2,
-                                         ai_identify_adapters));
-    }
-  } catch (const std::ios_base::failure& error) {
-    std::cerr << "IO error opening file; aborting:\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
-    return 1;
-  }
+  sch.add_step(ai_read_fastq,
+               "read_paired_fastq",
+               new read_fastq(config.quality_input_fmt.get(),
+                              config.input_files_1,
+                              config.input_files_2,
+                              config.interleaved_input,
+                              ai_identify_adapters));
 
   sch.add_step(ai_identify_adapters,
                "identify_adapters",
