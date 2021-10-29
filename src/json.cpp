@@ -72,25 +72,33 @@ _escape(const std::string& value)
   return stream.str();
 }
 
-json_section::json_section(json_writer& parent)
-  : m_parent(parent)
+json_section::json_section(json_section&& other)
+  : m_parent(nullptr)
 {
-  m_parent._write("{");
-  m_parent.m_values = false;
-  m_parent.m_indent++;
+  std::swap(m_parent, other.m_parent);
 }
 
-json_section::json_section(json_writer& parent, const std::string& key)
+json_section::json_section(json_writer* parent)
   : m_parent(parent)
 {
-  m_parent._write(key, "{");
-  m_parent.m_values = false;
-  m_parent.m_indent++;
+  m_parent->_write("{");
+  m_parent->m_values = false;
+  m_parent->m_indent++;
+}
+
+json_section::json_section(json_writer* parent, const std::string& key)
+  : m_parent(parent)
+{
+  m_parent->_write(key, "{");
+  m_parent->m_values = false;
+  m_parent->m_indent++;
 }
 
 json_section::~json_section()
 {
-  m_parent.end('}');
+  if (m_parent) {
+    m_parent->end('}');
+  }
 }
 
 json_writer::json_writer(std::ostream& stream)
@@ -111,13 +119,13 @@ json_writer::~json_writer()
 json_section
 json_writer::start()
 {
-  return json_section(*this);
+  return json_section(this);
 }
 
 json_section
 json_writer::start(const std::string& key)
 {
-  return json_section(*this, key);
+  return json_section(this, key);
 }
 
 void

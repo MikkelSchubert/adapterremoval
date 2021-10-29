@@ -35,17 +35,30 @@
 
 class json_writer;
 
+/** Helper class for creating sub-sections in JSON output. */
 class json_section
 {
 public:
-  explicit json_section(json_writer& parent);
-  explicit json_section(json_writer& parent, const std::string& key);
+  /** Move constructor. **/
+  json_section(json_section&& other);
+
+  /** Dictionary as value; for use with json_writer::start_list. */
+  explicit json_section(json_writer* parent);
+  /** Dictionary as key/value pair; . */
+  explicit json_section(json_writer* parent, const std::string& key);
+
+  /** Ends section. */
   ~json_section();
 
   inline operator bool() const { return true; }
 
+  //! Copy construction not supported
+  json_section(const json_section&) = delete;
+  //! Assignment not supported
+  json_section& operator=(const json_section&) = delete;
+
 private:
-  json_writer& m_parent;
+  json_writer* m_parent;
 };
 
 /**
