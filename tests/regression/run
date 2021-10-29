@@ -428,10 +428,18 @@ class TestCase(object):
         return [field % {"ROOT": root} for field in command]
 
     def _is_properly_paired(self):
-        input_1 = self._files["input_1"]
-        input_2 = self._files["input_2"]
+        def _count_lines(filenames):
+            line_count = 0
+            for filename in filenames:
+                with open(filename) as handle:
+                    line_count += sum(1 for line in handle)
 
-        return input_1 and len(input_1) == len(input_2)
+            return line_count
+
+        input_1_lines = _count_lines(self._files["input_1"])
+        input_2_lines = _count_lines(self._files["input_2"])
+
+        return input_1_lines and input_1_lines == input_2_lines
 
     @classmethod
     def _mangle_settings(cls, handle):
