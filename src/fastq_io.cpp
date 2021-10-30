@@ -26,6 +26,10 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifdef USE_LIBDEFLATE
+#include <libdeflate.h>
+#endif
+
 #include "debug.hpp"
 #include "fastq_io.hpp"
 #include "userconfig.hpp"
@@ -556,32 +560,44 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   output_chunk_ptr input_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
   AR_DEBUG_ASSERT(input_chunk->buffers.size() == 1);
 
-  z_stream stream;
-  checked_deflate_init2(&stream, m_config.gzip_level);
-
   buffer_pair& input_buffer = input_chunk->buffers.front();
   buffer_pair output_buffer;
-
-  stream.avail_in = input_buffer.first;
-  stream.next_in = input_buffer.second.get();
 
   output_buffer.first = OUTPUT_BLOCK_SIZE;
   output_buffer.second.reset(new unsigned char[OUTPUT_BLOCK_SIZE]);
 
+#ifdef USE_LIBDEFLATE
+  auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
+  auto compressed_size = libdeflate_gzip_compress(compressor,
+                                                  input_buffer.second.get(),
+                                                  input_buffer.first,
+                                                  output_buffer.second.get(),
+                                                  output_buffer.first);
+  libdeflate_free_compressor(compressor);
+
+  // The easily compressible input should fit in a single output block
+  AR_DEBUG_ASSERT(compressed_size);
+#else
+  z_stream stream;
+  checked_deflate_init2(&stream, m_config.gzip_level);
+
+  stream.avail_in = input_buffer.first;
+  stream.next_in = input_buffer.second.get();
   stream.avail_out = output_buffer.first;
   stream.next_out = output_buffer.second.get();
-
   // The easily compressible input should fit in a single output block
   const int returncode = checked_deflate(&stream, Z_FINISH);
   AR_DEBUG_ASSERT(stream.avail_out && returncode == Z_STREAM_END);
 
+  const auto compressed_size = OUTPUT_BLOCK_SIZE - stream.avail_out;
+  checked_deflate_end(&stream);
+#endif
+
   output_chunk_ptr block(new fastq_output_chunk(input_chunk->eof));
-  output_buffer.first = OUTPUT_BLOCK_SIZE - stream.avail_out;
+  output_buffer.first = compressed_size;
   block->buffers.emplace_back(std::move(output_buffer));
   block->count = input_chunk->count;
   output_buffer.second = nullptr;
-
-  checked_deflate_end(&stream);
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(block));

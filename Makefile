@@ -9,6 +9,9 @@ CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
+# Use libdeflate for block compression
+LIBDEFLATE := yes
+
 # Hide individual commands during build; only shows summaries instead.
 QUIET_BUILD := yes
 
@@ -34,6 +37,11 @@ LIBRARIES := -pthread -lz -lbz2
 
 # Build directory; modified depending on build options
 BDIR     := build/main
+
+ifeq ($(strip ${LIBDEFLATE}),yes)
+CXXFLAGS := $(CXXFLAGS) -DUSE_LIBDEFLATE
+LIBRARIES := $(LIBRARIES) -ldeflate
+endif
 
 
 ifeq ($(strip ${QUIET_BUILD}),yes)
