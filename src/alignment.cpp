@@ -36,28 +36,18 @@
 #include "fastq.hpp"
 
 #if defined(__SSE__) && defined(__SSE2__)
-#include <xmmintrin.h>
+#include <bitset>
+#include <emmintrin.h>
 
-//! Mask representing those (sparse) bits used when comparing multiple
-//! nucleotides. These are simply the least significant bit in each byte.
-const __m128i BIT_MASK_128 = _mm_set1_epi8(1);
-//! Zero'd 128b integer.
-const __m128i ZERO_128 = _mm_set1_epi8(0);
-//! A 0xffff... 128b integer.
-const __m128i ONES_128 = _mm_set1_epi8(-1);
 //! Mask of all Ns
 const __m128i N_MASK_128 = _mm_set1_epi8('N');
 
-/** Counts the number of bits set in a __m128i. **/
+/** Counts the number of masked bytes **/
 inline size_t
-COUNT_BITS_128(__m128i value)
+COUNT_MASKED(__m128i value)
 {
-  // Calculates the abs. difference between each pair of bytes in the upper
-  // and lower 64bit integers, and places the sum of these differences in
-  // the 0th and 4th shorts (16b).
-  value = _mm_sad_epu8(ZERO_128, value);
-  // Return the 0th and 4th shorts containing the sums calculated above
-  return _mm_extract_epi16(value, 0) + _mm_extract_epi16(value, 4);
+  // Generate 16 bit mask from most significant bits of each byte and count bits
+  return std::bitset<16>(_mm_movemask_epi8(value)).count();
 }
 #else
 #warning SEE optimizations disabled!
@@ -99,17 +89,11 @@ compare_subsequences(const alignment_info& best,
     const __m128i ns_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, N_MASK_128),
                                          _mm_cmpeq_epi8(s2, N_MASK_128));
 
-    // Sets 0xFF for every byte where bytes differ, but neither is N
-    const __m128i mm_mask =
-      _mm_xor_si128(ONES_128, // This is a bitwise NOT
-                    _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask));
-    // The oddity above is because SSE doesn't have a bitwise not operator, and
-    // `~(some __m128i)` doesn't work on Intel compilers. XOR(thing, 0xff)
-    // is the same, so we use that
+    // Sets 0xFF for every byte where bytes are equal or N
+    const __m128i eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
-    current.n_ambiguous += COUNT_BITS_128(_mm_and_si128(ns_mask, BIT_MASK_128));
-    current.n_mismatches +=
-      COUNT_BITS_128(_mm_and_si128(mm_mask, BIT_MASK_128));
+    current.n_ambiguous += COUNT_MASKED(ns_mask);
+    current.n_mismatches += 16 - COUNT_MASKED(eq_mask);
 
     // Matches count for 1, Ns for 0, and mismatches for -1
     current.score =
