@@ -45,7 +45,7 @@ add_write_step(const userconfig& config,
                analytical_step* step)
 {
   if (config.gzip) {
-    if (config.gzip_blocks) {
+    if (!config.gzip_stream) {
       sch.add_step(
         offset, "split_" + name, new split_fastq(offset + ai_split_offset));
 

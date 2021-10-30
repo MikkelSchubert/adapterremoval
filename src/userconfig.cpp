@@ -121,7 +121,7 @@ userconfig::userconfig(const std::string& name,
   , shift(2)
   , max_threads(1)
   , gzip(false)
-  , gzip_blocks(false)
+  , gzip_stream(false)
   , gzip_level(6)
   , bzip2(false)
   , bzip2_level(9)
@@ -251,12 +251,16 @@ userconfig::userconfig(const std::string& name,
   argparser.add_header("OUTPUT COMPRESSION:");
   argparser["--gzip"] =
     new argparse::flag(&gzip, "Enable gzip compression [default: %default]");
-  argparser["--gzip-blocks"] = new argparse::flag(
-    &gzip_blocks,
-    "Perform compression on independent blocks of data (64kb). This allows "
-    "much greater throughput in threaded mode at the cost of about 3% greater "
-    "file sizes. The output is compatible with zlib compliant programs, but "
-    "exceptions do exist. Implies --gzip [default: %default]");
+  argparser["--gzip-stream"] = new argparse::flag(
+    &gzip_stream,
+    "Compress output using GZip streams instead of compressing independent "
+    "blocks of 64kb data. Block based compression "
+#ifdef USE_LIBDEFLATE
+    "uses libdeflate for greater throughput and "
+#endif
+    "allows even greater throughput in threaded mode at the cost of about 3% "
+    "greater and possible incompatibility with some programs. Implies --gzip "
+    "[default: %default]");
   argparser["--gzip-level"] = new argparse::knob(
     &gzip_level, "LEVEL", "Compression level, 0 - 9 [default: %default]");
 
@@ -565,7 +569,7 @@ userconfig::parse_args(int argc, char* argv[])
     }
   }
 
-  gzip |= gzip_blocks;
+  gzip |= gzip_stream;
 
   if (gzip_level > 9) {
     std::cerr << "Error: --gzip-level must be in the range 0 to 9, not "

@@ -171,8 +171,8 @@ public:
 
   //! GZip compression enabled / disabled
   bool gzip;
-  //! GZip block-compression enabled / disabled
-  bool gzip_blocks;
+  //! GZip using a single stream rather than 64kb blocks.
+  bool gzip_stream;
   //! GZip compression level used for output reads
   unsigned int gzip_level;
 
