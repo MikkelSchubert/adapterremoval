@@ -72,7 +72,7 @@ _escape(const std::string& value)
   return stream.str();
 }
 
-json_section::json_section(json_section&& other)
+json_section::json_section(json_section&& other) noexcept
   : m_parent(nullptr)
 {
   std::swap(m_parent, other.m_parent);

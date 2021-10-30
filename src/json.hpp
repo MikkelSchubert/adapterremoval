@@ -40,7 +40,7 @@ class json_section
 {
 public:
   /** Move constructor. **/
-  json_section(json_section&& other);
+  json_section(json_section&& other) noexcept;
 
   /** Dictionary as value; for use with json_writer::start_list. */
   explicit json_section(json_writer* parent);
