@@ -22,7 +22,6 @@
 from __future__ import print_function
 
 import argparse
-import bz2
 import difflib
 import errno
 import gzip
@@ -81,14 +80,12 @@ def print_err(*vargs, **kwargs):
 
 
 #############################################################################
-UNCOMPRESSED, GZIP, BZIP2 = "raw", "gz", "bz2"
+UNCOMPRESSED, GZIP = "raw", "gz"
 
 
 def compress(value, compression):
     if compression == GZIP:
         return gzip.compress(value)
-    elif compression == BZIP2:
-        return bz2.compress(value)
     else:
         assert False, compression
 
@@ -194,8 +191,8 @@ class TestCase(object):
             interleaved_tests.append(True)
 
         parameters = itertools.product(
-            (UNCOMPRESSED, GZIP, BZIP2),
-            (UNCOMPRESSED, GZIP, BZIP2),
+            (UNCOMPRESSED, GZIP),
+            (UNCOMPRESSED, GZIP),
             interleaved_tests,
         )
 
@@ -233,8 +230,8 @@ class TestCase(object):
         out_compression=UNCOMPRESSED,
         interleaved=False,
     ):
-        assert in_compression in (UNCOMPRESSED, BZIP2, GZIP)
-        assert out_compression in (UNCOMPRESSED, BZIP2, GZIP)
+        assert in_compression in (UNCOMPRESSED, GZIP)
+        assert out_compression in (UNCOMPRESSED, GZIP)
         os.makedirs(root)
 
         input_1, input_2 = self._setup_input(root, in_compression, interleaved)
@@ -411,9 +408,7 @@ class TestCase(object):
             command.extend(("--barcode-list", "barcodes.txt"))
 
         if input_1 or input_2:
-            if compression == BZIP2:
-                command.append("--bzip2")
-            elif compression == GZIP:
+            if compression == GZIP:
                 command.append("--gzip")
 
         if input_1:

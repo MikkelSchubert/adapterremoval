@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <ios>
+#include <memory>
 #include <string>
 
 #include <bzlib.h>
@@ -42,13 +43,6 @@ class gzip_error : public io_error
 {
 public:
   gzip_error(const std::string& message, const char* gzip_msg = nullptr);
-};
-
-/** Represents errors during BZip2 (de)compression. */
-class bzip2_error : public io_error
-{
-public:
-  bzip2_error(const std::string& message);
 };
 
 /** Base-class for line reading; used by receivers. */
@@ -71,7 +65,6 @@ public:
  * Currently reads
  *  - uncompressed files
  *  - gzip compressed files
- *  - bzip2 compressed files
  *
  * Errors are reported using either 'io_error' or 'gzip_error'.
  */
@@ -84,7 +77,7 @@ public:
   /** Closes the file, if still open. */
   ~line_reader();
 
-  /** Reads a lien into dst, returning false on EOF. */
+  /** Reads a line into dst, returning false on EOF. */
   bool getline(std::string& dst);
 
   //! Copy construction not supported
@@ -96,48 +89,17 @@ private:
   //! Refills 'm_buffer' and sets 'm_buffer_ptr' and 'm_buffer_end'.
   void refill_buffers();
 
-  //! Raw file used to read input.
-  FILE* m_file;
-  /** Refills 'm_raw_buffer'; sets 'm_raw_buffer_ptr' and 'm_raw_buffer_end'. */
-  void refill_raw_buffer();
-  /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */
-  void refill_buffers_uncompressed();
-
-  //! GZip stream pointer; used if input it detected to be gzip compressed.
-  z_stream* m_gzip_stream;
-
-  /** Returns true if the raw buffer contains gzip'd data. */
-  bool identify_gzip() const;
-  /** Initializes gzip stream and output buffers. */
-  void initialize_buffers_gzip();
-  /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
-  void refill_buffers_gzip();
-  /** Closes gzip buffers and frees associated memory. */
-  void close_buffers_gzip();
-
-  //! GZip stream pointer; used if input it detected to be gzip compressed.
-  bz_stream* m_bzip2_stream;
-
-  /** Returns true if the raw buffer contains bzip2'd data. */
-  bool identify_bzip2() const;
-  /** Initializes bzip2 stream and output buffers. */
-  void initialize_buffers_bzip2();
-  /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
-  void refill_buffers_bzip2();
-  /** Closes gzip2 buffers and frees associated memory. */
-  void close_buffers_bzip2();
+  //! Filename of file
+  std::string m_filename;
+  //! Compressed or uncompresed file
+  gzFile m_file;
 
   //! Pointer to buffer of decompressed data.
-  char* m_buffer;
+  std::unique_ptr<char[]> m_buffer;
   //! Pointer to current location in input buffer.
   char* m_buffer_ptr;
   //! Pointer to end of current buffer.
   char* m_buffer_end;
-
-  //! Pointer to buffer of raw data.
-  char* m_raw_buffer;
-  //! Pointer to end of current raw buffer.
-  char* m_raw_buffer_end;
 
   //! Indicates if a read across the EOF has been attempted.
   bool m_eof;

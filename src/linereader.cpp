@@ -76,46 +76,46 @@ gzip_error::gzip_error(const std::string& message, const char* gzip_msg)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'gzip_error'
-
-bzip2_error::bzip2_error(const std::string& message)
-  : io_error(message)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'line_reader'
 
 line_reader::line_reader(const std::string& fpath)
-  : m_file(managed_writer::fopen(fpath, "rb"))
-  , m_gzip_stream(nullptr)
-  , m_bzip2_stream(nullptr)
-  , m_buffer(nullptr)
-  , m_buffer_ptr(nullptr)
-  , m_buffer_end(nullptr)
-  , m_raw_buffer(new char[BUF_SIZE])
-  , m_raw_buffer_end(m_raw_buffer + BUF_SIZE)
+  : m_filename(fpath)
+  , m_file(managed_writer::gzopen(fpath, "rb"))
+  , m_buffer(new char[BUF_SIZE])
+  , m_buffer_ptr(m_buffer.get())
+  , m_buffer_end(m_buffer.get())
   , m_eof(false)
-{
-  if (!m_file) {
-    throw io_error("line_reader::open: failed to open file", errno);
-  }
-}
+{}
 
 line_reader::~line_reader()
 {
-  try {
-    close_buffers_gzip();
-    close_buffers_bzip2();
+  auto errnum = gzclose(m_file);
+  if (errnum != Z_OK) {
+    std::string error;
 
-    delete[] m_raw_buffer;
-    m_raw_buffer = nullptr;
+    switch (errnum) {
+      case Z_STREAM_ERROR:
+        error = "~line_reader: invalid file";
+        break;
 
-    if (fclose(m_file)) {
-      throw io_error("line_reader::close: error closing file", errno);
+      case Z_ERRNO:
+        error = format_io_msg("~line_reader: error closing file", errno);
+        break;
+
+      case Z_MEM_ERROR:
+        error = "~line_reader: insufficient memory";
+        break;
+
+      case Z_BUF_ERROR:
+        error = "~line_reader: read ended in stream";
+        break;
+
+      default:
+        error = "~line_reader: unknown error";
     }
-  } catch (const std::exception& error) {
+
     print_locker lock;
-    std::cerr << "Error closing file: " << error.what() << std::endl;
+    std::cerr << "Error closing " << m_filename << ": " << error << std::endl;
     std::exit(1);
   }
 }
@@ -156,309 +156,17 @@ line_reader::getline(std::string& dst)
 void
 line_reader::refill_buffers()
 {
-  if (m_buffer) {
-    if (m_gzip_stream) {
-      refill_buffers_gzip();
-    } else if (m_bzip2_stream) {
-      refill_buffers_bzip2();
-    } else {
-      refill_raw_buffer();
-      refill_buffers_uncompressed();
-    }
-  } else {
-    refill_raw_buffer();
+  const int nread = gzread(m_file, m_buffer.get(), BUF_SIZE);
+  if (nread == -1) {
+    int errnum = 0;
+    auto message = gzerror(m_file, &errnum);
 
-    if (identify_gzip()) {
-      initialize_buffers_gzip();
-    } else if (identify_bzip2()) {
-      initialize_buffers_bzip2();
-    } else {
-      refill_buffers_uncompressed();
-    }
-  }
-}
-
-void
-line_reader::refill_buffers_uncompressed()
-{
-  m_buffer = m_raw_buffer;
-  m_buffer_ptr = m_raw_buffer;
-  m_buffer_end = m_raw_buffer_end;
-}
-
-void
-line_reader::refill_raw_buffer()
-{
-  const int nread = fread(m_raw_buffer, 1, BUF_SIZE, m_file);
-
-  if (nread == BUF_SIZE) {
-    m_raw_buffer_end = m_raw_buffer + BUF_SIZE;
-  } else if (ferror(m_file)) {
-    throw io_error("line_reader::refill_buffer: error reading file", errno);
+    throw gzip_error("line_reader: error reading file", message);
   } else {
     // EOF set only once all data has been consumed
     m_eof = (nread == 0);
-    m_raw_buffer_end = m_raw_buffer + nread;
-  }
-}
 
-bool
-line_reader::identify_gzip() const
-{
-  if (m_raw_buffer_end - m_raw_buffer < 2) {
-    return false;
-  } else if (m_raw_buffer[0] != '\x1f' || m_raw_buffer[1] != '\x8b') {
-    return false;
-  }
-
-  return true;
-}
-
-void
-line_reader::initialize_buffers_gzip()
-{
-  m_buffer = new char[BUF_SIZE];
-  m_buffer_ptr = m_buffer + BUF_SIZE;
-  m_buffer_end = m_buffer + BUF_SIZE;
-
-  m_gzip_stream = new z_stream();
-  m_gzip_stream->zalloc = nullptr;
-  m_gzip_stream->zfree = nullptr;
-  m_gzip_stream->opaque = nullptr;
-
-  m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-  m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer);
-
-  switch (inflateInit2(m_gzip_stream, 15 + 16)) {
-    case Z_OK:
-      break;
-
-    case Z_MEM_ERROR:
-      throw gzip_error(
-        "line_reader::initialize_buffers_gzip: insufficient memory",
-        m_gzip_stream ? m_gzip_stream->msg : nullptr);
-
-    case Z_VERSION_ERROR:
-      throw gzip_error(
-        "line_reader::initialize_buffers_gzip: incompatible zlib version",
-        m_gzip_stream ? m_gzip_stream->msg : nullptr);
-
-    case Z_STREAM_ERROR:
-      throw gzip_error(
-        "line_reader::initialize_buffers_gzip: invalid parameters",
-        m_gzip_stream ? m_gzip_stream->msg : nullptr);
-
-    default:
-      throw gzip_error("line_reader::initialize_buffers_gzip: unknown error",
-                       m_gzip_stream ? m_gzip_stream->msg : nullptr);
-  }
-}
-
-void
-line_reader::refill_buffers_gzip()
-{
-  if (!m_gzip_stream->avail_in) {
-    refill_raw_buffer();
-    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-    m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer);
-  }
-
-  m_gzip_stream->avail_out = BUF_SIZE;
-  m_gzip_stream->next_out = reinterpret_cast<Bytef*>(m_buffer);
-  switch (inflate(m_gzip_stream, Z_NO_FLUSH)) {
-    case Z_OK:
-    case Z_BUF_ERROR: /* input buffer empty or output buffer full */
-      break;
-
-    case Z_STREAM_END:
-      // Handle concatenated streams; causes unnecessary reset at EOF
-      if (inflateReset(m_gzip_stream) != Z_OK) {
-        throw gzip_error(
-          "line_reader::refill_buffers_gzip: failed to reset stream",
-          m_gzip_stream ? m_gzip_stream->msg : nullptr);
-      }
-      break;
-
-    case Z_STREAM_ERROR:
-      throw gzip_error(
-        "line_reader::refill_buffers_gzip: inconsistent stream state",
-        m_gzip_stream ? m_gzip_stream->msg : nullptr);
-
-    default:
-      throw gzip_error("line_reader::refill_buffers_gzip: unknown error",
-                       m_gzip_stream ? m_gzip_stream->msg : nullptr);
-  }
-
-  m_buffer_ptr = m_buffer;
-  m_buffer_end = m_buffer + (BUF_SIZE - m_gzip_stream->avail_out);
-}
-
-void
-line_reader::close_buffers_gzip()
-{
-  if (m_gzip_stream) {
-    switch (inflateEnd(m_gzip_stream)) {
-      case Z_OK:
-        break;
-
-      case Z_STREAM_ERROR:
-        throw gzip_error("line_reader::close: stream error",
-                         m_gzip_stream ? m_gzip_stream->msg : nullptr);
-
-      default:
-        throw gzip_error("Unknown error in line_reader::close",
-                         m_gzip_stream ? m_gzip_stream->msg : nullptr);
-    }
-
-    delete m_gzip_stream;
-    m_gzip_stream = nullptr;
-
-    delete[] m_buffer;
-    m_buffer = nullptr;
-  }
-}
-
-void
-bzip2_initialize_stream(bz_stream* stream)
-{
-  switch (BZ2_bzDecompressInit(stream, /* verbosity */ 0, /* small */ 0)) {
-    case BZ_OK:
-      break;
-
-    case BZ_CONFIG_ERROR:
-      throw bzip2_error("bzip2_initialize_buffer: "
-                        "bzip2 library is miscompiled");
-
-    case BZ_PARAM_ERROR:
-      throw bzip2_error("bzip2_initialize_buffer: "
-                        "invalid parameters during initialization");
-
-    case BZ_MEM_ERROR:
-      throw bzip2_error("bzip2_initialize_buffer: "
-                        "insufficient memory to initialize");
-
-    case BZ_SEQUENCE_ERROR:
-      throw bzip2_error("bzip2_initialize_buffer: bzip2 sequence error");
-
-    default:
-      throw bzip2_error("bzip2_initialize_buffer: unknown error");
-  }
-}
-
-void
-bzip2_close_stream(bz_stream* stream)
-{
-  switch (BZ2_bzDecompressEnd(stream)) {
-    case BZ_OK:
-      break;
-
-    case BZ_PARAM_ERROR:
-      throw bzip2_error("bzip2_close_stream: invalid parameters");
-
-    case BZ_SEQUENCE_ERROR:
-      throw bzip2_error("bzip2_close_stream: bzip2 sequence error");
-
-    default:
-      throw bzip2_error("bzip2_close_stream: unknown bzip2 error");
-  }
-}
-
-bool
-line_reader::identify_bzip2() const
-{
-  if (m_raw_buffer_end - m_raw_buffer < 4) {
-    return false;
-  } else if (m_raw_buffer[0] != 'B' || m_raw_buffer[1] != 'Z') {
-    // Fixed magic header "BZ"
-    return false;
-  } else if (m_raw_buffer[2] != 'h' && m_raw_buffer[2] != '0') {
-    // bzip2 or bzip1 (deprecated)
-    return false;
-  } else if (m_raw_buffer[3] < '1' || m_raw_buffer[3] > '9') {
-    // Blocksizes; '1' - '9'
-    return false;
-  }
-
-  return true;
-}
-
-void
-line_reader::initialize_buffers_bzip2()
-{
-  m_buffer = new char[BUF_SIZE];
-  m_buffer_ptr = m_buffer + BUF_SIZE;
-  m_buffer_end = m_buffer + BUF_SIZE;
-
-  m_bzip2_stream = new bz_stream();
-  m_bzip2_stream->bzalloc = nullptr;
-  m_bzip2_stream->bzfree = nullptr;
-  m_bzip2_stream->opaque = nullptr;
-
-  m_bzip2_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-  m_bzip2_stream->next_in = m_raw_buffer;
-
-  bzip2_initialize_stream(m_bzip2_stream);
-}
-
-void
-line_reader::refill_buffers_bzip2()
-{
-  if (!m_bzip2_stream->avail_in) {
-    refill_raw_buffer();
-    m_bzip2_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-    m_bzip2_stream->next_in = m_raw_buffer;
-  }
-
-  m_bzip2_stream->avail_out = BUF_SIZE;
-  m_bzip2_stream->next_out = m_buffer;
-  if (m_bzip2_stream->avail_in) {
-    switch (BZ2_bzDecompress(m_bzip2_stream)) {
-      case BZ_OK:
-        break;
-
-      case BZ_STREAM_END:
-        // Close an restart stream, to handle concatenated files
-        bzip2_close_stream(m_bzip2_stream);
-        bzip2_initialize_stream(m_bzip2_stream);
-        break;
-
-      case BZ_PARAM_ERROR:
-        throw bzip2_error("line_reader::refill_buffers_bzip2: "
-                          "inconsistent bzip2 parameters");
-
-      case BZ_DATA_ERROR:
-      case BZ_DATA_ERROR_MAGIC:
-        throw bzip2_error("line_reader::refill_buffers_bzip2: "
-                          "malformed bzip2 file");
-
-      case BZ_MEM_ERROR:
-        throw bzip2_error("line_reader::refill_buffers_bzip2: "
-                          "insufficient memory to deflate bzip2 stream");
-
-      case BZ_SEQUENCE_ERROR:
-        throw bzip2_error("line_reader::refill_buffers_bzip2: "
-                          "bzip2 sequence error");
-
-      default:
-        throw bzip2_error("line_reader::refill_buffers_bzip2: "
-                          "unknown bzip2 error");
-    }
-  }
-
-  m_buffer_ptr = m_buffer;
-  m_buffer_end = m_buffer + (BUF_SIZE - m_bzip2_stream->avail_out);
-}
-
-void
-line_reader::close_buffers_bzip2()
-{
-  if (m_bzip2_stream) {
-    bzip2_close_stream(m_bzip2_stream);
-
-    delete m_bzip2_stream;
-    m_bzip2_stream = nullptr;
-
-    delete[] m_buffer;
-    m_buffer = nullptr;
+    m_buffer_ptr = m_buffer.get();
+    m_buffer_end = m_buffer.get() + nread;
   }
 }

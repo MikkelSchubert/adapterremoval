@@ -176,11 +176,6 @@ public:
   //! GZip compression level used for output reads
   unsigned int gzip_level;
 
-  //! BZip2 compression enabled / disabled
-  bool bzip2;
-  //! BZip2 compression level used for output reads
-  unsigned int bzip2_level;
-
   //! Maximum number of mismatches (considering both barcodes for PE)
   unsigned barcode_mm;
   //! Maximum number of mismatches (considering both barcodes for PE)

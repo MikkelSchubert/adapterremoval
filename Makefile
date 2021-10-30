@@ -33,7 +33,7 @@ INSTALLDOC = install -m 0644
 MKDIR      = install -d  # act as mkdir -p
 
 # Libraries required by AdapterRemoval
-LIBRARIES := -pthread -lz -lbz2
+LIBRARIES := -pthread -lz
 
 # Build directory; modified depending on build options
 BDIR     := build/main

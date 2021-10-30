@@ -62,7 +62,7 @@ public:
   //! Indicates that EOF has been reached.
   bool eof;
 
-    //! Total number of nucleotides in this chunk
+  //! Total number of nucleotides in this chunk
   size_t nucleotides;
 
   //! Lines read from the mate 1 files
@@ -139,9 +139,9 @@ private:
   joined_line_readers m_io_input_1_base;
   //!
   joined_line_readers m_io_input_2_base;
-  //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
+  //! Line reader used to read raw / gzip'd FASTQ files.
   joined_line_readers* m_io_input_1;
-  //! Line reader used to read raw / gzip'd / bzip2'd FASTQ files.
+  //! Line reader used to read raw / gzip'd FASTQ files.
   joined_line_readers* m_io_input_2;
   //! Statistics collected from raw mate 1 reads
   fastq_statistics* m_statistics_1;
@@ -152,39 +152,6 @@ private:
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
-};
-
-/**
- * BZip2 compression step; takes any lines in the input chunk, compresses them,
- * and adds them to the buffer list of the chunk, before forwarding it. */
-class bzip2_fastq : public analytical_step
-{
-public:
-  /** Constructor; 'next_step' sets the destination of compressed chunks. */
-  bzip2_fastq(const userconfig& config, size_t next_step);
-
-  /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-  virtual chunk_vec process(analytical_chunk* chunk);
-
-  /** Checks that all input has been processed and frees stream. */
-  virtual void finalize();
-
-  //! Copy construction not supported
-  bzip2_fastq(const bzip2_fastq&) = delete;
-  //! Assignment not supported
-  bzip2_fastq& operator=(const bzip2_fastq&) = delete;
-
-private:
-  //! N reads which did not result in an output chunk
-  size_t m_buffered_reads;
-  //! The analytical step following this step
-  const size_t m_next_step;
-  //! BZip2 stream object
-  bz_stream m_stream;
-  //! Used to track whether an EOF block has been received.
-  bool m_eof;
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
 };

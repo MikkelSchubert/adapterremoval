@@ -123,8 +123,6 @@ userconfig::userconfig(const std::string& name,
   , gzip(false)
   , gzip_stream(false)
   , gzip_level(6)
-  , bzip2(false)
-  , bzip2_level(9)
   , barcode_mm(0)
   , barcode_mm_r1(0)
   , barcode_mm_r2(0)
@@ -263,11 +261,6 @@ userconfig::userconfig(const std::string& name,
     "[default: %default]");
   argparser["--gzip-level"] = new argparse::knob(
     &gzip_level, "LEVEL", "Compression level, 0 - 9 [default: %default]");
-
-  argparser["--bzip2"] =
-    new argparse::flag(&bzip2, "Enable bzip2 compression [default: %default]");
-  argparser["--bzip2-level"] = new argparse::knob(
-    &bzip2_level, "LEVEL", "Compression level, 0 - 9 [default: %default]");
 
   argparser.add_header("TRIMMING SETTINGS:");
   argparser["--adapter1"] =
@@ -577,16 +570,6 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   }
 
-  if (bzip2_level < 1 || bzip2_level > 9) {
-    std::cerr << "Error: --bzip2-level must be in the range 1 to 9, not "
-              << bzip2_level << std::endl;
-    return argparse::parse_result::error;
-  } else if (bzip2 && gzip) {
-    std::cerr << "Error: Cannot enable --gzip and --bzip2 at the same time!"
-              << std::endl;
-    return argparse::parse_result::error;
-  }
-
   if (!max_threads) {
     std::cerr << "Error: --threads must be at least 1!" << std::endl;
     return argparse::parse_result::error;
@@ -706,8 +689,6 @@ userconfig::get_output_filename(const std::string& key_, size_t nth) const
   if (!(key == "--settings" || argparser.is_set(key))) {
     if (gzip) {
       filename += ".gz";
-    } else if (bzip2) {
-      filename += ".bz2";
     }
   }
 

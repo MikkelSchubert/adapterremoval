@@ -52,13 +52,13 @@ managed_writer::~managed_writer()
   close();
 }
 
-FILE*
-managed_writer::fopen(const std::string& filename, const char* mode)
+gzFile
+managed_writer::gzopen(const std::string& filename, const char* mode)
 {
   AR_DEBUG_ASSERT(mode);
 
   while (true) {
-    FILE* handle = ::fopen(filename.c_str(), mode);
+    gzFile handle = ::gzopen(filename.c_str(), mode);
 
     if (handle) {
       return handle;

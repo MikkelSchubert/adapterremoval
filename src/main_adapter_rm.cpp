@@ -58,10 +58,6 @@ add_write_step(const userconfig& config,
     }
 
     sch.add_step(offset + ai_zip_offset, "write_gzip_" + name, step);
-  } else if (config.bzip2) {
-    sch.add_step(offset + ai_zip_offset, "write_bzip2_" + name, step);
-    sch.add_step(
-      offset, "bzip2_" + name, new bzip2_fastq(config, offset + ai_zip_offset));
   } else {
     sch.add_step(offset, "write_" + name, step);
   }
