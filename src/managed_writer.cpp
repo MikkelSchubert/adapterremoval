@@ -215,9 +215,8 @@ managed_writer::close_tail_writer()
     std::cerr
       << "\n"
       << "WARNING: Number of available file-handles (ulimit -n) is too low.\n"
-      << "         AdapterRemoval will dynamically close/re-open files as "
-         "required,\n"
-      << "         but performance may suffer as a result.\n"
+      << "         AdapterRemoval will dynamically close/re-open files as\n"
+      << "         required, but performance may suffer as a result.\n"
       << std::endl;
 
     s_warning_printed = true;
