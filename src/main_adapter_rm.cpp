@@ -37,18 +37,6 @@
 #include "trimming.hpp"
 #include "userconfig.hpp"
 
-bool
-trim_write_report(const userconfig& config,
-                  const std::vector<reads_processor*>& processors,
-                  ar_statistics& stats)
-{
-  for (auto ptr : processors) {
-    stats.trimming.push_back(*ptr->get_final_statistics());
-  }
-
-  return write_report(config, stats);
-}
-
 void
 add_write_step(const userconfig& config,
                scheduler& sch,
@@ -80,9 +68,9 @@ add_write_step(const userconfig& config,
 }
 
 int
-remove_adapter_sequences_se(const userconfig& config)
+remove_adapter_sequences(const userconfig& config)
 {
-  std::cerr << "Trimming single ended reads ..." << std::endl;
+  std::cerr << "Trimming reads ..." << std::endl;
 
   scheduler sch;
   std::vector<reads_processor*> processors;
@@ -97,93 +85,22 @@ remove_adapter_sequences_se(const userconfig& config)
                               config.input_files_1,
                               config.input_files_2,
                               next_step,
-                              false,
-                              &stats.input_1));
-
-  if (config.adapters.barcode_count()) {
-    // Step 2: Parse and demultiplex reads based on single or double indices
-    sch.add_step(ai_demultiplex,
-                 "demultiplex_se",
-                 new demultiplex_se_reads(&config, &stats.demultiplexing));
-
-    add_write_step(
-      config,
-      sch,
-      ai_write_unidentified_1,
-      "unidentified",
-      new write_fastq(config.get_output_filename("demux_unknown", 1)));
-  }
-
-  // Step 3 - N: Trim and write demultiplexed reads
-  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    const size_t offset = (nth + 1) * ai_analyses_offset;
-    const std::string& sample = config.adapters.get_sample_name(nth);
-
-    processors.push_back(new se_reads_processor(config, nth));
-    sch.add_step(offset + ai_trim_se, "trim_se_" + sample, processors.back());
-
-    add_write_step(
-      config,
-      sch,
-      offset + ai_write_mate_1,
-      sample + "_fastq",
-      new write_fastq(config.get_output_filename("--output1", nth)));
-
-    if (!config.combined_output) {
-      add_write_step(
-        config,
-        sch,
-        offset + ai_write_discarded,
-        sample + "_discarded",
-        new write_fastq(config.get_output_filename("--discarded", nth)));
-
-      if (config.collapse) {
-        add_write_step(config,
-                       sch,
-                       offset + ai_write_collapsed,
-                       sample + "_collapsed",
-                       new write_fastq(
-                         config.get_output_filename("--outputcollapsed", nth)));
-      }
-    }
-  }
-
-  if (!sch.run(config.max_threads)) {
-    return 1;
-  } else if (!trim_write_report(config, processors, stats)) {
-    return 1;
-  }
-
-  return 0;
-}
-
-int
-remove_adapter_sequences_pe(const userconfig& config)
-{
-  std::cerr << "Trimming paired end reads ..." << std::endl;
-
-  scheduler sch;
-  std::vector<reads_processor*> processors;
-  ar_statistics stats(config.report_sample_rate);
-
-  // Step 1: Read input file
-  const size_t next_step =
-    config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
-  sch.add_step(ai_read_fastq,
-               "read_interleaved_fastq",
-               new read_fastq(config.quality_input_fmt.get(),
-                              config.input_files_1,
-                              config.input_files_2,
-                              next_step,
                               config.interleaved_input,
                               &stats.input_1,
                               &stats.input_2));
 
   if (config.adapters.barcode_count()) {
     // Step 2: Parse and demultiplex reads based on single or double indices
-    sch.add_step(ai_demultiplex,
-                 "demultiplex_pe",
-                 new demultiplex_pe_reads(&config, &stats.demultiplexing));
+    if (config.paired_ended_mode) {
+      sch.add_step(ai_demultiplex,
+                   "demultiplex",
+                   new demultiplex_pe_reads(&config, &stats.demultiplexing));
+
+    } else {
+      sch.add_step(ai_demultiplex,
+                   "demultiplex",
+                   new demultiplex_se_reads(&config, &stats.demultiplexing));
+    }
 
     add_write_step(
       config,
@@ -192,7 +109,7 @@ remove_adapter_sequences_pe(const userconfig& config)
       "unidentified_mate_1",
       new write_fastq(config.get_output_filename("demux_unknown", 1)));
 
-    if (!config.interleaved_output) {
+    if (config.paired_ended_mode && !config.interleaved_output) {
       add_write_step(
         config,
         sch,
@@ -207,8 +124,13 @@ remove_adapter_sequences_pe(const userconfig& config)
     const size_t offset = (nth + 1) * ai_analyses_offset;
     const std::string& sample = config.adapters.get_sample_name(nth);
 
-    processors.push_back(new pe_reads_processor(config, nth));
-    sch.add_step(offset + ai_trim_pe, "trim_pe_" + sample, processors.back());
+    if (config.paired_ended_mode) {
+      processors.push_back(new pe_reads_processor(config, nth));
+    } else {
+      processors.push_back(new se_reads_processor(config, nth));
+    }
+
+    sch.add_step(offset + ai_trim_se, "trim_se_" + sample, processors.back());
 
     add_write_step(
       config,
@@ -217,7 +139,7 @@ remove_adapter_sequences_pe(const userconfig& config)
       sample + "_mate_1",
       new write_fastq(config.get_output_filename("--output1", nth)));
 
-    if (!config.interleaved_output) {
+    if (config.paired_ended_mode && !config.interleaved_output) {
       add_write_step(
         config,
         sch,
@@ -233,12 +155,15 @@ remove_adapter_sequences_pe(const userconfig& config)
         offset + ai_write_discarded,
         sample + "_discarded",
         new write_fastq(config.get_output_filename("--discarded", nth)));
-      add_write_step(
-        config,
-        sch,
-        offset + ai_write_singleton,
-        sample + "_singleton",
-        new write_fastq(config.get_output_filename("--singleton", nth)));
+
+      if (config.paired_ended_mode) {
+        add_write_step(
+          config,
+          sch,
+          offset + ai_write_singleton,
+          sample + "_singleton",
+          new write_fastq(config.get_output_filename("--singleton", nth)));
+      }
 
       if (config.collapse) {
         add_write_step(config,
@@ -253,19 +178,11 @@ remove_adapter_sequences_pe(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!trim_write_report(config, processors, stats)) {
-    return 1;
   }
 
-  return 0;
-}
-
-int
-remove_adapter_sequences(const userconfig& config)
-{
-  if (config.paired_ended_mode) {
-    return remove_adapter_sequences_pe(config);
-  } else {
-    return remove_adapter_sequences_se(config);
+  for (auto ptr : processors) {
+    stats.trimming.push_back(*ptr->get_final_statistics());
   }
+
+  return !write_report(config, stats);
 }

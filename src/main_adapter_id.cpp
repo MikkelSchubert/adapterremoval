@@ -467,9 +467,5 @@ identify_adapter_sequences(const userconfig& config)
                "identify_adapters",
                new adapter_identification(config));
 
-  if (!sch.run(config.max_threads)) {
-    return 1;
-  }
-
-  return 0;
+  return !sch.run(config.max_threads);
 }

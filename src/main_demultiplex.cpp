@@ -45,18 +45,6 @@ add_write_step(const userconfig& config,
                const std::string& name,
                analytical_step* step);
 
-bool
-demux_write_report(const userconfig& config,
-                   const std::vector<reads_processor*>& processors,
-                   ar_statistics& stats)
-{
-  for (auto ptr : processors) {
-    stats.trimming.push_back(*ptr->get_final_statistics());
-  }
-
-  return write_report(config, stats);
-}
-
 class se_demultiplexed_reads_processor : public reads_processor
 {
 public:
@@ -140,9 +128,9 @@ public:
 };
 
 int
-demultiplex_sequences_se(const userconfig& config)
+demultiplex_sequences(const userconfig& config)
 {
-  std::cerr << "Demultiplexing single ended reads ..." << std::endl;
+  std::cerr << "Demultiplexing reads ..." << std::endl;
 
   scheduler sch;
   std::vector<reads_processor*> processors;
@@ -155,71 +143,21 @@ demultiplex_sequences_se(const userconfig& config)
                               config.input_files_1,
                               config.input_files_2,
                               ai_demultiplex,
-                              false,
-                              &stats.input_1));
-
-  // Step 2: Parse and demultiplex reads based on single or double indices
-  sch.add_step(ai_demultiplex,
-               "demultiplex_se",
-               new demultiplex_se_reads(&config, &stats.demultiplexing));
-
-  add_write_step(
-    config,
-    sch,
-    ai_write_unidentified_1,
-    "unidentified",
-    new write_fastq(config.get_output_filename("demux_unknown", 1)));
-
-  // Step 3 - N: Trim and write demultiplexed reads
-  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    const size_t offset = (nth + 1) * ai_analyses_offset;
-    const std::string& sample = config.adapters.get_sample_name(nth);
-
-    processors.push_back(new se_demultiplexed_reads_processor(config, nth));
-    sch.add_step(
-      offset + ai_trim_se, "process_se_" + sample, processors.back());
-
-    add_write_step(
-      config,
-      sch,
-      offset + ai_write_mate_1,
-      sample + "_fastq",
-      new write_fastq(config.get_output_filename("--output1", nth)));
-  }
-
-  if (!sch.run(config.max_threads)) {
-    return 1;
-  } else if (!demux_write_report(config, processors, stats)) {
-    return 1;
-  }
-
-  return 0;
-}
-
-int
-demultiplex_sequences_pe(const userconfig& config)
-{
-  std::cerr << "Demultiplexing paired end reads ..." << std::endl;
-
-  scheduler sch;
-  std::vector<reads_processor*> processors;
-  ar_statistics stats(config.report_sample_rate);
-
-  // Step 1: Read input file
-  sch.add_step(ai_read_fastq,
-               "read_paired_fastq",
-               new read_fastq(config.quality_input_fmt.get(),
-                              config.input_files_1,
-                              config.input_files_2,
-                              ai_demultiplex,
                               config.interleaved_input,
                               &stats.input_1,
                               &stats.input_2));
 
   // Step 2: Parse and demultiplex reads based on single or double indices
-  sch.add_step(ai_demultiplex,
-               "demultiplex_pe",
-               new demultiplex_pe_reads(&config, &stats.demultiplexing));
+  if (config.paired_ended_mode) {
+    sch.add_step(ai_demultiplex,
+                 "demultiplex_pe",
+                 new demultiplex_pe_reads(&config, &stats.demultiplexing));
+
+  } else {
+    sch.add_step(ai_demultiplex,
+                 "demultiplex_se",
+                 new demultiplex_se_reads(&config, &stats.demultiplexing));
+  }
 
   add_write_step(
     config,
@@ -228,7 +166,7 @@ demultiplex_sequences_pe(const userconfig& config)
     "unidentified_mate_1",
     new write_fastq(config.get_output_filename("demux_unknown", 1)));
 
-  if (!config.interleaved_output) {
+  if (config.paired_ended_mode && !config.interleaved_output) {
     add_write_step(
       config,
       sch,
@@ -242,9 +180,15 @@ demultiplex_sequences_pe(const userconfig& config)
     const size_t offset = (nth + 1) * ai_analyses_offset;
     const std::string& sample = config.adapters.get_sample_name(nth);
 
-    processors.push_back(new pe_demultiplexed_reads_processor(config, nth));
-    sch.add_step(
-      offset + ai_trim_pe, "process_pe_" + sample, processors.back());
+    reads_processor* processor = nullptr;
+    if (config.paired_ended_mode) {
+      processor = new pe_demultiplexed_reads_processor(config, nth);
+    } else {
+      processor = new se_demultiplexed_reads_processor(config, nth);
+    }
+
+    processors.push_back(processor);
+    sch.add_step(offset + ai_trim_se, "process_" + sample, processor);
 
     add_write_step(
       config,
@@ -253,7 +197,7 @@ demultiplex_sequences_pe(const userconfig& config)
       sample + "_mate_1",
       new write_fastq(config.get_output_filename("--output1", nth)));
 
-    if (!config.interleaved_output) {
+    if (config.paired_ended_mode && !config.interleaved_output) {
       add_write_step(
         config,
         sch,
@@ -265,19 +209,11 @@ demultiplex_sequences_pe(const userconfig& config)
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  } else if (!demux_write_report(config, processors, stats)) {
-    return 1;
   }
 
-  return 0;
-}
-
-int
-demultiplex_sequences(const userconfig& config)
-{
-  if (config.paired_ended_mode) {
-    return demultiplex_sequences_pe(config);
-  } else {
-    return demultiplex_sequences_se(config);
+  for (auto ptr : processors) {
+    stats.trimming.push_back(*ptr->get_final_statistics());
   }
+
+  return !write_report(config, stats);
 }
