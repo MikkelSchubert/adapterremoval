@@ -74,9 +74,6 @@ public:
    */
   fastq_pair_vec get_adapter_set(size_t nth) const;
 
-  /** Returns get_adapter_set(nth) formatted for printing. */
-  string_pair_vec get_pretty_adapter_set(size_t nth) const;
-
   /** Returns adapter sequences absent of any barcodes. */
   const fastq_pair_vec& get_raw_adapters() const;
 

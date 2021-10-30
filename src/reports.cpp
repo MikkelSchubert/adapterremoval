@@ -90,7 +90,8 @@ write_report_summary_stats(json_writer& writer,
 void
 write_report_trimming(const userconfig& config,
                       json_writer& writer,
-                      const trimming_statistics& totals)
+                      const trimming_statistics& totals,
+                      const fastq_pair_vec& adapters)
 {
   if (config.run_type == ar_command::demultiplex_sequences) {
     writer.write_null("trimming_and_filtering");
@@ -104,7 +105,6 @@ write_report_trimming(const userconfig& config,
     writer.write_int("adapter_trimmed_bases",
                      totals.adapter_trimmed_bases.sum());
 
-    const auto& adapters = config.adapters.get_raw_adapters();
     if (adapters.size() == 1) {
       writer.write("adapter_sequence_1", adapters.front().first.sequence());
       writer.write("adapter_sequence_2", adapters.front().second.sequence());
@@ -209,7 +209,8 @@ write_report_summary(const userconfig& config,
         totals += it;
       }
 
-      write_report_trimming(config, writer, totals);
+      write_report_trimming(
+        config, writer, totals, config.adapters.get_raw_adapters());
     }
 
     WITH_SECTION(writer, "output")
@@ -352,7 +353,8 @@ write_report_demultiplexing(const userconfig& config,
 
             writer.write_int("reads", demux.barcodes.at(i));
 
-            write_report_trimming(config, writer, sample_stats);
+            write_report_trimming(
+              config, writer, sample_stats, config.adapters.get_adapter_set(i));
 
             WITH_SECTION(writer, "output")
             {

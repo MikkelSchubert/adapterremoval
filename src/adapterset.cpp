@@ -412,40 +412,6 @@ adapter_set::get_adapter_set(size_t nth) const
   return adapters;
 }
 
-string_pair_vec
-adapter_set::get_pretty_adapter_set(size_t nth) const
-{
-  fastq_pair barcodes;
-  if (m_barcodes.empty()) {
-    AR_DEBUG_ASSERT(nth == 0);
-  } else {
-    barcodes = m_barcodes.at(nth);
-  }
-
-  string_pair_vec adapters;
-  const fastq_pair_vec adapter_pairs = get_adapter_set(nth);
-  for (const auto& adapter_pair : adapter_pairs) {
-    fastq adapter_1 = adapter_pair.first;
-    fastq adapter_2 = adapter_pair.second;
-    adapter_2.reverse_complement();
-
-    std::string seq_1 = adapter_1.sequence();
-    std::string seq_2 = adapter_2.sequence();
-
-    if (barcodes.first.length()) {
-      seq_2.insert(barcodes.first.length(), 1, '_');
-    }
-
-    if (barcodes.second.length()) {
-      seq_1.insert(barcodes.second.length(), 1, '_');
-    }
-
-    adapters.push_back(string_pair(seq_1, seq_2));
-  }
-
-  return adapters;
-}
-
 const fastq_pair_vec&
 adapter_set::get_raw_adapters() const
 {
