@@ -224,6 +224,41 @@ TEST_CASE("constructor_no_qualities_no_sequence", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Move constructor
+
+TEST_CASE("move_constructor", "[fastq::fastq]")
+{
+  fastq record1("record_1", "ACGT", "1234");
+  fastq record2(std::move(record1));
+
+  REQUIRE(record1.header() == "");
+  REQUIRE(record1.sequence() == "");
+  REQUIRE(record1.qualities() == "");
+
+  REQUIRE(record2.header() == "record_1");
+  REQUIRE(record2.sequence() == "ACGT");
+  REQUIRE(record2.qualities() == "1234");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Move constructor
+
+TEST_CASE("assignment_operator", "[fastq::fastq]")
+{
+  fastq record1("record_1", "ACGT", "1234");
+  fastq record2;
+  record2 = record1;
+
+  REQUIRE(record1.header() == "record_1");
+  REQUIRE(record1.sequence() == "ACGT");
+  REQUIRE(record1.qualities() == "1234");
+
+  REQUIRE(record2.header() == "record_1");
+  REQUIRE(record2.sequence() == "ACGT");
+  REQUIRE(record2.qualities() == "1234");
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // misc properties
 
 TEST_CASE("name", "[fastq::fastq]")
