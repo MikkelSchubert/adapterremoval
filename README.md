@@ -1,4 +1,4 @@
-# AdapterRemoval [![Travis](https://img.shields.io/travis/MikkelSchubert/adapterremoval/master.svg)](https://travis-ci.com/MikkelSchubert/adapterremoval) [![Coveralls](https://img.shields.io/coveralls/MikkelSchubert/adapterremoval.svg)](https://coveralls.io/github/MikkelSchubert/adapterremoval)
+# AdapterRemoval [![Travis](https://img.shields.io/travis/MikkelSchubert/adapterremoval/master.svg)](https://app.travis-ci.com/github/MikkelSchubert/adapterremoval) [![Coveralls](https://img.shields.io/coveralls/MikkelSchubert/adapterremoval.svg)](https://coveralls.io/github/MikkelSchubert/adapterremoval)
 
 AdapterRemoval searches for and removes adapter sequences from High-Throughput
 Sequencing (HTS) data and (optionally) trims low quality bases from the 3' end
