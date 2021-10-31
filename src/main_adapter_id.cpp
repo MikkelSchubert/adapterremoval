@@ -460,10 +460,10 @@ identify_adapter_sequences(const userconfig& config)
                new read_fastq(config.quality_input_fmt.get(),
                               config.input_files_1,
                               config.input_files_2,
-                              config.interleaved_input,
-                              ai_identify_adapters));
+                              ai_analyses_offset,
+                              config.interleaved_input));
 
-  sch.add_step(ai_identify_adapters,
+  sch.add_step(ai_analyses_offset,
                "identify_adapters",
                new adapter_identification(config));
 
