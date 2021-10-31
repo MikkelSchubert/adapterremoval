@@ -95,14 +95,11 @@ def decompress(filename):
         value = handle.read()
 
     header = value[:2]
-    if filename.endswith(".bz2"):
-        if header != b"BZ":
-            raise TestError(f"{filename} has .bz2 extension, but header is {header!r}")
-
-        value = bz2.decompress(value)
-    elif filename.endswith(".gz"):
+    if filename.endswith(".gz"):
         if header != b"\x1f\x8b":
-            raise TestError(f"{filename} has .gz extension, but header is {header!r}")
+            raise TestError(
+                "{} has .gz extension, but header is {!r}".format(filename, header)
+            )
 
         value = gzip.decompress(value)
 
@@ -636,7 +633,7 @@ def main(argv):
         print_ok("\nAll %i tests succeeded." % (len(tests),))
 
     if n_skipped:
-        print_warn(f"Skipped {n_skipped} tests!")
+        print_warn("Skipped {} tests!".format(n_skipped))
 
     return n_failures
 
