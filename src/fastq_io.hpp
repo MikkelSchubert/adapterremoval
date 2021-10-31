@@ -149,6 +149,9 @@ private:
   fastq_statistics* m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
+
+  //! True if input is single-end
+  bool m_single_end;
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 

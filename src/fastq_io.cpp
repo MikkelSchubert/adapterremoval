@@ -191,6 +191,7 @@ read_fastq::read_fastq(const fastq_encoding* encoding,
   , m_statistics_1(statistics_1)
   , m_statistics_2(statistics_2)
   , m_next_step(next_step)
+  , m_single_end(false)
   , m_eof(false)
   , m_lock()
 {
@@ -201,6 +202,7 @@ read_fastq::read_fastq(const fastq_encoding* encoding,
   } else if (filenames_2.empty()) {
     m_io_input_2 = &m_io_input_1_base;
     m_statistics_2 = statistics_1;
+    m_single_end = true;
   } else {
     AR_DEBUG_ASSERT(filenames_1.size() == filenames_2.size());
   }
@@ -216,9 +218,8 @@ read_fastq::process(analytical_chunk* chunk)
   }
 
   read_chunk_ptr file_chunk(new fastq_read_chunk());
-  const bool single_end = m_statistics_1 == m_statistics_2;
   auto reads_1 = &file_chunk->reads_1;
-  auto reads_2 = single_end ? reads_1 : &file_chunk->reads_2;
+  auto reads_2 = m_single_end ? reads_1 : &file_chunk->reads_2;
 
   fastq record;
   bool eof = false;
@@ -245,7 +246,7 @@ read_fastq::process(analytical_chunk* chunk)
                 << "Please fix before continuing." << std::endl;
 
       throw thread_abort();
-    } else if (eof_2 && !(eof || single_end)) {
+    } else if (eof_2 && !(eof || m_single_end)) {
       print_locker lock;
       std::cerr << "ERROR: More mate 1 reads than mate 2 reads found in '"
                 << m_io_input_2->filename() << "'; file may be truncated. "
