@@ -1,0 +1,10 @@
+{
+	"arguments": [
+		"--identify-adapters"
+	],
+	"return_code": 0,
+	"stdout": [
+		"Consensus:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+		"Consensus:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT"
+	]
+}

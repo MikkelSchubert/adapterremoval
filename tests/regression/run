@@ -114,6 +114,7 @@ _INFO_FIELDS = {
     "arguments": list,
     "return_code": int,
     "stderr": list,
+    "stdout": list,
     "exhaustive": bool,
     "skip": bool,
 }
@@ -300,16 +301,17 @@ class TestCase(object):
         stdout = stdout.decode("utf-8")
         stderr = stderr.decode("utf-8")
 
-        if stdout:
+        if stdout and not self._info["stdout"]:
             raise TestError("Unexpected output to STDOUT: %r" % (stdout,))
 
-        for value in self._info["stderr"]:
-            if re.search(value, stderr) is None:
-                raise TestError(
-                    "Expected value not found in output:\n"
-                    "  Searching for:\n%s\n  STDERR:\n%s"
-                    % (pretty_output(value, 4), pretty_output(stderr, 4))
-                )
+        for name, output in (("stdout", stdout), ("stderr", stderr)):
+            for value in self._info[name]:
+                if re.search(value, output) is None:
+                    raise TestError(
+                        "Expected value not found in output:\n"
+                        "  Searching for:\n%s\n  %s:\n%s"
+                        % (pretty_output(value, 4), name, pretty_output(output, 4))
+                    )
 
         if proc.returncode != self._info["return_code"]:
             raise TestError(
@@ -485,6 +487,7 @@ class TestCase(object):
             "arguments": [],
             "return_code": 0,
             "stderr": [],
+            "stdout": [],
             "exhaustive": True,
             "skip": False,
         }
