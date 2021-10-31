@@ -440,10 +440,10 @@ write_report_output(const userconfig& config,
 }
 
 bool
-write_report(const userconfig& config, const ar_statistics& stats)
+write_report(const userconfig& config,
+             const ar_statistics& stats,
+             const std::string& filename)
 {
-  const auto filename = config.get_output_filename("--settings");
-
   try {
     std::ofstream output(filename, std::ofstream::out);
     if (!output.is_open()) {

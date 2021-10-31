@@ -48,6 +48,46 @@ enum class ar_command
   demultiplex_sequences,
 };
 
+/** Class used to organize filenames of output files. */
+struct output_files
+{
+public:
+  output_files();
+
+  //! JSON file containing settings / statistics
+  std::string settings;
+
+  //! Filename for unidentified mate 1 reads (demultiplexing)
+  std::string unidentified_1;
+  //! Filename for unidentified mate 1 reads (demultiplexing)
+  std::string unidentified_2;
+
+  /** Per sample filenames  */
+  struct sample_files
+  {
+    sample_files();
+
+    //! Add a new (non-unique) filename and returns the index in the unique set;
+    size_t add(const std::string& filename);
+
+    //! Vector of unique output filenames; filenames may be shared
+    string_vec filenames;
+
+    //! Offset of filename used for mate 1 reads
+    size_t output_1;
+    //! Offset of filename used for mate 2 reads
+    size_t output_2;
+    //! Offset of filename used for merged reads
+    size_t merged;
+    //! Offset of filename used for discarded reads
+    size_t singleton;
+    //! Offset of filename used for discarded reads
+    size_t discarded;
+  };
+
+  std::vector<sample_files> samples;
+};
+
 /**
  * Configuration store, containing all user-supplied options / default values,
  * as well as help-functions using these options.
@@ -67,7 +107,7 @@ public:
   /** Parses a set of commandline arguments. */
   argparse::parse_result parse_args(int argc, char* argv[]);
 
-  std::string get_output_filename(const std::string& key, size_t nth = 0) const;
+  output_files get_output_filenames() const;
 
   /** Characterize an alignment based on user settings. */
   bool is_good_alignment(const alignment_info& alignment) const;
@@ -194,11 +234,12 @@ public:
   userconfig& operator=(const userconfig&) = delete;
 
 private:
-  /** Sets up adapter sequences based on user settings.
-   *
-   * @return True on success, false otherwise.
-   */
+  /** Sets up adapter sequences based on user settings. */
   bool setup_adapter_sequences();
+
+  std::string get_output_filename(const std::string& key,
+                                  const std::string& filename,
+                                  const std::string& sample) const;
 
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser;

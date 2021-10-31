@@ -22,6 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <iostream>
@@ -35,6 +36,9 @@
 #include "fastq.hpp"
 #include "strutils.hpp"
 #include "userconfig.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
+// Helper functions
 
 fastq_encoding_ptr
 select_encoding(const std::string& value, size_t quality_max)
@@ -79,6 +83,41 @@ parse_trim_argument(const string_vec& values)
 
   return std::pair<unsigned, unsigned>(mate_1, mate_2);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `output_files`
+
+output_files::output_files()
+  : settings()
+  , unidentified_1()
+  , unidentified_2()
+  , samples()
+{}
+
+output_files::sample_files::sample_files()
+  : filenames()
+  , output_1(std::numeric_limits<size_t>::max())
+  , output_2(std::numeric_limits<size_t>::max())
+  , merged(std::numeric_limits<size_t>::max())
+  , singleton(std::numeric_limits<size_t>::max())
+  , discarded(std::numeric_limits<size_t>::max())
+{}
+
+size_t
+output_files::sample_files::add(const std::string& filename)
+{
+  auto it = std::find(filenames.begin(), filenames.end(), filename);
+  if (it == filenames.end()) {
+    filenames.push_back(filename);
+
+    return filenames.size() - 1;
+  }
+
+  return it - filenames.begin();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `userconfig`
 
 userconfig::userconfig(const std::string& name,
                        const std::string& version,
@@ -645,57 +684,55 @@ userconfig::is_alignment_collapsible(const alignment_info& alignment) const
   return collapse || identify_adapters;
 }
 
-std::string
-userconfig::get_output_filename(const std::string& key_, size_t nth) const
+output_files
+userconfig::get_output_filenames() const
 {
-  std::string filename;
-  std::string sample;
-  std::string key = key_;
+  output_files files;
 
-  if (key == "demux_unknown") {
-    // Demulitplexing unidentified reads
-    AR_DEBUG_ASSERT(nth == 1 || nth == 2);
-    key = "--output";
-    key.push_back('0' + nth);
+  files.settings = template_replace(out_settings, "basename", out_basename);
+  files.settings = template_replace(files.settings, "sample", "");
 
-    sample = "unidentified";
-  } else if (adapters.barcode_count()) {
-    sample = adapters.get_sample_name(nth);
+  const std::string out1 = interleaved_output ? out_interleaved : out_pair_1;
+  const std::string out2 = interleaved_output ? out_interleaved : out_pair_2;
+
+  files.unidentified_1 = get_output_filename("--output1", out1, "unidentified");
+  files.unidentified_2 = get_output_filename("--output2", out2, "unidentified");
+
+  const bool demultiplexing = adapters.barcode_count();
+
+  for (size_t i = 0; i < adapters.adapter_set_count(); ++i) {
+    const std::string name = demultiplexing ? adapters.get_sample_name(i) : "";
+
+    output_files::sample_files sample;
+
+    sample.output_1 = sample.add(get_output_filename("--output1", out1, name));
+    sample.output_2 = sample.add(get_output_filename("--output2", out2, name));
+    sample.merged =
+      sample.add(get_output_filename("--outputcollapsed", out_merged, name));
+    sample.singleton =
+      sample.add(get_output_filename("--singleton", out_singleton, name));
+    sample.discarded =
+      sample.add(get_output_filename("--discarded", out_discarded, name));
+
+    files.samples.push_back(sample);
   }
 
-  if (key == "--settings") {
-    AR_DEBUG_ASSERT(!nth);
-    filename = out_settings;
-    sample.clear();
-  } else if (key == "--outputcollapsed") {
-    filename = out_merged;
-  } else if (key == "--discarded") {
-    filename = out_discarded;
-  } else if (key == "--output1") {
-    if (interleaved_output) {
-      filename = out_interleaved;
-    } else {
-      filename = out_pair_1;
-    }
-  } else if (key == "--output2") {
-    filename = out_pair_2;
-  } else if (key == "--singleton") {
-    filename = out_singleton;
-  } else {
-    std::cerr << key << std::endl;
-    AR_DEBUG_FAIL("unknown key");
+  return files;
+}
+
+std::string
+userconfig::get_output_filename(const std::string& key,
+                                const std::string& filename,
+                                const std::string& sample) const
+{
+  auto tmp = template_replace(filename, "basename", out_basename);
+  tmp = template_replace(tmp, "sample", sample);
+
+  if (gzip && !argparser.is_set(key)) {
+    tmp.append(".gz");
   }
 
-  if (!(key == "--settings" || argparser.is_set(key))) {
-    if (gzip) {
-      filename += ".gz";
-    }
-  }
-
-  filename = template_replace(filename, "basename", out_basename);
-  filename = template_replace(filename, "sample", sample);
-
-  return filename;
+  return tmp;
 }
 
 bool

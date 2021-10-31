@@ -72,6 +72,8 @@ remove_adapter_sequences(const userconfig& config)
   std::vector<reads_processor*> processors;
   ar_statistics stats(config.report_sample_rate);
 
+  const auto out_files = config.get_output_filenames();
+
   // Step 1: Read input file
   const size_t next_step =
     config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
@@ -98,20 +100,18 @@ remove_adapter_sequences(const userconfig& config)
                    new demultiplex_se_reads(&config, &stats.demultiplexing));
     }
 
-    add_write_step(
-      config,
-      sch,
-      ai_write_unidentified_1,
-      "unidentified_mate_1",
-      new write_fastq(config.get_output_filename("demux_unknown", 1)));
+    add_write_step(config,
+                   sch,
+                   ai_write_unidentified_1,
+                   "unidentified_mate_1",
+                   new write_fastq(out_files.unidentified_1));
 
     if (config.paired_ended_mode && !config.interleaved_output) {
-      add_write_step(
-        config,
-        sch,
-        ai_write_unidentified_2,
-        "unidentified_mate_2",
-        new write_fastq(config.get_output_filename("demux_unknown", 2)));
+      add_write_step(config,
+                     sch,
+                     ai_write_unidentified_2,
+                     "unidentified_mate_2",
+                     new write_fastq(out_files.unidentified_2));
     }
   }
 
@@ -119,6 +119,8 @@ remove_adapter_sequences(const userconfig& config)
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
     const size_t offset = (nth + 1) * ai_analyses_offset;
     const std::string& sample = config.adapters.get_sample_name(nth);
+    const auto& filemap = out_files.samples.at(nth);
+    const auto& filenames = filemap.filenames;
 
     if (config.paired_ended_mode) {
       processors.push_back(new pe_reads_processor(config, nth));
@@ -128,37 +130,33 @@ remove_adapter_sequences(const userconfig& config)
 
     sch.add_step(offset + ai_trim_se, "trim_se_" + sample, processors.back());
 
-    add_write_step(
-      config,
-      sch,
-      offset + ai_write_mate_1,
-      sample + "_mate_1",
-      new write_fastq(config.get_output_filename("--output1", nth)));
+    add_write_step(config,
+                   sch,
+                   offset + ai_write_mate_1,
+                   sample + "_mate_1",
+                   new write_fastq(filenames.at(filemap.output_1)));
 
     if (config.paired_ended_mode && !config.interleaved_output) {
-      add_write_step(
-        config,
-        sch,
-        offset + ai_write_mate_2,
-        sample + "_mate_2",
-        new write_fastq(config.get_output_filename("--output2", nth)));
+      add_write_step(config,
+                     sch,
+                     offset + ai_write_mate_2,
+                     sample + "_mate_2",
+                     new write_fastq(filenames.at(filemap.output_2)));
     }
 
     if (!config.combined_output) {
-      add_write_step(
-        config,
-        sch,
-        offset + ai_write_discarded,
-        sample + "_discarded",
-        new write_fastq(config.get_output_filename("--discarded", nth)));
+      add_write_step(config,
+                     sch,
+                     offset + ai_write_discarded,
+                     sample + "_discarded",
+                     new write_fastq(filenames.at(filemap.discarded)));
 
       if (config.paired_ended_mode) {
-        add_write_step(
-          config,
-          sch,
-          offset + ai_write_singleton,
-          sample + "_singleton",
-          new write_fastq(config.get_output_filename("--singleton", nth)));
+        add_write_step(config,
+                       sch,
+                       offset + ai_write_singleton,
+                       sample + "_singleton",
+                       new write_fastq(filenames.at(filemap.singleton)));
       }
 
       if (config.collapse) {
@@ -166,8 +164,7 @@ remove_adapter_sequences(const userconfig& config)
                        sch,
                        offset + ai_write_collapsed,
                        sample + "_collapsed",
-                       new write_fastq(
-                         config.get_output_filename("--outputcollapsed", nth)));
+                       new write_fastq(filenames.at(filemap.merged)));
       }
     }
   }
@@ -180,5 +177,5 @@ remove_adapter_sequences(const userconfig& config)
     stats.trimming.push_back(*ptr->get_final_statistics());
   }
 
-  return !write_report(config, stats);
+  return !write_report(config, stats, out_files.settings);
 }
