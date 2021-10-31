@@ -1,6 +1,6 @@
 language: cpp
 
-dist: trusty
+dist: xenial
 
 compiler:
   - clang
@@ -18,7 +18,6 @@ addons:
   apt:
     packages:
       - zlib1g-dev
-      - libbz2-dev
       - python3
       - python3-pip
 
@@ -28,10 +27,10 @@ before_install:
 install: true
 
 script:
-    - make
+    - make LIBDEFLATE=no
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make test COVERAGE=yes; fi
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make test COVERAGE=no; fi
-    # - make regression
+    - make regression
     - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:
