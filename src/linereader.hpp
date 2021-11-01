@@ -28,7 +28,6 @@
 #include <memory>
 #include <string>
 
-#include <bzlib.h>
 #include <zlib.h>
 
 /** Represents errors during basic IO. */

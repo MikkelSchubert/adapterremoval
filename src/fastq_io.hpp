@@ -25,8 +25,6 @@
 
 #include <zlib.h>
 
-#include <bzlib.h>
-
 #include "commontypes.hpp"
 #include "fastq.hpp"
 #include "linereader_joined.hpp"
