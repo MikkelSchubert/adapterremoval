@@ -296,9 +296,10 @@ truncate_paired_ended_sequences(const alignment_info& alignment,
   size_t had_adapter = 0;
   const int template_length =
     std::max<int>(0, static_cast<int>(read2.length()) + alignment.offset);
-  if (alignment.offset > static_cast<int>(read1.length())) {
-    throw std::invalid_argument("invalid offset");
-  } else if (alignment.offset >= 0) {
+
+  AR_DEBUG_ASSERT(alignment.offset <= static_cast<int>(read1.length()));
+
+  if (alignment.offset >= 0) {
     // Read1 can potentially extend past read2, but by definition read2
     // cannot extend past read1 when the offset is not negative, so there
     // is no need to edit read2.
@@ -358,10 +359,8 @@ sequence_merger::merge(const alignment_info& alignment,
                        const fastq& read1,
                        const fastq& read2)
 {
-  if (alignment.offset > static_cast<int>(read1.length())) {
-    // Gap between the two reads is not allowed
-    throw std::invalid_argument("invalid offset");
-  }
+  // Gap between the two reads is not allowed
+  AR_DEBUG_ASSERT(alignment.offset <= static_cast<int>(read1.length()));
 
   // Offset to the first base overlapping read 2
   const size_t read_1_offset =
@@ -469,11 +468,9 @@ extract_adapter_sequences(const alignment_info& alignment,
                           fastq& read1,
                           fastq& read2)
 {
+  AR_DEBUG_ASSERT(alignment.offset <= static_cast<int>(read1.length()));
   const int template_length =
     std::max(0, static_cast<int>(read2.length()) + alignment.offset);
-  if (alignment.offset > static_cast<int>(read1.length())) {
-    throw std::invalid_argument("invalid offset");
-  }
 
   read1.truncate(std::min<size_t>(read1.length(), template_length));
   read2.truncate(

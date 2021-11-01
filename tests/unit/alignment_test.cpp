@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "alignment.hpp"
+#include "debug.hpp"
 #include "fastq.hpp"
 #include "testing.hpp"
 
@@ -756,7 +757,7 @@ TEST_CASE("Invalid alignment", "[alignment::paired_end]")
 
   REQUIRE_THROWS_AS(
     truncate_paired_ended_sequences(alignment, record1, record2),
-    std::invalid_argument);
+    assert_failed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -922,8 +923,7 @@ TEST_CASE("Offsets past the end throws", "[alignment::collapse]")
   const fastq record1("Rec1", "G", "1");
   const fastq record2("Rec2", "T", "1");
   const alignment_info alignment = ALN().offset(2);
-  REQUIRE_THROWS_AS(merger.merge(alignment, record1, record2),
-                    std::invalid_argument);
+  REQUIRE_THROWS_AS(merger.merge(alignment, record1, record2), assert_failed);
 }
 
 TEST_CASE("Mate numbering is removed", "[alignment::collapse]")
