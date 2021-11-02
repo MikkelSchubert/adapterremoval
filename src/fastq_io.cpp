@@ -193,6 +193,7 @@ read_fastq::read_fastq(const fastq_encoding* encoding,
   , m_next_step(next_step)
   , m_single_end(false)
   , m_eof(false)
+  , m_timer("reads")
   , m_lock()
 {
   if (interleaved) {
@@ -261,6 +262,9 @@ read_fastq::process(analytical_chunk* chunk)
   file_chunk->eof = eof;
   m_eof = eof;
 
+  m_timer.increment(file_chunk->reads_1.size());
+  m_timer.increment(file_chunk->reads_2.size());
+
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(file_chunk));
 
@@ -272,6 +276,8 @@ read_fastq::finalize()
 {
   AR_DEBUG_LOCK(m_lock);
   AR_DEBUG_ASSERT(m_eof);
+
+  m_timer.finalize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -483,13 +489,6 @@ gzip_split_fastq::process(analytical_chunk* chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'write_fastq'
 
-//! Mutex used to control access to s_timer and s_finalized;
-static std::mutex s_timer_lock;
-//! Timer used to track trimming progress; accessed by all instances
-static progress_timer s_timer = progress_timer("reads");
-//! Indicates if 'timer::finalize' has been called.
-static bool s_finalized = false;
-
 write_fastq::write_fastq(const std::string& filename)
   : analytical_step(analytical_step::ordering::ordered, true)
   , m_output(filename)
@@ -520,9 +519,6 @@ write_fastq::process(analytical_chunk* chunk)
     throw std::ofstream::failure(message + std::strerror(errno));
   }
 
-  std::lock_guard<std::mutex> lock(s_timer_lock);
-  s_timer.increment(file_chunk->count);
-
   return chunk_vec();
 }
 
@@ -530,12 +526,6 @@ void
 write_fastq::finalize()
 {
   AR_DEBUG_LOCK(m_lock);
-  std::lock_guard<std::mutex> lock(s_timer_lock);
-  if (!s_finalized) {
-    s_timer.finalize();
-    s_finalized = true;
-  }
-
   AR_DEBUG_ASSERT(m_eof);
 
   // Close file to trigger any exceptions due to badbit / failbit
