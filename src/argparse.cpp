@@ -123,8 +123,8 @@ parser::parse_args(int argc, char* argv[])
 
   string_vec_citer it = argvec.begin();
   while (it != argvec.end()) {
-    consumer_map::iterator parser = m_parsers.end();
-    if (find_argument(parser, *it)) {
+    consumer_map::iterator parser = find_argument(*it);
+    if (parser != m_parsers.end()) {
       if (parser->second->is_set()) {
         std::cerr << "WARNING: Command-line option " << parser->first
                   << " has been specified more than once." << std::endl;
@@ -277,40 +277,15 @@ parser::print_arguments(const key_pair_vec& keys) const
   std::cerr << std::endl;
 }
 
-bool
-parser::find_argument(consumer_map::iterator& it, const std::string& str)
+consumer_map::iterator
+parser::find_argument(const std::string& str)
 {
-  it = m_parsers.find(str);
-  if (it != m_parsers.end()) {
-    return true;
+  auto it = m_parsers.find(str);
+  if (it == m_parsers.end()) {
+    std::cerr << "ERROR: Unknown argument: '" << str << "'" << std::endl;
   }
 
-  // Locate partial arguments by finding arguments with 'str' as prefix
-  if (str != "-" && str != "--") {
-    key_pair_vec matches;
-    consumer_map::iterator cit = m_parsers.begin();
-    for (; cit != m_parsers.end(); ++cit) {
-      if (cit->first.substr(0, str.size()) == str) {
-        matches.push_back(key_pair(true, cit->first));
-      }
-    }
-
-    if (matches.size() == 1) {
-      it = m_parsers.find(matches.front().second);
-      return true;
-    } else if (matches.size() > 1) {
-      std::cerr << "ERROR: Ambiguous argument '" << str << "'; "
-                << "Candidate arguments are\n\n";
-
-      print_arguments(matches);
-
-      return false;
-    }
-  }
-
-  std::cerr << "ERROR: Unknown argument: '" << str << "'" << std::endl;
-
-  return false;
+  return it;
 }
 
 std::string

@@ -147,20 +147,8 @@ private:
   /** Pretty-print the listed arguments. */
   void print_arguments(const key_pair_vec& keys) const;
 
-  /**
-   * Attempt to find argument by similarity.
-   *
-   * @param it If a match is found, is set to iterator of matching parser,
-               otherwise it is set to m_parsers.end().
-   * @param str String containing expected argument.
-   * @return True if a match is found, false otherwise.
-   *
-   * If an exact match or a single partial match is found, 'it' is set and
-   * true is returned; otherwise it is set to m_parsers.end() and false is
-   * returned. In the case of multiple partial matches, the help string for
-   * each candidate is printed.
-   */
-  bool find_argument(consumer_map::iterator& it, const std::string& str);
+  /** Find the parser for the given argument or print an error if unknown. */
+  consumer_map::iterator find_argument(const std::string& str);
 
   /** Generate metavar from argument, namely uppercase without dashes. */
   std::string get_metavar_str(const consumer_ptr, const std::string&) const;
