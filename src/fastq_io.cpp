@@ -489,8 +489,10 @@ gzip_split_fastq::process(analytical_chunk* chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'write_fastq'
 
+const std::string STDOUT = "/dev/stdout";
+
 write_fastq::write_fastq(const std::string& filename)
-  : analytical_step(analytical_step::ordering::ordered, true)
+  : analytical_step(analytical_step::ordering::ordered, filename != STDOUT)
   , m_output(filename)
   , m_eof(false)
   , m_lock()

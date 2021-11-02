@@ -260,12 +260,10 @@ class write_fastq : public analytical_step
 {
 public:
   /**
-   * Constructor.
+   * Opens the specified file for writing using a managed writer.
    *
-   * @param filename Filename to which FASTQ reads are written.
-   *
-   * Based on the read-type specified, and SE / PE mode, the corresponding
-   * output file is opened
+   * The filename "/dev/stdout" is handled specially and does not count as IO
+   * for the purpose of scheduling the pipeline.
    */
   write_fastq(const std::string& filename);
 
