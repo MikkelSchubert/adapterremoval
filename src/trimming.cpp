@@ -150,7 +150,6 @@ trimmed_reads::trimmed_reads(const userconfig& config,
   , m_map(map)
   , m_chunks()
 {
-  AR_DEBUG_ASSERT(map.filenames.size());
   AR_DEBUG_ASSERT(map.filenames.size() == map.steps.size());
 
   for (size_t i = 0; i < map.steps.size(); ++i) {
