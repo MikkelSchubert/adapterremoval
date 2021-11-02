@@ -97,7 +97,6 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/strutils.o \
             $(BDIR)/threads.o \
             $(BDIR)/timer.o \
-            $(BDIR)/trimmed_reads.o \
             $(BDIR)/trimming.o \
             $(BDIR)/userconfig.o \
             $(BDIR)/utilities.o

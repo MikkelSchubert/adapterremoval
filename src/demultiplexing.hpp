@@ -32,6 +32,24 @@
 
 class userconfig;
 
+/** Map of samples to downstream FASTQ processing/writing steps. */
+class post_demux_steps
+{
+public:
+  post_demux_steps();
+
+  /* Step used to write unidentified mate 1 reads. */
+  size_t unidentified_1;
+  /* Step used to write unidentified mate 2 reads; may be disabled. */
+  size_t unidentified_2;
+
+  /* Processing step for each sample. */
+  std::vector<size_t> samples;
+
+  /** Constant indicating that a step has been disabled. */
+  static const size_t disabled;
+};
+
 /**
  * Baseclass for demultiplexing of reads; responsible for building the quad-tree
  * representing the set of adapter sequences, and for maintaining the cache of
@@ -40,8 +58,9 @@ class userconfig;
 class demultiplex_reads : public analytical_step
 {
 public:
-  /** Setup demultiplexer; keeps pointer to config object. */
-  demultiplex_reads(const userconfig* config,
+  /** Setup demultiplexer; keeps reference to config object. */
+  demultiplex_reads(const userconfig& config,
+                    const post_demux_steps& steps,
                     demultiplexing_statistics* statistics);
 
   /** Frees any unflushed caches. */
@@ -58,7 +77,7 @@ protected:
   //! Quad-tree representing all mate 1 adapters; for search with n mismatches
   const barcode_table m_barcode_table;
   //! Pointer to user settings used for output format for unidentified reads
-  const userconfig* m_config;
+  const userconfig& m_config;
 
   //! Returns a chunk-list with any set of reads exceeding the max cache size
   //! If 'eof' is true, all chunks are returned, and the 'eof' values in the
@@ -76,6 +95,9 @@ protected:
   //! Cache of unidentified mate 2 reads
   output_chunk_ptr m_unidentified_2;
 
+  //! Map of steps for output chunks;
+  post_demux_steps m_steps;
+
   //! Sink for demultiplexing statistics; used by subclasses.
   demultiplexing_statistics* m_statistics;
 
@@ -88,7 +110,8 @@ class demultiplex_se_reads : public demultiplex_reads
 {
 public:
   /** See demultiplex_reads::demultiplex_reads. */
-  demultiplex_se_reads(const userconfig* config,
+  demultiplex_se_reads(const userconfig& config,
+                       const post_demux_steps& steps,
                        demultiplexing_statistics* statistics);
 
   /**
@@ -104,7 +127,8 @@ class demultiplex_pe_reads : public demultiplex_reads
 {
 public:
   /** See demultiplex_reads::demultiplex_reads. */
-  demultiplex_pe_reads(const userconfig* config,
+  demultiplex_pe_reads(const userconfig& config,
+                       const post_demux_steps& steps,
                        demultiplexing_statistics* statistics);
 
   /**

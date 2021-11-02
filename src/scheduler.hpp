@@ -201,14 +201,14 @@ public:
   /**
    * Adds a step to the pipeline.
    *
-   * @param step_id Unique ID of current step; cannot be used twice.
    * @param name Textual name for the (type) of step being added.
    * @param step A analytical step; is deleted when scheduler is destroyed.
+   * @return The unique ID of the newly added step.
    *
    * The ID specified here is specified as the first value of 'chunk_pair's
    * in order to determine to which analytical step a chunk is assigned.
    **/
-  void add_step(size_t step_id, const std::string& name, analytical_step* step);
+  size_t add_step(const std::string& name, analytical_step* step);
 
   /** Runs the pipeline with n threads; return false on error. */
   bool run(int nthreads);

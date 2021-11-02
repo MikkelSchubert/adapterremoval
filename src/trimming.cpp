@@ -25,10 +25,13 @@
 #include <random>
 
 #include "debug.hpp"
+#include "fastq_io.hpp"
 #include "statistics.hpp"
-#include "trimmed_reads.hpp"
 #include "trimming.hpp"
 #include "userconfig.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
+// Helper functions
 
 /** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
 void
@@ -137,11 +140,65 @@ is_acceptable_read(const userconfig& config,
   return true;
 }
 
-reads_processor::reads_processor(const userconfig& config, size_t nth)
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `trimmed_reads`
+
+trimmed_reads::trimmed_reads(const userconfig& config,
+                             const output_sample_files& map,
+                             const bool eof)
+  : m_config(config)
+  , m_map(map)
+  , m_chunks()
+{
+  AR_DEBUG_ASSERT(map.filenames.size());
+  AR_DEBUG_ASSERT(map.filenames.size() == map.steps.size());
+
+  for (size_t i = 0; i < map.steps.size(); ++i) {
+    AR_DEBUG_ASSERT(map.filenames.at(i).size());
+    AR_DEBUG_ASSERT(map.steps.at(i) != output_sample_files::disabled);
+
+    m_chunks.emplace_back(new fastq_output_chunk(eof));
+  }
+}
+
+void
+trimmed_reads::add(fastq& read, const read_type type, const size_t count)
+{
+  const size_t offset = m_map.offset(type);
+  if (offset != output_sample_files::disabled) {
+    if (m_config.combined_output &&
+        (type == read_type::discarded_1 || type == read_type::discarded_2)) {
+      // Create dummy read where sequence = 'N' and qualities = '!'
+      read.discard();
+    }
+
+    m_chunks.at(offset)->add(*m_config.quality_output_fmt, read, count);
+  }
+}
+
+chunk_vec
+trimmed_reads::finalize()
+{
+  chunk_vec chunks;
+
+  for (size_t i = 0; i < m_chunks.size(); ++i) {
+    chunks.emplace_back(m_map.steps.at(i), std::move(m_chunks.at(i)));
+  }
+
+  return chunks;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `reads_processor`
+
+reads_processor::reads_processor(const userconfig& config,
+                                 const output_sample_files& output,
+                                 size_t nth)
   : analytical_step(analytical_step::ordering::unordered)
   , m_config(config)
   , m_adapters(config.adapters.get_adapter_set(nth))
   , m_stats()
+  , m_output(output)
   , m_nth(nth)
 {
   for (size_t i = 0; i < m_config.max_threads; ++i) {
@@ -160,17 +217,20 @@ reads_processor::get_final_statistics()
   return stats;
 }
 
-se_reads_processor::se_reads_processor(const userconfig& config, size_t nth)
-  : reads_processor(config, nth)
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `se_reads_processor`
+
+se_reads_processor::se_reads_processor(const userconfig& config,
+                                       const output_sample_files& output,
+                                       size_t nth)
+  : reads_processor(config, output, nth)
 {}
 
 chunk_vec
 se_reads_processor::process(analytical_chunk* chunk)
 {
-  const size_t offset = (m_nth + 1) * ai_analyses_offset;
-
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  trimmed_reads chunks(m_config, offset, read_chunk->eof);
+  trimmed_reads chunks(m_config, m_output, read_chunk->eof);
   auto stats = m_stats.acquire();
 
   for (auto& read : read_chunk->reads_1) {
@@ -190,10 +250,10 @@ se_reads_processor::process(analytical_chunk* chunk)
     trim_sequence_by_quality(m_config, *stats, read);
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1.process(read);
-      chunks.add_mate_1_read(read, read_status::passed);
+      chunks.add(read, read_type::mate_1);
     } else {
       stats->discarded.process(read);
-      chunks.add_mate_1_read(read, read_status::failed);
+      chunks.add(read, read_type::discarded_1);
     }
   }
 
@@ -202,14 +262,18 @@ se_reads_processor::process(analytical_chunk* chunk)
   return chunks.finalize();
 }
 
-pe_reads_processor::pe_reads_processor(const userconfig& config, size_t nth)
-  : reads_processor(config, nth)
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `pe_reads_processor`
+
+pe_reads_processor::pe_reads_processor(const userconfig& config,
+                                       const output_sample_files& output,
+                                       size_t nth)
+  : reads_processor(config, output, nth)
 {}
 
 chunk_vec
 pe_reads_processor::process(analytical_chunk* chunk)
 {
-  const size_t offset = (m_nth + 1) * ai_analyses_offset;
   const char mate_separator =
     m_config.combined_output ? '\0' : m_config.mate_separator;
 
@@ -218,7 +282,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
   merger.set_conservative(m_config.collapse_conservatively);
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  trimmed_reads chunks(m_config, offset, read_chunk->eof);
+  trimmed_reads chunks(m_config, m_output, read_chunk->eof);
   statistics_ptr stats = m_stats.acquire();
 
   AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
@@ -266,10 +330,10 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
         if (is_acceptable_read(m_config, *stats, collapsed_read)) {
           stats->merged.process(collapsed_read, 2);
-          chunks.add_collapsed_read(collapsed_read, read_status::passed, 2);
+          chunks.add(collapsed_read, read_type::collapsed, 2);
         } else {
           stats->discarded.process(collapsed_read, 2);
-          chunks.add_collapsed_read(collapsed_read, read_status::failed, 2);
+          chunks.add(collapsed_read, read_type::discarded_1, 2);
         }
 
         if (m_config.combined_output) {
@@ -277,8 +341,9 @@ pe_reads_processor::process(analytical_chunk* chunk)
           // Dummy read with read-count of zero; both mates have
           // already been accounted for in process_collapsed_read
           read_2.add_prefix_to_header(trimmed ? "MT_" : "M_");
-          chunks.add_mate_2_read(read_2, read_status::failed, 0);
+          chunks.add(read_2, read_type::discarded_2, 0);
         }
+
         continue;
       }
     }
@@ -296,24 +361,40 @@ pe_reads_processor::process(analytical_chunk* chunk)
     trim_sequence_by_quality(m_config, *stats, read_2);
 
     // Are the reads good enough? Not too many Ns?
-    read_status state_1 = read_status::passed;
-    if (is_acceptable_read(m_config, *stats, read_1)) {
-      stats->read_1.process(read_1);
+    const bool is_ok_1 = is_acceptable_read(m_config, *stats, read_1);
+    const bool is_ok_2 = is_acceptable_read(m_config, *stats, read_2);
+
+    read_type type_1;
+    read_type type_2;
+    if (is_ok_1 && is_ok_2) {
+      type_1 = read_type::mate_1;
+      type_2 = read_type::mate_2;
+    } else if (is_ok_1) {
+      type_1 = read_type::singleton_1;
+      type_2 = read_type::discarded_2;
+    } else if (is_ok_2) {
+      type_1 = read_type::discarded_1;
+      type_2 = read_type::singleton_2;
     } else {
-      stats->discarded.process(read_1);
-      state_1 = read_status::failed;
+      type_1 = read_type::discarded_1;
+      type_2 = read_type::discarded_2;
     }
 
-    read_status state_2 = read_status::passed;
-    if (is_acceptable_read(m_config, *stats, read_2)) {
-      stats->read_2.process(read_2);
+    if (is_ok_1) {
+      stats->discarded.process(read_1);
     } else {
+      stats->read_1.process(read_1);
+    }
+
+    if (is_ok_2) {
       stats->discarded.process(read_2);
-      state_2 = read_status::failed;
+    } else {
+      stats->read_2.process(read_2);
     }
 
     // Queue reads last, since this result in modifications to lengths
-    chunks.add_pe_reads(read_1, state_1, read_2, state_2);
+    chunks.add(read_1, type_1);
+    chunks.add(read_2, type_2);
   }
 
   m_stats.release(stats);

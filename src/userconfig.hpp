@@ -48,8 +48,42 @@ enum class ar_command
   demultiplex_sequences,
 };
 
+/** Per sample output filenames / steps  */
+class output_sample_files
+{
+public:
+  output_sample_files();
+
+  //! Add a new (non-unique) filename and returns the index in the unique set;
+  size_t add(const std::string& filename);
+
+  //! Vector of unique output filenames; filenames may be shared
+  string_vec filenames;
+  //! Vector of unique output steps IDs; steps may be shared
+  std::vector<size_t> steps;
+
+  /** Returns mutable offset to step/filename. */
+  size_t& offset(read_type value)
+  {
+    return offsets.at(static_cast<size_t>(value));
+  }
+
+  /** Returns offset to step/filename. */
+  size_t offset(read_type value) const
+  {
+    return offsets.at(static_cast<size_t>(value));
+  }
+
+  //! Constant used to represent disabled output files/steps.
+  static const size_t disabled;
+
+private:
+  //! Mapping of read types to filenames/steps.
+  std::array<size_t, static_cast<size_t>(read_type::max)> offsets;
+};
+
 /** Class used to organize filenames of output files. */
-struct output_files
+class output_files
 {
 public:
   output_files();
@@ -62,30 +96,7 @@ public:
   //! Filename for unidentified mate 1 reads (demultiplexing)
   std::string unidentified_2;
 
-  /** Per sample filenames  */
-  struct sample_files
-  {
-    sample_files();
-
-    //! Add a new (non-unique) filename and returns the index in the unique set;
-    size_t add(const std::string& filename);
-
-    //! Vector of unique output filenames; filenames may be shared
-    string_vec filenames;
-
-    //! Offset of filename used for mate 1 reads
-    size_t output_1;
-    //! Offset of filename used for mate 2 reads
-    size_t output_2;
-    //! Offset of filename used for merged reads
-    size_t merged;
-    //! Offset of filename used for discarded reads
-    size_t singleton;
-    //! Offset of filename used for discarded reads
-    size_t discarded;
-  };
-
-  std::vector<sample_files> samples;
+  std::vector<output_sample_files> samples;
 };
 
 /**

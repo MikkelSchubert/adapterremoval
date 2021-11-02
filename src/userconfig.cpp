@@ -37,6 +37,8 @@
 #include "strutils.hpp"
 #include "userconfig.hpp"
 
+const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
@@ -94,17 +96,16 @@ output_files::output_files()
   , samples()
 {}
 
-output_files::sample_files::sample_files()
+output_sample_files::output_sample_files()
   : filenames()
-  , output_1(std::numeric_limits<size_t>::max())
-  , output_2(std::numeric_limits<size_t>::max())
-  , merged(std::numeric_limits<size_t>::max())
-  , singleton(std::numeric_limits<size_t>::max())
-  , discarded(std::numeric_limits<size_t>::max())
-{}
+  , steps()
+  , offsets()
+{
+  offsets.fill(output_sample_files::disabled);
+}
 
 size_t
-output_files::sample_files::add(const std::string& filename)
+output_sample_files::add(const std::string& filename)
 {
   auto it = std::find(filenames.begin(), filenames.end(), filename);
   if (it == filenames.end()) {
@@ -703,18 +704,47 @@ userconfig::get_output_filenames() const
   for (size_t i = 0; i < adapters.adapter_set_count(); ++i) {
     const std::string name = demultiplexing ? adapters.get_sample_name(i) : "";
 
-    output_files::sample_files sample;
+    files.samples.emplace_back();
+    auto& map = files.samples.back();
 
-    sample.output_1 = sample.add(get_output_filename("--output1", out1, name));
-    sample.output_2 = sample.add(get_output_filename("--output2", out2, name));
-    sample.merged =
-      sample.add(get_output_filename("--outputcollapsed", out_merged, name));
-    sample.singleton =
-      sample.add(get_output_filename("--singleton", out_singleton, name));
-    sample.discarded =
-      sample.add(get_output_filename("--discarded", out_discarded, name));
+    map.offset(read_type::mate_1) =
+      map.add(get_output_filename("--output1", out1, name));
 
-    files.samples.push_back(sample);
+    if (paired_ended_mode) {
+      if (interleaved_output) {
+        map.offset(read_type::mate_2) = map.offset(read_type::mate_1);
+      } else {
+        map.offset(read_type::mate_2) =
+          map.add(get_output_filename("--output2", out2, name));
+      }
+    }
+
+    if (run_type == ar_command::trim_adapters) {
+      if (combined_output) {
+        map.offset(read_type::collapsed) = map.offset(read_type::mate_1);
+
+        map.offset(read_type::discarded_1) = map.offset(read_type::mate_1);
+        map.offset(read_type::discarded_2) = map.offset(read_type::mate_2);
+
+        map.offset(read_type::singleton_1) = map.offset(read_type::mate_1);
+        map.offset(read_type::singleton_2) = map.offset(read_type::mate_2);
+      } else {
+        map.offset(read_type::discarded_1) =
+          map.offset(read_type::discarded_2) =
+            map.add(get_output_filename("--discarded", out_discarded, name));
+
+        if (paired_ended_mode) {
+          map.offset(read_type::singleton_1) =
+            map.offset(read_type::singleton_2) =
+              map.add(get_output_filename("--singleton", out_singleton, name));
+
+          if (collapse) {
+            map.offset(read_type::collapsed) = map.add(
+              get_output_filename("--outputcollapsed", out_merged, name));
+          }
+        }
+      }
+    }
   }
 
   return files;

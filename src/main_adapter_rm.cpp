@@ -33,34 +33,27 @@
 #include "demultiplexing.hpp"
 #include "fastq.hpp"
 #include "reports.hpp"
-#include "trimmed_reads.hpp"
 #include "trimming.hpp"
 #include "userconfig.hpp"
 
-void
+size_t
 add_write_step(const userconfig& config,
                scheduler& sch,
-               size_t offset,
                const std::string& name,
-               analytical_step* step)
+               const std::string& filename)
 {
-  if (config.gzip) {
-    if (!config.gzip_stream) {
-      sch.add_step(
-        offset, "split_" + name, new split_fastq(offset + ai_split_offset));
+  size_t step_id = sch.add_step("write_" + name, new write_fastq(filename));
 
-      sch.add_step(offset + ai_split_offset,
-                   "gzip_" + name,
-                   new gzip_split_fastq(config, offset + ai_zip_offset));
-    } else {
-      sch.add_step(
-        offset, "gzip_" + name, new gzip_fastq(config, offset + ai_zip_offset));
-    }
+  if (config.gzip_stream) {
+    step_id = sch.add_step("gzip_" + name, new gzip_fastq(config, step_id));
+  } else if (config.gzip) {
+    step_id =
+      sch.add_step("gzip_" + name, new gzip_split_fastq(config, step_id));
 
-    sch.add_step(offset + ai_zip_offset, "write_gzip_" + name, step);
-  } else {
-    sch.add_step(offset, "write_" + name, step);
+    step_id = sch.add_step("split_" + name, new split_fastq(step_id));
   }
+
+  return step_id;
 }
 
 int
@@ -72,102 +65,62 @@ remove_adapter_sequences(const userconfig& config)
   std::vector<reads_processor*> processors;
   ar_statistics stats(config.report_sample_rate);
 
-  const auto out_files = config.get_output_filenames();
+  auto out_files = config.get_output_filenames();
+
+  post_demux_steps steps;
+  size_t processing_step = std::numeric_limits<size_t>::max();
+
+  // Step 3 - N: Trim and write (demultiplexed) reads
+  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
+    const std::string& sample = config.adapters.get_sample_name(nth);
+    auto& mapping = out_files.samples.at(nth);
+
+    for (const auto& filename : mapping.filenames) {
+      mapping.steps.push_back(add_write_step(config, sch, sample, filename));
+    }
+
+    if (config.paired_ended_mode) {
+      processors.push_back(new pe_reads_processor(config, mapping, nth));
+    } else {
+      processors.push_back(new se_reads_processor(config, mapping, nth));
+    }
+
+    steps.samples.push_back(sch.add_step("trim_" + sample, processors.back()));
+  }
+
+  // Step 2: Parse and demultiplex reads based on single or double indices
+  if (config.adapters.barcode_count()) {
+    steps.unidentified_1 = add_write_step(
+      config, sch, "unidentified_mate_1", out_files.unidentified_1);
+
+    if (config.paired_ended_mode && !config.interleaved_output) {
+      steps.unidentified_2 = add_write_step(
+        config, sch, "unidentified_mate_2", out_files.unidentified_2);
+    }
+
+    if (config.paired_ended_mode) {
+      processing_step = sch.add_step(
+        "demultiplex",
+        new demultiplex_pe_reads(config, steps, &stats.demultiplexing));
+
+    } else {
+      processing_step = sch.add_step(
+        "demultiplex",
+        new demultiplex_se_reads(config, steps, &stats.demultiplexing));
+    }
+  } else {
+    processing_step = steps.samples.back();
+  }
 
   // Step 1: Read input file
-  const size_t next_step =
-    config.adapters.barcode_count() ? ai_demultiplex : ai_analyses_offset;
-  sch.add_step(ai_read_fastq,
-               "read_fastq",
+  sch.add_step("read_fastq",
                new read_fastq(config.quality_input_fmt.get(),
                               config.input_files_1,
                               config.input_files_2,
-                              next_step,
+                              processing_step,
                               config.interleaved_input,
                               &stats.input_1,
                               &stats.input_2));
-
-  if (config.adapters.barcode_count()) {
-    // Step 2: Parse and demultiplex reads based on single or double indices
-    if (config.paired_ended_mode) {
-      sch.add_step(ai_demultiplex,
-                   "demultiplex",
-                   new demultiplex_pe_reads(&config, &stats.demultiplexing));
-
-    } else {
-      sch.add_step(ai_demultiplex,
-                   "demultiplex",
-                   new demultiplex_se_reads(&config, &stats.demultiplexing));
-    }
-
-    add_write_step(config,
-                   sch,
-                   ai_write_unidentified_1,
-                   "unidentified_mate_1",
-                   new write_fastq(out_files.unidentified_1));
-
-    if (config.paired_ended_mode && !config.interleaved_output) {
-      add_write_step(config,
-                     sch,
-                     ai_write_unidentified_2,
-                     "unidentified_mate_2",
-                     new write_fastq(out_files.unidentified_2));
-    }
-  }
-
-  // Step 3 - N: Trim and write demultiplexed reads
-  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    const size_t offset = (nth + 1) * ai_analyses_offset;
-    const std::string& sample = config.adapters.get_sample_name(nth);
-    const auto& filemap = out_files.samples.at(nth);
-    const auto& filenames = filemap.filenames;
-
-    if (config.paired_ended_mode) {
-      processors.push_back(new pe_reads_processor(config, nth));
-    } else {
-      processors.push_back(new se_reads_processor(config, nth));
-    }
-
-    sch.add_step(offset + ai_trim_se, "trim_se_" + sample, processors.back());
-
-    add_write_step(config,
-                   sch,
-                   offset + ai_write_mate_1,
-                   sample + "_mate_1",
-                   new write_fastq(filenames.at(filemap.output_1)));
-
-    if (config.paired_ended_mode && !config.interleaved_output) {
-      add_write_step(config,
-                     sch,
-                     offset + ai_write_mate_2,
-                     sample + "_mate_2",
-                     new write_fastq(filenames.at(filemap.output_2)));
-    }
-
-    if (!config.combined_output) {
-      add_write_step(config,
-                     sch,
-                     offset + ai_write_discarded,
-                     sample + "_discarded",
-                     new write_fastq(filenames.at(filemap.discarded)));
-
-      if (config.paired_ended_mode) {
-        add_write_step(config,
-                       sch,
-                       offset + ai_write_singleton,
-                       sample + "_singleton",
-                       new write_fastq(filenames.at(filemap.singleton)));
-      }
-
-      if (config.collapse) {
-        add_write_step(config,
-                       sch,
-                       offset + ai_write_collapsed,
-                       sample + "_collapsed",
-                       new write_fastq(filenames.at(filemap.merged)));
-      }
-    }
-  }
 
   if (!sch.run(config.max_threads)) {
     return 1;

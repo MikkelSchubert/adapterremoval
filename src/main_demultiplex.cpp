@@ -38,62 +38,55 @@
 #include "userconfig.hpp"
 
 //! Implemented in main_adapter_rm.cpp
-void
+size_t
 add_write_step(const userconfig& config,
                scheduler& sch,
-               size_t offset,
                const std::string& name,
-               analytical_step* step);
+               const std::string& filename);
 
-class se_demultiplexed_reads_processor : public reads_processor
+class se_demuxed_processor : public reads_processor
 {
 public:
-  se_demultiplexed_reads_processor(const userconfig& config, size_t nth)
-    : reads_processor(config, nth)
+  se_demuxed_processor(const userconfig& config,
+                       const output_sample_files& output,
+                       size_t nth)
+    : reads_processor(config, output, nth)
   {}
 
   chunk_vec process(analytical_chunk* chunk)
   {
-    const size_t offset = (m_nth + 1) * ai_analyses_offset;
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-    auto stats = m_stats.acquire();
-    output_chunk_ptr encoded_reads(new fastq_output_chunk(read_chunk->eof));
+    statistics_ptr stats = m_stats.acquire();
+    trimmed_reads chunks(m_config, m_output, read_chunk->eof);
 
-    for (const auto& read : read_chunk->reads_1) {
+    for (auto& read : read_chunk->reads_1) {
       stats->read_1.process(read);
-      encoded_reads->add(*m_config.quality_output_fmt, read);
+      chunks.add(read, read_type::mate_1);
     }
-
-    chunk_vec chunks;
-    chunks.push_back(
-      chunk_pair(offset + ai_write_mate_1, std::move(encoded_reads)));
 
     m_stats.release(stats);
 
-    return chunks;
+    return chunks.finalize();
   }
 };
 
-class pe_demultiplexed_reads_processor : public reads_processor
+class pe_demuxed_processor : public reads_processor
 {
 public:
-  pe_demultiplexed_reads_processor(const userconfig& config, size_t nth)
-    : reads_processor(config, nth)
+  pe_demuxed_processor(const userconfig& config,
+                       const output_sample_files& output,
+                       size_t nth)
+    : reads_processor(config, output, nth)
   {}
 
   chunk_vec process(analytical_chunk* chunk)
   {
-    const size_t offset = (m_nth + 1) * ai_analyses_offset;
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
     statistics_ptr stats = m_stats.acquire();
-    output_chunk_ptr encoded_reads_1(new fastq_output_chunk(read_chunk->eof));
-    output_chunk_ptr encoded_reads_2;
-    if (!m_config.interleaved_output) {
-      encoded_reads_2.reset(new fastq_output_chunk(read_chunk->eof));
-    }
+    trimmed_reads chunks(m_config, m_output, read_chunk->eof);
 
     fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
     fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
@@ -104,26 +97,13 @@ public:
       stats->read_1.process(read_1);
       stats->read_2.process(read_2);
 
-      encoded_reads_1->add(*m_config.quality_output_fmt, read_1);
-
-      if (m_config.interleaved_output) {
-        encoded_reads_1->add(*m_config.quality_output_fmt, read_2);
-      } else {
-        encoded_reads_2->add(*m_config.quality_output_fmt, read_2);
-      }
-    }
-
-    chunk_vec chunks;
-    chunks.push_back(
-      chunk_pair(offset + ai_write_mate_1, std::move(encoded_reads_1)));
-    if (!m_config.interleaved_output) {
-      chunks.push_back(
-        chunk_pair(offset + ai_write_mate_2, std::move(encoded_reads_2)));
+      chunks.add(read_1, read_type::mate_1);
+      chunks.add(read_2, read_type::mate_2);
     }
 
     m_stats.release(stats);
 
-    return chunks;
+    return chunks.finalize();
   }
 };
 
@@ -136,76 +116,63 @@ demultiplex_sequences(const userconfig& config)
   std::vector<reads_processor*> processors;
   ar_statistics stats(config.report_sample_rate);
 
+  auto out_files = config.get_output_filenames();
+
+  post_demux_steps steps;
+
+  // Step 3 - N: Trim and write (demultiplexed) reads
+  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
+    const std::string& sample = config.adapters.get_sample_name(nth);
+
+    auto& mapping = out_files.samples.at(nth);
+    for (const auto& filename : mapping.filenames) {
+      mapping.steps.push_back(add_write_step(config, sch, sample, filename));
+    }
+
+    if (config.paired_ended_mode) {
+      processors.push_back(new pe_demuxed_processor(config, mapping, nth));
+    } else {
+      processors.push_back(new se_demuxed_processor(config, mapping, nth));
+    }
+
+    steps.samples.push_back(sch.add_step("post_" + sample, processors.back()));
+  }
+
+  size_t processing_step = std::numeric_limits<size_t>::max();
+
+  // Step 2: Parse and demultiplex reads based on single or double indices
+  if (config.adapters.barcode_count()) {
+    steps.unidentified_1 = add_write_step(
+      config, sch, "unidentified_mate_1", out_files.unidentified_1);
+
+    if (config.paired_ended_mode && !config.interleaved_output) {
+      steps.unidentified_2 = add_write_step(
+        config, sch, "unidentified_mate_2", out_files.unidentified_2);
+    }
+
+    if (config.paired_ended_mode) {
+      processing_step = sch.add_step(
+        "demultiplex",
+        new demultiplex_pe_reads(config, steps, &stats.demultiplexing));
+
+    } else {
+      processing_step = sch.add_step(
+        "demultiplex",
+        new demultiplex_se_reads(config, steps, &stats.demultiplexing));
+    }
+  } else {
+    processing_step = steps.samples.back();
+  }
+
   // Step 1: Read input file
-  sch.add_step(ai_read_fastq,
-               "read_fastq",
+  sch.add_step("read_fastq",
                new read_fastq(config.quality_input_fmt.get(),
                               config.input_files_1,
                               config.input_files_2,
-                              ai_demultiplex,
+                              processing_step,
                               config.interleaved_input,
                               &stats.input_1,
                               &stats.input_2));
-
-  // Step 2: Parse and demultiplex reads based on single or double indices
-  if (config.paired_ended_mode) {
-    sch.add_step(ai_demultiplex,
-                 "demultiplex_pe",
-                 new demultiplex_pe_reads(&config, &stats.demultiplexing));
-
-  } else {
-    sch.add_step(ai_demultiplex,
-                 "demultiplex_se",
-                 new demultiplex_se_reads(&config, &stats.demultiplexing));
-  }
-
-  const auto out_files = config.get_output_filenames();
-
-  add_write_step(config,
-                 sch,
-                 ai_write_unidentified_1,
-                 "unidentified_mate_1",
-                 new write_fastq(out_files.unidentified_1));
-
-  if (config.paired_ended_mode && !config.interleaved_output) {
-    add_write_step(config,
-                   sch,
-                   ai_write_unidentified_2,
-                   "unidentified_mate_2",
-                   new write_fastq(out_files.unidentified_2));
-  }
-
-  // Step 3 - N: Write demultiplexed reads
-  for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    const size_t offset = (nth + 1) * ai_analyses_offset;
-    const std::string& sample = config.adapters.get_sample_name(nth);
-    const auto& filemap = out_files.samples.at(nth);
-    const auto& filenames = filemap.filenames;
-
-    reads_processor* processor = nullptr;
-    if (config.paired_ended_mode) {
-      processor = new pe_demultiplexed_reads_processor(config, nth);
-    } else {
-      processor = new se_demultiplexed_reads_processor(config, nth);
-    }
-
-    processors.push_back(processor);
-    sch.add_step(offset + ai_trim_se, "process_" + sample, processor);
-
-    add_write_step(config,
-                   sch,
-                   offset + ai_write_mate_1,
-                   sample + "_mate_1",
-                   new write_fastq(filenames.at(filemap.output_1)));
-
-    if (config.paired_ended_mode && !config.interleaved_output) {
-      add_write_step(config,
-                     sch,
-                     offset + ai_write_mate_2,
-                     sample + "_mate_2",
-                     new write_fastq(filenames.at(filemap.output_2)));
-    }
-  }
 
   if (!sch.run(config.max_threads)) {
     return 1;

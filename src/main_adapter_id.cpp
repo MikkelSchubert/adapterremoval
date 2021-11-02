@@ -333,15 +333,13 @@ public:
 
   chunk_vec process(analytical_chunk* chunk)
   {
-    if (!chunk) {
-      throw std::invalid_argument("sink received nullptr chunk");
-    }
+    AR_DEBUG_ASSERT(chunk);
+    read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+    AR_DEBUG_ASSERT(file_chunk);
 
     const fastq empty_adapter("dummy", "", "");
     fastq_pair_vec adapters;
     adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
-
-    read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     auto stats = m_stats.acquire();
 
@@ -455,17 +453,16 @@ identify_adapter_sequences(const userconfig& config)
   std::cout << "Attempting to identify adapter sequences ..." << std::endl;
 
   scheduler sch;
-  sch.add_step(ai_read_fastq,
-               "read_paired_fastq",
+
+  const size_t identification_step =
+    sch.add_step("identify_adapters", new adapter_identification(config));
+
+  sch.add_step("read_paired_fastq",
                new read_fastq(config.quality_input_fmt.get(),
                               config.input_files_1,
                               config.input_files_2,
-                              ai_analyses_offset,
+                              identification_step,
                               config.interleaved_input));
-
-  sch.add_step(ai_analyses_offset,
-               "identify_adapters",
-               new adapter_identification(config));
 
   return !sch.run(config.max_threads);
 }

@@ -28,14 +28,46 @@
 #include "scheduler.hpp"
 #include "statistics.hpp"
 
+class output_files;
+class output_sample_files;
 class userconfig;
 
 typedef std::unique_ptr<trimming_statistics> statistics_ptr;
 
+/** Helper class used to generate per file-type chunks for processed reads . */
+class trimmed_reads
+{
+public:
+  trimmed_reads(const userconfig& config,
+                const output_sample_files& map,
+                const bool eof);
+
+  /**
+   * Adds a read of the given type.
+   *
+   * @param read A read to be distributed in the pipeline; may be modified.
+   * @param type The read type to store the read as.
+   * @param count The amount of reads used to generate this read (2 for merged).
+   */
+  void add(fastq& read, const read_type type, const size_t count = 1);
+
+  /** Returns a chunk for each generated type of proccessed reads. */
+  chunk_vec finalize();
+
+private:
+  const userconfig& m_config;
+  const output_sample_files& m_map;
+
+  //! A set output chunks being created; typically fewer than read_type::max.
+  std::vector<output_chunk_ptr> m_chunks;
+};
+
 class reads_processor : public analytical_step
 {
 public:
-  reads_processor(const userconfig& config, size_t nth);
+  reads_processor(const userconfig& config,
+                  const output_sample_files& output,
+                  size_t nth);
 
   statistics_ptr get_final_statistics();
 
@@ -43,13 +75,16 @@ protected:
   const userconfig& m_config;
   const fastq_pair_vec m_adapters;
   threadstate<trimming_statistics> m_stats;
+  const output_sample_files& m_output;
   const size_t m_nth;
 };
 
 class se_reads_processor : public reads_processor
 {
 public:
-  se_reads_processor(const userconfig& config, size_t nth = 0);
+  se_reads_processor(const userconfig& config,
+                     const output_sample_files& output,
+                     size_t nth);
 
   chunk_vec process(analytical_chunk* chunk);
 };
@@ -57,7 +92,9 @@ public:
 class pe_reads_processor : public reads_processor
 {
 public:
-  pe_reads_processor(const userconfig& config, size_t nth);
+  pe_reads_processor(const userconfig& config,
+                     const output_sample_files& output,
+                     size_t nth);
 
   chunk_vec process(analytical_chunk* chunk);
 };

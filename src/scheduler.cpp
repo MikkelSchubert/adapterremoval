@@ -181,34 +181,29 @@ scheduler::scheduler()
 
 scheduler::~scheduler() {}
 
-void
-scheduler::add_step(size_t step_id,
-                    const std::string& name,
-                    analytical_step* step)
+size_t
+scheduler::add_step(const std::string& name, analytical_step* step)
 {
-  if (m_steps.size() <= step_id) {
-    m_steps.resize(step_id + 1);
-  }
-
   AR_DEBUG_ASSERT(step);
-  AR_DEBUG_ASSERT(!m_steps.at(step_id));
 
-  m_steps.at(step_id) = step_ptr(new scheduler_step(step, name));
+  const size_t step_id = m_steps.size();
+  m_steps.emplace_back(new scheduler_step(step, name));
+
+  return step_id;
 }
 
 bool
 scheduler::run(int nthreads)
 {
   AR_DEBUG_ASSERT(!m_steps.empty());
-  AR_DEBUG_ASSERT(m_steps.front());
   AR_DEBUG_ASSERT(nthreads >= 1);
   AR_DEBUG_ASSERT(!m_chunk_counter);
 
   for (size_t task = 3 * static_cast<size_t>(nthreads); task; --task) {
-    m_steps.front()->queue.push(data_chunk(m_chunk_counter++));
+    m_steps.back()->queue.push(data_chunk(m_chunk_counter++));
   }
 
-  queue_analytical_step(m_steps.front(), 0);
+  queue_analytical_step(m_steps.back(), 0);
 
   std::vector<std::thread> threads;
 
@@ -342,6 +337,7 @@ scheduler::execute_analytical_step(const step_ptr& step)
 
   // Schedule each of the resulting blocks
   for (auto& result : chunks) {
+    AR_DEBUG_ASSERT(result.first < m_steps.size());
     step_ptr& other_step = m_steps.at(result.first);
     AR_DEBUG_ASSERT(other_step != nullptr);
 
@@ -377,8 +373,8 @@ scheduler::execute_analytical_step(const step_ptr& step)
   }
 
   // End of the line for this chunk; re-schedule first step
-  if (chunks.empty() && chunk.unique() && step != m_steps.front()) {
-    step_ptr other_step = m_steps.front();
+  if (chunks.empty() && chunk.unique() && step != m_steps.back()) {
+    step_ptr other_step = m_steps.back();
 
     std::lock_guard<std::mutex> step_lock(other_step->lock);
     other_step->queue.push(data_chunk(m_chunk_counter));
