@@ -19,9 +19,6 @@
 * Support for reading and writing of bzip2 files has been removed. Superior
   formats are available for people wishing to obtain better compression of FASTQ
   data, such as CRAM, but this is better handled by other software.
-* The term "merging" is now used consistently instead of "collapsing", including
-  for default output filenames. Options have been renamed, but old option names
-  continue to work, except for `--outputcollapsedtruncated` (now removed).
 * Merged reads are no longer given a `M_` name prefix and merged reads that have
   been trimmed after merging are no longer given an `MT_` name prefix.
 * The `--outputcollapsedtruncated` has been removed and all merged reads
@@ -37,6 +34,9 @@
   With many changes to the CLI planned, this would risk unintended behavior.
 
 ### Other major changes
+* The term "merging" is now used consistently instead of "collapsing", including
+  for default output filenames. Options have been renamed, but old option names
+  continue to work, except for `--outputcollapsedtruncated` (now removed).
 * Output can now be arbitrarily combined simply by specifying the same output
   file for multiple outputs types: `--output1 file.fq --output2 file.fq` will
   for example produce interleaved output equivalent to
