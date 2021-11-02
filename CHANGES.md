@@ -1,3 +1,57 @@
+# Changelog
+
+## [3.0.0-pre1]
+
+### Breaking changes
+* Default adapters have been changed to the [recommended Illumina sequences],
+  equivalent to the first 33 bp of the adapter sequences used by AdapterRemoval
+  v2. This makes the default settings more generally applicable.
+* The `--settings` text file has been replaced by a JSON file containing
+  detailed statistics and quality metrics about the input and output.
+* `--gzip` now defaults to compressing independent blocks of 64kb data using
+  `libdeflate`. This significantly improves throughput in both single- and
+  (especially) multi-threaded mode, but may be incompatible with some programs.
+  A fallback mode (`--gzip-stream`) is provided for this case.
+* Merging is now always deterministic, meaning that overlapping, mismatching
+  bases with the same quality score are written as an `N` rather than
+  AdapterRemoval randomly picking one base. This ensure that results are always
+  reproducible. This was previously enabled with `--collapse-deterministic`.
+* Support for reading and writing of bzip2 files has been removed. Superior
+  formats are available for people wishing to obtain better compression of FASTQ
+  data, such as CRAM, but this is better handled by other software.
+* The term "merging" is now used consistently instead of "collapsing", including
+  for default output filenames. Options have been renamed, but old option names
+  continue to work, except for `--outputcollapsedtruncated` (now removed).
+* Merged reads are no longer given a `M_` name prefix and merged reads that have
+  been trimmed after merging are no longer given an `MT_` name prefix.
+* The `--outputcollapsedtruncated` has been removed and all merged reads
+  (whether quality trimmed or not) are simply written to `--outputmerged`.
+* Default filenames have all been revised and now include proper extensions.
+* `--pcr1` and `--pcr2` have been removed; these were already deprecated in v2.
+* `--qualitybase-output` has been removed; output is now always Phred+33.
+* `--collapse` no longer has any effect when processing SE data; previously this
+  option would treat reads with at least `--minalignmentlength` adapter sequence
+  as pseudo-merged reads.
+* AdapterRemoval will no longer try to guess the desired command-line option
+  based on a prefix. I.e. `--th` will no longer be accepted for `--threads`.
+  With many changes to the CLI planned, this would risk unintended behavior.
+
+### Other major changes
+* Output can now be arbitrarily combined simply by specifying the same output
+  file for multiple outputs types: `--output1 file.fq --output2 file.fq` will
+  for example produce interleaved output equivalent to
+  `--output1 file.fq --interleaved-output`.
+* A simple template system is now used for output filenames. This can be ignored
+  in most cases, but allows fine-grained control over output files when using
+  AdapterRemoval to perform demultiplexing.
+
+### Breaking changes under consideration
+* Defaulting to `--merge-conservatively` for a more conservative quality scoring
+  algorithm for merged bases, where  (`Q_match = max(Q_a, Q_b)` instead of
+  `Q_match ~= Q_a + Q_b`)). Motivated in part by `doi:10.1186/s12859-018-2579-2`
+* Changes to default output; e.g. writing discarded reads by default.
+
+
 ### Version 2.3.2 - 2021-03-17
 
  * Improved error messages when AdapterRemoval failed to open or write FASTQ
@@ -384,3 +438,8 @@ Stinus
     sequences to upper case.
   * The program now checks for inconsistent parameters.
   * Fixed some typographical issues with output.
+
+
+[3.0.0-pre1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...HEAD
+
+[recommended Illumina sequences]: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
