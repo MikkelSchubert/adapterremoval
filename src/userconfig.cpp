@@ -107,6 +107,12 @@ output_sample_files::output_sample_files()
 size_t
 output_sample_files::add(const std::string& filename)
 {
+  // If discarded then no post processing is needed; this saves time especially
+  // when output compression is enabled.
+  if (filename == "/dev/null") {
+    return output_sample_files::disabled;
+  }
+
   auto it = std::find(filenames.begin(), filenames.end(), filename);
   if (it == filenames.end()) {
     filenames.push_back(filename);
