@@ -85,7 +85,7 @@ public:
   bool eof;
 
   //! The number of reads used to generate this chunk; may differ from the
-  //! the number of reads, in the case of collapsed reads.
+  //! the number of reads, in the case of merged reads.
   size_t count;
 
   //! Total number of nucleotides in this chunk

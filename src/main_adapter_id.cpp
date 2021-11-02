@@ -404,7 +404,7 @@ private:
 
     if (m_config.is_good_alignment(alignment)) {
       stats.aligned_pairs++;
-      if (m_config.is_alignment_collapsible(alignment)) {
+      if (m_config.can_merge_alignment(alignment)) {
         if (extract_adapter_sequences(alignment, read1, read2)) {
           stats.pairs_with_adapters++;
 

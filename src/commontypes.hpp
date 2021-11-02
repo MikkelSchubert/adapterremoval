@@ -45,7 +45,7 @@ enum class read_type : size_t
   /** Mate 2 reads, either read or written by AR. */
   mate_2,
   /** Overlapping PE reads merged into a single sequence. */
-  collapsed,
+  merged,
   /** PE reads for which mate 2 has been discarded. */
   singleton_1,
   /** PE reads for which mate 1 has been discarded. */

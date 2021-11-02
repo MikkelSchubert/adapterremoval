@@ -54,7 +54,7 @@ trim_read_termini(const userconfig& config,
       trim_3p = config.trim_fixed_3p.second;
       break;
 
-    case read_type::collapsed:
+    case read_type::merged:
       if (config.paired_ended_mode) {
         trim_5p = config.trim_fixed_5p.first;
         trim_3p = config.trim_fixed_5p.second;
@@ -279,7 +279,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
   sequence_merger merger;
   merger.set_mate_separator(mate_separator);
-  merger.set_conservative(m_config.collapse_conservatively);
+  merger.set_conservative(m_config.merge_conservatively);
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);
@@ -310,36 +310,34 @@ pe_reads_processor::process(analytical_chunk* chunk)
       stats->adapter_trimmed_bases.inc(
         alignment.adapter_id, length - read_1.length() - read_2.length());
 
-      if (m_config.is_alignment_collapsible(alignment)) {
+      if (m_config.can_merge_alignment(alignment)) {
         stats->overlapping_reads_merged += 2;
-        fastq collapsed_read = merger.merge(alignment, read_1, read_2);
+        fastq merged_read = merger.merge(alignment, read_1, read_2);
 
-        trim_read_termini(
-          m_config, *stats, collapsed_read, read_type::collapsed);
+        trim_read_termini(m_config, *stats, merged_read, read_type::merged);
 
         bool trimmed = false;
         if (!m_config.preserve5p) {
-          // A collapsed read essentially consists of two 5p termini, both
+          // A merged read essentially consists of two 5p termini, both
           // informative for PCR duplicate removal.
-          trimmed = trim_sequence_by_quality(m_config, *stats, collapsed_read);
+          trimmed = trim_sequence_by_quality(m_config, *stats, merged_read);
         }
 
         // If trimmed, the external coordinates are no longer reliable
         // for determining the size of the original template.
-        collapsed_read.add_prefix_to_header(trimmed ? "MT_" : "M_");
+        merged_read.add_prefix_to_header(trimmed ? "MT_" : "M_");
 
-        if (is_acceptable_read(m_config, *stats, collapsed_read)) {
-          stats->merged.process(collapsed_read, 2);
-          chunks.add(collapsed_read, read_type::collapsed, 2);
+        if (is_acceptable_read(m_config, *stats, merged_read)) {
+          stats->merged.process(merged_read, 2);
+          chunks.add(merged_read, read_type::merged, 2);
         } else {
-          stats->discarded.process(collapsed_read, 2);
-          chunks.add(collapsed_read, read_type::discarded_1, 2);
+          stats->discarded.process(merged_read, 2);
+          chunks.add(merged_read, read_type::discarded_1, 2);
         }
 
         if (m_config.combined_output) {
           // FIXME: Does this make sense?
-          // Dummy read with read-count of zero; both mates have
-          // already been accounted for in process_collapsed_read
+          // Read-count of 0 since `add` above already accounts for both reads
           read_2.add_prefix_to_header(trimmed ? "MT_" : "M_");
           chunks.add(read_2, read_type::discarded_2, 0);
         }
@@ -348,7 +346,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
       }
     }
 
-    // Reads were not aligned or collapsing is not enabled
+    // Reads were not aligned or merging is not enabled
     // Undo reverse complementation (post truncation of adapters)
     read_2.reverse_complement();
 

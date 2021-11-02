@@ -22,11 +22,11 @@ Note that by default, AdapterRemoval does not require a minimum number of bases 
 Trimming paired-end reads
 -------------------------
 
-The following command removes adapters from a paired-end reads, where the mate 1 and mate 2 reads are kept in files *reads_1.fq* and *reads_2.fq*, respectively. The reads are trimmed for both Ns and low quality bases, and overlapping reads (at least 11 nucleotides, per default) are merged (collapsed)::
+The following command removes adapters from a paired-end reads, where the mate 1 and mate 2 reads are kept in files *reads_1.fq* and *reads_2.fq*, respectively. The reads are trimmed for both Ns and low quality bases, and overlapping reads (at least 11 nucleotides, per default) are merged (merged)::
 
-    AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_paired --trimns --trimqualities --collapse
+    AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_paired --trimns --trimqualities --merge
 
-This command generates the files *output_paired.pair1.truncated* and *output_paired.pair2.truncated*, which contain trimmed pairs of reads which were not collapsed, *output_paired.singleton.truncated* containing reads where one mate was discarded, and *output_paired.collapsed* containing merged reads. Finally, the *output_paired.discarded* and *output_paired.settings* files correspond to those of the single-end run.
+This command generates the files *output_paired.pair1.truncated* and *output_paired.pair2.truncated*, which contain trimmed pairs of reads which were not merged, *output_paired.singleton.truncated* containing reads where one mate was discarded, and *output_paired.merged* containing merged reads. Finally, the *output_paired.discarded* and *output_paired.settings* files correspond to those of the single-end run.
 
 
 Multiple input FASTQ files
@@ -58,7 +58,7 @@ Other than taking just a single input file, this mode operates almost exactly li
 Combining FASTQ output
 ----------------------
 
-By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for collapsed reads. Alternatively, these files may be combined using the ``--combined-output``, in which case all output is directed to the mate 1 and (in PE mode) to the mate 2 file. In cases where reads are discarded due to trimming to due to being collapsed into a single sequence, the sequence and quality scores of the discarded read is replaced with a single 'N' with base-quality 0. This option may be combined with ``--interleaved`` / ``--interleaved-output``, to write a single, interleaved file in paired-end mode.
+By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for merged reads. Alternatively, these files may be combined using the ``--combined-output``, in which case all output is directed to the mate 1 and (in PE mode) to the mate 2 file. In cases where reads are discarded due to trimming to due to being merged into a single sequence, the sequence and quality scores of the discarded read is replaced with a single 'N' with base-quality 0. This option may be combined with ``--interleaved`` / ``--interleaved-output``, to write a single, interleaved file in paired-end mode.
 
 
 Different quality score encodings
@@ -70,9 +70,9 @@ By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred
 
 Output is always saved as Phred+33.
 
-Note furthermore that AdapterRemoval by default only expects quality scores in the range 0 - 41 (or -5 to 41 in the case of Solexa encoded scores). If input data using a different maximum quality score is to be processed, or if the desired maximum quality score of collapsed reads is greater than 41, then this limit may be increased using the ``--qualitymax`` option::
+Note furthermore that AdapterRemoval by default only expects quality scores in the range 0 - 41 (or -5 to 41 in the case of Solexa encoded scores). If input data using a different maximum quality score is to be processed, or if the desired maximum quality score of merged reads is greater than 41, then this limit may be increased using the ``--qualitymax`` option::
 
-    AdapterRemoval --qualitymax 50 --file1 reads_1.fq --file2 reads_2.fq --collapse --basename output_collapsed_q50
+    AdapterRemoval --qualitymax 50 --file1 reads_1.fq --file2 reads_2.fq --merge --basename output_merged_q50
 
 For a detailed overview of Phred encoding schemes currently and previously in use, see e.g. the Wikipedia article on the subject:
 https://en.wikipedia.org/wiki/FASTQ_format#Encoding
@@ -92,7 +92,7 @@ It is possible to trim data that contains multiple adapter pairs, by providing a
 
 This table is then specified using the ``--adapter-list`` option::
 
-    AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_multi --trimns --trimqualities --collapse --adapter-list adapters.txt
+    AdapterRemoval --file1 reads_1.fq --file2 reads_2.fq --basename output_multi --trimns --trimqualities --merge --adapter-list adapters.txt
 
 The resulting .summary file contains an overview of how frequently each adapter (pair) was used.
 

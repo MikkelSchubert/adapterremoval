@@ -107,9 +107,9 @@ Output file options
 
 	Output file to which containing paired reads for which the mate has been discarded. Default filename is 'basename.singleton.truncated'.
 
-.. option:: --outputcollapsed file
+.. option:: --outputmerged file
 
-	If --collapsed is set, contains overlapping mate-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low-quality or ambiguous nucleotides. Default filename is 'basename.collapsed'
+	If --merged is set, contains overlapping mate-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low-quality or ambiguous nucleotides. Default filename is 'basename.merged'
 
 .. option:: --discarded file
 
@@ -153,7 +153,7 @@ FASTQ trimming options
 
 .. option:: --minadapteroverlap length
 
-	In single-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N); this is independent of the ``--minalignmentlength`` when using ``--collapse``, allowing a conservative selection of putative complete inserts in single-end mode, while ensuring that all possible adapter contamination is trimmed. The default is 0.
+	In single-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N); this is independent of the ``--minalignmentlength`` when using ``--merge``, allowing a conservative selection of putative complete inserts in single-end mode, while ensuring that all possible adapter contamination is trimmed. The default is 0.
 
 .. option:: --mm mismatchrate
 
@@ -208,25 +208,25 @@ FASTQ trimming options
 FASTQ merging options
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. option:: --collapse
+.. option:: --merge
 
-	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "collapsed" reads are written with a 'M\_' name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a 'MT\_' name prefix. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
+	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "merged" reads are written with a 'M\_' name prefix, and "merged" reads which are trimmed due to quality settings are written with a 'MT\_' name prefix. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
 
 .. option:: --minalignmentlength length
 
-	The minimum overlap between mate 1 and mate 2 before the reads are collapsed into one, when collapsing paired-end reads, or when attempting to identify complete template sequences in single-end mode. Default is 11.
+	The minimum overlap between mate 1 and mate 2 before the reads are merged into one, when collapsing paired-end reads, or when attempting to identify complete template sequences in single-end mode. Default is 11.
 
 .. option:: --seed seed
 
 	When collaping reads at positions where the two reads differ, and the quality of the bases are identical, AdapterRemoval will select a random base. This option specifies the seed used for the random number generator used by AdapterRemoval. This value is also written to the settings file. Note that setting the seed is not reliable in multithreaded mode, since the order of operations is non-deterministic.
 
-.. option:: --collapse-deterministic
+.. option:: --merge-deterministic
 
-	Enable deterministic mode; currently only affects --collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets --collapse.
+	Enable deterministic mode; currently only affects --merge, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets --merge.
 
-.. option:: --collapse-conservatively
+.. option:: --merge-conservatively
 
-	Alternative merging algorithm inspired by FASTQ-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred-score between the two bases. For mismatching bases with identical quality scores, the base is set to 'N' and the quality score to 0 (Phred-encoded). Setting this option also sets --collapse.
+	Alternative merging algorithm inspired by FASTQ-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred-score between the two bases. For mismatching bases with identical quality scores, the base is set to 'N' and the quality score to 0 (Phred-encoded). Setting this option also sets --merge.
 
 
 FASTQ demultiplexing options

@@ -123,8 +123,8 @@ public:
   /** Characterize an alignment based on user settings. */
   bool is_good_alignment(const alignment_info& alignment) const;
 
-  /** Returns true if the alignment is sufficient for collapsing. */
-  bool is_alignment_collapsible(const alignment_info& alignment) const;
+  /** Returns true if the alignment is sufficient for merge. */
+  bool can_merge_alignment(const alignment_info& alignment) const;
 
   /** Returns runtime in seconds. */
   double runtime() const;
@@ -175,7 +175,7 @@ public:
   unsigned max_genomic_length;
   //! The minimum required overlap before trimming single-end reads.
   unsigned min_adapter_overlap;
-  //! The minimum required genomic overlap before collapsing reads into one.
+  //! The minimum required genomic overlap before merging reads into one.
   unsigned min_alignment_length;
   //! Rate of mismatches determining the threshold for a an acceptable
   //! alignment, depending on the length of the alignment. But see also the
@@ -209,11 +209,11 @@ public:
   bool preserve5p;
 
   //! If true, PE reads overlapping at least 'min_alignment_length' are
-  //! collapsed to generate a higher quality consensus sequence.
-  bool collapse;
+  //! merged to generate a higher quality consensus sequence.
+  bool merge;
   //! If true, merging is done using the alternative, more conservative merging
   //! algorithm inspired by fastq-join.
-  bool collapse_conservatively;
+  bool merge_conservatively;
   // Allow for slipping basepairs by allowing missing bases in adapter
   unsigned shift;
 

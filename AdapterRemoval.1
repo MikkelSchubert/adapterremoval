@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ADAPTERREMOVAL" "1" "May 17, 2021" "2.3.2" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Nov 02, 2021" "2.3.2" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .SH SYNOPSIS
@@ -147,8 +147,8 @@ Output file to which containing paired reads for which the mate has been discard
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-outputcollapsed file
-If \-\-collapsed is set, contains overlapping mate\-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.collapsed\(aq
+.B \-\-outputmerged file
+If \-\-merged is set, contains overlapping mate\-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low\-quality or ambiguous nucleotides. Default filename is \(aqbasename.merged\(aq
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -195,7 +195,7 @@ Read one or more adapter sequences from a table. The first two columns (separate
 .INDENT 0.0
 .TP
 .B \-\-minadapteroverlap length
-In single\-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N); this is independent of the \fB\-\-minalignmentlength\fP when using \fB\-\-collapse\fP, allowing a conservative selection of putative complete inserts in single\-end mode, while ensuring that all possible adapter contamination is trimmed. The default is 0.
+In single\-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N); this is independent of the \fB\-\-minalignmentlength\fP when using \fB\-\-merge\fP, allowing a conservative selection of putative complete inserts in single\-end mode, while ensuring that all possible adapter contamination is trimmed. The default is 0.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -260,13 +260,13 @@ Reads longer than this length are discarded following trimming. Defaults to 4294
 .SS FASTQ merging options
 .INDENT 0.0
 .TP
-.B \-\-collapse
-In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "collapsed" reads are written with a \(aqM_\(aq name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&. This option has no effect in single\-end mode.
+.B \-\-merge
+In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "merged" reads are written with a \(aqM_\(aq name prefix, and "merged" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&. This option has no effect in single\-end mode.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-minalignmentlength length
-The minimum overlap between mate 1 and mate 2 before the reads are collapsed into one, when collapsing paired\-end reads, or when attempting to identify complete template sequences in single\-end mode. Default is 11.
+The minimum overlap between mate 1 and mate 2 before the reads are merged into one, when collapsing paired\-end reads, or when attempting to identify complete template sequences in single\-end mode. Default is 11.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -275,13 +275,13 @@ When collaping reads at positions where the two reads differ, and the quality of
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-collapse\-deterministic
-Enable deterministic mode; currently only affects \-\-collapse, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets \-\-collapse.
+.B \-\-merge\-deterministic
+Enable deterministic mode; currently only affects \-\-merge, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets \-\-merge.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-collapse\-conservatively
-Alternative merging algorithm inspired by FASTQ\-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred\-score between the two bases. For mismatching bases with identical quality scores, the base is set to \(aqN\(aq and the quality score to 0 (Phred\-encoded). Setting this option also sets \-\-collapse.
+.B \-\-merge\-conservatively
+Alternative merging algorithm inspired by FASTQ\-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred\-score between the two bases. For mismatching bases with identical quality scores, the base is set to \(aqN\(aq and the quality score to 0 (Phred\-encoded). Setting this option also sets \-\-merge.
 .UNINDENT
 .SS FASTQ demultiplexing options
 .INDENT 0.0

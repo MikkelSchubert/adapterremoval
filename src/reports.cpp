@@ -363,7 +363,7 @@ write_report_demultiplexing(const userconfig& config,
               if (config.paired_ended_mode) {
                 write_io_section("read2", writer, sample_stats.read_2);
 
-                if (config.collapse && !demux_only) {
+                if (config.merge && !demux_only) {
                   write_io_section("merged", writer, sample_stats.merged);
                 } else {
                   writer.write_null("merged");
@@ -414,7 +414,7 @@ write_report_output(const userconfig& config,
     if (config.paired_ended_mode) {
       write_io_section("read2", writer, output_2);
 
-      if (config.collapse && !demux_only) {
+      if (config.merge && !demux_only) {
         write_io_section("merged", writer, merged);
       } else {
         writer.write_null("merged");

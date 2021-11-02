@@ -156,8 +156,8 @@ userconfig::userconfig(const std::string& name,
   , trim_ambiguous_bases(false)
   , max_ambiguous_bases(1000)
   , preserve5p(false)
-  , collapse(false)
-  , collapse_conservatively(false)
+  , merge(false)
+  , merge_conservatively(false)
   , shift(2)
   , max_threads(1)
   , gzip(false)
@@ -271,10 +271,10 @@ userconfig::userconfig(const std::string& name,
     "FILE",
     "Output file to which containing paired reads for which the mate "
     "has been discarded [default: %default]");
-  argparser["--outputcollapsed"] = new argparse::any(
+  argparser["--outputmerged"] = new argparse::any(
     &out_merged,
     "FILE",
-    "If --collapsed is set, contains overlapping mate-pairs which "
+    "If --merge is set, contains overlapping mate-pairs which "
     "have been merged into a single read (PE mode) or reads for which "
     "the adapter was identified by a minimum overlap, indicating that "
     "the entire template molecule is present. This does not include "
@@ -328,7 +328,7 @@ userconfig::userconfig(const std::string& name,
     "In single-end mode, reads are only trimmed if the overlap "
     "between read and the adapter is at least X bases long, not "
     "counting ambiguous nucleotides (N); this is independent of the "
-    "--minalignmentlength when using --collapse, allowing a "
+    "--minalignmentlength when using --merge, allowing a "
     "conservative selection of putative complete inserts while "
     "ensuring that all possible adapter contamination is trimmed "
     "[default: %default].");
@@ -389,7 +389,7 @@ userconfig::userconfig(const std::string& name,
   argparser["--preserve5p"] = new argparse::flag(
     &preserve5p,
     "If set, bases at the 5p will not be trimmed by --trimns, "
-    "--trimqualities, and --trimwindows. Collapsed reads will "
+    "--trimqualities, and --trimwindows. Merged reads will "
     "not be quality trimmed when this option is enabled "
     "[default: 5p bases are trimmed]");
 
@@ -406,26 +406,24 @@ userconfig::userconfig(const std::string& name,
                        "following trimming [default: %default].");
 
   argparser.add_header("READ MERGING:");
-  argparser["--collapse"] = new argparse::flag(
-    &collapse,
+  argparser["--merge"] = new argparse::flag(
+    &merge,
     "When set, paired ended read alignments of --minalignmentlength or more "
     "bases are merged into a single consensus sequence. Merged reads are "
-    "written to basename.collapsed by default. Has no effect in single-end "
+    "written to basename.merged by default. Has no effect in single-end "
     "mode [default: %default].");
-  argparser["--collapse-deterministic"] =
-    new argparse::flag(&m_deprecated_flags, "HIDDEN");
-  argparser["--collapse-conservatively"] = new argparse::flag(
-    &collapse_conservatively,
+  argparser["--merge-conservatively"] = new argparse::flag(
+    &merge_conservatively,
     "Enables a more conservative merging algorithm inspired by fastq-join, "
     "in which the higher quality score is picked for matching bases and the "
     "max score minus the min score is picked for mismatching bases. For more "
-    "details, see the documentation. Setting this option also sets --collapse "
+    "details, see the documentation. Setting this option also sets --merge "
     "[default: %default].");
   argparser["--minalignmentlength"] = new argparse::knob(
     &min_alignment_length,
     "LENGTH",
-    "If --collapse is set, paired reads must overlap at least this "
-    "number of bases to be collapsed, and single-ended reads must "
+    "If --merge is set, paired reads must overlap at least this "
+    "number of bases to be merged, and single-ended reads must "
     "overlap at least this number of bases with the adapter to be "
     "considered complete template molecules [default: %default].");
   argparser["--seed"] = new argparse::knob(&m_deprecated_knobs, "", "HIDDEN");
@@ -468,6 +466,15 @@ userconfig::userconfig(const std::string& name,
     "Fraction of reads to use when generating base quality/composition curves "
     "for trimming reports. Using all data (--report-sample-nth 1.0) results in "
     "an about 10-30% decrease in throughput depending on settings [%default]");
+
+  // Deprecated command-line options
+  argparser["--collapse-deterministic"] =
+    new argparse::flag(&m_deprecated_flags, "HIDDEN");
+
+  // Aliases for backwards compatibility
+  argparser.create_alias("--merge", "--collapse");
+  argparser.create_alias("--merge-conservatively", "--collapse-conservatively");
+  argparser.create_alias("--outputmerged", "--outputcollapsed");
 
   // Required options
   argparser.option_requires("--demultiplex-only", "--barcode-list");
@@ -567,13 +574,13 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
-    // --collapse-deterministic implies --collapse
-    collapse |= argparser.is_set("--collapse-deterministic");
-    // --collapse-conservatively implies --collapse
-    collapse |= collapse_conservatively;
+    // --collapse-deterministic implies --merge
+    merge |= argparser.is_set("--collapse-deterministic");
+    // --merge-conservatively implies --merge
+    merge |= merge_conservatively;
   } else {
-    collapse = false;
-    collapse_conservatively = false;
+    merge = false;
+    merge_conservatively = false;
   }
 
   if (identify_adapters && !paired_ended_mode) {
@@ -671,7 +678,7 @@ userconfig::is_good_alignment(const alignment_info& alignment) const
 }
 
 bool
-userconfig::is_alignment_collapsible(const alignment_info& alignment) const
+userconfig::can_merge_alignment(const alignment_info& alignment) const
 {
   if (alignment.length < alignment.n_ambiguous) {
     throw std::invalid_argument("#ambiguous bases > read length");
@@ -682,7 +689,7 @@ userconfig::is_alignment_collapsible(const alignment_info& alignment) const
     return false;
   }
 
-  return collapse || identify_adapters;
+  return merge || identify_adapters;
 }
 
 output_files
@@ -721,7 +728,7 @@ userconfig::get_output_filenames() const
 
     if (run_type == ar_command::trim_adapters) {
       if (combined_output) {
-        map.offset(read_type::collapsed) = map.offset(read_type::mate_1);
+        map.offset(read_type::merged) = map.offset(read_type::mate_1);
 
         map.offset(read_type::discarded_1) = map.offset(read_type::mate_1);
         map.offset(read_type::discarded_2) = map.offset(read_type::mate_2);
@@ -738,9 +745,9 @@ userconfig::get_output_filenames() const
             map.offset(read_type::singleton_2) =
               map.add(get_output_filename("--singleton", out_singleton, name));
 
-          if (collapse) {
-            map.offset(read_type::collapsed) = map.add(
-              get_output_filename("--outputcollapsed", out_merged, name));
+          if (merge) {
+            map.offset(read_type::merged) =
+              map.add(get_output_filename("--outputmerged", out_merged, name));
           }
         }
       }

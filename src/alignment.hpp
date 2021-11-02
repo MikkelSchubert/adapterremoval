@@ -200,7 +200,7 @@ public:
    * original quality scores using the original algorithm implemented in
    * AdapterRemoval.
    *
-   * @return A single FASTQ record representing the collapsed sequence.
+   * @return A single FASTQ record representing the merged sequence.
    *
    * Note that the sequences are assumed to have been trimmed using the
    * function, and this function will produce undefined results if this is not
