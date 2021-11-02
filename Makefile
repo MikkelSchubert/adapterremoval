@@ -9,6 +9,9 @@ CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
+# Enable SSE, SSE2, and AVX2 instructions for a significant performance gain (YMMV)
+VECTORIZE := yes
+
 # Use libdeflate for block compression
 LIBDEFLATE := yes
 
@@ -38,12 +41,6 @@ LIBRARIES := -pthread -lz
 # Build directory; modified depending on build options
 BDIR     := build/main
 
-ifeq ($(strip ${LIBDEFLATE}),yes)
-CXXFLAGS := $(CXXFLAGS) -DUSE_LIBDEFLATE
-LIBRARIES := $(LIBRARIES) -ldeflate
-endif
-
-
 ifeq ($(strip ${QUIET_BUILD}),yes)
 QUIET := @
 endif
@@ -53,6 +50,22 @@ COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
+endif
+
+
+ifeq ($(strip ${VECTORIZE}),yes)
+$(info Building AdapterRemoval with SSE/SSE2/AVX2 extensions: yes)
+CXXFLAGS := $(CXXFLAGS) -msse -msse2 -mavx2
+else
+$(info Building AdapterRemoval with SSE/SSE2/AVX2 extensions: no)
+endif
+
+ifeq ($(strip ${LIBDEFLATE}),yes)
+$(info Building AdapterRemoval with libdeflate: yes)
+CXXFLAGS := $(CXXFLAGS) -DUSE_LIBDEFLATE
+LIBRARIES := $(LIBRARIES) -ldeflate
+else
+$(info Building AdapterRemoval with libdeflate: no)
 endif
 
 ifeq ($(strip ${COVERAGE}), yes)

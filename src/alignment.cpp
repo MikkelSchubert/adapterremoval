@@ -23,6 +23,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 
+#include <bitset>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -35,8 +36,24 @@
 #include "debug.hpp"
 #include "fastq.hpp"
 
+#if defined(__AVX2__)
+#include <immintrin.h>
+
+//! Mask of all Ns
+const __m256i N_MASK_256 = _mm256_set1_epi8('N');
+
+/** Counts the number of masked bytes **/
+inline size_t
+COUNT_MASKED_256(__m256i value)
+{
+  // Generate 16 bit mask from most significant bits of each byte and count bits
+  return std::bitset<32>(_mm256_movemask_epi8(value)).count();
+}
+#else
+#warning AVX2 optimizations disabled!
+#endif
+
 #if defined(__SSE__) && defined(__SSE2__)
-#include <bitset>
 #include <emmintrin.h>
 
 //! Mask of all Ns
@@ -77,6 +94,33 @@ compare_subsequences(const alignment_info& best,
                      const char* seq_2_ptr)
 {
   int remaining_bases = current.score = current.length;
+
+#if defined(__AVX2__)
+  while (remaining_bases >= 32 && current.score >= best.score) {
+    const __m256i s1 =
+      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_1_ptr));
+    const __m256i s2 =
+      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_2_ptr));
+
+    // Sets 0xFF for every byte where one or both nts is N
+    const __m256i ns_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, N_MASK_256),
+                                            _mm256_cmpeq_epi8(s2, N_MASK_256));
+
+    // Sets 0xFF for every byte where bytes are equal or N
+    const __m256i eq_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
+
+    current.n_ambiguous += COUNT_MASKED_256(ns_mask);
+    current.n_mismatches += 32 - COUNT_MASKED_256(eq_mask);
+
+    // Matches count for 1, Ns for 0, and mismatches for -1
+    current.score =
+      current.length - current.n_ambiguous - (current.n_mismatches * 2);
+
+    seq_1_ptr += 32;
+    seq_2_ptr += 32;
+    remaining_bases -= 32;
+  }
+#endif
 
 #if defined(__SSE__) && defined(__SSE2__)
   while (remaining_bases >= 16 && current.score >= best.score) {

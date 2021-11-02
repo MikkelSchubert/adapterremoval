@@ -1344,7 +1344,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
   const alignment_info best;
   const std::vector<std::string> combinations = get_combinations();
-  for (size_t seqlen = 10; seqlen <= 20; ++seqlen) {
+  for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
     for (size_t pos = 0; pos < seqlen; ++pos) {
       const size_t nbases = std::min<int>(3, seqlen - pos);
 

@@ -44,12 +44,13 @@
 * A simple template system is now used for output filenames. This can be ignored
   in most cases, but allows fine-grained control over output files when using
   AdapterRemoval to perform demultiplexing.
+* AVX2 enabled alignment algorithm for a significant performance boost (YMMV).
 
 ### Breaking changes under consideration
 * Defaulting to `--merge-conservatively` for a more conservative quality scoring
   algorithm for merged bases, where  (`Q_match = max(Q_a, Q_b)` instead of
   `Q_match ~= Q_a + Q_b`)). Motivated in part by `doi:10.1186/s12859-018-2579-2`
-* Changes to default output; e.g. writing discarded reads by default.
+* Changes to default output; e.g. not writing discarded reads by default.
 * Drop undocumented support for '.' as equivalent to 'N' in input.
 
 
