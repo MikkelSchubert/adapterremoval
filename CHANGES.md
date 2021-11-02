@@ -50,9 +50,10 @@
   algorithm for merged bases, where  (`Q_match = max(Q_a, Q_b)` instead of
   `Q_match ~= Q_a + Q_b`)). Motivated in part by `doi:10.1186/s12859-018-2579-2`
 * Changes to default output; e.g. writing discarded reads by default.
+* Drop undocumented support for '.' as equivalent to 'N' in input.
 
 
-### Version 2.3.2 - 2021-03-17
+## [2.3.2] - 2021-03-17
 
  * Improved error messages when AdapterRemoval failed to open or write FASTQ
    files (issue #42).
@@ -67,7 +68,7 @@
  * Added --collapse-conservatively merge algorithm based on FASTQ-join. See
    the man-page for more information
 
-### Version 2.3.1 - 2019-06-23
+## [2.3.1] - 2019-06-23
 
  * Added --preserve5p option. This option prevents AdapterRemoval from trimming
    the 5p of reads when the --trimqualities, --trimns, and --trimwindows options
@@ -76,7 +77,7 @@
    using --identify-adapters.
 
 
-### Version 2.3.0 - 2019-03-12
+## [2.3.0] - 2019-03-12
 
  * Fixed --collapse producing slightly different result on 32 bit and 64 bit
    architectures. Courtesy of Andreas Tille.
@@ -89,14 +90,14 @@
  * Reworked demultiplexing to improve performance for many paired barcodes.
 
 
-### Version 2.2.4 - 2019-02-10
+## [2.2.4] - 2019-02-10
 
   * Fixed bug in --trim5p N which would AdapterRemoval to abort if N was greater
     than the pre-trimmed read length.
   * Fixed --identify-adapters not respecting the --mate-separator option.
 
 
-### Version 2.2.3 - 2019-01-22
+## [2.2.3] - 2019-01-22
 
   * Added support for trimming reads by a fixed amount: --trim5p N --trim3p N.
     Different values may be given for each mate: --trim5p N1 N2. Trimming is
@@ -115,18 +116,18 @@
   * Fixed various typos and improved help/error messages.
 
 
-### Version 2.2.2 - 2017-07-17
+## [2.2.2] - 2017-07-17
 
   * Made gzip and bzip2 support mandatory.
   * Added support for Intel compilers, courtesy of Kevin Murray (kdmurray91).
 
 
-### Version 2.2.1a - 2017-05-17
+## [2.2.1a] - 2017-05-17
 
   * Fixed compilation on OSX.
 
 
-### Version 2.2.1 - 2017-05-15
+## [2.2.1] - 2017-05-15
 
   * Numerous spelling errors fixed courtesy of Andreas Tille.
   * Added support for specifying multiple filenames after --file1 and --file2,
@@ -141,7 +142,7 @@
     reads were being counted twice instead of counting both mate 1 and mate 2.
 
 
-### Version 2.2.0 - 2016-10-27
+## [2.2.0] - 2016-10-27
 
   * AdapterRemoval now requires a C++11 compliant compiler; furthermore,
     multithreading is no longer an optional feature, as this is now
@@ -174,7 +175,7 @@
     to how they were specified on the command-line.
 
 
-### Version 2.1.7 - 2016-03-11
+## [2.1.7] - 2016-03-11
 
   * The mate number is now stripped from collapsed reads, where previously this
     would always be '\1' (if set). However, if meta-data is present in the
@@ -187,7 +188,7 @@
     testing library automatically, using either wget or curl if available.
 
 
-### Version 2.1.6 - 2016-03-03
+## [2.1.6] - 2016-03-03
 
   * Added support for reading / writing interleaved FASTQ files; this is
     enabled by the options --interleaved-input and --interleaved-output,
@@ -198,7 +199,7 @@
   * Expanded README with information about reading / writing FASTQ files with
     different PHRED encodings / maximum quality scores.
 
-### Version 2.1.5 - 2016-02-19
+## [2.1.5] - 2016-02-19
 
   * Added the --mate-separator option, which specifies the character separating
     the mate number; by default this is '/', and AdapterRemoval will therefore
@@ -208,7 +209,7 @@
   * Improved checks during compression and sanity checks following processing.
 
 
-### Version 2.1.4 - 2016-02-09
+## [2.1.4] - 2016-02-09
 
   * Fixed bug which could occasionally result in failure when bzip2 compression
     was enabled, by attempting to compress empty buffer.
@@ -220,7 +221,7 @@
     * Fixed typos.
 
 
-### Version 2.1.3 - 2015-12-25
+## [2.1.3] - 2015-12-25
 
   * Added option --minadapteroverlap, which sets a minimum alignment length
     when carrying out trimming of single-end reads. The default (0) may result
@@ -235,7 +236,7 @@
   * Fixed the --seed option, which was not properly applied during runtime.
 
 
-### Version 2.1.2 - 2015-10-08
+## [2.1.2] - 2015-10-08
 
   * Changed the way "full-length" and "truncated collapsed" reads are counted
     in the .settings file; previously, all collapsed reads were counted, even
@@ -244,13 +245,13 @@
   * Added setup instructions when running 'make test' for the first time.
 
 
-### Version 2.1.1 - 2015-09-14
+## [2.1.1] - 2015-09-14
 
   * Fixed broken assert preventing the use of --adapter-list.
   * Fixed bug using --qualitybase-output for both input and output.
 
 
-### Version 2.1.0 - 2015-09-08
+## [2.1.0] - 2015-09-08
 
 Major changes:
   * Support for (transparently) reading and writing bzip2 files.
@@ -280,7 +281,7 @@ Other changes / bug-fixes:
     recommended to convert to Phred scores rather than use Solexa scores.
 
 
-### Version 2.0.0 - 2014-03-10
+## [2.0.0] - 2014-03-10
 
 Version 2.0.0 of AdapterRemoval is a near complete rewrite, with the goal of
 improved safety, increased speed, fixing a number of minor issues with
@@ -357,7 +358,7 @@ Other improvements / bug-fixes:
     run-time and number of reads processed.
 
 
-### Version 1.5.4 - 2014-04-23
+## [1.5.4] - 2014-04-23
 
   * Fixed bug in which collapsed reads would not be considered truncated if
     bases were trimmed from the 5' end.
@@ -366,7 +367,7 @@ Other improvements / bug-fixes:
   * Reduced the amount of IO operations during trimming.
 
 
-### Version 1.5.2 - 2013-10-22
+## [1.5.2] - 2013-10-22
 
 Two changes to the program:
   * I have added a reference to the paper to both the man page and the help
@@ -377,7 +378,7 @@ Two changes to the program:
     This has been fixed so that the the result is now C with quality ".
 
 
-### Version 1.5.0 - 2013-04-29
+## [1.5.0] - 2013-04-29
 
 Small update: Due to user feedback, the program now outputs collapsed pairs in
 two files: One contains full-length collapsed pairs constituting the full
@@ -385,7 +386,7 @@ insert, the other contains collapsed pairs that have been truncated due to low
 qualities or Ns in the reads.
 
 
-### Version 1.4.0 - 2013-03-24
+## [1.4.0] - 2013-03-24
 
 I have made some fixes to the program:
   * The program can now handle the use of '.' instead of 'N' to encode
@@ -394,7 +395,7 @@ I have made some fixes to the program:
   * Some minor changes to output etc.
 
 
-### Version 1.3.0 - 2013-02-10
+## [1.3.0] - 2013-02-10
 
 I have updated AdapterRemoval and released version 1.3. These changes are based
 on feedback from users of the program that had some very specific and well-
@@ -428,7 +429,7 @@ As always, please contact me with any questions or comments.
 Stinus
 
 
-### Version 1.1.0 - 2012-05-01
+## 1.1.0 - 2012-05-01
 
   * It is now possible to look for adapter in the 5' end of reads using the
     --5prime parameter.
@@ -441,5 +442,28 @@ Stinus
 
 
 [3.0.0-pre1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.4...v2.3.0
+[2.2.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.3...v2.2.4
+[2.2.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.2...v2.2.3
+[2.2.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.1...v2.2.2a
+[2.2.1a]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.1...v2.2.1a
+[2.2.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.0...v2.2.1
+[2.2.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.7...v2.2.0
+[2.1.7]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.6...v2.1.7
+[2.1.6]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.5...v2.1.6
+[2.1.5]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.4...v2.1.5
+[2.1.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.3...v2.1.4
+[2.1.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.2...v2.1.3
+[2.1.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.1...v2.1.2
+[2.1.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.4...v2.0.0
+[1.5.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.2...v1.5.4
+[1.5.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.0...v1.5.2
+[1.5.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.1.0...v1.3.0
 
 [recommended Illumina sequences]: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
