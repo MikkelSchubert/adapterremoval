@@ -316,11 +316,10 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
         trim_read_termini(m_config, *stats, merged_read, read_type::merged);
 
-        bool trimmed = false;
         if (!m_config.preserve5p) {
           // A merged read essentially consists of two 5p termini, both
           // informative for PCR duplicate removal.
-          trimmed = trim_sequence_by_quality(m_config, *stats, merged_read);
+          trim_sequence_by_quality(m_config, *stats, merged_read);
         }
 
         if (is_acceptable_read(m_config, *stats, merged_read)) {
