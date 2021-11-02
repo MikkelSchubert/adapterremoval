@@ -210,7 +210,7 @@ FASTQ merging options
 
 .. option:: --merge
 
-	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "merged" reads are written with a 'M\_' name prefix, and "merged" reads which are trimmed due to quality settings are written with a 'MT\_' name prefix. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
+	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
 
 .. option:: --minalignmentlength length
 

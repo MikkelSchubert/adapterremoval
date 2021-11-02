@@ -323,10 +323,6 @@ pe_reads_processor::process(analytical_chunk* chunk)
           trimmed = trim_sequence_by_quality(m_config, *stats, merged_read);
         }
 
-        // If trimmed, the external coordinates are no longer reliable
-        // for determining the size of the original template.
-        merged_read.add_prefix_to_header(trimmed ? "MT_" : "M_");
-
         if (is_acceptable_read(m_config, *stats, merged_read)) {
           stats->merged.process(merged_read, 2);
           chunks.add(merged_read, read_type::merged, 2);
@@ -338,7 +334,6 @@ pe_reads_processor::process(analytical_chunk* chunk)
         if (m_config.combined_output) {
           // FIXME: Does this make sense?
           // Read-count of 0 since `add` above already accounts for both reads
-          read_2.add_prefix_to_header(trimmed ? "MT_" : "M_");
           chunks.add(read_2, read_type::discarded_2, 0);
         }
 

@@ -688,60 +688,6 @@ TEST_CASE("reverse_complement", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Adding prefixes to the header
-
-TEST_CASE("add_prefix_to_header", "[fastq::fastq]")
-{
-  const fastq expected("not_my_header", "ACGTA", "12345");
-  fastq record("my_header", "ACGTA", "12345");
-  record.add_prefix_to_header("not_");
-  REQUIRE(record == expected);
-}
-
-TEST_CASE("add_prefix_to_header__empty_prefix", "[fastq::fastq]")
-{
-  const fastq expected("my_header", "ACGTA", "12345");
-  fastq record = expected;
-  record.add_prefix_to_header("");
-  REQUIRE(record == expected);
-}
-
-TEST_CASE("add_prefix_to_header__header", "[fastq::fastq]")
-{
-  const fastq expected("new_header", "ACGTA", "12345");
-  fastq record("", "ACGTA", "12345");
-  record.add_prefix_to_header("new_header");
-  REQUIRE(record == expected);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Adding postfixes to the header
-
-TEST_CASE("add_postfix_to_header", "[fastq::fastq]")
-{
-  const fastq expected("my_header new postfix", "ACGTA", "12345");
-  fastq record("my_header", "ACGTA", "12345");
-  record.add_postfix_to_header(" new postfix");
-  REQUIRE(record == expected);
-}
-
-TEST_CASE("add_postfix_to_header__empty_prefix", "[fastq::fastq]")
-{
-  const fastq expected("my_header", "ACGTA", "12345");
-  fastq record = expected;
-  record.add_postfix_to_header("");
-  REQUIRE(record == expected);
-}
-
-TEST_CASE("add_postfix_to_header__header", "[fastq::fastq]")
-{
-  const fastq expected("new_header", "ACGTA", "12345");
-  fastq record("", "ACGTA", "12345");
-  record.add_postfix_to_header("new_header");
-  REQUIRE(record == expected);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Discarding read, setting seq to N and qual to '!'
 
 TEST_CASE("discard_read", "[fastq::fastq]")

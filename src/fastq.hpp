@@ -133,11 +133,6 @@ public:
   /** Reverse complements the record in place. */
   void reverse_complement();
 
-  /** Adds a prefix to the header. */
-  void add_prefix_to_header(const std::string& prefix);
-  /** Adds a postfix to the header. */
-  void add_postfix_to_header(const std::string& postfix);
-
   /**
    * Discards read data; the sequence is replaced with a single 'N', and the
    * and the quality string is replaced with a single '!'.

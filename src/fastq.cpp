@@ -269,18 +269,6 @@ fastq::reverse_complement()
 }
 
 void
-fastq::add_prefix_to_header(const std::string& prefix)
-{
-  m_header.insert(0, prefix);
-}
-
-void
-fastq::add_postfix_to_header(const std::string& postfix)
-{
-  m_header += postfix;
-}
-
-void
 fastq::discard()
 {
   m_sequence = 'N';

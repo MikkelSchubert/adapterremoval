@@ -561,7 +561,7 @@ def parse_args(argv):
     parser.add_argument(
         "--max-failures",
         type=int,
-        default=1,
+        default=5,
         help="Maximum number of failures to report. Set to zero or less for no limit",
     )
     parser.add_argument(

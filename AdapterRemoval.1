@@ -261,7 +261,7 @@ Reads longer than this length are discarded following trimming. Defaults to 4294
 .INDENT 0.0
 .TP
 .B \-\-merge
-In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. Complete "merged" reads are written with a \(aqM_\(aq name prefix, and "merged" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&. This option has no effect in single\-end mode.
+In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&. This option has no effect in single\-end mode.
 .UNINDENT
 .INDENT 0.0
 .TP
