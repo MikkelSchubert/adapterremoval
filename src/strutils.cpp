@@ -63,7 +63,7 @@ toupper(const std::string& str)
     if (current >= 'a' && current <= 'z') {
       current -= 32;
     }
-  };
+  }
 
   return uppercased;
 }
@@ -238,10 +238,10 @@ cli_formatter::format(const std::string& lines) const
     // Current line, excluding terminal newline
     const size_t end_pos =
       (next_pos == std::string::npos) ? next_pos : (next_pos - last_pos);
-    line = lines.substr(last_pos, end_pos),
+    line = lines.substr(last_pos, end_pos);
 
     // Format into fixed width columns, indenting by ljust after first line
-      line = columnize_text(line, m_columns, m_ljust);
+    line = columnize_text(line, m_columns, m_ljust);
 
     // Add fixed width indentation
     if (m_indentation) {
