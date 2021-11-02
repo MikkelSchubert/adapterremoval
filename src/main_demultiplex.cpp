@@ -98,8 +98,8 @@ public:
     fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
     fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
     while (it_1 != read_chunk->reads_1.end()) {
-      fastq read_1 = *it_1++;
-      fastq read_2 = *it_2++;
+      fastq& read_1 = *it_1++;
+      fastq& read_2 = *it_2++;
 
       stats->read_1.process(read_1);
       stats->read_2.process(read_2);
