@@ -433,6 +433,7 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
   : analytical_step(analytical_step::ordering::unordered, false)
   , m_config(config)
   , m_next_step(next_step)
+  , m_buffers()
 {}
 
 chunk_vec
@@ -444,8 +445,12 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   buffer_pair& input_buffer = input_chunk->buffers.front();
   buffer_pair output_buffer;
 
+  // Try to re-use a previous input-buffer
   output_buffer.first = GZIP_BLOCK_SIZE;
-  output_buffer.second.reset(new unsigned char[GZIP_BLOCK_SIZE]);
+  output_buffer.second = m_buffers.try_acquire();
+  if (!output_buffer.second) {
+    output_buffer.second.reset(new unsigned char[GZIP_BLOCK_SIZE]);
+  }
 
 #ifdef USE_LIBDEFLATE
   auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
@@ -479,6 +484,9 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   block->buffers.emplace_back(std::move(output_buffer));
   block->count = input_chunk->count;
   output_buffer.second = nullptr;
+
+  // Make the input buffer available for re-use
+  m_buffers.release(input_buffer.second);
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(block));

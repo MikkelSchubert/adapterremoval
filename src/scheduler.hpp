@@ -60,11 +60,23 @@ public:
   /** Acquire ownership of a value. **/
   pointer acquire()
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    AR_DEBUG_ASSERT(!m_values.empty());
+    auto ptr = try_acquire();
+    AR_DEBUG_ASSERT(ptr);
 
-    auto value = std::move(m_values.back());
-    m_values.pop_back();
+    return ptr;
+  }
+
+  /** Try to acquire ownership of a value, returning null if there are none. */
+  pointer try_acquire()
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    pointer value;
+    if (!m_values.empty()) {
+      value = std::move(m_values.back());
+      m_values.pop_back();
+    }
+
     return value;
   }
 

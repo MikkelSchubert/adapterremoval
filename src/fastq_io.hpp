@@ -247,6 +247,8 @@ private:
   const userconfig& m_config;
   //! The analytical step following this step
   const size_t m_next_step;
+  //! Already allocated buffers usable for compressed output
+  threadstate<unsigned char[]> m_buffers;
 };
 
 /**
