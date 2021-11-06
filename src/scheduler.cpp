@@ -218,7 +218,7 @@ scheduler::run(int nthreads)
   }
 
   for (auto& step : m_steps) {
-    if (step && !step->queue.empty()) {
+    if (!step->queue.empty()) {
       print_locker lock;
       std::cerr << "ERROR: Not all parts run for step " << step->name << "; "
                 << step->queue.size() << " left ..." << std::endl;
@@ -232,13 +232,11 @@ scheduler::run(int nthreads)
   }
 
   for (auto step : m_steps) {
-    if (step) {
-      try {
-        step->ptr->finalize();
-      } catch (const std::exception&) {
-        std::cerr << "ERROR: Failed to finalizing task " << step->name << ":\n";
-        throw;
-      }
+    try {
+      step->ptr->finalize();
+    } catch (const std::exception&) {
+      std::cerr << "ERROR: Failed to finalizing task " << step->name << ":\n";
+      throw;
     }
   }
 
