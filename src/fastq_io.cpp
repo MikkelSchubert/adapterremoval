@@ -444,8 +444,8 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   buffer_pair& input_buffer = input_chunk->buffers.front();
   buffer_pair output_buffer;
 
-  output_buffer.first = OUTPUT_BLOCK_SIZE;
-  output_buffer.second.reset(new unsigned char[OUTPUT_BLOCK_SIZE]);
+  output_buffer.first = GZIP_BLOCK_SIZE;
+  output_buffer.second.reset(new unsigned char[GZIP_BLOCK_SIZE]);
 
 #ifdef USE_LIBDEFLATE
   auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
@@ -470,7 +470,7 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   const int returncode = checked_deflate(&stream, Z_FINISH);
   AR_DEBUG_ASSERT(stream.avail_out && returncode == Z_STREAM_END);
 
-  const auto compressed_size = OUTPUT_BLOCK_SIZE - stream.avail_out;
+  const auto compressed_size = GZIP_BLOCK_SIZE - stream.avail_out;
   checked_deflate_end(&stream);
 #endif
 
