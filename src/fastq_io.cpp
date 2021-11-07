@@ -479,17 +479,13 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   checked_deflate_end(&stream);
 #endif
 
-  output_chunk_ptr block(new fastq_output_chunk(input_chunk->eof));
+  // Re-use the input chunk and make its buffer available for re-use above
   output_buffer.first = compressed_size;
-  block->buffers.emplace_back(std::move(output_buffer));
-  block->count = input_chunk->count;
-  output_buffer.second = nullptr;
-
-  // Make the input buffer available for re-use
-  m_buffers.release(input_buffer.second);
+  std::swap(input_buffer, output_buffer);
+  m_buffers.release(output_buffer.second);
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(block));
+  chunks.emplace_back(m_next_step, std::move(input_chunk));
 
   return chunks;
 }
