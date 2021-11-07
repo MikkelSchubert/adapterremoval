@@ -79,14 +79,10 @@ public:
   fastq_output_chunk(bool eof_ = false);
 
   /** Add FASTQ read, accounting for one or more input reads. */
-  void add(const fastq_encoding& encoding, const fastq& read, size_t count = 1);
+  void add(const fastq_encoding& encoding, const fastq& read);
 
   //! Indicates that EOF has been reached.
   bool eof;
-
-  //! The number of reads used to generate this chunk; may differ from the
-  //! the number of reads, in the case of merged reads.
-  size_t count;
 
   //! Total number of nucleotides in this chunk
   size_t nucleotides;
@@ -181,8 +177,6 @@ public:
   gzip_fastq& operator=(const gzip_fastq&) = delete;
 
 private:
-  //! N reads which did not result in an output chunk
-  size_t m_buffered_reads;
   //! The analytical step following this step
   const size_t m_next_step;
   //! GZip stream object
@@ -217,8 +211,6 @@ private:
   buffer_ptr m_buffer;
   //! Offset in current buffer
   size_t m_offset;
-  //! Number of reads written to current buffer
-  size_t m_count;
 
   //! Used to track whether an EOF block has been received.
   bool m_eof;

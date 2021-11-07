@@ -161,7 +161,7 @@ trimmed_reads::trimmed_reads(const userconfig& config,
 }
 
 void
-trimmed_reads::add(fastq& read, const read_type type, const size_t count)
+trimmed_reads::add(fastq& read, const read_type type)
 {
   const size_t offset = m_map.offset(type);
   if (offset != output_sample_files::disabled) {
@@ -171,7 +171,7 @@ trimmed_reads::add(fastq& read, const read_type type, const size_t count)
       read.discard();
     }
 
-    m_chunks.at(offset)->add(*m_config.quality_output_fmt, read, count);
+    m_chunks.at(offset)->add(*m_config.quality_output_fmt, read);
   }
 }
 
@@ -323,16 +323,15 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
         if (is_acceptable_read(m_config, *stats, merged_read)) {
           stats->merged.process(merged_read, 2);
-          chunks.add(merged_read, read_type::merged, 2);
+          chunks.add(merged_read, read_type::merged);
         } else {
           stats->discarded.process(merged_read, 2);
-          chunks.add(merged_read, read_type::discarded_1, 2);
+          chunks.add(merged_read, read_type::discarded_1);
         }
 
         if (m_config.combined_output) {
           // FIXME: Does this make sense?
-          // Read-count of 0 since `add` above already accounts for both reads
-          chunks.add(read_2, read_type::discarded_2, 0);
+          chunks.add(read_2, read_type::discarded_2);
         }
 
         continue;

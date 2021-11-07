@@ -47,9 +47,8 @@ public:
    *
    * @param read A read to be distributed in the pipeline; may be modified.
    * @param type The read type to store the read as.
-   * @param count The amount of reads used to generate this read (2 for merged).
    */
-  void add(fastq& read, const read_type type, const size_t count = 1);
+  void add(fastq& read, const read_type type);
 
   /** Returns a chunk for each generated type of proccessed reads. */
   chunk_vec finalize();

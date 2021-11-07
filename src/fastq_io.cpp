@@ -125,18 +125,14 @@ fastq_read_chunk::fastq_read_chunk(bool eof_)
 
 fastq_output_chunk::fastq_output_chunk(bool eof_)
   : eof(eof_)
-  , count(0)
-  , nucleotides()
+  , nucleotides(0)
   , reads()
   , buffers()
 {}
 
 void
-fastq_output_chunk::add(const fastq_encoding& encoding,
-                        const fastq& read,
-                        size_t count_)
+fastq_output_chunk::add(const fastq_encoding& encoding, const fastq& read)
 {
-  count += count_;
   nucleotides += read.length();
   read.into_string(reads, encoding);
 }
@@ -285,7 +281,6 @@ read_fastq::finalize()
 
 gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   : analytical_step(analytical_step::ordering::ordered, false)
-  , m_buffered_reads(0)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
@@ -342,11 +337,7 @@ gzip_fastq::process(analytical_chunk* chunk)
 
   chunk_vec chunks;
   if (!file_chunk->buffers.empty() || m_eof) {
-    file_chunk->count += m_buffered_reads;
     chunks.emplace_back(m_next_step, std::move(file_chunk));
-    m_buffered_reads = 0;
-  } else {
-    m_buffered_reads += file_chunk->count;
   }
 
   return chunks;
@@ -360,7 +351,6 @@ split_fastq::split_fastq(size_t next_step)
   , m_next_step(next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
-  , m_count()
   , m_eof(false)
   , m_lock()
 {}
@@ -396,31 +386,20 @@ split_fastq::process(analytical_chunk* chunk)
     if (m_offset == GZIP_BLOCK_SIZE) {
       output_chunk_ptr block(new fastq_output_chunk());
       block->buffers.emplace_back(GZIP_BLOCK_SIZE, std::move(m_buffer));
-      block->count = m_count;
 
       chunks.emplace_back(m_next_step, std::move(block));
 
       m_buffer.reset(new unsigned char[GZIP_BLOCK_SIZE]);
       m_offset = 0;
-      m_count = 0;
     }
   }
-
-  // The next chunk will contain the last of these reads; incrementing the
-  // timer then is easier than trying to figure out how many reads are in each
-  // buffer. We ignore the case were m_buffer is currently empty to keep
-  // things simple.
-  m_count += file_chunk->count;
 
   if (m_eof) {
     output_chunk_ptr block(new fastq_output_chunk(true));
     block->buffers.emplace_back(m_offset, std::move(m_buffer));
-    block->count = m_count;
-
     chunks.emplace_back(m_next_step, std::move(block));
 
     m_offset = 0;
-    m_count = 0;
   }
 
   return chunks;
