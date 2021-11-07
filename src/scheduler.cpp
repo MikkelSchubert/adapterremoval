@@ -57,39 +57,23 @@ struct data_chunk
   explicit data_chunk(size_t chunk_id_ = 0)
     : chunk_id(chunk_id_)
     , data()
-    , counter(new bool())
   {}
 
   explicit data_chunk(const data_chunk& parent, chunk_ptr data_)
     : chunk_id(parent.chunk_id)
     , data(std::move(data_))
-    , counter(parent.counter)
   {}
 
-  /** Sorts by counter, data, type, in that order. **/
+  /** Sorts by id from high to low. **/
   bool operator<(const data_chunk& other) const
   {
-    if (chunk_id != other.chunk_id) {
-      return chunk_id > other.chunk_id;
-    } else if (data != other.data) {
-      return data > other.data;
-    } else if (counter != other.counter) {
-      return counter > other.counter;
-    }
-
-    return false;
+    return chunk_id > other.chunk_id;
   }
-
-  bool unique() const { return counter.unique(); }
 
   //! Strictly increasing counter; used to sort chunks for 'ordered' tasks
   size_t chunk_id;
   //! Use generated data; is normally not freed by this struct
   chunk_ptr data;
-
-private:
-  //! Reference counts
-  std::shared_ptr<bool> counter;
 };
 
 /** Simple priority queue; needed to allow moving values out of queue. */
@@ -171,7 +155,8 @@ scheduler::scheduler()
   : m_steps()
   , m_condition()
   , m_chunk_counter(0)
-  , m_live_chunks(0)
+  , m_live_tasks(0)
+  , m_live_tasks_max(0)
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
@@ -199,11 +184,7 @@ scheduler::run(int nthreads)
   AR_DEBUG_ASSERT(nthreads >= 1);
   AR_DEBUG_ASSERT(!m_chunk_counter);
 
-  for (size_t task = 3 * static_cast<size_t>(nthreads); task; --task) {
-    m_steps.back()->queue.push(data_chunk(m_chunk_counter++));
-  }
-
-  queue_analytical_step(m_steps.back(), 0);
+  m_live_tasks_max = static_cast<size_t>(nthreads) * 3;
 
   std::vector<std::thread> threads;
 
@@ -292,20 +273,25 @@ scheduler::do_run()
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
   while (!errors_occured()) {
-    // Try to keep the disk busy by preferring IO chunks
     step_ptr current_step;
-    if (m_io_active || m_queue_io.empty()) {
-      if (!m_queue_calc.empty()) {
-        current_step = m_queue_calc.front();
-        m_queue_calc.pop();
-      } else if (!m_live_chunks) {
-        // Nothing left to do at all
-        break;
-      }
-    } else {
+    if (!m_io_active && !m_queue_io.empty()) {
+      // Try to keep the disk busy by preferring IO tasks
       current_step = m_queue_io.front();
       m_queue_io.pop();
       m_io_active = true;
+    } else if (!m_queue_calc.empty()) {
+      // Otherwise try do do some non-IO work
+      current_step = m_queue_calc.front();
+      m_queue_calc.pop();
+    } else if (!m_io_active && m_live_tasks < m_live_tasks_max) {
+      // If all (or no) tasks are running and IO is idle then read another chunk
+      m_live_tasks++;
+      m_io_active = true;
+      current_step = m_steps.back();
+      current_step->queue.push(data_chunk(m_chunk_counter++));
+    } else if (!m_live_tasks) {
+      // Nothing left to do at all
+      break;
     }
 
     if (current_step) {
@@ -334,6 +320,10 @@ scheduler::execute_analytical_step(const step_ptr& step)
   chunk_vec chunks = step->ptr->process(chunk.data.release());
 
   std::lock_guard<std::mutex> lock(m_queue_lock);
+  if (chunks.empty() && step == m_steps.back()) {
+    // The source has stopped producing chunks; nothing more to do
+    m_live_tasks_max = 0;
+  }
 
   // Schedule each of the resulting blocks
   for (auto& result : chunks) {
@@ -357,9 +347,6 @@ scheduler::execute_analytical_step(const step_ptr& step)
   // Unlock use of IO steps after finishing processing
   if (step->ptr->file_io()) {
     m_io_active = false;
-    if (!m_queue_io.empty()) {
-      m_condition.notify_all();
-    }
   }
 
   // Reschedule current step if ordered and next chunk is available
@@ -372,21 +359,11 @@ scheduler::execute_analytical_step(const step_ptr& step)
     }
   }
 
-  // End of the line for this chunk; re-schedule first step
-  if (chunks.empty() && chunk.unique() && step != m_steps.back()) {
-    step_ptr other_step = m_steps.back();
-
-    std::lock_guard<std::mutex> step_lock(other_step->lock);
-    other_step->queue.push(data_chunk(m_chunk_counter));
-
-    queue_analytical_step(other_step, m_chunk_counter);
-
-    m_chunk_counter++;
-  }
-
   // Decrement counters before releasing lock
-  chunk = data_chunk(0);
-  m_live_chunks--;
+  m_live_tasks--;
+
+  // Just notifying all worked as well as my attempts at being smart about it
+  m_condition.notify_all();
 }
 
 void
@@ -399,7 +376,6 @@ scheduler::queue_analytical_step(const step_ptr& step, size_t current)
       m_queue_calc.push(step);
     }
 
-    m_live_chunks++;
-    m_condition.notify_one();
+    m_live_tasks++;
   }
 }

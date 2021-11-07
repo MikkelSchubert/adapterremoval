@@ -246,8 +246,10 @@ private:
 
   //! Counter used for sequential processing of data
   size_t m_chunk_counter;
-  //! Count of currently live chunks
-  size_t m_live_chunks;
+  //! Count of currently live tasks
+  size_t m_live_tasks;
+  //! The maximum number of tasks to process simultanously
+  size_t m_live_tasks_max;
 
   //! Lock used to control access to chunks
   std::mutex m_queue_lock;
