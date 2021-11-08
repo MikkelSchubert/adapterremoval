@@ -23,13 +23,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>
-#include <cerrno>
-#include <cstring>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include <sys/time.h>
 
 #include "alignment.hpp"
 #include "debug.hpp"
