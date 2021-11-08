@@ -23,10 +23,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <unistd.h>
 
 #include "alignment.hpp"
 #include "debug.hpp"
@@ -81,6 +83,55 @@ parse_trim_argument(const string_vec& values)
   }
 
   return std::pair<unsigned, unsigned>(mate_1, mate_2);
+}
+
+bool
+check_no_clobber(const std::string& label,
+                 const string_vec& in_files,
+                 const std::string& out_file)
+{
+  for (const auto& in_file : in_files) {
+    if (in_file == out_file) {
+      std::cerr << "ERROR: Input file would be overwritten: " << label << " "
+                << in_file << std::endl;
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool
+check_input_and_output(const std::string& label,
+                       const string_vec& filenames,
+                       const output_files& output_files)
+{
+  for (const auto& filename : filenames) {
+    if (access(filename.c_str(), R_OK)) {
+      std::cerr << "ERROR: Cannot read file: " << label << " " << filename
+                << "': " << std::strerror(errno) << std::endl;
+
+      return false;
+    }
+  }
+
+  if (!check_no_clobber(label, filenames, output_files.unidentified_1)) {
+    return false;
+  }
+
+  if (!check_no_clobber(label, filenames, output_files.unidentified_2)) {
+    return false;
+  }
+
+  for (const auto& sample : output_files.samples) {
+    for (const auto& out_file : sample.filenames) {
+      if (!check_no_clobber(label, filenames, out_file)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -858,6 +909,13 @@ userconfig::setup_adapter_sequences()
       std::cerr << "Error: No barcodes sequences found in table!" << std::endl;
       return false;
     }
+  }
+
+  const auto& output_files = get_output_filenames();
+  if (!check_input_and_output("--file1", input_files_1, output_files)) {
+    return false;
+  } else if (!check_input_and_output("--file2", input_files_2, output_files)) {
+    return false;
   }
 
   return true;
