@@ -21,11 +21,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "debug.hpp"
+#include <cstdlib>  // for abort, size_t
+#include <iostream> // for operator<<, basic_ostream, stringstream, endl
+#include <sstream>  // for stringstream
+#include <string>   // for char_traits, operator<<
 
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
+#include "debug.hpp"
 
 #ifdef AR_TEST_BUILD
 assert_failed::assert_failed(const assert_failed& errror)

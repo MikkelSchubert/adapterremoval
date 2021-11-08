@@ -21,10 +21,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cmath>
-#include <iomanip>
-#include <sstream>
+#include <cmath>   // for isnan
+#include <iomanip> // for operator<<, setw
+#include <sstream> // for operator<<, basic_ostream, stringstream, ostream
+#include <utility> // for swap
 
+#include "debug.hpp" // for AR_DEBUG_ASSERT
 #include "json.hpp"
 
 std::string

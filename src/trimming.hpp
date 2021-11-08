@@ -24,11 +24,16 @@
 \*************************************************************************/
 #pragma once
 
-#include "fastq.hpp"
-#include "scheduler.hpp"
-#include "statistics.hpp"
+#include <memory>   // for unique_ptr
+#include <stddef.h> // for size_t
+#include <vector>   // for vector
 
-class output_files;
+#include "commontypes.hpp" // for read_type
+#include "fastq.hpp"       // for fastq_pair_vec
+#include "fastq_io.hpp"    // for output_chunk_ptr
+#include "scheduler.hpp"   // for chunk_vec, analytical_step, threadstate
+#include "statistics.hpp"  // for trimming_statistics
+
 class output_sample_files;
 class userconfig;
 

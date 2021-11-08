@@ -22,15 +22,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <iostream>
+#include "debug.hpp" // for AR_DEBUG_ASSERT
+#include <algorithm> // for min, max, sort
+#include <memory>    // for allocator_traits<>::value_type
+#include <utility>   // for pair
 
 #include "barcode_table.hpp"
-#include "commontypes.hpp"
-#include "debug.hpp"
-#include "fastq_io.hpp"
-#include "strutils.hpp"
-#include "userconfig.hpp"
 
 typedef std::pair<std::string, size_t> barcode_pair;
 typedef std::vector<barcode_pair> barcode_vec;

@@ -24,13 +24,18 @@
 \*************************************************************************/
 #pragma once
 
-#include "barcode_table.hpp"
-#include "fastq.hpp"
-#include "fastq_io.hpp"
-#include "scheduler.hpp"
-#include "statistics.hpp"
+#include <algorithm> // for max, copy
+#include <mutex>     // for mutex
+#include <stddef.h>  // for size_t
+#include <vector>    // for vector
+
+#include "barcode_table.hpp" // for barcode_table
+#include "fastq.hpp"         // for fastq_pair_vec
+#include "fastq_io.hpp"      // for read_chunk_ptr, output_chunk_ptr
+#include "scheduler.hpp"     // for chunk_vec, analytical_step
 
 class userconfig;
+struct demultiplexing_statistics;
 
 /** Map of samples to downstream FASTQ processing/writing steps. */
 class post_demux_steps

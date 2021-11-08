@@ -23,20 +23,24 @@
 \*************************************************************************/
 #pragma once
 
-#include <zlib.h>
+#include <memory>   // for unique_ptr
+#include <mutex>    // for mutex
+#include <stddef.h> // for size_t
+#include <string>   // for string
+#include <zlib.h>   // for z_stream
 
-#include "commontypes.hpp"
-#include "fastq.hpp"
-#include "linereader_joined.hpp"
-#include "managed_writer.hpp"
-#include "scheduler.hpp"
-#include "strutils.hpp"
-#include "timer.hpp"
+#include "commontypes.hpp"       // for fastq_vec, string_vec
+#include "linereader_joined.hpp" // for joined_line_readers
+#include "managed_writer.hpp"    // for buffer_ptr, buffer_vec, managed_writer
+#include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
+#include "timer.hpp"             // for progress_timer
 
-class userconfig;
-class fastq_read_chunk;
+class fastq;
+class fastq_encoding;
 class fastq_output_chunk;
+class fastq_read_chunk;
 class fastq_statistics;
+class userconfig;
 
 typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
 typedef std::unique_ptr<fastq_read_chunk> read_chunk_ptr;

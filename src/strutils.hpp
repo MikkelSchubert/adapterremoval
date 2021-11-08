@@ -23,9 +23,8 @@
 \*************************************************************************/
 #pragma once
 
-#include <iomanip>
-#include <sstream>
-#include <string>
+#include <stddef.h> // for size_t
+#include <string>   // for string
 
 const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;

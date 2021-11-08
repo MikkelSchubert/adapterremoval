@@ -23,12 +23,10 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstdio>
-#include <ios>
-#include <memory>
-#include <string>
-
-#include <zlib.h>
+#include <ios>    // for ios_base, ios_base::failure
+#include <memory> // for unique_ptr
+#include <string> // for string
+#include <zlib.h> // for gzFile
 
 /** Represents errors during basic IO. */
 class io_error : public std::ios_base::failure

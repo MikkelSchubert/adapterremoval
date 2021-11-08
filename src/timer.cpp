@@ -22,14 +22,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <sstream>
-#include <sys/time.h>
+#include <iomanip>    // for operator<<, setfill, setw
+#include <iostream>   // for operator<<, basic_ostream, stringstream, cerr
+#include <locale>     // for numpunct, use_facet, locale
+#include <memory>     // for allocator_traits<>::value_type
+#include <sstream>    // for stringstream
+#include <sys/time.h> // for gettimeofday, timeval
 
-#include "threads.hpp"
+#include "threads.hpp" // for print_locker
 #include "timer.hpp"
 
 //! Print progress report every N items

@@ -21,15 +21,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <sstream>
-#include <stdexcept>
+#include <iomanip>     // for operator<<, setw
+#include <limits>      // for numeric_limits
+#include <sstream>     // for stringstream, basic_ostream, operator<<, basi...
+#include <stdexcept>   // for invalid_argument
+#include <stdint.h>    // for int64_t
+#include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
+#include <unistd.h>    // for STDOUT_FILENO
 
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "debug.hpp"
+#include "debug.hpp" // for AR_DEBUG_ASSERT
 #include "strutils.hpp"
 
 unsigned

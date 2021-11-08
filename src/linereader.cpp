@@ -21,16 +21,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <sstream>
+#include <cerrno>   // for errno
+#include <cstdio>   // for BUFSIZ
+#include <cstdlib>  // for exit
+#include <cstring>  // for strerror
+#include <iostream> // for operator<<, basic_ostream, endl, cerr
+#include <sstream>  // for stringstream
 
 #include "linereader.hpp"
-#include "managed_writer.hpp"
-#include "threads.hpp"
+#include "managed_writer.hpp" // for managed_writer
+#include "threads.hpp"        // for print_locker
 
 //! Size of compressed and uncompressed buffers.
 const int BUF_SIZE = 10 * BUFSIZ;

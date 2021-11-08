@@ -23,10 +23,11 @@
 \*************************************************************************/
 #pragma once
 
-#include <stdexcept>
-#include <string>
+#include <stddef.h> // for size_t
 
 #ifdef AR_TEST_BUILD
+#include <string> // for string
+
 /** Exception explaining 'abort' calls when running unit-tests. */
 class assert_failed : public std::exception
 {

@@ -21,18 +21,25 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cerrno>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
+
+#include <algorithm> // for max, min
+#include <cerrno>    // for errno
+#include <cstring>   // for size_t, strerror, memcpy
+#include <iostream>  // for operator<<, basic_ostream, char_traits, endl
+#include <utility>   // for move, swap
 
 #ifdef USE_LIBDEFLATE
 #include <libdeflate.h>
 #endif
 
-#include "debug.hpp"
+#include "debug.hpp"     // for AR_DEBUG_ASSERT, AR_DEBUG_LOCK
+#include "fastq.hpp"     // for fastq
+#include "fastq_enc.hpp" // for fastq_error
 #include "fastq_io.hpp"
-#include "userconfig.hpp"
+#include "statistics.hpp" // for fastq_statistics
+#include "strutils.hpp"   // for cli_formatter
+#include "threads.hpp"    // for thread_error, print_locker, thread_abort
+#include "userconfig.hpp" // for userconfig
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions for 'zlib'

@@ -24,19 +24,12 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstdlib>
-#include <random>
-#include <vector>
+#include <cstdlib> // for size_t
+#include <random>  // for mt19937
+#include <vector>  // for vector
 
-#include "commontypes.hpp"
-#include "counts.hpp"
-#include "fastq.hpp"
-#include "vecutils.hpp"
-
-class demultiplex_reads;
-class fastq;
-class reads_processor;
-class userconfig;
+#include "counts.hpp" // for counts
+#include "fastq.hpp"  // for ACGT_TO_IDX
 
 /** Class used to collect statistics about pre/post-processed FASTQ reads. */
 class fastq_statistics

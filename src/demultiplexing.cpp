@@ -22,15 +22,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <iostream>
+#include <memory>  // for unique_ptr, allocator_traits<>::value_type
+#include <utility> // for move
 
-#include "commontypes.hpp"
-#include "debug.hpp"
+#include "adapterset.hpp"  // for adapter_set
+#include "commontypes.hpp" // for fastq_vec
+#include "debug.hpp"       // for AR_DEBUG_ASSERT, AR_DEBUG_LOCK
 #include "demultiplexing.hpp"
-#include "fastq_io.hpp"
-#include "strutils.hpp"
-#include "userconfig.hpp"
+#include "fastq_io.hpp"   // for fastq_read_chunk, fastq_output_chunk, rea...
+#include "statistics.hpp" // for demultiplexing_statistics, fastq_statistics
+#include "userconfig.hpp" // for userconfig, fastq_encoding_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 

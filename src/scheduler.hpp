@@ -23,17 +23,19 @@
 \*************************************************************************/
 #pragma once
 
-#include <atomic>
-#include <condition_variable>
-#include <memory>
-#include <mutex>
-#include <queue>
-#include <string>
-#include <vector>
+#include <algorithm>          // for copy, max, copy_backward
+#include <atomic>             // for atomic_bool
+#include <condition_variable> // for condition_variable
+#include <memory>             // for unique_ptr, shared_ptr
+#include <mutex>              // for mutex, lock_guard
+#include <queue>              // for queue
+#include <stddef.h>           // for size_t
+#include <string>             // for string
+#include <utility>            // for pair
+#include <vector>             // for vector
 
-#include "threads.hpp"
+#include "debug.hpp" // for AR_DEBUG_ASSERT
 
-struct data_chunk;
 struct scheduler_step;
 
 /** Simple thread-safe storage backed by a vector. **/

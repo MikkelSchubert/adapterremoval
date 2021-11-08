@@ -25,6 +25,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include "commontypes.hpp"
 #include "debug.hpp"
 #include "fastq.hpp"
 #include "linereader.hpp"

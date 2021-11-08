@@ -22,19 +22,23 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
+#include <algorithm> // for max
+#include <cstring>   // for size_t
+#include <iostream>  // for operator<<, endl, basic_ostream, cerr
+#include <limits>    // for numeric_limits
+#include <memory>    // for unique_ptr
+#include <string>    // for operator+, string
+#include <vector>    // for vector
 
-#include "debug.hpp"
-#include "demultiplexing.hpp"
-#include "fastq.hpp"
-#include "reports.hpp"
-#include "trimming.hpp"
-#include "userconfig.hpp"
+#include "adapterset.hpp"     // for adapter_set
+#include "commontypes.hpp"    // for string_vec
+#include "demultiplexing.hpp" // for post_demux_steps, demultiplex_pe_reads
+#include "fastq_io.hpp"       // for gzip_fastq, gzip_split_fastq, read_fastq
+#include "reports.hpp"        // for write_report
+#include "scheduler.hpp"      // for scheduler
+#include "statistics.hpp"     // for trimming_statistics, ar_statistics
+#include "trimming.hpp"       // for pe_reads_processor, reads_processor
+#include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
 
 size_t
 add_write_step(const userconfig& config,

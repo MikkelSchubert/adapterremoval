@@ -24,8 +24,10 @@
 \*************************************************************************/
 #pragma once
 
-#include "commontypes.hpp"
-#include "fastq.hpp"
+#include "commontypes.hpp" // for string_vec
+#include "fastq.hpp"       // for fastq_pair_vec
+#include <stddef.h>        // for size_t
+#include <string>          // for string
 
 /**
  * Class for reading sets of adapters and barcodes, and for generating

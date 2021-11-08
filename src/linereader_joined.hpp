@@ -23,10 +23,12 @@
 \*************************************************************************/
 #pragma once
 
-#include <memory>
+#include <memory>   // for unique_ptr
+#include <stddef.h> // for size_t
+#include <string>   // for string
 
-#include "commontypes.hpp"
-#include "linereader.hpp"
+#include "commontypes.hpp" // for string_vec
+#include "linereader.hpp"  // for line_reader_base
 
 /**
  * Multi-file line-reader

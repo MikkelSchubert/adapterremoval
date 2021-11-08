@@ -22,11 +22,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iostream>
+#include <iostream> // for operator<<, endl, basic_ostream, cerr, ost...
+#include <stddef.h> // for size_t
 
-#include "debug.hpp"
+#include "argparse.hpp" // for parse_result, parse_result::error
 #include "main.hpp"
-#include "userconfig.hpp"
+#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
 
 // See main_adapter_rm.cpp
 int

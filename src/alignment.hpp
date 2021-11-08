@@ -23,10 +23,10 @@
 \*************************************************************************/
 #pragma once
 
-#include <random>
-#include <string>
+#include <stddef.h> // for size_t
 
-#include "fastq.hpp"
+#include "fastq.hpp"     // for fastq_pair_vec, fastq
+#include "fastq_enc.hpp" // for MATE_SEPARATOR
 
 /**
  * Summarizes an alignment.

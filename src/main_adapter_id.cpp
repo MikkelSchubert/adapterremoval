@@ -21,22 +21,27 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <queue>
-#include <stdexcept>
-#include <vector>
+#include <algorithm> // for max, copy, min, count, reverse
+#include <iomanip>   // for operator<<, setw
+#include <iostream>  // for operator<<, basic_ostream, char_traits
+#include <memory>    // for unique_ptr, allocator_traits<>::value_type
+#include <queue>     // for priority_queue
+#include <sstream>   // for stringstream
+#include <stddef.h>  // for size_t
+#include <string>    // for string, basic_string, operator<<
+#include <utility>   // for pair
+#include <vector>    // for vector, vector<>::iterator, vector<>::con...
 
-#include "alignment.hpp"
-#include "debug.hpp"
-#include "fastq_io.hpp"
-#include "scheduler.hpp"
-#include "strutils.hpp"
-#include "timer.hpp"
-#include "userconfig.hpp"
+#include "adapterset.hpp"  // for adapter_set
+#include "alignment.hpp"   // for align_paired_ended_sequences, extract_ada...
+#include "commontypes.hpp" // for fastq_vec
+#include "debug.hpp"       // for AR_DEBUG_ASSERT
+#include "fastq.hpp"       // for fastq, ACGT_TO_IDX, fastq_pair_vec, IDX_T...
+#include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
+#include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
+#include "timer.hpp"       // for progress_timer
+#include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
+#include "vecutils.hpp"    // for merge_vectors
 
 ///////////////////////////////////////////////////////////////////////////////
 // KMer related functions and constants

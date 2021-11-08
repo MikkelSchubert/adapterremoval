@@ -24,14 +24,15 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>
+#include <algorithm>        // for max
+#include <array>            // for array
+#include <bits/exception.h> // for exception
+#include <stddef.h>         // for size_t
+#include <string>           // for string
+#include <vector>           // for vector
 
-#include "fastq.hpp"
-#include "fastq_io.hpp"
-#include "scheduler.hpp"
-#include "statistics.hpp"
+#include "fastq.hpp" // for fastq_pair_vec
 
-class userconfig;
 struct next_subsequence;
 
 /** Exception raised for FASTQ parsing and validation errors. */

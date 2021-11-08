@@ -21,15 +21,8 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <sstream>
+#include <vector> // for vector
 
-#include "debug.hpp"
 #include "linereader_joined.hpp"
 
 joined_line_readers::joined_line_readers(const string_vec& filenames)

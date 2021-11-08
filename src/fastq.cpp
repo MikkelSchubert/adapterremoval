@@ -22,15 +22,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <cmath>
-#include <numeric>
-#include <sstream>
-#include <stdexcept>
+#include <algorithm> // for reverse, count, max, min
+#include <cmath>     // for log10
+#include <iostream>  // for operator<<, basic_ostream, stringstream
+#include <numeric>   // for accumulate
+#include <sstream>   // for stringstream
 
-#include "debug.hpp"
+#include "debug.hpp" // for AR_DEBUG_ASSERT, AR_DEBUG_FAIL
 #include "fastq.hpp"
-#include "linereader.hpp"
+#include "linereader.hpp" // for line_reader_base
 
 enum class read_mate
 {

@@ -24,20 +24,21 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>
-#include <memory>
-#include <string>
-#include <utility>
+#include <array>    // for array
+#include <memory>   // for unique_ptr
+#include <stddef.h> // for size_t
+#include <string>   // for string
+#include <utility>  // for pair
+#include <vector>   // for vector
 
-#include "adapterset.hpp"
-#include "alignment.hpp"
-#include "argparse.hpp"
-#include "commontypes.hpp"
-#include "fastq.hpp"
-#include "statistics.hpp"
-#include "timer.hpp"
+#include "adapterset.hpp"  // for adapter_set
+#include "argparse.hpp"    // for parse_result, parser
+#include "commontypes.hpp" // for string_vec, read_type, read_type::max
+#include "fastq_enc.hpp"   // for fastq_encoding
+#include "timer.hpp"       // for highres_timer
 
 struct alignment_info;
+struct trimming_statistics;
 
 typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
 typedef std::unique_ptr<trimming_statistics> statistics_ptr;

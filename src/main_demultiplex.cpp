@@ -22,20 +22,26 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cerrno>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <string>
+#include <algorithm> // for copy, max
+#include <cstring>   // for size_t
+#include <iostream>  // for operator<<, endl, basic_ostream, cerr
+#include <limits>    // for numeric_limits
+#include <memory>    // for unique_ptr
+#include <string>    // for string, operator+
+#include <vector>    // for vector, vector<>::iterator
 
-#include "debug.hpp"
-#include "demultiplexing.hpp"
-#include "fastq.hpp"
-#include "fastq_io.hpp"
-#include "main.hpp"
-#include "reports.hpp"
-#include "trimming.hpp"
-#include "userconfig.hpp"
+#include "adapterset.hpp"     // for adapter_set
+#include "commontypes.hpp"    // for fastq_vec, read_type, read_type::mate_1
+#include "debug.hpp"          // for AR_DEBUG_ASSERT
+#include "demultiplexing.hpp" // for post_demux_steps, demultiplex_pe_reads
+#include "fastq_io.hpp"       // for fastq_read_chunk, read_chunk_ptr, read...
+#include "reports.hpp"        // for write_report
+#include "scheduler.hpp"      // for scheduler, threadstate, analytical_chunk
+#include "statistics.hpp"     // for trimming_statistics, ar_statistics
+#include "trimming.hpp"       // for trimmed_reads, reads_processor
+#include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
+
+class fastq;
 
 //! Implemented in main_adapter_rm.cpp
 size_t

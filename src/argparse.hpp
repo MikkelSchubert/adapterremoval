@@ -24,12 +24,14 @@
 \*************************************************************************/
 #pragma once
 
-#include <map>
-#include <sstream>
-#include <stdexcept>
-#include <vector>
+#include <algorithm> // for max
+#include <map>       // for map, map<>::value_compare
+#include <stddef.h>  // for size_t
+#include <string>    // for string
+#include <utility>   // for pair
+#include <vector>    // for vector
 
-#include "commontypes.hpp"
+#include "commontypes.hpp" // for string_vec_citer, string_vec
 
 namespace argparse {
 

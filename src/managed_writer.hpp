@@ -23,12 +23,13 @@
 \*************************************************************************/
 #pragma once
 
-#include <fstream>
-#include <memory>
-#include <vector>
-#include <zlib.h>
-
-#include "commontypes.hpp"
+#include <fstream>  // for ofstream
+#include <memory>   // for unique_ptr
+#include <stddef.h> // for size_t
+#include <string>   // for string
+#include <utility>  // for pair
+#include <vector>   // for vector
+#include <zlib.h>   // for gzFile
 
 typedef std::unique_ptr<unsigned char[]> buffer_ptr;
 typedef std::pair<size_t, buffer_ptr> buffer_pair;

@@ -22,14 +22,18 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <iostream>
-#include <sstream>
+#include <algorithm> // for sort, max
+#include <iostream>  // for operator<<, basic_ostream, char_traits
+#include <memory>    // for allocator_traits<>::value_type
+#include <sstream>   // for stringstream
+#include <utility>   // for pair
+#include <vector>    // for vector, vector<>::const_iterator
 
 #include "adapterset.hpp"
-#include "debug.hpp"
-#include "linereader.hpp"
-#include "strutils.hpp"
+#include "debug.hpp"      // for AR_DEBUG_ASSERT
+#include "fastq_enc.hpp"  // for fastq_error
+#include "linereader.hpp" // for line_reader
+#include "strutils.hpp"   // for cli_formatter
 
 typedef std::pair<std::string, fastq_vec> named_fastq_row;
 typedef std::vector<named_fastq_row> fastq_table;

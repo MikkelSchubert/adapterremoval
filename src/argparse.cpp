@@ -22,20 +22,19 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <limits>
-#include <set>
-#include <stdexcept>
-
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <algorithm>   // for min, copy, max, replace
+#include <cmath>       // for isnan
+#include <iomanip>     // for operator<<, setw
+#include <iostream>    // for operator<<, basic_ostream, endl, cerr, ostream
+#include <set>         // for set
+#include <sstream>     // for stringstream
+#include <stdexcept>   // for invalid_argument
+#include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
+#include <unistd.h>    // for STDERR_FILENO
 
 #include "argparse.hpp"
-#include "debug.hpp"
-#include "strutils.hpp"
+#include "debug.hpp"    // for AR_DEBUG_ASSERT
+#include "strutils.hpp" // for cli_formatter, str_to_unsigned, toupper
 
 namespace argparse {
 

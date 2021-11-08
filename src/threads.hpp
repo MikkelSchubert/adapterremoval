@@ -23,9 +23,9 @@
 \*************************************************************************/
 #pragma once
 
-#include <mutex>
-#include <string>
-#include <thread>
+#include <bits/exception.h> // for exception
+#include <mutex>            // for lock_guard, mutex
+#include <string>           // for string
 
 /**
  * Exception thrown for threading related errors, including errors with

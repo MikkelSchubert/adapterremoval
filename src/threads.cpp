@@ -21,17 +21,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-
-#include <cerrno>
-#include <cstdlib>
-#include <iostream>
-#include <queue>
-#include <stdexcept>
-#include <unistd.h>
+#include <iostream> // for endl, cerr, ostream
 
 #include "threads.hpp"
-
-#include <ctime>
 
 ///////////////////////////////////////////////////////////////////////////////
 // exceptions

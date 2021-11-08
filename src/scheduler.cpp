@@ -21,16 +21,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <cerrno>
-#include <cstdlib>
-#include <iostream>
-#include <stdexcept>
-#include <unistd.h>
+#include <algorithm>        // for max
+#include <bits/exception.h> // for exception
+#include <iostream>         // for operator<<, basic_ostream, endl, cerr
+#include <system_error>     // for system_error
+#include <thread>           // for thread
 
-#include "debug.hpp"
+#include "debug.hpp" // for AR_DEBUG_ASSERT
 #include "scheduler.hpp"
-#include "strutils.hpp"
+#include "strutils.hpp" // for cli_formatter
+#include "threads.hpp"  // for print_locker, thread_abort
 
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_chunk

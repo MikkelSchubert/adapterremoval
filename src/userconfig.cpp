@@ -22,18 +22,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <cstring>
-#include <iostream>
-#include <limits>
-#include <stdexcept>
-#include <string>
-#include <unistd.h>
+#include <algorithm> // for find, min, max
+#include <cstring>   // for size_t, strerror
+#include <errno.h>   // for errno
+#include <iostream>  // for operator<<, basic_ostream, endl, cerr, ostream
+#include <limits>    // for numeric_limits
+#include <stdexcept> // for invalid_argument
+#include <string>    // for string, operator<<, char_traits, operator==
+#include <unistd.h>  // for access, R_OK
 
-#include "alignment.hpp"
-#include "debug.hpp"
-#include "fastq.hpp"
-#include "strutils.hpp"
+#include "alignment.hpp" // for alignment_info
+#include "strutils.hpp"  // for template_replace, str_to_unsigned, toupper
 #include "userconfig.hpp"
 
 const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();

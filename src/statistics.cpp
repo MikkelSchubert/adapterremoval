@@ -22,16 +22,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <numeric>
+#include <cstdlib>            // for size_t
+#include <ext/alloc_traits.h> // for __alloc_traits<>::value_type
+#include <memory>             // for allocator_traits<>::value_type
+#include <string>             // for string
 
-#include "debug.hpp"
-#include "fastq.hpp"
+#include "fastq.hpp"     // for ACGT_TO_IDX, fastq
+#include "fastq_enc.hpp" // for PHRED_OFFSET_33
 #include "statistics.hpp"
-#include "utilities.hpp"
+#include "utilities.hpp" // for prng_seed
 
 fastq_statistics::fastq_statistics(double sample_rate)
   : m_sample_rate(sample_rate)

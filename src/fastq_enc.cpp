@@ -22,14 +22,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <limits>
-#include <sstream>
-#include <stdexcept>
+#include <algorithm> // for min, max
+#include <cmath>     // for log10, pow, round
+#include <iostream>  // for operator<<, basic_ostream, basic_ostream::opera...
+#include <sstream>   // for stringstream
+#include <stdexcept> // for invalid_argument
 
-#include "debug.hpp"
+#include "debug.hpp" // for AR_DEBUG_FAIL, AR_DEBUG_ASSERT
 #include "fastq_enc.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////

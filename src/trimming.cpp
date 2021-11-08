@@ -22,13 +22,18 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <random>
+#include <algorithm> // for min
+#include <stdexcept> // for invalid_argument
+#include <utility>   // for pair, move
 
-#include "debug.hpp"
-#include "fastq_io.hpp"
-#include "statistics.hpp"
+#include "adapterset.hpp" // for adapter_set
+#include "alignment.hpp"  // for alignment_info, sequence_merger, align_pai...
+#include "counts.hpp"     // for counts
+#include "debug.hpp"      // for AR_DEBUG_ASSERT
+#include "fastq_io.hpp"   // for output_chunk_ptr, fastq_read_chunk, fastq_...
+#include "statistics.hpp" // for trimming_statistics, fastq_statistics
 #include "trimming.hpp"
-#include "userconfig.hpp"
+#include "userconfig.hpp" // for userconfig, output_sample_files, output_sa...
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions

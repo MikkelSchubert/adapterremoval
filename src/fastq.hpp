@@ -24,12 +24,12 @@
 \*************************************************************************/
 #pragma once
 
-#include <iostream>
+#include <stddef.h> // for size_t
+#include <string>   // for string
+#include <utility>  // for pair
+#include <vector>   // for vector
 
-#include <string>
-
-#include "commontypes.hpp"
-#include "fastq_enc.hpp"
+#include "fastq_enc.hpp" // for FASTQ_ENCODING_33, MATE_SEPARATOR
 
 class line_reader_base;
 struct mate_info;

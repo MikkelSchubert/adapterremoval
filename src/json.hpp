@@ -23,17 +23,16 @@
 \*************************************************************************/
 #pragma once
 
-#include <cmath>
-#include <memory>
-#include <ostream>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "counts.hpp"
-#include "debug.hpp"
+#include <cmath>    // for isnan
+#include <sstream>  // for operator<<, stringstream, basic_ostream, fixed
+#include <stddef.h> // for size_t
+#include <stdint.h> // for int64_t
+#include <string>   // for string, char_traits
+#include <vector>   // for vector
 
 class json_writer;
+template<typename T>
+class counts_tmpl;
 
 /** Helper class for creating sub-sections in JSON output. */
 class json_section

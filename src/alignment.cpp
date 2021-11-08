@@ -23,18 +23,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 
-#include <bitset>
-#include <cmath>
-#include <cstdio>
-#include <cstring>
-#include <limits>
-#include <stdexcept>
-#include <vector>
+#include <algorithm> // for max, min
+#include <bitset>    // for bitset
+#include <limits>    // for numeric_limits
+#include <string>    // for string, operator+
+#include <utility>   // for swap, pair
 
 #include "alignment.hpp"
-#include "alignment_tables.hpp"
-#include "debug.hpp"
-#include "fastq.hpp"
+#include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
+#include "debug.hpp"            // for AR_DEBUG_ASSERT
+#include "fastq.hpp"            // for fastq, fastq_pair_vec
 
 #if defined(__AVX2__)
 #include <immintrin.h>
@@ -54,7 +52,7 @@ COUNT_MASKED_256(__m256i value)
 #endif
 
 #if defined(__SSE__) && defined(__SSE2__)
-#include <emmintrin.h>
+#include <emmintrin.h> // for _mm_cmpeq_epi8, __m128i, _mm_loadu_s...
 
 //! Mask of all Ns
 const __m128i N_MASK_128 = _mm_set1_epi8('N');

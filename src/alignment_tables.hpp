@@ -23,7 +23,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <sys/types.h>
+#include <stddef.h> // for size_t
 
 const size_t PHRED_TABLE_SIZE = 8836;
 
