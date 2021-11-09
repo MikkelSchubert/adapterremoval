@@ -24,9 +24,9 @@
 \*************************************************************************/
 #pragma once
 
-#include <bits/exception.h> // for exception
-#include <stddef.h>         // for size_t
-#include <string>           // for string
+#include <exception> // for exception
+#include <stddef.h>  // for size_t
+#include <string>    // for string
 
 //! Offset used by Phred+33 and SAM encodings
 const int PHRED_OFFSET_33 = '!';

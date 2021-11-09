@@ -24,12 +24,12 @@
 \*************************************************************************/
 #pragma once
 
-#include <algorithm>        // for max
-#include <array>            // for array
-#include <bits/exception.h> // for exception
-#include <stddef.h>         // for size_t
-#include <string>           // for string
-#include <vector>           // for vector
+#include <algorithm> // for max
+#include <array>     // for array
+#include <exception> // for exception
+#include <stddef.h>  // for size_t
+#include <string>    // for string
+#include <vector>    // for vector
 
 #include "fastq.hpp" // for fastq_pair_vec
 

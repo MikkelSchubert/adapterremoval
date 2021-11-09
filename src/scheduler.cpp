@@ -21,11 +21,11 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>        // for max
-#include <bits/exception.h> // for exception
-#include <iostream>         // for operator<<, basic_ostream, endl, cerr
-#include <system_error>     // for system_error
-#include <thread>           // for thread
+#include <algorithm>    // for max
+#include <exception>    // for exception
+#include <iostream>     // for operator<<, basic_ostream, endl, cerr
+#include <system_error> // for system_error
+#include <thread>       // for thread
 
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 #include "scheduler.hpp"
