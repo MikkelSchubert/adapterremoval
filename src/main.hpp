@@ -27,7 +27,7 @@
 #include <string>
 
 const std::string NAME = "AdapterRemoval";
-const std::string VERSION = "v3.0.0-pre";
+const std::string VERSION = "v3.0.0-alpha";
 const std::string HELPTEXT =
   "This program searches for and removes remnant adapter sequences from\n"
   "your read data.  The program can analyze both single end and paired end\n"

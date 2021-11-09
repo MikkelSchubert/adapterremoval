@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.0.0-pre1]
+## [3.0.0-alpha]
 
 ### Breaking changes
 * Default adapters have been changed to the [recommended Illumina sequences],
