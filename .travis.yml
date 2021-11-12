@@ -29,10 +29,10 @@ before_install:
 install: true
 
 script:
-    - make LIBDEFLATE=no VECTORIZE=no
-    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make test COVERAGE=yes LIBDEFLATE=no VECTORIZE=no; fi
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make test COVERAGE=no LIBDEFLATE=no VECTORIZE=no; fi
-    - make regression LIBDEFLATE=no VECTORIZE=no
+    - make LIBISAL=no LIBDEFLATE=no VECTORIZE=no
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no VECTORIZE=no; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make test COVERAGE=no LIBISAL=no LIBDEFLATE=no VECTORIZE=no; fi
+    - make regression LIBISAL=no LIBDEFLATE=no VECTORIZE=no
     - PATH=$PATH:$PWD/build/ make -C examples
 
 after_success:

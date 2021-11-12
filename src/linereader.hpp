@@ -28,6 +28,10 @@
 #include <string> // for string
 #include <zlib.h> // for gzFile
 
+#if defined(USE_LIBISAL)
+#include <isa-l/igzip_lib.h> // for inflate_state, etc.
+#endif
+
 /** Represents errors during basic IO. */
 class io_error : public std::ios_base::failure
 {
@@ -39,7 +43,7 @@ public:
 class gzip_error : public io_error
 {
 public:
-  gzip_error(const std::string& message, const char* gzip_msg = nullptr);
+  gzip_error(const std::string& message);
 };
 
 /** Base-class for line reading; used by receivers. */
@@ -88,15 +92,41 @@ private:
 
   //! Filename of file
   std::string m_filename;
-  //! Compressed or uncompresed file
-  gzFile m_file;
+  //! Raw file used to read input.
+  FILE* m_file;
+  /** Refills 'm_raw_buffer'; sets 'm_raw_buffer_ptr' and 'm_raw_buffer_end'. */
+  void refill_raw_buffer();
+  /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */
+  void refill_buffers_uncompressed();
+
+#if defined(USE_LIBISAL)
+  std::unique_ptr<inflate_state> m_gzip_stream;
+  std::unique_ptr<isal_gzip_header> m_gzip_header;
+#else
+  //! GZip stream pointer; used if input it detected to be gzip compressed.
+  std::unique_ptr<z_stream> m_gzip_stream;
+#endif
+
+  /** Returns true if the raw buffer contains gzip'd data. */
+  bool identify_gzip() const;
+  /** Initializes gzip stream and output buffers. */
+  void initialize_buffers_gzip();
+  /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
+  void refill_buffers_gzip();
+  /** Closes gzip buffers and frees associated memory. */
+  void close_buffers_gzip();
 
   //! Pointer to buffer of decompressed data.
-  std::unique_ptr<char[]> m_buffer;
+  char* m_buffer;
   //! Pointer to current location in input buffer.
   char* m_buffer_ptr;
   //! Pointer to end of current buffer.
   char* m_buffer_end;
+
+  //! Pointer to buffer of raw data.
+  char* m_raw_buffer;
+  //! Pointer to end of current raw buffer.
+  char* m_raw_buffer_end;
 
   //! Indicates if a read across the EOF has been attempted.
   bool m_eof;

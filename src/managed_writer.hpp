@@ -23,13 +23,13 @@
 \*************************************************************************/
 #pragma once
 
+#include <cstdio>   // for FILE, fopen, fclose
 #include <fstream>  // for ofstream
 #include <memory>   // for unique_ptr
 #include <stddef.h> // for size_t
 #include <string>   // for string
 #include <utility>  // for pair
 #include <vector>   // for vector
-#include <zlib.h>   // for gzFile
 
 typedef std::unique_ptr<unsigned char[]> buffer_ptr;
 typedef std::pair<size_t, buffer_ptr> buffer_pair;
@@ -50,12 +50,12 @@ public:
   ~managed_writer();
 
   /**
-   * Opens a file using gzopen and returns the handle.
+   * Opens a file using fopen and returns the handle.
    *
    * If too many handles are used, this funtion will close writers until
    * the file can be succesfully opened.
    */
-  static gzFile gzopen(const std::string& filename, const char* mode);
+  static FILE* fopen(const std::string& filename, const char* mode);
 
   void write_buffers(const buffer_vec& buffers, bool flush);
   void write_string(const std::string& buffer, bool flush);

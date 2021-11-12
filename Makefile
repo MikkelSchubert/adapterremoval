@@ -12,6 +12,9 @@ CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
 # Enable SSE, SSE2, and AVX2 instructions for a significant performance gain (YMMV)
 VECTORIZE := yes
 
+# Use Intelligent Storage Acceleration Library (ISA-L) for gzip decompression
+LIBISAL := yes
+
 # Use libdeflate for block compression
 LIBDEFLATE := yes
 
@@ -59,6 +62,16 @@ CXXFLAGS := $(CXXFLAGS) -msse -msse2 -mavx2
 else
 $(info Building AdapterRemoval with SSE/SSE2/AVX2 extensions: no)
 endif
+
+
+ifeq ($(strip ${LIBISAL}),yes)
+$(info Building AdapterRemoval with isa-l: yes)
+CXXFLAGS := $(CXXFLAGS) -DUSE_LIBISAL
+LIBRARIES := $(LIBRARIES) -lisal
+else
+$(info Building AdapterRemoval with isa-l: no)
+endif
+
 
 ifeq ($(strip ${LIBDEFLATE}),yes)
 $(info Building AdapterRemoval with libdeflate: yes)
