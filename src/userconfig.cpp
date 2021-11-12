@@ -350,8 +350,8 @@ userconfig::userconfig(const std::string& name,
     "uses libdeflate for greater throughput and "
 #endif
     "allows even greater throughput in threaded mode at the cost of about 3% "
-    "greater and possible incompatibility with some programs. Implies --gzip "
-    "[default: %default]");
+    "greater file size and possible incompatibility with a few programs. "
+    "Implies --gzip [default: %default]");
   argparser["--gzip-level"] = new argparse::knob(
     &gzip_level, "LEVEL", "Compression level, 0 - 9 [default: %default]");
 
