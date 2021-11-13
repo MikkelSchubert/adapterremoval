@@ -719,7 +719,7 @@ userconfig::is_good_alignment(const alignment_info& alignment) const
   if (n_aligned < 6) {
     mm_threshold = 0;
   } else if (n_aligned < 10) {
-    // --mm may imply fewer allowed mismatches than 1, so always compare
+    // Allow at most 1 mismatch, possibly set to 0 by the user
     mm_threshold = std::min<size_t>(1, mm_threshold);
   }
 
