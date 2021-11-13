@@ -346,6 +346,8 @@ public:
     fastq_pair_vec adapters;
     adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
 
+    auto aligner = sequence_aligner(adapters);
+
     auto stats = m_stats.acquire();
 
     AR_DEBUG_ASSERT(file_chunk->reads_1.size() == file_chunk->reads_2.size());
@@ -353,7 +355,7 @@ public:
     fastq_vec::iterator read_2 = file_chunk->reads_2.begin();
 
     while (read_1 != file_chunk->reads_1.end()) {
-      process_reads(adapters, *stats, *read_1++, *read_2++);
+      process_reads(aligner, *stats, *read_1++, *read_2++);
     }
 
     m_stats.release(stats);
@@ -393,7 +395,7 @@ public:
   }
 
 private:
-  void process_reads(const fastq_pair_vec& adapters,
+  void process_reads(const sequence_aligner& aligner,
                      adapter_stats& stats,
                      fastq& read1,
                      fastq& read2)
@@ -404,8 +406,8 @@ private:
     // Reverse complement to match the orientation of read1
     read2.reverse_complement();
 
-    const alignment_info alignment =
-      align_paired_ended_sequences(read1, read2, adapters, m_config.shift);
+    const auto alignment =
+      aligner.align_paired_end(read1, read2, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
       stats.aligned_pairs++;

@@ -237,13 +237,15 @@ se_reads_processor::process(analytical_chunk* chunk)
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);
   auto stats = m_stats.acquire();
 
+  auto aligner = sequence_aligner(m_adapters);
+
   for (auto& read : read_chunk->reads_1) {
     const alignment_info alignment =
-      align_single_ended_sequence(read, m_adapters, m_config.shift);
+      aligner.align_single_end(read, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
       const auto length = read.length();
-      truncate_single_ended_sequence(alignment, read);
+      alignment.truncate_single_end(read);
 
       stats->adapter_trimmed_reads.inc(alignment.adapter_id);
       stats->adapter_trimmed_bases.inc(alignment.adapter_id,
@@ -286,6 +288,8 @@ pe_reads_processor::process(analytical_chunk* chunk)
   merger.set_conservative(m_config.merge_conservatively);
   merger.set_max_recalculated_score(m_config.quality_max);
 
+  auto aligner = sequence_aligner(m_adapters);
+
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);
   statistics_ptr stats = m_stats.acquire();
@@ -305,12 +309,11 @@ pe_reads_processor::process(analytical_chunk* chunk)
     read_2.reverse_complement();
 
     const alignment_info alignment =
-      align_paired_ended_sequences(read_1, read_2, m_adapters, m_config.shift);
+      aligner.align_paired_end(read_1, read_2, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
       const size_t length = read_1.length() + read_2.length();
-      const size_t n_adapters =
-        truncate_paired_ended_sequences(alignment, read_1, read_2);
+      const size_t n_adapters = alignment.truncate_paired_end(read_1, read_2);
       stats->adapter_trimmed_reads.inc(alignment.adapter_id, n_adapters);
       stats->adapter_trimmed_bases.inc(
         alignment.adapter_id, length - read_1.length() - read_2.length());

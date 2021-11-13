@@ -72,12 +72,9 @@ COUNT_MASKED(__m128i value)
  * Compares two subsequences in an alignment to a previous (best) alignment.
  *
  * @param best The currently best alignment, used for evaluating this alignment
- * @param current The current alignment to be evaluated (counts are assumed to
- * be zero'd!)
- * @param seq_1_ptr Pointer to the first base in the first sequence in the
- * alignment.
- * @param seq_2_ptr Pointer to the first base in the second sequence in the
- * alignment.
+ * @param current The current alignment to be evaluated (assumed to be zero'd).
+ * @param seq_1_ptr Pointer to the first sequence in the alignment.
+ * @param seq_2_ptr Pointer to the second sequence in the alignment.
  * @return True if the current alignment is at least as good as the best
  * alignment, false otherwise.
  *
@@ -164,16 +161,14 @@ compare_subsequences(const alignment_info& best,
 }
 
 alignment_info
-pairwise_align_sequences(const alignment_info& best_alignment,
-                         const std::string& seq1,
-                         const std::string& seq2,
-                         int min_offset = std::numeric_limits<int>::min(),
-                         int max_offset = std::numeric_limits<int>::max())
+sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
+                                           const std::string& seq1,
+                                           const std::string& seq2,
+                                           int min_offset) const
 {
   const int start_offset =
     std::max<int>(min_offset, -static_cast<int>(seq2.length()) + 1);
-  const int end_offset =
-    std::min<int>(max_offset, static_cast<int>(seq1.length()) - 1);
+  const int end_offset = static_cast<int>(seq1.length()) - 1;
 
   alignment_info best = best_alignment;
   for (int offset = start_offset; offset <= end_offset; ++offset) {
@@ -254,94 +249,26 @@ alignment_info::is_better_than(const alignment_info& other) const
   return false;
 }
 
-alignment_info
-align_single_ended_sequence(const fastq& read,
-                            const fastq_pair_vec& adapters,
-                            int max_shift)
-{
-  size_t adapter_id = 0;
-  alignment_info best_alignment;
-  for (const auto& adapter_pair : adapters) {
-    const fastq& adapter = adapter_pair.first;
-    const alignment_info alignment =
-      pairwise_align_sequences(best_alignment,
-                               read.sequence(),
-                               adapter.sequence(),
-                               -max_shift,
-                               std::numeric_limits<int>::max());
-
-    if (alignment.is_better_than(best_alignment)) {
-      best_alignment = alignment;
-      best_alignment.adapter_id = adapter_id;
-    }
-
-    ++adapter_id;
-  }
-
-  return best_alignment;
-}
-
-alignment_info
-align_paired_ended_sequences(const fastq& read1,
-                             const fastq& read2,
-                             const fastq_pair_vec& adapters,
-                             int max_shift)
-{
-  size_t adapter_id = 0;
-  alignment_info best_alignment;
-  for (const auto& adapter_pair : adapters) {
-    const fastq& adapter1 = adapter_pair.first;
-    const fastq& adapter2 = adapter_pair.second;
-
-    const std::string sequence1 = adapter2.sequence() + read1.sequence();
-    const std::string sequence2 = read2.sequence() + adapter1.sequence();
-
-    // Only consider alignments where at least one nucleotide from each read
-    // is aligned against the other, included shifted alignments to account
-    // for missing bases at the 5' ends of the reads.
-    const int min_offset = adapter2.length() - read2.length() - max_shift;
-    alignment_info alignment =
-      pairwise_align_sequences(best_alignment,
-                               sequence1,
-                               sequence2,
-                               min_offset,
-                               std::numeric_limits<int>::max());
-
-    if (alignment.is_better_than(best_alignment)) {
-      best_alignment = alignment;
-      best_alignment.adapter_id = adapter_id;
-      // Convert the alignment into an alignment between read 1 & 2 only
-      best_alignment.offset -= adapter2.length();
-    }
-
-    ++adapter_id;
-  }
-
-  return best_alignment;
-}
-
 void
-truncate_single_ended_sequence(const alignment_info& alignment, fastq& read)
+alignment_info::truncate_single_end(fastq& read) const
 {
   // Given a shift, the alignment of the adapter may start one or more
   // bases before the start of the sequence, leading to a negative offset
-  const size_t len = std::max<int>(0, alignment.offset);
+  const size_t len = std::max<int>(0, offset);
 
   return read.truncate(0, len);
 }
 
 size_t
-truncate_paired_ended_sequences(const alignment_info& alignment,
-                                fastq& read1,
-                                fastq& read2)
+alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
 {
   size_t had_adapter = 0;
   const int template_length =
-    std::max<int>(0, static_cast<int>(read2.length()) + alignment.offset);
+    std::max<int>(0, static_cast<int>(read2.length()) + offset);
 
-  AR_DEBUG_ASSERT(alignment.offset <= static_cast<int>(read1.length()));
+  AR_DEBUG_ASSERT(offset <= static_cast<int>(read1.length()));
 
-  if (alignment.offset >= 0) {
+  if (offset >= 0) {
     // Read1 can potentially extend past read2, but by definition read2
     // cannot extend past read1 when the offset is not negative, so there
     // is no need to edit read2.
@@ -357,6 +284,68 @@ truncate_paired_ended_sequences(const alignment_info& alignment,
   }
 
   return had_adapter;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `sequence_aligner`
+
+sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters)
+  : m_adapters(adapters)
+{}
+
+alignment_info
+sequence_aligner::align_single_end(const fastq& read, int max_shift) const
+{
+  size_t adapter_id = 0;
+  alignment_info best_alignment;
+  for (const auto& adapter_pair : m_adapters) {
+    const fastq& adapter = adapter_pair.first;
+    const alignment_info alignment = pairwise_align_sequences(
+      best_alignment, read.sequence(), adapter.sequence(), -max_shift);
+
+    if (alignment.is_better_than(best_alignment)) {
+      best_alignment = alignment;
+      best_alignment.adapter_id = adapter_id;
+    }
+
+    ++adapter_id;
+  }
+
+  return best_alignment;
+}
+
+alignment_info
+sequence_aligner::align_paired_end(const fastq& read1,
+                                   const fastq& read2,
+                                   int max_shift) const
+{
+  size_t adapter_id = 0;
+  alignment_info best_alignment;
+  for (const auto& adapter_pair : m_adapters) {
+    const fastq& adapter1 = adapter_pair.first;
+    const fastq& adapter2 = adapter_pair.second;
+
+    const std::string sequence1 = adapter2.sequence() + read1.sequence();
+    const std::string sequence2 = read2.sequence() + adapter1.sequence();
+
+    // Only consider alignments where at least one nucleotide from each read
+    // is aligned against the other, included shifted alignments to account
+    // for missing bases at the 5' ends of the reads.
+    const int min_offset = adapter2.length() - read2.length() - max_shift;
+    const alignment_info alignment = pairwise_align_sequences(
+      best_alignment, sequence1, sequence2, min_offset);
+
+    if (alignment.is_better_than(best_alignment)) {
+      best_alignment = alignment;
+      best_alignment.adapter_id = adapter_id;
+      // Convert the alignment into an alignment between read 1 & 2 only
+      best_alignment.offset -= adapter2.length();
+    }
+
+    ++adapter_id;
+  }
+
+  return best_alignment;
 }
 
 void

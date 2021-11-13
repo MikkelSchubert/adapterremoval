@@ -106,6 +106,45 @@ operator<<(std::ostream& stream, const alignment_info& aln)
   return stream << ")";
 }
 
+fastq_pair_vec
+create_adapter_vec(const fastq& pcr1, const fastq& pcr2 = fastq())
+{
+  fastq_pair_vec adapters;
+  adapters.push_back(fastq_pair(pcr1, pcr2));
+  return adapters;
+}
+
+alignment_info
+align_single_ended_sequence(const fastq& read,
+                            const fastq_pair_vec& adapters,
+                            int max_shift)
+{
+  return sequence_aligner(adapters).align_single_end(read, max_shift);
+}
+
+alignment_info
+align_paired_ended_sequences(const fastq& read1,
+                             const fastq& read2,
+                             const fastq_pair_vec& adapters,
+                             int max_shift)
+{
+  return sequence_aligner(adapters).align_paired_end(read1, read2, max_shift);
+}
+
+void
+truncate_single_ended_sequence(const alignment_info& alignment, fastq& read)
+{
+  alignment.truncate_single_end(read);
+}
+
+size_t
+truncate_paired_ended_sequences(const alignment_info& alignment,
+                                fastq& read1,
+                                fastq& read2)
+{
+  return alignment.truncate_paired_end(read1, read2);
+}
+
 void
 REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
                                   const fastq& record1,
@@ -117,14 +156,6 @@ REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
     truncate_paired_ended_sequences(alignment, tmp_record1, tmp_record2) == 0);
   REQUIRE(tmp_record1 == record1);
   REQUIRE(tmp_record2 == record2);
-}
-
-fastq_pair_vec
-create_adapter_vec(const fastq& pcr1, const fastq& pcr2 = fastq())
-{
-  fastq_pair_vec adapters;
-  adapters.push_back(fastq_pair(pcr1, pcr2));
-  return adapters;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

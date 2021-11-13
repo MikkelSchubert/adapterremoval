@@ -90,6 +90,21 @@ struct alignment_info
    */
   bool is_better_than(const alignment_info& other) const;
 
+  /**
+   * Truncates a SE read according to the alignment, such that the second read
+   * used in the alignment (assumed to represent adapter sequence) is excluded
+   * from the read passed to this function.
+   */
+  void truncate_single_end(fastq& read) const;
+
+  /**
+   * Truncate a pair of PE reads, such that any adapter sequence inferred from
+   * the alignment is excluded from both mates.
+   *
+   * @return The number of sequences (0 .. 2) which contained adapter sequence.
+   */
+  size_t truncate_paired_end(fastq& read1, fastq& read2) const;
+
   //! Alignment score; equal to length - n_ambiguous - 2 * n_mismatches;
   int score;
   //! Zero based id of the adapter which offered the best alignment. Is less
@@ -108,65 +123,62 @@ struct alignment_info
   int adapter_id;
 };
 
-/**
- * Attempts to align adapters sequences against a SE read.
- *
- * @param read A read potentially containing adapter sequences
- * @param adapters A set of adapter pairs; only the first adapters are used.
- * @param max_shift Allow up to this number of missing bases at the 5' end of
- *                  the read, when aligning the adapter.
- * @return The best alignment, or a length 0 alignment if not aligned.
- *
- * The best alignment is selected using alignment_info::is_better_than.
- */
-alignment_info
-align_single_ended_sequence(const fastq& read,
-                            const fastq_pair_vec& adapters,
-                            int max_shift);
+class sequence_aligner
+{
+public:
+  explicit sequence_aligner(const fastq_pair_vec& adapters);
 
-/**
- * Attempts to align PE mates, along with any adapter pairs.
- *
- * @param read1 A mate 1 read potentially containing adapter sequences
- * @param read2 A mate 2 read potentially containing adapter sequences
- * @param adapters A set of adapter pairs; both in each pair adapters are used.
- * @param max_shift Allow up to this number of missing bases at the 5' end of
- *                  both mate reads.
- * @return The best alignment, or a length 0 alignment if not aligned.
- *
- * The alignment is carried out following the concatenation of pcr2 and read1,
- * and the concatenation of read2 and pcr1, resulting in this alignment:
- *
- *                pcr2-read1
- *                read2-pcr1
- *
- * Note the returned offset is relative read1, not to adapter2 + read1,
- * and can be used to directly infer the alignment between read1 and read2.
- */
-alignment_info
-align_paired_ended_sequences(const fastq& read1,
-                             const fastq& read2,
-                             const fastq_pair_vec& adapters,
-                             int max_shift);
+  /**
+   * Attempts to align adapters sequences against a SE read.
+   *
+   * @param read A read potentially containing adapter sequences
+   * @param max_shift Allow up to this number of missing bases at the 5' end of
+   *                  the read, when aligning the adapter.
+   * @return The best alignment, or a length 0 alignment if not aligned.
+   *
+   * The best alignment is selected using alignment_info::is_better_than.
+   */
+  alignment_info align_single_end(const fastq& read, int max_shift) const;
 
-/**
- * Truncates a SE read according to the alignment, such that the second read
- * used in the alignment (assumed to represent adapter sequence) is excluded
- * from the read passed to this function.
- */
-void
-truncate_single_ended_sequence(const alignment_info& alignment, fastq& read);
+  /**
+   * Attempts to align PE mates, along with any adapter pairs.
+   *
+   * @param read1 A mate 1 read potentially containing adapter sequences
+   * @param read2 A mate 2 read potentially containing adapter sequences
+   * @param max_shift Allow up to this number of missing bases at the 5' end of
+   *                  both mate reads.
+   * @return The best alignment, or a length 0 alignment if not aligned.
+   *
+   * The alignment is carried out following the concatenation of pcr2 and read1,
+   * and the concatenation of read2 and pcr1, resulting in this alignment:
+   *
+   *                pcr2-read1
+   *                read2-pcr1
+   *
+   * Note the returned offset is relative read1, not to adapter2 + read1,
+   * and can be used to directly infer the alignment between read1 and read2.
+   */
+  alignment_info align_paired_end(const fastq& read1,
+                                  const fastq& read2,
+                                  int max_shift) const;
 
-/**
- * Truncate a pair of PE reads, such that any adapter sequence inferred from
- * the alignment is excluded from both mates.
- *
- * @return The number of sequences (0 .. 2) which contained adapter sequence.
- */
-size_t
-truncate_paired_ended_sequences(const alignment_info& alignment,
-                                fastq& read1,
-                                fastq& read2);
+private:
+  /**
+   * Perform pairwise alignment between two sequences.
+   *
+   * @param best_alignment Do not return alignments worse than this alignment.
+   * @param seq1 First sequence to align (mate 1).
+   * @param seq2 Second sequence to align (mate 2 or adapter).
+   * @param offset Search for alignments from this offset.
+   */
+  alignment_info pairwise_align_sequences(const alignment_info& best_alignment,
+                                          const std::string& seq1,
+                                          const std::string& seq2,
+                                          int min_offset) const;
+
+  //! Adapter sequences against which to align the sequences
+  const fastq_pair_vec& m_adapters;
+};
 
 /**
  * Class for merging two sequence fragments into a single sequence, either
@@ -197,11 +209,11 @@ public:
 
   /**
    * Merges two overlapping reads into a single sequence, recalculating the
-   * quality in one of two ways. If `conservative` mode is enabled, the highest
-   * quality score of the two bases is used for matches, and the difference is
-   * used for matches. Otherwise an updated score is caculated bases on the
-   * original quality scores using the original algorithm implemented in
-   * AdapterRemoval.
+   * quality in one of two ways. If `conservative` mode is enabled, the
+   * highest quality score of the two bases is used for matches, and the
+   * difference is used for matches. Otherwise an updated score is caculated
+   * bases on the original quality scores using the original algorithm
+   * implemented in AdapterRemoval.
    *
    * Note that the sequences are assumed to have been trimmed using the
    * function, and this function will produce undefined results if this is not
