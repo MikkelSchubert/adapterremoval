@@ -193,7 +193,6 @@ TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/fastq.o \
              $(TEST_DIR)/fastq_test.o \
              $(TEST_DIR)/fastq_enc.o \
-             $(TEST_DIR)/fastq_enc_test.o \
              $(TEST_DIR)/json.o \
              $(TEST_DIR)/json_test.o \
              $(TEST_DIR)/strutils.o \

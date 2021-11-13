@@ -382,6 +382,7 @@ strip_mate_info(const std::string& header, const char mate_sep)
 sequence_merger::sequence_merger()
   : m_mate_sep(MATE_SEPARATOR)
   , m_conservative(false)
+  , m_max_score(MAX_PHRED_SCORE + '!')
 {}
 
 void
@@ -394,6 +395,12 @@ void
 sequence_merger::set_conservative(bool enabled)
 {
   m_conservative = enabled;
+}
+
+void
+sequence_merger::set_max_recalculated_score(char max)
+{
+  m_max_score = max + '!';
 }
 
 fastq
@@ -470,8 +477,9 @@ sequence_merger::original_merge(char& nt_1,
 
     const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
 
-    qual_1 =
-      (nt_1 == nt_2) ? new_scores.identical_nts : new_scores.different_nts;
+    qual_1 = std::min<char>(m_max_score,
+                            (nt_1 == nt_2) ? new_scores.identical_nts
+                                           : new_scores.different_nts);
   }
 }
 

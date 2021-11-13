@@ -314,14 +314,14 @@ fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 }
 
 void
-fastq::into_string(std::string& dst, const fastq_encoding& encoding) const
+fastq::into_string(std::string& dst) const
 {
   dst.push_back('@');
   dst.append(m_header);
   dst.push_back('\n');
   dst.append(m_sequence);
   dst.append("\n+\n", 3);
-  encoding.encode(m_qualities, dst);
+  fastq_encoding::encode(m_qualities, dst);
   dst.push_back('\n');
 }
 

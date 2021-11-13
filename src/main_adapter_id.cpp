@@ -463,7 +463,7 @@ identify_adapter_sequences(const userconfig& config)
     sch.add_step("identify_adapters", new adapter_identification(config));
 
   sch.add_step("read_paired_fastq",
-               new read_fastq(config.quality_input_fmt.get(),
+               new read_fastq(config.io_encoding,
                               config.input_files_1,
                               config.input_files_2,
                               identification_step,

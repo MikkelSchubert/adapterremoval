@@ -40,24 +40,30 @@ const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
-fastq_encoding_ptr
-select_encoding(const std::string& value, size_t quality_max)
+bool
+select_encoding(const std::string& value,
+                size_t quality_max,
+                fastq_encoding& out)
 {
-  fastq_encoding_ptr ptr;
+  quality_encoding encoding;
 
   const std::string uppercase_value = toupper(value);
   if (uppercase_value == "33") {
-    ptr.reset(new fastq_encoding(PHRED_OFFSET_33, quality_max));
+    encoding = quality_encoding::phred_33;
   } else if (uppercase_value == "64") {
-    ptr.reset(new fastq_encoding(PHRED_OFFSET_64, quality_max));
+    encoding = quality_encoding::phred_64;
   } else if (uppercase_value == "SOLEXA") {
-    ptr.reset(new fastq_encoding_solexa(quality_max));
+    encoding = quality_encoding::solexa;
   } else {
     std::cerr << "Error: Invalid value for --qualitybase: '" << value << "'\n"
               << "   expected values 33, 64, or solexa." << std::endl;
+
+    return false;
   }
 
-  return ptr;
+  out = fastq_encoding(encoding, quality_max);
+
+  return true;
 }
 
 std::pair<unsigned, unsigned>
@@ -199,8 +205,8 @@ userconfig::userconfig(const std::string& name,
   , min_adapter_overlap(0)
   , min_alignment_length(11)
   , mismatch_threshold(-1.0)
-  , quality_input_fmt()
-  , quality_output_fmt()
+  , io_encoding(FASTQ_ENCODING_33)
+  , quality_max(MAX_PHRED_SCORE_DEFAULT)
   , trim_fixed_5p(0, 0)
   , trim_fixed_3p(0, 0)
   , trim_by_quality(false)
@@ -227,7 +233,6 @@ userconfig::userconfig(const std::string& name,
   , adapter_list()
   , barcode_list()
   , quality_input_base("33")
-  , quality_max(MAX_PHRED_SCORE_DEFAULT)
   , mate_separator_str(1, MATE_SEPARATOR)
   , interleaved(false)
   , identify_adapters(false)
@@ -260,8 +265,8 @@ userconfig::userconfig(const std::string& name,
   argparser["--qualitybase"] = new argparse::any(
     &quality_input_base,
     "BASE",
-    "Quality base used to encode Phred scores in input; either 33, "
-    "64, or solexa [default: %default].");
+    "Quality base used to encode Phred scores in input; either 33 or 64 "
+    "[default: %default].");
   argparser["--qualitymax"] = new argparse::knob(
     &quality_max,
     "BASE",
@@ -269,7 +274,7 @@ userconfig::userconfig(const std::string& name,
     "used when writing output. ASCII encoded values are limited to "
     "the characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning "
     "that possible scores are 0 - 93 with offset 33, and 0 - 62 "
-    "for offset 64 and Solexa scores [default: %default].");
+    "for offset 64 scores [default: %default].");
   argparser["--mate-separator"] = new argparse::any(
     &mate_separator_str,
     "CHAR",
@@ -552,11 +557,9 @@ userconfig::parse_args(int argc, char* argv[])
     return result;
   }
 
-  if (!(quality_input_fmt = select_encoding(quality_input_base, quality_max))) {
+  if (!select_encoding(quality_input_base, quality_max, io_encoding)) {
     return argparse::parse_result::error;
   }
-
-  quality_output_fmt.reset(new fastq_encoding(PHRED_OFFSET_33, quality_max));
 
   if (mate_separator_str.size() != 1) {
     std::cerr << "Error: The argument for --mate-separator must be "
@@ -572,10 +575,7 @@ userconfig::parse_args(int argc, char* argv[])
   if (identify_adapters) {
     // By default quality scores are ignored when inferring adapter
     // sequences. However, arguments are still checked above.
-    quality_input_fmt.reset(
-      new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
-    quality_output_fmt.reset(
-      new fastq_encoding(PHRED_OFFSET_33, MAX_PHRED_SCORE));
+    io_encoding = FASTQ_ENCODING_SAM;
     run_type = ar_command::identify_adapters;
   }
 

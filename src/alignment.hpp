@@ -192,6 +192,9 @@ public:
    */
   void set_conservative(bool enabled = false);
 
+  /** Sets the maximum base quality score for recaculated scores. */
+  void set_max_recalculated_score(char max);
+
   /**
    * Merges two overlapping reads into a single sequence, recalculating the
    * quality in one of two ways. If `conservative` mode is enabled, the highest
@@ -219,9 +222,10 @@ private:
 
   //! Mate separator used in read names
   char m_mate_sep;
-  //! Whether or not to recalculate scores using the conservative or the
-  //! standard mode
+  //! Whether to recalculate scores using the conservative or the standard mode
   bool m_conservative;
+  //! Maximum score when recalculating qualities in non-conservative mode
+  char m_max_score;
 };
 
 /**

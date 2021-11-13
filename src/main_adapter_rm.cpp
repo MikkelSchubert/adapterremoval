@@ -118,7 +118,7 @@ remove_adapter_sequences(const userconfig& config)
 
   // Step 1: Read input file
   sch.add_step("read_fastq",
-               new read_fastq(config.quality_input_fmt.get(),
+               new read_fastq(config.io_encoding,
                               config.input_files_1,
                               config.input_files_2,
                               processing_step,

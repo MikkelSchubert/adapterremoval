@@ -176,7 +176,7 @@ trimmed_reads::add(fastq& read, const read_type type)
       read.discard();
     }
 
-    m_chunks.at(offset)->add(*m_config.quality_output_fmt, read);
+    m_chunks.at(offset)->add(read);
   }
 }
 
@@ -284,6 +284,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
   sequence_merger merger;
   merger.set_mate_separator(mate_separator);
   merger.set_conservative(m_config.merge_conservatively);
+  merger.set_max_recalculated_score(m_config.quality_max);
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);

@@ -48,13 +48,11 @@ public:
    *
    * @param header FASTQ header, including read name and meta information.
    * @param sequence nucleotide sequence containing the letters "acgtnACGTN."
-   * @param qualities phred or solexa encoded quality scores
+   * @param qualities phred encoded quality scores
    * @param encoding the encoding used for the quality scores.
    *
    * Nucleotides are converted to uppercase, and dots are replaced with N.
-   * Phred scores are calculated from the encoded scores, in the case of
-   * Solexa encoding re-encoded under this scheme, otherwise simply decoded
-   * to Phred+33 scores, if not already in this format.
+   * Phred scores are converted to to Phred+33 scores, if not already Phred+33.
    *
    * The quality scores are expected to be in the range of 0 .. 40, unless
    * the format is Phred+33, in which case the range 0 .. 41 is accepted.
@@ -158,8 +156,7 @@ public:
    * quality bases are truncated to 0 .. 40, while phred_33 supports quality
    * scores in the range 0 .. 41.
    */
-  void into_string(std::string& dst,
-                   const fastq_encoding& encoding = FASTQ_ENCODING_33) const;
+  void into_string(std::string& dst) const;
 
   /** Converts an error-probability to a Phred+33 encoded quality score. **/
   static char p_to_phred_33(double p);

@@ -40,7 +40,6 @@
 struct alignment_info;
 struct trimming_statistics;
 
-typedef std::unique_ptr<fastq_encoding> fastq_encoding_ptr;
 typedef std::unique_ptr<trimming_statistics> statistics_ptr;
 
 enum class ar_command
@@ -185,9 +184,9 @@ public:
   double mismatch_threshold;
 
   //! Quality format expected in input files.
-  fastq_encoding_ptr quality_input_fmt;
-  //! Quality format to use when writing FASTQ records.
-  fastq_encoding_ptr quality_output_fmt;
+  fastq_encoding io_encoding;
+  //! Maximum quality score for input/recalculated qualties
+  unsigned quality_max;
 
   //! Fixed number of bases to trim from 5' for mate 1 and mate 2 reads
   std::pair<unsigned, unsigned> trim_fixed_5p;
@@ -269,8 +268,6 @@ private:
 
   //! Sink for user-supplied quality score formats; use quality_input_fmt.
   std::string quality_input_base;
-  //! Sink for maximum quality score for input / output
-  unsigned quality_max;
   //! Sink for the mate separator character; use mate separator
   std::string mate_separator_str;
   //! Sink for --interleaved

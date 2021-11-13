@@ -40,7 +40,7 @@ const int MIN_PHRED_SCORE = 0;
 const int MAX_PHRED_SCORE_DEFAULT = 41;
 //! Maximum Phred score allowed, as this encodes to the last printable
 //! character '~', when using an offset of 33.
-const int MAX_PHRED_SCORE = 93;
+const int MAX_PHRED_SCORE = '~' - '!';
 
 //! Minimum Solexa score allowed; encodes to ';' with an offset of 64
 const int MIN_SOLEXA_SCORE = -5;
@@ -49,6 +49,13 @@ const int MAX_SOLEXA_SCORE = 40;
 
 //! Default character used to separate mate number
 const char MATE_SEPARATOR = '/';
+
+enum class quality_encoding
+{
+  solexa = -1,
+  phred_33 = 33,
+  phred_64 = 64,
+};
 
 /** Exception raised for FASTQ parsing and validation errors. */
 class fastq_error : public std::exception
@@ -75,68 +82,27 @@ public:
    * quality-scores up to a given value (0 - N). Input with higher scores
    * is rejected, and output is truncated to this score.
    */
-  fastq_encoding(char offset = PHRED_OFFSET_33,
-                 char max_score = MAX_PHRED_SCORE_DEFAULT);
+  fastq_encoding(quality_encoding encoding, char max_score);
 
-  virtual ~fastq_encoding();
-
-  /** Appends encoded Phred+33/66 quality-scores to dst. */
-  virtual void encode(const std::string& qualities, std::string& dst) const;
+  /** Appends Phred+33 encoded qualities to dst. */
+  static void encode(const std::string& qualities, std::string& dst);
   /** Decodes a string of ASCII values in-place. */
-  virtual void decode(std::string& qualities) const;
-
-  /** Returns the standard name for this encoding. */
-  virtual const char* name() const;
-
-  /**
-   * Returns the maximum allowed quality score for input, and the range to
-   * range to which output scores are truncated.
-   */
-  size_t max_score() const;
-
-  //! Copy construction not supported
-  fastq_encoding(const fastq_encoding&) = delete;
-  //! Assignment not supported
-  fastq_encoding& operator=(const fastq_encoding&) = delete;
+  void decode(std::string& qualities) const;
 
 protected:
-  //! Character offset for Phred encoded scores (33 or 64)
-  const char m_offset;
+  //! Quality score encoding expected when decoding data
+  quality_encoding m_encoding;
+  //! Offset used by the given encoding
+  char m_offset;
   //! Maximum allowed score; used for checking input / truncating output
-  const char m_max_score;
+  char m_max_score;
 };
 
-/**
- * Solexa scores encoding by adding '@'; max score is 40.
- *
- * Solexa scores are defined as Q = -10 * log10(p / (1 - p)), and differ from
- * Phred scores for values less than 13. Lossless conversion between the
- * formats is not possible, and since the fastq class stores quality scores as
- * Phred+33 internally, this means that reading Solexa scores is a lossy
- * operation, even if the output is written using Solexa scores.
- */
-class fastq_encoding_solexa : public fastq_encoding
-{
-public:
-  /**
-   * Create FASTQ Solexa encoding with offset 64, allowing for quality-scores
-   * up to a given value (0 - N). Input with higher scores is rejected, and
-   * output is truncated to this score.
-   */
-  fastq_encoding_solexa(unsigned max_score = MAX_PHRED_SCORE_DEFAULT);
-
-  /** Appends encoded Phred+33/66 quality-scores to dst. */
-  virtual void encode(const std::string& qualities,
-                      std::string& dst) const override;
-  /** Decodes a string of ASCII values in-place. */
-  virtual void decode(std::string& qualities) const override;
-
-  /** Returns the standard name for this encoding. */
-  virtual const char* name() const override;
-};
-
-static const fastq_encoding FASTQ_ENCODING_33(PHRED_OFFSET_33);
-static const fastq_encoding FASTQ_ENCODING_64(PHRED_OFFSET_64);
-static const fastq_encoding FASTQ_ENCODING_SAM(PHRED_OFFSET_33,
+static const fastq_encoding FASTQ_ENCODING_33(quality_encoding::phred_33,
+                                              MAX_PHRED_SCORE_DEFAULT);
+static const fastq_encoding FASTQ_ENCODING_64(quality_encoding::phred_64,
+                                              MAX_PHRED_SCORE_DEFAULT);
+static const fastq_encoding FASTQ_ENCODING_SAM(quality_encoding::phred_33,
                                                MAX_PHRED_SCORE);
-static const fastq_encoding_solexa FASTQ_ENCODING_SOLEXA;
+static const fastq_encoding FASTQ_ENCODING_SOLEXA(quality_encoding::solexa,
+                                                  MAX_SOLEXA_SCORE);

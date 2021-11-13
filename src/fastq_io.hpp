@@ -82,8 +82,8 @@ public:
   /** Constructor; does nothing. */
   fastq_output_chunk(bool eof_ = false);
 
-  /** Add FASTQ read, accounting for one or more input reads. */
-  void add(const fastq_encoding& encoding, const fastq& read);
+  /** Add FASTQ read to output buffer. */
+  void add(const fastq& read);
 
   //! Indicates that EOF has been reached.
   bool eof;
@@ -111,7 +111,7 @@ public:
   /**
    * Constructor.
    */
-  read_fastq(const fastq_encoding* encoding,
+  read_fastq(const fastq_encoding& encoding,
              const string_vec& filenames_1,
              const string_vec& filenames_2,
              size_t next_step,
@@ -132,7 +132,7 @@ public:
 
 private:
   //! Encoding used to parse FASTQ reads.
-  const fastq_encoding* m_encoding;
+  const fastq_encoding m_encoding;
   //!
   joined_line_readers m_io_input_1_base;
   //!

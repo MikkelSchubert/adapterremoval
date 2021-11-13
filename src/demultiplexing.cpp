@@ -138,7 +138,7 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
-      m_unidentified_1->add(*m_config.quality_output_fmt, read);
+      m_unidentified_1->add(read);
 
       if (best_barcode == -1) {
         m_statistics->unidentified += 1;
@@ -182,11 +182,11 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 
     if (best_barcode < 0) {
-      m_unidentified_1->add(*m_config.quality_output_fmt, *it_1);
+      m_unidentified_1->add(*it_1);
       if (m_config.interleaved_output) {
-        m_unidentified_1->add(*m_config.quality_output_fmt, *it_2);
+        m_unidentified_1->add(*it_2);
       } else {
-        m_unidentified_2->add(*m_config.quality_output_fmt, *it_2);
+        m_unidentified_2->add(*it_2);
       }
 
       if (best_barcode == -1) {

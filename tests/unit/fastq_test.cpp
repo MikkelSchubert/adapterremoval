@@ -165,8 +165,8 @@ TEST_CASE("constructor_score_boundries_solexa", "[fastq::fastq]")
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", ":;<", FASTQ_ENCODING_SOLEXA),
                     fastq_error);
 
-  REQUIRE_NOTHROW(fastq("Rec", "CAT", "ghi", FASTQ_ENCODING_SOLEXA));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "ghj", FASTQ_ENCODING_SOLEXA),
+  REQUIRE_NOTHROW(fastq("Rec", "CAT", "fgh", FASTQ_ENCODING_SOLEXA));
+  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "fgi", FASTQ_ENCODING_SOLEXA),
                     fastq_error);
 }
 
@@ -1015,15 +1015,6 @@ TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
   record.into_string(str);
 
   REQUIRE(str == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
-}
-
-TEST_CASE("Writing_to_stream_phred_64_explicit", "[fastq::fastq]")
-{
-  const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  std::string str;
-  record.into_string(str, FASTQ_ENCODING_64);
-
-  REQUIRE(str == "@record_1\nACGTACGATA\n+\n@CBCIUWbfi\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

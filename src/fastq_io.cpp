@@ -138,10 +138,10 @@ fastq_output_chunk::fastq_output_chunk(bool eof_)
 {}
 
 void
-fastq_output_chunk::add(const fastq_encoding& encoding, const fastq& read)
+fastq_output_chunk::add(const fastq& read)
 {
   nucleotides += read.length();
-  read.into_string(reads, encoding);
+  read.into_string(reads);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ read_record(joined_line_readers& reader,
   }
 }
 
-read_fastq::read_fastq(const fastq_encoding* encoding,
+read_fastq::read_fastq(const fastq_encoding& encoding,
                        const string_vec& filenames_1,
                        const string_vec& filenames_2,
                        size_t next_step,
@@ -230,14 +230,14 @@ read_fastq::process(analytical_chunk* chunk)
   size_t n_nucleotides = 0;
   while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && !eof) {
     eof = !read_record(*m_io_input_1,
-                       *m_encoding,
+                       m_encoding,
                        m_statistics_1,
                        reads_1,
                        record,
                        n_nucleotides);
 
     bool eof_2 = !read_record(*m_io_input_2,
-                              *m_encoding,
+                              m_encoding,
                               m_statistics_2,
                               reads_2,
                               record,
