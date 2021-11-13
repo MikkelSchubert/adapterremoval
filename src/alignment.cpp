@@ -359,8 +359,8 @@ truncate_paired_ended_sequences(const alignment_info& alignment,
   return had_adapter;
 }
 
-std::string
-strip_mate_info(const std::string& header, const char mate_sep)
+void
+strip_mate_info(std::string& header, const char mate_sep)
 {
   size_t pos = header.find_first_of(' ');
   if (pos == std::string::npos) {
@@ -371,12 +371,9 @@ strip_mate_info(const std::string& header, const char mate_sep)
     const char digit = header.at(pos - 1);
 
     if (digit == '1' || digit == '2') {
-      std::string new_header = header;
-      return new_header.erase(pos - 2, 2);
+      header.erase(pos - 2, 2);
     }
   }
-
-  return header;
 }
 
 sequence_merger::sequence_merger()
@@ -403,9 +400,9 @@ sequence_merger::set_max_recalculated_score(char max)
   m_max_score = max + '!';
 }
 
-fastq
+void
 sequence_merger::merge(const alignment_info& alignment,
-                       const fastq& read1,
+                       fastq& read1,
                        const fastq& read2)
 {
   // Gap between the two reads is not allowed
@@ -420,17 +417,15 @@ sequence_merger::merge(const alignment_info& alignment,
 
   AR_DEBUG_ASSERT(read1.length() - read_1_offset == read_2_offset);
 
-  // Produce draft by merging seq 1 and the parts of seq 2 that extend past seq
-  // 1
-  std::string merged_seq = read1.sequence();
-  merged_seq.append(read2.sequence(), read_2_offset, std::string::npos);
-  std::string merged_qual = read1.qualities();
-  merged_qual.append(read2.qualities(), read_2_offset, std::string::npos);
+  // Produce draft by merging r1 and the parts of r2 that extend past r1
+  read1.m_sequence.append(read2.sequence(), read_2_offset, std::string::npos);
+  read1.m_qualities.append(read2.qualities(), read_2_offset, std::string::npos);
+  AR_DEBUG_ASSERT(read1.m_sequence.length() == read1.m_qualities.length());
 
   // Pick the best bases for the overlapping part of the reads
   for (size_t i = 0; i < read_2_offset; ++i) {
-    char& nt_1 = merged_seq.at(i + read_1_offset);
-    char& qual_1 = merged_qual.at(i + read_1_offset);
+    char& nt_1 = read1.m_sequence.at(i + read_1_offset);
+    char& qual_1 = read1.m_qualities.at(i + read_1_offset);
     const char nt_2 = read2.sequence().at(i);
     const char qual_2 = read2.qualities().at(i);
 
@@ -441,12 +436,10 @@ sequence_merger::merge(const alignment_info& alignment,
     }
   }
 
-  // Remove mate number from read, if present, when building new record
-  return fastq(m_mate_sep ? strip_mate_info(read1.header(), m_mate_sep)
-                          : read1.header(),
-               merged_seq,
-               merged_qual,
-               FASTQ_ENCODING_SAM);
+  // Remove mate number from read, if present
+  if (m_mate_sep) {
+    strip_mate_info(read1.m_header, m_mate_sep);
+  }
 }
 
 void

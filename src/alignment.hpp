@@ -203,15 +203,11 @@ public:
    * original quality scores using the original algorithm implemented in
    * AdapterRemoval.
    *
-   * @return A single FASTQ record representing the merged sequence.
-   *
    * Note that the sequences are assumed to have been trimmed using the
    * function, and this function will produce undefined results if this is not
    * the case!
    */
-  fastq merge(const alignment_info& alignment,
-              const fastq& read1,
-              const fastq& read2);
+  void merge(const alignment_info& alignment, fastq& read1, const fastq& read2);
 
 private:
   /** The original merging algorithm implemented in AdapterRemoval. */

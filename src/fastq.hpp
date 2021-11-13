@@ -200,6 +200,9 @@ private:
   std::string m_sequence;
   //! Phred+33 encoded quality scores
   std::string m_qualities;
+
+  //! Needs access to merge sequence/qualities to in-place
+  friend class sequence_merger;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

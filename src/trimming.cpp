@@ -317,22 +317,23 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
       if (m_config.can_merge_alignment(alignment)) {
         stats->overlapping_reads_merged += 2;
-        fastq merged_read = merger.merge(alignment, read_1, read_2);
+        // Merge read_2 into read_1
+        merger.merge(alignment, read_1, read_2);
 
-        trim_read_termini(m_config, *stats, merged_read, read_type::merged);
+        trim_read_termini(m_config, *stats, read_1, read_type::merged);
 
         if (!m_config.preserve5p) {
           // A merged read essentially consists of two 5p termini, both
           // informative for PCR duplicate removal.
-          trim_sequence_by_quality(m_config, *stats, merged_read);
+          trim_sequence_by_quality(m_config, *stats, read_1);
         }
 
-        if (is_acceptable_read(m_config, *stats, merged_read)) {
-          stats->merged.process(merged_read, 2);
-          chunks.add(merged_read, read_type::merged);
+        if (is_acceptable_read(m_config, *stats, read_1)) {
+          stats->merged.process(read_1, 2);
+          chunks.add(read_1, read_type::merged);
         } else {
-          stats->discarded.process(merged_read, 2);
-          chunks.add(merged_read, read_type::discarded_1);
+          stats->discarded.process(read_1, 2);
+          chunks.add(read_1, read_type::discarded_1);
         }
 
         if (m_config.combined_output) {
