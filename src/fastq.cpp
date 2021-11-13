@@ -348,10 +348,6 @@ fastq::clean_sequence(std::string& sequence)
         nuc += 'A' - 'a';
         break;
 
-      case '.':
-        nuc = 'N';
-        break;
-
       default:
         throw fastq_error("invalid character in FASTQ sequence; "
                           "only A, C, G, T and N are expected!");

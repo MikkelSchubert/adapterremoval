@@ -174,7 +174,7 @@ public:
 
 private:
   /**
-   * Converting lower-case nucleotides to uppercase, '.' to N.
+   * Converting lower-case nucleotides to uppercase.
    *
    * If the sequence contains letters other than "acgtnACGTN.", a fastq_error
    * is thrown.

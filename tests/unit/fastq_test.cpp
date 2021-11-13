@@ -134,12 +134,6 @@ TEST_CASE("constructor_simple_record_lowercase_to_uppercase", "[fastq::fastq]")
   REQUIRE(record.sequence() == "ANGAGTCA");
 }
 
-TEST_CASE("constructor_simple_record_dots_to_n", "[fastq::fastq]")
-{
-  const fastq record("record_1", "AC.AG.C.", "!7BF8DGI");
-  REQUIRE(record.sequence() == "ACNAGNCN");
-}
-
 TEST_CASE("constructor_score_boundries_phred_33", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_33));
