@@ -24,7 +24,7 @@
 #include <algorithm> // for max, copy, min, count, reverse
 #include <iomanip>   // for operator<<, setw
 #include <iostream>  // for operator<<, basic_ostream, char_traits
-#include <memory>    // for unique_ptr, allocator_traits<>::value_type
+#include <memory>    // for unique_ptr
 #include <queue>     // for priority_queue
 #include <sstream>   // for stringstream
 #include <stddef.h>  // for size_t

@@ -24,7 +24,6 @@
 \*************************************************************************/
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 #include <algorithm> // for min, max, sort
-#include <memory>    // for allocator_traits<>::value_type
 #include <utility>   // for pair
 
 #include "barcode_table.hpp"

@@ -26,7 +26,6 @@
 #include <errno.h>  // for errno
 #include <fstream>  // for ofstream
 #include <iostream> // for ofstream, operator<<, basic_ostream, endl
-#include <memory>   // for allocator, allocator_traits<>::value_type
 #include <string>   // for operator+, string, operator<<
 #include <vector>   // for vector
 

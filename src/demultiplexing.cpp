@@ -22,7 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <memory>  // for unique_ptr, allocator_traits<>::value_type
+#include <memory>  // for unique_ptr
 #include <utility> // for move
 
 #include "adapterset.hpp"  // for adapter_set

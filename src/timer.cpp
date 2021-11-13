@@ -25,7 +25,6 @@
 #include <iomanip>    // for operator<<, setfill, setw
 #include <iostream>   // for operator<<, basic_ostream, stringstream, cerr
 #include <locale>     // for numpunct, use_facet, locale
-#include <memory>     // for allocator_traits<>::value_type
 #include <sstream>    // for stringstream
 #include <sys/time.h> // for gettimeofday, timeval
 

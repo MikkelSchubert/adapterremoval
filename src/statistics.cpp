@@ -22,10 +22,8 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdlib>            // for size_t
-#include <ext/alloc_traits.h> // for __alloc_traits<>::value_type
-#include <memory>             // for allocator_traits<>::value_type
-#include <string>             // for string
+#include <cstdlib> // for size_t
+#include <string>  // for string
 
 #include "fastq.hpp"     // for ACGT_TO_IDX, fastq
 #include "fastq_enc.hpp" // for PHRED_OFFSET_33

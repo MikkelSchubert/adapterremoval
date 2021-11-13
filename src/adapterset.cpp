@@ -24,7 +24,6 @@
 \*************************************************************************/
 #include <algorithm> // for sort, max
 #include <iostream>  // for operator<<, basic_ostream, char_traits
-#include <memory>    // for allocator_traits<>::value_type
 #include <sstream>   // for stringstream
 #include <utility>   // for pair
 #include <vector>    // for vector, vector<>::const_iterator
