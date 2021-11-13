@@ -128,6 +128,9 @@ class sequence_aligner
 public:
   explicit sequence_aligner(const fastq_pair_vec& adapters);
 
+  /** Set mismatch threshold for alignments returned by the aligner. */
+  void set_mismatch_threshold(double mm);
+
   /**
    * Attempts to align adapters sequences against a SE read.
    *
@@ -178,6 +181,8 @@ private:
 
   //! Adapter sequences against which to align the sequences
   const fastq_pair_vec& m_adapters;
+  //! Maximum acceptable error rate
+  double m_mismatch_threshold;
 };
 
 /**

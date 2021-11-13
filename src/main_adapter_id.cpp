@@ -347,6 +347,7 @@ public:
     adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
 
     auto aligner = sequence_aligner(adapters);
+    aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
     auto stats = m_stats.acquire();
 

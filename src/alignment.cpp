@@ -86,7 +86,8 @@ bool
 compare_subsequences(const alignment_info& best,
                      alignment_info& current,
                      const char* seq_1_ptr,
-                     const char* seq_2_ptr)
+                     const char* seq_2_ptr,
+                     double mismatch_threshold = 1.0)
 {
   int remaining_bases = current.score = current.length;
 
@@ -106,6 +107,10 @@ compare_subsequences(const alignment_info& best,
 
     current.n_ambiguous += COUNT_MASKED_256(ns_mask);
     current.n_mismatches += 32 - COUNT_MASKED_256(eq_mask);
+    if (current.n_mismatches >
+        (current.length - current.n_ambiguous) * mismatch_threshold) {
+      return false;
+    }
 
     // Matches count for 1, Ns for 0, and mismatches for -1
     current.score =
@@ -133,6 +138,10 @@ compare_subsequences(const alignment_info& best,
 
     current.n_ambiguous += COUNT_MASKED(ns_mask);
     current.n_mismatches += 16 - COUNT_MASKED(eq_mask);
+    if (current.n_mismatches >
+        (current.length - current.n_ambiguous) * mismatch_threshold) {
+      return false;
+    }
 
     // Matches count for 1, Ns for 0, and mismatches for -1
     current.score =
@@ -185,7 +194,8 @@ sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
       const char* seq_1_ptr = seq1.data() + initial_seq1_offset;
       const char* seq_2_ptr = seq2.data() + initial_seq2_offset;
 
-      if (compare_subsequences(best, current, seq_1_ptr, seq_2_ptr)) {
+      if (compare_subsequences(
+            best, current, seq_1_ptr, seq_2_ptr, m_mismatch_threshold)) {
         best = current;
       }
     }
@@ -291,7 +301,14 @@ alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
 
 sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters)
   : m_adapters(adapters)
+  , m_mismatch_threshold(1.0)
 {}
+
+void
+sequence_aligner::set_mismatch_threshold(double mm)
+{
+  m_mismatch_threshold = mm;
+}
 
 alignment_info
 sequence_aligner::align_single_end(const fastq& read, int max_shift) const

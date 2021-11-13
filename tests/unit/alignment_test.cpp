@@ -1321,7 +1321,8 @@ bool
 compare_subsequences(const alignment_info& best,
                      alignment_info& current,
                      const char* seq_1_ptr,
-                     const char* seq_2_ptr);
+                     const char* seq_2_ptr,
+                     double mismatch_threshold = 1.0);
 
 /** Naive reimplementation of alignment calculation. **/
 void

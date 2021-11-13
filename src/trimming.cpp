@@ -238,6 +238,7 @@ se_reads_processor::process(analytical_chunk* chunk)
   auto stats = m_stats.acquire();
 
   auto aligner = sequence_aligner(m_adapters);
+  aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
   for (auto& read : read_chunk->reads_1) {
     const alignment_info alignment =
@@ -289,6 +290,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
   merger.set_max_recalculated_score(m_config.quality_max);
 
   auto aligner = sequence_aligner(m_adapters);
+  aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);
