@@ -17,7 +17,6 @@ Automatic variants?
 
 Single end:
 x	--collapse
-x	--combined-output
 x	--trimns
 x	--trimqualities
 x	--minlength
@@ -57,4 +56,3 @@ TODO:
 		- No adapter, overlapping, lq trimming
 		- No adapter, overlapping, too short
 		- No adapter, overlapping, too short, lq trimming
-

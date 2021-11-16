@@ -58,7 +58,7 @@ Other than taking just a single input file, this mode operates almost exactly li
 Combining FASTQ output
 ----------------------
 
-By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for merged reads. Alternatively, these files may be combined using the ``--combined-output``, in which case all output is directed to the mate 1 and (in PE mode) to the mate 2 file. In cases where reads are discarded due to trimming to due to being merged into a single sequence, the sequence and quality scores of the discarded read is replaced with a single 'N' with base-quality 0. This option may be combined with ``--interleaved`` / ``--interleaved-output``, to write a single, interleaved file in paired-end mode.
+By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for merged reads. To combine multiple types of reads in a single output file, simply specify that output file multiple times. For example, interleaved reads can be obtained with ``--output1 my_file.fq --output2 my_file.fq``.
 
 
 Different quality score encodings

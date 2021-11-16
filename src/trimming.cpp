@@ -170,12 +170,6 @@ trimmed_reads::add(fastq& read, const read_type type)
 {
   const size_t offset = m_map.offset(type);
   if (offset != output_sample_files::disabled) {
-    if (m_config.combined_output &&
-        (type == read_type::discarded_1 || type == read_type::discarded_2)) {
-      // Create dummy read where sequence = 'N' and qualities = '!'
-      read.discard();
-    }
-
     m_chunks.at(offset)->add(read);
   }
 }
@@ -281,11 +275,8 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
 chunk_vec
 pe_reads_processor::process(analytical_chunk* chunk)
 {
-  const char mate_separator =
-    m_config.combined_output ? '\0' : m_config.mate_separator;
-
   sequence_merger merger;
-  merger.set_mate_separator(mate_separator);
+  merger.set_mate_separator(m_config.mate_separator);
   merger.set_conservative(m_config.merge_conservatively);
   merger.set_max_recalculated_score(m_config.quality_max);
 
@@ -339,11 +330,6 @@ pe_reads_processor::process(analytical_chunk* chunk)
         } else {
           stats->discarded.process(read_1, 2);
           chunks.add(read_1, read_type::discarded_1);
-        }
-
-        if (m_config.combined_output) {
-          // FIXME: Does this make sense?
-          chunks.add(read_2, read_type::discarded_2);
         }
 
         continue;

@@ -33,6 +33,7 @@
   based on a prefix. I.e. `--th` will no longer be accepted for `--threads`.
   With many changes to the CLI planned, this would risk unintended behavior.
 * Dropped undocumented support for '.' as equivalent to 'N' in FASTQ reads.
+* The `--combined-output` has been removed.
 
 ### Other major changes
 * The term "merging" is now used consistently instead of "collapsing", including

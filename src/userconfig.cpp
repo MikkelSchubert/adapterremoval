@@ -198,7 +198,6 @@ userconfig::userconfig(const std::string& name,
   , paired_ended_mode(false)
   , interleaved_input(false)
   , interleaved_output(false)
-  , combined_output(false)
   , mate_separator(MATE_SEPARATOR)
   , min_genomic_length(15)
   , max_genomic_length(std::numeric_limits<unsigned>::max())
@@ -297,12 +296,6 @@ userconfig::userconfig(const std::string& name,
     "containing mate 1 and mate 2 reads, one pair after the other. "
     "This option is implied by the --interleaved option [default: "
     "%default].");
-  argparser["--combined-output"] = new argparse::flag(
-    &combined_output,
-    "If set, all reads are written to the same file(s), specified by "
-    "--output1 and --output2 (--output1 only if --interleaved-output "
-    "is not set). Discarded reads are replaced with a single 'N' with "
-    "Phred score 0 [default: %default].");
 
   argparser.add_header("OUTPUT FILES:");
   argparser["--basename"] = new argparse::any(
@@ -780,28 +773,17 @@ userconfig::get_output_filenames() const
     }
 
     if (run_type == ar_command::trim_adapters) {
-      if (combined_output) {
-        map.offset(read_type::merged) = map.offset(read_type::mate_1);
+      map.offset(read_type::discarded_1) = map.offset(read_type::discarded_2) =
+        map.add(get_output_filename("--discarded", out_discarded, name));
 
-        map.offset(read_type::discarded_1) = map.offset(read_type::mate_1);
-        map.offset(read_type::discarded_2) = map.offset(read_type::mate_2);
+      if (paired_ended_mode) {
+        map.offset(read_type::singleton_1) =
+          map.offset(read_type::singleton_2) =
+            map.add(get_output_filename("--singleton", out_singleton, name));
 
-        map.offset(read_type::singleton_1) = map.offset(read_type::mate_1);
-        map.offset(read_type::singleton_2) = map.offset(read_type::mate_2);
-      } else {
-        map.offset(read_type::discarded_1) =
-          map.offset(read_type::discarded_2) =
-            map.add(get_output_filename("--discarded", out_discarded, name));
-
-        if (paired_ended_mode) {
-          map.offset(read_type::singleton_1) =
-            map.offset(read_type::singleton_2) =
-              map.add(get_output_filename("--singleton", out_singleton, name));
-
-          if (merge) {
-            map.offset(read_type::merged) =
-              map.add(get_output_filename("--outputmerged", out_merged, name));
-          }
+        if (merge) {
+          map.offset(read_type::merged) =
+            map.add(get_output_filename("--outputmerged", out_merged, name));
         }
       }
     }

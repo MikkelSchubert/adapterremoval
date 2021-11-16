@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ADAPTERREMOVAL" "1" "Nov 02, 2021" "2.3.2" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Nov 16, 2021" "2.3.2" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .SH SYNOPSIS
@@ -113,11 +113,6 @@ If set, input is expected to be a interleaved FASTQ files specified using \fB\-\
 .TP
 .B \-\-interleaved\-ouput
 Write paired\-end reads to a single file, interleaving mate 1 and mate 2 reads. By default, this file is named \fBbasename.paired.truncated\fP, but this may be changed using the \fB\-\-output1\fP option.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-combined\-output
-Write all reads into the files specified by \fB\-\-output1\fP and \fB\-\-output2\fP\&. The sequences of reads discarded due to quality filters or read merging are replaced with a single \(aqN\(aq with Phred score 0. This option can be combined with \fB\-\-interleaved\-output\fP to write PE reads to a single output file specified with \fB\-\-output1\fP\&.
 .UNINDENT
 .SS Output file options
 .INDENT 0.0

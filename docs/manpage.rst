@@ -80,10 +80,6 @@ FASTQ options
 
 	Write paired-end reads to a single file, interleaving mate 1 and mate 2 reads. By default, this file is named ``basename.paired.truncated``, but this may be changed using the ``--output1`` option.
 
-.. option:: --combined-output
-
-	Write all reads into the files specified by ``--output1`` and ``--output2``. The sequences of reads discarded due to quality filters or read merging are replaced with a single 'N' with Phred score 0. This option can be combined with ``--interleaved-output`` to write PE reads to a single output file specified with ``--output1``.
-
 
 Output file options
 ~~~~~~~~~~~~~~~~~~~

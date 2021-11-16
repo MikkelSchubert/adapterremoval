@@ -1,6 +1,0 @@
-{
-	"arguments": ["--combined-output", "--collapse", "--trimns", "--interleaved-output"],
-	"return_code": 0,
-	"stderr": [
-	]
-}
