@@ -102,7 +102,7 @@ TEST_CASE("write_vector([2])", "[json::write_vector]")
 
 TEST_CASE("write_vector([3])", "[json::write_vector]")
 {
-  rates r;
+  auto r = rates(3);
   r.inc(0, 0);
   r.inc(1, std::nan(""));
   r.inc(2, 0.5);
@@ -133,7 +133,7 @@ TEST_CASE("write_int_vector", "[json::write_int_vector]")
   {
     json_writer json(ss);
 
-    counts values;
+    auto values = counts(3);
     values.inc(0, 7);
     values.inc(1, 9);
     values.inc(2, 13);
