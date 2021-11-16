@@ -28,7 +28,7 @@ template<typename T>
 class counts_tmpl
 {
 public:
-  counts_tmpl(size_t size = 0)
+  explicit counts_tmpl(size_t size = 0)
     : m_values(size, T())
   {}
 
@@ -80,6 +80,18 @@ public:
   /** Returns the number of values. */
   size_t size() const { return m_values.size(); }
 
+  /** Return counts with trailing zero values trimmed. */
+  counts_tmpl<T> trim() const
+  {
+    auto result = *this;
+
+    while (result.m_values.size() && !result.m_values.back()) {
+      result.m_values.pop_back();
+    }
+
+    return result;
+  }
+
   /** + operator. */
   counts_tmpl<T> operator+(const counts_tmpl<T>& other) const
   {
@@ -116,6 +128,18 @@ public:
 
     for (size_t i = 0; i < length; ++i) {
       result.inc(i, static_cast<double>(get(i)) / denom.get(i));
+    }
+
+    return result;
+  }
+
+  /** / operator for constants. Always returns double values. */
+  counts_tmpl<double> operator/(T denom) const
+  {
+    counts_tmpl<double> result(size());
+
+    for (size_t i = 0; i < size(); ++i) {
+      result.inc(i, static_cast<double>(get(i)) / denom);
     }
 
     return result;

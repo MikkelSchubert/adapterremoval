@@ -375,6 +375,9 @@ struct io_section
           (m_stats.nucleotides_pos('G') + m_stats.nucleotides_pos('C')) /
             total_bases);
       }
+
+      const auto quality_dist = m_stats.quality_dist().trim();
+      writer.write("quality_scores", quality_dist / quality_dist.sum());
     }
   }
 
