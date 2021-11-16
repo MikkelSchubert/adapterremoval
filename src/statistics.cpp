@@ -137,7 +137,8 @@ demultiplexing_statistics::demultiplexing_statistics(double sample_rate)
   : barcodes()
   , unidentified(0)
   , ambiguous(0)
-  , unidentified_stats(sample_rate)
+  , unidentified_stats_1(sample_rate)
+  , unidentified_stats_2(sample_rate)
 {}
 
 bool

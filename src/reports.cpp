@@ -234,17 +234,24 @@ write_report_summary(const userconfig& config,
       }
 
       if (config.adapters.barcode_count()) {
-        const std::vector<const fastq_statistics*> output = {
-          &stats.demultiplexing.unidentified_stats
-        };
-
-        WITH_SECTION(writer, "unidentified")
+        WITH_SECTION(writer, "unidentified_1")
         {
-          write_report_summary_stats(writer, output);
+          write_report_summary_stats(
+            writer, { &stats.demultiplexing.unidentified_stats_1 });
         }
 
+        if (config.paired_ended_mode) {
+          WITH_SECTION(writer, "unidentified_2")
+          {
+            write_report_summary_stats(
+              writer, { &stats.demultiplexing.unidentified_stats_2 });
+          }
+        } else {
+          writer.write_null("unidentified_2");
+        }
       } else {
-        writer.write_null("unidentified");
+        writer.write_null("unidentified_1");
+        writer.write_null("unidentified_2");
       }
 
       if (demux_only) {
@@ -432,9 +439,17 @@ write_report_output(const userconfig& config,
 
     if (config.adapters.barcode_count()) {
       write_io_section(
-        "unidentified", writer, stats.demultiplexing.unidentified_stats);
+        "unidentified_1", writer, stats.demultiplexing.unidentified_stats_1);
+
+      if (config.paired_ended_mode) {
+        write_io_section(
+          "unidentified_2", writer, stats.demultiplexing.unidentified_stats_2);
+      } else {
+        writer.write_null("unidentified_2");
+      }
     } else {
-      writer.write_null("unidentified");
+      writer.write_null("unidentified_1");
+      writer.write_null("unidentified_2");
     }
 
     if (demux_only) {

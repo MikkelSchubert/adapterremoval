@@ -146,7 +146,7 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
         m_statistics->ambiguous += 1;
       }
 
-      m_statistics->unidentified_stats.process(read);
+      m_statistics->unidentified_stats_1.process(read);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
       read.truncate(m_barcodes.at(best_barcode).first.length());
@@ -195,8 +195,8 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
         m_statistics->ambiguous += 2;
       }
 
-      m_statistics->unidentified_stats.process(*it_1);
-      m_statistics->unidentified_stats.process(*it_2);
+      m_statistics->unidentified_stats_1.process(*it_1);
+      m_statistics->unidentified_stats_2.process(*it_2);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
 
