@@ -354,10 +354,10 @@ struct io_section
           total_bases += nucleotides;
           total_quality += quality;
 
-          writer.write(std::string(1, nuc), quality / nucleotides);
+          writer.write(std::string(1, tolower(nuc)), quality / nucleotides);
         }
 
-        writer.write("Mean", total_quality / total_bases);
+        writer.write("mean", total_quality / total_bases);
       }
 
       WITH_SECTION(writer, "content_curves")
@@ -366,12 +366,12 @@ struct io_section
           const auto nuc = IDX_TO_ACGT(nuc_i);
           const auto& bases = m_stats.nucleotides_pos(nuc);
 
-          writer.write(std::string(1, nuc), bases / total_bases);
+          writer.write(std::string(1, tolower(nuc)), bases / total_bases);
         }
 
-        writer.write("N", m_stats.uncalled_quality_pos() / total_bases);
+        writer.write("n", m_stats.uncalled_quality_pos() / total_bases);
         writer.write(
-          "GC",
+          "gc",
           (m_stats.nucleotides_pos('G') + m_stats.nucleotides_pos('C')) /
             total_bases);
       }
