@@ -44,6 +44,11 @@ public:
     return m_number_of_input_reads;
   }
 
+  inline size_t number_of_output_reads() const
+  {
+    return m_number_of_output_reads;
+  }
+
   inline size_t number_of_sampled_reads() const
   {
     return m_number_of_sampled_reads;
@@ -76,6 +81,8 @@ private:
 
   //! Number of input reads used to produce these statistics
   size_t m_number_of_input_reads;
+  //! The actual number of reads written, e.g. input / 2 for merged.
+  size_t m_number_of_output_reads;
   //! Number of reads sampled for computationally expensive stats
   size_t m_number_of_sampled_reads;
 

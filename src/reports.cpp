@@ -336,7 +336,8 @@ struct io_section
         writer.write("filenames", m_filenames);
       }
 
-      writer.write_int("reads", m_stats.number_of_input_reads());
+      writer.write_int("input_reads", m_stats.number_of_input_reads());
+      writer.write_int("output_reads", m_stats.number_of_output_reads());
       writer.write_int("reads_sampled", m_stats.number_of_sampled_reads());
       writer.write("lengths", m_stats.length_dist());
 

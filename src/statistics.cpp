@@ -34,6 +34,7 @@ fastq_statistics::fastq_statistics(double sample_rate)
   : m_sample_rate(sample_rate)
   , m_rng(prng_seed())
   , m_number_of_input_reads()
+  , m_number_of_output_reads()
   , m_number_of_sampled_reads()
   , m_length_dist()
   , m_quality_dist()
@@ -48,6 +49,8 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
 {
   m_number_of_input_reads += num_input_reads;
   m_length_dist.inc(read.length());
+
+  m_number_of_output_reads++;
 
   if (std::generate_canonical<float, 32>(m_rng) <= m_sample_rate) {
     m_number_of_sampled_reads += num_input_reads;
@@ -76,6 +79,7 @@ fastq_statistics&
 fastq_statistics::operator+=(const fastq_statistics& other)
 {
   m_number_of_input_reads += other.m_number_of_input_reads;
+  m_number_of_output_reads += other.m_number_of_output_reads;
   m_number_of_sampled_reads += other.m_number_of_sampled_reads;
   m_length_dist += other.m_length_dist;
   m_quality_dist += other.m_quality_dist;
