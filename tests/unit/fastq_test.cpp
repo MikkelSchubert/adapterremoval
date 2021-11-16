@@ -683,33 +683,6 @@ TEST_CASE("reverse_complement", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Discarding read, setting seq to N and qual to '!'
-
-TEST_CASE("discard_read", "[fastq::fastq]")
-{
-  const fastq expected("my_header", "N", "!");
-  fastq record("my_header", "ACGTA", "12345");
-  record.discard();
-  REQUIRE(record == expected);
-}
-
-TEST_CASE("discard_discarded_read", "[fastq::fastq]")
-{
-  const fastq expected("my_header", "N", "!");
-  fastq record("my_header", "N", "!");
-  record.discard();
-  REQUIRE(record == expected);
-}
-
-TEST_CASE("discard_empty_read", "[fastq::fastq]")
-{
-  const fastq expected("my_header", "N", "!");
-  fastq record("my_header", "", "");
-  record.discard();
-  REQUIRE(record == expected);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Reading from stream
 
 TEST_CASE("simple_fastq_record_1", "[fastq::fastq]")

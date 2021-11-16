@@ -132,12 +132,6 @@ public:
   void reverse_complement();
 
   /**
-   * Discards read data; the sequence is replaced with a single 'N', and the
-   * and the quality string is replaced with a single '!'.
-   */
-  void discard();
-
-  /**
    * Reads a FASTQ record from a list of lines (without newlines).
    *
    * If a malformed or invalid FASTQ record is encountered, the fastq_error

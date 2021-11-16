@@ -268,13 +268,6 @@ fastq::reverse_complement()
   }
 }
 
-void
-fastq::discard()
-{
-  m_sequence = 'N';
-  m_qualities = '!';
-}
-
 bool
 fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {
