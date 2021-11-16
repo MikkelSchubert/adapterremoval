@@ -37,20 +37,35 @@ fastq_statistics::fastq_statistics(double sample_rate)
   , m_number_of_output_reads()
   , m_number_of_sampled_reads()
   , m_length_dist()
-  , m_quality_dist()
+  , m_quality_dist(MAX_PHRED_SCORE + 1)
   , m_uncalled_pos()
   , m_uncalled_quality_pos()
   , m_called_pos(4)
   , m_quality_pos(4)
+  , m_max_sequence_len()
 {}
 
 void
 fastq_statistics::process(const fastq& read, size_t num_input_reads)
 {
   m_number_of_input_reads += num_input_reads;
-  m_length_dist.inc(read.length());
-
   m_number_of_output_reads++;
+
+  if (read.length() >= m_max_sequence_len) {
+    m_max_sequence_len = read.length() + 1;
+
+    m_length_dist.resize_up_to(m_max_sequence_len);
+
+    m_uncalled_pos.resize_up_to(m_max_sequence_len);
+    m_uncalled_quality_pos.resize_up_to(m_max_sequence_len);
+
+    for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+      m_called_pos.at(nuc_i).resize_up_to(m_max_sequence_len);
+      m_quality_pos.at(nuc_i).resize_up_to(m_max_sequence_len);
+    }
+  }
+
+  m_length_dist.inc(read.length());
 
   if (std::generate_canonical<float, 32>(m_rng) <= m_sample_rate) {
     m_number_of_sampled_reads += num_input_reads;

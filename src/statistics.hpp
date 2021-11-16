@@ -98,6 +98,9 @@ private:
   std::vector<counts> m_called_pos;
   /** Sum of qualities of A/C/G/Ts per position; indexed using ACGT_TO_IDX. */
   std::vector<counts> m_quality_pos;
+
+  //! Maximum size of read processed; used to resize counters as needed
+  size_t m_max_sequence_len;
 };
 
 /** Object used to collect summary statistics for trimming. */

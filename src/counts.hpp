@@ -32,15 +32,16 @@ public:
     : m_values(size, T())
   {}
 
-  /** Increment the specified value, growing the underlying array as needed. */
-  void inc(size_t n, T x = 1)
+  /** Increase the storage size to accomondate at least size items. */
+  void resize_up_to(size_t size)
   {
-    if (n >= m_values.size()) {
-      m_values.resize(n + 1);
+    if (m_values.size() < size) {
+      m_values.resize(size);
     }
-
-    m_values.at(n) += x;
   }
+
+  /** Increment the specified value. */
+  void inc(size_t n, T x = 1) { m_values.at(n) += x; }
 
   /** The sum of values in the specified range. */
   uint64_t sum(size_t from = 0,

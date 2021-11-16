@@ -229,7 +229,10 @@ se_reads_processor::process(analytical_chunk* chunk)
 {
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);
+
   auto stats = m_stats.acquire();
+  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
+  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
   auto aligner = sequence_aligner(m_adapters);
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
@@ -285,7 +288,10 @@ pe_reads_processor::process(analytical_chunk* chunk)
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
   trimmed_reads chunks(m_config, m_output, read_chunk->eof);
-  statistics_ptr stats = m_stats.acquire();
+
+  auto stats = m_stats.acquire();
+  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
+  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
   AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
