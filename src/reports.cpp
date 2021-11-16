@@ -31,6 +31,7 @@
 
 #include "adapterset.hpp" // for adapter_set
 #include "counts.hpp"     // for counts, counts_tmpl
+#include "debug.hpp"      // for AR_DEBUG_FAIL
 #include "fastq.hpp"      // for fastq_pair_vec, IDX_TO_ACGT, fastq
 #include "json.hpp"       // for json_writer, json_section
 #include "main.hpp"       // for NAME, VERSION
@@ -271,54 +272,117 @@ write_report_summary(const userconfig& config,
   }
 }
 
-void
-write_io_section(const std::string& key,
-                 json_writer& writer,
-                 const fastq_statistics& stats)
+/** Helper struct used to simplify writing of multiple io sections. */
+struct io_section
 {
-  WITH_SECTION(writer, key)
+  io_section(read_type rtype,
+             const fastq_statistics& stats,
+             const output_sample_files& sample_files,
+             bool multiple_files = false)
+    : io_section(rtype, stats, string_vec(), multiple_files)
   {
-    const std::vector<const fastq_statistics*> read_1 = { &stats };
-
-    writer.write_int("reads", stats.number_of_input_reads());
-    writer.write_int("reads_sampled", stats.number_of_sampled_reads());
-    writer.write("lengths", stats.length_dist());
-
-    auto total_bases = stats.uncalled_pos();
-    auto total_quality = stats.uncalled_quality_pos();
-
-    WITH_SECTION(writer, "quality_curves")
-    {
-      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
-        const auto nuc = IDX_TO_ACGT(nuc_i);
-        const auto& nucleotides = stats.nucleotides_pos(nuc);
-        const auto& quality = stats.qualities_pos(nuc);
-
-        total_bases += nucleotides;
-        total_quality += quality;
-
-        writer.write(std::string(1, nuc), quality / nucleotides);
-      }
-
-      writer.write("Mean", total_quality / total_bases);
-    }
-
-    WITH_SECTION(writer, "content_curves")
-    {
-      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
-        const auto nuc = IDX_TO_ACGT(nuc_i);
-        const auto& bases = stats.nucleotides_pos(nuc);
-
-        writer.write(std::string(1, nuc), bases / total_bases);
-      }
-
-      writer.write("N", stats.uncalled_quality_pos() / total_bases);
-      writer.write("GC",
-                   (stats.nucleotides_pos('G') + stats.nucleotides_pos('C')) /
-                     total_bases);
+    const auto offset = sample_files.offset(rtype);
+    if (offset != output_sample_files::disabled) {
+      m_filenames.push_back(sample_files.filenames.at(offset));
     }
   }
-}
+
+  io_section(read_type rtype,
+             const fastq_statistics& stats,
+             const string_vec& filenames,
+             bool multiple_files = false)
+    : m_read_type(rtype)
+    , m_stats(stats)
+    , m_filenames(filenames)
+    , m_multiple_files(multiple_files)
+  {}
+
+  const char* name() const
+  {
+    switch (m_read_type) {
+      case read_type::mate_1:
+        return "read1";
+      case read_type::mate_2:
+        return "read2";
+      case read_type::merged:
+        return "merged";
+      case read_type::singleton_1:
+      case read_type::singleton_2:
+        return "singleton";
+      case read_type::discarded_1:
+      case read_type::discarded_2:
+        return "discarded";
+      case read_type::unidentified_1:
+        return "unidentified_1";
+      case read_type::unidentified_2:
+        return "unidentified_2";
+      default:
+        AR_DEBUG_FAIL("unknown read type");
+    }
+  }
+
+  void write_to_if(json_writer& writer, bool enabled = true)
+  {
+    if (!enabled) {
+      writer.write_null(name());
+      return;
+    }
+
+    WITH_SECTION(writer, name())
+    {
+      if (m_filenames.empty()) {
+        writer.write_null("filenames");
+      } else {
+        writer.write("filenames", m_filenames);
+      }
+
+      writer.write_int("reads", m_stats.number_of_input_reads());
+      writer.write_int("reads_sampled", m_stats.number_of_sampled_reads());
+      writer.write("lengths", m_stats.length_dist());
+
+      auto total_bases = m_stats.uncalled_pos();
+      auto total_quality = m_stats.uncalled_quality_pos();
+
+      WITH_SECTION(writer, "quality_curves")
+      {
+        for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+          const auto nuc = IDX_TO_ACGT(nuc_i);
+          const auto& nucleotides = m_stats.nucleotides_pos(nuc);
+          const auto& quality = m_stats.qualities_pos(nuc);
+
+          total_bases += nucleotides;
+          total_quality += quality;
+
+          writer.write(std::string(1, nuc), quality / nucleotides);
+        }
+
+        writer.write("Mean", total_quality / total_bases);
+      }
+
+      WITH_SECTION(writer, "content_curves")
+      {
+        for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+          const auto nuc = IDX_TO_ACGT(nuc_i);
+          const auto& bases = m_stats.nucleotides_pos(nuc);
+
+          writer.write(std::string(1, nuc), bases / total_bases);
+        }
+
+        writer.write("N", m_stats.uncalled_quality_pos() / total_bases);
+        writer.write(
+          "GC",
+          (m_stats.nucleotides_pos('G') + m_stats.nucleotides_pos('C')) /
+            total_bases);
+      }
+    }
+  }
+
+private:
+  const read_type m_read_type;
+  const fastq_statistics& m_stats;
+  string_vec m_filenames;
+  const bool m_multiple_files;
+};
 
 void
 write_report_input(const userconfig& config,
@@ -327,28 +391,29 @@ write_report_input(const userconfig& config,
 {
   WITH_SECTION(writer, "input")
   {
-    write_io_section("read1", writer, stats.input_1);
+    const auto mate_2_filenames =
+      config.interleaved_input ? config.input_files_1 : config.input_files_2;
 
-    if (config.paired_ended_mode) {
-      write_io_section("read2", writer, stats.input_2);
-    } else {
-      writer.write_null("read2");
-    }
+    io_section(read_type::mate_1, stats.input_1, config.input_files_1, true)
+      .write_to_if(writer);
+    io_section(read_type::mate_2, stats.input_2, mate_2_filenames, true)
+      .write_to_if(writer, config.paired_ended_mode);
   }
 }
 
 void
 write_report_demultiplexing(const userconfig& config,
                             json_writer& writer,
-                            const ar_statistics& stats)
+                            const ar_statistics& sample_stats)
 {
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+  const auto out_files = config.get_output_filenames();
 
   if (config.adapters.barcode_count()) {
     WITH_SECTION(writer, "demultiplexing")
     {
       size_t assigned_reads = 0;
-      const auto& demux = stats.demultiplexing;
+      const auto& demux = sample_stats.demultiplexing;
       for (size_t it : demux.barcodes) {
         assigned_reads += it;
       }
@@ -362,35 +427,27 @@ write_report_demultiplexing(const userconfig& config,
         for (size_t i = 0; i < demux.barcodes.size(); ++i) {
           WITH_SECTION(writer, config.adapters.get_sample_name(i))
           {
-            const auto& sample_stats = stats.trimming.at(i);
+            const auto& stats = sample_stats.trimming.at(i);
+            const auto& files = out_files.samples.at(i);
 
             writer.write_int("reads", demux.barcodes.at(i));
 
             write_report_trimming(
-              config, writer, sample_stats, config.adapters.get_adapter_set(i));
+              config, writer, stats, config.adapters.get_adapter_set(i));
 
             WITH_SECTION(writer, "output")
             {
-              write_io_section("read1", writer, sample_stats.read_1);
+              io_section(read_type::mate_1, stats.read_1, files)
+                .write_to_if(writer);
 
-              if (config.paired_ended_mode) {
-                write_io_section("read2", writer, sample_stats.read_2);
+              io_section(read_type::mate_2, stats.read_2, files)
+                .write_to_if(writer, config.paired_ended_mode);
 
-                if (config.merge && !demux_only) {
-                  write_io_section("merged", writer, sample_stats.merged);
-                } else {
-                  writer.write_null("merged");
-                }
-              } else {
-                writer.write_null("read2");
-                writer.write_null("merged");
-              }
+              io_section(read_type::merged, stats.merged, files)
+                .write_to_if(writer, config.merge && !demux_only);
 
-              if (demux_only) {
-                writer.write_null("discarded");
-              } else {
-                write_io_section("discarded", writer, sample_stats.discarded);
-              }
+              io_section(read_type::discarded_1, stats.discarded, files)
+                .write_to_if(writer, !demux_only);
             }
           }
         }
@@ -399,6 +456,21 @@ write_report_demultiplexing(const userconfig& config,
   } else {
     writer.write_null("demultiplexing");
   }
+}
+
+string_vec
+collect_files(const output_files& files, read_type rtype)
+{
+  string_vec filenames;
+
+  for (const auto& sample_files : files.samples) {
+    const auto offset = sample_files.offset(rtype);
+    if (offset != output_sample_files::disabled) {
+      filenames.push_back(sample_files.filenames.at(offset));
+    }
+  }
+
+  return filenames;
 }
 
 void
@@ -418,45 +490,35 @@ write_report_output(const userconfig& config,
     discarded += it.discarded;
   }
 
+  const auto out_files = config.get_output_filenames();
+  const auto mate_1_files = collect_files(out_files, read_type::mate_1);
+  const auto mate_2_files = collect_files(out_files, read_type::mate_2);
+  const auto merged_files = collect_files(out_files, read_type::merged);
+  const auto discarded_files = collect_files(out_files, read_type::discarded_1);
+
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
 
   WITH_SECTION(writer, "output")
   {
-    write_io_section("read1", writer, output_1);
+    io_section(read_type::mate_1, output_1, mate_1_files)
+      .write_to_if(writer, true);
+    io_section(read_type::mate_2, output_2, mate_2_files)
+      .write_to_if(writer, config.paired_ended_mode);
+    io_section(read_type::merged, merged, merged_files)
+      .write_to_if(writer, config.merge && !demux_only);
 
-    if (config.paired_ended_mode) {
-      write_io_section("read2", writer, output_2);
+    io_section(read_type::unidentified_1,
+               stats.demultiplexing.unidentified_stats_1,
+               { out_files.unidentified_1 })
+      .write_to_if(writer, config.adapters.barcode_count());
+    io_section(read_type::unidentified_2,
+               stats.demultiplexing.unidentified_stats_2,
+               { out_files.unidentified_2 })
+      .write_to_if(writer,
+                   config.adapters.barcode_count() && config.paired_ended_mode);
 
-      if (config.merge && !demux_only) {
-        write_io_section("merged", writer, merged);
-      } else {
-        writer.write_null("merged");
-      }
-    } else {
-      writer.write_null("read2");
-      writer.write_null("merged");
-    }
-
-    if (config.adapters.barcode_count()) {
-      write_io_section(
-        "unidentified_1", writer, stats.demultiplexing.unidentified_stats_1);
-
-      if (config.paired_ended_mode) {
-        write_io_section(
-          "unidentified_2", writer, stats.demultiplexing.unidentified_stats_2);
-      } else {
-        writer.write_null("unidentified_2");
-      }
-    } else {
-      writer.write_null("unidentified_1");
-      writer.write_null("unidentified_2");
-    }
-
-    if (demux_only) {
-      writer.write_null("discarded");
-    } else {
-      write_io_section("discarded", writer, discarded);
-    }
+    io_section(read_type::discarded_1, discarded, discarded_files)
+      .write_to_if(writer, !demux_only);
   }
 }
 
