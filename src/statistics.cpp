@@ -52,9 +52,9 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
   m_number_of_output_reads++;
 
   if (read.length() >= m_max_sequence_len) {
-    m_max_sequence_len = read.length() + 1;
+    m_max_sequence_len = read.length();
 
-    m_length_dist.resize_up_to(m_max_sequence_len);
+    m_length_dist.resize_up_to(m_max_sequence_len + 1);
 
     m_uncalled_pos.resize_up_to(m_max_sequence_len);
     m_uncalled_quality_pos.resize_up_to(m_max_sequence_len);
