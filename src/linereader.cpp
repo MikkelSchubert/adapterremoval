@@ -222,7 +222,7 @@ line_reader::initialize_buffers_gzip()
   m_gzip_header.reset(new isal_gzip_header());
 
   isal_inflate_init(m_gzip_stream.get());
-  m_gzip_stream->crc_flag = ISAL_GZIP;
+  m_gzip_stream->crc_flag = ISAL_GZIP_NO_HDR_VER;
   m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
   m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer);
 
