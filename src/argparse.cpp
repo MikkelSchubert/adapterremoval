@@ -110,15 +110,6 @@ parse_result
 parser::parse_args(int argc, char* argv[])
 {
   const string_vec argvec(argv + 1, argv + argc);
-  for (const auto& arg : argvec) {
-    if (arg == "--help" || arg == "-h") {
-      print_help();
-      return parse_result::exit;
-    } else if (arg == "--version") {
-      print_version();
-      return parse_result::exit;
-    }
-  }
 
   string_vec_citer it = argvec.begin();
   while (it != argvec.end()) {
@@ -165,6 +156,14 @@ parser::parse_args(int argc, char* argv[])
                 << " cannot be used together with option " << pair.first
                 << std::endl;
     }
+  }
+
+  if (is_set("--help")) {
+    print_help();
+    return parse_result::exit;
+  } else if (is_set("--version")) {
+    print_version();
+    return parse_result::exit;
   }
 
   return result;
