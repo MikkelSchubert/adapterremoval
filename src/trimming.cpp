@@ -383,15 +383,15 @@ pe_reads_processor::process(analytical_chunk* chunk)
     }
 
     if (is_ok_1) {
-      stats->discarded.process(read_1);
-    } else {
       stats->read_1.process(read_1);
+    } else {
+      stats->discarded.process(read_1);
     }
 
     if (is_ok_2) {
-      stats->discarded.process(read_2);
-    } else {
       stats->read_2.process(read_2);
+    } else {
+      stats->discarded.process(read_2);
     }
 
     // Queue reads last, since this result in modifications to lengths
