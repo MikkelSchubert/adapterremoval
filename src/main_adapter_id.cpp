@@ -39,7 +39,6 @@
 #include "fastq.hpp"       // for fastq, ACGT_TO_IDX, fastq_pair_vec, IDX_T...
 #include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
 #include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
-#include "timer.hpp"       // for progress_timer
 #include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
 #include "vecutils.hpp"    // for merge_vectors
 
@@ -328,7 +327,6 @@ public:
   adapter_identification(const userconfig& config)
     : analytical_step(analytical_step::ordering::unordered)
     , m_config(config)
-    , m_timer("reads")
     , m_stats()
   {
     for (size_t i = 0; i < m_config.max_threads; ++i) {
@@ -360,7 +358,6 @@ public:
     }
 
     m_stats.release(stats);
-    m_timer.increment(file_chunk->reads_1.size() * 2);
 
     return chunk_vec();
   }
@@ -368,8 +365,6 @@ public:
   /** Prints summary of inferred consensus sequences. */
   void finalize()
   {
-    m_timer.finalize();
-
     auto stats = m_stats.acquire();
     while (!m_stats.empty()) {
       *stats += *m_stats.acquire();
@@ -450,7 +445,6 @@ private:
 
   const userconfig& m_config;
 
-  progress_timer m_timer;
   threadstate<adapter_stats> m_stats;
 };
 
