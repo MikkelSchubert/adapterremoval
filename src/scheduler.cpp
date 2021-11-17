@@ -218,7 +218,7 @@ scheduler::run(int nthreads)
     if (!step->queue.empty()) {
       print_locker lock;
       std::cerr << "ERROR: Not all parts run for step " << step->name << "; "
-                << step->queue.size() << " left ..." << std::endl;
+                << step->queue.size() << " parts left" << std::endl;
 
       set_errors_occured();
     }

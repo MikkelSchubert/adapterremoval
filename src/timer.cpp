@@ -152,12 +152,11 @@ progress_timer::do_print(size_t rate, double current_time, bool finalize) const
 
   std::cerr << thousands_sep(m_total) << " " << m_what << " in "
             << format_time(current_time - m_first_time) << "; "
-            << thousands_sep(rate) << " " << m_what << " per second ";
+            << thousands_sep(rate) << " " << m_what << " per second";
 
   if (finalize) {
-    std::cerr << "on average ..." << std::endl;
+    std::cerr << " on average" << std::endl;
   } else {
-    std::cerr << "...";
     std::cerr.flush();
     lock.partial_stderr_output();
   }

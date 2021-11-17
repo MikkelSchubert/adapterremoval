@@ -171,7 +171,7 @@ struct demultiplexing_statistics
   fastq_statistics unidentified_stats_2;
 };
 
-// FIXME: Rename to ... something better
+// FIXME: Rename to something better
 struct ar_statistics
 {
   inline ar_statistics(double sample_rate = 1.0)

@@ -33,10 +33,10 @@
  *
  * Every 1 million records / reads / etc processed, when the counter is
  * incremented using the 'increment' function, a progress report is printed:
- *   "Processed last 1,000,000 pairs in 14.1s; 2,000,000 pairs in 28.9s ..."
+ *   "Processed last 1,000,000 pairs in 14.1s; 2,000,000 pairs in 28.9s"
  *
  * A final summary is printed using the 'finalize' function:
- *   "Processed a total of 4,000,000 reads in 31.9s ..."
+ *   "Processed a total of 4,000,000 reads in 31.9s"
  */
 class progress_timer
 {

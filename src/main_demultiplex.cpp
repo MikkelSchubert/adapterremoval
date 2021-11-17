@@ -116,7 +116,7 @@ public:
 int
 demultiplex_sequences(const userconfig& config)
 {
-  std::cerr << "Demultiplexing reads ..." << std::endl;
+  std::cerr << "Demultiplexing reads" << std::endl;
 
   scheduler sch;
   std::vector<reads_processor*> processors;

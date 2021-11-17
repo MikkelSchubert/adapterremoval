@@ -375,10 +375,9 @@ public:
       *stats += *m_stats.acquire();
     }
 
-    std::cout << "   Found " << stats->aligned_pairs
-              << " overlapping pairs ...\n"
+    std::cout << "   Found " << stats->aligned_pairs << " overlapping pairs\n"
               << "   Of which " << stats->pairs_with_adapters
-              << " contained adapter sequence(s) ...\n\n"
+              << " contained adapter sequence(s)\n\n"
               << "Printing adapter sequences, including poly-A tails:"
               << std::endl;
 
@@ -458,7 +457,7 @@ private:
 int
 identify_adapter_sequences(const userconfig& config)
 {
-  std::cout << "Attempting to identify adapter sequences ..." << std::endl;
+  std::cout << "Attempting to identify adapter sequences" << std::endl;
 
   scheduler sch;
 

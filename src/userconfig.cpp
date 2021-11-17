@@ -854,7 +854,7 @@ userconfig::setup_adapter_sequences()
       return false;
     } else if (adapters.adapter_count()) {
       std::cerr << "Read " << adapters.adapter_count()
-                << " adapters / adapter pairs from '" << adapter_list << "'..."
+                << " adapters / adapter pairs from '" << adapter_list << "'"
                 << std::endl;
     } else {
       std::cerr << "Error: No adapter sequences found in table!" << std::endl;
@@ -890,7 +890,7 @@ userconfig::setup_adapter_sequences()
       return false;
     } else if (adapters.adapter_count()) {
       std::cerr << "Read " << adapters.barcode_count()
-                << " barcodes / barcode pairs from '" << barcode_list << "' ..."
+                << " barcodes / barcode pairs from '" << barcode_list << "'"
                 << std::endl;
     } else {
       std::cerr << "Error: No barcodes sequences found in table!" << std::endl;

@@ -63,7 +63,7 @@ add_write_step(const userconfig& config,
 int
 remove_adapter_sequences(const userconfig& config)
 {
-  std::cerr << "Trimming reads ..." << std::endl;
+  std::cerr << "Trimming reads" << std::endl;
 
   scheduler sch;
   std::vector<reads_processor*> processors;

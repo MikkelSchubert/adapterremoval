@@ -123,10 +123,10 @@ parser::parse_args(int argc, char* argv[])
       if (consumed == static_cast<size_t>(-1)) {
         if (it != argvec.end()) {
           std::cerr << "ERROR: Invalid value for " << *(it - 1) << ": '" << *it
-                    << "'; aborting ..." << std::endl;
+                    << "'" << std::endl;
         } else {
           std::cerr << "ERROR: No value supplied for " << *(it - 1)
-                    << "; aborting ..." << std::endl;
+                    << std::endl;
         }
 
         return parse_result::error;
