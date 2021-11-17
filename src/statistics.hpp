@@ -56,6 +56,7 @@ public:
 
   inline const counts& length_dist() const { return m_length_dist; }
   inline const counts& quality_dist() const { return m_quality_dist; }
+  inline const counts& gc_content() const { return m_gc_content_dist; }
   inline const counts& uncalled_pos() const { return m_uncalled_pos; }
   inline const counts& uncalled_quality_pos() const
   {
@@ -90,6 +91,8 @@ private:
   counts m_length_dist;
   /** Quality distribution. */
   counts m_quality_dist;
+  /** GC content distribution. */
+  counts m_gc_content_dist;
   /** Count of uncalled bases per position. */
   counts m_uncalled_pos;
   /** Sum of qualities of Ns per position. */

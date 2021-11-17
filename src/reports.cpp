@@ -375,6 +375,7 @@ struct io_section
 
       const auto quality_dist = m_stats.quality_dist().trim();
       writer.write("quality_scores", quality_dist / quality_dist.sum());
+      writer.write("gc_content", m_stats.gc_content());
     }
   }
 
@@ -478,6 +479,11 @@ write_report_output(const userconfig& config,
                     json_writer& writer,
                     const ar_statistics& stats)
 {
+  if (config.run_type == ar_command::report_only) {
+    writer.write_null("output");
+    return;
+  }
+
   fastq_statistics output_1;
   fastq_statistics output_2;
   fastq_statistics merged;

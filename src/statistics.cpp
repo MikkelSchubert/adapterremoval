@@ -38,6 +38,7 @@ fastq_statistics::fastq_statistics(double sample_rate)
   , m_number_of_sampled_reads()
   , m_length_dist()
   , m_quality_dist(MAX_PHRED_SCORE + 1)
+  , m_gc_content_dist(101)
   , m_uncalled_pos()
   , m_uncalled_quality_pos()
   , m_called_pos(4)
@@ -73,6 +74,7 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
     const std::string& sequence = read.sequence();
     const std::string& qualities = read.qualities();
 
+    size_t acgt_counts[] = { 0, 0, 0, 0 };
     for (size_t i = 0; i < sequence.length(); ++i) {
       const auto nuc = sequence.at(i);
       if (nuc == 'N') {
@@ -81,11 +83,18 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       } else {
         const auto nuc_i = ACGT_TO_IDX(nuc);
 
+        acgt_counts[nuc_i]++;
         m_called_pos.at(nuc_i).inc(i);
         m_quality_pos.at(nuc_i).inc(i, qualities.at(i) - PHRED_OFFSET_33);
       }
 
       m_quality_dist.inc(qualities.at(i) - PHRED_OFFSET_33);
+    }
+
+    auto n_at = acgt_counts[ACGT_TO_IDX('A')] + acgt_counts[ACGT_TO_IDX('T')];
+    auto n_gc = acgt_counts[ACGT_TO_IDX('G')] + acgt_counts[ACGT_TO_IDX('C')];
+    if (n_at || n_gc) {
+      m_gc_content_dist.inc((100.0 * n_gc) / (n_at + n_gc) + 0.5);
     }
   }
 }
