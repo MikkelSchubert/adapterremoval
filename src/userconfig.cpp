@@ -234,8 +234,6 @@ userconfig::userconfig(const std::string& name,
   , quality_input_base("33")
   , mate_separator_str(1, MATE_SEPARATOR)
   , interleaved(false)
-  , identify_adapters(false)
-  , demultiplex_sequences(false)
   , trim5p()
   , trim3p()
   , m_runtime()
@@ -254,7 +252,7 @@ userconfig::userconfig(const std::string& name,
     "number of files as --file1 must be listed [OPTIONAL].");
 
   argparser["--identify-adapters"] = new argparse::flag(
-    &identify_adapters,
+    nullptr,
     "Attempt to identify the adapter pair of PE reads, by searching "
     "for overlapping mate reads [default: %default].");
   argparser["--threads"] = new argparse::knob(
@@ -506,11 +504,17 @@ userconfig::userconfig(const std::string& name,
     "if not set, this value is equal to the '--barcode-mm' value; "
     "cannot be higher than the '--barcode-mm value'.");
   argparser["--demultiplex-only"] = new argparse::flag(
-    &demultiplex_sequences,
+    nullptr,
     "Only carry out demultiplexing using the list of barcodes "
     "supplied with --barcode-list. No other processing is done.");
 
   argparser.add_header("REPORTS:");
+  argparser["--report-only"] = new argparse::flag(
+    nullptr,
+    "Write a report of the input data without performing any processing of the "
+    "FASTQ reads. To generate a post-trimming/demultiplexing report without "
+    "writing FASTQ files, set --output options to /dev/null.");
+
   argparser["--report-sample-rate"] = new argparse::floaty_knob(
     &report_sample_rate,
     "X",
@@ -532,6 +536,8 @@ userconfig::userconfig(const std::string& name,
 
   // Probibited combinations
   argparser.option_prohibits("--demultiplex-only", "--identify-adapters");
+  argparser.option_prohibits("--demultiplex-only", "--report-only");
+  argparser.option_prohibits("--identify-adapters", "--report-only");
   argparser.option_prohibits("--interleaved", "--file2");
   argparser.option_prohibits("--interleaved-input", "--file2");
 }
@@ -550,6 +556,8 @@ userconfig::parse_args(int argc, char* argv[])
     return result;
   }
 
+  // --qualitybase is not always used (e.g. when identifying adapters), but is
+  // always checked in order to catch invalid argument.
   if (!select_encoding(quality_input_base, quality_max, io_encoding)) {
     return argparse::parse_result::error;
   }
@@ -563,17 +571,15 @@ userconfig::parse_args(int argc, char* argv[])
     mate_separator = mate_separator_str.at(0);
   }
 
-  // --qualitybase is not used for adapter identification, but are still
-  // checked above in order to catch invalid argument.
-  if (identify_adapters) {
+  if (argparser.is_set("--identify-adapters")) {
     // By default quality scores are ignored when inferring adapter
     // sequences. However, arguments are still checked above.
     io_encoding = FASTQ_ENCODING_SAM;
     run_type = ar_command::identify_adapters;
-  }
-
-  if (demultiplex_sequences) {
+  } else if (argparser.is_set("--demultiplex-only")) {
     run_type = ar_command::demultiplex_sequences;
+  } else if (argparser.is_set("--report-only")) {
+    run_type = ar_command::report_only;
   }
 
   if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
@@ -629,7 +635,7 @@ userconfig::parse_args(int argc, char* argv[])
     merge_conservatively = false;
   }
 
-  if (identify_adapters && !paired_ended_mode) {
+  if (run_type == ar_command::identify_adapters && !paired_ended_mode) {
     std::cerr << "Error: Both input files (--file1 / --file2) must be "
               << "specified when using --identify-adapters, or input must "
               << "be interleaved FASTQ reads (requires --interleaved)."
@@ -647,7 +653,7 @@ userconfig::parse_args(int argc, char* argv[])
   if (mismatch_threshold > 1) {
     mismatch_threshold = 1.0 / mismatch_threshold;
   } else if (mismatch_threshold < 0) {
-    if (identify_adapters) {
+    if (run_type == ar_command::identify_adapters) {
       mismatch_threshold = 1.0 / 10.0;
     } else {
       // Defaults for PE / SE trimming (changed in v2)
@@ -735,7 +741,7 @@ userconfig::can_merge_alignment(const alignment_info& alignment) const
     return false;
   }
 
-  return merge || identify_adapters;
+  return merge || run_type == ar_command::identify_adapters;
 }
 
 output_files

@@ -47,6 +47,7 @@ enum class ar_command
   trim_adapters,
   identify_adapters,
   demultiplex_sequences,
+  report_only,
 };
 
 /** Per sample output filenames / steps  */
@@ -270,11 +271,6 @@ private:
   std::string mate_separator_str;
   //! Sink for --interleaved
   bool interleaved;
-
-  //! Sink for --identify-adapters
-  bool identify_adapters;
-  //! Sink for --demultiplex-sequences
-  bool demultiplex_sequences;
 
   //! Sink for --trim5p
   string_vec trim5p;

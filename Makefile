@@ -116,6 +116,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/main_adapter_id.o \
             $(BDIR)/main_adapter_rm.o \
             $(BDIR)/main_demultiplex.o \
+            $(BDIR)/main_fastq_ro.o \
             $(BDIR)/managed_writer.o \
             $(BDIR)/reports.o \
             $(BDIR)/scheduler.o \

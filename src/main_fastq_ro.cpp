@@ -22,79 +22,53 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iostream> // for operator<<, endl, basic_ostream, cerr, ost...
-#include <stddef.h> // for size_t
+#include <cstring>  // for size_t
+#include <iostream> // for operator<<, endl, basic_ostream, cerr
 
-#include "argparse.hpp" // for parse_result, parse_result::error
-#include "main.hpp"
-#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
+#include "fastq_io.hpp"   // for read_fastq
+#include "reports.hpp"    // for write_report
+#include "scheduler.hpp"  // for scheduler
+#include "statistics.hpp" // for ar_statistics
+#include "userconfig.hpp" // for userconfig, output_files
 
-// See main_adapter_rm.cpp
-int
-remove_adapter_sequences(const userconfig& config);
-// See main_adapter_id.cpp
-int
-identify_adapter_sequences(const userconfig& config);
-// See main_demultiplex.cpp
-int
-demultiplex_sequences(const userconfig& config);
-// See main_fastq_ro.cpp
-int
-fastq_report_only(const userconfig& config);
-
-int
-main(int argc, char* argv[])
+class reads_sink : public analytical_step
 {
-  std::ios_base::sync_with_stdio(false);
+public:
+  reads_sink()
+    : analytical_step(ordering::unordered)
+  {}
 
-  userconfig config(NAME, VERSION, HELPTEXT);
-  switch (config.parse_args(argc, argv)) {
-    case argparse::parse_result::error: {
-      return 1;
-    }
+  chunk_vec process(analytical_chunk* chunk)
+  {
+    delete chunk;
+    return chunk_vec();
+  }
+};
 
-    case argparse::parse_result::exit: {
-      // --version, --help, or similar used.
-      return 0;
-    }
+int
+fastq_report_only(const userconfig& config)
+{
+  std::cerr << "Reading FASTQ files" << std::endl;
 
-    default: {
-      // Ok
-    }
+  scheduler sch;
+  ar_statistics stats(config.report_sample_rate);
+
+  // Discard all written reads
+  size_t sink = sch.add_step("sink", new reads_sink());
+
+  sch.add_step("read_fastq",
+               new read_fastq(config.io_encoding,
+                              config.input_files_1,
+                              config.input_files_2,
+                              sink,
+                              config.interleaved_input,
+                              &stats.input_1,
+                              &stats.input_2));
+
+  if (!sch.run(config.max_threads)) {
+    return 1;
   }
 
-  auto returncode = 0;
-  switch (config.run_type) {
-    case ar_command::trim_adapters: {
-      returncode = remove_adapter_sequences(config);
-      break;
-    }
-
-    case ar_command::demultiplex_sequences: {
-      returncode = demultiplex_sequences(config);
-      break;
-    }
-
-    case ar_command::identify_adapters: {
-      return identify_adapter_sequences(config);
-    }
-
-    case ar_command::report_only: {
-      return fastq_report_only(config);
-    }
-
-    default: {
-      std::cerr << "ERROR: Unknown run-type: "
-                << static_cast<size_t>(config.run_type) << std::endl;
-      return 1;
-    }
-  }
-
-  if (returncode) {
-    std::cerr << "ERROR: AdapterRemoval did not run to completion;\n"
-              << "       do NOT make use of resulting trimmed reads!"
-              << std::endl;
-  }
-
-  return returncode;
+  const auto out_files = config.get_output_filenames();
+  return !write_report(config, stats, out_files.settings);
 }

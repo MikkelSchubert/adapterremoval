@@ -30,6 +30,7 @@
 #include <zlib.h>   // for z_stream
 
 #include "commontypes.hpp"       // for fastq_vec, string_vec
+#include "fastq_enc.hpp"         // for fastq_encoding
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_writer.hpp"    // for buffer_ptr, buffer_vec, managed_writer
 #include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
