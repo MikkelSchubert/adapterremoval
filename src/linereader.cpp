@@ -124,27 +124,24 @@ line_reader::getline(std::string& dst)
   dst.clear();
 
   while (!m_eof) {
-    const char* start = m_buffer_ptr;
-    char* end = m_buffer_ptr;
-
-    for (; end != m_buffer_end; ++end) {
-      if (*end == '\n') {
-        // Excluding terminal \n
-        dst.append(start, end - start);
-        if (!dst.empty() && dst.back() == '\r') {
-          // Excluding terminal \r; dst is examined, since the \r may
-          // have been added separately, if the \r was the last
-          // character in the previous buffer fill (see below).
-          dst.pop_back();
-        }
-
-        m_buffer_ptr = end + 1;
-        return true;
+    const size_t length = m_buffer_end - m_buffer_ptr;
+    char* ptr = reinterpret_cast<char*>(memchr(m_buffer_ptr, '\n', length));
+    if (ptr) {
+      // Excluding terminal \n
+      dst.append(m_buffer_ptr, ptr - m_buffer_ptr);
+      if (!dst.empty() && dst.back() == '\r') {
+        // Excluding terminal \r; this may have been added in the loop prior to
+        // \n being found, if \n is the first character in the buffer. It is
+        // therefore easiest to check dst directly.
+        dst.pop_back();
       }
+
+      m_buffer_ptr = ptr + 1;
+      return true;
     }
 
     // Can potentially introduce a \r; this is handled above.
-    dst.append(start, end - start);
+    dst.append(m_buffer_ptr, length);
     refill_buffers();
   }
 
