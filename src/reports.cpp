@@ -277,9 +277,8 @@ struct io_section
 {
   io_section(read_type rtype,
              const fastq_statistics& stats,
-             const output_sample_files& sample_files,
-             bool multiple_files = false)
-    : io_section(rtype, stats, string_vec(), multiple_files)
+             const output_sample_files& sample_files)
+    : io_section(rtype, stats, string_vec())
   {
     const auto offset = sample_files.offset(rtype);
     if (offset != output_sample_files::disabled) {
@@ -289,12 +288,10 @@ struct io_section
 
   io_section(read_type rtype,
              const fastq_statistics& stats,
-             const string_vec& filenames,
-             bool multiple_files = false)
+             const string_vec& filenames)
     : m_read_type(rtype)
     , m_stats(stats)
     , m_filenames(filenames)
-    , m_multiple_files(multiple_files)
   {}
 
   const char* name() const
@@ -385,7 +382,6 @@ private:
   const read_type m_read_type;
   const fastq_statistics& m_stats;
   string_vec m_filenames;
-  const bool m_multiple_files;
 };
 
 void
@@ -398,9 +394,9 @@ write_report_input(const userconfig& config,
     const auto mate_2_filenames =
       config.interleaved_input ? config.input_files_1 : config.input_files_2;
 
-    io_section(read_type::mate_1, stats.input_1, config.input_files_1, true)
+    io_section(read_type::mate_1, stats.input_1, config.input_files_1)
       .write_to_if(writer);
-    io_section(read_type::mate_2, stats.input_2, mate_2_filenames, true)
+    io_section(read_type::mate_2, stats.input_2, mate_2_filenames)
       .write_to_if(writer, config.paired_ended_mode);
   }
 }

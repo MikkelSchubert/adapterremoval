@@ -148,11 +148,8 @@ is_acceptable_read(const userconfig& config,
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `trimmed_reads`
 
-trimmed_reads::trimmed_reads(const userconfig& config,
-                             const output_sample_files& map,
-                             const bool eof)
-  : m_config(config)
-  , m_map(map)
+trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
+  : m_map(map)
   , m_chunks()
 {
   AR_DEBUG_ASSERT(map.filenames.size() == map.steps.size());
@@ -228,7 +225,7 @@ chunk_vec
 se_reads_processor::process(analytical_chunk* chunk)
 {
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  trimmed_reads chunks(m_config, m_output, read_chunk->eof);
+  trimmed_reads chunks(m_output, read_chunk->eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
@@ -287,7 +284,7 @@ pe_reads_processor::process(analytical_chunk* chunk)
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
   read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  trimmed_reads chunks(m_config, m_output, read_chunk->eof);
+  trimmed_reads chunks(m_output, read_chunk->eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());

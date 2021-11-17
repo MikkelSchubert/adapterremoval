@@ -64,7 +64,7 @@ public:
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
     statistics_ptr stats = m_stats.acquire();
-    trimmed_reads chunks(m_config, m_output, read_chunk->eof);
+    trimmed_reads chunks(m_output, read_chunk->eof);
 
     for (auto& read : read_chunk->reads_1) {
       stats->read_1.process(read);
@@ -92,7 +92,7 @@ public:
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
     statistics_ptr stats = m_stats.acquire();
-    trimmed_reads chunks(m_config, m_output, read_chunk->eof);
+    trimmed_reads chunks(m_output, read_chunk->eof);
 
     fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
     fastq_vec::iterator it_2 = read_chunk->reads_2.begin();

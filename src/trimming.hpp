@@ -43,9 +43,7 @@ typedef std::unique_ptr<trimming_statistics> statistics_ptr;
 class trimmed_reads
 {
 public:
-  trimmed_reads(const userconfig& config,
-                const output_sample_files& map,
-                const bool eof);
+  trimmed_reads(const output_sample_files& map, const bool eof);
 
   /**
    * Adds a read of the given type.
@@ -59,7 +57,6 @@ public:
   chunk_vec finalize();
 
 private:
-  const userconfig& m_config;
   const output_sample_files& m_map;
 
   //! A set output chunks being created; typically fewer than read_type::max.
