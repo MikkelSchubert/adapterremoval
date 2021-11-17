@@ -27,6 +27,10 @@
 #include <stdexcept>    // for runtime_error
 #include <system_error> // for errc, errc::too_many_files_open
 
+#if _POSIX_C_SOURCE >= 200112L
+#include <fcntl.h> // for posix_fadvise
+#endif
+
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 #include "managed_writer.hpp"
 #include "threads.hpp" // for print_locker
@@ -58,6 +62,10 @@ managed_writer::fopen(const std::string& filename, const char* mode)
 
   while (true) {
     FILE* handle = ::fopen(filename.c_str(), mode);
+#if _POSIX_C_SOURCE >= 200112L
+    // Hint that we'll (only) be doing sequential reads
+    posix_fadvise(fileno(handle), 0, 0, POSIX_FADV_SEQUENTIAL);
+#endif
 
     if (handle) {
       return handle;
