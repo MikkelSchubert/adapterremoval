@@ -269,6 +269,7 @@ post_process_fastq::post_process_fastq(const fastq_encoding& encoding,
   , m_statistics_2(statistics ? &statistics->input_2 : nullptr)
   , m_next_step(next_step)
   , m_eof(false)
+  , m_lock()
 {}
 
 chunk_vec
