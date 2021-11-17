@@ -529,9 +529,9 @@ write_report_output(const userconfig& config,
 }
 
 bool
-write_report(const userconfig& config,
-             const ar_statistics& stats,
-             const std::string& filename)
+write_json_report(const userconfig& config,
+                  const ar_statistics& stats,
+                  const std::string& filename)
 {
   try {
     std::ofstream output(filename, std::ofstream::out);

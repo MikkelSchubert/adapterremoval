@@ -31,6 +31,6 @@ class statistics;
 class userconfig;
 
 bool
-write_report(const userconfig& config,
-             const ar_statistics& stats,
-             const std::string& filename);
+write_json_report(const userconfig& config,
+                  const ar_statistics& stats,
+                  const std::string& filename);

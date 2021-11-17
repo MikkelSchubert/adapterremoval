@@ -118,7 +118,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/main_demultiplex.o \
             $(BDIR)/main_fastq_ro.o \
             $(BDIR)/managed_writer.o \
-            $(BDIR)/reports.o \
+            $(BDIR)/reports_json.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/statistics.o \
             $(BDIR)/strutils.o \

@@ -132,5 +132,5 @@ remove_adapter_sequences(const userconfig& config)
     stats.trimming.push_back(*ptr->get_final_statistics());
   }
 
-  return !write_report(config, stats, out_files.settings);
+  return !write_json_report(config, stats, out_files.settings);
 }
