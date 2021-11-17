@@ -54,16 +54,15 @@ fastq_report_only(const userconfig& config)
   ar_statistics stats(config.report_sample_rate);
 
   // Discard all written reads
-  size_t sink = sch.add_step("sink", new reads_sink());
+  size_t sink_step = sch.add_step("sink", new reads_sink());
 
-  sch.add_step("read_fastq",
-               new read_fastq(config.io_encoding,
-                              config.input_files_1,
-                              config.input_files_2,
-                              sink,
-                              config.interleaved_input,
-                              &stats.input_1,
-                              &stats.input_2));
+  // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
+  const size_t postproc_step =
+    sch.add_step("post_process_fastq",
+                 new post_process_fastq(config.io_encoding, sink_step, &stats));
+
+  // Step 1: Read input file(s)
+  sch.add_step("read_fastq", new read_fastq(config, postproc_step));
 
   if (!sch.run(config.max_threads)) {
     return 1;

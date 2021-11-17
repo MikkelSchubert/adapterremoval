@@ -110,7 +110,7 @@ fastq::fastq(const std::string& header,
   , m_sequence(sequence)
   , m_qualities(qualities)
 {
-  process_record(encoding);
+  post_process(encoding);
 }
 
 fastq::fastq(const std::string& header, const std::string& sequence)
@@ -118,7 +118,7 @@ fastq::fastq(const std::string& header, const std::string& sequence)
   , m_sequence(sequence)
   , m_qualities(std::string(sequence.length(), '!'))
 {
-  process_record(FASTQ_ENCODING_33);
+  post_process(FASTQ_ENCODING_33);
 }
 
 bool
@@ -269,7 +269,7 @@ fastq::reverse_complement()
 }
 
 bool
-fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
+fastq::read_unsafe(line_reader_base& reader)
 {
   std::string line;
   do {
@@ -300,9 +300,22 @@ fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
     throw fastq_error("partial FASTQ record; cut off after separator");
   } else if (m_qualities.empty()) {
     throw fastq_error("no qualities");
+  } else if (m_qualities.length() != m_sequence.length()) {
+    throw fastq_error("sequence/quality lengths do not match");
   }
 
-  process_record(encoding);
+  return true;
+}
+
+bool
+fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
+{
+  if (!read_unsafe(reader)) {
+    return false;
+  }
+
+  post_process(encoding);
+
   return true;
 }
 
@@ -404,7 +417,7 @@ fastq::validate_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 // Private helper functions
 
 void
-fastq::process_record(const fastq_encoding& encoding)
+fastq::post_process(const fastq_encoding& encoding)
 {
   if (m_qualities.length() != m_sequence.length()) {
     throw fastq_error(

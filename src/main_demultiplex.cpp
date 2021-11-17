@@ -126,7 +126,7 @@ demultiplex_sequences(const userconfig& config)
 
   post_demux_steps steps;
 
-  // Step 3 - N: Trim and write (demultiplexed) reads
+  // Step 4 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
     const std::string& sample = config.adapters.get_sample_name(nth);
 
@@ -146,7 +146,7 @@ demultiplex_sequences(const userconfig& config)
 
   size_t processing_step = std::numeric_limits<size_t>::max();
 
-  // Step 2: Parse and demultiplex reads based on single or double indices
+  // Step 3: Parse and demultiplex reads based on single or double indices
   if (config.adapters.barcode_count()) {
     steps.unidentified_1 = add_write_step(
       config, sch, "unidentified_mate_1", out_files.unidentified_1);
@@ -170,15 +170,13 @@ demultiplex_sequences(const userconfig& config)
     processing_step = steps.samples.back();
   }
 
-  // Step 1: Read input file
-  sch.add_step("read_fastq",
-               new read_fastq(config.io_encoding,
-                              config.input_files_1,
-                              config.input_files_2,
-                              processing_step,
-                              config.interleaved_input,
-                              &stats.input_1,
-                              &stats.input_2));
+  // Step 2: Post-process, validate, and collect statistics on FASTQ reads
+  const size_t postproc_step = sch.add_step(
+    "post_process_fastq",
+    new post_process_fastq(config.io_encoding, processing_step, &stats));
+
+  // Step 1: Read input file(s)
+  sch.add_step("read_fastq", new read_fastq(config, postproc_step));
 
   if (!sch.run(config.max_threads)) {
     return 1;

@@ -144,6 +144,21 @@ public:
             const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
   /**
+   * Reads a FASTQ record from a list of lines (without newlines).
+   *
+   * This is equivalent to `read` except that only minimal validation is
+   * performed. `post_process` *must* be called before using bases or quality
+   * scores.
+   */
+  bool read_unsafe(line_reader_base& reader);
+
+  /**
+   * Finalizes read, validates sequence and transforms qualities. This function
+   * *must* be called for all reads produced by calling `read_unsafe`.
+   */
+  void post_process(const fastq_encoding& encoding);
+
+  /**
    * Converts a FASTQ record to a string ending with a newline.
    *
    * Only the phred_33 and phred_64 encodings are supported. For phred_64,
@@ -174,9 +189,6 @@ private:
    * is thrown.
    **/
   static void clean_sequence(std::string& sequence);
-
-  /** Initializes record; used by constructor and read function. **/
-  void process_record(const fastq_encoding& encoding);
 
   /**
    * Trims the read to the specified bases, and returns a pair specifying the

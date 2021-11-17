@@ -462,15 +462,17 @@ identify_adapter_sequences(const userconfig& config)
 
   scheduler sch;
 
+  // Step 3: Attempt to identify adapters through pair-wise alignments
   const size_t identification_step =
     sch.add_step("identify_adapters", new adapter_identification(config));
 
-  sch.add_step("read_paired_fastq",
-               new read_fastq(config.io_encoding,
-                              config.input_files_1,
-                              config.input_files_2,
-                              identification_step,
-                              config.interleaved_input));
+  // Step 2: Post-process and validate FASTQ reads
+  const size_t postproc_step = sch.add_step(
+    "post_process_fastq",
+    new post_process_fastq(config.io_encoding, identification_step));
+
+  // Step 1: Read input file(s)
+  sch.add_step("read_fastq", new read_fastq(config, postproc_step));
 
   return !sch.run(config.max_threads);
 }

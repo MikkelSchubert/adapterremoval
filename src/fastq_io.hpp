@@ -36,6 +36,7 @@
 #include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
 #include "timer.hpp"             // for progress_timer
 
+struct ar_statistics;
 class fastq;
 class fastq_encoding;
 class fastq_output_chunk;
@@ -112,13 +113,7 @@ public:
   /**
    * Constructor.
    */
-  read_fastq(const fastq_encoding& encoding,
-             const string_vec& filenames_1,
-             const string_vec& filenames_2,
-             size_t next_step,
-             bool interleaved = false,
-             fastq_statistics* statistics_1 = nullptr,
-             fastq_statistics* statistics_2 = nullptr);
+  read_fastq(const userconfig& config, size_t next_step);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   virtual chunk_vec process(analytical_chunk* chunk);
@@ -132,20 +127,14 @@ public:
   read_fastq& operator=(const read_fastq&) = delete;
 
 private:
-  //! Encoding used to parse FASTQ reads.
-  const fastq_encoding m_encoding;
-  //!
+  //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_io_input_1_base;
-  //!
+  //! The underlying file reader for mate 2 read (if not interleaved)
   joined_line_readers m_io_input_2_base;
-  //! Line reader used to read raw / gzip'd FASTQ files.
+  //! The reader used to read mate 1 reads.
   joined_line_readers* m_io_input_1;
-  //! Line reader used to read raw / gzip'd FASTQ files.
+  //! The reader used to read mate 1 reads; may be equal to m_io_input_1.
   joined_line_readers* m_io_input_2;
-  //! Statistics collected from raw mate 1 reads
-  fastq_statistics* m_statistics_1;
-  //! Statistics collected from raw mate 2 reads
-  fastq_statistics* m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
 
@@ -157,6 +146,46 @@ private:
   //! Timer for displaying read progress.
   progress_timer m_timer;
 
+  //! Lock used to verify that the analytical_step is only run sequentially.
+  std::mutex m_lock;
+};
+
+/**
+ * Class responsible for validating FASTQ records and collecting statistics.
+ * This is split into a seperate step to minimize the amount of time that IO
+ * is blocked by the FASTQ reading step.
+ */
+class post_process_fastq : public analytical_step
+{
+public:
+  /** Constructor. */
+  post_process_fastq(const fastq_encoding& encoding,
+                     size_t next_step,
+                     ar_statistics* statitics = nullptr);
+
+  /** Reads lines from the input file and saves them in an fastq_file_chunk. */
+  virtual chunk_vec process(analytical_chunk* chunk);
+
+  /** Finalizer; checks that all input has been processed. */
+  virtual void finalize();
+
+  //! Copy construction not supported
+  post_process_fastq(const post_process_fastq&) = delete;
+  //! Assignment not supported
+  post_process_fastq& operator=(const post_process_fastq&) = delete;
+
+private:
+  //! Encoding used to parse FASTQ reads.
+  const fastq_encoding m_encoding;
+  //! Statistics collected from raw mate 1 reads
+  fastq_statistics* m_statistics_1;
+  //! Statistics collected from raw mate 2 reads
+  fastq_statistics* m_statistics_2;
+  //! The analytical step following this step
+  const size_t m_next_step;
+
+  //! Used to track whether an EOF block has been received.
+  bool m_eof;
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
 };

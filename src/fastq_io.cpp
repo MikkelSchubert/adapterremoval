@@ -149,18 +149,12 @@ fastq_output_chunk::add(const fastq& read)
 
 bool
 read_record(joined_line_readers& reader,
-            const fastq_encoding& encoding,
-            fastq_statistics* stats,
             fastq_vec* chunk,
             fastq& record,
             size_t& n_nucleotides)
 {
   try {
-    if (record.read(reader, encoding)) {
-      if (stats) {
-        stats->process(record);
-      }
-
+    if (record.read_unsafe(reader)) {
       chunk->push_back(record);
       n_nucleotides += record.length();
 
@@ -178,37 +172,27 @@ read_record(joined_line_readers& reader,
   }
 }
 
-read_fastq::read_fastq(const fastq_encoding& encoding,
-                       const string_vec& filenames_1,
-                       const string_vec& filenames_2,
-                       size_t next_step,
-                       bool interleaved,
-                       fastq_statistics* statistics_1,
-                       fastq_statistics* statistics_2)
+read_fastq::read_fastq(const userconfig& config, size_t next_step)
   : analytical_step(analytical_step::ordering::ordered, true)
-  , m_encoding(encoding)
-  , m_io_input_1_base(filenames_1)
-  , m_io_input_2_base(filenames_2)
+  , m_io_input_1_base(config.input_files_1)
+  , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
   , m_io_input_2(&m_io_input_2_base)
-  , m_statistics_1(statistics_1)
-  , m_statistics_2(statistics_2)
   , m_next_step(next_step)
   , m_single_end(false)
   , m_eof(false)
   , m_timer("reads")
   , m_lock()
 {
-  if (interleaved) {
-    AR_DEBUG_ASSERT(filenames_2.empty());
+  if (config.interleaved_input) {
+    AR_DEBUG_ASSERT(config.input_files_2.empty());
 
     m_io_input_2 = &m_io_input_1_base;
-  } else if (filenames_2.empty()) {
+  } else if (config.input_files_2.empty()) {
     m_io_input_2 = &m_io_input_1_base;
-    m_statistics_2 = statistics_1;
     m_single_end = true;
   } else {
-    AR_DEBUG_ASSERT(filenames_1.size() == filenames_2.size());
+    AR_DEBUG_ASSERT(config.input_files_1.size() == config.input_files_2.size());
   }
 }
 
@@ -229,19 +213,9 @@ read_fastq::process(analytical_chunk* chunk)
   bool eof = false;
   size_t n_nucleotides = 0;
   while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && !eof) {
-    eof = !read_record(*m_io_input_1,
-                       m_encoding,
-                       m_statistics_1,
-                       reads_1,
-                       record,
-                       n_nucleotides);
+    eof = !read_record(*m_io_input_1, reads_1, record, n_nucleotides);
 
-    bool eof_2 = !read_record(*m_io_input_2,
-                              m_encoding,
-                              m_statistics_2,
-                              reads_2,
-                              record,
-                              n_nucleotides);
+    bool eof_2 = !read_record(*m_io_input_2, reads_2, record, n_nucleotides);
 
     if (eof && !eof_2) {
       print_locker lock;
@@ -281,6 +255,56 @@ read_fastq::finalize()
   AR_DEBUG_ASSERT(m_eof);
 
   m_timer.finalize();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'post_process_fastq'
+
+post_process_fastq::post_process_fastq(const fastq_encoding& encoding,
+                                       size_t next_step,
+                                       ar_statistics* statistics)
+  : analytical_step(analytical_step::ordering::ordered)
+  , m_encoding(encoding)
+  , m_statistics_1(statistics ? &statistics->input_1 : nullptr)
+  , m_statistics_2(statistics ? &statistics->input_2 : nullptr)
+  , m_next_step(next_step)
+  , m_eof(false)
+{}
+
+chunk_vec
+post_process_fastq::process(analytical_chunk* chunk)
+{
+  read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+  AR_DEBUG_ASSERT(!m_eof);
+  AR_DEBUG_LOCK(m_lock);
+
+  m_eof = file_chunk->eof;
+
+  for (auto& read : file_chunk->reads_1) {
+    read.post_process(m_encoding);
+    if (m_statistics_1) {
+      m_statistics_1->process(read);
+    }
+  }
+
+  for (auto& read : file_chunk->reads_2) {
+    read.post_process(m_encoding);
+    if (m_statistics_2) {
+      m_statistics_2->process(read);
+    }
+  }
+
+  chunk_vec chunks;
+  chunks.emplace_back(m_next_step, std::move(file_chunk));
+
+  return chunks;
+}
+
+void
+post_process_fastq::finalize()
+{
+  AR_DEBUG_LOCK(m_lock);
+  AR_DEBUG_ASSERT(m_eof);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
