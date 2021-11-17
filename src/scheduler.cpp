@@ -114,8 +114,7 @@ private:
 struct scheduler_step
 {
   scheduler_step(analytical_step* value, const std::string& name_)
-    : lock()
-    , ptr(value)
+    : ptr(value)
     , current_chunk(0)
     , last_chunk(0)
     , queue()
@@ -131,8 +130,6 @@ struct scheduler_step
     return true;
   }
 
-  //! Mutex used to control access to step
-  std::mutex lock;
   //! Analytical step implementation
   std::unique_ptr<analytical_step> ptr;
   //! The current chunk to be processed
@@ -293,8 +290,10 @@ scheduler::do_run()
     }
 
     if (current_step) {
+      data_chunk chunk = current_step->queue.pop();
+
       lock.unlock();
-      execute_analytical_step(current_step);
+      execute_analytical_step(current_step, chunk);
       lock.lock();
     } else {
       m_condition.wait(lock);
@@ -306,15 +305,8 @@ scheduler::do_run()
 }
 
 void
-scheduler::execute_analytical_step(const step_ptr& step)
+scheduler::execute_analytical_step(const step_ptr& step, data_chunk& chunk)
 {
-  data_chunk chunk;
-
-  {
-    std::lock_guard<std::mutex> lock(step->lock);
-    chunk = step->queue.pop();
-  }
-
   chunk_vec chunks = step->ptr->process(chunk.data.release());
 
   std::lock_guard<std::mutex> lock(m_queue_lock);
@@ -329,7 +321,6 @@ scheduler::execute_analytical_step(const step_ptr& step)
     step_ptr& other_step = m_steps.at(result.first);
     AR_DEBUG_ASSERT(other_step != nullptr);
 
-    std::lock_guard<std::mutex> step_lock(other_step->lock);
     // Inherit reference count from source chunk
     data_chunk next_chunk(chunk, std::move(result.second));
     if (step->ptr->get_ordering() == analytical_step::ordering::ordered) {
@@ -349,8 +340,6 @@ scheduler::execute_analytical_step(const step_ptr& step)
 
   // Reschedule current step if ordered and next chunk is available
   if (step->ptr->get_ordering() == analytical_step::ordering::ordered) {
-    std::lock_guard<std::mutex> step_lock(step->lock);
-
     step->current_chunk++;
     if (!step->queue.empty()) {
       queue_analytical_step(step, step->queue.top().chunk_id);

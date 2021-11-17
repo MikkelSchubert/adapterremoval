@@ -37,6 +37,7 @@
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 
 struct scheduler_step;
+struct data_chunk;
 
 /** Simple thread-safe storage backed by a vector. **/
 template<typename T>
@@ -243,7 +244,7 @@ private:
   void do_run();
 
   /** Executes an analytical step. */
-  void execute_analytical_step(const step_ptr& step);
+  void execute_analytical_step(const step_ptr& step, data_chunk& chunk);
   /** Attempts to queue an analytical step given a current chunk. */
   void queue_analytical_step(const step_ptr& step, size_t current);
 
