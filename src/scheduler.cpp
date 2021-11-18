@@ -151,8 +151,9 @@ scheduler::scheduler()
   : m_steps()
   , m_condition()
   , m_chunk_counter(0)
+  , m_tasks(0)
+  , m_tasks_max(0)
   , m_live_tasks(0)
-  , m_live_tasks_max(0)
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
@@ -180,7 +181,7 @@ scheduler::run(int nthreads)
   AR_DEBUG_ASSERT(nthreads >= 1);
   AR_DEBUG_ASSERT(!m_chunk_counter);
 
-  m_live_tasks_max = static_cast<size_t>(nthreads) * 3;
+  m_tasks_max = static_cast<size_t>(nthreads) * 3;
 
   std::vector<std::thread> threads;
 
@@ -277,17 +278,21 @@ scheduler::do_run()
       // Otherwise try do do some non-IO work
       step = m_queue_calc.front();
       m_queue_calc.pop();
-    } else if (!m_io_active && m_live_tasks < m_live_tasks_max) {
+    } else if (!m_io_active && m_tasks < m_tasks_max) {
       // If all (or no) tasks are running and IO is idle then read another chunk
+      m_tasks++;
       m_live_tasks++;
       m_io_active = true;
       step = m_steps.back();
       step->queue.push(data_chunk(m_chunk_counter++));
     } else if (m_live_tasks) {
+      // There are either tasks running (which may produce new tasks) or tasks
+      // that cannot yet be run due to IO already being active.
       m_condition.wait(lock);
       continue;
     } else {
-      // Nothing left to do at all
+      // We break if there is no live tasks to prevent bugs in the scheduling
+      // from causing infinite loops. Leftover tasks are caught in `run`.
       break;
     }
 
@@ -300,7 +305,7 @@ scheduler::do_run()
 
       if (chunks.empty() && step == m_steps.back()) {
         // The source has stopped producing chunks; nothing more to do
-        m_live_tasks_max = 0;
+        m_tasks_max = 0;
       }
 
       // Schedule each of the resulting blocks
@@ -328,6 +333,8 @@ scheduler::do_run()
 
           m_live_tasks++;
         }
+
+        m_tasks++;
       }
 
       if (chunks.size()) {
@@ -339,6 +346,9 @@ scheduler::do_run()
         // Indicate that the next chunk can be processed
         step->current_chunk++;
       }
+
+      // One less task in memory
+      m_tasks--;
 
       // If possible continue processing this task using the same thread
     } while (step->ptr->ordering() != processing_order::unordered &&
