@@ -173,7 +173,7 @@ read_record(joined_line_readers& reader,
 }
 
 read_fastq::read_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordering::ordered_io)
+  : analytical_step(processing_order::ordered_io)
   , m_io_input_1_base(config.input_files_1)
   , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
@@ -263,7 +263,7 @@ read_fastq::finalize()
 post_process_fastq::post_process_fastq(const fastq_encoding& encoding,
                                        size_t next_step,
                                        ar_statistics* statistics)
-  : analytical_step(analytical_step::ordering::ordered)
+  : analytical_step(processing_order::ordered)
   , m_encoding(encoding)
   , m_statistics_1(statistics ? &statistics->input_1 : nullptr)
   , m_statistics_2(statistics ? &statistics->input_2 : nullptr)
@@ -312,7 +312,7 @@ post_process_fastq::finalize()
 // Implementations for 'gzip_fastq'
 
 gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordering::ordered)
+  : analytical_step(processing_order::ordered)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
@@ -379,7 +379,7 @@ gzip_fastq::process(analytical_chunk* chunk)
 // Implementations for 'split_fastq'
 
 split_fastq::split_fastq(size_t next_step)
-  : analytical_step(analytical_step::ordering::ordered)
+  : analytical_step(processing_order::ordered)
   , m_next_step(next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
@@ -441,7 +441,7 @@ split_fastq::process(analytical_chunk* chunk)
 // Implementations for 'gzip_split_fastq'
 
 gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordering::unordered)
+  : analytical_step(processing_order::unordered)
   , m_config(config)
   , m_next_step(next_step)
   , m_buffers()
@@ -508,8 +508,8 @@ const std::string STDOUT = "/dev/stdout";
 
 write_fastq::write_fastq(const std::string& filename)
   // Allow disk IO and writing to STDOUT at the same time
-  : analytical_step(filename == STDOUT ? analytical_step::ordering::ordered
-                                       : analytical_step::ordering::ordered_io)
+  : analytical_step(filename == STDOUT ? processing_order::ordered
+                                       : processing_order::ordered_io)
   , m_output(filename)
   , m_eof(false)
   , m_lock()

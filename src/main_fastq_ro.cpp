@@ -35,7 +35,7 @@ class reads_sink : public analytical_step
 {
 public:
   reads_sink()
-    : analytical_step(ordering::unordered)
+    : analytical_step(processing_order::unordered)
   {}
 
   chunk_vec process(analytical_chunk* chunk)

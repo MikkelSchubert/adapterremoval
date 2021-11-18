@@ -121,6 +121,17 @@ typedef std::unique_ptr<analytical_chunk> chunk_ptr;
 typedef std::pair<size_t, chunk_ptr> chunk_pair;
 typedef std::vector<chunk_pair> chunk_vec;
 
+/** Ordering of input for analytical steps. */
+enum class processing_order
+{
+  //! Data must be consumed in the input order
+  ordered,
+  //! Data must be consumed in the input order and involves disk IO
+  ordered_io,
+  //! Data may be consumed in any order
+  unordered
+};
+
 /**
  * Base class for analytical steps in a pipeline.
  *
@@ -132,23 +143,13 @@ typedef std::vector<chunk_pair> chunk_vec;
 class analytical_step
 {
 public:
-  enum class ordering
-  {
-    //! Data must be consumed in the input order
-    ordered,
-    //! Data must be consumed in the input order and involves disk IO
-    ordered_io,
-    //! Data may be consumed in any order
-    unordered
-  };
-
   /**
    * @param step_order Indicates the expected ordering of chunks; processing
    *                   steps are typically unordered, while IO is typically
    *                   ordered in order to ensure that output order matches
    *                   input order.
    */
-  analytical_step(ordering step_order);
+  analytical_step(processing_order step_order);
 
   /** Destructor; does nothing in base class. **/
   virtual ~analytical_step();
@@ -183,7 +184,7 @@ public:
   virtual void finalize();
 
   /** Returns the expected ordering (ordered / unordered) for input data. **/
-  ordering get_ordering() const;
+  processing_order ordering() const;
 
   //! Copy construction not supported
   analytical_step(const analytical_step&) = delete;
@@ -192,7 +193,7 @@ public:
 
 private:
   //! Stores the ordering of data chunks expected by the step
-  const ordering m_step_order;
+  const processing_order m_step_order;
 };
 
 /**
@@ -239,11 +240,6 @@ private:
   /** Work function; invoked by each thread. */
   void do_run();
 
-  /** Executes an analytical step. */
-  void execute_analytical_step(const step_ptr& step, data_chunk& chunk);
-  /** Attempts to queue an analytical step given a current chunk. */
-  void queue_analytical_step(const step_ptr& step, size_t current);
-
   /** Returns true if an error has occurred, and the run should terminate. */
   bool errors_occured();
   /** Mark that an error has occurred, and that the run should terminate. */
@@ -282,8 +278,8 @@ inline void
 analytical_step::finalize()
 {}
 
-inline analytical_step::ordering
-analytical_step::get_ordering() const
+inline processing_order
+analytical_step::ordering() const
 {
   return m_step_order;
 }

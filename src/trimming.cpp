@@ -189,7 +189,7 @@ trimmed_reads::finalize()
 reads_processor::reads_processor(const userconfig& config,
                                  const output_sample_files& output,
                                  size_t nth)
-  : analytical_step(analytical_step::ordering::unordered)
+  : analytical_step(processing_order::unordered)
   , m_config(config)
   , m_adapters(config.adapters.get_adapter_set(nth))
   , m_stats()

@@ -42,7 +42,7 @@ analytical_chunk::~analytical_chunk() {}
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
-analytical_step::analytical_step(ordering step_order)
+analytical_step::analytical_step(processing_order step_order)
   : m_step_order(step_order)
 {}
 
@@ -122,7 +122,7 @@ struct scheduler_step
 
   bool can_run(size_t next_chunk)
   {
-    if (ptr->get_ordering() != analytical_step::ordering::unordered) {
+    if (ptr->ordering() != processing_order::unordered) {
       return (current_chunk == next_chunk);
     }
 
@@ -267,101 +267,93 @@ scheduler::do_run()
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
   while (!errors_occured()) {
-    step_ptr current_step;
+    step_ptr step;
     if (!m_io_active && !m_queue_io.empty()) {
       // Try to keep the disk busy by preferring IO tasks
-      current_step = m_queue_io.front();
+      step = m_queue_io.front();
       m_queue_io.pop();
       m_io_active = true;
     } else if (!m_queue_calc.empty()) {
       // Otherwise try do do some non-IO work
-      current_step = m_queue_calc.front();
+      step = m_queue_calc.front();
       m_queue_calc.pop();
     } else if (!m_io_active && m_live_tasks < m_live_tasks_max) {
       // If all (or no) tasks are running and IO is idle then read another chunk
       m_live_tasks++;
       m_io_active = true;
-      current_step = m_steps.back();
-      current_step->queue.push(data_chunk(m_chunk_counter++));
-    } else if (!m_live_tasks) {
+      step = m_steps.back();
+      step->queue.push(data_chunk(m_chunk_counter++));
+    } else if (m_live_tasks) {
+      m_condition.wait(lock);
+      continue;
+    } else {
       // Nothing left to do at all
       break;
     }
 
-    if (current_step) {
-      data_chunk chunk = current_step->queue.pop();
+    do {
+      data_chunk chunk = step->queue.pop();
 
       lock.unlock();
-      execute_analytical_step(current_step, chunk);
+      chunk_vec chunks = step->ptr->process(chunk.data.release());
       lock.lock();
-    } else {
-      m_condition.wait(lock);
+
+      if (chunks.empty() && step == m_steps.back()) {
+        // The source has stopped producing chunks; nothing more to do
+        m_live_tasks_max = 0;
+      }
+
+      // Schedule each of the resulting blocks
+      for (auto& result : chunks) {
+        AR_DEBUG_ASSERT(result.first < m_steps.size());
+        step_ptr& recipient = m_steps.at(result.first);
+
+        // Inherit reference count from source chunk
+        data_chunk next_chunk(chunk, std::move(result.second));
+        if (step->ptr->ordering() != processing_order::unordered) {
+          // Ordered steps are allowed to not return results, so the chunk
+          // numbering is remembered for down-stream steps
+          next_chunk.chunk_id = recipient->last_chunk++;
+        }
+
+        const auto next_id = next_chunk.chunk_id;
+        recipient->queue.push(std::move(next_chunk));
+
+        if (recipient->can_run(next_id)) {
+          if (recipient->ptr->ordering() == processing_order::ordered_io) {
+            m_queue_io.push(recipient);
+          } else {
+            m_queue_calc.push(recipient);
+          }
+
+          m_live_tasks++;
+        }
+      }
+
+      if (chunks.size()) {
+        // This worked better than trying to be smart about it
+        m_condition.notify_all();
+      }
+
+      if (step->ptr->ordering() != processing_order::unordered) {
+        // Indicate that the next chunk can be processed
+        step->current_chunk++;
+      }
+
+      // If possible continue processing this task using the same thread
+    } while (step->ptr->ordering() != processing_order::unordered &&
+             step->queue.size() &&
+             step->current_chunk == step->queue.top().chunk_id);
+
+    // Decrement number of running/runnable tasks
+    m_live_tasks--;
+
+    // Unlock use of IO steps after finishing processing
+    if (step->ptr->ordering() == processing_order::ordered_io) {
+      m_io_active = false;
     }
   }
 
   // Signal any waiting threads
   m_condition.notify_all();
-}
-
-void
-scheduler::execute_analytical_step(const step_ptr& step, data_chunk& chunk)
-{
-  chunk_vec chunks = step->ptr->process(chunk.data.release());
-
-  std::lock_guard<std::mutex> lock(m_queue_lock);
-  if (chunks.empty() && step == m_steps.back()) {
-    // The source has stopped producing chunks; nothing more to do
-    m_live_tasks_max = 0;
-  }
-
-  // Schedule each of the resulting blocks
-  for (auto& result : chunks) {
-    AR_DEBUG_ASSERT(result.first < m_steps.size());
-    step_ptr& other_step = m_steps.at(result.first);
-    AR_DEBUG_ASSERT(other_step != nullptr);
-
-    // Inherit reference count from source chunk
-    data_chunk next_chunk(chunk, std::move(result.second));
-    if (step->ptr->get_ordering() != analytical_step::ordering::unordered) {
-      // Ordered steps are allowed to not return results, so the chunk
-      // numbering is remembered for down-stream steps
-      next_chunk.chunk_id = other_step->last_chunk++;
-    }
-
-    other_step->queue.push(std::move(next_chunk));
-    queue_analytical_step(other_step, next_chunk.chunk_id);
-  }
-
-  // Unlock use of IO steps after finishing processing
-  if (step->ptr->get_ordering() == analytical_step::ordering::ordered_io) {
-    m_io_active = false;
-  }
-
-  // Reschedule current step if ordered and next chunk is available
-  if (step->ptr->get_ordering() != analytical_step::ordering::unordered) {
-    step->current_chunk++;
-    if (!step->queue.empty()) {
-      queue_analytical_step(step, step->queue.top().chunk_id);
-    }
-  }
-
-  // Decrement counters before releasing lock
-  m_live_tasks--;
-
-  // Just notifying all worked as well as my attempts at being smart about it
-  m_condition.notify_all();
-}
-
-void
-scheduler::queue_analytical_step(const step_ptr& step, size_t current)
-{
-  if (step->can_run(current)) {
-    if (step->ptr->get_ordering() == analytical_step::ordering::ordered_io) {
-      m_queue_io.push(step);
-    } else {
-      m_queue_calc.push(step);
-    }
-
-    m_live_tasks++;
-  }
 }
