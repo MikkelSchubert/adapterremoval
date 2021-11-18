@@ -114,25 +114,30 @@ struct scheduler_step
 {
   scheduler_step(analytical_step* value, const std::string& name_)
     : ptr(value)
-    , current_chunk(0)
+    , next_chunk(0)
     , last_chunk(0)
     , queue()
     , name(name_)
   {}
 
-  bool can_run(size_t next_chunk)
+  bool can_run(size_t chunk_id) const
   {
     if (ptr->ordering() != processing_order::unordered) {
-      return (current_chunk == next_chunk);
+      return (next_chunk == chunk_id);
     }
 
     return true;
   }
 
+  bool has_next() const
+  {
+    return queue.size() && queue.top().chunk_id == next_chunk;
+  }
+
   //! Analytical step implementation
   std::unique_ptr<analytical_step> ptr;
-  //! The current chunk to be processed
-  size_t current_chunk;
+  //! The next chunk to be processed
+  size_t next_chunk;
   //! The last chunk queued to the step;
   //! Used to correct numbering for sparse output from sequential steps
   size_t last_chunk;
@@ -344,7 +349,7 @@ scheduler::do_run()
 
       if (step->ptr->ordering() != processing_order::unordered) {
         // Indicate that the next chunk can be processed
-        step->current_chunk++;
+        step->next_chunk++;
       }
 
       // One less task in memory
@@ -352,8 +357,7 @@ scheduler::do_run()
 
       // If possible continue processing this task using the same thread
     } while (step->ptr->ordering() != processing_order::unordered &&
-             step->queue.size() &&
-             step->current_chunk == step->queue.top().chunk_id);
+             step->has_next());
 
     // Decrement number of running/runnable tasks
     m_live_tasks--;
