@@ -173,7 +173,7 @@ read_record(joined_line_readers& reader,
 }
 
 read_fastq::read_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordering::ordered, true)
+  : analytical_step(analytical_step::ordering::ordered_io)
   , m_io_input_1_base(config.input_files_1)
   , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
@@ -312,7 +312,7 @@ post_process_fastq::finalize()
 // Implementations for 'gzip_fastq'
 
 gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordering::ordered, false)
+  : analytical_step(analytical_step::ordering::ordered)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
@@ -379,7 +379,7 @@ gzip_fastq::process(analytical_chunk* chunk)
 // Implementations for 'split_fastq'
 
 split_fastq::split_fastq(size_t next_step)
-  : analytical_step(analytical_step::ordering::ordered, false)
+  : analytical_step(analytical_step::ordering::ordered)
   , m_next_step(next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
@@ -441,7 +441,7 @@ split_fastq::process(analytical_chunk* chunk)
 // Implementations for 'gzip_split_fastq'
 
 gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(analytical_step::ordering::unordered, false)
+  : analytical_step(analytical_step::ordering::unordered)
   , m_config(config)
   , m_next_step(next_step)
   , m_buffers()
@@ -507,7 +507,9 @@ gzip_split_fastq::process(analytical_chunk* chunk)
 const std::string STDOUT = "/dev/stdout";
 
 write_fastq::write_fastq(const std::string& filename)
-  : analytical_step(analytical_step::ordering::ordered, filename != STDOUT)
+  // Allow disk IO and writing to STDOUT at the same time
+  : analytical_step(filename == STDOUT ? analytical_step::ordering::ordered
+                                       : analytical_step::ordering::ordered_io)
   , m_output(filename)
   , m_eof(false)
   , m_lock()

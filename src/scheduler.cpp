@@ -42,9 +42,8 @@ analytical_chunk::~analytical_chunk() {}
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
-analytical_step::analytical_step(ordering step_order, bool file_io)
+analytical_step::analytical_step(ordering step_order)
   : m_step_order(step_order)
-  , m_file_io(file_io)
 {}
 
 analytical_step::~analytical_step() {}
@@ -123,7 +122,7 @@ struct scheduler_step
 
   bool can_run(size_t next_chunk)
   {
-    if (ptr->get_ordering() == analytical_step::ordering::ordered) {
+    if (ptr->get_ordering() != analytical_step::ordering::unordered) {
       return (current_chunk == next_chunk);
     }
 
@@ -323,7 +322,7 @@ scheduler::execute_analytical_step(const step_ptr& step, data_chunk& chunk)
 
     // Inherit reference count from source chunk
     data_chunk next_chunk(chunk, std::move(result.second));
-    if (step->ptr->get_ordering() == analytical_step::ordering::ordered) {
+    if (step->ptr->get_ordering() != analytical_step::ordering::unordered) {
       // Ordered steps are allowed to not return results, so the chunk
       // numbering is remembered for down-stream steps
       next_chunk.chunk_id = other_step->last_chunk++;
@@ -334,12 +333,12 @@ scheduler::execute_analytical_step(const step_ptr& step, data_chunk& chunk)
   }
 
   // Unlock use of IO steps after finishing processing
-  if (step->ptr->file_io()) {
+  if (step->ptr->get_ordering() == analytical_step::ordering::ordered_io) {
     m_io_active = false;
   }
 
   // Reschedule current step if ordered and next chunk is available
-  if (step->ptr->get_ordering() == analytical_step::ordering::ordered) {
+  if (step->ptr->get_ordering() != analytical_step::ordering::unordered) {
     step->current_chunk++;
     if (!step->queue.empty()) {
       queue_analytical_step(step, step->queue.top().chunk_id);
@@ -357,7 +356,7 @@ void
 scheduler::queue_analytical_step(const step_ptr& step, size_t current)
 {
   if (step->can_run(current)) {
-    if (step->ptr->file_io()) {
+    if (step->ptr->get_ordering() == analytical_step::ordering::ordered_io) {
       m_queue_io.push(step);
     } else {
       m_queue_calc.push(step);

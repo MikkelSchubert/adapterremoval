@@ -136,6 +136,8 @@ public:
   {
     //! Data must be consumed in the input order
     ordered,
+    //! Data must be consumed in the input order and involves disk IO
+    ordered_io,
     //! Data may be consumed in any order
     unordered
   };
@@ -145,9 +147,8 @@ public:
    *                   steps are typically unordered, while IO is typically
    *                   ordered in order to ensure that output order matches
    *                   input order.
-   * @param file_io Indicates if the step involves the use of file IO.
    */
-  analytical_step(ordering step_order, bool file_io = false);
+  analytical_step(ordering step_order);
 
   /** Destructor; does nothing in base class. **/
   virtual ~analytical_step();
@@ -184,9 +185,6 @@ public:
   /** Returns the expected ordering (ordered / unordered) for input data. **/
   ordering get_ordering() const;
 
-  /** Returns true if the step involves file IO. */
-  bool file_io() const;
-
   //! Copy construction not supported
   analytical_step(const analytical_step&) = delete;
   //! Assignment not supported
@@ -195,8 +193,6 @@ public:
 private:
   //! Stores the ordering of data chunks expected by the step
   const ordering m_step_order;
-  //! True if the step involves file IO (read and / or writes)
-  const bool m_file_io;
 };
 
 /**
@@ -290,12 +286,6 @@ inline analytical_step::ordering
 analytical_step::get_ordering() const
 {
   return m_step_order;
-}
-
-inline bool
-analytical_step::file_io() const
-{
-  return m_file_io;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
