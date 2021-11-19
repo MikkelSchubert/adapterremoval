@@ -357,7 +357,7 @@ scheduler::do_run()
 
       // If possible continue processing this task using the same thread
     } while (step->ptr->ordering() != processing_order::unordered &&
-             step->has_next());
+             step->has_next() && !errors_occured());
 
     // Decrement number of running/runnable tasks
     m_live_tasks--;
