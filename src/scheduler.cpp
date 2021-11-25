@@ -58,8 +58,8 @@ struct data_chunk
     , data()
   {}
 
-  explicit data_chunk(const data_chunk& parent, chunk_ptr data_)
-    : chunk_id(parent.chunk_id)
+  explicit data_chunk(size_t chunk_id_, chunk_ptr& data_)
+    : chunk_id(chunk_id_)
     , data(std::move(data_))
   {}
 
@@ -83,9 +83,10 @@ public:
     : m_chunks()
   {}
 
-  void push(data_chunk value)
+  template<class... Args>
+  void emplace_back(Args&&... args)
   {
-    m_chunks.push_back(std::move(value));
+    m_chunks.emplace_back(args...);
     std::push_heap(m_chunks.begin(), m_chunks.end());
   }
 
@@ -289,7 +290,7 @@ scheduler::do_run()
       m_live_tasks++;
       m_io_active = true;
       step = m_steps.back();
-      step->queue.push(data_chunk(m_chunk_counter++));
+      step->queue.emplace_back(m_chunk_counter++);
     } else if (m_live_tasks) {
       // There are either tasks running (which may produce new tasks) or tasks
       // that cannot yet be run due to IO already being active.
@@ -319,15 +320,14 @@ scheduler::do_run()
         step_ptr& recipient = m_steps.at(result.first);
 
         // Inherit reference count from source chunk
-        data_chunk next_chunk(chunk, std::move(result.second));
+        auto next_id = chunk.chunk_id;
         if (step->ptr->ordering() != processing_order::unordered) {
           // Ordered steps are allowed to not return results, so the chunk
           // numbering is remembered for down-stream steps
-          next_chunk.chunk_id = recipient->last_chunk++;
+          next_id = recipient->last_chunk++;
         }
 
-        const auto next_id = next_chunk.chunk_id;
-        recipient->queue.push(std::move(next_chunk));
+        recipient->queue.emplace_back(next_id, std::move(result.second));
 
         if (recipient->can_run(next_id)) {
           if (recipient->ptr->ordering() == processing_order::ordered_io) {
