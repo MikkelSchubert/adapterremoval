@@ -63,10 +63,18 @@ io_error::io_error(const std::string& message, int error_number)
 throw_gzip_error(const char* func, z_stream* zstream, const char* msg)
 {
   std::stringstream stream;
-  stream << func << ": " << msg;
+  stream << func << " (zlib): " << msg;
   if (zstream && zstream->msg) {
     stream << " ('" << zstream->msg << "')";
   }
+
+  throw gzip_error(stream.str());
+}
+[[noreturn]] void
+throw_isal_error(const char* func, const char* msg)
+{
+  std::stringstream stream;
+  stream << func << " (isa-l): " << msg;
 
   throw gzip_error(stream.str());
 }
@@ -77,6 +85,60 @@ throw_gzip_error(const char* func, z_stream* zstream, const char* msg)
 gzip_error::gzip_error(const std::string& message)
   : io_error(message)
 {}
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions for zlib/isa-l
+
+#if defined(USE_LIBISAL)
+void
+check_isal_return_code(const char* func, int returncode)
+{
+  switch (returncode) {
+    case ISAL_DECOMP_OK:
+      return;
+
+    case ISAL_END_INPUT:
+      throw_isal_error(func, "end of input reached");
+
+    case ISAL_OUT_OVERFLOW:
+      throw_isal_error(func, "end of output reached");
+
+    case ISAL_NAME_OVERFLOW:
+      throw_isal_error(func, "end of gzip name buffer reached");
+
+    case ISAL_COMMENT_OVERFLOW:
+      throw_isal_error(func, "end of gzip name buffer reached");
+
+    case ISAL_EXTRA_OVERFLOW:
+      throw_isal_error(func, "end of extra buffer reached");
+
+    case ISAL_NEED_DICT:
+      throw_isal_error(func, "stream needs a dictionary to continue");
+
+    case ISAL_INVALID_BLOCK:
+      throw_isal_error(func, "invalid deflate block found");
+
+    case ISAL_INVALID_SYMBOL:
+      throw_isal_error(func, "invalid deflate symbol found");
+
+    case ISAL_INVALID_LOOKBACK:
+      throw_isal_error(func, "invalid lookback distance found");
+
+    case ISAL_INVALID_WRAPPER:
+      throw_isal_error(func, "invalid gzip/zlib wrapper found");
+
+    case ISAL_UNSUPPORTED_METHOD:
+      throw_isal_error(func, "unsupported compression method");
+
+    case ISAL_INCORRECT_CHECKSUM:
+      throw_isal_error(func, "incorrect checksum found");
+
+    default:
+      throw_isal_error(func, "unknown error");
+  }
+}
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'line_reader'
@@ -208,8 +270,6 @@ line_reader::identify_gzip() const
 void
 line_reader::initialize_buffers_gzip()
 {
-  std::cerr << "initialize_buffers_gzip" << std::endl;
-
   m_buffer = new char[BUF_SIZE];
   m_buffer_ptr = m_buffer + BUF_SIZE;
   m_buffer_end = m_buffer + BUF_SIZE;
@@ -223,10 +283,8 @@ line_reader::initialize_buffers_gzip()
   m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
   m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer);
 
-  const auto ret =
-    isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-#warning TODO: handle isal_read_gzip_header return value
-  AR_DEBUG_ASSERT(ret == ISAL_DECOMP_OK);
+  auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
+  check_isal_return_code(__func__, result);
 #else
   m_gzip_stream.reset(new z_stream());
   m_gzip_stream->zalloc = nullptr;
@@ -268,15 +326,12 @@ line_reader::refill_buffers_gzip()
   m_gzip_stream->avail_out = BUF_SIZE;
   m_gzip_stream->next_out = reinterpret_cast<uint8_t*>(m_buffer);
 
-  const auto ret = isal_inflate(m_gzip_stream.get());
-#warning TODO: handle isal_inflate return value
-  AR_DEBUG_ASSERT(ret == ISAL_DECOMP_OK);
-
-  switch (m_gzip_stream->block_state) {
-#warning TODO: handle isal_inflate block states
-    case isal_block_state::ISAL_BLOCK_FINISH:
-      isal_inflate_reset(m_gzip_stream.get());
+  if (m_gzip_stream->avail_in &&
+      m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
+    isal_inflate_reset(m_gzip_stream.get());
   }
+
+  check_isal_return_code(__func__, isal_inflate(m_gzip_stream.get()));
 
   m_buffer_ptr = m_buffer;
   m_buffer_end = m_buffer + (BUF_SIZE - m_gzip_stream->avail_out);
@@ -318,7 +373,10 @@ line_reader::close_buffers_gzip()
 {
   if (m_gzip_stream) {
 #if defined(USE_LIBISAL)
-#warning TODO
+    if (m_gzip_stream->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
+      throw_gzip_error(__func__, nullptr, "incomplete gzip stream");
+    }
+
     m_gzip_stream.reset();
     m_gzip_header.reset();
 #else
