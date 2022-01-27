@@ -91,6 +91,9 @@ public:
   /** Returns the number of ambiguous nucleotides in the sequence (N). **/
   size_t count_ns() const;
 
+  /** Returns a measure of sequence complexity in the range [0; 1]. **/
+  double complexity() const;
+
   /** The number of bases trimmmed from the 5p and 3p end respectively. **/
   typedef std::pair<size_t, size_t> ntrimmed;
 

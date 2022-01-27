@@ -135,6 +135,29 @@ fastq::count_ns() const
     std::count(m_sequence.begin(), m_sequence.end(), 'N'));
 }
 
+double
+fastq::complexity() const
+{
+  if (m_sequence.length() < 2) {
+    return 0.0;
+  }
+
+  auto prev = m_sequence.begin();
+  while (prev != m_sequence.end() && *prev == 'N') {
+    ++prev;
+  }
+
+  size_t score = 0;
+  for (auto it = prev + 1; it != m_sequence.end(); ++it) {
+    if (*it != 'N' && *it != *prev) {
+      prev = it;
+      score++;
+    }
+  }
+
+  return score / (m_sequence.length() - 1.0);
+}
+
 fastq::ntrimmed
 fastq::trim_trailing_bases(const bool trim_ns,
                            char low_quality,

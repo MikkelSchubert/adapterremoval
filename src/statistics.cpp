@@ -135,6 +135,8 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , filtered_max_length_bases()
   , filtered_ambiguous_reads()
   , filtered_ambiguous_bases()
+  , filtered_low_complexity_reads()
+  , filtered_low_complexity_bases()
 {}
 
 trimming_statistics&
@@ -157,6 +159,8 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   filtered_max_length_bases += other.filtered_max_length_bases;
   filtered_ambiguous_reads += other.filtered_ambiguous_reads;
   filtered_ambiguous_bases += other.filtered_ambiguous_bases;
+  filtered_low_complexity_reads += other.filtered_low_complexity_reads;
+  filtered_low_complexity_bases += other.filtered_low_complexity_bases;
 
   return *this;
 }

@@ -144,6 +144,9 @@ struct trimming_statistics
   size_t filtered_ambiguous_reads;
   size_t filtered_ambiguous_bases;
 
+  size_t filtered_low_complexity_reads;
+  size_t filtered_low_complexity_bases;
+
   /** Combine statistics objects, e.g. those used by different threads. */
   trimming_statistics& operator+=(const trimming_statistics& other);
 };

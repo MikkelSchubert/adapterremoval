@@ -213,6 +213,7 @@ userconfig::userconfig(const std::string& name,
   , low_quality_score(2)
   , trim_ambiguous_bases(false)
   , max_ambiguous_bases(1000)
+  , min_complexity(0)
   , preserve5p(false)
   , merge(false)
   , merge_conservatively(false)
@@ -453,6 +454,13 @@ userconfig::userconfig(const std::string& name,
                        "LENGTH",
                        "Reads longer than this length are discarded "
                        "following trimming [default: %default].");
+
+  argparser["--min-complexity"] = new argparse::floaty_knob(
+    &min_complexity,
+    "LENGTH",
+    "Filter low-complexity reads after carrying out adapter trimming and "
+    "trimming of low-quality bases. Complexity is a value in the range 0 to 1, "
+    "with 0 being the least complex reads [default: %default]");
 
   argparser.add_header("READ MERGING:");
   argparser["--merge"] = new argparse::flag(

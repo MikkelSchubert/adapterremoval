@@ -281,6 +281,26 @@ TEST_CASE("count_ns", "[fastq::fastq]")
   REQUIRE(fastq("Rec", "NNNNN", "IJIJI").count_ns() == 5);
 }
 
+TEST_CASE("complexity", "[fastq::fastq]")
+{
+  REQUIRE(fastq("c", "").complexity() == 0.0);
+  REQUIRE(fastq("c", "A").complexity() == 0.0);
+  REQUIRE(fastq("c", "AA").complexity() == 0.0);
+  REQUIRE(fastq("c", "AAA").complexity() == 0.0);
+
+  REQUIRE(fastq("c", "N").complexity() == 0.0);
+  REQUIRE(fastq("c", "NA").complexity() == 0.0);
+  REQUIRE(fastq("c", "NAN").complexity() == 0.0);
+
+  REQUIRE(fastq("c", "AT").complexity() == 1.0 / 1.0);
+  REQUIRE(fastq("c", "ACGT").complexity() == 3.0 / 3.0);
+  REQUIRE(fastq("c", "AACGT").complexity() == 3.0 / 4.0);
+  REQUIRE(fastq("c", "ANCGT").complexity() == 3.0 / 4.0);
+  REQUIRE(fastq("c", "AGACCGT").complexity() == 5.0 / 6.0);
+  REQUIRE(fastq("c", "AGACCGGT").complexity() == 5.0 / 7.0);
+  REQUIRE(fastq("c", "AGACCGGTN").complexity() == 5.0 / 8.0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // trim_trailing_bases
 

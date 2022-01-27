@@ -156,6 +156,10 @@ write_report_trimming(const userconfig& config,
                      totals.filtered_ambiguous_reads);
     writer.write_int("filtered_ambiguous_bases",
                      totals.filtered_ambiguous_bases);
+    writer.write_int("filtered_low_complexity_reads",
+                     totals.filtered_low_complexity_reads);
+    writer.write_int("filtered_low_complexity_bases",
+                     totals.filtered_low_complexity_bases);
   }
 }
 

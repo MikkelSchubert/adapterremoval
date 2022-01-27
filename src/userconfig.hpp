@@ -205,6 +205,9 @@ public:
   //! this number following trimming (optionally) are discarded.
   unsigned max_ambiguous_bases;
 
+  //! The minimum complexity score for FASTQ reads (see FASTQ::complexity()).
+  double min_complexity;
+
   //! If true, only the 3p is trimmed for low quality bases (if enabled)
   bool preserve5p;
 

@@ -142,6 +142,12 @@ is_acceptable_read(const userconfig& config,
     return false;
   }
 
+  if (config.min_complexity > 0.0 && seq.complexity() < config.min_complexity) {
+    stats.filtered_low_complexity_reads++;
+    stats.filtered_low_complexity_bases += length;
+    return false;
+  }
+
   return true;
 }
 
