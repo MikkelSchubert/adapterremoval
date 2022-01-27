@@ -235,7 +235,7 @@ VALIDATION_SDIR=./tests/regression
 regression: build/$(PROG)
 	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
 	@$(MKDIR) $(VALIDATION_BDIR)
-	@$(VALIDATION_SDIR)/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
+	@python3 $(VALIDATION_SDIR)/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
 
 
 # Automatic header dependencies for tests
