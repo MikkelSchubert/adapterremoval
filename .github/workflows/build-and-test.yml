@@ -1,0 +1,48 @@
+name: build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: test on ${{ matrix.os }} with ${{ matrix.cxx }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-18.04, macos-11 ]
+        cxx: [ g++, clang++ ]
+        include:
+          - os: ubuntu-18.04
+            vectorize: yes
+          - os: macos-11
+            vectorize: no
+    env:
+      CXX: ${{ matrix.cxx }}
+      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: dependencies
+      if: ${{ matrix.os == 'ubuntu-18.04' }}
+      run: sudo apt-get install zlib1g-dev
+
+    - name: make test
+      run: make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no VECTORIZE=${{ matrix.vectorize }}
+    - name: make regression
+      run: make regression COVERAGE=yes LIBISAL=no LIBDEFLATE=no VECTORIZE=${{ matrix.vectorize }}
+
+    - name: setup coveralls
+      if: ${{ matrix.os == 'ubuntu-18.04' && matrix.cxx == 'g++' }}
+      run: |
+        python3 -m pip install cpp-coveralls
+        coveralls --exclude tests --gcov-options '\-lp'
+
+    - name: examples
+      run: PATH=$PATH:$PWD/build/ make -C examples

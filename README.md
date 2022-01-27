@@ -1,4 +1,4 @@
-# AdapterRemoval [![Travis](https://img.shields.io/travis/MikkelSchubert/adapterremoval/master.svg)](https://app.travis-ci.com/github/MikkelSchubert/adapterremoval) [![Coveralls](https://img.shields.io/coveralls/MikkelSchubert/adapterremoval.svg)](https://coveralls.io/github/MikkelSchubert/adapterremoval)
+# AdapterRemoval [![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![coverage](https://coveralls.io/repos/github/MikkelSchubert/adapterremoval/badge.svg?branch=master)](https://coveralls.io/github/MikkelSchubert/adapterremoval) [![docs](https://readthedocs.org/projects/paleomix/badge/?version=stable)](https://paleomix.readthedocs.io/en/stable/)
 
 AdapterRemoval searches for and removes adapter sequences from High-Throughput
 Sequencing (HTS) data and (optionally) trims low quality bases from the 3' end
