@@ -42,7 +42,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-18.04' && matrix.cxx == 'g++' }}
       run: |
         python3 -m pip install cpp-coveralls
-        coveralls --exclude tests --gcov-options '\-lp'
+        coveralls --exclude tests --gcov-options '\-lpbc'
 
     - name: examples
       run: PATH=$PATH:$PWD/build/ make -C examples
