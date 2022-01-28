@@ -9,8 +9,7 @@ consensus adapter sequence for paired-ended reads, if which this information is
 not available.
 
 For questions, bug reports, and/or suggestions, please use the
-[GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/)
-or contact Mikkel Schubert at [MikkelSch@gmail.com](mailto:MikkelSch@gmail.com).
+[GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/).
 
 If you use AdapterRemoval v2, then please cite the paper:
 
