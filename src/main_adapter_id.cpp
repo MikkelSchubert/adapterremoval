@@ -437,7 +437,7 @@ private:
 
     if (sequence.length() >= KMER_LENGTH) {
       const std::string kmer = sequence.substr(0, KMER_LENGTH);
-      if (!std::count(kmer.begin(), kmer.end(), 'N')) {
+      if (kmer.find('N') == std::string::npos) {
         kmers.at(kmer_to_size_t(kmer)) += 1;
       }
     }
