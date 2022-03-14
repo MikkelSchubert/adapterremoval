@@ -297,7 +297,12 @@ class TestCase(object):
             cwd=root,
         )
 
-        stdout, stderr = proc.communicate()
+        try:
+            stdout, stderr = proc.communicate()
+        except:
+            proc.terminate()
+            raise
+
         stdout = stdout.decode("utf-8")
         stderr = stderr.decode("utf-8")
 
