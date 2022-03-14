@@ -304,26 +304,30 @@ userconfig::userconfig(const std::string& name,
           "explicitly set")
     .bind_str(&out_basename)
     .with_default("your_output");
-  argparser.add("--settings", "FILE")
-    .help("Output file containing information on the parameters used in the "
-          "run as well as overall statistics on the reads after trimming")
+  argparser.add("--out-json", "FILE")
+    .help("Output file containing statistics about trimming, merging, and more "
+          "in JSON format")
+    .deprecated_alias("--settings")
     .bind_str(&out_settings)
     .with_default("{basename}{.sample}.json");
 
-  argparser.add("--output1", "FILE")
+  argparser.add("--out-file1", "FILE")
     .help("Output file containing trimmed mate1 reads")
+    .deprecated_alias("--output1")
     .bind_str(&out_pair_1)
     .with_default("{basename}{.sample}.r1.fastq");
-  argparser.add("--output2", "FILE")
+  argparser.add("--out-file2", "FILE")
     .help("Output file containing trimmed mate 2 reads")
+    .deprecated_alias("--output2")
     .bind_str(&out_pair_2)
     .with_default("{basename}{.sample}.r2.fastq");
-  argparser.add("--singleton", "FILE")
+  argparser.add("--out-singleton", "FILE")
     .help("Output file to which containing paired reads for which the mate "
           "has been discarded")
+    .deprecated_alias("--singleton")
     .bind_str(&out_singleton)
     .with_default("{basename}{.sample}.singleton.fastq");
-  argparser.add("--outputmerged", "FILE")
+  argparser.add("--out-merged", "FILE")
     .help("If --merge is set, contains overlapping mate-pairs which "
           "have been merged into a single read (PE mode) or reads for which "
           "the adapter was identified by a minimum overlap, indicating that "
@@ -333,9 +337,10 @@ userconfig::userconfig(const std::string& name,
     .deprecated_alias("--outputcollapsed")
     .bind_str(&out_merged)
     .with_default("{basename}{.sample}.merged.fastq");
-  argparser.add("--discarded", "FILE")
+  argparser.add("--out-discarded", "FILE")
     .help("Contains reads discarded due to the --minlength, --maxlength or "
           "--maxns options")
+    .deprecated_alias("--discarded")
     .bind_str(&out_discarded)
     .with_default("{basename}{.sample}.discarded.fastq");
 
@@ -760,29 +765,29 @@ userconfig::get_output_filenames() const
     auto& map = files.samples.back();
 
     map.offset(read_type::mate_1) =
-      map.add(get_output_filename("--output1", out1, name));
+      map.add(get_output_filename("--out-file1", out1, name));
 
     if (paired_ended_mode) {
       if (interleaved_output) {
         map.offset(read_type::mate_2) = map.offset(read_type::mate_1);
       } else {
         map.offset(read_type::mate_2) =
-          map.add(get_output_filename("--output2", out2, name));
+          map.add(get_output_filename("--out-file2", out2, name));
       }
     }
 
     if (run_type == ar_command::trim_adapters) {
       map.offset(read_type::discarded_1) = map.offset(read_type::discarded_2) =
-        map.add(get_output_filename("--discarded", out_discarded, name));
+        map.add(get_output_filename("--out-discarded", out_discarded, name));
 
       if (paired_ended_mode) {
         map.offset(read_type::singleton_1) =
-          map.offset(read_type::singleton_2) =
-            map.add(get_output_filename("--singleton", out_singleton, name));
+          map.offset(read_type::singleton_2) = map.add(
+            get_output_filename("--out-singleton", out_singleton, name));
 
         if (merge) {
           map.offset(read_type::merged) =
-            map.add(get_output_filename("--outputmerged", out_merged, name));
+            map.add(get_output_filename("--out-merged", out_merged, name));
         }
       }
     }
