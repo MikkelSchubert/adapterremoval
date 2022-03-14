@@ -29,6 +29,10 @@
 const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
+/** Computes the Levenshtein distance between two strings. */
+size_t
+levenshtein(const std::string& s, const std::string& t);
+
 /**
  * Convert a string to an unsigned integer.
  *

@@ -29,6 +29,25 @@
 #include "testing.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for 'levenshtein'
+
+TEST_CASE("Levenshtein distance", "[strutils::levenshtein]")
+{
+  REQUIRE(levenshtein("", "") == 0);
+  REQUIRE(levenshtein("a", "") == 1);
+  REQUIRE(levenshtein("", "a") == 1);
+  REQUIRE(levenshtein("a", "a") == 0);
+  REQUIRE(levenshtein("ab", "") == 2);
+  REQUIRE(levenshtein("", "ab") == 2);
+  REQUIRE(levenshtein("ab", "c") == 2);
+  REQUIRE(levenshtein("c", "ab") == 2);
+  REQUIRE(levenshtein("b", "abc") == 2);
+  REQUIRE(levenshtein("abc", "b") == 2);
+  REQUIRE(levenshtein("abc", "") == 3);
+  REQUIRE(levenshtein("", "abc") == 3);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for 'toupper'
 
 TEST_CASE("ASCII letters are uppercased", "[strutils::toupper]")

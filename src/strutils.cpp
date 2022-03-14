@@ -28,9 +28,37 @@
 #include <stdint.h>    // for int64_t
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>    // for STDOUT_FILENO
+#include <vector>      // for vector
 
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 #include "strutils.hpp"
+
+size_t
+levenshtein(const std::string& s, const std::string& t)
+{
+  std::vector<size_t> v0(t.size() + 1, 0);
+  std::vector<size_t> v1(t.size() + 1, 0);
+
+  for (size_t i = 0; i < v0.size(); ++i) {
+    v0.at(i) = i;
+  }
+
+  for (size_t i = 0; i < s.size(); ++i) {
+    v1.at(0) = i + 1;
+
+    for (size_t j = 0; j < t.size(); ++j) {
+      const auto del = v0.at(j + 1) + 1;
+      const auto ins = v1.at(j) + 1;
+      const auto sub = s.at(i) == t.at(j) ? v0.at(j) : v0.at(j) + 1;
+
+      v1.at(j + 1) = std::min(del, std::min(ins, sub));
+    }
+
+    std::swap(v0, v1);
+  }
+
+  return v0.back();
+}
 
 unsigned
 str_to_unsigned(const std::string& s)
