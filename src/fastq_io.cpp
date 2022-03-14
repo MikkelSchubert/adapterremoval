@@ -239,8 +239,7 @@ read_fastq::process(analytical_chunk* chunk)
   file_chunk->eof = eof;
   m_eof = eof;
 
-  m_timer.increment(file_chunk->reads_1.size());
-  m_timer.increment(file_chunk->reads_2.size());
+  m_timer.increment(file_chunk->reads_1.size() + file_chunk->reads_2.size());
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(file_chunk));
