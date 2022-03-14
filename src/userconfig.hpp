@@ -285,6 +285,4 @@ private:
 
   //! Sink for deprecated knobs
   unsigned m_deprecated_knobs;
-  //! Sink for deprecated flags
-  bool m_deprecated_flags;
 };

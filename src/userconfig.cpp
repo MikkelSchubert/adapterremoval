@@ -186,368 +186,353 @@ userconfig::userconfig(const std::string& name,
   , run_type(ar_command::trim_adapters)
   , input_files_1()
   , input_files_2()
-  , out_basename("your_output")
-  , out_settings("{basename}{.sample}.json")
+  , out_basename()
+  , out_settings()
   , out_interleaved("{basename}{.sample}.fastq")
-  , out_pair_1("{basename}{.sample}.r1.fastq")
-  , out_pair_2("{basename}{.sample}.r2.fastq")
-  , out_merged("{basename}{.sample}.merged.fastq")
-  , out_discarded("{basename}{.sample}.discarded.fastq")
+  , out_pair_1()
+  , out_pair_2()
+  , out_merged()
+  , out_discarded()
   // FIXME: Support both .1 and .2
-  , out_singleton("{basename}{.sample}.singleton.fastq")
-  , paired_ended_mode(false)
-  , interleaved_input(false)
-  , interleaved_output(false)
+  , out_singleton()
+  , paired_ended_mode()
+  , interleaved_input()
+  , interleaved_output()
   , mate_separator(MATE_SEPARATOR)
-  , min_genomic_length(15)
-  , max_genomic_length(std::numeric_limits<unsigned>::max())
-  , min_adapter_overlap(0)
-  , min_alignment_length(11)
-  , mismatch_threshold(-1.0)
+  , min_genomic_length()
+  , max_genomic_length()
+  , min_adapter_overlap()
+  , min_alignment_length()
+  , mismatch_threshold()
   , io_encoding(FASTQ_ENCODING_33)
-  , quality_max(MAX_PHRED_SCORE_DEFAULT)
-  , trim_fixed_5p(0, 0)
-  , trim_fixed_3p(0, 0)
-  , trim_by_quality(false)
-  , trim_window_length(std::numeric_limits<double>::quiet_NaN())
-  , low_quality_score(2)
-  , trim_ambiguous_bases(false)
-  , max_ambiguous_bases(1000)
-  , min_complexity(0)
-  , preserve5p(false)
-  , merge(false)
-  , merge_conservatively(false)
-  , shift(2)
-  , max_threads(1)
-  , gzip(false)
-  , gzip_stream(false)
-  , gzip_level(6)
-  , barcode_mm(0)
-  , barcode_mm_r1(0)
-  , barcode_mm_r2(0)
+  , quality_max()
+  , trim_fixed_5p()
+  , trim_fixed_3p()
+  , trim_by_quality()
+  , trim_window_length()
+  , low_quality_score()
+  , trim_ambiguous_bases()
+  , max_ambiguous_bases()
+  , min_complexity()
+  , preserve5p()
+  , merge()
+  , merge_conservatively()
+  , shift()
+  , max_threads()
+  , gzip()
+  , gzip_stream()
+  , gzip_level()
+  , barcode_mm()
+  , barcode_mm_r1()
+  , barcode_mm_r2()
   , adapters()
-  , report_sample_rate(0.1)
+  , report_sample_rate()
   , argparser(name, version, help)
-  , adapter_1("AGATCGGAAGAGCACACGTCTGAACTCCAGTCA")
-  , adapter_2("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT")
+  , adapter_1()
+  , adapter_2()
   , adapter_list()
   , barcode_list()
-  , quality_input_base("33")
-  , mate_separator_str(1, MATE_SEPARATOR)
-  , interleaved(false)
+  , quality_input_base()
+  , mate_separator_str()
+  , interleaved()
   , trim5p()
   , trim3p()
   , m_runtime()
   , m_deprecated_knobs()
-  , m_deprecated_flags()
 {
-  argparser["--file1"] = new argparse::many(
-    &input_files_1,
-    "FILE [FILE ...]",
-    "Input files containing mate 1 reads or single-ended reads; "
-    "one or more files may be listed [REQUIRED].");
-  argparser["--file2"] = new argparse::many(
-    &input_files_2,
-    "[FILE ...]",
-    "Input files containing mate 2 reads; if used, then the same "
-    "number of files as --file1 must be listed [OPTIONAL].");
+  argparser.add("--file1", "FILE [FILE ...]")
+    .help("Input files containing mate 1 reads or single-ended reads; one or "
+          "more files may be listed [REQUIRED]")
+    .bind_vec(&input_files_1);
+  argparser.add("--file2", "[FILE ...]")
+    .help("Input files containing mate 2 reads; if used, then the same number "
+          "of files as --file1 must be listed [OPTIONAL]")
+    .bind_vec(&input_files_2);
 
-  argparser["--identify-adapters"] = new argparse::flag(
-    nullptr,
-    "Attempt to identify the adapter pair of PE reads, by searching "
-    "for overlapping mate reads [default: %default].");
-  argparser["--threads"] = new argparse::knob(
-    &max_threads, "THREADS", "Maximum number of threads [default: %default]");
+  argparser.add("--identify-adapters")
+    .help("Attempt to identify the adapter pair of PE reads, by searching for "
+          "overlapping mate reads")
+    .conflicts("--demultiplex-only")
+    .conflicts("--report-only");
+
+  argparser.add("--threads", "N")
+    .help("Maximum number of threads")
+    .bind_uint(&max_threads)
+    .with_default(1);
 
   argparser.add_header("FASTQ OPTIONS:");
-  argparser["--qualitybase"] = new argparse::any(
-    &quality_input_base,
-    "BASE",
-    "Quality base used to encode Phred scores in input; either 33 or 64 "
-    "[default: %default].");
-  argparser["--qualitymax"] = new argparse::knob(
-    &quality_max,
-    "BASE",
-    "Specifies the maximum Phred score expected in input files, and "
-    "used when writing output. ASCII encoded values are limited to "
-    "the characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning "
-    "that possible scores are 0 - 93 with offset 33, and 0 - 62 "
-    "for offset 64 scores [default: %default].");
-  argparser["--mate-separator"] = new argparse::any(
-    &mate_separator_str,
-    "CHAR",
-    "Character separating the mate number (1 or 2) from the read name "
-    "in FASTQ records [default: '%default'].");
+  argparser.add("--qualitybase", "BASE")
+    .help("Quality base used to encode Phred scores in input; either 33 or 64")
+    .bind_str(&quality_input_base)
+    .with_default("33");
 
-  argparser["--interleaved"] = new argparse::flag(
-    &interleaved,
-    "This option enables both the --interleaved-input option and the "
-    "--interleaved-output option [default: %default].");
-  argparser["--interleaved-input"] = new argparse::flag(
-    &interleaved_input,
-    "The (single) input file provided contains both the mate 1 and "
-    "mate 2 reads, one pair after the other, with one mate 1 reads "
-    "followed by one mate 2 read. This option is implied by the "
-    "--interleaved option [default: %default].");
-  argparser["--interleaved-output"] = new argparse::flag(
-    &interleaved_output,
-    "If set, trimmed paired-end reads are written to a single file "
-    "containing mate 1 and mate 2 reads, one pair after the other. "
-    "This option is implied by the --interleaved option [default: "
-    "%default].");
+  argparser.add("--qualitymax", "N")
+    .help("Specifies the maximum Phred score expected in input files, and used "
+          "when writing output. ASCII encoded values are limited to the "
+          "characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning that "
+          "possible scores are 0 - 93 with offset 33, and 0 - 62 for offset 64 "
+          "scores")
+    .bind_uint(&quality_max)
+    .with_default(MAX_PHRED_SCORE_DEFAULT);
+  argparser.add("--mate-separator", "CHAR")
+    .help("Character separating the mate number (1 or 2) from the read name in "
+          "FASTQ records")
+    .bind_str(&mate_separator_str)
+    .with_default("/");
+
+  argparser.add("--interleaved")
+    .help("This option enables both the --interleaved-input option and the "
+          "--interleaved-output option")
+    .conflicts("--file2")
+    .bind_bool(&interleaved);
+  argparser.add("--interleaved-input")
+    .help("The (single) input file provided contains both the mate 1 and mate "
+          "2 reads, one pair after the other, with one mate 1 reads followed "
+          "by one mate 2 read. This option is implied by the --interleaved "
+          "option")
+    .conflicts("--file2")
+    .bind_bool(&interleaved_input);
+  argparser.add("--interleaved-output")
+    .help("If set, trimmed paired-end reads are written to a single file "
+          "containing mate 1 and mate 2 reads, one pair after the other. This "
+          "option is implied by the --interleaved option")
+    .bind_bool(&interleaved_output);
 
   argparser.add_header("OUTPUT FILES:");
-  argparser["--basename"] = new argparse::any(
-    &out_basename,
-    "BASENAME",
-    "Default prefix for all output files for which no filename was "
-    "explicitly set [default: %default].");
-  argparser["--settings"] = new argparse::any(
-    &out_settings,
-    "FILE",
-    "Output file containing information on the parameters used in the "
-    "run as well as overall statistics on the reads after trimming "
-    "[default: %default]");
-  argparser["--output1"] = new argparse::any(
-    &out_pair_1,
-    "FILE",
-    "Output file containing trimmed mate1 reads [default: %default]");
-  argparser["--output2"] = new argparse::any(
-    &out_pair_2,
-    "FILE",
-    "Output file containing trimmed mate 2 reads [default: %default]");
-  argparser["--singleton"] = new argparse::any(
-    &out_singleton,
-    "FILE",
-    "Output file to which containing paired reads for which the mate "
-    "has been discarded [default: %default]");
-  argparser["--outputmerged"] = new argparse::any(
-    &out_merged,
-    "FILE",
-    "If --merge is set, contains overlapping mate-pairs which "
-    "have been merged into a single read (PE mode) or reads for which "
-    "the adapter was identified by a minimum overlap, indicating that "
-    "the entire template molecule is present. This does not include "
-    "which have subsequently been trimmed due to low-quality or "
-    "ambiguous nucleotides [default: %default]");
-  argparser["--discarded"] = new argparse::any(
-    &out_discarded,
-    "FILE",
-    "Contains reads discarded due to the --minlength, --maxlength or "
-    "--maxns options [default: %default]");
+  argparser.add("--basename", "BASENAME")
+    .help("Default prefix for all output files for which no filename was "
+          "explicitly set")
+    .bind_str(&out_basename)
+    .with_default("your_output");
+  argparser.add("--settings", "FILE")
+    .help("Output file containing information on the parameters used in the "
+          "run as well as overall statistics on the reads after trimming")
+    .bind_str(&out_settings)
+    .with_default("{basename}{.sample}.json");
+
+  argparser.add("--output1", "FILE")
+    .help("Output file containing trimmed mate1 reads")
+    .bind_str(&out_pair_1)
+    .with_default("{basename}{.sample}.r1.fastq");
+  argparser.add("--output2", "FILE")
+    .help("Output file containing trimmed mate 2 reads")
+    .bind_str(&out_pair_2)
+    .with_default("{basename}{.sample}.r2.fastq");
+  argparser.add("--singleton", "FILE")
+    .help("Output file to which containing paired reads for which the mate "
+          "has been discarded")
+    .bind_str(&out_singleton)
+    .with_default("{basename}{.sample}.singleton.fastq");
+  argparser.add("--outputmerged", "FILE")
+    .help("If --merge is set, contains overlapping mate-pairs which "
+          "have been merged into a single read (PE mode) or reads for which "
+          "the adapter was identified by a minimum overlap, indicating that "
+          "the entire template molecule is present. This does not include "
+          "which have subsequently been trimmed due to low-quality or "
+          "ambiguous nucleotides")
+    .deprecated_alias("--outputcollapsed")
+    .bind_str(&out_merged)
+    .with_default("{basename}{.sample}.merged.fastq");
+  argparser.add("--discarded", "FILE")
+    .help("Contains reads discarded due to the --minlength, --maxlength or "
+          "--maxns options")
+    .bind_str(&out_discarded)
+    .with_default("{basename}{.sample}.discarded.fastq");
 
   argparser.add_header("OUTPUT COMPRESSION:");
-  argparser["--gzip"] =
-    new argparse::flag(&gzip, "Enable gzip compression [default: %default]");
-  argparser["--gzip-stream"] = new argparse::flag(
-    &gzip_stream,
-    "Compress output using GZip streams instead of compressing independent "
-    "blocks of 64kb data. Block based compression "
+  argparser.add("--gzip")
+    .help("Enable block-based gzip-compression. This allows for "
 #ifdef USE_LIBDEFLATE
-    "uses libdeflate for greater throughput and "
+          "faster compression using libdeflate and "
 #endif
-    "allows even greater throughput in threaded mode at the cost of about 3% "
-    "greater file size and possible incompatibility with a few programs. "
-    "Implies --gzip [default: %default]");
-  argparser["--gzip-level"] = new argparse::knob(
-    &gzip_level, "LEVEL", "Compression level, 0 - 9 [default: %default]");
+          "greater throughput in multi-threaded mode at the cost of about 3% "
+          "greater file sizes and possible incompatibility with some programs")
+    .bind_bool(&gzip);
+  argparser.add("--gzip-stream")
+    .help("Enable gzip-compression using a single GZip streams instead of "
+          "compressing independent blocks of 64kb data (see --gzip). This may "
+          "be required for compatibility in some cases")
+    .bind_bool(&gzip_stream);
+  argparser.add("--gzip-level", "LEVEL")
+    .help("GZip compression level, 0 - 9")
+    .bind_uint(&gzip_level)
+    .with_default(6);
 
   argparser.add_header("TRIMMING SETTINGS:");
-  argparser["--adapter1"] =
-    new argparse::any(&adapter_1,
-                      "SEQUENCE",
-                      "Adapter sequence expected to be found in mate 1 reads "
-                      "[default: %default].");
-  argparser["--adapter2"] =
-    new argparse::any(&adapter_2,
-                      "SEQUENCE",
-                      "Adapter sequence expected to be found in mate 2 reads "
-                      "[default: %default].");
-  argparser["--adapter-list"] = new argparse::any(
-    &adapter_list,
-    "FILENAME",
-    "Read table of white-space separated adapters pairs, used as if "
-    "the first column was supplied to --adapter1, and the second "
-    "column was supplied to --adapter2; only the first adapter in "
-    "each pair is required SE trimming mode [default: %default].");
+  argparser.add("--adapter1", "SEQUENCE")
+    .help("Adapter sequence expected to be found in mate 1 reads")
+    .bind_str(&adapter_1)
+    .with_default("AGATCGGAAGAGCACACGTCTGAACTCCAGTCA");
+  argparser.add("--adapter2", "SEQUENCE")
+    .help("Adapter sequence expected to be found in mate 2 reads")
+    .bind_str(&adapter_2)
+    .with_default("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT");
+  argparser.add("--adapter-list", "FILENAME")
+    .help("Read table of white-space separated adapters pairs, used as if the "
+          "first column was supplied to --adapter1, and the second column was "
+          "supplied to --adapter2; only the first adapter in each pair is "
+          "required SE trimming mode")
+    .bind_str(&adapter_list);
 
-  argparser.add_seperator();
-  argparser["--minadapteroverlap"] = new argparse::knob(
-    &min_adapter_overlap,
-    "LENGTH",
-    "In single-end mode, reads are only trimmed if the overlap "
-    "between read and the adapter is at least X bases long, not "
-    "counting ambiguous nucleotides (N); this is independent of the "
-    "--minalignmentlength when using --merge, allowing a "
-    "conservative selection of putative complete inserts while "
-    "ensuring that all possible adapter contamination is trimmed "
-    "[default: %default].");
-  argparser["--mm"] = new argparse::floaty_knob(
-    &mismatch_threshold,
-    "MISMATCH_RATE",
-    "Max error-rate when aligning reads and/or adapters. If > 1, the "
-    "max error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults "
-    "are used, otherwise the user-supplied value is used directly "
-    "[default: 1/3 for trimming; 1/10 when identifying adapters].");
-  argparser["--shift"] = new argparse::knob(
-    &shift,
-    "N",
-    "Consider alignments where up to N nucleotides are missing from "
-    "the 5' termini [default: %default].");
+  argparser.add_separator();
+  argparser.add("--minadapteroverlap", "LENGTH")
+    .help("In single-end mode, reads are only trimmed if the overlap between "
+          "read and the adapter is at least X bases long, not counting "
+          "ambiguous nucleotides (N); this is independent of the "
+          "--minalignmentlength when using --merge, allowing a conservative "
+          "selection of putative complete inserts while ensuring that all "
+          "possible adapter contamination is trimmed")
+    .bind_uint(&min_adapter_overlap)
+    .with_default(0);
+  argparser.add("--mm", "MISMATCH_RATE")
+    .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
+          "error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults are "
+          "used, otherwise the user-supplied value is used directly [default: "
+          "1/3 for trimming; 1/10 when identifying adapters]")
+    .bind_double(&mismatch_threshold)
+    .with_default(-1.0);
+  argparser.add("--shift", "N")
+    .help("Consider alignments where up to N nucleotides are missing from the "
+          "5' termini")
+    .bind_uint(&shift)
+    .with_default(2);
 
-  argparser.add_seperator();
-  argparser["--trim5p"] = new argparse::many(
-    &trim5p,
-    "N [N]",
-    "Trim the 5' of reads by a fixed amount after removing adapters, "
-    "but before carrying out quality based trimming. Specify one "
-    "value to trim mate 1 and mate 2 reads the same amount, or two "
-    "values separated by a space to trim each mate different amounts "
-    "[default: no trimming].");
-  argparser["--trim3p"] = new argparse::many(
-    &trim3p, "N [N]", "Trim the 3' of reads by a fixed amount. See --trim5p.");
+  argparser.add_separator();
+  argparser.add("--trim5p", "N [N]")
+    .help("Trim the 5' of reads by a fixed amount after removing adapters, "
+          "but before carrying out quality based trimming. Specify one value "
+          "to trim mate 1 and mate 2 reads the same amount, or two values "
+          "separated by a space to trim each mate different amounts [default: "
+          "no trimming]")
+    .bind_vec(&trim5p);
+  argparser.add("--trim3p", "N [N]")
+    .help("Trim the 3' of reads by a fixed amount. See --trim5p")
+    .bind_vec(&trim3p);
 
-  argparser["--trimns"] =
-    new argparse::flag(&trim_ambiguous_bases,
-                       "If set, trim ambiguous bases (N) at 5'/3' termini "
-                       "[default: %default]");
-  argparser["--maxns"] = new argparse::knob(
-    &max_ambiguous_bases,
-    "MAX",
-    "Reads containing more ambiguous bases (N) than this number after "
-    "trimming are discarded [default: %default].");
-  argparser["--trimqualities"] = new argparse::flag(
-    &trim_by_quality,
-    "If set, trim bases at 5'/3' termini with quality scores <= to "
-    "--minquality value [default: %default]");
-  argparser["--trimwindows"] = new argparse::floaty_knob(
-    &trim_window_length,
-    "INT",
-    "If set, quality trimming will be carried out using window based "
-    "approach, where windows with an average quality less than "
-    "--minquality will be trimmed. If >= 1, this value will be used "
-    "as the window size. If the value is < 1, the value will be "
-    "multiplied with the read length to determine a window size per "
-    "read. If the resulting window size is 0 or larger than the read "
-    "length, the read length is used as the window size. This option "
-    "implies --trimqualities [default: %default].");
-  argparser["--minquality"] =
-    new argparse::knob(&low_quality_score,
-                       "PHRED",
-                       "Inclusive minimum; see --trimqualities for details "
-                       "[default: %default]");
-  argparser["--preserve5p"] = new argparse::flag(
-    &preserve5p,
-    "If set, bases at the 5p will not be trimmed by --trimns, "
-    "--trimqualities, and --trimwindows. Merged reads will "
-    "not be quality trimmed when this option is enabled "
-    "[default: 5p bases are trimmed]");
+  argparser.add("--trimns")
+    .help("If set, trim ambiguous bases (N) at 5'/3' termini")
+    .bind_bool(&trim_ambiguous_bases);
+  argparser.add("--maxns", "MAX")
+    .help("Reads containing more ambiguous bases (N) than this number after "
+          "trimming are discarded")
+    .bind_uint(&max_ambiguous_bases)
+    .with_default(1000);
+  argparser.add("--trimqualities")
+    .help("If set, trim bases at 5'/3' termini with quality scores <= to "
+          "--minquality value")
+    .bind_bool(&trim_by_quality);
+  argparser.add("--trimwindows", "SIZE")
+    .help("If set, quality trimming will be carried out using window based "
+          "approach, where windows with an average quality less than "
+          "--minquality will be trimmed. If >= 1, this value will be used "
+          "as the window size. If the value is < 1, the value will be "
+          "multiplied with the read length to determine a window size per "
+          "read. If the resulting window size is 0 or larger than the read "
+          "length, the read length is used as the window size. This option "
+          "implies --trimqualities")
+    .bind_double(&trim_window_length)
+    .with_default(-1.0);
+  argparser.add("--minquality", "PHRED")
+    .help("Inclusive minimum; see --trimqualities for details")
+    .bind_uint(&low_quality_score)
+    .with_default(2);
+  argparser.add("--preserve5p")
+    .help("If set, bases at the 5p will not be trimmed by --trimns, "
+          "--trimqualities, and --trimwindows. Merged reads will not be "
+          "quality trimmed when this option is enabled "
+          "[default: 5p bases are trimmed]")
+    .bind_bool(&preserve5p);
 
-  argparser.add_seperator();
-  argparser["--minlength"] =
-    new argparse::knob(&min_genomic_length,
-                       "LENGTH",
-                       "Reads shorter than this length are discarded "
-                       "following trimming [default: %default].");
-  argparser["--maxlength"] =
-    new argparse::knob(&max_genomic_length,
-                       "LENGTH",
-                       "Reads longer than this length are discarded "
-                       "following trimming [default: %default].");
+  argparser.add_separator();
+  argparser.add("--minlength", "LENGTH")
+    .help("Reads shorter than this length are discarded following trimming")
+    .bind_uint(&min_genomic_length)
+    .with_default(15);
+  argparser.add("--maxlength", "LENGTH")
+    .help("Reads longer than this length are discarded following trimming")
+    .bind_uint(&max_genomic_length)
+    .with_default(std::numeric_limits<unsigned>::max());
 
-  argparser["--min-complexity"] = new argparse::floaty_knob(
-    &min_complexity,
-    "LENGTH",
-    "Filter low-complexity reads after carrying out adapter trimming and "
-    "trimming of low-quality bases. Complexity is a value in the range 0 to 1, "
-    "with 0 being the least complex reads [default: %default]");
+  argparser.add("--min-complexity", "X")
+    .help("Filter low-complexity reads after carrying out adapter trimming and "
+          "trimming of low-quality bases. Complexity is a value in the range 0 "
+          "to 1, with 0 being the least complex reads")
+    .bind_double(&min_complexity)
+    .with_default(0);
 
   argparser.add_header("READ MERGING:");
-  argparser["--merge"] = new argparse::flag(
-    &merge,
-    "When set, paired ended read alignments of --minalignmentlength or more "
-    "bases are merged into a single consensus sequence. Merged reads are "
-    "written to basename.merged by default. Has no effect in single-end "
-    "mode [default: %default].");
-  argparser["--merge-conservatively"] = new argparse::flag(
-    &merge_conservatively,
-    "Enables a more conservative merging algorithm inspired by fastq-join, "
-    "in which the higher quality score is picked for matching bases and the "
-    "max score minus the min score is picked for mismatching bases. For more "
-    "details, see the documentation. Setting this option also sets --merge "
-    "[default: %default].");
-  argparser["--minalignmentlength"] = new argparse::knob(
-    &min_alignment_length,
-    "LENGTH",
-    "If --merge is set, paired reads must overlap at least this "
-    "number of bases to be merged, and single-ended reads must "
-    "overlap at least this number of bases with the adapter to be "
-    "considered complete template molecules [default: %default].");
-  argparser["--seed"] = new argparse::knob(&m_deprecated_knobs, "", "HIDDEN");
+  argparser.add("--merge")
+    .help("When set, paired ended read alignments of --minalignmentlength or "
+          "more bases are merged into a single consensus sequence. Merged "
+          "reads are written to basename.merged by default. Has no effect "
+          "in single-end mode")
+    .deprecated_alias("--collapse")
+    .bind_bool(&merge);
+  argparser.add("--merge-conservatively")
+    .help("Enables a more conservative merging algorithm inspired by "
+          "fastq-join, in which the higher quality score is picked for "
+          "matching bases and the max score minus the min score is picked for "
+          "mismatching bases. For more details, see the documentation. Setting "
+          "this option also sets --merge")
+    .deprecated_alias("--collapse-conservatively")
+    .bind_bool(&merge_conservatively);
+  argparser.add("--minalignmentlength", "LENGTH")
+    .help("If --merge is set, paired reads must overlap at least this "
+          "number of bases to be merged, and single-ended reads must "
+          "overlap at least this number of bases with the adapter to be "
+          "considered complete template molecules")
+    .bind_uint(&min_alignment_length)
+    .with_default(11);
 
   argparser.add_header("DEMULTIPLEXING:");
-  argparser["--barcode-list"] = new argparse::any(
-    &barcode_list,
-    "FILENAME",
-    "List of barcodes or barcode pairs for single or double-indexed "
-    "demultiplexing. Note that both indexes should be specified for "
-    "both single-end and paired-end trimming, if double-indexed "
-    "multiplexing was used, in order to ensure that the demultiplexed "
-    "reads can be trimmed correctly [default: %default].");
-  argparser["--barcode-mm"] = new argparse::knob(
-    &barcode_mm,
-    "N",
-    "Maximum number of mismatches allowed when counting mismatches in "
-    "both the mate 1 and the mate 2 barcode for paired reads.");
-  argparser["--barcode-mm-r1"] = new argparse::knob(
-    &barcode_mm_r1,
-    "N",
-    "Maximum number of mismatches allowed for the mate 1 barcode; "
-    "if not set, this value is equal to the '--barcode-mm' value; "
-    "cannot be higher than the '--barcode-mm value'.");
-  argparser["--barcode-mm-r2"] = new argparse::knob(
-    &barcode_mm_r2,
-    "N",
-    "Maximum number of mismatches allowed for the mate 2 barcode; "
-    "if not set, this value is equal to the '--barcode-mm' value; "
-    "cannot be higher than the '--barcode-mm value'.");
-  argparser["--demultiplex-only"] = new argparse::flag(
-    nullptr,
-    "Only carry out demultiplexing using the list of barcodes "
-    "supplied with --barcode-list. No other processing is done.");
+  argparser.add("--barcode-list", "FILE")
+    .help("List of barcodes or barcode pairs for single or double-indexed "
+          "demultiplexing. Note that both indexes should be specified for "
+          "both single-end and paired-end trimming, if double-indexed "
+          "multiplexing was used, in order to ensure that the demultiplexed "
+          "reads can be trimmed correctly")
+    .bind_str(&barcode_list);
+  argparser.add("--barcode-mm", "N")
+    .help("Maximum number of mismatches allowed when counting mismatches in "
+          "both the mate 1 and the mate 2 barcode for paired reads")
+    .bind_uint(&barcode_mm)
+    .with_default(0);
+  argparser.add("--barcode-mm-r1", "N")
+    .help("Maximum number of mismatches allowed for the mate 1 barcode. "
+          "Cannot be higher than the --barcode-mm value [default: same value "
+          "as --barcode-mm]")
+    .bind_uint(&barcode_mm_r1)
+    .with_default(0);
+  argparser.add("--barcode-mm-r2", "N")
+    .help("Maximum number of mismatches allowed for the mate 2 barcode. "
+          "Cannot be higher than the --barcode-mm value [default: same value "
+          "as --barcode-mm]")
+    .bind_uint(&barcode_mm_r2)
+    .with_default(0);
+  argparser.add("--demultiplex-only")
+    .help("Only carry out demultiplexing using the list of barcodes "
+          "supplied with --barcode-list. No other processing is done")
+    .requires("--barcode-list")
+    .conflicts("--identify-adapters")
+    .conflicts("--report-only");
 
   argparser.add_header("REPORTS:");
-  argparser["--report-only"] = new argparse::flag(
-    nullptr,
-    "Write a report of the input data without performing any processing of the "
-    "FASTQ reads. To generate a post-trimming/demultiplexing report without "
-    "writing FASTQ files, set --output options to /dev/null.");
+  argparser.add("--report-only")
+    .help("Write a report of the input data without performing any processing "
+          "of the FASTQ reads. Report-only post-trimming/demultiplexing runs "
+          "can be accomplished by setting --output options to /dev/null")
+    .conflicts("--demultiplex-only")
+    .conflicts("--identify-adapters");
 
-  argparser["--report-sample-rate"] = new argparse::floaty_knob(
-    &report_sample_rate,
-    "X",
-    "Fraction of reads to use when generating base quality/composition curves "
-    "for trimming reports. Using all data (--report-sample-nth 1.0) results in "
-    "an about 10-30% decrease in throughput depending on settings [%default]");
+  argparser.add("--report-sample-rate", "X")
+    .help("Fraction of reads to use when generating base quality/composition "
+          "curves for trimming reports. Using all data (--report-sample-nth "
+          "1.0) results in an 10-30% decrease in throughput")
+    .bind_double(&report_sample_rate)
+    .with_default(0.1);
 
-  // Deprecated command-line options
-  argparser["--collapse-deterministic"] =
-    new argparse::flag(&m_deprecated_flags, "HIDDEN");
-
-  // Aliases for backwards compatibility
-  argparser.create_alias("--merge", "--collapse");
-  argparser.create_alias("--merge-conservatively", "--collapse-conservatively");
-  argparser.create_alias("--outputmerged", "--outputcollapsed");
-
-  // Required options
-  argparser.option_requires("--demultiplex-only", "--barcode-list");
-
-  // Probibited combinations
-  argparser.option_prohibits("--demultiplex-only", "--identify-adapters");
-  argparser.option_prohibits("--demultiplex-only", "--report-only");
-  argparser.option_prohibits("--identify-adapters", "--report-only");
-  argparser.option_prohibits("--interleaved", "--file2");
-  argparser.option_prohibits("--interleaved-input", "--file2");
+  argparser.add("--collapse-deterministic").deprecated();
+  argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
 }
 
 argparse::parse_result
@@ -598,7 +583,7 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   } else if (trim_window_length >= 0) {
     trim_by_quality = true;
-  } else if (trim_window_length < 0.0) {
+  } else if (argparser.is_set("--trimwindows")) {
     std::cerr << "Error: Invalid value for --trimwindows ("
               << trim_window_length << "); value must be >= 0." << std::endl;
     return argparse::parse_result::error;

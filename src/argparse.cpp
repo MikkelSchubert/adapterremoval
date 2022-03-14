@@ -23,7 +23,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>   // for min, copy, max, replace
-#include <cmath>       // for isnan
 #include <iomanip>     // for operator<<, setw
 #include <iostream>    // for operator<<, basic_ostream, endl, cerr, ostream
 #include <set>         // for set
@@ -38,7 +37,7 @@
 
 namespace argparse {
 
-typedef std::set<consumer_ptr> consumer_set;
+const size_t parsing_failed = static_cast<size_t>(-1);
 
 /** Returns the number of columns available in the terminal. */
 size_t
@@ -50,109 +49,122 @@ get_terminal_columns()
     return 80;
   }
 
-  return std::min<size_t>(120, std::max<size_t>(80, params.ws_col));
+  return std::min<size_t>(88, std::max<size_t>(50, params.ws_col));
 }
+
+/** Detect similar arguments based on prefixes or max edit distance. */
+bool
+is_similar_argument(const std::string& user,
+                    const std::string& ref,
+                    size_t max_distance)
+{
+  const auto overlap = std::min(user.size(), ref.size());
+  if (overlap == user.size() && user == ref.substr(0, overlap)) {
+    return true;
+  }
+
+  const auto diff = std::max(user.size(), ref.size()) - overlap;
+  if (diff <= max_distance && levenshtein(user, ref) <= max_distance) {
+    return true;
+  }
+
+  return false;
+}
+
+std::string
+escape(const std::string& s)
+{
+  std::string out;
+  out.append("\"");
+  for (auto c : s) {
+    switch (c) {
+      case '\\':
+        out.push_back('\\');
+        break;
+      case '\"':
+        out.append("\\\"");
+        break;
+      default:
+        out.push_back(c);
+    }
+  }
+
+  out.append("\"");
+
+  return out;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 parser::parser(const std::string& name,
                const std::string& version,
                const std::string& help)
-  : m_keys()
-  , m_parsers()
-  , m_key_requires()
-  , m_key_prohibits()
+  : m_args()
+  , m_keys()
   , m_name(name)
   , m_version(version)
   , m_help(help)
+  , m_stream(&std::cerr)
+  , m_terminal_width(get_terminal_columns())
 {
   add_header("OPTIONS:");
 
-  // Built-in arguments (aliases are not shown!)
-  (*this)["--help"] = new flag(nullptr, "Display this message.");
-  create_alias("--help", "-h");
-
-  (*this)["--version"] = new flag(nullptr, "Print the version string.");
-  create_alias("--version", "-v");
-
-  add_seperator();
-}
-
-parser::~parser()
-{
-  // Track set of unique pointers, to handle parsers assigned to multiple keys.
-  consumer_set pointers;
-  for (const auto& parser : m_parsers) {
-    if (pointers.insert(parser.second).second) {
-      delete parser.second;
-    }
-  }
-}
-
-consumer_ptr&
-parser::operator[](const std::string& key)
-{
-  AR_DEBUG_ASSERT(!key.empty());
-  if (m_parsers.find(key) == m_parsers.end()) {
-    m_keys.push_back(key_pair(true, key));
-  }
-
-  return m_parsers[key];
-}
-
-const consumer_ptr&
-parser::at(const std::string& key) const
-{
-  return m_parsers.at(key);
+  // Built-in arguments
+  add("-h").alias("--help").help("Display this message.");
+  add("-v").alias("--version").help("Print the version string.");
+  add_separator();
 }
 
 parse_result
-parser::parse_args(int argc, char* argv[])
+parser::parse_args(int argc, char const* const* argv)
 {
+  update_argument_map();
   const string_vec argvec(argv + 1, argv + argc);
 
   string_vec_citer it = argvec.begin();
   while (it != argvec.end()) {
-    consumer_map::iterator parser = find_argument(*it);
-    if (parser != m_parsers.end()) {
-      if (parser->second->is_set()) {
-        std::cerr << "WARNING: Command-line option " << parser->first
-                  << " has been specified more than once." << std::endl;
-      }
+    auto argument = find_argument(*it);
+    if (argument) {
+      const size_t consumed = argument->parse(it, argvec.end());
 
-      const size_t consumed = parser->second->consume(++it, argvec.end());
-
-      if (consumed == static_cast<size_t>(-1)) {
-        if (it != argvec.end()) {
-          std::cerr << "ERROR: Invalid value for " << *(it - 1) << ": '" << *it
-                    << "'" << std::endl;
+      if (consumed == parsing_failed) {
+        if (it + 1 != argvec.end()) {
+          *m_stream << "ERROR: Invalid value for " << *it << ": "
+                    << escape(*(it + 1)) << std::endl;
         } else {
-          std::cerr << "ERROR: No value supplied for " << *(it - 1)
-                    << std::endl;
+          *m_stream << "ERROR: No value supplied for " << *it << std::endl;
         }
 
         return parse_result::error;
       }
 
-      it += static_cast<consumer_map::iterator::difference_type>(consumed);
+      it += static_cast<string_vec::iterator::difference_type>(consumed);
     } else {
       return parse_result::error;
     }
   }
 
   parse_result result = parse_result::ok;
-  for (const auto& pair : m_key_requires) {
-    if (is_set(pair.first) && !is_set(pair.second)) {
-      result = parse_result::error;
-      std::cerr << "ERROR: Option " << pair.second << " is required when using "
-                << pair.first << std::endl;
-    }
-  }
+  for (const auto& it : m_args) {
+    if (it.argument && it.argument->is_set()) {
+      const auto& key = it.argument->key();
 
-  for (const auto& pair : m_key_prohibits) {
-    if (is_set(pair.first) && is_set(pair.second)) {
-      result = parse_result::error;
-      std::cerr << "ERROR: Option " << pair.second
-                << " cannot be used together with option " << pair.first
-                << std::endl;
+      for (const auto& requirement : it.argument->requires()) {
+        if (!is_set(requirement)) {
+          result = parse_result::error;
+          *m_stream << "ERROR: Option " << requirement << " is required when "
+                    << "using option " << key << std::endl;
+        }
+      }
+
+      for (const auto& prohibited : it.argument->conflicts()) {
+        if (is_set(prohibited)) {
+          result = parse_result::error;
+          *m_stream << "ERROR: Option " << prohibited
+                    << " cannot be used together with option " << key
+                    << std::endl;
+        }
+      }
     }
   }
 
@@ -170,244 +182,551 @@ parser::parse_args(int argc, char* argv[])
 bool
 parser::is_set(const std::string& key) const
 {
-  const consumer_map::const_iterator it = m_parsers.find(key);
-  AR_DEBUG_ASSERT(it != m_parsers.end());
+  const auto it = m_keys.find(key);
+  AR_DEBUG_ASSERT(it != m_keys.end());
 
   return it->second->is_set();
 }
 
-void
-parser::add_seperator()
+argument&
+parser::add(const std::string& name, const std::string& metavar)
 {
-  m_keys.push_back(key_pair(false, std::string()));
+  argument_ptr ptr = argument_ptr(new argument(name, metavar));
+  m_args.push_back({ std::string(), ptr });
+  ptr->set_ostream(m_stream);
+
+  return *ptr;
+}
+
+void
+parser::add_separator()
+{
+  m_args.push_back({ std::string(), argument_ptr() });
 }
 
 void
 parser::add_header(const std::string& header)
 {
-  add_seperator();
-  m_keys.push_back(key_pair(false, header));
-}
-
-void
-parser::create_alias(const std::string& key, const std::string& alias)
-{
-  AR_DEBUG_ASSERT(m_parsers.find(alias) == m_parsers.end());
-
-  m_parsers[alias] = m_parsers.at(key);
-}
-
-void
-parser::option_requires(const std::string& key, const std::string& required)
-{
-  AR_DEBUG_ASSERT(m_parsers.find(key) != m_parsers.end());
-  AR_DEBUG_ASSERT(m_parsers.find(required) != m_parsers.end());
-
-  m_key_requires.push_back(str_pair(key, required));
-}
-void
-parser::option_prohibits(const std::string& key, const std::string& prohibited)
-{
-  AR_DEBUG_ASSERT(m_parsers.find(key) != m_parsers.end());
-  AR_DEBUG_ASSERT(m_parsers.find(prohibited) != m_parsers.end());
-
-  m_key_prohibits.push_back(str_pair(key, prohibited));
+  add_separator();
+  m_args.push_back({ header, argument_ptr() });
 }
 
 void
 parser::print_version() const
 {
-  std::cerr << m_name << " " << m_version << std::endl;
+  *m_stream << m_name << " " << m_version << std::endl;
 }
 
 void
 parser::print_help() const
 {
   print_version();
-  std::cerr << "\n" << m_help << "\n";
+  *m_stream << "\n" << m_help;
 
-  print_arguments(m_keys);
-}
-
-void
-parser::print_arguments(const key_pair_vec& keys) const
-{
-  const size_t indentation = 8;
+  const size_t indentation = 4;
 
   cli_formatter fmt;
   fmt.set_indent(indentation);
-  fmt.set_column_width(std::min<size_t>(80, get_terminal_columns()) -
-                       indentation - 3);
+  fmt.set_column_width(m_terminal_width - indentation);
 
-  for (const auto& key_pair : keys) {
-    if (!key_pair.first) {
-      std::cerr << key_pair.second << "\n";
+  for (const auto& entry : m_args) {
+    const auto& ptr = entry.argument;
+
+    if (!ptr) {
+      *m_stream << entry.header << "\n";
+      continue;
+    } else if (ptr->is_deprecated()) {
       continue;
     }
 
-    const consumer_ptr ptr = m_parsers.at(key_pair.second);
-    if (ptr->help() == "HIDDEN") {
-      continue;
-    }
-
-    const std::string metavar = get_metavar_str(ptr, key_pair.second);
-    std::cerr << std::left << std::setw(indentation)
-              << ("    " + key_pair.second + " " + metavar) << "\n";
-
-    std::string value = ptr->help();
-    if (!value.empty()) {
-      // Replace "%default" with string representation of current value.
-      size_t index = value.find("%default");
-      if (index != std::string::npos) {
-        const std::string default_value = ptr->to_str();
-        value.replace(index, 8, default_value);
+    bool first = true;
+    *m_stream << "  ";
+    for (const auto& key : ptr->keys()) {
+      if (!key.deprecated) {
+        *m_stream << (first ? "" : ", ") << key.name;
+        first = false;
       }
+    };
 
-      // Format into columns and indent lines (except the first line)
-      std::cerr << fmt.format(value) << "\n";
+    if (!ptr->metavar().empty()) {
+      *m_stream << " " << ptr->metavar();
     }
 
-    std::cerr << "\n";
+    *m_stream << "\n";
+
+    const std::string help = ptr->help();
+    if (!help.empty()) {
+      // Format into columns and indent lines (except the first line)
+      *m_stream << fmt.format(help) << "\n";
+    }
   }
 
-  std::cerr << std::endl;
+  m_stream->flush();
 }
 
-consumer_map::iterator
-parser::find_argument(const std::string& str)
+void
+parser::set_ostream(std::ostream* stream)
 {
-  auto it = m_parsers.find(str);
-  if (it == m_parsers.end()) {
-    std::cerr << "ERROR: Unknown argument: '" << str << "'" << std::endl;
-  }
+  AR_DEBUG_ASSERT(stream);
 
-  return it;
+  m_stream = stream;
 }
 
-std::string
-parser::get_metavar_str(const consumer_ptr ptr, const std::string& key) const
+void
+parser::set_terminal_width(unsigned w)
 {
-  if (!ptr->metavar().empty()) {
-    return ptr->metavar();
+  m_terminal_width = w;
+}
+
+void
+parser::update_argument_map()
+{
+  m_keys.clear();
+
+  for (auto& it : m_args) {
+    if (it.argument) {
+      for (const auto& key : it.argument->keys()) {
+        const auto result = m_keys.emplace(key.name, it.argument);
+        AR_DEBUG_ASSERT(result.second);
+      }
+    }
+  }
+}
+
+argument_ptr
+parser::find_argument(const std::string& key)
+{
+  auto it = m_keys.find(key);
+  if (it != m_keys.end()) {
+    return it->second;
   }
 
-  std::string metavar = key;
-  metavar.erase(0, metavar.find_first_not_of("-"));
-  std::replace(metavar.begin(), metavar.end(), '-', '_');
+  if (key.size() > 1 && key.front() == '-' && key.back() != '-') {
+    string_vec candidates;
+    const size_t max_distance = 1 + key.size() / 4;
 
-  return toupper(metavar);
+    for (const auto& arg : m_args) {
+      if (arg.argument) {
+        for (const auto& it : arg.argument->keys()) {
+          if (!it.deprecated &&
+              is_similar_argument(key, it.name, max_distance)) {
+            candidates.push_back(it.name);
+          }
+        }
+      }
+    }
+
+    *m_stream << "ERROR: Unknown argument '" << key << "'" << std::endl;
+
+    std::sort(candidates.begin(), candidates.end());
+    if (!candidates.empty()) {
+      *m_stream << "\n    Did you mean" << std::endl;
+
+      for (const auto& key : candidates) {
+        *m_stream << "      " << key << std::endl;
+      }
+    }
+  } else {
+    *m_stream << "ERROR: Unexpected positional argument '" << key << "'"
+              << std::endl;
+  }
+
+  return argument_ptr();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-consumer_base::consumer_base(const std::string& metavar,
-                             const std::string& help)
-  : m_value_set(false)
+argument::argument(const std::string& key, const std::string& metavar)
+  : m_times_set()
+  , m_default_sink()
+  , m_deprecated()
+  , m_keys()
   , m_metavar(metavar)
-  , m_help(help)
-{}
+  , m_help()
+  , m_requires()
+  , m_conflicts()
+  , m_sink(new bool_sink(&m_default_sink))
+  , m_stream(&std::cerr)
+{
+  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
 
-consumer_base::~consumer_base() {}
+  m_keys.push_back({ key, false });
+}
+
+argument&
+argument::help(const std::string& text)
+{
+  m_help = text;
+
+  return *this;
+}
 
 bool
-consumer_base::is_set() const
+argument::is_set() const
 {
-  return m_value_set;
+  return m_times_set;
+}
+
+bool
+argument::is_deprecated() const
+{
+  return m_deprecated;
 }
 
 const std::string&
-consumer_base::metavar() const
+argument::key() const
+{
+  AR_DEBUG_ASSERT(m_keys.size());
+  return m_keys.front().name;
+}
+
+const std::vector<argument::argument_key>&
+argument::keys() const
+{
+  return m_keys;
+}
+
+const std::string&
+argument::metavar() const
 {
   return m_metavar;
 }
 
-const std::string&
-consumer_base::help() const
+std::string
+argument::help() const
 {
-  return m_help;
+  if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
+    // Append string representation of current (default) value
+    std::stringstream ss;
+    ss << m_help << " [default: " << to_str() << "]";
+
+    return ss.str();
+  } else {
+    return m_help;
+  }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-flag::flag(bool* value, const std::string& help)
-  // Non-empty metavar to avoid auto-generated metavar
-  : consumer_base(" ", help)
-  , m_ptr(value)
+const string_vec& argument::requires() const
 {
-  AR_DEBUG_ASSERT(!(m_ptr && *m_ptr));
+  return m_requires;
+}
+
+const string_vec&
+argument::conflicts() const
+{
+  return m_conflicts;
+}
+
+std::string
+argument::to_str() const
+{
+  return m_sink->to_str();
+}
+
+template<typename A, typename B>
+A&
+bind(std::unique_ptr<sink>& ptr, B* sink)
+{
+  auto* argsink = new A(sink);
+  ptr.reset(argsink);
+
+  return *argsink;
+}
+
+bool_sink&
+argument::bind_bool(bool* sink)
+{
+  return bind<bool_sink>(m_sink, sink);
+}
+
+uint_sink&
+argument::bind_uint(unsigned* sink)
+{
+  return bind<uint_sink>(m_sink, sink);
+}
+
+double_sink&
+argument::bind_double(double* sink)
+{
+  return bind<double_sink>(m_sink, sink);
+}
+
+str_sink&
+argument::bind_str(std::string* sink)
+{
+  return bind<str_sink>(m_sink, sink);
+}
+
+vec_sink&
+argument::bind_vec(string_vec* sink)
+{
+  return bind<vec_sink>(m_sink, sink);
+}
+
+argument&
+argument::alias(const std::string& key)
+{
+  m_keys.push_back({ key, false });
+
+  return *this;
+}
+
+argument&
+argument::deprecated_alias(const std::string& key)
+{
+  m_keys.push_back({ key, true });
+
+  return *this;
+}
+
+argument&
+argument::deprecated()
+{
+  m_deprecated = true;
+
+  return *this;
+}
+
+argument& argument::requires(const std::string& key)
+{
+  m_requires.push_back(key);
+
+  return *this;
+}
+
+argument&
+argument::conflicts(const std::string& key)
+{
+  m_conflicts.push_back(key);
+
+  return *this;
 }
 
 size_t
-flag::consume(string_vec_citer, const string_vec_citer&)
+argument::parse(string_vec_citer start, const string_vec_citer& end)
 {
-  if (m_ptr) {
-    *m_ptr = true;
+  AR_DEBUG_ASSERT(start != end);
+  for (const auto& key_ : m_keys) {
+    if (*start == key_.name) {
+      if (m_deprecated) {
+        *m_stream << "WARNING: Option " << *start << " is deprecated and will "
+                  << "be removed in the future." << std::endl;
+      } else if (key_.deprecated) {
+        *m_stream << "WARNING: Option " << *start << " is deprecated and will "
+                  << "be removed in the future. Please use " << key()
+                  << " instead." << std::endl;
+      }
+
+      if (m_times_set == 1) {
+        *m_stream << "WARNING: Command-line option " << key()
+                  << " has been specified more than once." << std::endl;
+      }
+
+      auto result = m_sink->consume(++start, end);
+      if (result == parsing_failed) {
+        return result;
+      }
+
+      m_times_set++;
+      return result + 1;
+    }
   }
-  m_value_set = true;
+
+  return parsing_failed;
+}
+
+void
+argument::set_ostream(std::ostream* stream)
+{
+  AR_DEBUG_ASSERT(stream);
+
+  m_stream = stream;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// sink
+
+sink::sink()
+  : m_has_default()
+{}
+
+sink::~sink() {}
+
+bool
+sink::has_default() const
+{
+  return m_has_default;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// bool_sink
+
+bool_sink::bool_sink(bool* sink)
+  : m_sink(sink)
+{
+  AR_DEBUG_ASSERT(sink);
+
+  *m_sink = false;
+}
+
+std::string
+bool_sink::to_str() const
+{
+  return *m_sink ? "on" : "off";
+}
+
+size_t
+bool_sink::consume(string_vec_citer, const string_vec_citer&)
+{
+  *m_sink = true;
 
   return 0;
 }
 
-std::string
-flag::to_str() const
+///////////////////////////////////////////////////////////////////////////////
+// uint_sink
+
+uint_sink::uint_sink(unsigned* sink)
+  : m_sink(sink)
 {
-  bool is_set = m_value_set;
-  if (m_ptr) {
-    is_set = *m_ptr;
+  AR_DEBUG_ASSERT(sink);
+
+  *m_sink = 0;
+}
+
+uint_sink&
+uint_sink::with_default(unsigned value)
+{
+  m_has_default = true;
+  *m_sink = value;
+
+  return *this;
+}
+
+std::string
+uint_sink::to_str() const
+{
+  return std::to_string(*m_sink);
+}
+
+size_t
+uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
+{
+  if (start != end) {
+    try {
+      *m_sink = str_to_unsigned(*start);
+
+      return 1;
+    } catch (const std::invalid_argument&) {
+      return parsing_failed;
+    }
   }
 
-  return std::string(is_set ? "on" : "off");
+  return parsing_failed;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// double_sink
 
-any::any(std::string* value,
-         const std::string& metavar,
-         const std::string& help)
-  : consumer_base(metavar, help)
-  , m_ptr(value)
-  , m_sink()
-{}
+double_sink::double_sink(double* sink)
+  : m_sink(sink)
+{
+  AR_DEBUG_ASSERT(sink);
+
+  *m_sink = 0.0;
+}
+
+double_sink&
+double_sink::with_default(double value)
+{
+  m_has_default = true;
+  *m_sink = value;
+
+  return *this;
+}
+
+std::string
+double_sink::to_str() const
+{
+  auto s = std::to_string(*m_sink);
+  s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+  s.erase(s.find_last_not_of('.') + 1, std::string::npos);
+
+  return s;
+}
 
 size_t
-any::consume(string_vec_citer start, const string_vec_citer& end)
+double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   if (start != end) {
-    m_value_set = true;
-    (m_ptr ? *m_ptr : m_sink) = *start;
+    double value = 0;
+    std::stringstream stream(*start);
+    if (!(stream >> value)) {
+      return parsing_failed;
+    }
+
+    // Failing on trailing, non-numerical values
+    std::string trailing;
+    if (stream >> trailing) {
+      return parsing_failed;
+    }
+
+    *m_sink = value;
+    return 1;
+  }
+
+  return parsing_failed;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// str_sink
+
+str_sink::str_sink(std::string* sink)
+  : m_sink(sink)
+{
+  AR_DEBUG_ASSERT(sink);
+
+  m_sink->clear();
+}
+
+str_sink&
+str_sink::with_default(const char* value)
+{
+  m_has_default = true;
+  *m_sink = value;
+
+  return *this;
+}
+
+std::string
+str_sink::to_str() const
+{
+  return escape(*m_sink);
+}
+
+size_t
+str_sink::consume(string_vec_citer start, const string_vec_citer& end)
+{
+  if (start != end) {
+    *m_sink = *start;
 
     return 1;
   }
 
-  return static_cast<size_t>(-1);
+  return parsing_failed;
 }
 
-std::string
-any::to_str() const
+vec_sink::vec_sink(string_vec* sink)
+  : m_sink(sink)
 {
-  const std::string& result = m_ptr ? *m_ptr : m_sink;
-  if (result.empty()) {
-    return "<not set>";
-  } else {
-    return result;
-  }
-}
+  AR_DEBUG_ASSERT(sink);
 
-///////////////////////////////////////////////////////////////////////////////
-
-many::many(string_vec* value,
-           const std::string& metavar,
-           const std::string& help)
-  : consumer_base(metavar, help)
-  , m_ptr(value)
-{
-  AR_DEBUG_ASSERT(m_ptr);
+  m_sink->clear();
 }
 
 size_t
-many::consume(string_vec_citer start, const string_vec_citer& end)
+vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  m_value_set = true;
   string_vec_citer it = start;
   for (; it != end; ++it) {
     if (!it->empty() && it->front() == '-') {
@@ -415,107 +734,29 @@ many::consume(string_vec_citer start, const string_vec_citer& end)
     }
   }
 
-  m_ptr->assign(start, it);
+  if (start != it) {
+    m_sink->assign(start, it);
 
-  return static_cast<size_t>(it - start);
+    return static_cast<size_t>(it - start);
+  }
+
+  return parsing_failed;
 }
 
 std::string
-many::to_str() const
+vec_sink::to_str() const
 {
-  if (m_ptr->empty()) {
-    return "<not set>";
-  } else {
-    std::string output;
+  std::string output;
 
-    for (const auto& s : *m_ptr) {
-      if (!output.empty()) {
-        output.push_back(';');
-      }
-
-      output.append(s);
+  for (const auto& s : *m_sink) {
+    if (!output.empty()) {
+      output.push_back(';');
     }
 
-    return output;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-knob::knob(unsigned* value, const std::string& metavar, const std::string& help)
-  : consumer_base(metavar, help)
-  , m_ptr(value)
-{
-  AR_DEBUG_ASSERT(m_ptr);
-}
-
-size_t
-knob::consume(string_vec_citer start, const string_vec_citer& end)
-{
-  if (start != end) {
-    try {
-      *m_ptr = str_to_unsigned(*start);
-      m_value_set = true;
-      return 1;
-    } catch (const std::invalid_argument&) {
-      return static_cast<size_t>(-1);
-    }
+    output.append(escape(s));
   }
 
-  return static_cast<size_t>(-1);
-}
-
-std::string
-knob::to_str() const
-{
-  std::stringstream stream;
-  stream << *m_ptr;
-  return stream.str();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-floaty_knob::floaty_knob(double* value,
-                         const std::string& metavar,
-                         const std::string& help)
-  : consumer_base(metavar, help)
-  , m_ptr(value)
-{
-  AR_DEBUG_ASSERT(m_ptr);
-}
-
-size_t
-floaty_knob::consume(string_vec_citer start, const string_vec_citer& end)
-{
-  if (start != end) {
-    std::stringstream stream(*start);
-    if (!(stream >> *m_ptr)) {
-      return static_cast<size_t>(-1);
-    }
-
-    // Failing on trailing, non-numerical values
-    std::string trailing;
-    if (stream >> trailing) {
-      return static_cast<size_t>(-1);
-    }
-
-    m_value_set = true;
-    return 1;
-  }
-
-  return static_cast<size_t>(-1);
-}
-
-std::string
-floaty_knob::to_str() const
-{
-  if (std::isnan(*m_ptr)) {
-    return "<not set>";
-  } else {
-    std::stringstream stream;
-    stream << *m_ptr;
-    return stream.str();
-  }
+  return output;
 }
 
 } // namespace argparse

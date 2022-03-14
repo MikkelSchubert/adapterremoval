@@ -25,7 +25,8 @@
 #pragma once
 
 #include <algorithm> // for max
-#include <map>       // for map, map<>::value_compare
+#include <map>       // for map
+#include <memory>    // for shared_ptr, unique_ptr
 #include <stddef.h>  // for size_t
 #include <string>    // for string
 #include <utility>   // for pair
@@ -35,9 +36,17 @@
 
 namespace argparse {
 
-class consumer_base;
-typedef consumer_base* consumer_ptr;
-typedef std::map<std::string, consumer_ptr> consumer_map;
+class argument;
+class argument_parser;
+
+class sink;
+class bool_sink;
+class double_sink;
+class uint_sink;
+class str_sink;
+class vec_sink;
+
+typedef std::shared_ptr<argument> argument_ptr;
 
 //! Parse results for command-line arguments
 enum class parse_result
@@ -53,14 +62,17 @@ enum class parse_result
 /**
  * Simple type-safe parsing of command-line options.
  *
- * To handle a an argument, an object of type consumer_base is assigned
+ * To handle a an argument, an object of type argument is assigned
  * to the argparse::parser using the [] operator. For example, the parse and
  * save an integer value to a variable when the user supplies the argument
  * '--example', the following is done:
  *
  * int target = 0; // Must be initialized!
  * argparse::parser argparser(...);
- * argparser["--example"] = new argparse::knob(&target);
+ * argparser
+ *  .add_knob("--example", &target)
+ *  .metavar("N")
+ *  .help("the number of examples");
  * argparser.parse_args(argc, argv);
  *
  * Aliases can be created for command-line arguments simply by assigning the
@@ -93,47 +105,30 @@ public:
          const std::string& version,
          const std::string& help);
 
-  /** Deletes all (unique) parsers assigned to the set. */
-  ~parser();
-
   /** Parses a set of command-line options as passed to main(argc, argv). */
-  parse_result parse_args(int argc, char* argv[]);
+  parse_result parse_args(int argc, char const* const* argv);
 
   /** Returns true if the option with the given key has been set. */
   bool is_set(const std::string& key) const;
 
-  /**
-   * Returns a reference to the pointer for the parser with the given key.
-   *
-   * If an entry does not exist for the given key, it is created upon access.
-   */
-  consumer_ptr& operator[](const std::string& key);
-
-  /**
-   * Returns a reference to the pointer for the parser with the given key.
-   *
-   * If an entry does not exist for the given key, out_of_range is thrown.
-   */
-  const consumer_ptr& at(const std::string& key) const;
+  /** Add argument with metavar. By default this takes no values. */
+  argument& add(const std::string& name, const std::string& metavar = "");
 
   /** Add a blank line between the previous and the next command. */
-  void add_seperator();
+  void add_separator();
 
   /** Add a blank line and a header between the previous and next command. */
   void add_header(const std::string& header);
-
-  /** Create alias for key with name alias. */
-  void create_alias(const std::string& key, const std::string& alias);
-
-  /** Option `requires` must be set if `key` is set on the CLI. */
-  void option_requires(const std::string& key, const std::string& required);
-  /** Option `prohibited` must NOT be set if `key` is set on the CLI. */
-  void option_prohibits(const std::string& key, const std::string& prohibited);
 
   /** Helper function; prints the program name and version string. */
   void print_version() const;
   /** Helper functions; prints the full set of help-text. */
   void print_help() const;
+
+  /** Set the stream used for printing help and error messages. */
+  void set_ostream(std::ostream* stream);
+  /** Set the maximum terminal width. */
+  void set_terminal_width(unsigned w);
 
   //! Copy construction not supported
   parser(const parser&) = delete;
@@ -141,30 +136,18 @@ public:
   parser& operator=(const parser&) = delete;
 
 private:
-  typedef std::pair<bool, std::string> key_pair;
-  typedef std::vector<key_pair> key_pair_vec;
-  typedef std::pair<std::string, std::string> str_pair;
-  typedef std::vector<str_pair> str_pair_vec;
+  void update_argument_map();
 
-  /** Pretty-print the listed arguments. */
-  void print_arguments(const key_pair_vec& keys) const;
+  argument_ptr find_argument(const std::string& key);
 
-  /** Find the parser for the given argument or print an error if unknown. */
-  consumer_map::iterator find_argument(const std::string& str);
+  struct argument_entry
+  {
+    std::string header;
+    argument_ptr argument;
+  };
 
-  /** Generate metavar from argument, namely uppercase without dashes. */
-  std::string get_metavar_str(const consumer_ptr, const std::string&) const;
-
-  //! Vector of keys (command-line options), tracking the order of addition.
-  key_pair_vec m_keys;
-  //! Map of keys (command-line args) to parser pointers; multiple
-  //! keys may be associated with the same pointer.
-  consumer_map m_parsers;
-
-  //! Vector of options required by other options
-  str_pair_vec m_key_requires;
-  //! Vector of options prohibited by other options
-  str_pair_vec m_key_prohibits;
+  std::vector<argument_entry> m_args;
+  std::map<std::string, argument_ptr> m_keys;
 
   //! Name of the program
   std::string m_name;
@@ -172,226 +155,236 @@ private:
   std::string m_version;
   //! Help text for the program.
   std::string m_help;
+  //! Stream used for printing help and error messages. Defaults to cerr
+  std::ostream* m_stream;
+  //! Maximum terminal width used for printing help messages
+  unsigned m_terminal_width;
 };
 
 /**
- * Base class for argument parsers;
+ * Base class for arguments;
  *
  * Each consumer must implement the consume function, which takes iterators to
  * the arguments following the key for this parser (i.e. not including the
  * --option). These then consume zero or more values, returning the number
  * thus consumed, or (size_t)-1 if the values were missing or invalid.
  */
-class consumer_base
+class argument
 {
 public:
-  /**
-   * Base constructor; sets various values used when printing --help.
-   *
-   *  metavar - Used to represent the input value; if empty,
-   *            argparse::parser will use the current key associated with
-   *            the parser to generate a metavar.
-   *  help    - Help string; the value %default is replaced with the default
-   *            value.
-   */
-  consumer_base(const std::string& metavar, const std::string& help);
+  struct argument_key
+  {
+    std::string name;
+    bool deprecated;
+  };
 
-  /* Destructor; does nothing in the base class. */
-  virtual ~consumer_base();
+  argument(const std::string& key, const std::string& metavar = "");
 
-  /**
-   * Attempts to consume a value specified on the command-line; returns the
-   * number of values consumed (if any), or -1 if parsing failed (e.g. due to
-   * the specified value being of the wrong type).
-   *
-   * Parameters:
-   *   start - Iterator pointing to the value following the command-line
-   *           argument, if any remain to be consumed.
-   *   end - Iterator past-the-end of the list of command-line arguments.
-   */
-  virtual size_t consume(string_vec_citer start,
-                         const string_vec_citer& end) = 0;
+  /** Returns true if the consumer has consumed a value. */
+  bool is_set() const;
+  /** Returns true if the argument is deprecated and hidden. */
+  bool is_deprecated() const;
 
-  /** Returns true if the consumer has consumed a value. **/
-  virtual bool is_set() const;
+  /** Returns the canonical argument key. */
+  const std::string& key() const;
+  /** Returns all argument keys. */
+  const std::vector<argument_key>& keys() const;
+  /** Returns the metavariable. May be an empty string. */
+  const std::string& metavar() const;
+  /** Returns help string with %default replaced with the current value. */
+  std::string help() const;
 
-  /** Returns the metavariable associated with the consumer. **/
-  virtual const std::string& metavar() const;
+  /** Options that MUST be specified along with this argument. */
+  const string_vec& requires() const;
+  /** Options that must NOT be specified along with this argument. */
+  const string_vec& conflicts() const;
 
-  /** Returns the help string associated with the consumer. **/
-  virtual const std::string& help() const;
+  /** Returns the value associated with the argument as a string. */
+  std::string to_str() const;
+
+  /** Set the metavar for this argument. */
+  argument& metavar(const std::string& metavar);
+  /** Set help string for this argument. */
+  argument& help(const std::string& alias);
+  /** Create alias for the argument. */
+  argument& alias(const std::string& alias);
+  /** Create deprecated alias for the argument. */
+  argument& deprecated_alias(const std::string& alias);
+  /** The argument is deprecated / not to be printed by -h/--help. */
+  argument& deprecated();
+
+  /** Option `key` MUST be specified along with this argument. */
+  argument& requires(const std::string& key);
+  /** Option `key` must NOT be specified along with this argument. */
+  argument& conflicts(const std::string& key);
+
+  bool_sink& bind_bool(bool* sink);
+  uint_sink& bind_uint(unsigned* sink);
+  double_sink& bind_double(double* sink);
+  str_sink& bind_str(std::string* sink);
+  vec_sink& bind_vec(string_vec* sink);
+
+  /** Parse the next arguments, returning the number of items parsed or -1. */
+  size_t parse(string_vec_citer start, const string_vec_citer& end);
+
+  /** Set the stream used for printing help and error messages. */
+  void set_ostream(std::ostream* stream);
+
+  //! Copy construction not supported
+  argument(const argument&) = delete;
+  //! Assignment not supported
+  argument& operator=(const argument&) = delete;
+
+protected:
+  //! Number of times the argument has been specified
+  unsigned m_times_set;
+  //! Default sink value
+  bool m_default_sink;
+  //! Indicates if the argument is deprecated / hidden.
+  bool m_deprecated;
+
+  //! Argument keys, the first key being the canonical name
+  std::vector<argument_key> m_keys;
+  //! Optional metavar (defaults to uppercase `m_name` without dashes)
+  std::string m_metavar;
+  //! Help string; the string '%default' will be replaced with the current value
+  std::string m_help;
+
+  //! This argument must be specified along with these arguments.
+  string_vec m_requires;
+  //! This argument cannot be specified along with these arguments.
+  string_vec m_conflicts;
+
+  std::unique_ptr<sink> m_sink;
+
+  //! Stream used for printing help and error messages. Defaults to cerr
+  std::ostream* m_stream;
+};
+
+class sink
+{
+public:
+  sink();
+  virtual ~sink();
 
   /** Returns the value associated with the consumer as a string. **/
   virtual std::string to_str() const = 0;
 
-  //! Copy construction not supported
-  consumer_base(const consumer_base&) = delete;
-  //! Assignment not supported
-  consumer_base& operator=(const consumer_base&) = delete;
+  /** See argument::consume */
+  virtual size_t consume(string_vec_citer start,
+                         const string_vec_citer& end) = 0;
+
+  /** Indicates if the sink has been supplied with a default value. */
+  virtual bool has_default() const;
 
 protected:
-  //! Should be set to true if a value has been consumed in a derived class.
-  bool m_value_set;
-
-  //! Stores the metavar associated with the consumer
-  std::string m_metavar;
-  //! Stores the optional description of default behavior.
-  std::string m_help;
-};
-
-/**
- * Consumer for boolean values (i.e. flags).
- *
- * Unlike typical consumers, this consumer does not expected a value associated
- * with the command-line argument, but instead sets the associated value to
- * true if the command-line argument is specified one or more times.
- */
-class flag : public consumer_base
-{
-public:
-  /**
-   * See consumer_base::consumer_base
-   *
-   * Unlike the base constructor, this class does not take a 'metavar', as
-   * no values are consumed during parsing.
-   */
-  flag(bool* sink = nullptr, const std::string& help = "");
-
-  /** See consumer_base::consume */
-  virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
-
-  /** See consumer_base::to_str */
-  virtual std::string to_str() const;
-
-  //! Copy construction not supported
-  flag(const flag&) = delete;
-  //! Assignment not supported
-  flag& operator=(const flag&) = delete;
+  //! Indicates if the sink has been supplied with a default value
+  bool m_has_default;
 
 private:
-  //! Optional pointer to storage for boolean value; if nullptr, m_value is
-  //! used.
-  bool* m_ptr;
+  //! Copy construction not supported
+  sink(const sink&) = delete;
+  //! Assignment not supported
+  sink& operator=(const sink&) = delete;
 };
 
-/**
- * Consumer for string values (filenames, etc.).
- */
-class any : public consumer_base
+class bool_sink : public sink
 {
 public:
-  /**
-   * See consumer_base::consumer_base
-   */
-  any(std::string* sink = nullptr,
-      const std::string& metavar = "",
-      const std::string& help = "");
+  bool_sink(bool* sink);
 
-  /** See consumer_base::consume */
-  virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
-
-  /** See consumer_base::to_str */
-  virtual std::string to_str() const;
-
-  //! Copy construction not supported
-  any(const any&) = delete;
-  //! Assignment not supported
-  any& operator=(const any&) = delete;
+  virtual std::string to_str() const override;
+  virtual size_t consume(string_vec_citer,
+                         const string_vec_citer& end) override;
 
 private:
-  //! Optional pointer to storage for string value; if nullptr, m_value is used.
-  std::string* m_ptr;
-  //! Value sink used if a pointer to a sink is not provided.
-  std::string m_sink;
+  //! Copy construction not supported
+  bool_sink(const bool_sink&) = delete;
+  //! Assignment not supported
+  bool_sink& operator=(const bool_sink&) = delete;
+
+  bool* m_sink;
 };
 
-/**
- * Consumer for multiple string values; consumes values until another option
- * (value starting with '-') is encountered.
- */
-class many : public consumer_base
+class uint_sink : public sink
 {
 public:
-  /**
-   * See consumer_base::consumer_base
-   */
-  many(string_vec* sink,
-       const std::string& metavar = "",
-       const std::string& help = "");
+  uint_sink(unsigned* sink);
 
-  /** See consumer_base::consume */
-  virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
+  uint_sink& with_default(unsigned value);
 
-  /** See consumer_base::to_str */
-  virtual std::string to_str() const;
+  virtual std::string to_str() const override;
 
-  //! Copy construction not supported
-  many(const many&) = delete;
-  //! Assignment not supported
-  many& operator=(const many&) = delete;
+  virtual size_t consume(string_vec_citer start,
+                         const string_vec_citer& end) override;
 
 private:
-  //! Pointer to storage for string value; if nullptr, m_value is used.
-  string_vec* m_ptr;
+  //! Copy construction not supported
+  uint_sink(const uint_sink&) = delete;
+  //! Assignment not supported
+  uint_sink& operator=(const uint_sink&) = delete;
+
+  unsigned* m_sink;
 };
 
-/**
- * Consumer for unsigned integer values.
- *
- * Signed values are rejected. On 32 bit systems, the range of values is
- * limited to 0 .. 2^31 - 1, on 64 bit systems the range is 0 .. 2^64 - 1.
- */
-class knob : public consumer_base
+class double_sink : public sink
 {
 public:
-  /**
-   * See consumer_base::consumer_base; a sink must be set.
-   */
-  knob(unsigned* sink,
-       const std::string& metavar = "",
-       const std::string& help = "");
+  double_sink(double* sink);
 
-  /** See consumer_base::consume */
-  virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
+  double_sink& with_default(double value);
 
-  /** See consumer_base::to_str */
-  virtual std::string to_str() const;
+  virtual std::string to_str() const override;
 
-  //! Copy construction not supported
-  knob(const knob&) = delete;
-  //! Assignment not supported
-  knob& operator=(const knob&) = delete;
+  virtual size_t consume(string_vec_citer start,
+                         const string_vec_citer& end) override;
 
 private:
-  //! Pointer to storage for unsigned value (required).
-  unsigned* m_ptr;
+  //! Copy construction not supported
+  double_sink(const double_sink&) = delete;
+  //! Assignment not supported
+  double_sink& operator=(const double_sink&) = delete;
+
+  double* m_sink;
 };
 
-/**
- * Consumer for floating point values (doubles).
- */
-class floaty_knob : public consumer_base
+class str_sink : public sink
 {
 public:
-  /** See consumer_base::consumer_base; a sink must be set. */
-  floaty_knob(double* sink,
-              const std::string& metavar = "",
-              const std::string& help = "");
+  str_sink(std::string* sink);
 
-  /** See consumer_base::consume */
-  virtual size_t consume(string_vec_citer start, const string_vec_citer& end);
+  str_sink& with_default(const char* value);
 
-  /** See consumer_base::to_str */
-  virtual std::string to_str() const;
+  virtual std::string to_str() const override;
 
-  //! Copy construction not supported
-  floaty_knob(const floaty_knob&) = delete;
-  //! Assignment not supported
-  floaty_knob& operator=(const floaty_knob&) = delete;
+  virtual size_t consume(string_vec_citer start,
+                         const string_vec_citer& end) override;
 
 private:
-  //! Pointer to storage for unsigned value (required).
-  double* m_ptr;
+  //! Copy construction not supported
+  str_sink(const str_sink&) = delete;
+  //! Assignment not supported
+  str_sink& operator=(const str_sink&) = delete;
+
+  std::string* m_sink;
 };
 
+class vec_sink : public sink
+{
+public:
+  vec_sink(string_vec* sink);
+
+  virtual std::string to_str() const override;
+
+  virtual size_t consume(string_vec_citer start,
+                         const string_vec_citer& end) override;
+
+private:
+  //! Copy construction not supported
+  vec_sink(const vec_sink&) = delete;
+  //! Assignment not supported
+  vec_sink& operator=(const vec_sink&) = delete;
+
+  string_vec* m_sink;
+};
 } // namespace argparse

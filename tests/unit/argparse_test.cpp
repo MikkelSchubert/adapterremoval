@@ -24,444 +24,995 @@
 \*************************************************************************/
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 
 #include "argparse.hpp"
 #include "debug.hpp"
 #include "testing.hpp"
 
-typedef std::unique_ptr<argparse::consumer_base> consumer_autoptr;
+using argparse::argument;
+using argparse::argument_ptr;
+
+const size_t parsing_failed = static_cast<size_t>(-1);
+
+using Catch::Matchers::Contains;
 
 ///////////////////////////////////////////////////////////////////////////////
-// flag -- boolean
+// boolean sink
 
-TEST_CASE("Flag defaults", "[argparse::flag]")
+TEST_CASE("bool sink is required", "[argparse::bool_sink]")
 {
-  consumer_autoptr ptr(new argparse::flag());
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == " ");
-  REQUIRE(ptr->help() == "");
-  REQUIRE(ptr->to_str() == "off");
+  REQUIRE_THROWS_AS(argparse::bool_sink(nullptr), assert_failed);
 }
 
-TEST_CASE("Flag help", "[argparse::flag]")
+TEST_CASE("bool sink is initialized", "[argparse::bool_sink]")
 {
-  consumer_autoptr ptr(new argparse::flag(nullptr, "help! help!"));
-  REQUIRE(ptr->help() == "help! help!");
+  bool value = true;
+  argparse::bool_sink sink(&value);
+  REQUIRE_FALSE(value);
 }
 
-TEST_CASE("Flag consumes no arguments", "[argparse::flag]")
+TEST_CASE("bool sink to_str", "[argparse::bool_sink]")
 {
-  string_vec arguments;
-  arguments.push_back("--foo");
-  consumer_autoptr ptr(new argparse::flag());
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 0);
-  CHECK(ptr->is_set());
+  bool value = false;
+  argparse::bool_sink sink(&value);
+  REQUIRE(sink.to_str() == "off");
+  value = true;
+  REQUIRE(sink.to_str() == "on");
 }
 
-TEST_CASE("Flag may be called on end of arguments", "[argparse::flag]")
+TEST_CASE("bool sink has_default", "[argparse::bool_sink]")
 {
-  const string_vec arguments;
-  consumer_autoptr ptr(new argparse::flag());
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 0);
-  CHECK(ptr->is_set());
+  bool value = false;
+  argparse::bool_sink sink(&value);
+  REQUIRE_FALSE(sink.has_default());
 }
 
-TEST_CASE("Flag prohibits sink with true", "[argparse::flag]")
+TEST_CASE("bool sink does not require values", "[argparse::bool_sink]")
 {
-  bool sink = true;
-  REQUIRE_THROWS_AS(argparse::flag(&sink), assert_failed);
+  bool value = false;
+  argparse::bool_sink sink(&value);
+
+  string_vec values;
+  REQUIRE(sink.consume(values.begin(), values.end()) == 0);
+  REQUIRE(sink.to_str() == "on");
+  REQUIRE(value);
 }
 
-TEST_CASE("Flag uses sink with false", "[argparse::flag]")
+TEST_CASE("bool sink ignores values", "[argparse::bool_sink]")
 {
+  string_vec values{ "0" };
+  bool value = false;
+  argparse::bool_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 0);
+  REQUIRE(sink.to_str() == "on");
+  REQUIRE(value);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// uint sink
+
+TEST_CASE("uint sink is required", "[argparse::uint_sink]")
+{
+  REQUIRE_THROWS_AS(argparse::uint_sink(nullptr), assert_failed);
+}
+
+TEST_CASE("uint sink is initialized", "[argparse::uint_sink]")
+{
+  unsigned value = 12345;
+  argparse::uint_sink sink(&value);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("uint sink to_str", "[argparse::uint_sink]")
+{
+  unsigned value = 1234567;
+  argparse::uint_sink sink(&value);
+  REQUIRE(sink.to_str() == "0");
+  value = 1234567;
+  REQUIRE(sink.to_str() == "1234567");
+}
+
+TEST_CASE("uint sink with_default", "[argparse::uint_sink]")
+{
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  REQUIRE_FALSE(sink.has_default());
+  sink.with_default(1234567);
+
+  REQUIRE(sink.has_default());
+  REQUIRE(value == 1234567);
+}
+
+TEST_CASE("uint sink require value", "[argparse::uint_sink]")
+{
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+  sink.with_default(1234567);
+
+  string_vec values;
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 1234567);
+}
+
+TEST_CASE("uint sink consumes single value", "[argparse::uint_sink]")
+{
+  string_vec values{ "1234567" };
+
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == 1234567);
+}
+
+TEST_CASE("uint sink consumes single value only", "[argparse::uint_sink]")
+{
+  string_vec values{ "1234567", "8901234" };
+
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(sink.to_str() == "1234567");
+  REQUIRE(value == 1234567);
+}
+
+TEST_CASE("uint requires valid integer value", "[argparse::uint_sink]")
+{
+  string_vec values{ "abc" };
+
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("uint requires positive integer value", "[argparse::uint_sink]")
+{
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  string_vec values{ "-123" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("uint accepts unsigned lower bound", "[argparse::uint_sink]")
+{
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+  sink.with_default(123456);
+
+  string_vec values{ "0" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("uint accepts unsigned upper bound", "[argparse::uint_sink]")
+{
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  string_vec values{ "4294967295" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == 4294967295);
+}
+
+TEST_CASE("uint rejects past unsigned upper bound", "[argparse::uint_sink]")
+{
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  string_vec values{ "4294967296" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("uint disallows trailing garbage", "[argparse::uint_sink]")
+{
+  string_vec values{ "123abc" };
+
+  unsigned value = 0;
+  argparse::uint_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// double sink
+
+TEST_CASE("double sink is required", "[argparse::double_sink]")
+{
+  REQUIRE_THROWS_AS(argparse::double_sink(nullptr), assert_failed);
+}
+
+TEST_CASE("double sink is initialized", "[argparse::double_sink]")
+{
+  double value = 12345;
+  argparse::double_sink sink(&value);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("double sink to_str", "[argparse::double_sink]")
+{
+  double value = 12345.67;
+  argparse::double_sink sink(&value);
+  REQUIRE(sink.to_str() == "0");
+  value = 12345.67;
+  REQUIRE(sink.to_str() == "12345.67");
+  value = 1234567;
+  REQUIRE(sink.to_str() == "1234567");
+}
+
+TEST_CASE("double sink with_default", "[argparse::double_sink]")
+{
+  double value = 0;
+  argparse::double_sink sink(&value);
+  sink.with_default(12345.67);
+
+  REQUIRE(value == 12345.67);
+}
+
+TEST_CASE("double sink has_default", "[argparse::double_sink]")
+{
+  double value = 0;
+  argparse::double_sink sink(&value);
+  REQUIRE_FALSE(sink.has_default());
+  sink.with_default(12345.67);
+  REQUIRE(sink.has_default());
+}
+
+TEST_CASE("double sink require value", "[argparse::double_sink]")
+{
+  double value = 0;
+  argparse::double_sink sink(&value);
+  sink.with_default(12345.67);
+
+  string_vec values;
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 12345.67);
+}
+
+TEST_CASE("double sink consumes single value", "[argparse::double_sink]")
+{
+  string_vec values{ "12345.67" };
+
+  double value = 0;
+  argparse::double_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == 12345.67);
+}
+
+TEST_CASE("double sink consumes single value only", "[argparse::double_sink]")
+{
+  string_vec values{ "12345.67", "8901234" };
+
+  double value = 0;
+  argparse::double_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(sink.to_str() == "12345.67");
+  REQUIRE(value == 12345.67);
+}
+
+TEST_CASE("double requires valid double #1", "[argparse::double_sink]")
+{
+  string_vec values{ "abc" };
+
+  double value = 0;
+  argparse::double_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 0);
+}
+
+TEST_CASE("double requires valid double #2", "[argparse::double_sink]")
+{
+  string_vec values{ "123.0abc" };
+
+  double value = 0;
+  argparse::double_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// str sink
+
+TEST_CASE("str sink is required", "[argparse::str_sink]")
+{
+  REQUIRE_THROWS_AS(argparse::str_sink(nullptr), assert_failed);
+}
+
+TEST_CASE("str sink is initialized", "[argparse::str_sink]")
+{
+  std::string value = "foo";
+  argparse::str_sink sink(&value);
+  REQUIRE(value.empty());
+}
+
+TEST_CASE("str sink to_str", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  value = "foobar";
+  REQUIRE(sink.to_str() == "\"foobar\"");
+}
+
+TEST_CASE("str sink with_default", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_default("foobar");
+
+  REQUIRE(value == "foobar");
+}
+
+TEST_CASE("str sink has_default", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  REQUIRE_FALSE(sink.has_default());
+  sink.with_default("foobar");
+  REQUIRE(sink.has_default());
+}
+
+TEST_CASE("str sink require value", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_default("foobar");
+
+  string_vec values;
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == "foobar");
+}
+
+TEST_CASE("str sink consumes single value", "[argparse::str_sink]")
+{
+  string_vec values{ "foobar" };
+
+  std::string value;
+  argparse::str_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "foobar");
+}
+
+TEST_CASE("str sink consumes single value only", "[argparse::str_sink]")
+{
+  string_vec values{ "foo", "bar" };
+
+  std::string value;
+  argparse::str_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "foo");
+}
+
+TEST_CASE("str sink consumes empty string", "[argparse::str_sink]")
+{
+  string_vec values{ "" };
+
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_default("foo");
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// vec sink
+
+TEST_CASE("vec sink is required", "[argparse::vec_sink]")
+{
+  REQUIRE_THROWS_AS(argparse::vec_sink(nullptr), assert_failed);
+}
+
+TEST_CASE("vec sink is initialized", "[argparse::vec_sink]")
+{
+  string_vec value{ "foo" };
+  argparse::vec_sink sink(&value);
+  REQUIRE(value.empty());
+}
+
+TEST_CASE("vec sink to_vec #1", "[argparse::vec_sink]")
+{
+  string_vec value;
+  argparse::vec_sink sink(&value);
+  value.push_back("foobar");
+  REQUIRE(sink.to_str() == "\"foobar\"");
+}
+
+TEST_CASE("vec sink to_vec #2", "[argparse::vec_sink]")
+{
+  string_vec value;
+  argparse::vec_sink sink(&value);
+  value.push_back("foo");
+  value.push_back("bar");
+  REQUIRE(sink.to_str() == "\"foo\";\"bar\"");
+}
+
+TEST_CASE("vec sink require value", "[argparse::vec_sink]")
+{
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  string_vec values;
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value.empty());
+}
+
+TEST_CASE("vec sink consumes single value", "[argparse::vec_sink]")
+{
+  string_vec values{ "foobar" };
+
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value.size() == 1);
+  REQUIRE(value.front() == "foobar");
+}
+
+TEST_CASE("vec sink consumes multiple values", "[argparse::vec_sink]")
+{
+  string_vec values{ "foo", "bar" };
+
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 2);
+  REQUIRE(value.size() == 2);
+  REQUIRE(value.front() == "foo");
+  REQUIRE(value.back() == "bar");
+}
+
+TEST_CASE("vec sink consumes until dash", "[argparse::vec_sink]")
+{
+  string_vec values{ "foo", "--bar", "123" };
+
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value.size() == 1);
+  REQUIRE(value.front() == "foo");
+}
+
+TEST_CASE("vec sink consumes empty string", "[argparse::vec_sink]")
+{
+  string_vec values{ "" };
+
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value.size() == 1);
+  REQUIRE(value.front() == "");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// argument
+
+TEST_CASE("argument properties", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.key() == "--12345");
+  REQUIRE(arg.metavar() == "67890");
+}
+
+TEST_CASE("help without default", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+  REQUIRE(arg.help() == "");
+
+  arg.help("pointless gibberish");
+  REQUIRE(arg.help() == "pointless gibberish");
+}
+
+TEST_CASE("help with default", "[argparse::argument]")
+{
+  unsigned value = 0;
+  argparse::argument arg("--12345", "67890");
+  arg.help("pointless gibberish").bind_uint(&value).with_default(7913);
+
+  REQUIRE(arg.help() == "pointless gibberish [default: 7913]");
+}
+
+TEST_CASE("help with custom default", "[argparse::argument]")
+{
+  unsigned value = 0;
+  argparse::argument arg("--12345", "67890");
+  arg.help("pointless gibberish [default: foo]")
+    .bind_uint(&value)
+    .with_default(7913);
+
+  REQUIRE(arg.help() == "pointless gibberish [default: foo]");
+}
+
+TEST_CASE("deprecated argument", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+
+  REQUIRE_FALSE(arg.is_deprecated());
+  arg.deprecated();
+  REQUIRE(arg.is_deprecated());
+
+  std::stringstream ss;
+  arg.set_ostream(&ss);
+
+  string_vec values{ "--12345", "foo" };
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(ss.str() == "WARNING: Option --12345 is deprecated and will be "
+                      "removed in the future.\n");
+}
+
+TEST_CASE("default argument sink", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+
+  REQUIRE(arg.to_str() == "off");
+}
+
+TEST_CASE("canonical key", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+
+  const auto& keys = arg.keys();
+  REQUIRE(keys.size() == 1);
+  REQUIRE(keys.front().name == "--12345");
+  REQUIRE_FALSE(keys.front().deprecated);
+}
+
+TEST_CASE("argument alias", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+  arg.alias("--foo");
+
+  REQUIRE(arg.key() == "--12345");
+
+  const auto& keys = arg.keys();
+  REQUIRE(keys.size() == 2);
+  REQUIRE(keys.at(0).name == "--12345");
+  REQUIRE_FALSE(keys.at(0).deprecated);
+  REQUIRE(keys.at(1).name == "--foo");
+  REQUIRE_FALSE(keys.at(1).deprecated);
+}
+
+TEST_CASE("deprecated argument alias", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+  arg.deprecated_alias("--foo");
+
+  REQUIRE(arg.key() == "--12345");
+
+  const auto& keys = arg.keys();
+  REQUIRE(keys.size() == 2);
+  REQUIRE(keys.at(0).name == "--12345");
+  REQUIRE_FALSE(keys.at(0).deprecated);
+  REQUIRE(keys.at(1).name == "--foo");
+  REQUIRE(keys.at(1).deprecated);
+}
+
+TEST_CASE("argument requires", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+  arg.requires("--bar");
+  arg.requires("--zod");
+
+  REQUIRE(arg.requires() == string_vec{ "--bar", "--zod" });
+}
+
+TEST_CASE("argument conflicts with", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+  arg.conflicts("--bar");
+  arg.conflicts("--zod");
+
+  REQUIRE(arg.conflicts() == string_vec{ "--bar", "--zod" });
+}
+
+TEST_CASE("default bind", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345" };
+
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(arg.is_set());
+}
+
+TEST_CASE("bind bool", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345" };
+
   bool sink = false;
-  consumer_autoptr ptr(new argparse::flag(&sink));
-  REQUIRE(ptr->to_str() == "off");
-  const string_vec arguments;
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 0);
-  CHECK(ptr->is_set());
-  CHECK(sink);
-  REQUIRE(ptr->to_str() == "on");
+  arg.bind_bool(&sink);
+
+  REQUIRE_FALSE(sink);
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(arg.is_set());
+  REQUIRE(sink);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// any -- string
-
-TEST_CASE("Any defaults", "[argparse::any]")
+TEST_CASE("bind uint", "[argparse::argument]")
 {
-  consumer_autoptr ptr(new argparse::any());
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "");
-  REQUIRE(ptr->help() == "");
-  REQUIRE(ptr->to_str() == "<not set>");
-}
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345", "7913" };
 
-TEST_CASE("Any value set", "[argparse::any]")
-{
-  std::string sink = "kitchensink";
-  consumer_autoptr ptr(new argparse::any(&sink, "a metavar", "help!"));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "a metavar");
-  REQUIRE(ptr->help() == "help!");
-  REQUIRE(ptr->to_str() == "kitchensink");
-}
-
-TEST_CASE("Any consumes one argument", "[argparse::any]")
-{
-  string_vec arguments;
-  arguments.push_back("foo");
-  arguments.push_back("bar");
-  consumer_autoptr ptr(new argparse::any());
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-TEST_CASE("Any cannot consume empty list of arguments", "[argparse::any]")
-{
-  const string_vec arguments;
-  consumer_autoptr ptr(new argparse::any());
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) ==
-          static_cast<size_t>(-1));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->to_str() == "<not set>");
-}
-
-TEST_CASE("Any with empty sink", "[argparse::any]")
-{
-  std::string sink;
-  consumer_autoptr ptr(new argparse::any(&sink));
-  REQUIRE(ptr->to_str() == "<not set>");
-  string_vec arguments;
-  arguments.push_back("foo");
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == "foo");
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-TEST_CASE("Any with preset sink", "[argparse::any]")
-{
-  std::string sink = "kitchensink";
-  consumer_autoptr ptr(new argparse::any(&sink));
-  REQUIRE(ptr->to_str() == "kitchensink");
-  string_vec arguments;
-  arguments.push_back("foo");
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == "foo");
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// many -- strings
-
-TEST_CASE("Many defaults", "[argparse::many]")
-{
-  string_vec sink;
-  consumer_autoptr ptr(new argparse::many(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "");
-  REQUIRE(ptr->help() == "");
-  REQUIRE(ptr->to_str() == "<not set>");
-}
-
-TEST_CASE("Many with defaults", "[argparse::many]")
-{
-  string_vec sink;
-  sink.push_back("kitchensink");
-
-  consumer_autoptr ptr(new argparse::many(&sink, "a metavar", "help!"));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "a metavar");
-  REQUIRE(ptr->help() == "help!");
-  REQUIRE(ptr->to_str() == "kitchensink");
-}
-
-TEST_CASE("Many consumes one argument", "[argparse::many]")
-{
-  string_vec arguments;
-  arguments.push_back("foo");
-
-  string_vec sink;
-  consumer_autoptr ptr(new argparse::many(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-TEST_CASE("Many consumes two arguments", "[argparse::many]")
-{
-  string_vec arguments;
-  arguments.push_back("foo");
-  arguments.push_back("bar");
-
-  string_vec sink;
-  consumer_autoptr ptr(new argparse::many(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 2);
-  CHECK(ptr->is_set());
-  REQUIRE(ptr->to_str() == "foo;bar");
-}
-
-TEST_CASE("Many consumes until next option", "[argparse::many]")
-{
-  string_vec arguments;
-  arguments.push_back("foo");
-  arguments.push_back("--zoo");
-  arguments.push_back("bar");
-
-  string_vec sink;
-  consumer_autoptr ptr(new argparse::many(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-TEST_CASE("Many does not consume empty list of arguments", "[argparse::many]")
-{
-  string_vec sink;
-  const string_vec arguments;
-  consumer_autoptr ptr(new argparse::many(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 0);
-  CHECK(ptr->is_set());
-  REQUIRE(ptr->to_str() == "<not set>");
-}
-
-TEST_CASE("Many with empty sink", "[argparse::many]")
-{
-  string_vec sink;
-  string_vec expected;
-  expected.push_back("foo");
-
-  consumer_autoptr ptr(new argparse::many(&sink));
-  REQUIRE(ptr->to_str() == "<not set>");
-  string_vec arguments;
-  arguments.push_back("foo");
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == expected);
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-TEST_CASE("many with preset sink", "[argparse::many]")
-{
-  string_vec sink;
-  sink.push_back("kitchensink");
-  string_vec expected;
-  expected.push_back("foo");
-
-  consumer_autoptr ptr(new argparse::many(&sink));
-  REQUIRE(ptr->to_str() == "kitchensink");
-  string_vec arguments;
-  arguments.push_back("foo");
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == expected);
-  REQUIRE(ptr->to_str() == "foo");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// knob -- unsigned
-
-TEST_CASE("Knob defaults", "[argparse::knob]")
-{
   unsigned sink = 0;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "");
-  REQUIRE(ptr->help() == "");
-  REQUIRE(ptr->to_str() == "0");
-}
+  arg.bind_uint(&sink);
 
-TEST_CASE("Knob requires a sink", "[argparse::knob]")
-{
-  REQUIRE_THROWS_AS(argparse::knob(nullptr), assert_failed);
-}
-
-TEST_CASE("Knot values are set", "[argparse::knob]")
-{
-  unsigned sink = 7913;
-  consumer_autoptr ptr(new argparse::knob(&sink, "a metavar", "help!"));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "a metavar");
-  REQUIRE(ptr->help() == "help!");
-  REQUIRE(ptr->to_str() == "7913");
-}
-
-TEST_CASE("Knob consumes one argument", "[argparse::knob]")
-{
-  unsigned sink = 0;
-  string_vec arguments;
-  arguments.push_back("47");
-  arguments.push_back("bar");
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == 47);
-  REQUIRE(ptr->to_str() == "47");
-}
-
-TEST_CASE("Knob does not consume empty list of arguments", "[argparse::knob]")
-{
-  unsigned sink = 13;
-  const string_vec arguments;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) ==
-          static_cast<size_t>(-1));
-  CHECK(!ptr->is_set());
-  REQUIRE(sink == 13);
-  REQUIRE(ptr->to_str() == "13");
-}
-
-TEST_CASE("Knob rejects negative values", "[argparse::knob]")
-{
-  unsigned sink = 13;
-  string_vec arguments;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  arguments.push_back("-47");
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) ==
-          static_cast<size_t>(-1));
-  CHECK(!ptr->is_set());
-  REQUIRE(sink == 13);
-  REQUIRE(ptr->to_str() == "13");
-}
-
-TEST_CASE("Knob accepts zero", "[argparse::knob]")
-{
-  unsigned sink = 13;
-  string_vec arguments;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  arguments.push_back("0");
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
   REQUIRE(sink == 0);
-  REQUIRE(ptr->to_str() == "0");
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 2);
+  REQUIRE(arg.is_set());
+  REQUIRE(sink == 7913);
 }
 
-TEST_CASE("Knob accepts unsigned upper bound", "[argparse::knob]")
+TEST_CASE("bind double", "[argparse::argument]")
 {
-  unsigned sink = 13;
-  string_vec arguments;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  arguments.push_back("4294967295");
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == 4294967295);
-  REQUIRE(ptr->to_str() == "4294967295");
-}
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345", "7.913" };
 
-TEST_CASE("Knob rejects past unsigned upper bound", "[argparse::knob]")
-{
-  unsigned sink = 13;
-  string_vec arguments;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  arguments.push_back("4294967296");
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == -1);
-  CHECK(!ptr->is_set());
-}
-
-TEST_CASE("Knob rejects trailing garbage", "[argparse::knob]")
-{
-  unsigned sink = 13;
-  string_vec arguments;
-  consumer_autoptr ptr(new argparse::knob(&sink));
-  arguments.push_back("7913w");
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == -1);
-  CHECK(!ptr->is_set());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// floaty_knob -- double
-
-TEST_CASE("Floaty knob defaults", "[argparse::floaty_knob]")
-{
   double sink = 0;
-  consumer_autoptr ptr(new argparse::floaty_knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "");
-  REQUIRE(ptr->help() == "");
-  REQUIRE(ptr->to_str() == "0");
+  arg.bind_double(&sink);
+
+  REQUIRE(sink == 0);
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 2);
+  REQUIRE(arg.is_set());
+  REQUIRE(sink == 7.913);
 }
 
-TEST_CASE("Floaty knob treats NaN as unset", "[argparse::floaty_knob]")
+TEST_CASE("bind str", "[argparse::argument]")
 {
-  double sink = std::numeric_limits<double>::quiet_NaN();
-  consumer_autoptr ptr(new argparse::floaty_knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "");
-  REQUIRE(ptr->help() == "");
-  REQUIRE(ptr->to_str() == "<not set>");
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345", "abcdef" };
+
+  std::string sink;
+  arg.bind_str(&sink);
+
+  REQUIRE(sink.empty());
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 2);
+  REQUIRE(arg.is_set());
+  REQUIRE(sink == "abcdef");
 }
 
-TEST_CASE("Floaty knob requires sink", "[argparse::floaty_knob]")
+TEST_CASE("bind vec", "[argparse::argument]")
 {
-  REQUIRE_THROWS_AS(argparse::floaty_knob(nullptr), assert_failed);
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345", "abcdef", "7913" };
+
+  string_vec sink;
+  arg.bind_vec(&sink);
+
+  REQUIRE(sink.empty());
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 3);
+  REQUIRE(arg.is_set());
+  REQUIRE(sink == string_vec{ "abcdef", "7913" });
 }
 
-TEST_CASE("Floaty knob with values", "[argparse::floaty_knob]")
+TEST_CASE("parse wrong argument", "[argparse::argument]")
 {
-  double sink = 3.142;
-  consumer_autoptr ptr(new argparse::floaty_knob(&sink, "a metavar", "help!"));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->metavar() == "a metavar");
-  REQUIRE(ptr->help() == "help!");
-  REQUIRE(ptr->to_str() == "3.142");
+  argparse::argument arg("--12345");
+  string_vec values{ "--54321" };
+
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_FALSE(arg.is_set());
 }
 
-TEST_CASE("Floaty knob consumes one argument", "[argparse::floaty_knob]")
+TEST_CASE("warning on first duplicate argument", "[argparse::argument]")
 {
-  double sink = 47.0;
-  string_vec arguments;
-  arguments.push_back("-19.84");
-  arguments.push_back("bar");
-  consumer_autoptr ptr(new argparse::floaty_knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == 1);
-  CHECK(ptr->is_set());
-  REQUIRE(sink == -19.84);
-  REQUIRE(ptr->to_str() == "-19.84");
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345" };
+
+  std::stringstream ss;
+  arg.set_ostream(&ss);
+
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(ss.str() == "");
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(ss.str() == "WARNING: Command-line option --12345 has been specified "
+                      "more than once.\n");
+  // Only display the warning once per argument
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(ss.str() == "WARNING: Command-line option --12345 has been specified "
+                      "more than once.\n");
 }
 
-TEST_CASE("Floaty knob does not consume empty list of arguments",
-          "[argparse::floaty_knob]")
+TEST_CASE("no warning on main alias", "[argparse::argument]")
 {
-  double sink = 13;
-  const string_vec arguments;
-  consumer_autoptr ptr(new argparse::floaty_knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) ==
-          static_cast<size_t>(-1));
-  CHECK(!ptr->is_set());
-  REQUIRE(sink == 13);
-  REQUIRE(ptr->to_str() == "13");
+  argparse::argument arg("--12345");
+  arg.deprecated_alias("--foo");
+  string_vec values{ "--12345" };
+
+  std::stringstream ss;
+  arg.set_ostream(&ss);
+
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(ss.str() == "");
 }
 
-TEST_CASE("Floaty knob rejects trailing garbage", "[argparse::floaty_knob]")
+TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 {
-  double sink = 47.0;
-  string_vec arguments;
-  arguments.push_back("-19.84wat");
-  consumer_autoptr ptr(new argparse::floaty_knob(&sink));
-  CHECK(!ptr->is_set());
-  REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == -1);
-  CHECK(!ptr->is_set());
+  argparse::argument arg("--12345");
+  arg.deprecated_alias("--foo");
+  string_vec values{ "--foo" };
+
+  std::stringstream ss;
+  arg.set_ostream(&ss);
+
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE(ss.str() == "WARNING: Option --foo is deprecated and will be removed "
+                      "in the future. Please use --12345 instead.\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // parser
+
+const std::string HELP_HEADER = "My App v1234\n\n"
+                                "basic help\n"
+                                "OPTIONS:\n"
+                                "  -h, --help\n"
+                                "    Display this message.\n"
+                                "  -v, --version\n"
+                                "    Print the version string.\n\n";
+
+TEST_CASE("--version", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  const auto arg = GENERATE("-v", "--version");
+  const char* args[] = { "exe", arg };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(ss.str() == "My App v1234\n");
+}
+
+TEST_CASE("--help", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  const auto arg = GENERATE("-h", "--help");
+  const char* args[] = { "exe", arg };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(ss.str() == HELP_HEADER);
+}
+
+TEST_CASE("--help with deprecated argument", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").deprecated();
+  const char* args[] = { "exe", "--help" };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE_THAT(ss.str(), !Contains("--foo"));
+}
+
+TEST_CASE("unexpected positional argument", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  const char* args[] = { "exe", "foo" };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "ERROR: Unexpected positional argument 'foo'\n");
+}
+
+TEST_CASE("unexpected argument", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  const char* args[] = { "exe", "--foo" };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "ERROR: Unknown argument '--foo'\n");
+}
+
+TEST_CASE("typo in argument", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  const char* args[] = { "exe", "--halp" };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(
+    ss.str() ==
+    "ERROR: Unknown argument '--halp'\n\n    Did you mean\n      --help\n");
+}
+
+TEST_CASE("partial argument", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--partofalongargument");
+  const char* args[] = { "exe", "--part" };
+
+  std::stringstream ss;
+  p.set_ostream(&ss);
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "ERROR: Unknown argument '--part'\n\n    Did you mean\n  "
+                      "    --partofalongargument\n");
+}
+
+TEST_CASE("parse multiple arguments", "[argparse::parser]")
+{
+  unsigned sink = 0;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--arg1").bind_uint(&sink);
+  p.add("--arg2");
+  p.add("--arg3");
+  const char* args[] = { "exe", "--arg1", "1234", "--arg3" };
+
+  REQUIRE(p.parse_args(4, args) == argparse::parse_result::ok);
+  REQUIRE(p.is_set("--arg1"));
+  REQUIRE_FALSE(p.is_set("--arg2"));
+  REQUIRE(p.is_set("--arg3"));
+  REQUIRE(sink == 1234);
+}
+
+TEST_CASE("user supplied argument", "[argparse::parser]")
+{
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--test");
+  p.set_ostream(&ss);
+  p.print_help();
+
+  REQUIRE(ss.str() == HELP_HEADER + "  --test\n");
+}
+
+TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
+{
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--test", "META");
+  p.set_ostream(&ss);
+  p.print_help();
+
+  REQUIRE(ss.str() == HELP_HEADER + "  --test META\n");
+}
+
+TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
+{
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--test", "META")
+    .help("A long help message that exceeds the limit of 80 characters by some "
+          "amount in order to test the line break functionality");
+  p.set_ostream(&ss);
+  p.set_terminal_width(80);
+  p.print_help();
+
+  REQUIRE(ss.str() == HELP_HEADER +
+                        "  --test META\n    A long help message that exceeds "
+                        "the limit of 80 characters by some amount\n    in "
+                        "order to test the line break functionality\n");
+}
+
+TEST_CASE("help with default value", "[argparse::parser]")
+{
+  unsigned sink = 0;
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--test", "META")
+    .help("A long help message that exceeds the limit of 80 characters by some "
+          "amount in order to test the line break functionality")
+    .bind_uint(&sink)
+    .with_default(1234);
+  p.set_ostream(&ss);
+  p.set_terminal_width(80);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          HELP_HEADER +
+            "  --test META\n    A long help message that exceeds the limit of "
+            "80 characters by some amount\n    in order to test the line break "
+            "functionality [default: 1234]\n");
+}
+
+TEST_CASE("required option missing", "[argparse::parser]")
+{
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").requires("--bar");
+  p.add("--bar");
+  p.set_ostream(&ss);
+
+  const char* args[] = { "exe", "--foo" };
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() ==
+          "ERROR: Option --bar is required when using option --foo\n");
+}
+
+TEST_CASE("required option supplied", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").requires("--bar");
+  p.add("--bar");
+
+  const char* args[] = { "exe", "--foo", "--bar" };
+  REQUIRE(p.parse_args(3, args) == argparse::parse_result::ok);
+}
+
+TEST_CASE("conflicting option missing", "[argparse::parser]")
+{
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").conflicts("--bar");
+  p.add("--bar");
+
+  const char* args[] = { "exe", "--foo" };
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::ok);
+}
+
+TEST_CASE("conflicting option supplied", "[argparse::parser]")
+{
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").conflicts("--bar");
+  p.add("--bar");
+  p.set_ostream(&ss);
+
+  const char* args[] = { "exe", "--foo", "--bar" };
+  REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() ==
+          "ERROR: Option --bar cannot be used together with option --foo\n");
+}
+
+TEST_CASE("missing value", "[argparse::parser]")
+{
+  unsigned sink = 0;
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").bind_uint(&sink);
+  p.set_ostream(&ss);
+
+  const char* args[] = { "exe", "--foo" };
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "ERROR: No value supplied for --foo\n");
+}
+
+TEST_CASE("invalid value", "[argparse::parser]")
+{
+  unsigned sink = 0;
+  std::stringstream ss;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--foo").bind_uint(&sink);
+  p.set_ostream(&ss);
+
+  const char* args[] = { "exe", "--foo", "one" };
+  REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "ERROR: Invalid value for --foo: \"one\"\n");
+}
