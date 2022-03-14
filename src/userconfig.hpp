@@ -166,6 +166,9 @@ public:
   //! Set to true if --interleaved or --interleaved-output is set.
   bool interleaved_output;
 
+  //! Maximum of reads/read pairs to process
+  unsigned head;
+
   //! Character separating the mate number from the read name in FASTQ reads.
   char mate_separator;
 

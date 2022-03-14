@@ -371,12 +371,10 @@ line_reader::refill_buffers_gzip()
 void
 line_reader::close_buffers_gzip()
 {
+  // Pending input is ignored
+
   if (m_gzip_stream) {
 #if defined(USE_LIBISAL)
-    if (m_gzip_stream->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
-      throw_gzip_error(__func__, nullptr, "incomplete gzip stream");
-    }
-
     m_gzip_stream.reset();
     m_gzip_header.reset();
 #else

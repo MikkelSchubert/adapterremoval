@@ -183,6 +183,7 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_eof(false)
   , m_timer("reads")
   , m_lock()
+  , m_head(config.head)
 {
   if (config.interleaved_input) {
     AR_DEBUG_ASSERT(config.input_files_2.empty());
@@ -206,25 +207,58 @@ read_fastq::process(analytical_chunk* chunk)
   }
 
   read_chunk_ptr file_chunk(new fastq_read_chunk());
-  auto reads_1 = &file_chunk->reads_1;
-  auto reads_2 = m_single_end ? reads_1 : &file_chunk->reads_2;
+  if (m_single_end) {
+    read_single_end(file_chunk);
+  } else {
+    read_paired_end(file_chunk);
+  }
+
+  m_eof |= !m_head;
+  file_chunk->eof = m_eof;
+
+  m_timer.increment(file_chunk->reads_1.size() + file_chunk->reads_2.size());
+
+  chunk_vec chunks;
+  chunks.emplace_back(m_next_step, std::move(file_chunk));
+
+  return chunks;
+}
+
+void
+read_fastq::read_single_end(read_chunk_ptr& chunk)
+{
+  fastq record;
+  size_t n_nucleotides = 0;
+  while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && m_head && !m_eof) {
+    m_eof = !read_record(*m_io_input_1, &chunk->reads_1, record, n_nucleotides);
+
+    if (m_head != std::numeric_limits<unsigned>::max()) {
+      m_head--;
+    }
+  }
+}
+
+void
+read_fastq::read_paired_end(read_chunk_ptr& chunk)
+{
+  auto reads_1 = &chunk->reads_1;
+  auto reads_2 = &chunk->reads_2;
 
   fastq record;
-  bool eof = false;
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && !eof) {
-    eof = !read_record(*m_io_input_1, reads_1, record, n_nucleotides);
+  while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && m_head && !m_eof) {
+    m_eof = !read_record(*m_io_input_1, reads_1, record, n_nucleotides);
 
     bool eof_2 = !read_record(*m_io_input_2, reads_2, record, n_nucleotides);
 
-    if (eof && !eof_2) {
+    if (m_eof && !eof_2) {
       print_locker lock;
       std::cerr << "ERROR: More mate 2 reads than mate 1 reads found in '"
                 << m_io_input_1->filename() << "'; file may be truncated. "
                 << "Please fix before continuing." << std::endl;
 
       throw thread_abort();
-    } else if (eof_2 && !(eof || m_single_end)) {
+    } else if (eof_2 && !m_eof) {
       print_locker lock;
       std::cerr << "ERROR: More mate 1 reads than mate 2 reads found in '"
                 << m_io_input_2->filename() << "'; file may be truncated. "
@@ -233,18 +267,10 @@ read_fastq::process(analytical_chunk* chunk)
       throw thread_abort();
     }
 
-    eof |= eof_2;
+    if (m_head != std::numeric_limits<unsigned>::max()) {
+      m_head--;
+    }
   }
-
-  file_chunk->eof = eof;
-  m_eof = eof;
-
-  m_timer.increment(file_chunk->reads_1.size() + file_chunk->reads_2.size());
-
-  chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(file_chunk));
-
-  return chunks;
 }
 
 void

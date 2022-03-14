@@ -198,6 +198,7 @@ userconfig::userconfig(const std::string& name,
   , paired_ended_mode()
   , interleaved_input()
   , interleaved_output()
+  , head()
   , mate_separator(MATE_SEPARATOR)
   , min_genomic_length()
   , max_genomic_length()
@@ -248,6 +249,11 @@ userconfig::userconfig(const std::string& name,
     .help("Input files containing mate 2 reads; if used, then the same number "
           "of files as --file1 must be listed [OPTIONAL]")
     .bind_vec(&input_files_2);
+  argparser.add("--head", "N")
+    .help("Process only the first N reads in single-end mode or the first N "
+          "read-pairs in paired-end mode [default: all reads]")
+    .bind_uint(&head)
+    .with_default(std::numeric_limits<unsigned>::max());
 
   argparser.add("--identify-adapters")
     .help("Attempt to identify the adapter pair of PE reads, by searching for "

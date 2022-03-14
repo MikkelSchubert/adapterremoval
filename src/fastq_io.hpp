@@ -127,6 +127,11 @@ public:
   read_fastq& operator=(const read_fastq&) = delete;
 
 private:
+  /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
+  void read_single_end(read_chunk_ptr& chunk);
+  /** Fills a chunk with PE reads; stops on EOF or after `head` reads. */
+  void read_paired_end(read_chunk_ptr& chunk);
+
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_io_input_1_base;
   //! The underlying file reader for mate 2 read (if not interleaved)
@@ -148,6 +153,9 @@ private:
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
+
+  //! Number of reads to process
+  unsigned m_head;
 };
 
 /**
