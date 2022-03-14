@@ -234,11 +234,12 @@ scheduler::run(int nthreads)
     return false;
   }
 
-  for (auto step : m_steps) {
+  // Steps are added in reverse order
+  for (auto it = m_steps.rbegin(); it != m_steps.rend(); ++it) {
     try {
-      step->ptr->finalize();
+      (*it)->ptr->finalize();
     } catch (const std::exception&) {
-      std::cerr << "ERROR: Failed to finalizing task " << step->name << ":\n";
+      std::cerr << "ERROR: Failed to finalizing task " << (*it)->name << ":\n";
       throw;
     }
   }
