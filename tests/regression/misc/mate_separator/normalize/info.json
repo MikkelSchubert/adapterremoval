@@ -1,0 +1,10 @@
+{
+	"arguments": [
+		"--mate-separator",
+		"."
+	],
+	"return_code": 0,
+	"stderr": [
+	],
+	"exhaustive": false
+}

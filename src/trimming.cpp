@@ -282,7 +282,6 @@ chunk_vec
 pe_reads_processor::process(analytical_chunk* chunk)
 {
   sequence_merger merger;
-  merger.set_mate_separator(m_config.mate_separator);
   merger.set_conservative(m_config.merge_conservatively);
   merger.set_max_recalculated_score(m_config.quality_max);
 
