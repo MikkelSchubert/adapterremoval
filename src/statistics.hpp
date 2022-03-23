@@ -3,6 +3,7 @@
  *                                                                       *
  * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
  * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
+ * Copyright (C) 2010-17 by Simon Andrews
  *                                                                       *
  * If you use the program, please cite the paper:                        *
  * S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation *
@@ -29,18 +30,71 @@
 #include <random>  // for mt19937
 #include <vector>  // for vector
 
-#include "counts.hpp" // for counts
-#include "fastq.hpp"  // for ACGT_TO_IDX
+#include "commontypes.hpp" // for string_vec
+#include "counts.hpp"      // for counts, rates
+#include "fastq.hpp"       // for ACGT_TO_IDX
+#include "robin_hood.hpp"  // for unordered_flat_map
 
-class fastq_statistics;
 class demux_statistics;
-class trimming_statistics;
+class duplication_statistics;
+class fastq_statistics;
 class statistics;
+class trimming_statistics;
 
-typedef std::shared_ptr<fastq_statistics> fastq_stats_ptr;
 typedef std::shared_ptr<demux_statistics> demux_stats_ptr;
-typedef std::shared_ptr<trimming_statistics> trim_stats_ptr;
+typedef std::shared_ptr<duplication_statistics> duplication_stats_ptr;
+typedef std::shared_ptr<fastq_statistics> fastq_stats_ptr;
 typedef std::shared_ptr<statistics> stats_ptr;
+typedef std::shared_ptr<trimming_statistics> trim_stats_ptr;
+
+/**
+ * Estimation of the fraction of duplicated sequences.
+ *
+ * Adapted from FastQC v0.11.9 by Simon Andrews under GPLv3+.
+ */
+class duplication_statistics
+{
+public:
+  /** Represents the results of a duplication estimate. **/
+  struct summary
+  {
+    summary();
+
+    //! X-axis labels; the number of duplicates : 1, 2, .., >10, >50, >100, ..
+    string_vec labels;
+    //! Fraction of sequences for X-axis label
+    rates total_sequences;
+    //! Fraction of sequences for X-axis label after de-duplication
+    rates unique_sequences;
+    //! Estimated fraction of unique sequences in input
+    double unique_frac;
+  };
+
+  duplication_statistics(size_t max_unique_sequences);
+
+  /** **/
+  void process(const fastq& read);
+
+  summary summarize() const;
+
+  size_t max_unique() const;
+
+private:
+  void insert(const std::string& key);
+
+  /** Attempts to correct the number of observations for a given bin */
+  double correct_count(size_t bin, size_t count) const;
+
+  typedef robin_hood::unordered_flat_map<std::string, size_t> string_counts;
+
+  /** Maximum size of m_sequence_counts. */
+  size_t m_max_unique_sequences;
+  /** Map of truncated sequences to sequence counts. */
+  string_counts m_sequence_counts;
+
+  size_t m_sequences_counted;
+  size_t m_sequences_counted_at_max;
+};
 
 /** Class used to collect statistics about pre/post-processed FASTQ reads. */
 class fastq_statistics
@@ -82,6 +136,11 @@ public:
     return m_quality_pos.at(ACGT_TO_IDX(nuc));
   }
 
+  /** Count duplications with the given max number of unique sequences. */
+  void init_duplication_stats(size_t max_unique);
+  /** Return the duplication statistics, if any. */
+  const duplication_stats_ptr& duplication() const;
+
   /** Sum statistics, e.g. those used by different threads. */
   fastq_statistics& operator+=(const fastq_statistics& other);
 
@@ -115,6 +174,9 @@ private:
 
   //! Maximum size of read processed; used to resize counters as needed
   size_t m_max_sequence_len;
+
+  //! Optional duplication statistics
+  duplication_stats_ptr m_duplication;
 
   //! Copy construction not supported
   fastq_statistics(const fastq_statistics&) = delete;
@@ -221,8 +283,12 @@ struct statistics_builder
 public:
   statistics_builder();
 
+  /** The number of barcodes used for demultiplexing (0 if disabled). */
   statistics_builder& demultiplexing(size_t barcodes);
+  /** Sampling rate of sequences used for sequence composition statistics. */
   statistics_builder& sample_rate(double rate);
+  /** Estimate duplication rate using the algorithm implemented in FastQC. */
+  statistics_builder& estimate_duplication(size_t max_unique);
 
   statistics initialize() const;
 
@@ -231,4 +297,6 @@ private:
   size_t m_barcode_count;
   //! Fraction of reads sampled for costly statistics (quality distrib., etc.).
   double m_sample_rate;
+  //! The max number of unique sequences counted when estimating duplication.
+  size_t m_max_unique;
 };

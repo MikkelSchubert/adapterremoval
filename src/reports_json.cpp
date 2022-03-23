@@ -380,6 +380,26 @@ struct io_section
       const auto quality_dist = m_stats->quality_dist().trim();
       writer.write("quality_scores", quality_dist / quality_dist.sum());
       writer.write("gc_content", m_stats->gc_content());
+
+      // Currently only for input 1/2
+      const auto duplication = m_stats->duplication();
+
+      if (duplication) {
+        // Must be enabled, but key is always written for applicable files
+        if (duplication->max_unique()) {
+          WITH_SECTION(writer, "duplication")
+          {
+            const auto summary = duplication->summarize();
+
+            writer.write("labels", summary.labels);
+            writer.write("unique_sequences", summary.unique_sequences);
+            writer.write("total_sequences", summary.total_sequences);
+            writer.write_float("unique_frac", summary.unique_frac);
+          }
+        } else {
+          writer.write_null("duplication");
+        }
+      }
     }
   }
 

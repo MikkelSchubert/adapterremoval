@@ -228,6 +228,7 @@ userconfig::userconfig(const std::string& name,
   , barcode_mm_r2()
   , adapters()
   , report_sample_rate()
+  , report_duplication()
   , argparser(name, version, help)
   , adapter_1()
   , adapter_2()
@@ -541,6 +542,12 @@ userconfig::userconfig(const std::string& name,
           "1.0) results in an 10-30% decrease in throughput")
     .bind_double(&report_sample_rate)
     .with_default(0.1);
+  argparser.add("--report-duplication", "N")
+    .help("FastQC based duplicate detection, based on the frequency of the "
+          "first N unique sequences observed. A value of 100,000 corresponds "
+          "to FastQC defaults; a value of 0 disables the analysis")
+    .bind_uint(&report_duplication)
+    .with_default(0);
 
   argparser.add("--collapse-deterministic").deprecated();
   argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);

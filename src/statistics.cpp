@@ -3,6 +3,7 @@
  *                                                                       *
  * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
  * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
+ * Copyright (C) 2010-17 by Simon Andrews
  *                                                                       *
  * If you use the program, please cite the paper:                        *
  * S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation *
@@ -23,12 +24,183 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <cstdlib> // for size_t
-#include <string>  // for string
+#include <iostream>
+#include <string> // for string
 
+#include "debug.hpp"     // for AR_DEBUG_ASSERT
 #include "fastq.hpp"     // for ACGT_TO_IDX, fastq
 #include "fastq_enc.hpp" // for PHRED_OFFSET_33
 #include "statistics.hpp"
-#include "utilities.hpp" // for prng_seed
+#include "userconfig.hpp" // for userconfig
+#include "utilities.hpp"  // for prng_seed
+
+////////////////////////////////////////////////////////////////////////////////
+
+const size_t DUPLICATION_LEVELS = 16;
+const string_vec DUPLICATION_LABELS = { "1",    "2",   "3",   "4",
+                                        "5",    "6",   "7",   "8",
+                                        "9",    ">10", ">50", ">100",
+                                        ">500", ">1k", ">5k", ">10k" };
+
+size_t
+duplication_level(size_t count)
+{
+  if (count > 10000) {
+    return 15;
+  } else if (count > 50000) {
+    return 14;
+  } else if (count > 10000) {
+    return 13;
+  } else if (count > 500) {
+    return 12;
+  } else if (count > 100) {
+    return 11;
+  } else if (count > 50) {
+    return 10;
+  } else if (count > 10) {
+    return 9;
+  } else {
+    return count - 1;
+  }
+}
+
+duplication_statistics::summary::summary()
+  : labels(DUPLICATION_LABELS)
+  , total_sequences(DUPLICATION_LEVELS)
+  , unique_sequences(DUPLICATION_LEVELS)
+  , unique_frac()
+{}
+
+duplication_statistics::duplication_statistics(size_t max_unique_sequences)
+  : m_max_unique_sequences(max_unique_sequences)
+  , m_sequence_counts()
+  , m_sequences_counted()
+  , m_sequences_counted_at_max()
+{
+  m_sequence_counts.reserve(max_unique_sequences);
+}
+
+void
+duplication_statistics::process(const fastq& read)
+{
+  if (m_max_unique_sequences) {
+    if (read.length() > 75) {
+      insert(read.sequence().substr(0, 50));
+    } else {
+      insert(read.sequence());
+    }
+  }
+}
+
+duplication_statistics::summary
+duplication_statistics::summarize() const
+{
+  // Histogram of sequence duplication counts
+  robin_hood::unordered_flat_map<size_t, size_t> histogram;
+  for (const auto& it : m_sequence_counts) {
+    histogram[it.second]++;
+  }
+
+  duplication_statistics::summary summary;
+
+  summary.total_sequences.resize_up_to(DUPLICATION_LEVELS);
+  summary.unique_sequences.resize_up_to(DUPLICATION_LEVELS);
+
+  for (const auto& it : histogram) {
+    const auto level = it.first;
+    const auto count = correct_count(level, it.second);
+
+    const auto slot = duplication_level(level);
+    summary.total_sequences.inc(slot, count * level);
+    summary.unique_sequences.inc(slot, count);
+  }
+
+  const auto unique_count = summary.unique_sequences.sum();
+  const auto total_count = summary.total_sequences.sum();
+
+  if (total_count) {
+    summary.unique_frac = unique_count / static_cast<double>(total_count);
+    summary.total_sequences = summary.total_sequences / total_count;
+    summary.unique_sequences = summary.unique_sequences / unique_count;
+  } else {
+    summary.unique_frac = 1.0;
+  }
+
+  return summary;
+}
+
+size_t
+duplication_statistics::max_unique() const
+{
+  return m_max_unique_sequences;
+}
+
+double
+duplication_statistics::correct_count(size_t bin, size_t count) const
+{
+  // Adapted from
+  //   https://github.com/s-andrews/FastQC/blob/v0.11.9/uk/ac/babraham/FastQC/Modules/DuplicationLevel.java#L158
+
+  // See if we can bail out early
+  if (m_sequences_counted_at_max == m_sequences_counted) {
+    return count;
+  }
+
+  // If there aren't enough sequences left to hide another sequence with this
+  // count then we can also skip the calculation
+  if (m_sequences_counted - count < m_sequences_counted_at_max) {
+    return count;
+  }
+
+  // If not then we need to see what the likelihood is that we had another
+  // sequence with this number of observations which we would have missed.
+
+  // We'll start by working out the probability of NOT seeing a sequence with
+  // this duplication level within the first countAtLimit sequences of
+  // count.  This is easier than calculating the probability of
+  // seeing it.
+  double p_not_seeing_at_limit = 1.0;
+
+  // To save doing long calculations which are never going to produce anything
+  // meaningful we'll set a limit to our p-value calculation.  This is the
+  // probability below which we won't increase our count by 0.01 of an
+  // observation.  Once we're below this we stop caring about the corrected
+  // value since it's going to be so close to the observed value that we can
+  // just return that instead.
+  const double limit_of_caring = 1.0 - (count / (count + 0.01));
+
+  for (size_t i = 0; i < m_sequences_counted_at_max; i++) {
+    p_not_seeing_at_limit *= ((m_sequences_counted - i) - bin) /
+                             static_cast<double>(m_sequences_counted - i);
+
+    if (p_not_seeing_at_limit < limit_of_caring) {
+      p_not_seeing_at_limit = 0;
+      break;
+    }
+  }
+
+  // Scale by the chance of seeing
+  return count / (1 - p_not_seeing_at_limit);
+}
+
+void
+duplication_statistics::insert(const std::string& key)
+{
+  m_sequences_counted++;
+
+  const auto unique_seqs = m_sequence_counts.size();
+  if (unique_seqs >= m_max_unique_sequences) {
+    auto it = m_sequence_counts.find(key);
+    if (it != m_sequence_counts.end()) {
+      it->second++;
+    }
+  } else {
+    m_sequence_counts[key]++;
+    m_sequences_counted_at_max++;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 fastq_statistics::fastq_statistics(double sample_rate)
   : m_sample_rate(sample_rate)
@@ -44,6 +216,7 @@ fastq_statistics::fastq_statistics(double sample_rate)
   , m_called_pos(4)
   , m_quality_pos(4)
   , m_max_sequence_len()
+  , m_duplication()
 {}
 
 void
@@ -97,6 +270,23 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       m_gc_content_dist.inc((100.0 * n_gc) / (n_at + n_gc) + 0.5);
     }
   }
+
+  if (m_duplication) {
+    m_duplication->process(read);
+  }
+}
+
+void
+fastq_statistics::init_duplication_stats(size_t max_unique_sequences)
+{
+  AR_DEBUG_ASSERT(!m_duplication);
+  m_duplication = make_shared<duplication_statistics>(max_unique_sequences);
+}
+
+const duplication_stats_ptr&
+fastq_statistics::duplication() const
+{
+  return m_duplication;
 }
 
 fastq_statistics&
@@ -194,6 +384,7 @@ statistics::statistics(double sample_rate)
 statistics_builder::statistics_builder()
   : m_barcode_count(0)
   , m_sample_rate(1.0)
+  , m_max_unique(0)
 {}
 
 statistics_builder&
@@ -212,6 +403,14 @@ statistics_builder::demultiplexing(size_t barcodes)
   return *this;
 }
 
+statistics_builder&
+statistics_builder::estimate_duplication(size_t max_unique)
+{
+  m_max_unique = max_unique;
+
+  return *this;
+}
+
 statistics
 statistics_builder::initialize() const
 {
@@ -219,6 +418,9 @@ statistics_builder::initialize() const
   if (m_barcode_count) {
     stats.demultiplexing->barcodes.resize(m_barcode_count);
   }
+
+  stats.input_1->init_duplication_stats(m_max_unique);
+  stats.input_2->init_duplication_stats(m_max_unique);
 
   return stats;
 }

@@ -241,6 +241,8 @@ public:
 
   //! Fraction of reads used for quality/content curves, etc.
   double report_sample_rate;
+  //! Number of reads used to estimate duplication in input files
+  unsigned report_duplication;
 
   //! Copy construction not supported
   userconfig(const userconfig&) = delete;

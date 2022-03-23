@@ -123,6 +123,7 @@ demultiplex_sequences(const userconfig& config)
 
   statistics stats = statistics_builder()
                        .sample_rate(config.report_sample_rate)
+                       .estimate_duplication(config.report_duplication)
                        .demultiplexing(config.adapters.barcode_count())
                        .initialize();
 

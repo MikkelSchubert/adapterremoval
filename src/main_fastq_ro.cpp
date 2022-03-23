@@ -52,8 +52,10 @@ fastq_report_only(const userconfig& config)
 
   scheduler sch;
 
-  statistics stats =
-    statistics_builder().sample_rate(config.report_sample_rate).initialize();
+  statistics stats = statistics_builder()
+                       .sample_rate(config.report_sample_rate)
+                       .estimate_duplication(config.report_duplication)
+                       .initialize();
 
   // Discard all written reads
   size_t sink_step = sch.add_step("sink", new reads_sink());
