@@ -119,10 +119,10 @@ fastq_statistics::operator+=(const fastq_statistics& other)
 }
 
 trimming_statistics::trimming_statistics(double sample_rate)
-  : read_1(sample_rate)
-  , read_2(sample_rate)
-  , merged(sample_rate)
-  , discarded(sample_rate)
+  : read_1(make_shared<fastq_statistics>(sample_rate))
+  , read_2(make_shared<fastq_statistics>(sample_rate))
+  , merged(make_shared<fastq_statistics>(sample_rate))
+  , discarded(make_shared<fastq_statistics>(sample_rate))
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
   , overlapping_reads_merged()
@@ -142,10 +142,10 @@ trimming_statistics::trimming_statistics(double sample_rate)
 trimming_statistics&
 trimming_statistics::operator+=(const trimming_statistics& other)
 {
-  read_1 += other.read_1;
-  read_2 += other.read_2;
-  merged += other.merged;
-  discarded += other.discarded;
+  *read_1 += *other.read_1;
+  *read_2 += *other.read_2;
+  *merged += *other.merged;
+  *discarded += *other.discarded;
 
   adapter_trimmed_reads += other.adapter_trimmed_reads;
   adapter_trimmed_bases += other.adapter_trimmed_bases;
@@ -165,28 +165,16 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   return *this;
 }
 
-demultiplexing_statistics::demultiplexing_statistics(double sample_rate)
+demux_statistics::demux_statistics(double sample_rate)
   : barcodes()
   , unidentified(0)
   , ambiguous(0)
-  , unidentified_stats_1(sample_rate)
-  , unidentified_stats_2(sample_rate)
+  , unidentified_stats_1(make_shared<fastq_statistics>(sample_rate))
+  , unidentified_stats_2(make_shared<fastq_statistics>(sample_rate))
 {}
 
-bool
-demultiplexing_statistics::empty() const
-{
-  return barcodes.empty();
-}
-
-void
-demultiplexing_statistics::resize(size_t n)
-{
-  barcodes.resize(n);
-}
-
 size_t
-demultiplexing_statistics::total() const
+demux_statistics::total() const
 {
   size_t total = unidentified + ambiguous;
   for (size_t i = 0; i < barcodes.size(); ++i) {
@@ -194,4 +182,43 @@ demultiplexing_statistics::total() const
   }
 
   return total;
+}
+
+statistics::statistics(double sample_rate)
+  : input_1(make_shared<fastq_statistics>(sample_rate))
+  , input_2(make_shared<fastq_statistics>(sample_rate))
+  , demultiplexing(make_shared<demux_statistics>(sample_rate))
+  , trimming()
+{}
+
+statistics_builder::statistics_builder()
+  : m_barcode_count(0)
+  , m_sample_rate(1.0)
+{}
+
+statistics_builder&
+statistics_builder::sample_rate(double value)
+{
+  m_sample_rate = value;
+
+  return *this;
+}
+
+statistics_builder&
+statistics_builder::demultiplexing(size_t barcodes)
+{
+  m_barcode_count = barcodes;
+
+  return *this;
+}
+
+statistics
+statistics_builder::initialize() const
+{
+  statistics stats(m_sample_rate);
+  if (m_barcode_count) {
+    stats.demultiplexing->barcodes.resize(m_barcode_count);
+  }
+
+  return stats;
 }

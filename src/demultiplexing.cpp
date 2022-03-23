@@ -30,7 +30,6 @@
 #include "debug.hpp"       // for AR_DEBUG_ASSERT, AR_DEBUG_LOCK
 #include "demultiplexing.hpp"
 #include "fastq_io.hpp"   // for fastq_read_chunk, fastq_output_chunk, rea...
-#include "statistics.hpp" // for demultiplexing_statistics, fastq_statistics
 #include "userconfig.hpp" // for userconfig, fastq_encoding_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,7 +61,7 @@ const size_t post_demux_steps::disabled = static_cast<size_t>(-1);
 
 demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
-                                     demultiplexing_statistics* statistics)
+                                     demux_stats_ptr stats)
   : analytical_step(processing_order::ordered)
   , m_barcodes(config.adapters.get_barcodes())
   , m_barcode_table(m_barcodes,
@@ -74,15 +73,13 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   , m_unidentified_1()
   , m_unidentified_2()
   , m_steps(steps)
-  , m_statistics(statistics)
+  , m_statistics(stats)
   , m_lock()
 {
   AR_DEBUG_ASSERT(!m_barcodes.empty());
   AR_DEBUG_ASSERT(m_barcodes.size() == m_steps.samples.size());
   AR_DEBUG_ASSERT(m_statistics);
-  AR_DEBUG_ASSERT(m_statistics->empty());
-
-  m_statistics->resize(m_barcodes.size());
+  AR_DEBUG_ASSERT(m_statistics->barcodes.size() == m_barcodes.size());
 
   AR_DEBUG_ASSERT(m_steps.unidentified_1 != post_demux_steps::disabled);
   m_unidentified_1.reset(new fastq_output_chunk());
@@ -121,11 +118,10 @@ demultiplex_reads::flush_cache(bool eof)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_se_reads::demultiplex_se_reads(
-  const userconfig& config,
-  const post_demux_steps& steps,
-  demultiplexing_statistics* statistics)
-  : demultiplex_reads(config, steps, statistics)
+demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
+                                           const post_demux_steps& steps,
+                                           demux_stats_ptr stats)
+  : demultiplex_reads(config, steps, stats)
 {}
 
 chunk_vec
@@ -146,7 +142,7 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
         m_statistics->ambiguous += 1;
       }
 
-      m_statistics->unidentified_stats_1.process(read);
+      m_statistics->unidentified_stats_1->process(read);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
       read.truncate(m_barcodes.at(best_barcode).first.length());
@@ -162,11 +158,10 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplex_pe_reads::demultiplex_pe_reads(
-  const userconfig& config,
-  const post_demux_steps& steps,
-  demultiplexing_statistics* statistics)
-  : demultiplex_reads(config, steps, statistics)
+demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
+                                           const post_demux_steps& steps,
+                                           demux_stats_ptr stats)
+  : demultiplex_reads(config, steps, stats)
 {}
 
 chunk_vec
@@ -195,8 +190,8 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
         m_statistics->ambiguous += 2;
       }
 
-      m_statistics->unidentified_stats_1.process(*it_1);
-      m_statistics->unidentified_stats_2.process(*it_2);
+      m_statistics->unidentified_stats_1->process(*it_1);
+      m_statistics->unidentified_stats_2->process(*it_2);
     } else {
       read_chunk_ptr& dst = m_cache.at(best_barcode);
 

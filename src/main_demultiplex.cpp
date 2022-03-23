@@ -63,11 +63,11 @@ public:
   {
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
 
-    statistics_ptr stats = m_stats.acquire();
+    auto stats = m_stats.acquire();
     trimmed_reads chunks(m_output, read_chunk->eof);
 
     for (auto& read : read_chunk->reads_1) {
-      stats->read_1.process(read);
+      stats->read_1->process(read);
       chunks.add(read, read_type::mate_1);
     }
 
@@ -91,7 +91,7 @@ public:
     read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
     AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
 
-    statistics_ptr stats = m_stats.acquire();
+    auto stats = m_stats.acquire();
     trimmed_reads chunks(m_output, read_chunk->eof);
 
     fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
@@ -100,8 +100,8 @@ public:
       fastq& read_1 = *it_1++;
       fastq& read_2 = *it_2++;
 
-      stats->read_1.process(read_1);
-      stats->read_2.process(read_2);
+      stats->read_1->process(read_1);
+      stats->read_2->process(read_2);
 
       chunks.add(read_1, read_type::mate_1);
       chunks.add(read_2, read_type::mate_2);
@@ -120,7 +120,11 @@ demultiplex_sequences(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  ar_statistics stats(config.report_sample_rate);
+
+  statistics stats = statistics_builder()
+                       .sample_rate(config.report_sample_rate)
+                       .demultiplexing(config.adapters.barcode_count())
+                       .initialize();
 
   auto out_files = config.get_output_filenames();
 
@@ -159,12 +163,12 @@ demultiplex_sequences(const userconfig& config)
     if (config.paired_ended_mode) {
       processing_step = sch.add_step(
         "demultiplex",
-        new demultiplex_pe_reads(config, steps, &stats.demultiplexing));
+        new demultiplex_pe_reads(config, steps, stats.demultiplexing));
 
     } else {
       processing_step = sch.add_step(
         "demultiplex",
-        new demultiplex_se_reads(config, steps, &stats.demultiplexing));
+        new demultiplex_se_reads(config, steps, stats.demultiplexing));
     }
   } else {
     processing_step = steps.samples.back();
@@ -183,7 +187,7 @@ demultiplex_sequences(const userconfig& config)
   }
 
   for (auto ptr : processors) {
-    stats.trimming.push_back(*ptr->get_final_statistics());
+    stats.trimming.push_back(ptr->get_final_statistics());
   }
 
   return !write_json_report(config, stats, out_files.settings);

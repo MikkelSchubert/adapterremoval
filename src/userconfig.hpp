@@ -25,7 +25,6 @@
 #pragma once
 
 #include <array>    // for array
-#include <memory>   // for unique_ptr
 #include <stddef.h> // for size_t
 #include <string>   // for string
 #include <utility>  // for pair
@@ -39,8 +38,6 @@
 
 struct alignment_info;
 struct trimming_statistics;
-
-typedef std::unique_ptr<trimming_statistics> statistics_ptr;
 
 enum class ar_command
 {

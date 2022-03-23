@@ -33,9 +33,10 @@
 #include "fastq.hpp"         // for fastq_pair_vec
 #include "fastq_io.hpp"      // for read_chunk_ptr, output_chunk_ptr
 #include "scheduler.hpp"     // for chunk_vec, analytical_step
+#include "statistics.hpp"    // for demux_statistics, fastq_statistics
 
 class userconfig;
-struct demultiplexing_statistics;
+struct demux_statistics;
 
 /** Map of samples to downstream FASTQ processing/writing steps. */
 class post_demux_steps
@@ -66,7 +67,7 @@ public:
   /** Setup demultiplexer; keeps reference to config object. */
   demultiplex_reads(const userconfig& config,
                     const post_demux_steps& steps,
-                    demultiplexing_statistics* statistics);
+                    demux_stats_ptr stats);
 
   /** Frees any unflushed caches. */
   virtual ~demultiplex_reads();
@@ -104,7 +105,7 @@ protected:
   post_demux_steps m_steps;
 
   //! Sink for demultiplexing statistics; used by subclasses.
-  demultiplexing_statistics* m_statistics;
+  demux_stats_ptr m_statistics;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
@@ -117,7 +118,7 @@ public:
   /** See demultiplex_reads::demultiplex_reads. */
   demultiplex_se_reads(const userconfig& config,
                        const post_demux_steps& steps,
-                       demultiplexing_statistics* statistics);
+                       demux_stats_ptr stats);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with
@@ -134,7 +135,7 @@ public:
   /** See demultiplex_reads::demultiplex_reads. */
   demultiplex_pe_reads(const userconfig& config,
                        const post_demux_steps& steps,
-                       demultiplexing_statistics* statistics);
+                       demux_stats_ptr stats);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with

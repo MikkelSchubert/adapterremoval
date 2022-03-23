@@ -38,6 +38,7 @@
 #include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
 #include "strutils.hpp"   // for cli_formatter
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
+#include "utilities.hpp"  // for make_shared
 
 #define WITH_SECTION(writer, key)                                              \
   if (const auto section##__LINE__ = (writer).start(key))
@@ -55,7 +56,7 @@ write_report_meta(const userconfig& config, json_writer& writer)
 
 void
 write_report_summary_stats(json_writer& writer,
-                           const std::vector<const fastq_statistics*>& stats)
+                           const std::vector<fastq_stats_ptr>& stats)
 {
   size_t n_reads = 0;
   size_t n_reads_s = 0;
@@ -177,7 +178,7 @@ write_read_length(json_writer& writer,
 void
 write_report_summary(const userconfig& config,
                      json_writer& writer,
-                     const ar_statistics& stats)
+                     const statistics& stats)
 {
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
 
@@ -185,15 +186,14 @@ write_report_summary(const userconfig& config,
   {
     WITH_SECTION(writer, "input")
     {
-      std::vector<const fastq_statistics*> input = { &stats.input_1,
-                                                     &stats.input_2 };
+      std::vector<fastq_stats_ptr> input = { stats.input_1, stats.input_2 };
       write_report_summary_stats(writer, input);
     }
 
     if (config.adapters.barcode_count()) {
       WITH_SECTION(writer, "demultiplexing")
       {
-        const auto& demux = stats.demultiplexing;
+        const auto& demux = *stats.demultiplexing;
         const auto total = demux.total();
 
         writer.write_int("total_reads", total);
@@ -217,7 +217,7 @@ write_report_summary(const userconfig& config,
     {
       trimming_statistics totals;
       for (const auto& it : stats.trimming) {
-        totals += it;
+        totals += *it;
       }
 
       write_report_trimming(
@@ -228,11 +228,11 @@ write_report_summary(const userconfig& config,
     {
       WITH_SECTION(writer, "passed")
       {
-        std::vector<const fastq_statistics*> output;
+        std::vector<fastq_stats_ptr> output;
         for (const auto& it : stats.trimming) {
-          output.push_back(&it.read_1);
-          output.push_back(&it.read_2);
-          output.push_back(&it.merged);
+          output.push_back(it->read_1);
+          output.push_back(it->read_2);
+          output.push_back(it->merged);
         }
 
         write_report_summary_stats(writer, output);
@@ -242,14 +242,14 @@ write_report_summary(const userconfig& config,
         WITH_SECTION(writer, "unidentified_1")
         {
           write_report_summary_stats(
-            writer, { &stats.demultiplexing.unidentified_stats_1 });
+            writer, { stats.demultiplexing->unidentified_stats_1 });
         }
 
         if (config.paired_ended_mode) {
           WITH_SECTION(writer, "unidentified_2")
           {
             write_report_summary_stats(
-              writer, { &stats.demultiplexing.unidentified_stats_2 });
+              writer, { stats.demultiplexing->unidentified_stats_2 });
           }
         } else {
           writer.write_null("unidentified_2");
@@ -264,9 +264,9 @@ write_report_summary(const userconfig& config,
       } else {
         WITH_SECTION(writer, "discarded")
         {
-          std::vector<const fastq_statistics*> discarded;
+          std::vector<fastq_stats_ptr> discarded;
           for (const auto& it : stats.trimming) {
-            discarded.push_back(&it.discarded);
+            discarded.push_back(it->discarded);
           }
 
           write_report_summary_stats(writer, discarded);
@@ -280,7 +280,7 @@ write_report_summary(const userconfig& config,
 struct io_section
 {
   io_section(read_type rtype,
-             const fastq_statistics& stats,
+             const fastq_stats_ptr& stats,
              const output_sample_files& sample_files)
     : io_section(rtype, stats, string_vec())
   {
@@ -291,7 +291,7 @@ struct io_section
   }
 
   io_section(read_type rtype,
-             const fastq_statistics& stats,
+             const fastq_stats_ptr& stats,
              const string_vec& filenames)
     : m_read_type(rtype)
     , m_stats(stats)
@@ -337,20 +337,20 @@ struct io_section
         writer.write("filenames", m_filenames);
       }
 
-      writer.write_int("input_reads", m_stats.number_of_input_reads());
-      writer.write_int("output_reads", m_stats.number_of_output_reads());
-      writer.write_int("reads_sampled", m_stats.number_of_sampled_reads());
-      writer.write("lengths", m_stats.length_dist());
+      writer.write_int("input_reads", m_stats->number_of_input_reads());
+      writer.write_int("output_reads", m_stats->number_of_output_reads());
+      writer.write_int("reads_sampled", m_stats->number_of_sampled_reads());
+      writer.write("lengths", m_stats->length_dist());
 
-      auto total_bases = m_stats.uncalled_pos();
-      auto total_quality = m_stats.uncalled_quality_pos();
+      auto total_bases = m_stats->uncalled_pos();
+      auto total_quality = m_stats->uncalled_quality_pos();
 
       WITH_SECTION(writer, "quality_curves")
       {
         for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
           const auto nuc = IDX_TO_ACGT(nuc_i);
-          const auto& nucleotides = m_stats.nucleotides_pos(nuc);
-          const auto& quality = m_stats.qualities_pos(nuc);
+          const auto& nucleotides = m_stats->nucleotides_pos(nuc);
+          const auto& quality = m_stats->qualities_pos(nuc);
 
           total_bases += nucleotides;
           total_quality += quality;
@@ -365,34 +365,34 @@ struct io_section
       {
         for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
           const auto nuc = IDX_TO_ACGT(nuc_i);
-          const auto& bases = m_stats.nucleotides_pos(nuc);
+          const auto& bases = m_stats->nucleotides_pos(nuc);
 
           writer.write(std::string(1, tolower(nuc)), bases / total_bases);
         }
 
-        writer.write("n", m_stats.uncalled_quality_pos() / total_bases);
+        writer.write("n", m_stats->uncalled_quality_pos() / total_bases);
         writer.write(
           "gc",
-          (m_stats.nucleotides_pos('G') + m_stats.nucleotides_pos('C')) /
+          (m_stats->nucleotides_pos('G') + m_stats->nucleotides_pos('C')) /
             total_bases);
       }
 
-      const auto quality_dist = m_stats.quality_dist().trim();
+      const auto quality_dist = m_stats->quality_dist().trim();
       writer.write("quality_scores", quality_dist / quality_dist.sum());
-      writer.write("gc_content", m_stats.gc_content());
+      writer.write("gc_content", m_stats->gc_content());
     }
   }
 
 private:
   const read_type m_read_type;
-  const fastq_statistics& m_stats;
+  const fastq_stats_ptr m_stats;
   string_vec m_filenames;
 };
 
 void
 write_report_input(const userconfig& config,
                    json_writer& writer,
-                   const ar_statistics& stats)
+                   const statistics& stats)
 {
   WITH_SECTION(writer, "input")
   {
@@ -409,7 +409,7 @@ write_report_input(const userconfig& config,
 void
 write_report_demultiplexing(const userconfig& config,
                             json_writer& writer,
-                            const ar_statistics& sample_stats)
+                            const statistics& sample_stats)
 {
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
   const auto out_files = config.get_output_filenames();
@@ -418,7 +418,7 @@ write_report_demultiplexing(const userconfig& config,
     WITH_SECTION(writer, "demultiplexing")
     {
       size_t assigned_reads = 0;
-      const auto& demux = sample_stats.demultiplexing;
+      const auto& demux = *sample_stats.demultiplexing;
       for (size_t it : demux.barcodes) {
         assigned_reads += it;
       }
@@ -432,7 +432,7 @@ write_report_demultiplexing(const userconfig& config,
         for (size_t i = 0; i < demux.barcodes.size(); ++i) {
           WITH_SECTION(writer, config.adapters.get_sample_name(i))
           {
-            const auto& stats = sample_stats.trimming.at(i);
+            const auto& stats = *sample_stats.trimming.at(i);
             const auto& files = out_files.samples.at(i);
 
             writer.write_int("reads", demux.barcodes.at(i));
@@ -481,23 +481,23 @@ collect_files(const output_files& files, read_type rtype)
 void
 write_report_output(const userconfig& config,
                     json_writer& writer,
-                    const ar_statistics& stats)
+                    const statistics& stats)
 {
   if (config.run_type == ar_command::report_only) {
     writer.write_null("output");
     return;
   }
 
-  fastq_statistics output_1;
-  fastq_statistics output_2;
-  fastq_statistics merged;
-  fastq_statistics discarded;
+  fastq_stats_ptr output_1 = make_shared<fastq_statistics>();
+  fastq_stats_ptr output_2 = make_shared<fastq_statistics>();
+  fastq_stats_ptr merged = make_shared<fastq_statistics>();
+  fastq_stats_ptr discarded = make_shared<fastq_statistics>();
 
   for (const auto& it : stats.trimming) {
-    output_1 += it.read_1;
-    output_2 += it.read_2;
-    merged += it.merged;
-    discarded += it.discarded;
+    *output_1 += *it->read_1;
+    *output_2 += *it->read_2;
+    *merged += *it->merged;
+    *discarded += *it->discarded;
   }
 
   const auto out_files = config.get_output_filenames();
@@ -518,11 +518,11 @@ write_report_output(const userconfig& config,
       .write_to_if(writer, config.merge && !demux_only);
 
     io_section(read_type::unidentified_1,
-               stats.demultiplexing.unidentified_stats_1,
+               stats.demultiplexing->unidentified_stats_1,
                { out_files.unidentified_1 })
       .write_to_if(writer, config.adapters.barcode_count());
     io_section(read_type::unidentified_2,
-               stats.demultiplexing.unidentified_stats_2,
+               stats.demultiplexing->unidentified_stats_2,
                { out_files.unidentified_2 })
       .write_to_if(writer,
                    config.adapters.barcode_count() && config.paired_ended_mode);
@@ -534,7 +534,7 @@ write_report_output(const userconfig& config,
 
 bool
 write_json_report(const userconfig& config,
-                  const ar_statistics& stats,
+                  const statistics& stats,
                   const std::string& filename)
 {
   try {

@@ -34,14 +34,13 @@
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_writer.hpp"    // for buffer_ptr, buffer_vec, managed_writer
 #include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
+#include "statistics.hpp"        // for fastq_stats_ptr, fastq_statistics, ...
 #include "timer.hpp"             // for progress_timer
 
-struct ar_statistics;
 class fastq;
 class fastq_encoding;
 class fastq_output_chunk;
 class fastq_read_chunk;
-class fastq_statistics;
 class userconfig;
 
 typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
@@ -169,7 +168,7 @@ public:
   /** Constructor. */
   post_process_fastq(const fastq_encoding& encoding,
                      size_t next_step,
-                     ar_statistics* statitics = nullptr);
+                     statistics* statitics = nullptr);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   virtual chunk_vec process(analytical_chunk* chunk);
@@ -186,9 +185,9 @@ private:
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
   //! Statistics collected from raw mate 1 reads
-  fastq_statistics* m_statistics_1;
+  fastq_stats_ptr m_statistics_1;
   //! Statistics collected from raw mate 2 reads
-  fastq_statistics* m_statistics_2;
+  fastq_stats_ptr m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
 

@@ -26,11 +26,10 @@
 
 #include <vector>
 
-struct ar_statistics;
 class statistics;
 class userconfig;
 
 bool
 write_json_report(const userconfig& config,
-                  const ar_statistics& stats,
+                  const statistics& stats,
                   const std::string& filename);

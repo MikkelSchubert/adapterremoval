@@ -287,11 +287,11 @@ read_fastq::finalize()
 
 post_process_fastq::post_process_fastq(const fastq_encoding& encoding,
                                        size_t next_step,
-                                       ar_statistics* statistics)
+                                       statistics* stats)
   : analytical_step(processing_order::ordered)
   , m_encoding(encoding)
-  , m_statistics_1(statistics ? &statistics->input_1 : nullptr)
-  , m_statistics_2(statistics ? &statistics->input_2 : nullptr)
+  , m_statistics_1(stats ? stats->input_1 : nullptr)
+  , m_statistics_2(stats ? stats->input_2 : nullptr)
   , m_next_step(next_step)
   , m_eof(false)
   , m_lock()

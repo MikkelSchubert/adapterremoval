@@ -67,7 +67,11 @@ remove_adapter_sequences(const userconfig& config)
 
   scheduler sch;
   std::vector<reads_processor*> processors;
-  ar_statistics stats(config.report_sample_rate);
+
+  statistics stats = statistics_builder()
+                       .sample_rate(config.report_sample_rate)
+                       .demultiplexing(config.adapters.barcode_count())
+                       .initialize();
 
   auto out_files = config.get_output_filenames();
 
@@ -105,12 +109,12 @@ remove_adapter_sequences(const userconfig& config)
     if (config.paired_ended_mode) {
       processing_step = sch.add_step(
         "demultiplex",
-        new demultiplex_pe_reads(config, steps, &stats.demultiplexing));
+        new demultiplex_pe_reads(config, steps, stats.demultiplexing));
 
     } else {
       processing_step = sch.add_step(
         "demultiplex",
-        new demultiplex_se_reads(config, steps, &stats.demultiplexing));
+        new demultiplex_se_reads(config, steps, stats.demultiplexing));
     }
   } else {
     processing_step = steps.samples.back();
@@ -129,7 +133,7 @@ remove_adapter_sequences(const userconfig& config)
   }
 
   for (auto ptr : processors) {
-    stats.trimming.push_back(*ptr->get_final_statistics());
+    stats.trimming.push_back(ptr->get_final_statistics());
   }
 
   return !write_json_report(config, stats, out_files.settings);

@@ -25,11 +25,22 @@
 #pragma once
 
 #include <cstdlib> // for size_t
+#include <memory>  // for unique_ptr
 #include <random>  // for mt19937
 #include <vector>  // for vector
 
 #include "counts.hpp" // for counts
 #include "fastq.hpp"  // for ACGT_TO_IDX
+
+class fastq_statistics;
+class demux_statistics;
+class trimming_statistics;
+class statistics;
+
+typedef std::shared_ptr<fastq_statistics> fastq_stats_ptr;
+typedef std::shared_ptr<demux_statistics> demux_stats_ptr;
+typedef std::shared_ptr<trimming_statistics> trim_stats_ptr;
+typedef std::shared_ptr<statistics> stats_ptr;
 
 /** Class used to collect statistics about pre/post-processed FASTQ reads. */
 class fastq_statistics
@@ -104,21 +115,27 @@ private:
 
   //! Maximum size of read processed; used to resize counters as needed
   size_t m_max_sequence_len;
+
+  //! Copy construction not supported
+  fastq_statistics(const fastq_statistics&) = delete;
+  //! Assignment not supported
+  fastq_statistics& operator=(const fastq_statistics&) = delete;
 };
 
 /** Object used to collect summary statistics for trimming. */
-struct trimming_statistics
+class trimming_statistics
 {
+public:
   trimming_statistics(double sample_rate = 1.0);
 
   //! Statistics for first reads
-  fastq_statistics read_1;
+  fastq_stats_ptr read_1;
   //! Statistics for second reads
-  fastq_statistics read_2;
+  fastq_stats_ptr read_2;
   //! Statistics for merged reads
-  fastq_statistics merged;
+  fastq_stats_ptr merged;
   //! Statistics for discarded reads
-  fastq_statistics discarded;
+  fastq_stats_ptr discarded;
 
   //! Number of reads with adapters trimmed
   counts adapter_trimmed_reads;
@@ -149,15 +166,18 @@ struct trimming_statistics
 
   /** Combine statistics objects, e.g. those used by different threads. */
   trimming_statistics& operator+=(const trimming_statistics& other);
+
+  //! Copy construction not supported
+  trimming_statistics(const trimming_statistics&) = delete;
+  //! Assignment not supported
+  trimming_statistics& operator=(const trimming_statistics&) = delete;
 };
 
 /** Object used to collect summary statistics for demultiplexing. */
-struct demultiplexing_statistics
+class demux_statistics
 {
-  demultiplexing_statistics(double sample_rate = 1.0);
-
-  bool empty() const;
-  void resize(size_t n);
+public:
+  demux_statistics(double sample_rate = 1.0);
 
   size_t total() const;
 
@@ -169,24 +189,46 @@ struct demultiplexing_statistics
   size_t ambiguous;
 
   //! Statistics for unidentified mate 1 reads
-  fastq_statistics unidentified_stats_1;
+  fastq_stats_ptr unidentified_stats_1;
   //! Statistics for unidentified mate 2 reads
-  fastq_statistics unidentified_stats_2;
+  fastq_stats_ptr unidentified_stats_2;
+
+  //! Copy construction not supported
+  demux_statistics(const demux_statistics&) = delete;
+  //! Assignment not supported
+  demux_statistics& operator=(const demux_statistics&) = delete;
+
+  friend class statistics_builder;
 };
 
-// FIXME: Rename to something better
-struct ar_statistics
+class statistics
 {
-  inline ar_statistics(double sample_rate = 1.0)
-    : input_1(sample_rate)
-    , input_2(sample_rate)
-    , demultiplexing(sample_rate)
-    , trimming()
-  {}
+public:
+  fastq_stats_ptr input_1;
+  fastq_stats_ptr input_2;
 
-  fastq_statistics input_1;
-  fastq_statistics input_2;
+  demux_stats_ptr demultiplexing;
+  std::vector<trim_stats_ptr> trimming;
 
-  demultiplexing_statistics demultiplexing;
-  std::vector<trimming_statistics> trimming;
+private:
+  statistics(double sample_rate);
+
+  friend class statistics_builder;
+};
+
+struct statistics_builder
+{
+public:
+  statistics_builder();
+
+  statistics_builder& demultiplexing(size_t barcodes);
+  statistics_builder& sample_rate(double rate);
+
+  statistics initialize() const;
+
+private:
+  //! Number of demultiplexing barcodes
+  size_t m_barcode_count;
+  //! Fraction of reads sampled for costly statistics (quality distrib., etc.).
+  double m_sample_rate;
 };

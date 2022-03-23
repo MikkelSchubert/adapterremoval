@@ -37,8 +37,6 @@
 class output_sample_files;
 class userconfig;
 
-typedef std::unique_ptr<trimming_statistics> statistics_ptr;
-
 /** Helper class used to generate per file-type chunks for processed reads . */
 class trimmed_reads
 {
@@ -70,7 +68,7 @@ public:
                   const output_sample_files& output,
                   size_t nth);
 
-  statistics_ptr get_final_statistics();
+  trim_stats_ptr get_final_statistics();
 
 protected:
   const userconfig& m_config;

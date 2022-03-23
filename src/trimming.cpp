@@ -207,7 +207,7 @@ reads_processor::reads_processor(const userconfig& config,
   }
 }
 
-statistics_ptr
+trim_stats_ptr
 reads_processor::get_final_statistics()
 {
   auto stats = m_stats.acquire();
@@ -256,10 +256,10 @@ se_reads_processor::process(analytical_chunk* chunk)
     trim_read_termini(m_config, *stats, read, read_type::mate_1);
     trim_sequence_by_quality(m_config, *stats, read);
     if (is_acceptable_read(m_config, *stats, read)) {
-      stats->read_1.process(read);
+      stats->read_1->process(read);
       chunks.add(read, read_type::mate_1);
     } else {
-      stats->discarded.process(read);
+      stats->discarded->process(read);
       chunks.add(read, read_type::discarded_1);
     }
   }
@@ -334,10 +334,10 @@ pe_reads_processor::process(analytical_chunk* chunk)
         }
 
         if (is_acceptable_read(m_config, *stats, read_1)) {
-          stats->merged.process(read_1, 2);
+          stats->merged->process(read_1, 2);
           chunks.add(read_1, read_type::merged);
         } else {
-          stats->discarded.process(read_1, 2);
+          stats->discarded->process(read_1, 2);
           chunks.add(read_1, read_type::discarded_1);
         }
 
@@ -378,15 +378,15 @@ pe_reads_processor::process(analytical_chunk* chunk)
     }
 
     if (is_ok_1) {
-      stats->read_1.process(read_1);
+      stats->read_1->process(read_1);
     } else {
-      stats->discarded.process(read_1);
+      stats->discarded->process(read_1);
     }
 
     if (is_ok_2) {
-      stats->read_2.process(read_2);
+      stats->read_2->process(read_2);
     } else {
-      stats->discarded.process(read_2);
+      stats->discarded->process(read_2);
     }
 
     // Queue reads last, since this result in modifications to lengths

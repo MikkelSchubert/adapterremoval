@@ -51,7 +51,9 @@ fastq_report_only(const userconfig& config)
   std::cerr << "Reading FASTQ files" << std::endl;
 
   scheduler sch;
-  ar_statistics stats(config.report_sample_rate);
+
+  statistics stats =
+    statistics_builder().sample_rate(config.report_sample_rate).initialize();
 
   // Discard all written reads
   size_t sink_step = sch.add_step("sink", new reads_sink());
