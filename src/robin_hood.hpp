@@ -1991,6 +1991,9 @@ public:
 
       case InsertionState::overflow_error:
         throwOverflowError();
+
+      default:
+        break;
     }
 
     return mKeyVals[idxAndState.first].getSecond();
