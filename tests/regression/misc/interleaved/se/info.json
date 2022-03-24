@@ -1,0 +1,11 @@
+{
+	"arguments": [
+		"--trimns",
+		"--interleaved-output",
+		"--output1",
+		"interleaved.fastq"
+	],
+	"return_code": 0,
+	"stderr": [],
+	"exhaustive": false
+}

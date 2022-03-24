@@ -291,6 +291,7 @@ userconfig::userconfig(const std::string& name,
     .help("This option enables both the --interleaved-input option and the "
           "--interleaved-output option")
     .conflicts("--file2")
+    .conflicts("--output2")
     .bind_bool(&interleaved);
   argparser.add("--interleaved-input")
     .help("The (single) input file provided contains both the mate 1 and mate "
@@ -303,6 +304,7 @@ userconfig::userconfig(const std::string& name,
     .help("If set, trimmed paired-end reads are written to a single file "
           "containing mate 1 and mate 2 reads, one pair after the other. This "
           "option is implied by the --interleaved option")
+    .conflicts("--output2")
     .bind_bool(&interleaved_output);
 
   argparser.add_header("OUTPUT FILES:");
@@ -633,6 +635,11 @@ userconfig::parse_args(int argc, char* argv[])
     // Enable paired end mode .. other than the FASTQ reader, all other
     // parts of the pipeline simply run in paired-end mode.
     paired_ended_mode = true;
+  }
+
+  // Interleaved output has it's own default filename, but can be overwritten
+  if (interleaved_output && argparser.is_set("--out-file1")) {
+    out_interleaved = out_pair_1;
   }
 
   if (paired_ended_mode) {
