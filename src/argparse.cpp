@@ -291,6 +291,31 @@ parser::update_argument_map()
       }
     }
   }
+
+  bool any_errors = false;
+  for (auto& it : m_args) {
+    if (it.argument) {
+      for (const auto& key : it.argument->conflicts()) {
+        if (!m_keys.count(key)) {
+          any_errors = true;
+          std::cerr << "ERROR: " << it.argument->key() << " conflicts with "
+                    << "unknown command-line option " << key << std::endl;
+        }
+      }
+
+      for (const auto& key : it.argument->requires()) {
+        if (!m_keys.count(key)) {
+          any_errors = true;
+          std::cerr << "ERROR: " << it.argument->key() << " requires "
+                    << "unknown command-line option " << key << std::endl;
+        }
+      }
+    }
+  }
+
+  if (any_errors) {
+    AR_DEBUG_FAIL("bugs in argument parsing");
+  }
 }
 
 argument_ptr
