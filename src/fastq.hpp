@@ -174,15 +174,28 @@ public:
   static char p_to_phred_33(double p);
 
   /**
-   * Validate that two reads form a valid pair.
+   * Attempt to infer the mate separator from a set of paired reads.
+   *
+   * A separator is considered valid if the reads contain this separator and
+   * yield mate 1 for `reads_1` and mate 2 reads for `reads_2`. Reads without
+   * mate numbers will be assumed to use '/'. Currently considers '/', '.',
+   * and ':' as possible candidate separators.
+   *
+   * Returns 0 if the separator could not be guessed.
+   */
+  static char guess_mate_separator(const std::vector<fastq>& reads_1,
+                                   const std::vector<fastq>& reads_2);
+
+  /**
+   * Validates a pair and normalizes the mate separator.
    *
    * The mate separator character is the character expected as the second-to-
    * last character, if the last character (either '1' or '2') specify the
-   * mate number. Non-standard mate-separators (not '/') are changed to '/'.
-   */
-  static void validate_paired_reads(fastq& mate1,
-                                    fastq& mate2,
-                                    char mate_separator = MATE_SEPARATOR);
+   * mate number (must be 1 and 2, in that order).
+   **/
+  static void normalize_paired_reads(fastq& mate1,
+                                     fastq& mate2,
+                                     char mate_separator = MATE_SEPARATOR);
 
 private:
   /**
@@ -199,9 +212,6 @@ private:
    */
   ntrimmed trim_sequence_and_qualities(const size_t left_inclusive,
                                        const size_t right_exclusive);
-
-  /** Helper function to get mate numbering and fix the separator char. */
-  friend mate_info get_and_fix_mate_info(fastq& read, char mate_separator);
 
   //! Header excluding the @ sigil, but (possibly) including meta-info
   std::string m_header;

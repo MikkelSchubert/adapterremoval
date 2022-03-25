@@ -24,7 +24,6 @@
 \*************************************************************************/
 #include <algorithm> // for reverse, count, max, min
 #include <cmath>     // for log10
-#include <iostream>  // for operator<<, basic_ostream, stringstream
 #include <numeric>   // for accumulate
 #include <sstream>   // for stringstream
 
@@ -44,6 +43,7 @@ struct mate_info
   mate_info()
     : name()
     , mate(read_mate::unknown)
+    , sep_pos(std::string::npos)
   {}
 
   std::string desc() const
@@ -60,32 +60,36 @@ struct mate_info
     }
   }
 
+  //! Read name without mate number or meta-data
   std::string name;
+  //! Which mate in a pair, if identified
   read_mate mate;
+  //! Position of the seperator character in the header (if any)
+  size_t sep_pos;
 };
 
-inline mate_info
-get_and_fix_mate_info(fastq& read, char mate_separator)
+mate_info
+get_mate_info(const fastq& read, char mate_separator)
 {
-  mate_info info;
-  std::string& header = read.m_header;
+  const std::string& header = read.header();
 
   size_t pos = header.find_first_of(' ');
   if (pos == std::string::npos) {
     pos = header.length();
   }
 
+  mate_info info;
   if (pos >= 2 && header.at(pos - 2) == mate_separator) {
     const char digit = header.at(pos - 1);
 
     if (digit == '1') {
-      header[pos - 2] = MATE_SEPARATOR;
       info.mate = read_mate::mate_1;
       pos -= 2;
+      info.sep_pos = pos;
     } else if (digit == '2') {
-      header[pos - 2] = MATE_SEPARATOR;
       info.mate = read_mate::mate_2;
       pos -= 2;
+      info.sep_pos = pos;
     }
   }
 
@@ -393,15 +397,64 @@ fastq::p_to_phred_33(double p)
   return std::min<int>('~', raw_score + PHRED_OFFSET_33);
 }
 
+char
+fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
+                            const std::vector<fastq>& reads_2)
+{
+  AR_DEBUG_ASSERT(reads_1.size() == reads_2.size());
+
+  // Commonly used characters
+  const std::string candidates = "/.:";
+
+  for (auto candidate : candidates) {
+    auto it_1 = reads_1.begin();
+    auto it_2 = reads_2.begin();
+
+    bool any_failures = false;
+    while (it_1 != reads_1.end()) {
+      const mate_info info1 = get_mate_info(*it_1++, candidate);
+      const mate_info info2 = get_mate_info(*it_2++, candidate);
+
+      if (info1.name != info2.name) {
+        any_failures = true;
+        break;
+      }
+
+      const auto mate_1 = info1.mate;
+      const auto mate_2 = info2.mate;
+
+      if (mate_1 != read_mate::unknown || mate_2 != read_mate::unknown) {
+        if (mate_1 == mate_2) {
+          // This could be valid data that just happens to include a known mate
+          // separator in the name. But this could also happen if the same reads
+          // are used for both mate 1 and mate 2, so we cannot safely guess.
+          return 0;
+        } else if (mate_1 != read_mate::mate_1 || mate_2 != read_mate::mate_2) {
+          // The mate separator seems to be correct, but the mate information
+          // does not match: One mate is missing information or the order is
+          // wrong. Return the identified separator and raise an error later.
+          return candidate;
+        }
+      }
+    }
+
+    if (!any_failures) {
+      return candidate;
+    }
+  }
+
+  return 0;
+}
+
 void
-fastq::validate_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
+fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 {
   if (mate1.length() == 0 || mate2.length() == 0) {
     throw fastq_error("Pair contains empty reads");
   }
 
-  const mate_info info1 = get_and_fix_mate_info(mate1, mate_separator);
-  const mate_info info2 = get_and_fix_mate_info(mate2, mate_separator);
+  const mate_info info1 = get_mate_info(mate1, mate_separator);
+  const mate_info info2 = get_mate_info(mate2, mate_separator);
 
   if (info1.name != info2.name) {
     std::stringstream error;
@@ -433,6 +486,10 @@ fastq::validate_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 
       throw fastq_error(error.str());
     }
+
+    AR_DEBUG_ASSERT(info1.sep_pos == info2.sep_pos);
+    mate1.m_header.at(info1.sep_pos) = MATE_SEPARATOR;
+    mate2.m_header.at(info2.sep_pos) = MATE_SEPARATOR;
   }
 }
 

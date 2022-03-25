@@ -199,7 +199,7 @@ userconfig::userconfig(const std::string& name,
   , interleaved_input()
   , interleaved_output()
   , head()
-  , mate_separator(MATE_SEPARATOR)
+  , mate_separator()
   , min_genomic_length()
   , max_genomic_length()
   , min_adapter_overlap()
@@ -283,9 +283,8 @@ userconfig::userconfig(const std::string& name,
     .with_default(MAX_PHRED_SCORE_DEFAULT);
   argparser.add("--mate-separator", "CHAR")
     .help("Character separating the mate number (1 or 2) from the read name in "
-          "FASTQ records")
-    .bind_str(&mate_separator_str)
-    .with_default("/");
+          "FASTQ records. Will be determined automatically if not specified")
+    .bind_str(&mate_separator_str);
 
   argparser.add("--interleaved")
     .help("This option enables both the --interleaved-input option and the "
@@ -575,13 +574,15 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   }
 
-  if (mate_separator_str.size() != 1) {
-    std::cerr << "Error: The argument for --mate-separator must be "
-                 "exactly one character long, not "
-              << mate_separator_str.size() << " characters!" << std::endl;
-    return argparse::parse_result::error;
-  } else {
-    mate_separator = mate_separator_str.at(0);
+  if (argparser.is_set("--mate-separator")) {
+    if (mate_separator_str.size() != 1) {
+      std::cerr << "Error: The argument for --mate-separator must be "
+                   "exactly one character long, not "
+                << mate_separator_str.size() << " characters!" << std::endl;
+      return argparse::parse_result::error;
+    } else {
+      mate_separator = mate_separator_str.at(0);
+    }
   }
 
   if (argparser.is_set("--identify-adapters")) {

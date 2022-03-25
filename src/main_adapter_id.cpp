@@ -395,9 +395,6 @@ private:
                      fastq& read1,
                      fastq& read2)
   {
-    // Throws if read-names or mate numbering does not match
-    fastq::validate_paired_reads(read1, read2, m_config.mate_separator);
-
     // Reverse complement to match the orientation of read1
     read2.reverse_complement();
 
@@ -461,8 +458,7 @@ identify_adapter_sequences(const userconfig& config)
 
   // Step 2: Post-process and validate FASTQ reads
   const size_t postproc_step = sch.add_step(
-    "post_process_fastq",
-    new post_process_fastq(config.io_encoding, identification_step));
+    "post_process_fastq", new post_process_fastq(config, identification_step));
 
   // Step 1: Read input file(s)
   sch.add_step("read_fastq", new read_fastq(config, postproc_step));

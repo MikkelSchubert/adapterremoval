@@ -159,16 +159,16 @@ private:
 
 /**
  * Class responsible for validating FASTQ records and collecting statistics.
- * This is split into a seperate step to minimize the amount of time that IO
+ * This is split into a separate step to minimize the amount of time that IO
  * is blocked by the FASTQ reading step.
  */
 class post_process_fastq : public analytical_step
 {
 public:
   /** Constructor. */
-  post_process_fastq(const fastq_encoding& encoding,
+  post_process_fastq(const userconfig& config,
                      size_t next_step,
-                     statistics* statitics = nullptr);
+                     statistics* stats = nullptr);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   virtual chunk_vec process(analytical_chunk* chunk);
@@ -182,8 +182,13 @@ public:
   post_process_fastq& operator=(const post_process_fastq&) = delete;
 
 private:
+  void process_single_end(fastq_vec& reads_1);
+  void process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2);
+
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
+  //! Character used to join read-names with mate numbers, e.g. '/'
+  char m_mate_separator;
   //! Statistics collected from raw mate 1 reads
   fastq_stats_ptr m_statistics_1;
   //! Statistics collected from raw mate 2 reads

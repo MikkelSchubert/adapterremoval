@@ -176,9 +176,9 @@ demultiplex_sequences(const userconfig& config)
   }
 
   // Step 2: Post-process, validate, and collect statistics on FASTQ reads
-  const size_t postproc_step = sch.add_step(
-    "post_process_fastq",
-    new post_process_fastq(config.io_encoding, processing_step, &stats));
+  const size_t postproc_step =
+    sch.add_step("post_process_fastq",
+                 new post_process_fastq(config, processing_step, &stats));
 
   // Step 1: Read input file(s)
   sch.add_step("read_fastq", new read_fastq(config, postproc_step));

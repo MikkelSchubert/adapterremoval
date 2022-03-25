@@ -303,9 +303,6 @@ pe_reads_processor::process(analytical_chunk* chunk)
     fastq read_1 = *it_1++;
     fastq read_2 = *it_2++;
 
-    // Throws if read-names or mate numbering does not match
-    fastq::validate_paired_reads(read_1, read_2, m_config.mate_separator);
-
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
 

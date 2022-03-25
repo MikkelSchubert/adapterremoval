@@ -285,11 +285,12 @@ read_fastq::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
-post_process_fastq::post_process_fastq(const fastq_encoding& encoding,
+post_process_fastq::post_process_fastq(const userconfig& config,
                                        size_t next_step,
                                        statistics* stats)
   : analytical_step(processing_order::ordered)
-  , m_encoding(encoding)
+  , m_encoding(config.io_encoding)
+  , m_mate_separator(config.mate_separator)
   , m_statistics_1(stats ? stats->input_1 : nullptr)
   , m_statistics_2(stats ? stats->input_2 : nullptr)
   , m_next_step(next_step)
@@ -306,24 +307,64 @@ post_process_fastq::process(analytical_chunk* chunk)
 
   m_eof = file_chunk->eof;
 
-  for (auto& read : file_chunk->reads_1) {
-    read.post_process(m_encoding);
-    if (m_statistics_1) {
-      m_statistics_1->process(read);
-    }
-  }
+  auto& reads_1 = file_chunk->reads_1;
+  auto& reads_2 = file_chunk->reads_2;
 
-  for (auto& read : file_chunk->reads_2) {
-    read.post_process(m_encoding);
-    if (m_statistics_2) {
-      m_statistics_2->process(read);
-    }
+  if (reads_1.size() == reads_2.size()) {
+    process_paired_end(reads_1, reads_2);
+  } else {
+    AR_DEBUG_ASSERT(reads_2.empty());
+    process_single_end(reads_1);
   }
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(file_chunk));
 
   return chunks;
+}
+
+void
+post_process_fastq::process_single_end(fastq_vec& reads_1)
+{
+  for (auto& read : reads_1) {
+    read.post_process(m_encoding);
+
+    if (m_statistics_1) {
+      m_statistics_1->process(read);
+    }
+  }
+}
+
+void
+post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
+{
+  AR_DEBUG_ASSERT(reads_1.size() == reads_2.size());
+
+  if (!m_mate_separator) {
+    // Attempt to determine the mate separator character
+    m_mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
+
+    if (!m_mate_separator) {
+      // Fall back to the default so that a human-readable error will be thrown
+      // during normalization below.
+      m_mate_separator = MATE_SEPARATOR;
+    }
+  }
+
+  auto it_1 = reads_1.begin();
+  auto it_2 = reads_2.begin();
+  while (it_1 != reads_1.end()) {
+    fastq& read_1 = *it_1++;
+    fastq& read_2 = *it_2++;
+
+    // Throws if read-names or mate numbering does not match
+    fastq::normalize_paired_reads(read_1, read_2, m_mate_separator);
+
+    if (m_statistics_1) {
+      m_statistics_1->process(read_1);
+      m_statistics_2->process(read_2);
+    }
+  }
 }
 
 void

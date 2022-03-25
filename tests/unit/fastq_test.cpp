@@ -809,7 +809,7 @@ TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
 TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
 {
   string_vec lines;
-  lines.push_back("@");
+  lines.push_back("@record_1");
   lines.push_back("ACGAGTCA");
   lines.push_back("+");
   lines.push_back("");
@@ -822,10 +822,23 @@ TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
 TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
 {
   string_vec lines;
-  lines.push_back("@");
+  lines.push_back("@record_1");
   lines.push_back("");
   lines.push_back("+");
   lines.push_back("");
+  vec_reader reader(lines);
+
+  fastq record;
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+}
+
+TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")
+{
+  string_vec lines;
+  lines.push_back("@record_1");
+  lines.push_back("ACGAGTCA");
+  lines.push_back("+");
+  lines.push_back("!!!!!!!");
   vec_reader reader(lines);
 
   fastq record;
@@ -1005,9 +1018,85 @@ TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Validating pairs
+// Guessing the mate separator
 
-TEST_CASE("validate_paired_reads__throws_if_order_or_number_is_wrong",
+TEST_CASE("guess_mate_separator__empty_lists", "[fastq::guess_mate_separator]")
+{
+  REQUIRE(fastq::guess_mate_separator(fastq_vec(), fastq_vec()) == '/');
+}
+
+TEST_CASE("guess_mate_separator asserts on mismatching input lengths")
+{
+  const fastq_vec reads_1{ fastq("foo", "") };
+  const fastq_vec reads_2;
+
+  REQUIRE_THROWS_AS(fastq::guess_mate_separator(reads_1, reads_2),
+                    assert_failed);
+  REQUIRE_THROWS_AS(fastq::guess_mate_separator(reads_2, reads_1),
+                    assert_failed);
+}
+
+TEST_CASE("guess_mate_separator should default to / if there are no separators")
+{
+  const fastq_vec reads{ fastq("foo", "") };
+
+  REQUIRE(fastq::guess_mate_separator(reads, reads) == '/');
+}
+
+TEST_CASE("guess_mate_separator should return valid separator")
+{
+  const std::string name = "foo";
+  const char sep = GENERATE('/', '.', ':');
+  const fastq_vec reads_1{ fastq(name + sep + '1', "A") };
+  const fastq_vec reads_2{ fastq(name + sep + '2', "A") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == sep);
+}
+
+TEST_CASE("guess_mate_separator fails on mismatching separators")
+{
+  const fastq_vec reads_1{ fastq("foo/1", "") };
+  const fastq_vec reads_2{ fastq("foo.2", "") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
+}
+
+TEST_CASE("guess_mate_separator fails on mismatching mates")
+{
+  const fastq_vec reads_1{ fastq("foo/1", "A") };
+  const fastq_vec reads_2{ fastq("foo/1", "A") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
+}
+
+TEST_CASE("guess_mate_separator returns separator for partial information")
+{
+  const fastq_vec reads_1{ fastq("foo/1", "") };
+  const fastq_vec reads_2{ fastq("foo", "") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == '/');
+}
+
+TEST_CASE("guess_mate_separator fails on inconsistent data")
+{
+  const fastq_vec reads_1{ fastq("foo/1", ""), fastq("foo.1", "") };
+  const fastq_vec reads_2{ fastq("foo/2", ""), fastq("foo.2", "") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
+}
+
+TEST_CASE("guess_mate_separator fails on malformed data")
+{
+  const fastq_vec reads_1{ fastq("foo/1", ""), fastq("foo/1", "") };
+  const fastq_vec reads_2{ fastq("foo/2", ""), fastq("foox", "") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Normalizing pairs
+
+TEST_CASE("normalize_paired_reads__throws_if_order_or_number_is_wrong",
           "[fastq::fastq]")
 {
   const fastq ref_mate0 = fastq("Mate/0", "ACGT", "!!#$");
@@ -1020,53 +1109,53 @@ TEST_CASE("validate_paired_reads__throws_if_order_or_number_is_wrong",
   {
     fastq mate0 = ref_mate0;
     fastq mate1 = ref_mate1;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate0, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate0, mate1), fastq_error);
   }
 
   {
     fastq mate0 = ref_mate0;
     fastq mate1 = ref_mate1;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate0), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate0), fastq_error);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    fastq::validate_paired_reads(mate1, mate2);
+    fastq::normalize_paired_reads(mate1, mate2);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 
   {
     fastq mate2 = ref_mate2;
     fastq mate3 = ref_mate3;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate2, mate3), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate3), fastq_error);
   }
 
   {
     fastq mate2 = ref_mate2;
     fastq mate3 = ref_mate3;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate3, mate2), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate3, mate2), fastq_error);
   }
 
   {
     fastq matea = ref_matea;
     fastq mateb = ref_mateb;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(matea, mateb), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(matea, mateb), fastq_error);
   }
 
   {
     fastq matea = ref_matea;
     fastq mateb = ref_mateb;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mateb, matea), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mateb, matea), fastq_error);
   }
 }
 
-TEST_CASE("validate_paired_reads__allows_other_separators", "[fastq::fastq]")
+TEST_CASE("normalize_paired_reads__allows_other_separators", "[fastq::fastq]")
 {
   const fastq ref_mate1 = fastq("Mate:1", "ACGT", "!!#$");
   const fastq ref_mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
@@ -1074,53 +1163,53 @@ TEST_CASE("validate_paired_reads__allows_other_separators", "[fastq::fastq]")
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    fastq::validate_paired_reads(mate1, mate2, ':');
+    fastq::normalize_paired_reads(mate1, mate2, ':');
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 }
 
-TEST_CASE("validate_paired_reads__mate_separator_is_updated", "[fastq::fastq]")
+TEST_CASE("normalize_paired_reads__mate_separator_is_updated", "[fastq::fastq]")
 {
   const fastq ref_mate_1 = fastq("Mate/1", "ACGT", "!!#$");
   const fastq ref_mate_2 = fastq("Mate/2", "GCTAA", "$!@#$");
 
   fastq mate1 = fastq("Mate:1", "ACGT", "!!#$");
   fastq mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
-  fastq::validate_paired_reads(mate1, mate2, ':');
+  fastq::normalize_paired_reads(mate1, mate2, ':');
 
   REQUIRE(ref_mate_1 == mate1);
   REQUIRE(ref_mate_2 == mate2);
 }
 
-TEST_CASE("validate_paired_reads__throws_if_mate_is_empty", "[fastq::fastq]")
+TEST_CASE("normalize_paired_reads__throws_if_mate_is_empty", "[fastq::fastq]")
 {
   const fastq ref_mate1 = fastq("Mate", "", "");
   const fastq ref_mate2 = fastq("Mate", "ACGT", "!!#$");
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate1), fastq_error);
   }
 }
 
-TEST_CASE("validate_paired_reads__throws_if_only_mate_1_is_numbered",
+TEST_CASE("normalize_paired_reads__throws_if_only_mate_1_is_numbered",
           "[fastq::fastq]")
 {
   const fastq ref_mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
@@ -1129,18 +1218,18 @@ TEST_CASE("validate_paired_reads__throws_if_only_mate_1_is_numbered",
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
 
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 }
 
-TEST_CASE("validate_paired_reads__throws_if_only_mate_2_is_numbered",
+TEST_CASE("normalize_paired_reads__throws_if_only_mate_2_is_numbered",
           "[fastq::fastq]")
 {
   const fastq ref_mate1 = fastq("Mate", "GCTAA", "$!@#$");
@@ -1149,35 +1238,47 @@ TEST_CASE("validate_paired_reads__throws_if_only_mate_2_is_numbered",
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate2, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 }
 
-TEST_CASE("validate_paired_reads__throws_if_mate_is_misnumbered",
+TEST_CASE("normalize_paired_reads__throws_if_mate_is_misnumbered",
           "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/3", "ACGT", "!!#$");
-  REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+  REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
 }
 
-TEST_CASE("validate_paired_reads__throws_if_same_mate_numbers",
+TEST_CASE("normalize_paired_reads__throws_if_same_mate_numbers",
           "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/1", "ACGT", "!!#$");
-  REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+  REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
 }
 
-TEST_CASE("validate_paired_reads__throws_if_name_differs", "[fastq::fastq]")
+TEST_CASE("normalize_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
-  REQUIRE_THROWS_AS(fastq::validate_paired_reads(mate1, mate2), fastq_error);
+  REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
+}
+
+TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
+{
+  const auto name = GENERATE("Name", "Name and meta");
+  fastq mate1 = fastq(name, "GCTAA", "$!@#$");
+  fastq mate2 = fastq(name, "ACGTA", "@$!$#");
+
+  fastq::normalize_paired_reads(mate1, mate2);
+
+  REQUIRE(mate1.header() == name);
+  REQUIRE(mate2.header() == name);
 }
