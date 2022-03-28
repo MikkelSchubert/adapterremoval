@@ -37,7 +37,7 @@
 #include "timer.hpp"       // for highres_timer
 
 struct alignment_info;
-struct trimming_statistics;
+class trimming_statistics;
 
 enum class ar_command
 {

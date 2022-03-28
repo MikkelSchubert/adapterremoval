@@ -278,7 +278,7 @@ private:
   friend class statistics_builder;
 };
 
-struct statistics_builder
+class statistics_builder
 {
 public:
   statistics_builder();

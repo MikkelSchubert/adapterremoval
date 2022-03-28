@@ -36,7 +36,7 @@
 #include "statistics.hpp"    // for demux_statistics, fastq_statistics
 
 class userconfig;
-struct demux_statistics;
+class demux_statistics;
 
 /** Map of samples to downstream FASTQ processing/writing steps. */
 class post_demux_steps
