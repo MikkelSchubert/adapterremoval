@@ -115,6 +115,11 @@ public:
 
   /** Destructor; does nothing. */
   virtual ~analytical_chunk();
+
+  //! Copy construction not supported
+  analytical_chunk(const analytical_chunk&) = delete;
+  //! Assignment not supported
+  analytical_chunk& operator=(const analytical_chunk&) = delete;
 };
 
 typedef std::unique_ptr<analytical_chunk> chunk_ptr;

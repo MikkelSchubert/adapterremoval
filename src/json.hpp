@@ -100,6 +100,11 @@ public:
   /** Write key with string value. */
   void write_null(const std::string& key);
 
+  //! Copy construction not supported
+  json_writer(const json_writer&) = delete;
+  //! Assignment not supported
+  json_writer& operator=(const json_writer&) = delete;
+
 private:
   /** End current sub-section. */
   void end(char c);

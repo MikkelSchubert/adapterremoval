@@ -58,6 +58,11 @@ public:
 
   /** Reads a lien into dst, returning false on EOF. */
   virtual bool getline(std::string& dst) = 0;
+
+  //! Copy construction not supported
+  line_reader_base(const line_reader_base&) = delete;
+  //! Assignment not supported
+  line_reader_base& operator=(const line_reader_base&) = delete;
 };
 
 /**
