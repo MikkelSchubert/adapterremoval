@@ -33,8 +33,6 @@
 
 //! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
-//! Number of blocks to store for calculating mean rate
-const size_t AVG_BLOCKS = 10;
 
 double
 get_current_time()
@@ -95,75 +93,58 @@ format_time(double seconds)
 progress_timer::progress_timer(const std::string& what)
   : m_what(what)
   , m_total(0)
-  , m_next_report(REPORT_EVERY)
+  , m_current(0)
   , m_first_time(get_current_time())
-  , m_counts()
-{
-  m_counts.push_back(time_count_pair(get_current_time(), 0));
-}
+  , m_last_time(m_first_time)
+{}
 
 void
 progress_timer::increment(size_t inc)
 {
   m_total += inc;
-  m_counts.back().second += inc;
+  m_current += inc;
 
-  if (m_total >= m_next_report) {
+  if (m_current >= REPORT_EVERY) {
     const double current_time = get_current_time();
-    // Number of seconds since oldest block was created
-    const double seconds = current_time - m_counts.front().first;
 
-    size_t current_total = 0;
-    for (const auto& time_block : m_counts) {
-      current_total += time_block.second;
-    }
+    print_locker lock(false);
+    do_print(m_current, current_time - m_last_time);
 
-    do_print(static_cast<size_t>(current_total / seconds), current_time);
-
-    m_counts.push_back(time_count_pair(current_time, 0));
-    while (m_counts.size() > AVG_BLOCKS) {
-      m_counts.pop_front();
-    }
-
-    while (m_total >= m_next_report) {
-      m_next_report += REPORT_EVERY;
-    }
+    m_current = 0;
+    m_last_time = current_time;
   }
 }
 
 void
 progress_timer::finalize() const
 {
-  const double current_time = get_current_time();
-  const double seconds = current_time - m_first_time;
+  print_locker lock(false);
+  const auto current_time = get_current_time();
 
-  do_print(static_cast<size_t>(m_total / seconds), current_time, true);
+  if (m_current != m_total) {
+    do_print(m_current, current_time - m_last_time);
+  }
+
+  do_print(m_total, current_time - m_first_time, true);
 }
 
 void
-progress_timer::do_print(size_t rate, double current_time, bool finalize) const
+progress_timer::do_print(size_t items, double seconds, bool finalize) const
 {
-  print_locker lock(false);
-
-  if (finalize) {
-    std::cerr << "\rProcessed a total of ";
-  } else {
-    std::cerr << "\rProcessed ";
-  }
-
-  if (rate > 10000) {
+  size_t rate = static_cast<size_t>(items / seconds);
+  if (rate >= 10000) {
     rate = (rate / 1000) * 1000;
   }
 
-  std::cerr << thousands_sep(m_total) << " " << m_what << " in "
-            << format_time(current_time - m_first_time) << "; "
-            << thousands_sep(rate) << " " << m_what << " per second";
-
   if (finalize) {
-    std::cerr << " on average" << std::endl;
+    std::cerr << "\rProcessed a total of " << thousands_sep(items) << " "
+              << m_what << " in " << format_time(seconds) << "; "
+              << thousands_sep(rate) << " " << m_what << "/s on average"
+              << std::endl;
   } else {
-    std::cerr.flush();
-    lock.partial_stderr_output();
+    std::cerr << "\rProcessed " << thousands_sep(items) << " " << m_what
+              << " in " << format_time(seconds) << "; " << thousands_sep(rate)
+              << " " << m_what << "/s" << std::endl;
   }
 }
 

@@ -25,7 +25,6 @@
 #pragma once
 
 #include <chrono>
-#include <deque>
 #include <string>
 
 /**
@@ -54,22 +53,19 @@ public:
   void finalize() const;
 
 private:
-  typedef std::pair<double, size_t> time_count_pair;
-  typedef std::deque<time_count_pair> time_count_deque;
-
   /** Print summary based on current rate; finalize to end with newline. */
-  void do_print(size_t rate, double current_time, bool finalize = false) const;
+  void do_print(size_t items, double seconds, bool finalize = false) const;
 
   //! Description of what is being processed.
   std::string m_what;
   //! Total number of items processed
   size_t m_total;
-  //! Number of items triggering next report
-  size_t m_next_report;
+  //! Number of items processed since last update
+  size_t m_current;
   //! Starting time (in seconds) of the timer.
   double m_first_time;
-  //! Counts for last N updates, for calculating running mean rate.
-  time_count_deque m_counts;
+  //! Time (in seconds) of the last update
+  double m_last_time;
 };
 
 /**
