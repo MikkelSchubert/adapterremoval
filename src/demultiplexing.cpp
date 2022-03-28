@@ -125,12 +125,12 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
 {}
 
 chunk_vec
-demultiplex_se_reads::process(analytical_chunk* chunk)
+demultiplex_se_reads::process(chunk_ptr chunk)
 {
   AR_DEBUG_LOCK(m_lock);
-  read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
-  for (auto& read : read_chunk->reads_1) {
+  for (auto& read : read_chunk.reads_1) {
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
@@ -153,7 +153,7 @@ demultiplex_se_reads::process(analytical_chunk* chunk)
     }
   }
 
-  return flush_cache(read_chunk->eof);
+  return flush_cache(read_chunk.eof);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,15 +165,15 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
 {}
 
 chunk_vec
-demultiplex_pe_reads::process(analytical_chunk* chunk)
+demultiplex_pe_reads::process(chunk_ptr chunk)
 {
   AR_DEBUG_LOCK(m_lock);
-  read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
+  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
+  AR_DEBUG_ASSERT(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
-  fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
-  fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
-  for (; it_1 != read_chunk->reads_1.end(); ++it_1, ++it_2) {
+  fastq_vec::iterator it_1 = read_chunk.reads_1.begin();
+  fastq_vec::iterator it_2 = read_chunk.reads_2.begin();
+  for (; it_1 != read_chunk.reads_1.end(); ++it_1, ++it_2) {
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 
     if (best_barcode < 0) {
@@ -206,5 +206,5 @@ demultiplex_pe_reads::process(analytical_chunk* chunk)
     }
   }
 
-  return flush_cache(read_chunk->eof);
+  return flush_cache(read_chunk.eof);
 }

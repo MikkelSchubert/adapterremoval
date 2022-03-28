@@ -125,7 +125,7 @@ public:
    * the IDs corresponding to ai_analyses_offset * (nth + 1) for the nth
    * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1.
    */
-  chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 };
 
 /** Demultiplexer for paired-end reads. */
@@ -143,5 +143,5 @@ public:
    * barcode (pair). Unidentified reads are sent to ai_write_unidentified_1
    * and ai_write_unidentified_2.
    */
-  chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 };

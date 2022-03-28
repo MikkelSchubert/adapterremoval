@@ -59,14 +59,14 @@ public:
     : reads_processor(config, output, nth)
   {}
 
-  chunk_vec process(analytical_chunk* chunk)
+  chunk_vec process(chunk_ptr chunk) override
   {
-    read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+    auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
     auto stats = m_stats.acquire();
-    trimmed_reads chunks(m_output, read_chunk->eof);
+    trimmed_reads chunks(m_output, read_chunk.eof);
 
-    for (auto& read : read_chunk->reads_1) {
+    for (auto& read : read_chunk.reads_1) {
       stats->read_1->process(read);
       chunks.add(read, read_type::mate_1);
     }
@@ -86,17 +86,17 @@ public:
     : reads_processor(config, output, nth)
   {}
 
-  chunk_vec process(analytical_chunk* chunk)
+  chunk_vec process(chunk_ptr chunk) override
   {
-    read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-    AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
+    auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
+    AR_DEBUG_ASSERT(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
     auto stats = m_stats.acquire();
-    trimmed_reads chunks(m_output, read_chunk->eof);
+    trimmed_reads chunks(m_output, read_chunk.eof);
 
-    fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
-    fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
-    while (it_1 != read_chunk->reads_1.end()) {
+    fastq_vec::iterator it_1 = read_chunk.reads_1.begin();
+    fastq_vec::iterator it_2 = read_chunk.reads_2.begin();
+    while (it_1 != read_chunk.reads_1.end()) {
       fastq& read_1 = *it_1++;
       fastq& read_2 = *it_2++;
 

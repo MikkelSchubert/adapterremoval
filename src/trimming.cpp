@@ -228,10 +228,10 @@ se_reads_processor::se_reads_processor(const userconfig& config,
 {}
 
 chunk_vec
-se_reads_processor::process(analytical_chunk* chunk)
+se_reads_processor::process(chunk_ptr chunk)
 {
-  read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  trimmed_reads chunks(m_output, read_chunk->eof);
+  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
+  trimmed_reads chunks(m_output, read_chunk.eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
@@ -240,7 +240,7 @@ se_reads_processor::process(analytical_chunk* chunk)
   auto aligner = sequence_aligner(m_adapters);
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
-  for (auto& read : read_chunk->reads_1) {
+  for (auto& read : read_chunk.reads_1) {
     const alignment_info alignment =
       aligner.align_single_end(read, m_config.shift);
 
@@ -279,7 +279,7 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
 {}
 
 chunk_vec
-pe_reads_processor::process(analytical_chunk* chunk)
+pe_reads_processor::process(chunk_ptr chunk)
 {
   sequence_merger merger;
   merger.set_conservative(m_config.merge_conservatively);
@@ -288,18 +288,18 @@ pe_reads_processor::process(analytical_chunk* chunk)
   auto aligner = sequence_aligner(m_adapters);
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
-  read_chunk_ptr read_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-  trimmed_reads chunks(m_output, read_chunk->eof);
+  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
+  trimmed_reads chunks(m_output, read_chunk.eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
   stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
-  AR_DEBUG_ASSERT(read_chunk->reads_1.size() == read_chunk->reads_2.size());
+  AR_DEBUG_ASSERT(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
-  auto it_1 = read_chunk->reads_1.begin();
-  auto it_2 = read_chunk->reads_2.begin();
-  while (it_1 != read_chunk->reads_1.end()) {
+  auto it_1 = read_chunk.reads_1.begin();
+  auto it_2 = read_chunk.reads_2.begin();
+  while (it_1 != read_chunk.reads_1.end()) {
     fastq read_1 = *it_1++;
     fastq read_2 = *it_2++;
 

@@ -334,11 +334,10 @@ public:
     }
   }
 
-  chunk_vec process(analytical_chunk* chunk)
+  chunk_vec process(chunk_ptr chunk) override
   {
     AR_DEBUG_ASSERT(chunk);
-    read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
-    AR_DEBUG_ASSERT(file_chunk);
+    auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
     const fastq empty_adapter("dummy", "", "");
     fastq_pair_vec adapters;
@@ -349,11 +348,11 @@ public:
 
     auto stats = m_stats.acquire();
 
-    AR_DEBUG_ASSERT(file_chunk->reads_1.size() == file_chunk->reads_2.size());
-    fastq_vec::iterator read_1 = file_chunk->reads_1.begin();
-    fastq_vec::iterator read_2 = file_chunk->reads_2.begin();
+    AR_DEBUG_ASSERT(file_chunk.reads_1.size() == file_chunk.reads_2.size());
+    fastq_vec::iterator read_1 = file_chunk.reads_1.begin();
+    fastq_vec::iterator read_2 = file_chunk.reads_2.begin();
 
-    while (read_1 != file_chunk->reads_1.end()) {
+    while (read_1 != file_chunk.reads_1.end()) {
       process_reads(aligner, *stats, *read_1++, *read_2++);
     }
 
@@ -363,7 +362,7 @@ public:
   }
 
   /** Prints summary of inferred consensus sequences. */
-  void finalize()
+  void finalize() override
   {
     auto stats = m_stats.acquire();
     while (!m_stats.empty()) {

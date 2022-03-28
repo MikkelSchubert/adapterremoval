@@ -85,7 +85,7 @@ public:
                      const output_sample_files& output,
                      size_t nth);
 
-  chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 };
 
 class pe_reads_processor : public reads_processor
@@ -95,5 +95,5 @@ public:
                      const output_sample_files& output,
                      size_t nth);
 
-  chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 };

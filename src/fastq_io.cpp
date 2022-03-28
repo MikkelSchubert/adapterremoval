@@ -198,10 +198,10 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
 }
 
 chunk_vec
-read_fastq::process(analytical_chunk* chunk)
+read_fastq::process(chunk_ptr chunk)
 {
   AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(chunk == nullptr);
+  AR_DEBUG_ASSERT(!chunk);
   if (m_eof) {
     return chunk_vec();
   }
@@ -299,16 +299,16 @@ post_process_fastq::post_process_fastq(const userconfig& config,
 {}
 
 chunk_vec
-post_process_fastq::process(analytical_chunk* chunk)
+post_process_fastq::process(chunk_ptr chunk)
 {
-  read_chunk_ptr file_chunk(dynamic_cast<fastq_read_chunk*>(chunk));
+  auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
   AR_DEBUG_ASSERT(!m_eof);
   AR_DEBUG_LOCK(m_lock);
 
-  m_eof = file_chunk->eof;
+  m_eof = file_chunk.eof;
 
-  auto& reads_1 = file_chunk->reads_1;
-  auto& reads_2 = file_chunk->reads_2;
+  auto& reads_1 = file_chunk.reads_1;
+  auto& reads_2 = file_chunk.reads_2;
 
   if (reads_1.size() == reads_2.size()) {
     process_paired_end(reads_1, reads_2);
@@ -318,7 +318,7 @@ post_process_fastq::process(analytical_chunk* chunk)
   }
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(file_chunk));
+  chunks.emplace_back(m_next_step, std::move(chunk));
 
   return chunks;
 }
@@ -397,23 +397,23 @@ gzip_fastq::finalize()
 }
 
 chunk_vec
-gzip_fastq::process(analytical_chunk* chunk)
+gzip_fastq::process(chunk_ptr chunk)
 {
-  output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+  auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
   AR_DEBUG_LOCK(m_lock);
   AR_DEBUG_ASSERT(!m_eof);
 
-  m_eof = file_chunk->eof;
-  if (file_chunk->reads.empty() && !m_eof) {
+  m_eof = file_chunk.eof;
+  if (file_chunk.reads.empty() && !m_eof) {
     return chunk_vec();
   }
 
   buffer_pair output_buffer;
 
-  m_stream.avail_in = file_chunk->reads.size();
+  m_stream.avail_in = file_chunk.reads.size();
   m_stream.next_in = reinterpret_cast<unsigned char*>(
-    const_cast<char*>(file_chunk->reads.data()));
+    const_cast<char*>(file_chunk.reads.data()));
 
   int returncode = -1;
   do {
@@ -427,15 +427,15 @@ gzip_fastq::process(analytical_chunk* chunk)
 
     output_buffer.first = OUTPUT_BLOCK_SIZE - m_stream.avail_out;
     if (output_buffer.first) {
-      file_chunk->buffers.push_back(std::move(output_buffer));
+      file_chunk.buffers.push_back(std::move(output_buffer));
     }
   } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
 
-  file_chunk->reads.clear();
+  file_chunk.reads.clear();
 
   chunk_vec chunks;
-  if (!file_chunk->buffers.empty() || m_eof) {
-    chunks.emplace_back(m_next_step, std::move(file_chunk));
+  if (!file_chunk.buffers.empty() || m_eof) {
+    chunks.emplace_back(m_next_step, std::move(chunk));
   }
 
   return chunks;
@@ -463,16 +463,16 @@ split_fastq::finalize()
 }
 
 chunk_vec
-split_fastq::process(analytical_chunk* chunk)
+split_fastq::process(chunk_ptr chunk)
 {
-  output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+  auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
   AR_DEBUG_LOCK(m_lock);
   AR_DEBUG_ASSERT(!m_eof);
-  m_eof = file_chunk->eof;
+  m_eof = file_chunk.eof;
 
   chunk_vec chunks;
-  const auto& src = file_chunk->reads;
+  const auto& src = file_chunk.reads;
   for (size_t src_offset = 0; src_offset < src.size();) {
     const auto n =
       std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_offset);
@@ -514,12 +514,12 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
 {}
 
 chunk_vec
-gzip_split_fastq::process(analytical_chunk* chunk)
+gzip_split_fastq::process(chunk_ptr chunk)
 {
-  output_chunk_ptr input_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
-  AR_DEBUG_ASSERT(input_chunk->buffers.size() == 1);
+  auto& input_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
+  AR_DEBUG_ASSERT(input_chunk.buffers.size() == 1);
 
-  buffer_pair& input_buffer = input_chunk->buffers.front();
+  buffer_pair& input_buffer = input_chunk.buffers.front();
   buffer_pair output_buffer;
 
   // Try to re-use a previous input-buffer
@@ -562,7 +562,7 @@ gzip_split_fastq::process(analytical_chunk* chunk)
   m_buffers.release(output_buffer.second);
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(input_chunk));
+  chunks.emplace_back(m_next_step, std::move(chunk));
 
   return chunks;
 }
@@ -582,21 +582,21 @@ write_fastq::write_fastq(const std::string& filename)
 {}
 
 chunk_vec
-write_fastq::process(analytical_chunk* chunk)
+write_fastq::process(chunk_ptr chunk)
 {
-  output_chunk_ptr file_chunk(dynamic_cast<fastq_output_chunk*>(chunk));
+  auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
   AR_DEBUG_LOCK(m_lock);
   AR_DEBUG_ASSERT(!m_eof);
 
   try {
-    m_eof = file_chunk->eof;
-    if (file_chunk->buffers.empty()) {
-      m_output.write_string(file_chunk->reads, m_eof);
+    m_eof = file_chunk.eof;
+    if (file_chunk.buffers.empty()) {
+      m_output.write_string(file_chunk.reads, m_eof);
     } else {
-      AR_DEBUG_ASSERT(file_chunk->reads.empty());
+      AR_DEBUG_ASSERT(file_chunk.reads.empty());
 
-      m_output.write_buffers(file_chunk->buffers, m_eof);
+      m_output.write_buffers(file_chunk.buffers, m_eof);
     }
   } catch (const std::ios_base::failure&) {
     const std::string message =

@@ -38,11 +38,7 @@ public:
     : analytical_step(processing_order::unordered)
   {}
 
-  chunk_vec process(analytical_chunk* chunk)
-  {
-    delete chunk;
-    return chunk_vec();
-  }
+  chunk_vec process(chunk_ptr) override { return chunk_vec(); }
 };
 
 int

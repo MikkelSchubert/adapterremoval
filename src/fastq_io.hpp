@@ -115,10 +115,10 @@ public:
   read_fastq(const userconfig& config, size_t next_step);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
-  virtual chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 
   /** Finalizer; checks that all input has been processed. */
-  virtual void finalize();
+  void finalize() override;
 
   //! Copy construction not supported
   read_fastq(const read_fastq&) = delete;
@@ -171,10 +171,10 @@ public:
                      statistics* stats = nullptr);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
-  virtual chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 
   /** Finalizer; checks that all input has been processed. */
-  virtual void finalize();
+  void finalize() override;
 
   //! Copy construction not supported
   post_process_fastq(const post_process_fastq&) = delete;
@@ -212,10 +212,10 @@ public:
   gzip_fastq(const userconfig& config, size_t next_step);
 
   /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-  virtual chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 
   /** Checks that all input has been processed and frees stream. */
-  virtual void finalize();
+  void finalize() override;
 
   //! Copy construction not supported
   gzip_fastq(const gzip_fastq&) = delete;
@@ -242,8 +242,8 @@ public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
   split_fastq(size_t next_step);
 
-  virtual chunk_vec process(analytical_chunk* chunk);
-  virtual void finalize();
+  chunk_vec process(chunk_ptr chunk) override;
+  void finalize() override;
 
   //! Copy construction not supported
   split_fastq(const split_fastq&) = delete;
@@ -274,7 +274,7 @@ public:
   gzip_split_fastq(const userconfig& config, size_t next_step);
 
   /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-  virtual chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 
   //! Copy construction not supported
   gzip_split_fastq(const gzip_split_fastq&) = delete;
@@ -308,10 +308,10 @@ public:
   write_fastq(const std::string& filename);
 
   /** Writes the reads of the type specified in the constructor. */
-  virtual chunk_vec process(analytical_chunk* chunk);
+  chunk_vec process(chunk_ptr chunk) override;
 
   /** Flushes the output file and prints progress report (if enabled). */
-  virtual void finalize();
+  void finalize() override;
 
 private:
   //! Lazily opened / automatically closed handle

@@ -307,7 +307,7 @@ scheduler::do_run()
       data_chunk chunk = step->queue.pop();
 
       lock.unlock();
-      chunk_vec chunks = step->ptr->process(chunk.data.release());
+      chunk_vec chunks = step->ptr->process(std::move(chunk.data));
       lock.lock();
 
       if (chunks.empty() && step == m_steps.back()) {
