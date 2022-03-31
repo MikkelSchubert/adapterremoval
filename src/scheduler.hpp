@@ -90,14 +90,6 @@ public:
     m_values.push_back(std::move(value));
   }
 
-  /** Returns true if there are no values. **/
-  bool empty() const
-  {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    return m_values.empty();
-  }
-
 private:
   mutable std::mutex m_mutex;
   std::vector<pointer> m_values;

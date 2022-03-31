@@ -211,8 +211,8 @@ trim_stats_ptr
 reads_processor::get_final_statistics()
 {
   auto stats = m_stats.acquire();
-  while (!m_stats.empty()) {
-    *stats += *m_stats.acquire();
+  while (auto next = m_stats.try_acquire()) {
+    *stats += *next;
   }
 
   return stats;

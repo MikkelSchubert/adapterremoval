@@ -365,8 +365,8 @@ public:
   void finalize() override
   {
     auto stats = m_stats.acquire();
-    while (!m_stats.empty()) {
-      *stats += *m_stats.acquire();
+    while (auto next = m_stats.try_acquire()) {
+      *stats += *next;
     }
 
     std::cout << "   Found " << stats->aligned_pairs << " overlapping pairs\n"
