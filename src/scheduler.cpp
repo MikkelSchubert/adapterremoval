@@ -51,106 +51,92 @@ analytical_step::~analytical_step() {}
 ///////////////////////////////////////////////////////////////////////////////
 // scheduler
 
-struct data_chunk
-{
-  explicit data_chunk(size_t chunk_id_ = 0)
-    : chunk_id(chunk_id_)
-    , data()
-  {}
+typedef std::pair<size_t, chunk_ptr> data_chunk;
 
-  explicit data_chunk(size_t chunk_id_, chunk_ptr& data_)
-    : chunk_id(chunk_id_)
-    , data(std::move(data_))
-  {}
-
-  /** Sorts by id from high to low. **/
-  bool operator<(const data_chunk& other) const
-  {
-    return chunk_id > other.chunk_id;
-  }
-
-  //! Strictly increasing counter; used to sort chunks for 'ordered' tasks
-  size_t chunk_id;
-  //! Use generated data; is normally not freed by this struct
-  chunk_ptr data;
-};
-
-/** Simple priority queue; needed to allow moving values out of queue. */
-class chunk_queue
+/** Class wrapping a analytical_step. */
+class scheduler_step
 {
 public:
-  chunk_queue()
-    : m_chunks()
+  /** Constructor; name is used in error messages related to bugs */
+  scheduler_step(analytical_step* value, const std::string& name)
+    : m_ptr(value)
+    , m_next_chunk(0)
+    , m_last_chunk(0)
+    , m_queue()
+    , m_name(name)
   {}
 
-  template<class... Args>
-  void emplace_back(Args&&... args)
-  {
-    m_chunks.emplace_back(args...);
-    std::push_heap(m_chunks.begin(), m_chunks.end());
-  }
-
-  data_chunk pop()
-  {
-    std::pop_heap(m_chunks.begin(), m_chunks.end());
-    data_chunk value = std::move(m_chunks.back());
-    m_chunks.pop_back();
-
-    return value;
-  }
-
-  const data_chunk& top() const { return m_chunks.front(); }
-
-  bool empty() const { return m_chunks.empty(); }
-
-  size_t size() const { return m_chunks.size(); }
-
-private:
-  typedef std::vector<data_chunk> chunk_vec;
-
-  chunk_vec m_chunks;
-};
-
-struct scheduler_step
-{
-  scheduler_step(analytical_step* value, const std::string& name_)
-    : ptr(value)
-    , next_chunk(0)
-    , last_chunk(0)
-    , queue()
-    , name(name_)
-  {}
-
+  /** Returns true if the chunk can be executed now; requires locking */
   bool can_run(size_t chunk_id) const
   {
-    if (ptr->ordering() != processing_order::unordered) {
-      return (next_chunk == chunk_id);
-    }
-
-    return true;
+    return ordering() == processing_order::unordered ||
+           m_next_chunk == chunk_id;
   }
 
-  bool has_next() const
+  /**
+   * Returns true if the next chunk is queued; only applicable to ordered tasks,
+   * since unordered tasks are always added to a scheduler queue and looping on
+   * the same task will result in queues going out of sync. Requires locking.
+   */
+  bool can_run_next() const
   {
-    return queue.size() && queue.top().chunk_id == next_chunk;
+    return ordering() != processing_order::unordered && !m_queue.empty() &&
+           m_queue.front().first == m_next_chunk;
   }
 
-  //! Analytical step implementation
-  std::unique_ptr<analytical_step> ptr;
-  //! The next chunk to be processed
-  size_t next_chunk;
-  //! The last chunk queued to the step;
-  //! Used to correct numbering for sparse output from sequential steps
-  size_t last_chunk;
-  //! (Ordered) vector of chunks to be processed
-  chunk_queue queue;
-  //! Short name for step used for error reporting
-  std::string name;
+  /** FIFO queues a task; requires locking */
+  void push_chunk(size_t id, chunk_ptr ptr)
+  {
+    m_queue.emplace_back(id, std::move(ptr));
+    std::push_heap(m_queue.begin(), m_queue.end(), std::greater<chunk_pair>{});
+  }
 
+  /** Returns the oldest task; requires locking */
+  data_chunk pop_chunk()
+  {
+    std::pop_heap(m_queue.begin(), m_queue.end(), std::greater<chunk_pair>{});
+    auto task = std::move(m_queue.back());
+    m_queue.pop_back();
+
+    return task;
+  }
+
+  /** Name of the analytical task; for error messages when bugs are detected */
+  const std::string name() const { return m_name; }
+  /** Name of the analytical task; for error messages when bugs are detected */
+  processing_order ordering() const { return m_ptr->ordering(); }
+  /** Number of chunks waiting to be processed by this task; requires locking */
+  size_t chunks_queued() const { return m_queue.size(); }
+  /** Returns new ID for (sparse) output from ordered tasks; requires locking */
+  size_t new_chunk_id() { return m_last_chunk++; }
+
+  /** Processes a data chunk and returns the output chunks; assumes `can_run` */
+  chunk_vec process(chunk_ptr chunk)
+  {
+    return m_ptr->process(std::move(chunk));
+  }
+
+  /** Increment the next chunk to be processed; requires locking */
+  void increment_next_chunk() { m_next_chunk++; }
+  /** Perform any final cleanup assosited with the task; requires locking */
+  void finalize() { return m_ptr->finalize(); }
+
+private:
   //! Copy construction not supported
   scheduler_step(const scheduler_step&) = delete;
   //! Assignment not supported
   scheduler_step& operator=(const scheduler_step&) = delete;
+
+  //! Analytical step implementation
+  std::unique_ptr<analytical_step> m_ptr;
+  //! The next chunk to be processed
+  size_t m_next_chunk;
+  //! Running counter of output; for (possibly) sparse output of ordered steps
+  size_t m_last_chunk;
+  //! (Ordered) vector of chunks to be processed
+  std::vector<chunk_pair> m_queue;
+  //! Short name for step used for error reporting
+  std::string m_name;
 };
 
 scheduler::scheduler()
@@ -159,7 +145,6 @@ scheduler::scheduler()
   , m_chunk_counter(0)
   , m_tasks(0)
   , m_tasks_max(0)
-  , m_live_tasks(0)
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
@@ -221,10 +206,10 @@ scheduler::run(int nthreads)
   }
 
   for (auto& step : m_steps) {
-    if (!step->queue.empty()) {
+    if (step->chunks_queued()) {
       print_locker lock;
-      std::cerr << "ERROR: Not all parts run for step " << step->name << "; "
-                << step->queue.size() << " parts left" << std::endl;
+      std::cerr << "ERROR: Not all parts run for step " << step->name() << "; "
+                << step->chunks_queued() << " parts left" << std::endl;
 
       set_errors_occured();
     }
@@ -237,9 +222,9 @@ scheduler::run(int nthreads)
   // Steps are added in reverse order
   for (auto it = m_steps.rbegin(); it != m_steps.rend(); ++it) {
     try {
-      (*it)->ptr->finalize();
+      (*it)->finalize();
     } catch (const std::exception&) {
-      std::cerr << "ERROR: Failed to finalizing task " << (*it)->name << ":\n";
+      std::cerr << "ERROR: Failed to finalize " << (*it)->name() << ":\n";
       throw;
     }
   }
@@ -288,26 +273,23 @@ scheduler::do_run()
     } else if (!m_io_active && m_tasks < m_tasks_max) {
       // If all (or no) tasks are running and IO is idle then read another chunk
       m_tasks++;
-      m_live_tasks++;
       m_io_active = true;
       step = m_steps.back();
-      step->queue.emplace_back(m_chunk_counter++);
-    } else if (m_live_tasks) {
+      step->push_chunk(m_chunk_counter++, chunk_ptr());
+    } else if (m_tasks) {
       // There are either tasks running (which may produce new tasks) or tasks
       // that cannot yet be run due to IO already being active.
       m_condition.wait(lock);
       continue;
     } else {
-      // We break if there is no live tasks to prevent bugs in the scheduling
-      // from causing infinite loops. Leftover tasks are caught in `run`.
       break;
     }
 
     do {
-      data_chunk chunk = step->queue.pop();
-
+      data_chunk chunk = step->pop_chunk();
       lock.unlock();
-      chunk_vec chunks = step->ptr->process(std::move(chunk.data));
+
+      chunk_vec chunks = step->process(std::move(chunk.second));
       lock.lock();
 
       if (chunks.empty() && step == m_steps.back()) {
@@ -318,26 +300,23 @@ scheduler::do_run()
       // Schedule each of the resulting blocks
       for (auto& result : chunks) {
         AR_DEBUG_ASSERT(result.first < m_steps.size());
-        step_ptr& recipient = m_steps.at(result.first);
+        const step_ptr& recipient = m_steps.at(result.first);
 
         // Inherit reference count from source chunk
-        auto next_id = chunk.chunk_id;
-        if (step->ptr->ordering() != processing_order::unordered) {
+        auto next_id = chunk.first;
+        if (step->ordering() != processing_order::unordered) {
           // Ordered steps are allowed to not return results, so the chunk
           // numbering is remembered for down-stream steps
-          next_id = recipient->last_chunk++;
+          next_id = recipient->new_chunk_id();
         }
 
-        recipient->queue.emplace_back(next_id, std::move(result.second));
-
+        recipient->push_chunk(next_id, std::move(result.second));
         if (recipient->can_run(next_id)) {
-          if (recipient->ptr->ordering() == processing_order::ordered_io) {
+          if (recipient->ordering() == processing_order::ordered_io) {
             m_queue_io.push(recipient);
           } else {
             m_queue_calc.push(recipient);
           }
-
-          m_live_tasks++;
         }
 
         m_tasks++;
@@ -348,23 +327,19 @@ scheduler::do_run()
         m_condition.notify_all();
       }
 
-      if (step->ptr->ordering() != processing_order::unordered) {
+      if (step->ordering() != processing_order::unordered) {
         // Indicate that the next chunk can be processed
-        step->next_chunk++;
+        step->increment_next_chunk();
       }
 
       // One less task in memory
       m_tasks--;
 
       // If possible continue processing this task using the same thread
-    } while (step->ptr->ordering() != processing_order::unordered &&
-             step->has_next() && !errors_occured());
-
-    // Decrement number of running/runnable tasks
-    m_live_tasks--;
+    } while (step->can_run_next() && !errors_occured());
 
     // Unlock use of IO steps after finishing processing
-    if (step->ptr->ordering() == processing_order::ordered_io) {
+    if (step->ordering() == processing_order::ordered_io) {
       m_io_active = false;
     }
   }

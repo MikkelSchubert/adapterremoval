@@ -37,7 +37,6 @@
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 
 struct scheduler_step;
-struct data_chunk;
 
 /** Simple thread-safe storage backed by a vector. **/
 template<typename T>
@@ -262,8 +261,6 @@ private:
   size_t m_tasks;
   //! The maximum number of tasks to process simultanously
   size_t m_tasks_max;
-  //! Count of currently running/runable tasks
-  size_t m_live_tasks;
 
   //! Lock used to control access to chunks
   std::mutex m_queue_lock;
