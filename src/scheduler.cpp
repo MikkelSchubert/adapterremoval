@@ -286,8 +286,18 @@ scheduler::do_run()
     }
 
     do {
+      const bool wake_thread =
+        // CPU bound tasks can always be run (if there are any idle threads)
+        m_queue_calc.size() ||
+        // IO bound tasks can be run if IO is idle or we are low on tasks
+        (!m_io_active && (m_queue_io.size() || m_tasks < m_tasks_max));
+
       data_chunk chunk = step->pop_chunk();
+
       lock.unlock();
+      if (wake_thread) {
+        m_condition.notify_one();
+      }
 
       chunk_vec chunks = step->process(std::move(chunk.second));
       lock.lock();
@@ -320,11 +330,6 @@ scheduler::do_run()
         }
 
         m_tasks++;
-      }
-
-      if (chunks.size()) {
-        // This worked better than trying to be smart about it
-        m_condition.notify_all();
       }
 
       if (step->ordering() != processing_order::unordered) {
