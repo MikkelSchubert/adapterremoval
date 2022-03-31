@@ -297,11 +297,11 @@ analytical_step::ordering() const
 inline bool
 scheduler::errors_occured()
 {
-  return m_errors.load();
+  return m_errors.load(std::memory_order::memory_order_relaxed);
 }
 
 inline void
 scheduler::set_errors_occured()
 {
-  m_errors.store(true);
+  m_errors.store(true, std::memory_order::memory_order_relaxed);
 }
