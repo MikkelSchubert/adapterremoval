@@ -187,12 +187,21 @@ public:
 
   /** Returns the canonical argument key. */
   const std::string& key() const;
-  /** Returns all argument keys. */
-  const std::vector<argument_key>& keys() const;
+  /** Returns the short argument key; may be an empty string. */
+  const std::string& short_key() const;
+  /** Returns long, short, and deprecated argument keys. */
+  string_vec keys() const;
+  /** Returns true if this key is a deprecated alias for this argument. */
+  bool is_deprecated_alias(const std::string& key) const;
   /** Returns the metavariable. May be an empty string. */
   const std::string& metavar() const;
   /** Returns help string with %default replaced with the current value. */
   std::string help() const;
+
+  /** Indicates the minimum number of values taken by this argument */
+  size_t min_values() const;
+  /** Indicates the maximum number of values taken by this argument */
+  size_t max_values() const;
 
   /** Options that MUST be specified along with this argument. */
   const string_vec& requires() const;
@@ -206,8 +215,8 @@ public:
   argument& metavar(const std::string& metavar);
   /** Set help string for this argument. */
   argument& help(const std::string& alias);
-  /** Create alias for the argument. */
-  argument& alias(const std::string& alias);
+  /** Create a short form of the argument. */
+  argument& abbreviation(char key);
   /** Create deprecated alias for the argument. */
   argument& deprecated_alias(const std::string& alias);
   /** The argument is deprecated / not to be printed by -h/--help. */
@@ -242,9 +251,14 @@ protected:
   bool m_default_sink;
   //! Indicates if the argument is deprecated / hidden.
   bool m_deprecated;
+  //! Deprecated keys (long and short) for this argument
+  string_vec m_deprecated_keys;
 
-  //! Argument keys, the first key being the canonical name
-  std::vector<argument_key> m_keys;
+  //! The long, canonical argument key
+  std::string m_key_long;
+  //! An optional, short argument key
+  std::string m_key_short;
+
   //! Optional metavar (defaults to uppercase `m_name` without dashes)
   std::string m_metavar;
   //! Help string; the string '%default' will be replaced with the current value
@@ -386,6 +400,8 @@ class vec_sink : public sink
 {
 public:
   vec_sink(string_vec* sink);
+
+  vec_sink& max_values(size_t n);
 
   virtual std::string to_str() const override;
 

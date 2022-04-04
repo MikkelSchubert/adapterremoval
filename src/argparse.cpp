@@ -50,7 +50,7 @@ get_terminal_columns()
     return 80;
   }
 
-  return std::min<size_t>(88, std::max<size_t>(50, params.ws_col));
+  return std::min<size_t>(100, std::max<size_t>(80, params.ws_col));
 }
 
 /** Detect similar arguments based on prefixes or max edit distance. */
@@ -70,6 +70,23 @@ is_similar_argument(const std::string& user,
   }
 
   return false;
+}
+
+bool
+to_double(const std::string& value, double& out)
+{
+  std::stringstream stream(value);
+  if (!(stream >> out)) {
+    return false;
+  }
+
+  // Failing on trailing, non-numerical values
+  char trailing;
+  if (stream >> trailing) {
+    return false;
+  }
+
+  return true;
 }
 
 std::string
@@ -106,13 +123,13 @@ parser::parser(const std::string& name,
   , m_version(version)
   , m_help(help)
   , m_stream(&std::cerr)
-  , m_terminal_width(get_terminal_columns())
+  , m_terminal_width(100)
 {
   add_header("OPTIONS:");
 
   // Built-in arguments
-  add("-h").alias("--help").help("Display this message.");
-  add("-v").alias("--version").help("Print the version string.");
+  add("--help").abbreviation('h').help("Display this message.");
+  add("--version").abbreviation('v').help("Print the version string.");
   add_separator();
 }
 
@@ -124,7 +141,7 @@ parser::parse_args(int argc, char const* const* argv)
 
   string_vec_citer it = argvec.begin();
   while (it != argvec.end()) {
-    auto argument = find_argument(*it);
+    const auto argument = find_argument(*it);
     if (argument) {
       const size_t consumed = argument->parse(it, argvec.end());
 
@@ -133,6 +150,7 @@ parser::parse_args(int argc, char const* const* argv)
       }
 
       it += static_cast<string_vec::iterator::difference_type>(consumed);
+      AR_DEBUG_ASSERT(it <= argvec.end());
     } else {
       return parse_result::error;
     }
@@ -217,41 +235,64 @@ parser::print_help() const
   print_version();
   *m_stream << "\n" << m_help;
 
-  const size_t indentation = 4;
+  string_vec signatures;
+
+  size_t indentation = 0;
+  for (const auto& entry : m_args) {
+    if (entry.argument && !entry.argument->is_deprecated()) {
+      const auto& arg = *entry.argument;
+
+      std::stringstream ss;
+      if (arg.short_key().empty()) {
+        ss << "   " << arg.key();
+      } else {
+        ss << "   " << arg.short_key() << ", " << arg.key();
+      }
+
+      for (size_t i = 0; i < arg.min_values(); ++i) {
+        ss << " <" << arg.metavar() << ">";
+      }
+
+      if (arg.max_values() == std::numeric_limits<size_t>::max()) {
+        ss << " [" << arg.metavar() << ", ...]";
+      } else {
+        for (size_t i = arg.min_values(); i < arg.max_values(); ++i) {
+          ss << " [" << arg.metavar() << "]";
+        }
+      }
+
+      indentation = std::max<size_t>(indentation, ss.str().size() + 3);
+      signatures.push_back(ss.str());
+    } else {
+      signatures.push_back(std::string());
+    }
+  }
 
   cli_formatter fmt;
   fmt.set_indent(indentation);
+  fmt.set_indent_first_line(false);
   fmt.set_column_width(m_terminal_width - indentation);
 
-  for (const auto& entry : m_args) {
-    const auto& ptr = entry.argument;
+  for (size_t i = 0; i < m_args.size(); i++) {
+    const auto& entry = m_args.at(i);
+    if (entry.argument) {
+      if (!entry.argument->is_deprecated()) {
+        const auto& arg = *entry.argument;
+        const auto signature = signatures.at(i);
 
-    if (!ptr) {
-      *m_stream << entry.header << "\n";
-      continue;
-    } else if (ptr->is_deprecated()) {
-      continue;
-    }
+        *m_stream << signature;
 
-    bool first = true;
-    *m_stream << "  ";
-    for (const auto& key : ptr->keys()) {
-      if (!key.deprecated) {
-        *m_stream << (first ? "" : ", ") << key.name;
-        first = false;
+        const std::string help = arg.help();
+        if (!help.empty()) {
+          // Format into columns and indent lines (except the first line)
+          *m_stream << std::string(indentation - signature.length(), ' ')
+                    << fmt.format(help);
+        }
+
+        *m_stream << "\n";
       }
-    };
-
-    if (!ptr->metavar().empty()) {
-      *m_stream << " " << ptr->metavar();
-    }
-
-    *m_stream << "\n";
-
-    const std::string help = ptr->help();
-    if (!help.empty()) {
-      // Format into columns and indent lines (except the first line)
-      *m_stream << fmt.format(help) << "\n";
+    } else {
+      *m_stream << entry.header << "\n";
     }
   }
 
@@ -286,7 +327,7 @@ parser::update_argument_map()
   for (auto& it : m_args) {
     if (it.argument) {
       for (const auto& key : it.argument->keys()) {
-        const auto result = m_keys.emplace(key.name, it.argument);
+        const auto result = m_keys.emplace(key, it.argument);
         AR_DEBUG_ASSERT(result.second);
       }
     }
@@ -332,10 +373,10 @@ parser::find_argument(const std::string& key)
 
     for (const auto& arg : m_args) {
       if (arg.argument) {
-        for (const auto& it : arg.argument->keys()) {
-          if (!it.deprecated &&
-              is_similar_argument(key, it.name, max_distance)) {
-            candidates.push_back(it.name);
+        for (const auto& name : arg.argument->keys()) {
+
+          if (is_similar_argument(key, name, max_distance)) {
+            candidates.push_back(name);
           }
         }
       }
@@ -365,7 +406,9 @@ argument::argument(const std::string& key, const std::string& metavar)
   : m_times_set()
   , m_default_sink()
   , m_deprecated()
-  , m_keys()
+  , m_deprecated_keys()
+  , m_key_long(key)
+  , m_key_short()
   , m_metavar(metavar)
   , m_help()
   , m_requires()
@@ -374,8 +417,6 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_stream(&std::cerr)
 {
   AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
-
-  m_keys.push_back({ key, false });
 }
 
 argument&
@@ -401,14 +442,26 @@ argument::is_deprecated() const
 const std::string&
 argument::key() const
 {
-  AR_DEBUG_ASSERT(m_keys.size());
-  return m_keys.front().name;
+  return m_key_long;
 }
 
-const std::vector<argument::argument_key>&
+const std::string&
+argument::short_key() const
+{
+  return m_key_short;
+}
+
+string_vec
 argument::keys() const
 {
-  return m_keys;
+  string_vec keys = m_deprecated_keys;
+  keys.push_back(m_key_long);
+
+  if (!m_key_short.empty()) {
+    keys.push_back(m_key_short);
+  }
+
+  return keys;
 }
 
 const std::string&
@@ -429,6 +482,18 @@ argument::help() const
   } else {
     return m_help;
   }
+}
+
+size_t
+argument::min_values() const
+{
+  return m_sink->min_values();
+}
+
+size_t
+argument::max_values() const
+{
+  return m_sink->max_values();
 }
 
 const string_vec& argument::requires() const
@@ -489,9 +554,11 @@ argument::bind_vec(string_vec* sink)
 }
 
 argument&
-argument::alias(const std::string& key)
+argument::abbreviation(char key)
 {
-  m_keys.push_back({ key, false });
+  m_key_short.clear();
+  m_key_short.push_back('-');
+  m_key_short.push_back(key);
 
   return *this;
 }
@@ -499,7 +566,8 @@ argument::alias(const std::string& key)
 argument&
 argument::deprecated_alias(const std::string& key)
 {
-  m_keys.push_back({ key, true });
+  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
+  m_deprecated_keys.emplace_back(key);
 
   return *this;
 }
@@ -514,6 +582,7 @@ argument::deprecated()
 
 argument& argument::requires(const std::string& key)
 {
+  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
   m_requires.push_back(key);
 
   return *this;
@@ -522,6 +591,7 @@ argument& argument::requires(const std::string& key)
 argument&
 argument::conflicts(const std::string& key)
 {
+  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
   m_conflicts.push_back(key);
 
   return *this;
@@ -554,62 +624,65 @@ size_t
 argument::parse(string_vec_citer start, const string_vec_citer& end)
 {
   AR_DEBUG_ASSERT(start != end);
-  for (const auto& key_ : m_keys) {
-    if (*start == key_.name) {
-      if (m_deprecated) {
-        *m_stream << "WARNING: Option " << *start << " is deprecated and will "
-                  << "be removed in the future." << std::endl;
-      } else if (key_.deprecated) {
-        *m_stream << "WARNING: Option " << *start << " is deprecated and will "
-                  << "be removed in the future. Please use " << key()
-                  << " instead." << std::endl;
-      }
 
-      if (m_times_set == 1) {
-        *m_stream << "WARNING: Command-line option " << key()
-                  << " has been specified more than once." << std::endl;
-      }
+  bool is_deprecated = is_deprecated_alias(*start);
+  AR_DEBUG_ASSERT(is_deprecated || *start == m_key_long ||
+                  (m_key_short.size() && *start == m_key_short));
 
-      auto end_of_values = start + 1;
-      for (; end_of_values != end; ++end_of_values) {
-        if (!end_of_values->empty() && end_of_values->front() == '-') {
-          break;
-        }
-      }
+  if (m_deprecated) {
+    *m_stream << "WARNING: Option " << *start << " is deprecated and will "
+              << "be removed in the future." << std::endl;
+  } else if (is_deprecated) {
+    *m_stream << "WARNING: Option " << *start << " is deprecated and will "
+              << "be removed in the future. Please use " << key() << " instead."
+              << std::endl;
+  }
 
-      AR_DEBUG_ASSERT(start < end_of_values);
-      const auto n_values = static_cast<size_t>(end_of_values - start - 1);
-      const auto min_values = m_sink->min_values();
-      const auto max_values = m_sink->max_values();
+  if (m_times_set == 1) {
+    *m_stream << "WARNING: Command-line option " << key()
+              << " has been specified more than once." << std::endl;
+  }
 
-      if (n_values != min_values && min_values == max_values) {
-        n_args_error(*m_stream, *start, min_values, "", n_values);
-
-        return parsing_failed;
-      } else if (n_values < min_values) {
-        n_args_error(*m_stream, *start, min_values, " at least", n_values);
-
-        return parsing_failed;
-      } else if (n_values > max_values) {
-        n_args_error(*m_stream, *start, max_values, " at most", n_values);
-
-        return parsing_failed;
-      }
-
-      const auto result = m_sink->consume(start + 1, end_of_values);
-      if (result == parsing_failed) {
-        *m_stream << "ERROR: Invalid value for " << *start << ": "
-                  << escape(*(start + 1)) << std::endl;
-
-        return result;
-      }
-
-      m_times_set++;
-      return result + 1;
+  double numeric_sink = 0;
+  auto end_of_values = start + 1;
+  for (; end_of_values != end; ++end_of_values) {
+    if (end_of_values->size() > 1 && end_of_values->front() == '-' &&
+        // Avoid confusing numeric values for command-line arguments
+        !to_double(*end_of_values, numeric_sink)) {
+      break;
     }
   }
 
-  return parsing_failed;
+  const auto min_values = m_sink->min_values();
+  const auto max_values = m_sink->max_values();
+
+  AR_DEBUG_ASSERT(start < end_of_values);
+  auto n_values = static_cast<size_t>(end_of_values - start - 1);
+
+  if (n_values != min_values && min_values == max_values) {
+    n_args_error(*m_stream, *start, min_values, "", n_values);
+
+    return parsing_failed;
+  } else if (n_values < min_values) {
+    n_args_error(*m_stream, *start, min_values, " at least", n_values);
+
+    return parsing_failed;
+  } else if (n_values > max_values) {
+    n_args_error(*m_stream, *start, max_values, " at most", n_values);
+
+    return parsing_failed;
+  }
+
+  const auto result = m_sink->consume(start + 1, end_of_values);
+  if (result == parsing_failed) {
+    *m_stream << "ERROR: Invalid value for " << *start << ": "
+              << escape(*(start + 1)) << std::endl;
+
+    return result;
+  }
+
+  m_times_set++;
+  return result + 1;
 }
 
 void
@@ -618,6 +691,13 @@ argument::set_ostream(std::ostream* stream)
   AR_DEBUG_ASSERT(stream);
 
   m_stream = stream;
+}
+
+bool
+argument::is_deprecated_alias(const std::string& key) const
+{
+  return std::find(m_deprecated_keys.begin(), m_deprecated_keys.end(), key) !=
+         m_deprecated_keys.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -758,14 +838,7 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
   AR_DEBUG_ASSERT(end - start == 1);
 
   double value = 0;
-  std::stringstream stream(*start);
-  if (!(stream >> value)) {
-    return parsing_failed;
-  }
-
-  // Failing on trailing, non-numerical values
-  std::string trailing;
-  if (stream >> trailing) {
+  if (!to_double(*start, value)) {
     return parsing_failed;
   }
 
@@ -817,6 +890,15 @@ vec_sink::vec_sink(string_vec* ptr)
   AR_DEBUG_ASSERT(ptr);
 
   m_sink->clear();
+}
+
+vec_sink&
+vec_sink::max_values(size_t n)
+{
+  AR_DEBUG_ASSERT(n >= m_min_values);
+  m_max_values = n;
+
+  return *this;
 }
 
 size_t

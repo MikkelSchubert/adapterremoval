@@ -542,25 +542,20 @@ TEST_CASE("canonical key", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
 
-  const auto& keys = arg.keys();
-  REQUIRE(keys.size() == 1);
-  REQUIRE(keys.front().name == "--12345");
-  REQUIRE_FALSE(keys.front().deprecated);
+  REQUIRE(arg.keys() == string_vec{ "--12345" });
+  REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
 }
 
-TEST_CASE("argument alias", "[argparse::argument]")
+TEST_CASE("short argument alias", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
-  arg.alias("--foo");
+  arg.abbreviation('1');
 
   REQUIRE(arg.key() == "--12345");
-
-  const auto& keys = arg.keys();
-  REQUIRE(keys.size() == 2);
-  REQUIRE(keys.at(0).name == "--12345");
-  REQUIRE_FALSE(keys.at(0).deprecated);
-  REQUIRE(keys.at(1).name == "--foo");
-  REQUIRE_FALSE(keys.at(1).deprecated);
+  REQUIRE(arg.short_key() == "-1");
+  REQUIRE(arg.keys() == string_vec{ "--12345", "-1" });
+  REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
+  REQUIRE_FALSE(arg.is_deprecated_alias("-1"));
 }
 
 TEST_CASE("deprecated argument alias", "[argparse::argument]")
@@ -569,13 +564,10 @@ TEST_CASE("deprecated argument alias", "[argparse::argument]")
   arg.deprecated_alias("--foo");
 
   REQUIRE(arg.key() == "--12345");
-
-  const auto& keys = arg.keys();
-  REQUIRE(keys.size() == 2);
-  REQUIRE(keys.at(0).name == "--12345");
-  REQUIRE_FALSE(keys.at(0).deprecated);
-  REQUIRE(keys.at(1).name == "--foo");
-  REQUIRE(keys.at(1).deprecated);
+  REQUIRE(arg.short_key() == "");
+  REQUIRE(arg.keys() == string_vec{ "--foo", "--12345" });
+  REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
+  REQUIRE(arg.is_deprecated_alias("--foo"));
 }
 
 TEST_CASE("argument requires", "[argparse::argument]")
@@ -651,6 +643,21 @@ TEST_CASE("bind double", "[argparse::argument]")
   REQUIRE(sink == 7.913);
 }
 
+TEST_CASE("bound double takes negative values", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+  string_vec values{ "--12345", "-123" };
+
+  double sink = 0;
+  arg.bind_double(&sink);
+
+  REQUIRE(sink == 0);
+  REQUIRE_FALSE(arg.is_set());
+  REQUIRE(arg.parse(values.begin(), values.end()) == 2);
+  REQUIRE(arg.is_set());
+  REQUIRE(sink == -123);
+}
+
 TEST_CASE("bind str", "[argparse::argument]")
 {
   argparse::argument arg("--12345");
@@ -681,14 +688,12 @@ TEST_CASE("bind vec", "[argparse::argument]")
   REQUIRE(sink == string_vec{ "abcdef", "7913" });
 }
 
-TEST_CASE("parse wrong argument", "[argparse::argument]")
+TEST_CASE("parse wrong argument asserts", "[argparse::argument]")
 {
   argparse::argument arg("--12345");
   string_vec values{ "--54321" };
 
-  REQUIRE_FALSE(arg.is_set());
-  REQUIRE(arg.parse(values.begin(), values.end()) == parsing_failed);
-  REQUIRE_FALSE(arg.is_set());
+  REQUIRE_THROWS_AS(arg.parse(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("warning on first duplicate argument", "[argparse::argument]")
@@ -740,13 +745,12 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 ///////////////////////////////////////////////////////////////////////////////
 // parser
 
-const std::string HELP_HEADER = "My App v1234\n\n"
-                                "basic help\n"
-                                "OPTIONS:\n"
-                                "  -h, --help\n"
-                                "    Display this message.\n"
-                                "  -v, --version\n"
-                                "    Print the version string.\n\n";
+const std::string HELP_HEADER =
+  "My App v1234\n\n"
+  "basic help\n"
+  "OPTIONS:\n"
+  "   -h, --help      Display this message.\n"
+  "   -v, --version   Print the version string.\n\n";
 
 TEST_CASE("--version", "[argparse::parser]")
 {
@@ -863,35 +867,49 @@ TEST_CASE("user supplied argument", "[argparse::parser]")
   p.set_ostream(&ss);
   p.print_help();
 
-  REQUIRE(ss.str() == HELP_HEADER + "  --test\n");
+  REQUIRE(ss.str() == HELP_HEADER + "   --test\n");
 }
 
 TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 {
+  unsigned sink = 0;
   std::stringstream ss;
   argparse::parser p("My App", "v1234", "basic help");
-  p.add("--test", "META");
+  p.add("--test", "META").bind_uint(&sink);
   p.set_ostream(&ss);
   p.print_help();
 
-  REQUIRE(ss.str() == HELP_HEADER + "  --test META\n");
+  REQUIRE(ss.str() == "My App v1234\n\n"
+                      "basic help\n"
+                      "OPTIONS:\n"
+                      "   -h, --help      Display this message.\n"
+                      "   -v, --version   Print the version string.\n\n"
+                      "   --test <META>\n");
 }
 
 TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 {
+  unsigned sink = 0;
   std::stringstream ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--test", "META")
-    .help("A long help message that exceeds the limit of 80 characters by some "
-          "amount in order to test the line break functionality");
+    .help("A long help message that exceeds the limit of 60 characters by some "
+          "amount in order to test the line break functionality")
+    .bind_uint(&sink);
   p.set_ostream(&ss);
-  p.set_terminal_width(80);
+  p.set_terminal_width(60);
   p.print_help();
 
-  REQUIRE(ss.str() == HELP_HEADER +
-                        "  --test META\n    A long help message that exceeds "
-                        "the limit of 80 characters by some amount\n    in "
-                        "order to test the line break functionality\n");
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "basic help\n"
+          "OPTIONS:\n"
+          "   -h, --help      Display this message.\n"
+          "   -v, --version   Print the version string.\n\n"
+          "   --test <META>   A long help message that exceeds the\n"
+          "                   limit of 60 characters by some amount in\n"
+          "                   order to test the line break\n"
+          "                   functionality\n");
 }
 
 TEST_CASE("help with default value", "[argparse::parser]")
@@ -900,19 +918,24 @@ TEST_CASE("help with default value", "[argparse::parser]")
   std::stringstream ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--test", "META")
-    .help("A long help message that exceeds the limit of 80 characters by some "
+    .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
     .bind_uint(&sink)
     .with_default(1234);
   p.set_ostream(&ss);
-  p.set_terminal_width(80);
+  p.set_terminal_width(60);
   p.print_help();
 
   REQUIRE(ss.str() ==
-          HELP_HEADER +
-            "  --test META\n    A long help message that exceeds the limit of "
-            "80 characters by some amount\n    in order to test the line break "
-            "functionality [default: 1234]\n");
+          "My App v1234\n\n"
+          "basic help\n"
+          "OPTIONS:\n"
+          "   -h, --help      Display this message.\n"
+          "   -v, --version   Print the version string.\n\n"
+          "   --test <META>   A long help message that exceeds the\n"
+          "                   limit of 60 characters by some amount in\n"
+          "                   order to test the line break\n"
+          "                   functionality [default: 1234]\n");
 }
 
 TEST_CASE("required option missing", "[argparse::parser]")

@@ -242,11 +242,11 @@ userconfig::userconfig(const std::string& name,
   , m_runtime()
   , m_deprecated_knobs()
 {
-  argparser.add("--file1", "FILE [FILE ...]")
+  argparser.add("--file1", "FILE")
     .help("Input files containing mate 1 reads or single-ended reads; one or "
           "more files may be listed [REQUIRED]")
     .bind_vec(&input_files_1);
-  argparser.add("--file2", "[FILE ...]")
+  argparser.add("--file2", "FILE")
     .help("Input files containing mate 2 reads; if used, then the same number "
           "of files as --file1 must be listed [OPTIONAL]")
     .bind_vec(&input_files_2);
@@ -268,8 +268,9 @@ userconfig::userconfig(const std::string& name,
     .with_default(1);
 
   argparser.add_header("FASTQ OPTIONS:");
-  argparser.add("--qualitybase", "BASE")
-    .help("Quality base used to encode Phred scores in input; either 33 or 64")
+  argparser.add("--qualitybase", "N")
+    .help("Quality base/offset used to encode Phred scores in input; either "
+          "33, 64, or solexa [default: 33]")
     .bind_str(&quality_input_base)
     .with_default("33");
 
@@ -307,7 +308,7 @@ userconfig::userconfig(const std::string& name,
     .bind_bool(&interleaved_output);
 
   argparser.add_header("OUTPUT FILES:");
-  argparser.add("--basename", "BASENAME")
+  argparser.add("--basename", "PREFIX")
     .help("Default prefix for all output files for which no filename was "
           "explicitly set")
     .bind_str(&out_basename)
@@ -366,21 +367,21 @@ userconfig::userconfig(const std::string& name,
           "compressing independent blocks of 64kb data (see --gzip). This may "
           "be required for compatibility in some cases")
     .bind_bool(&gzip_stream);
-  argparser.add("--gzip-level", "LEVEL")
+  argparser.add("--gzip-level", "N")
     .help("GZip compression level, 0 - 9")
     .bind_uint(&gzip_level)
     .with_default(6);
 
   argparser.add_header("TRIMMING SETTINGS:");
-  argparser.add("--adapter1", "SEQUENCE")
+  argparser.add("--adapter1", "SEQ")
     .help("Adapter sequence expected to be found in mate 1 reads")
     .bind_str(&adapter_1)
     .with_default("AGATCGGAAGAGCACACGTCTGAACTCCAGTCA");
-  argparser.add("--adapter2", "SEQUENCE")
+  argparser.add("--adapter2", "SEQ")
     .help("Adapter sequence expected to be found in mate 2 reads")
     .bind_str(&adapter_2)
     .with_default("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT");
-  argparser.add("--adapter-list", "FILENAME")
+  argparser.add("--adapter-list", "FILE")
     .help("Read table of white-space separated adapters pairs, used as if the "
           "first column was supplied to --adapter1, and the second column was "
           "supplied to --adapter2; only the first adapter in each pair is "
@@ -388,7 +389,7 @@ userconfig::userconfig(const std::string& name,
     .bind_str(&adapter_list);
 
   argparser.add_separator();
-  argparser.add("--minadapteroverlap", "LENGTH")
+  argparser.add("--minadapteroverlap", "N")
     .help("In single-end mode, reads are only trimmed if the overlap between "
           "read and the adapter is at least X bases long, not counting "
           "ambiguous nucleotides (N); this is independent of the "
@@ -397,11 +398,11 @@ userconfig::userconfig(const std::string& name,
           "possible adapter contamination is trimmed")
     .bind_uint(&min_adapter_overlap)
     .with_default(0);
-  argparser.add("--mm", "MISMATCH_RATE")
+  argparser.add("--mm", "X")
     .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
-          "error-rate is set to 1 / MISMATCH_RATE; if < 0, the defaults are "
-          "used, otherwise the user-supplied value is used directly [default: "
-          "1/3 for trimming; 1/10 when identifying adapters]")
+          "error-rate is set to 1 / X; if < 0, the defaults are used, "
+          "otherwise the user-supplied value is used directly [default: 1/3 "
+          "for trimming; 1/10 when identifying adapters]")
     .bind_double(&mismatch_threshold)
     .with_default(-1.0);
   argparser.add("--shift", "N")
@@ -411,21 +412,23 @@ userconfig::userconfig(const std::string& name,
     .with_default(2);
 
   argparser.add_separator();
-  argparser.add("--trim5p", "N [N]")
+  argparser.add("--trim5p", "N")
     .help("Trim the 5' of reads by a fixed amount after removing adapters, "
           "but before carrying out quality based trimming. Specify one value "
           "to trim mate 1 and mate 2 reads the same amount, or two values "
           "separated by a space to trim each mate different amounts [default: "
           "no trimming]")
-    .bind_vec(&trim5p);
-  argparser.add("--trim3p", "N [N]")
+    .bind_vec(&trim5p)
+    .max_values(2);
+  argparser.add("--trim3p", "N")
     .help("Trim the 3' of reads by a fixed amount. See --trim5p")
-    .bind_vec(&trim3p);
+    .bind_vec(&trim3p)
+    .max_values(2);
 
   argparser.add("--trimns")
     .help("If set, trim ambiguous bases (N) at 5'/3' termini")
     .bind_bool(&trim_ambiguous_bases);
-  argparser.add("--maxns", "MAX")
+  argparser.add("--maxns", "N")
     .help("Reads containing more ambiguous bases (N) than this number after "
           "trimming are discarded")
     .bind_uint(&max_ambiguous_bases)
@@ -434,7 +437,7 @@ userconfig::userconfig(const std::string& name,
     .help("If set, trim bases at 5'/3' termini with quality scores <= to "
           "--minquality value")
     .bind_bool(&trim_by_quality);
-  argparser.add("--trimwindows", "SIZE")
+  argparser.add("--trimwindows", "X")
     .help("If set, quality trimming will be carried out using window based "
           "approach, where windows with an average quality less than "
           "--minquality will be trimmed. If >= 1, this value will be used "
@@ -445,7 +448,7 @@ userconfig::userconfig(const std::string& name,
           "implies --trimqualities")
     .bind_double(&trim_window_length)
     .with_default(-1.0);
-  argparser.add("--minquality", "PHRED")
+  argparser.add("--minquality", "N")
     .help("Inclusive minimum; see --trimqualities for details")
     .bind_uint(&low_quality_score)
     .with_default(2);
@@ -457,11 +460,11 @@ userconfig::userconfig(const std::string& name,
     .bind_bool(&preserve5p);
 
   argparser.add_separator();
-  argparser.add("--minlength", "LENGTH")
+  argparser.add("--minlength", "N")
     .help("Reads shorter than this length are discarded following trimming")
     .bind_uint(&min_genomic_length)
     .with_default(15);
-  argparser.add("--maxlength", "LENGTH")
+  argparser.add("--maxlength", "N")
     .help("Reads longer than this length are discarded following trimming")
     .bind_uint(&max_genomic_length)
     .with_default(std::numeric_limits<unsigned>::max());
@@ -489,7 +492,7 @@ userconfig::userconfig(const std::string& name,
           "this option also sets --merge")
     .deprecated_alias("--collapse-conservatively")
     .bind_bool(&merge_conservatively);
-  argparser.add("--minalignmentlength", "LENGTH")
+  argparser.add("--minalignmentlength", "N")
     .help("If --merge is set, paired reads must overlap at least this "
           "number of bases to be merged, and single-ended reads must "
           "overlap at least this number of bases with the adapter to be "
