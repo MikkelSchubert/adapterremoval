@@ -25,6 +25,7 @@
 #include <algorithm>   // for min, copy, max, replace
 #include <iomanip>     // for operator<<, setw
 #include <iostream>    // for operator<<, basic_ostream, endl, cerr, ostream
+#include <limits>      // for numeric_limits
 #include <set>         // for set
 #include <sstream>     // for stringstream
 #include <stdexcept>   // for invalid_argument
@@ -128,13 +129,6 @@ parser::parse_args(int argc, char const* const* argv)
       const size_t consumed = argument->parse(it, argvec.end());
 
       if (consumed == parsing_failed) {
-        if (it + 1 != argvec.end()) {
-          *m_stream << "ERROR: Invalid value for " << *it << ": "
-                    << escape(*(it + 1)) << std::endl;
-        } else {
-          *m_stream << "ERROR: No value supplied for " << *it << std::endl;
-        }
-
         return parse_result::error;
       }
 
@@ -270,6 +264,12 @@ parser::set_ostream(std::ostream* stream)
   AR_DEBUG_ASSERT(stream);
 
   m_stream = stream;
+
+  for (auto& it : m_args) {
+    if (it.argument) {
+      it.argument->set_ostream(stream);
+    }
+  }
 }
 
 void
@@ -298,7 +298,7 @@ parser::update_argument_map()
       for (const auto& key : it.argument->conflicts()) {
         if (!m_keys.count(key)) {
           any_errors = true;
-          std::cerr << "ERROR: " << it.argument->key() << " conflicts with "
+          *m_stream << "ERROR: " << it.argument->key() << " conflicts with "
                     << "unknown command-line option " << key << std::endl;
         }
       }
@@ -306,7 +306,7 @@ parser::update_argument_map()
       for (const auto& key : it.argument->requires()) {
         if (!m_keys.count(key)) {
           any_errors = true;
-          std::cerr << "ERROR: " << it.argument->key() << " requires "
+          *m_stream << "ERROR: " << it.argument->key() << " requires "
                     << "unknown command-line option " << key << std::endl;
         }
       }
@@ -527,6 +527,29 @@ argument::conflicts(const std::string& key)
   return *this;
 }
 
+void
+n_args_error(std::ostream& out,
+             const std::string& key,
+             size_t limit,
+             const char* relation,
+             size_t n)
+{
+  out << "ERROR: Command-line argument " << key << " takes" << relation << " "
+      << limit << " value";
+
+  if (limit != 1) {
+    out << "s";
+  }
+
+  if (n == 1) {
+    out << ", but 1 value was provided!";
+  } else {
+    out << ", but " << n << " values were provided!";
+  }
+
+  out << std::endl;
+}
+
 size_t
 argument::parse(string_vec_citer start, const string_vec_citer& end)
 {
@@ -547,8 +570,37 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
                   << " has been specified more than once." << std::endl;
       }
 
-      auto result = m_sink->consume(++start, end);
+      auto end_of_values = start + 1;
+      for (; end_of_values != end; ++end_of_values) {
+        if (!end_of_values->empty() && end_of_values->front() == '-') {
+          break;
+        }
+      }
+
+      AR_DEBUG_ASSERT(start < end_of_values);
+      const auto n_values = static_cast<size_t>(end_of_values - start - 1);
+      const auto min_values = m_sink->min_values();
+      const auto max_values = m_sink->max_values();
+
+      if (n_values != min_values && min_values == max_values) {
+        n_args_error(*m_stream, *start, min_values, "", n_values);
+
+        return parsing_failed;
+      } else if (n_values < min_values) {
+        n_args_error(*m_stream, *start, min_values, " at least", n_values);
+
+        return parsing_failed;
+      } else if (n_values > max_values) {
+        n_args_error(*m_stream, *start, max_values, " at most", n_values);
+
+        return parsing_failed;
+      }
+
+      const auto result = m_sink->consume(start + 1, end_of_values);
       if (result == parsing_failed) {
+        *m_stream << "ERROR: Invalid value for " << *start << ": "
+                  << escape(*(start + 1)) << std::endl;
+
         return result;
       }
 
@@ -571,8 +623,14 @@ argument::set_ostream(std::ostream* stream)
 ///////////////////////////////////////////////////////////////////////////////
 // sink
 
-sink::sink()
+sink::sink(size_t n_values)
+  : sink(n_values, n_values)
+{}
+
+sink::sink(size_t min_values, size_t max_values)
   : m_has_default()
+  , m_min_values(min_values)
+  , m_max_values(max_values)
 {}
 
 sink::~sink() {}
@@ -583,13 +641,26 @@ sink::has_default() const
   return m_has_default;
 }
 
+size_t
+sink::min_values() const
+{
+  return m_min_values;
+}
+
+size_t
+sink::max_values() const
+{
+  return m_max_values;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // bool_sink
 
-bool_sink::bool_sink(bool* sink)
-  : m_sink(sink)
+bool_sink::bool_sink(bool* ptr)
+  : sink(0)
+  , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(sink);
+  AR_DEBUG_ASSERT(ptr);
 
   *m_sink = false;
 }
@@ -601,8 +672,9 @@ bool_sink::to_str() const
 }
 
 size_t
-bool_sink::consume(string_vec_citer, const string_vec_citer&)
+bool_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
+  AR_DEBUG_ASSERT(start == end);
   *m_sink = true;
 
   return 0;
@@ -611,10 +683,11 @@ bool_sink::consume(string_vec_citer, const string_vec_citer&)
 ///////////////////////////////////////////////////////////////////////////////
 // uint_sink
 
-uint_sink::uint_sink(unsigned* sink)
-  : m_sink(sink)
+uint_sink::uint_sink(unsigned* ptr)
+  : sink(1)
+  , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(sink);
+  AR_DEBUG_ASSERT(ptr);
 
   *m_sink = 0;
 }
@@ -637,26 +710,25 @@ uint_sink::to_str() const
 size_t
 uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  if (start != end) {
-    try {
-      *m_sink = str_to_unsigned(*start);
+  AR_DEBUG_ASSERT(end - start == 1);
 
-      return 1;
-    } catch (const std::invalid_argument&) {
-      return parsing_failed;
-    }
+  try {
+    *m_sink = str_to_unsigned(*start);
+
+    return 1;
+  } catch (const std::invalid_argument&) {
+    return parsing_failed;
   }
-
-  return parsing_failed;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // double_sink
 
-double_sink::double_sink(double* sink)
-  : m_sink(sink)
+double_sink::double_sink(double* ptr)
+  : sink(1)
+  , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(sink);
+  AR_DEBUG_ASSERT(ptr);
 
   *m_sink = 0.0;
 }
@@ -683,33 +755,32 @@ double_sink::to_str() const
 size_t
 double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  if (start != end) {
-    double value = 0;
-    std::stringstream stream(*start);
-    if (!(stream >> value)) {
-      return parsing_failed;
-    }
+  AR_DEBUG_ASSERT(end - start == 1);
 
-    // Failing on trailing, non-numerical values
-    std::string trailing;
-    if (stream >> trailing) {
-      return parsing_failed;
-    }
-
-    *m_sink = value;
-    return 1;
+  double value = 0;
+  std::stringstream stream(*start);
+  if (!(stream >> value)) {
+    return parsing_failed;
   }
 
-  return parsing_failed;
+  // Failing on trailing, non-numerical values
+  std::string trailing;
+  if (stream >> trailing) {
+    return parsing_failed;
+  }
+
+  *m_sink = value;
+  return 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // str_sink
 
-str_sink::str_sink(std::string* sink)
-  : m_sink(sink)
+str_sink::str_sink(std::string* ptr)
+  : sink(1)
+  , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(sink);
+  AR_DEBUG_ASSERT(ptr);
 
   m_sink->clear();
 }
@@ -732,19 +803,18 @@ str_sink::to_str() const
 size_t
 str_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  if (start != end) {
-    *m_sink = *start;
+  AR_DEBUG_ASSERT(end - start == 1);
 
-    return 1;
-  }
+  *m_sink = *start;
 
-  return parsing_failed;
+  return 1;
 }
 
-vec_sink::vec_sink(string_vec* sink)
-  : m_sink(sink)
+vec_sink::vec_sink(string_vec* ptr)
+  : sink(1, std::numeric_limits<size_t>::max())
+  , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(sink);
+  AR_DEBUG_ASSERT(ptr);
 
   m_sink->clear();
 }
@@ -752,20 +822,11 @@ vec_sink::vec_sink(string_vec* sink)
 size_t
 vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  string_vec_citer it = start;
-  for (; it != end; ++it) {
-    if (!it->empty() && it->front() == '-') {
-      break;
-    }
-  }
+  AR_DEBUG_ASSERT(end - start >= 1);
 
-  if (start != it) {
-    m_sink->assign(start, it);
+  m_sink->assign(start, end);
 
-    return static_cast<size_t>(it - start);
-  }
-
-  return parsing_failed;
+  return static_cast<size_t>(end - start);
 }
 
 std::string

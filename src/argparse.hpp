@@ -264,7 +264,11 @@ protected:
 class sink
 {
 public:
-  sink();
+  /** Creates a sink that takes exactly `n_values` values */
+  sink(size_t n_values);
+  /** Creates a sink that takes between min and max values (incl.) */
+  sink(size_t min_values, size_t max_values);
+
   virtual ~sink();
 
   /** Returns the value associated with the consumer as a string. **/
@@ -277,9 +281,18 @@ public:
   /** Indicates if the sink has been supplied with a default value. */
   virtual bool has_default() const;
 
+  /** Indicates the minimum number of values taken by this sink */
+  size_t min_values() const;
+  /** Indicates the maximum number of values taken by this sink */
+  size_t max_values() const;
+
 protected:
   //! Indicates if the sink has been supplied with a default value
   bool m_has_default;
+  //! The minimum number of values taken by this sink
+  size_t m_min_values;
+  //! The maximum number of values taken by this sink
+  size_t m_max_values;
 
 private:
   //! Copy construction not supported

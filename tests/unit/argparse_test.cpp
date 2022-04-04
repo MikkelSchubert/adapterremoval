@@ -80,15 +80,13 @@ TEST_CASE("bool sink does not require values", "[argparse::bool_sink]")
   REQUIRE(value);
 }
 
-TEST_CASE("bool sink ignores values", "[argparse::bool_sink]")
+TEST_CASE("bool sink rejects values", "[argparse::bool_sink]")
 {
   string_vec values{ "0" };
   bool value = false;
   argparse::bool_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == 0);
-  REQUIRE(sink.to_str() == "on");
-  REQUIRE(value);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,15 +125,13 @@ TEST_CASE("uint sink with_default", "[argparse::uint_sink]")
   REQUIRE(value == 1234567);
 }
 
-TEST_CASE("uint sink require value", "[argparse::uint_sink]")
+TEST_CASE("uint sink requires value", "[argparse::uint_sink]")
 {
   unsigned value = 0;
   argparse::uint_sink sink(&value);
-  sink.with_default(1234567);
 
   string_vec values;
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
-  REQUIRE(value == 1234567);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("uint sink consumes single value", "[argparse::uint_sink]")
@@ -151,14 +147,11 @@ TEST_CASE("uint sink consumes single value", "[argparse::uint_sink]")
 
 TEST_CASE("uint sink consumes single value only", "[argparse::uint_sink]")
 {
-  string_vec values{ "1234567", "8901234" };
-
   unsigned value = 0;
   argparse::uint_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
-  REQUIRE(sink.to_str() == "1234567");
-  REQUIRE(value == 1234567);
+  const string_vec values{ "1234567", "8901234" };
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("uint requires valid integer value", "[argparse::uint_sink]")
@@ -272,11 +265,9 @@ TEST_CASE("double sink require value", "[argparse::double_sink]")
 {
   double value = 0;
   argparse::double_sink sink(&value);
-  sink.with_default(12345.67);
 
   string_vec values;
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
-  REQUIRE(value == 12345.67);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("double sink consumes single value", "[argparse::double_sink]")
@@ -292,14 +283,12 @@ TEST_CASE("double sink consumes single value", "[argparse::double_sink]")
 
 TEST_CASE("double sink consumes single value only", "[argparse::double_sink]")
 {
-  string_vec values{ "12345.67", "8901234" };
 
   double value = 0;
   argparse::double_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
-  REQUIRE(sink.to_str() == "12345.67");
-  REQUIRE(value == 12345.67);
+  const string_vec values{ "12345.67", "8901234" };
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("double requires valid double #1", "[argparse::double_sink]")
@@ -369,11 +358,9 @@ TEST_CASE("str sink require value", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
-  sink.with_default("foobar");
 
-  string_vec values;
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
-  REQUIRE(value == "foobar");
+  const string_vec values;
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("str sink consumes single value", "[argparse::str_sink]")
@@ -389,13 +376,11 @@ TEST_CASE("str sink consumes single value", "[argparse::str_sink]")
 
 TEST_CASE("str sink consumes single value only", "[argparse::str_sink]")
 {
-  string_vec values{ "foo", "bar" };
-
   std::string value;
   argparse::str_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
-  REQUIRE(value == "foo");
+  const string_vec values{ "foo", "bar" };
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("str sink consumes empty string", "[argparse::str_sink]")
@@ -447,9 +432,8 @@ TEST_CASE("vec sink require value", "[argparse::vec_sink]")
   string_vec value;
   argparse::vec_sink sink(&value);
 
-  string_vec values;
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
-  REQUIRE(value.empty());
+  const string_vec values;
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
 TEST_CASE("vec sink consumes single value", "[argparse::vec_sink]")
@@ -475,18 +459,6 @@ TEST_CASE("vec sink consumes multiple values", "[argparse::vec_sink]")
   REQUIRE(value.size() == 2);
   REQUIRE(value.front() == "foo");
   REQUIRE(value.back() == "bar");
-}
-
-TEST_CASE("vec sink consumes until dash", "[argparse::vec_sink]")
-{
-  string_vec values{ "foo", "--bar", "123" };
-
-  string_vec value;
-  argparse::vec_sink sink(&value);
-
-  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
-  REQUIRE(value.size() == 1);
-  REQUIRE(value.front() == "foo");
 }
 
 TEST_CASE("vec sink consumes empty string", "[argparse::vec_sink]")
@@ -544,7 +516,7 @@ TEST_CASE("help with custom default", "[argparse::argument]")
 
 TEST_CASE("deprecated argument", "[argparse::argument]")
 {
-  argparse::argument arg("--12345", "67890");
+  argparse::argument arg("--12345");
 
   REQUIRE_FALSE(arg.is_deprecated());
   arg.deprecated();
@@ -553,7 +525,7 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
   std::stringstream ss;
   arg.set_ostream(&ss);
 
-  string_vec values{ "--12345", "foo" };
+  string_vec values{ "--12345" };
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE(ss.str() == "WARNING: Option --12345 is deprecated and will be "
                       "removed in the future.\n");
@@ -1001,7 +973,8 @@ TEST_CASE("missing value", "[argparse::parser]")
 
   const char* args[] = { "exe", "--foo" };
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() == "ERROR: No value supplied for --foo\n");
+  REQUIRE(ss.str() == "ERROR: Command-line argument --foo takes 1 value, but 0 "
+                      "values were provided!\n");
 }
 
 TEST_CASE("invalid value", "[argparse::parser]")
