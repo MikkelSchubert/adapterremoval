@@ -229,7 +229,7 @@ read_fastq::read_single_end(read_chunk_ptr& chunk)
 {
   fastq record;
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && m_head && !m_eof) {
+  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof) {
     m_eof = !read_record(*m_io_input_1, &chunk->reads_1, record, n_nucleotides);
 
     if (m_head != std::numeric_limits<unsigned>::max()) {
@@ -246,7 +246,7 @@ read_fastq::read_paired_end(read_chunk_ptr& chunk)
 
   fastq record;
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE * 4 && m_head && !m_eof) {
+  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof) {
     m_eof = !read_record(*m_io_input_1, reads_1, record, n_nucleotides);
 
     bool eof_2 = !read_record(*m_io_input_2, reads_2, record, n_nucleotides);
