@@ -25,7 +25,6 @@
 
 #include <stddef.h> // for size_t
 
-#ifdef AR_TEST_BUILD
 #include <string> // for string
 
 /** Exception explaining 'abort' calls when running unit-tests. */
@@ -47,7 +46,6 @@ private:
   //! User supplied error message
   const std::string m_what;
 };
-#endif
 
 /**
  * Aborts after printing the filename, line-number, and message, plus

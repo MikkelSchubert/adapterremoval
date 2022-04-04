@@ -28,7 +28,6 @@
 
 #include "debug.hpp"
 
-#ifdef AR_TEST_BUILD
 assert_failed::assert_failed(const assert_failed& errror)
   : m_what(errror.m_what)
 {}
@@ -44,7 +43,6 @@ assert_failed::what() const noexcept
 {
   return m_what.c_str();
 }
-#endif
 
 void
 debug_raise_assert(const char* filename, size_t lineno, const char* what)
