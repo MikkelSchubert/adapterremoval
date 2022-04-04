@@ -49,7 +49,7 @@ analytical_step::analytical_step(processing_order step_order)
 analytical_step::~analytical_step() {}
 
 ///////////////////////////////////////////////////////////////////////////////
-// scheduler
+// scheduler_step
 
 typedef std::pair<size_t, chunk_ptr> data_chunk;
 
@@ -138,6 +138,9 @@ private:
   //! Short name for step used for error reporting
   std::string m_name;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// scheduler
 
 scheduler::scheduler()
   : m_steps()
