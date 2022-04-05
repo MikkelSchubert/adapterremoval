@@ -37,7 +37,8 @@ struct next_subsequence
                             const size_t max_local_mismatches_)
     : seq(seq_)
     , max_local_mismatches(max_local_mismatches_)
-  {}
+  {
+  }
 
   const char* seq;
   const size_t max_local_mismatches;
@@ -49,12 +50,14 @@ struct next_subsequence
 barcode_error::barcode_error(const std::string& message)
   : std::exception()
   , m_message(message)
-{}
+{
+}
 
 barcode_error::barcode_error(const barcode_error& error)
   : std::exception()
   , m_message(error.m_message)
-{}
+{
+}
 
 barcode_error::~barcode_error() noexcept {}
 
@@ -76,7 +79,8 @@ demultiplexer_node::demultiplexer_node()
 barcode_table::candidate::candidate(int barcode_, size_t mismatches_)
   : barcode(barcode_)
   , mismatches(mismatches_)
-{}
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

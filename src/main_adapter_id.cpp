@@ -87,7 +87,8 @@ struct nt_counts
 {
   nt_counts()
     : counts(4, 0)
-  {}
+  {
+  }
 
   /** Increment count of a nucleotide A, C, G, or T (uppercase only). */
   void increment(char nt)
@@ -280,7 +281,8 @@ public:
     , aligned_pairs(0)
     , unaligned_pairs(0)
     , pairs_with_adapters(0)
-  {}
+  {
+  }
 
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   adapter_stats& operator+=(const adapter_stats& other)

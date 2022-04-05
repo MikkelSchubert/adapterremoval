@@ -705,13 +705,15 @@ argument::is_deprecated_alias(const std::string& key) const
 
 sink::sink(size_t n_values)
   : sink(n_values, n_values)
-{}
+{
+}
 
 sink::sink(size_t min_values, size_t max_values)
   : m_has_default()
   , m_min_values(min_values)
   , m_max_values(max_values)
-{}
+{
+}
 
 sink::~sink() {}
 

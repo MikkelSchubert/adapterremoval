@@ -96,7 +96,8 @@ progress_timer::progress_timer(const std::string& what)
   , m_current(0)
   , m_first_time(get_current_time())
   , m_last_time(m_first_time)
-{}
+{
+}
 
 void
 progress_timer::increment(size_t inc)
@@ -150,7 +151,8 @@ progress_timer::do_print(size_t items, double seconds, bool finalize) const
 
 highres_timer::highres_timer()
   : m_start_time(highres_clock::now())
-{}
+{
+}
 
 double
 highres_timer::duration() const

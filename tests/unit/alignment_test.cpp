@@ -53,7 +53,8 @@ struct ALN
 {
   ALN()
     : info()
-  {}
+  {
+  }
 
   TEST_ALIGNMENT_SETTER(int, score);
   TEST_ALIGNMENT_SETTER(int, offset);

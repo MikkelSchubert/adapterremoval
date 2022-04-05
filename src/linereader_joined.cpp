@@ -30,7 +30,8 @@ joined_line_readers::joined_line_readers(const string_vec& filenames)
   , m_reader()
   , m_filename()
   , m_current_line(0)
-{}
+{
+}
 
 joined_line_readers::~joined_line_readers() {}
 

@@ -36,7 +36,8 @@ class reads_sink : public analytical_step
 public:
   reads_sink()
     : analytical_step(processing_order::unordered)
-  {}
+  {
+  }
 
   chunk_vec process(chunk_ptr) override { return chunk_vec(); }
 };

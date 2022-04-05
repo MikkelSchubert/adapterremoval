@@ -296,7 +296,8 @@ struct io_section
     : m_read_type(rtype)
     , m_stats(stats)
     , m_filenames(filenames)
-  {}
+  {
+  }
 
   const char* name() const
   {

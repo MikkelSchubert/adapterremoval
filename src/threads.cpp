@@ -31,12 +31,14 @@
 thread_error::thread_error(const std::string& message)
   : std::exception()
   , m_message(message)
-{}
+{
+}
 
 thread_error::thread_error(const thread_error& error)
   : std::exception()
   , m_message(error.m_message)
-{}
+{
+}
 
 thread_error::~thread_error() noexcept {}
 
@@ -48,7 +50,8 @@ thread_error::what() const noexcept
 
 thread_abort::thread_abort()
   : thread_error("abort thread")
-{}
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // print_locker

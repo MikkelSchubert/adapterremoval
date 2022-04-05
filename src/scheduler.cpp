@@ -44,7 +44,8 @@ analytical_chunk::~analytical_chunk() {}
 
 analytical_step::analytical_step(processing_order step_order)
   : m_step_order(step_order)
-{}
+{
+}
 
 analytical_step::~analytical_step() {}
 
@@ -64,7 +65,8 @@ public:
     , m_last_chunk(0)
     , m_queue()
     , m_name(name)
-  {}
+  {
+  }
 
   /** Returns true if the chunk can be executed now; requires locking */
   bool can_run(size_t chunk_id) const
@@ -103,10 +105,13 @@ public:
 
   /** Name of the analytical task; for error messages when bugs are detected */
   const std::string name() const { return m_name; }
+
   /** Name of the analytical task; for error messages when bugs are detected */
   processing_order ordering() const { return m_ptr->ordering(); }
+
   /** Number of chunks waiting to be processed by this task; requires locking */
   size_t chunks_queued() const { return m_queue.size(); }
+
   /** Returns new ID for (sparse) output from ordered tasks; requires locking */
   size_t new_chunk_id() { return m_last_chunk++; }
 
@@ -118,6 +123,7 @@ public:
 
   /** Increment the next chunk to be processed; requires locking */
   void increment_next_chunk() { m_next_chunk++; }
+
   /** Perform any final cleanup assosited with the task; requires locking */
   void finalize() { return m_ptr->finalize(); }
 
@@ -153,7 +159,8 @@ scheduler::scheduler()
   , m_queue_io()
   , m_io_active(false)
   , m_errors(false)
-{}
+{
+}
 
 scheduler::~scheduler() {}
 

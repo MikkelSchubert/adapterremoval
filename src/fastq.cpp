@@ -44,7 +44,8 @@ struct mate_info
     : name()
     , mate(read_mate::unknown)
     , sep_pos(std::string::npos)
-  {}
+  {
+  }
 
   std::string desc() const
   {
@@ -104,7 +105,8 @@ fastq::fastq()
   : m_header()
   , m_sequence()
   , m_qualities()
-{}
+{
+}
 
 fastq::fastq(const std::string& header,
              const std::string& sequence,

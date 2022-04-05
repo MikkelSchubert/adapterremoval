@@ -57,7 +57,8 @@ public:
                        const output_sample_files& output,
                        size_t nth)
     : reads_processor(config, output, nth)
-  {}
+  {
+  }
 
   chunk_vec process(chunk_ptr chunk) override
   {
@@ -84,7 +85,8 @@ public:
                        const output_sample_files& output,
                        size_t nth)
     : reads_processor(config, output, nth)
-  {}
+  {
+  }
 
   chunk_vec process(chunk_ptr chunk) override
   {

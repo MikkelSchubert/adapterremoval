@@ -147,7 +147,8 @@ output_files::output_files()
   , unidentified_1()
   , unidentified_2()
   , samples()
-{}
+{
+}
 
 output_sample_files::output_sample_files()
   : filenames()

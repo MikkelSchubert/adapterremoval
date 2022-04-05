@@ -37,7 +37,8 @@ public:
   vec_reader(const string_vec& lines)
     : m_lines(lines)
     , m_it(m_lines.begin())
-  {}
+  {
+  }
 
   bool getline(std::string& dst)
   {

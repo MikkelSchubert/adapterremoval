@@ -119,18 +119,31 @@ public:
     return m_number_of_sampled_reads;
   }
 
+  /** Distribution of read lengths */
   inline const counts& length_dist() const { return m_length_dist; }
+
+  /** Distribution of Phred quality scores (offset 0) */
   inline const counts& quality_dist() const { return m_quality_dist; }
+
+  /** Distribution of GC content in percent */
   inline const counts& gc_content() const { return m_gc_content_dist; }
+
+  /** Count of uncalled nucleotides (N) by position */
   inline const counts& uncalled_pos() const { return m_uncalled_pos; }
+
+  /** Sum of qualities of uncalled bases (N) by position */
   inline const counts& uncalled_quality_pos() const
   {
     return m_uncalled_quality_pos;
   }
+
+  /** Counts of each nucleotype (ACGT) by position */
   inline const counts& nucleotides_pos(char nuc) const
   {
     return m_called_pos.at(ACGT_TO_IDX(nuc));
   }
+
+  /** Sum of base qualities for each nucleotype (ACGT) by position */
   inline const counts& qualities_pos(char nuc) const
   {
     return m_quality_pos.at(ACGT_TO_IDX(nuc));

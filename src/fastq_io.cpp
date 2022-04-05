@@ -125,7 +125,8 @@ fastq_read_chunk::fastq_read_chunk(bool eof_)
   , nucleotides()
   , reads_1()
   , reads_2()
-{}
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_output_chunk'
@@ -135,7 +136,8 @@ fastq_output_chunk::fastq_output_chunk(bool eof_)
   , nucleotides(0)
   , reads()
   , buffers()
-{}
+{
+}
 
 void
 fastq_output_chunk::add(const fastq& read)
@@ -296,7 +298,8 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   , m_next_step(next_step)
   , m_eof(false)
   , m_lock()
-{}
+{
+}
 
 chunk_vec
 post_process_fastq::process(chunk_ptr chunk)
@@ -451,7 +454,8 @@ split_fastq::split_fastq(size_t next_step)
   , m_offset()
   , m_eof(false)
   , m_lock()
-{}
+{
+}
 
 void
 split_fastq::finalize()
@@ -511,7 +515,8 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
   , m_config(config)
   , m_next_step(next_step)
   , m_buffers()
-{}
+{
+}
 
 chunk_vec
 gzip_split_fastq::process(chunk_ptr chunk)
@@ -579,7 +584,8 @@ write_fastq::write_fastq(const std::string& filename)
   , m_output(filename)
   , m_eof(false)
   , m_lock()
-{}
+{
+}
 
 chunk_vec
 write_fastq::process(chunk_ptr chunk)

@@ -37,12 +37,14 @@
 fastq_error::fastq_error(const std::string& message)
   : std::exception()
   , m_message(message)
-{}
+{
+}
 
 fastq_error::fastq_error(const fastq_error& error)
   : std::exception()
   , m_message(error.m_message)
-{}
+{
+}
 
 fastq_error::~fastq_error() noexcept {}
 
@@ -212,6 +214,7 @@ invalid_solexa(const int max_score, const char raw_score)
 
   throw fastq_error(ss.str());
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 fastq_encoding::fastq_encoding(quality_encoding encoding, char max_score)

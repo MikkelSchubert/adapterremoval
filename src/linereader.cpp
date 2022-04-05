@@ -54,7 +54,8 @@ format_io_msg(const std::string& message, int error_number)
 
 io_error::io_error(const std::string& message, int error_number)
   : std::ios_base::failure(format_io_msg(message, error_number))
-{}
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_error'
@@ -70,6 +71,7 @@ throw_gzip_error(const char* func, z_stream* zstream, const char* msg)
 
   throw gzip_error(stream.str());
 }
+
 [[noreturn]] void
 throw_isal_error(const char* func, const char* msg)
 {
@@ -84,7 +86,8 @@ throw_isal_error(const char* func, const char* msg)
 
 gzip_error::gzip_error(const std::string& message)
   : io_error(message)
-{}
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions for zlib/isa-l

@@ -30,11 +30,13 @@
 
 assert_failed::assert_failed(const assert_failed& errror)
   : m_what(errror.m_what)
-{}
+{
+}
 
 assert_failed::assert_failed(const std::string& what)
   : m_what(what)
-{}
+{
+}
 
 assert_failed::~assert_failed() noexcept {}
 

@@ -209,7 +209,8 @@ struct phred_scores
   explicit phred_scores(size_t index)
     : identical_nts(IDENTICAL_NTS[index])
     , different_nts(DIFFERENT_NTS[index])
-  {}
+  {
+  }
 
   //! Phred score to assign if the two nucleotides are identical
   char identical_nts;
@@ -241,7 +242,8 @@ alignment_info::alignment_info()
   , n_mismatches(0)
   , n_ambiguous(0)
   , adapter_id(-1)
-{}
+{
+}
 
 bool
 alignment_info::is_better_than(const alignment_info& other) const
@@ -302,7 +304,8 @@ alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
 sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters)
   : m_adapters(adapters)
   , m_mismatch_threshold(1.0)
-{}
+{
+}
 
 void
 sequence_aligner::set_mismatch_threshold(double mm)
@@ -386,7 +389,8 @@ sequence_merger::sequence_merger()
   : m_mate_sep(MATE_SEPARATOR)
   , m_conservative(false)
   , m_max_score(MAX_PHRED_SCORE + '!')
-{}
+{
+}
 
 void
 sequence_merger::set_mate_separator(char sep)

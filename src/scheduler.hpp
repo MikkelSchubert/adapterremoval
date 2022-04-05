@@ -46,7 +46,8 @@ public:
   threadstate()
     : m_mutex()
     , m_values()
-  {}
+  {
+  }
 
   typedef std::unique_ptr<T> pointer;
 
@@ -272,7 +273,8 @@ private:
 
 inline void
 analytical_step::finalize()
-{}
+{
+}
 
 inline processing_order
 analytical_step::ordering() const

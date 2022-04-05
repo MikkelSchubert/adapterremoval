@@ -225,7 +225,8 @@ se_reads_processor::se_reads_processor(const userconfig& config,
                                        const output_sample_files& output,
                                        size_t nth)
   : reads_processor(config, output, nth)
-{}
+{
+}
 
 chunk_vec
 se_reads_processor::process(chunk_ptr chunk)
@@ -276,7 +277,8 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const output_sample_files& output,
                                        size_t nth)
   : reads_processor(config, output, nth)
-{}
+{
+}
 
 chunk_vec
 pe_reads_processor::process(chunk_ptr chunk)

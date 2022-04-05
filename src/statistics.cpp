@@ -69,7 +69,8 @@ duplication_statistics::summary::summary()
   , total_sequences(DUPLICATION_LEVELS)
   , unique_sequences(DUPLICATION_LEVELS)
   , unique_frac()
-{}
+{
+}
 
 duplication_statistics::duplication_statistics(size_t max_unique_sequences)
   : m_max_unique_sequences(max_unique_sequences)
@@ -217,7 +218,8 @@ fastq_statistics::fastq_statistics(double sample_rate)
   , m_quality_pos(4)
   , m_max_sequence_len()
   , m_duplication()
-{}
+{
+}
 
 void
 fastq_statistics::process(const fastq& read, size_t num_input_reads)
@@ -327,7 +329,8 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , filtered_ambiguous_bases()
   , filtered_low_complexity_reads()
   , filtered_low_complexity_bases()
-{}
+{
+}
 
 trimming_statistics&
 trimming_statistics::operator+=(const trimming_statistics& other)
@@ -361,7 +364,8 @@ demux_statistics::demux_statistics(double sample_rate)
   , ambiguous(0)
   , unidentified_stats_1(make_shared<fastq_statistics>(sample_rate))
   , unidentified_stats_2(make_shared<fastq_statistics>(sample_rate))
-{}
+{
+}
 
 size_t
 demux_statistics::total() const
@@ -379,13 +383,15 @@ statistics::statistics(double sample_rate)
   , input_2(make_shared<fastq_statistics>(sample_rate))
   , demultiplexing(make_shared<demux_statistics>(sample_rate))
   , trimming()
-{}
+{
+}
 
 statistics_builder::statistics_builder()
   : m_barcode_count(0)
   , m_sample_rate(1.0)
   , m_max_unique(0)
-{}
+{
+}
 
 statistics_builder&
 statistics_builder::sample_rate(double value)

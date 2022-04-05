@@ -30,7 +30,8 @@ class counts_tmpl
 public:
   explicit counts_tmpl(size_t size = 0)
     : m_values(size, T())
-  {}
+  {
+  }
 
   /** Increase the storage size to accomondate at least size items. */
   void resize_up_to(size_t size)
