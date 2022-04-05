@@ -188,7 +188,7 @@ userconfig::userconfig(const std::string& name,
   , input_files_1()
   , input_files_2()
   , out_basename()
-  , out_settings()
+  , out_json()
   , out_interleaved("{basename}{.sample}.fastq")
   , out_pair_1()
   , out_pair_2()
@@ -318,7 +318,7 @@ userconfig::userconfig(const std::string& name,
     .help("Output file containing statistics about trimming, merging, and more "
           "in JSON format")
     .deprecated_alias("--settings")
-    .bind_str(&out_settings)
+    .bind_str(&out_json)
     .with_default("{basename}{.sample}.json");
 
   argparser.add("--out-file1", "FILE")
@@ -772,7 +772,7 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings = template_replace(out_settings, "basename", out_basename);
+  files.settings = template_replace(out_json, "basename", out_basename);
   files.settings = template_replace(files.settings, "sample", "");
 
   const std::string out1 = interleaved_output ? out_interleaved : out_pair_1;

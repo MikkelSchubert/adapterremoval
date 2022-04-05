@@ -140,19 +140,19 @@ public:
   string_vec input_files_2;
   //! Prefix used for output files for which no filename was explicitly set
   std::string out_basename;
-  //! FIXME:
-  std::string out_settings;
-  //! FIXME:
+  //! Template filename used for writing JSON report
+  std::string out_json;
+  //! Template filename used for writing interleaved reads
   std::string out_interleaved;
-  //! FIXME:
+  //! Template filename used for writing mate 1 reads
   std::string out_pair_1;
-  //! FIXME:
+  //! Template filename used for writing mate 2 reads
   std::string out_pair_2;
-  //! FIXME:
+  //! Template filename used for writing merged mate 1/2 reads
   std::string out_merged;
-  //! FIXME:
+  //! Template filename used for writing discarded reads
   std::string out_discarded;
-  //! FIXME:
+  //! Template filename used for writing singleton reads
   std::string out_singleton;
 
   //! Set to true if both --input1 and --input2 are set, or if either of
