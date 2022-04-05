@@ -43,6 +43,10 @@ levenshtein(const std::string& s, const std::string& t);
 unsigned
 str_to_unsigned(const std::string& s);
 
+/** Lowercases letters in the range a-z */
+std::string
+tolower(const std::string& str);
+
 /** Uppercases letters in the range a-z */
 std::string
 toupper(const std::string& str);

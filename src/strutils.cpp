@@ -84,6 +84,19 @@ str_to_unsigned(const std::string& s)
 }
 
 std::string
+tolower(const std::string& str)
+{
+  std::string uppercased = str;
+  for (auto& current : uppercased) {
+    if (current >= 'A' && current <= 'Z') {
+      current += 32;
+    }
+  }
+
+  return uppercased;
+}
+
+std::string
 toupper(const std::string& str)
 {
   std::string uppercased = str;
