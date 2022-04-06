@@ -36,6 +36,7 @@ import subprocess
 import sys
 import tempfile
 
+from itertools import groupby
 from shlex import quote
 
 
@@ -642,46 +643,46 @@ def main(argv):
     print("\nRunning tests:")
 
     with multiprocessing.Pool(args.threads) as pool:
-        test_name = None
-        test_idx = 0
-        test_errors = 0
+        results = pool.imap(run_test, tests_calls)
+        grouped_results = groupby(results, lambda it: it[0].name)
 
-        for test, label, error in pool.imap(run_test, tests_calls):
-            if test_name != test.name:
-                if not test_errors:
-                    print_ok(" [OK]")
+        for idx, (name, test_results) in enumerate(grouped_results, start=1):
+            print("  %i of %i: %s " % (idx, len(tests), name), end="")
 
-                test_name = test.name
-                test_idx += 1
-                test_errors = 0
-
-                print("  %i of %i: %s " % (test_idx, len(tests), test_name), end="")
+            last_error = None
+            last_variant = None
+            test_skipped = False
+            for test, variant, error in test_results:
                 if test.skip:
-                    print_warn("[SKIPPED]")
-                    test_errors = 1
+                    print_ok(".", end="")
+                    test_skipped = True
+                elif error is None:
+                    print_ok(".", end="")
+                    sys.stdout.flush()
+                else:
+                    print_err("X", end="")
+                    sys.stdout.flush()
+                    if last_error is None:
+                        last_error = error
+                        last_variant = variant
 
-            if test.skip:
+            if test_skipped:
+                print_warn(" [SKIPPED]")
                 n_skipped += 1
-                continue
-
-            if error is None:
-                print_ok(".", end="")
-                sys.stdout.flush()
-
+            elif last_error is None:
                 n_successes += 1
+                print_ok(" [OK]")
             else:
                 n_failures += 1
-                message = "\n    ".join(str(error).split("\n"))
+                message = "\n    ".join(str(last_error).split("\n"))
                 print_err(
                     "\n  %s for %s:\n    %s"
-                    % (error.__class__.__name__, label, message)
+                    % (last_error.__class__.__name__, last_variant, message)
                 )
+
                 if n_failures >= args.max_failures:
                     pool.terminate()
                     break
-
-        if not test_errors:
-            print_ok(" [OK]")
 
     cleanup_dirs(args.work_dir)
 
