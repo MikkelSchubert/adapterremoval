@@ -192,11 +192,13 @@ public:
   //! Fixed number of bases to trim from 3' for mate 1 and mate 2 reads
   std::pair<unsigned, unsigned> trim_fixed_3p;
 
-  //! If true, read termini are trimmed for low-quality bases.
+  //! Error rate used for quality trimming using the modified Mott's algorithm.
+  double trim_error_rate;
+  //! DEPRECATED: If true, read termini are trimmed for low-quality bases.
   bool trim_by_quality;
-  //! Window size for window trimming; a fraction, whole number, or negative.
+  //! DEPRECATED: Window based trimming; a fraction / N bp size / off (negative)
   double trim_window_length;
-  //! The highest quality score which is considered low-quality
+  //! DEPRECATED: The highest quality score which is considered low-quality
   unsigned low_quality_score;
 
   //! If true, ambiguous bases (N) at read termini are trimmed.

@@ -104,6 +104,8 @@ trim_sequence_by_quality(const userconfig& config,
 
     trimmed = read.trim_trailing_bases(
       config.trim_ambiguous_bases, quality_score, config.preserve5p);
+  } else if (config.trim_error_rate > 0.0) {
+    trimmed = read.mott_trimming(config.trim_error_rate, config.preserve5p);
   }
 
   if (trimmed.first || trimmed.second) {

@@ -619,6 +619,67 @@ TEST_CASE("trim_windowed_bases__trim_3p__reversed", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// mott_trimming
+
+TEST_CASE("Mott trimming empty sequence yields empty sequence")
+{
+  const fastq expected_record("Rec", "", "");
+  fastq record = expected_record;
+
+  REQUIRE(record.mott_trimming(0.05) == fastq::ntrimmed());
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("Mott doesn't trim high quality bases")
+{
+  const fastq expected("Rec", "GGAACGTG", "JJJJJJJJ");
+  auto record = expected;
+
+  REQUIRE(record.mott_trimming(0.05) == fastq::ntrimmed());
+  REQUIRE(record == expected);
+}
+
+TEST_CASE("Mott trimming treats Ns as low quality")
+{
+  fastq record("Rec", "NNNNNNNN", "JJJJJJJJ");
+
+  REQUIRE(record.mott_trimming(0.05) == fastq::ntrimmed(0, 8));
+  REQUIRE(record == fastq("Rec", ""));
+}
+
+TEST_CASE("Mott trimming both ends by default")
+{
+  fastq record("Rec", "GGAACGTGTACTAT", "####JJJJJ#####");
+
+  REQUIRE(record.mott_trimming(0.05) == fastq::ntrimmed(4, 5));
+  REQUIRE(record == fastq("Rec", "CGTGT", "JJJJJ"));
+}
+
+TEST_CASE("Mott trimming trims only 3' if preserve3p")
+{
+  fastq record("Rec", "GGAACGTGTACTAT", "####JJJJJ#####");
+
+  REQUIRE(record.mott_trimming(0.05, true) == fastq::ntrimmed(0, 5));
+  REQUIRE(record == fastq("Rec", "GGAACGTGT", "####JJJJJ"));
+}
+
+TEST_CASE("Mott trimming shorter segments if first")
+{
+  fastq record("Rec", "GGAACGTGTACTATGGAACGTG", "####JJJJ#####JJJJJ####");
+
+  REQUIRE(record.mott_trimming(0.05) == fastq::ntrimmed(13, 4));
+  REQUIRE(record == fastq("Rec", "TGGAA", "JJJJJ"));
+}
+
+TEST_CASE("Mott trimming shorter segments if last")
+{
+  fastq record("Rec", "GGAACGTGTACTATGGAACGTG", "####JJJJJ####JJJJ#####");
+
+  REQUIRE(record.mott_trimming(0.05) == fastq::ntrimmed(4, 13));
+  REQUIRE(record == fastq("Rec", "CGTGT", "JJJJJ"));
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Truncate
 
 TEST_CASE("truncate_empty", "[fastq::fastq]")

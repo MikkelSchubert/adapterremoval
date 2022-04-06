@@ -23,6 +23,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm> // for find, min, max
+#include <cmath>     // for pow
 #include <cstring>   // for size_t, strerror
 #include <errno.h>   // for errno
 #include <iostream>  // for operator<<, basic_ostream, endl, cerr, ostream
@@ -210,6 +211,7 @@ userconfig::userconfig(const std::string& name,
   , quality_max()
   , trim_fixed_5p()
   , trim_fixed_3p()
+  , trim_error_rate()
   , trim_by_quality()
   , trim_window_length()
   , low_quality_score()
@@ -426,29 +428,22 @@ userconfig::userconfig(const std::string& name,
     .bind_vec(&trim3p)
     .max_values(2);
 
-  argparser.add("--trimns")
-    .help("If set, trim ambiguous bases (N) at 5'/3' termini")
-    .bind_bool(&trim_ambiguous_bases);
+  argparser.add("--trim-error-rate", "X")
+    .help("The threshold value used when performing trimming quality based "
+          "trimming using the modified Mott's algorithm. A value of zero or "
+          "less disables trimming; a value greater than one is assumed to be "
+          "a Phred encoded error rate (e.g. 13 ~= 0.05)")
+    .conflicts("--trimwindows")
+    .conflicts("--trimqualities")
+    .conflicts("--trimns")
+    .bind_double(&trim_error_rate)
+    .with_default(0);
+
   argparser.add("--maxns", "N")
     .help("Reads containing more ambiguous bases (N) than this number after "
           "trimming are discarded")
     .bind_uint(&max_ambiguous_bases)
     .with_default(1000);
-  argparser.add("--trimqualities")
-    .help("If set, trim bases at 5'/3' termini with quality scores <= to "
-          "--minquality value")
-    .bind_bool(&trim_by_quality);
-  argparser.add("--trimwindows", "X")
-    .help("If set, quality trimming will be carried out using window based "
-          "approach, where windows with an average quality less than "
-          "--minquality will be trimmed. If >= 1, this value will be used "
-          "as the window size. If the value is < 1, the value will be "
-          "multiplied with the read length to determine a window size per "
-          "read. If the resulting window size is 0 or larger than the read "
-          "length, the read length is used as the window size. This option "
-          "implies --trimqualities")
-    .bind_double(&trim_window_length)
-    .with_default(-1.0);
   argparser.add("--minquality", "N")
     .help("Inclusive minimum; see --trimqualities for details")
     .bind_uint(&low_quality_score)
@@ -554,6 +549,12 @@ userconfig::userconfig(const std::string& name,
     .bind_uint(&report_duplication)
     .with_default(0);
 
+  argparser.add("--trimwindows", "X")
+    .deprecated()
+    .bind_double(&trim_window_length)
+    .with_default(-1.0);
+  argparser.add("--trimns").deprecated().bind_bool(&trim_ambiguous_bases);
+  argparser.add("--trimqualities").deprecated().bind_bool(&trim_by_quality);
   argparser.add("--collapse-deterministic").deprecated();
   argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
 }
@@ -717,6 +718,11 @@ userconfig::parse_args(int argc, char* argv[])
               << std::endl;
 
     return argparse::parse_result::error;
+  }
+
+  if (trim_error_rate > 1) {
+    trim_error_rate = std::pow(10.0, trim_error_rate / -10.0);
+    // TODO: Log resulting error rate limit
   }
 
   return argparse::parse_result::ok;

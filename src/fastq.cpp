@@ -23,13 +23,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm> // for reverse, count, max, min
-#include <cmath>     // for log10
+#include <cmath>     // for log10, pow
 #include <numeric>   // for accumulate
 #include <sstream>   // for stringstream
 
 #include "debug.hpp" // for AR_DEBUG_ASSERT, AR_DEBUG_FAIL
 #include "fastq.hpp"
 #include "linereader.hpp" // for line_reader_base
+
+std::vector<double>
+init_phred_to_p_values()
+{
+  std::vector<double> result;
+  for (size_t i = 0; i <= MAX_PHRED_SCORE; ++i) {
+    result.push_back(std::pow(10.0, i / -10.0));
+  }
+
+  return result;
+}
+
+// Stored as constants to ensure identical results across platforms
+const std::vector<double> g_phred_to_p = init_phred_to_p_values();
 
 enum class read_mate
 {
@@ -271,6 +285,46 @@ fastq::trim_windowed_bases(const bool trim_ns,
 
   AR_DEBUG_ASSERT(right_exclusive != std::string::npos);
   return trim_sequence_and_qualities(left_inclusive, right_exclusive);
+}
+
+fastq::ntrimmed
+fastq::mott_trimming(const double error_limit, const bool preserve5p)
+{
+  AR_DEBUG_ASSERT(error_limit >= 0 && error_limit <= 1);
+
+  size_t left_inclusive_temp = 0;
+  size_t left_inclusive = 0;
+  size_t right_exclusive = 0;
+
+  double error_sum = 0.0;
+  double error_sum_max = 0.0;
+
+  for (size_t i = 0; i < length(); i++) {
+    char phred = m_qualities.at(i) - PHRED_OFFSET_33;
+
+    // Reduce weighting of very low-quality bases (inspired by seqtk) and
+    // normalize Ns. The latter is not expected to matter for most data, but may
+    // be relevant for some old/weird data and masked FASTQ reads.
+    if (phred < 3 || m_sequence.at(i) == 'N') {
+      phred = 3;
+    }
+
+    error_sum += error_limit - g_phred_to_p.at(phred);
+
+    if (error_sum < 0.0) {
+      // End of current segment (if any)
+      left_inclusive_temp = i + 1;
+      error_sum = 0;
+    } else if (error_sum > error_sum_max) {
+      // Extend best segment, possibly replacing the previous candidate
+      left_inclusive = left_inclusive_temp;
+      right_exclusive = i + 1;
+      error_sum_max = error_sum;
+    }
+  }
+
+  return trim_sequence_and_qualities(preserve5p ? 0 : left_inclusive,
+                                     right_exclusive);
 }
 
 void

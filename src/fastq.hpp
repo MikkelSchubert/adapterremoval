@@ -124,6 +124,16 @@ public:
                                const bool preserve5p = false);
 
   /**
+   * Performs quality based trimming using the modified Mott's algorithm.
+   *
+   * @param error_limit Error rate limit used for good v. bad quality scores.
+   * @param preserve5p Only trim from the 3p end if true.
+   * @return A pair containing the number of 5' and 3' bases trimmed.
+   */
+  ntrimmed mott_trimming(const double error_limit,
+                         const bool preserve5p = false);
+
+  /**
    * Truncates the record in place.
    *
    * This function behaves like std::string::substr, except that the
