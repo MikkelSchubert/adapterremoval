@@ -28,6 +28,7 @@ import gzip
 import io
 import itertools
 import json
+import multiprocessing
 import os
 import re
 import shutil
@@ -181,7 +182,7 @@ class TestCase(object):
             }
         )
 
-    def run(self, root, delete_folder):
+    def build(self, root, delete_folder):
         root = os.path.join(root, *self.path)
 
         interleaved_tests = [False]
@@ -195,41 +196,46 @@ class TestCase(object):
         )
 
         for in_compression, out_compression, interleaved in parameters:
-            yield "%s>%s%s" % (
+            label = "%s>%s%s" % (
                 in_compression,
                 out_compression,
                 ",intl" if interleaved else "",
             )
 
-            postfix = "%s_%s%s" % (
-                in_compression,
-                out_compression,
-                "_intl" if interleaved else "",
-            )
-            test_folder = os.path.join(root, postfix)
+            args = ()
+            kwargs = {
+                "root": root,
+                "in_compression": in_compression,
+                "out_compression": out_compression,
+                "interleaved": interleaved,
+                "delete_folder": delete_folder,
+            }
 
-            self._do_run(
-                root=test_folder,
-                in_compression=in_compression,
-                out_compression=out_compression,
-                interleaved=interleaved,
-            )
-
-            if delete_folder:
-                shutil.rmtree(test_folder)
-
+            yield self, label, args, kwargs
             if not self._info["exhaustive"]:
                 break
 
-    def _do_run(
+    def __call__(
         self,
         root,
         in_compression=UNCOMPRESSED,
         out_compression=UNCOMPRESSED,
         interleaved=False,
+        delete_folder=False,
     ):
         assert in_compression in (UNCOMPRESSED, GZIP)
         assert out_compression in (UNCOMPRESSED, GZIP)
+
+        root = os.path.join(
+            root,
+            "%s_%s%s"
+            % (
+                in_compression,
+                out_compression,
+                "_intl" if interleaved else "",
+            ),
+        )
+
         os.makedirs(root)
 
         input_1, input_2 = self._setup_input(root, in_compression, interleaved)
@@ -247,6 +253,9 @@ class TestCase(object):
                 "Command = %s\nDirectory = %s\n%s"
                 % (" ".join(quote(value) for value in command), quote(root), error)
             )
+
+        if delete_folder:
+            shutil.rmtree(root)
 
     def _setup_input(self, root, compression, interleaved):
         input_files = {}
@@ -551,12 +560,31 @@ def try_rmdir(dirpath):
     return False
 
 
-def cleanup_dirs(root, last, current):
-    while last and last != current[: len(last)]:
-        if not try_rmdir(os.path.join(root, *last)):
-            break
+def cleanup_dirs(root):
+    has_children = False
+    for child in os.scandir(root):
+        if child.is_dir(follow_symlinks=False):
+            if not cleanup_dirs(child.path):
+                has_children = True
+        else:
+            has_children = True
 
-        last = last[:-1]
+    if not has_children:
+        os.rmdir(root)
+
+    return not has_children
+
+
+def run_test(args):
+    obj, label, args, kwargs = args
+
+    try:
+        if not obj.skip:
+            obj(*args, **kwargs)
+    except Exception as error:
+        return obj, label, error
+
+    return obj, label, None
 
 
 def parse_args(argv):
@@ -573,6 +601,12 @@ def parse_args(argv):
         "--keep-all",
         help="Keep both completed and failed test folders, "
         "not just the folders of failed tests.",
+    )
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=min(4, multiprocessing.cpu_count()),
+        help="Size of thread-pool for concurrent execution of tests",
     )
 
     return parser.parse_args(argv)
@@ -597,41 +631,59 @@ def main(argv):
     args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
     print("Writing test-cases results to %r" % (args.work_dir,))
 
-    last_path = ()
+    tests_calls = []
+    print("Building tests functions")
+    for test in tests:
+        tests_calls.extend(test.build(args.work_dir, not args.keep_all))
+
     n_failures = 0
     n_successes = 0
     n_skipped = 0
     print("\nRunning tests:")
-    for idx, test in enumerate(tests, start=1):
-        print("  %i of %i: %s " % (idx, len(tests), test.name), end="")
-        if test.skip:
-            print_warn("[SKIPPED]")
-            n_skipped += 1
-            continue
 
-        # Cleanup as many dirs as possible from last test
-        cleanup_dirs(args.work_dir, last_path, test.path)
-        last_path = test.path
-        label = "unknown"
+    with multiprocessing.Pool(args.threads) as pool:
+        test_name = None
+        test_idx = 0
+        test_errors = 0
 
-        try:
-            for label in test.run(args.work_dir, delete_folder=not args.keep_all):
+        for test, label, error in pool.imap(run_test, tests_calls):
+            if test_name != test.name:
+                if not test_errors:
+                    print_ok(" [OK]")
+
+                test_name = test.name
+                test_idx += 1
+                test_errors = 0
+
+                print("  %i of %i: %s " % (test_idx, len(tests), test_name), end="")
+                if test.skip:
+                    print_warn("[SKIPPED]")
+                    test_errors = 1
+
+            if test.skip:
+                n_skipped += 1
+                continue
+
+            if error is None:
                 print_ok(".", end="")
                 sys.stdout.flush()
-            n_successes += 1
-        except TestError as error:
-            n_failures += 1
-            message = "\n    ".join(str(error).split("\n"))
-            print_err(
-                "\n  %s for %s:\n    %s" % (error.__class__.__name__, label, message)
-            )
-            if n_failures >= args.max_failures:
-                break
-        else:
+
+                n_successes += 1
+            else:
+                n_failures += 1
+                message = "\n    ".join(str(error).split("\n"))
+                print_err(
+                    "\n  %s for %s:\n    %s"
+                    % (error.__class__.__name__, label, message)
+                )
+                if n_failures >= args.max_failures:
+                    pool.terminate()
+                    break
+
+        if not test_errors:
             print_ok(" [OK]")
 
-    cleanup_dirs(args.work_dir, last_path, ())
-    try_rmdir(args.work_dir)
+    cleanup_dirs(args.work_dir)
 
     if n_failures >= args.max_failures:
         print_err("\nAborted after %i of %i tests failed." % (n_failures, n_successes))
