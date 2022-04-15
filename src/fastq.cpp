@@ -42,7 +42,6 @@ init_phred_to_p_values()
   return result;
 }
 
-// Stored as constants to ensure identical results across platforms
 const std::vector<double> g_phred_to_p = init_phred_to_p_values();
 
 enum class read_mate
