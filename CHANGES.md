@@ -56,6 +56,9 @@
 * Enabling (more stringent) trimming of low-quality bases by default
 * Enabling filtering of short reads by default
 
+## [2.3.3] - 2022-04-15
+
+  * Updated Catch2 to fix compilation with glibc 2.34, courtesy of loganrosen. 
 
 ## [2.3.2] - 2021-03-17
 
@@ -445,7 +448,8 @@ Stinus
   * Fixed some typographical issues with output.
 
 
-[3.0.0-pre1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...HEAD
+[3.0.0-pre1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...HEAD
+[2.3.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...v2.3.3
 [2.3.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.4...v2.3.0
