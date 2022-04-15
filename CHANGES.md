@@ -1,3 +1,7 @@
+### Version 2.3.3 - 2022-04-15
+
+  * Updated Catch2 to fix compilation with glibc 2.34, courtesy of loganrosen. 
+
 ### Version 2.3.2 - 2021-03-17
 
  * Improved error messages when AdapterRemoval failed to open or write FASTQ
