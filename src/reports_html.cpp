@@ -28,16 +28,17 @@
 #include <string>   // for operator+, string, operator<<
 #include <vector>   // for vector
 
-#include "adapterset.hpp" // for adapter_set
-#include "counts.hpp"     // for counts, counts_tmpl
-#include "debug.hpp"      // for AR_DEBUG_FAIL
-#include "fastq.hpp"      // for fastq_pair_vec, IDX_TO_ACGT, fastq
-#include "json.hpp"       // for json_writer, json_section
-#include "main.hpp"       // for NAME, VERSION
-#include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
-#include "strutils.hpp"   // for cli_formatter
-#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
-#include "utilities.hpp"  // for make_shared
+#include "adapterset.hpp"            // for adapter_set
+#include "counts.hpp"                // for counts, counts_tmpl
+#include "debug.hpp"                 // for AR_DEBUG_FAIL
+#include "fastq.hpp"                 // for fastq_pair_vec, IDX_TO_ACGT, fastq
+#include "json.hpp"                  // for json_writer, json_section
+#include "main.hpp"                  // for NAME, VERSION
+#include "reports_template_html.hpp" // for template strings
+#include "statistics.hpp"            // for fastq_statistics, ...
+#include "strutils.hpp"              // for cli_formatter
+#include "userconfig.hpp"            // for userconfig, ...
+#include "utilities.hpp"             // for make_shared
 
 bool
 write_html_report(const userconfig& config,
@@ -52,7 +53,14 @@ write_html_report(const userconfig& config,
 
     output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
-    output << "TODO" << std::endl;
+    HTMLTmplHead head;
+    head.set_name(NAME);
+    head.set_version(VERSION);
+    head.write(output);
+
+    HTMLTmplBody body;
+    body.write(output);
+
   } catch (const std::ios_base::failure& error) {
     std::cerr << "Error writing JSON report to '" << filename << "':\n"
               << cli_formatter::fmt(error.what()) << std::endl;

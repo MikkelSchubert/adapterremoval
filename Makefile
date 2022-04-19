@@ -120,6 +120,7 @@ LIBOBJS  := $(BDIR)/adapterset.o \
             $(BDIR)/managed_writer.o \
             $(BDIR)/reports_html.o \
             $(BDIR)/reports_json.o \
+            $(BDIR)/reports_template_html.o \
             $(BDIR)/scheduler.o \
             $(BDIR)/statistics.o \
             $(BDIR)/strutils.o \
@@ -163,6 +164,14 @@ install: build/$(PROG)
 	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/examples/
 	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval/examples/
+
+# HTML report templates
+.INTERMEDIATE: src/reports_template.intermediate
+
+src/reports_template_html.hpp src/reports_template_html.cpp: src/reports_template.intermediate ;
+src/reports_template.intermediate: src/reports_template.html src/reports_template_html.py
+	@echo $(COLOR_CYAN)"Building HTML templates from $<"$(COLOR_END)
+	$(QUIET) python3 src/reports_template_html.py $< src/reports_template_html
 
 # Object files
 $(BDIR)/%.o: src/%.cpp
