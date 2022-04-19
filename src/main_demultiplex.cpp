@@ -193,5 +193,9 @@ demultiplex_sequences(const userconfig& config)
     stats.trimming.push_back(ptr->get_final_statistics());
   }
 
-  return !write_json_report(config, stats, out_files.settings);
+  if (!write_json_report(config, stats, out_files.settings_json)) {
+    return 1;
+  }
+
+  return !write_html_report(config, stats, out_files.settings_html);
 }

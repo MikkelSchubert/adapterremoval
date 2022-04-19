@@ -69,5 +69,9 @@ fastq_report_only(const userconfig& config)
   }
 
   const auto out_files = config.get_output_filenames();
-  return !write_json_report(config, stats, out_files.settings);
+  if (!write_json_report(config, stats, out_files.settings_json)) {
+    return 1;
+  }
+
+  return !write_html_report(config, stats, out_files.settings_html);
 }

@@ -144,7 +144,8 @@ check_input_and_output(const std::string& label,
 // Implementations for `output_files`
 
 output_files::output_files()
-  : settings()
+  : settings_json()
+  , settings_html()
   , unidentified_1()
   , unidentified_2()
   , samples()
@@ -190,6 +191,7 @@ userconfig::userconfig(const std::string& name,
   , input_files_2()
   , out_basename()
   , out_json()
+  , out_html()
   , out_interleaved("{basename}{.sample}.fastq")
   , out_pair_1()
   , out_pair_2()
@@ -322,6 +324,11 @@ userconfig::userconfig(const std::string& name,
     .deprecated_alias("--settings")
     .bind_str(&out_json)
     .with_default("{basename}{.sample}.json");
+  argparser.add("--out-html", "FILE")
+    .help("Output report containing statistics about trimming, merging, and "
+          "more in HTML format")
+    .bind_str(&out_html)
+    .with_default("{basename}{.sample}.html");
 
   argparser.add("--out-file1", "FILE")
     .help("Output file containing trimmed mate1 reads")
@@ -778,8 +785,11 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings = template_replace(out_json, "basename", out_basename);
-  files.settings = template_replace(files.settings, "sample", "");
+  files.settings_json = template_replace(out_json, "basename", out_basename);
+  files.settings_json = template_replace(files.settings_json, "sample", "");
+
+  files.settings_html = template_replace(out_html, "basename", out_basename);
+  files.settings_html = template_replace(files.settings_html, "sample", "");
 
   const std::string out1 = interleaved_output ? out_interleaved : out_pair_1;
   const std::string out2 = interleaved_output ? out_interleaved : out_pair_2;

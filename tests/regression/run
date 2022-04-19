@@ -362,7 +362,9 @@ class TestCase(object):
             fname for fname in expected_files if not fname.endswith(".settings")
         )
         observed_files = set(
-            fname for fname in observed_files if not fname.endswith(".json")
+            fname
+            for fname in observed_files
+            if not (fname.endswith(".json") or fname.endswith(".html"))
         )
 
         if expected_files != observed_files:

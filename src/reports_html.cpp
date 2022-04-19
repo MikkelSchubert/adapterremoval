@@ -1,8 +1,7 @@
 /*************************************************************************\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
  *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
+ * Copyright (C) 2022 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
  * If you use the program, please cite the paper:                        *
  * S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation *
@@ -22,19 +21,43 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#pragma once
+#include <cstring>  // for size_t, strerror
+#include <errno.h>  // for errno
+#include <fstream>  // for ofstream
+#include <iostream> // for ofstream, operator<<, basic_ostream, endl
+#include <string>   // for operator+, string, operator<<
+#include <vector>   // for vector
 
-#include <vector>
-
-class statistics;
-class userconfig;
-
-bool
-write_json_report(const userconfig& config,
-                  const statistics& stats,
-                  const std::string& filename);
+#include "adapterset.hpp" // for adapter_set
+#include "counts.hpp"     // for counts, counts_tmpl
+#include "debug.hpp"      // for AR_DEBUG_FAIL
+#include "fastq.hpp"      // for fastq_pair_vec, IDX_TO_ACGT, fastq
+#include "json.hpp"       // for json_writer, json_section
+#include "main.hpp"       // for NAME, VERSION
+#include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
+#include "strutils.hpp"   // for cli_formatter
+#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
+#include "utilities.hpp"  // for make_shared
 
 bool
 write_html_report(const userconfig& config,
                   const statistics& stats,
-                  const std::string& filename);
+                  const std::string& filename)
+{
+  try {
+    std::ofstream output(filename, std::ofstream::out);
+    if (!output.is_open()) {
+      throw std::ofstream::failure(std::strerror(errno));
+    }
+
+    output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+
+    output << "TODO" << std::endl;
+  } catch (const std::ios_base::failure& error) {
+    std::cerr << "Error writing JSON report to '" << filename << "':\n"
+              << cli_formatter::fmt(error.what()) << std::endl;
+    return false;
+  }
+
+  return true;
+}

@@ -88,7 +88,9 @@ public:
   output_files();
 
   //! JSON file containing settings / statistics
-  std::string settings;
+  std::string settings_json;
+  //! HTML file containing settings / statistics / plots
+  std::string settings_html;
 
   //! Filename for unidentified mate 1 reads (demultiplexing)
   std::string unidentified_1;
@@ -142,6 +144,8 @@ public:
   std::string out_basename;
   //! Template filename used for writing JSON report
   std::string out_json;
+  //! Template filename used for writing HTML report
+  std::string out_html;
   //! Template filename used for writing interleaved reads
   std::string out_interleaved;
   //! Template filename used for writing mate 1 reads
