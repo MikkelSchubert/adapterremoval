@@ -122,7 +122,7 @@ struct alignment_info
   size_t n_mismatches;
   //! Number of positions in the alignment where one or both bases were N.
   size_t n_ambiguous;
-  //! Offset describing the alignment between the two sequences (see above).
+  //! 0-based ID of best matching adapter or a negative value if not set.
   int adapter_id;
 };
 
