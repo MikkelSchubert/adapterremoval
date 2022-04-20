@@ -323,11 +323,13 @@ pe_reads_processor::process(chunk_ptr chunk)
         stats->overlapping_reads += 2;
       }
 
-      const size_t length = read_1.length() + read_2.length();
+      const size_t pre_trimmed_bp = read_1.length() + read_2.length();
       const size_t n_adapters = alignment.truncate_paired_end(read_1, read_2);
+      const size_t post_trimmed_bp = read_1.length() + read_2.length();
+
       stats->adapter_trimmed_reads.inc(alignment.adapter_id, n_adapters);
-      stats->adapter_trimmed_bases.inc(
-        alignment.adapter_id, length - read_1.length() - read_2.length());
+      stats->adapter_trimmed_bases.inc(alignment.adapter_id,
+                                       pre_trimmed_bp - post_trimmed_bp);
 
       if (m_config.merge && can_merge_alignment) {
         // Merge read_2 into read_1
