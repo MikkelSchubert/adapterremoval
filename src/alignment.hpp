@@ -105,6 +105,9 @@ struct alignment_info
    */
   size_t truncate_paired_end(fastq& read1, fastq& read2) const;
 
+  /** Calculates the insert size given a pair of un-truncated reads. */
+  size_t insert_size(const fastq& read1, const fastq& read2) const;
+
   //! Alignment score; equal to length - n_ambiguous - 2 * n_mismatches;
   int score;
   //! Zero based id of the adapter which offered the best alignment. Is less

@@ -275,27 +275,31 @@ size_t
 alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
 {
   size_t had_adapter = 0;
-  const int template_length =
-    std::max<int>(0, static_cast<int>(read2.length()) + offset);
-
-  AR_DEBUG_ASSERT(offset <= static_cast<int>(read1.length()));
+  const size_t isize = insert_size(read1, read2);
 
   if (offset >= 0) {
     // Read1 can potentially extend past read2, but by definition read2
     // cannot extend past read1 when the offset is not negative, so there
     // is no need to edit read2.
-    had_adapter += static_cast<size_t>(template_length) < read1.length();
-    read1.truncate(0, static_cast<size_t>(template_length));
+    had_adapter += isize < read1.length();
+    read1.truncate(0, isize);
   } else {
-    had_adapter += static_cast<size_t>(template_length) < read1.length();
-    had_adapter += static_cast<size_t>(template_length) < read2.length();
+    had_adapter += isize < read1.length();
+    had_adapter += isize < read2.length();
 
-    read1.truncate(0, static_cast<size_t>(template_length));
-    read2.truncate(
-      static_cast<size_t>(static_cast<int>(read2.length()) - template_length));
+    read1.truncate(0, isize);
+    read2.truncate(read2.length() - isize);
   }
 
   return had_adapter;
+}
+
+size_t
+alignment_info::insert_size(const fastq& read1, const fastq& read2) const
+{
+  AR_DEBUG_ASSERT(offset <= static_cast<int>(read1.length()));
+
+  return std::max<int>(0, static_cast<int>(read2.length()) + offset);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
