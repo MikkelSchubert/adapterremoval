@@ -320,7 +320,7 @@ pe_reads_processor::process(chunk_ptr chunk)
       stats->adapter_trimmed_bases.inc(
         alignment.adapter_id, length - read_1.length() - read_2.length());
 
-      if (m_config.can_merge_alignment(alignment)) {
+      if (m_config.merge && m_config.can_merge_alignment(alignment)) {
         stats->overlapping_reads_merged += 2;
         // Merge read_2 into read_1
         merger.merge(alignment, read_1, read_2);

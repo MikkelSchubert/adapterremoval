@@ -772,12 +772,7 @@ userconfig::can_merge_alignment(const alignment_info& alignment) const
     throw std::invalid_argument("#ambiguous bases > read length");
   }
 
-  const size_t n_aligned = alignment.length - alignment.n_ambiguous;
-  if (n_aligned < min_alignment_length) {
-    return false;
-  }
-
-  return merge || run_type == ar_command::identify_adapters;
+  return alignment.length - alignment.n_ambiguous >= min_alignment_length;
 }
 
 output_files
