@@ -384,7 +384,7 @@ struct io_section
       }
 
       const auto quality_dist = m_stats->quality_dist().trim();
-      writer.write("quality_scores", quality_dist / quality_dist.sum());
+      writer.write("quality_scores", quality_dist);
       writer.write("gc_content", m_stats->gc_content());
 
       // Currently only for input 1/2
