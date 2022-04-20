@@ -376,7 +376,7 @@ struct io_section
           writer.write(std::string(1, tolower(nuc)), bases / total_bases);
         }
 
-        writer.write("n", m_stats->uncalled_quality_pos() / total_bases);
+        writer.write("n", m_stats->uncalled_pos() / total_bases);
         writer.write(
           "gc",
           (m_stats->nucleotides_pos('G') + m_stats->nucleotides_pos('C')) /
