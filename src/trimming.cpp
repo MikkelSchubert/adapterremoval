@@ -314,14 +314,22 @@ pe_reads_processor::process(chunk_ptr chunk)
       aligner.align_paired_end(read_1, read_2, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
+      const bool can_merge_alignment = m_config.can_merge_alignment(alignment);
+      if (can_merge_alignment) {
+        // Insert size calculated from untrimmed reads
+        const size_t insert_size = alignment.insert_size(read_1, read_2);
+        stats->insert_sizes.resize_up_to(insert_size + 1);
+        stats->insert_sizes.inc(insert_size);
+        stats->overlapping_reads += 2;
+      }
+
       const size_t length = read_1.length() + read_2.length();
       const size_t n_adapters = alignment.truncate_paired_end(read_1, read_2);
       stats->adapter_trimmed_reads.inc(alignment.adapter_id, n_adapters);
       stats->adapter_trimmed_bases.inc(
         alignment.adapter_id, length - read_1.length() - read_2.length());
 
-      if (m_config.merge && m_config.can_merge_alignment(alignment)) {
-        stats->overlapping_reads_merged += 2;
+      if (m_config.merge && can_merge_alignment) {
         // Merge read_2 into read_1
         merger.merge(alignment, read_1, read_2);
 

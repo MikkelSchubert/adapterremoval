@@ -139,8 +139,7 @@ write_report_trimming(const userconfig& config,
       writer.end_list();
     }
 
-    writer.write_int("overlapping_reads_merged",
-                     totals.overlapping_reads_merged);
+    writer.write_int("overlapping_reads", totals.overlapping_reads);
     writer.write_int("terminal_bases_trimmed", totals.terminal_bases_trimmed);
     writer.write_int("low_quality_trimmed_reads",
                      totals.low_quality_trimmed_reads);
@@ -162,6 +161,12 @@ write_report_trimming(const userconfig& config,
                      totals.filtered_low_complexity_reads);
     writer.write_int("filtered_low_complexity_bases",
                      totals.filtered_low_complexity_bases);
+
+    if (config.paired_ended_mode) {
+      writer.write("insert_sizes", totals.insert_sizes);
+    } else {
+      writer.write_null("insert_sizes");
+    }
   }
 }
 

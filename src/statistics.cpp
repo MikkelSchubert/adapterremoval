@@ -315,9 +315,10 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , read_2(make_shared<fastq_statistics>(sample_rate))
   , merged(make_shared<fastq_statistics>(sample_rate))
   , discarded(make_shared<fastq_statistics>(sample_rate))
+  , insert_sizes()
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
-  , overlapping_reads_merged()
+  , overlapping_reads()
   , terminal_bases_trimmed()
   , low_quality_trimmed_reads()
   , low_quality_trimmed_bases()
@@ -340,9 +341,10 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   *merged += *other.merged;
   *discarded += *other.discarded;
 
+  insert_sizes += other.insert_sizes;
   adapter_trimmed_reads += other.adapter_trimmed_reads;
   adapter_trimmed_bases += other.adapter_trimmed_bases;
-  overlapping_reads_merged += other.overlapping_reads_merged;
+  overlapping_reads += other.overlapping_reads;
   terminal_bases_trimmed += other.terminal_bases_trimmed;
   low_quality_trimmed_reads += other.low_quality_trimmed_reads;
   low_quality_trimmed_bases += other.low_quality_trimmed_bases;

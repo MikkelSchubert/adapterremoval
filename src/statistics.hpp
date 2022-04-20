@@ -212,13 +212,16 @@ public:
   //! Statistics for discarded reads
   fastq_stats_ptr discarded;
 
+  /** Insert size distribution. */
+  counts insert_sizes;
+
   //! Number of reads with adapters trimmed
   counts adapter_trimmed_reads;
   //! Number of bases trimmed for a given adapter (pair)
   counts adapter_trimmed_bases;
 
-  //! Number of paired reads merged
-  size_t overlapping_reads_merged;
+  //! Number of reads that overlap/can be merged
+  size_t overlapping_reads;
 
   //! Number of bases 5p/3p bases trimmed with --trim5p/3p
   size_t terminal_bases_trimmed;
