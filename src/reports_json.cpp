@@ -303,11 +303,9 @@ struct io_section
         return "read2";
       case read_type::merged:
         return "merged";
-      case read_type::singleton_1:
-      case read_type::singleton_2:
+      case read_type::singleton:
         return "singleton";
-      case read_type::discarded_1:
-      case read_type::discarded_2:
+      case read_type::discarded:
         return "discarded";
       case read_type::unidentified_1:
         return "unidentified_1";
@@ -464,13 +462,13 @@ write_report_demultiplexing(const userconfig& config,
               io_section(read_type::mate_2, stats.read_2, files)
                 .write_to_if(writer, config.paired_ended_mode);
 
-              io_section(read_type::singleton_1, stats.singleton, files)
+              io_section(read_type::singleton, stats.singleton, files)
                 .write_to_if(writer, config.paired_ended_mode);
 
               io_section(read_type::merged, stats.merged, files)
                 .write_to_if(writer, config.merge && !demux_only);
 
-              io_section(read_type::discarded_1, stats.discarded, files)
+              io_section(read_type::discarded, stats.discarded, files)
                 .write_to_if(writer, !demux_only);
             }
           }
@@ -525,8 +523,8 @@ write_report_output(const userconfig& config,
   const auto mate_1_files = collect_files(out_files, read_type::mate_1);
   const auto mate_2_files = collect_files(out_files, read_type::mate_2);
   const auto merged_files = collect_files(out_files, read_type::merged);
-  const auto singleton_files = collect_files(out_files, read_type::singleton_1);
-  const auto discarded_files = collect_files(out_files, read_type::discarded_1);
+  const auto singleton_files = collect_files(out_files, read_type::singleton);
+  const auto discarded_files = collect_files(out_files, read_type::discarded);
 
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
 
@@ -549,10 +547,10 @@ write_report_output(const userconfig& config,
       .write_to_if(writer,
                    config.adapters.barcode_count() && config.paired_ended_mode);
 
-    io_section(read_type::singleton_1, singleton, singleton_files)
+    io_section(read_type::singleton, singleton, singleton_files)
       .write_to_if(writer, !demux_only);
 
-    io_section(read_type::discarded_1, discarded, discarded_files)
+    io_section(read_type::discarded, discarded, discarded_files)
       .write_to_if(writer, !demux_only);
   }
 }

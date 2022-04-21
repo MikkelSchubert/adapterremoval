@@ -813,13 +813,12 @@ userconfig::get_output_filenames() const
     }
 
     if (run_type == ar_command::trim_adapters) {
-      map.offset(read_type::discarded_1) = map.offset(read_type::discarded_2) =
+      map.offset(read_type::discarded) =
         map.add(get_output_filename("--out-discarded", out_discarded, name));
 
       if (paired_ended_mode) {
-        map.offset(read_type::singleton_1) =
-          map.offset(read_type::singleton_2) = map.add(
-            get_output_filename("--out-singleton", out_singleton, name));
+        map.offset(read_type::singleton) =
+          map.add(get_output_filename("--out-singleton", out_singleton, name));
 
         if (merge) {
           map.offset(read_type::merged) =

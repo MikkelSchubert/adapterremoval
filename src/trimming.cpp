@@ -263,7 +263,7 @@ se_reads_processor::process(chunk_ptr chunk)
       chunks.add(read, read_type::mate_1);
     } else {
       stats->discarded->process(read);
-      chunks.add(read, read_type::discarded_1);
+      chunks.add(read, read_type::discarded);
     }
   }
 
@@ -292,13 +292,11 @@ add_pe_statistics(const trimming_statistics& stats,
       stats.merged->process(read);
       break;
 
-    case read_type::singleton_1:
-    case read_type::singleton_2:
+    case read_type::singleton:
       stats.singleton->process(read);
       break;
 
-    case read_type::discarded_1:
-    case read_type::discarded_2:
+    case read_type::discarded:
       stats.discarded->process(read);
       break;
 
@@ -380,7 +378,7 @@ pe_reads_processor::process(chunk_ptr chunk)
           chunks.add(read_1, read_type::merged);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(read_1, read_type::discarded_1);
+          chunks.add(read_1, read_type::discarded);
         }
 
         continue;
@@ -409,14 +407,14 @@ pe_reads_processor::process(chunk_ptr chunk)
       type_1 = read_type::mate_1;
       type_2 = read_type::mate_2;
     } else if (is_ok_1) {
-      type_1 = read_type::singleton_1;
-      type_2 = read_type::discarded_2;
+      type_1 = read_type::singleton;
+      type_2 = read_type::discarded;
     } else if (is_ok_2) {
-      type_1 = read_type::discarded_1;
-      type_2 = read_type::singleton_2;
+      type_1 = read_type::discarded;
+      type_2 = read_type::singleton;
     } else {
-      type_1 = read_type::discarded_1;
-      type_2 = read_type::discarded_2;
+      type_1 = read_type::discarded;
+      type_2 = read_type::discarded;
     }
 
     add_pe_statistics(*stats, read_1, type_1);

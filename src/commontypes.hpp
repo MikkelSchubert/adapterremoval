@@ -46,14 +46,10 @@ enum class read_type : size_t
   mate_2,
   /** Overlapping PE reads merged into a single sequence. */
   merged,
-  /** PE reads for which mate 2 has been discarded. */
-  singleton_1,
-  /** PE reads for which mate 1 has been discarded. */
-  singleton_2,
-  /** Discarded mate 1 reads; e.g. too short reads. */
-  discarded_1,
-  /** Discarded mate 2 reads; e.g. too short reads. */
-  discarded_2,
+  /** PE reads for which the mate has been discarded. */
+  singleton,
+  /** Discarded reads; e.g. too short reads. */
+  discarded,
   //! End value; not to be used as an argument.
   max,
 
