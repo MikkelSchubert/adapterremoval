@@ -479,6 +479,9 @@ write_report_demultiplexing(const userconfig& config,
               io_section(read_type::mate_2, stats.read_2, files)
                 .write_to_if(writer, config.paired_ended_mode);
 
+              io_section(read_type::singleton_1, stats.singleton, files)
+                .write_to_if(writer, config.paired_ended_mode);
+
               io_section(read_type::merged, stats.merged, files)
                 .write_to_if(writer, config.merge && !demux_only);
 
@@ -522,12 +525,14 @@ write_report_output(const userconfig& config,
   fastq_stats_ptr output_1 = make_shared<fastq_statistics>();
   fastq_stats_ptr output_2 = make_shared<fastq_statistics>();
   fastq_stats_ptr merged = make_shared<fastq_statistics>();
+  fastq_stats_ptr singleton = make_shared<fastq_statistics>();
   fastq_stats_ptr discarded = make_shared<fastq_statistics>();
 
   for (const auto& it : stats.trimming) {
     *output_1 += *it->read_1;
     *output_2 += *it->read_2;
     *merged += *it->merged;
+    *singleton += *it->singleton;
     *discarded += *it->discarded;
   }
 
@@ -535,6 +540,7 @@ write_report_output(const userconfig& config,
   const auto mate_1_files = collect_files(out_files, read_type::mate_1);
   const auto mate_2_files = collect_files(out_files, read_type::mate_2);
   const auto merged_files = collect_files(out_files, read_type::merged);
+  const auto singleton_files = collect_files(out_files, read_type::singleton_1);
   const auto discarded_files = collect_files(out_files, read_type::discarded_1);
 
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
@@ -557,6 +563,9 @@ write_report_output(const userconfig& config,
                { out_files.unidentified_2 })
       .write_to_if(writer,
                    config.adapters.barcode_count() && config.paired_ended_mode);
+
+    io_section(read_type::singleton_1, singleton, singleton_files)
+      .write_to_if(writer, !demux_only);
 
     io_section(read_type::discarded_1, discarded, discarded_files)
       .write_to_if(writer, !demux_only);

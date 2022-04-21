@@ -207,6 +207,8 @@ public:
   fastq_stats_ptr read_1;
   //! Statistics for second reads
   fastq_stats_ptr read_2;
+  //! Statistics for discarded reads
+  fastq_stats_ptr singleton;
   //! Statistics for merged reads
   fastq_stats_ptr merged;
   //! Statistics for discarded reads

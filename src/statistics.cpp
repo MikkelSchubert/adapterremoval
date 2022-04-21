@@ -313,6 +313,7 @@ fastq_statistics::operator+=(const fastq_statistics& other)
 trimming_statistics::trimming_statistics(double sample_rate)
   : read_1(make_shared<fastq_statistics>(sample_rate))
   , read_2(make_shared<fastq_statistics>(sample_rate))
+  , singleton(make_shared<fastq_statistics>(sample_rate))
   , merged(make_shared<fastq_statistics>(sample_rate))
   , discarded(make_shared<fastq_statistics>(sample_rate))
   , insert_sizes()
@@ -338,6 +339,7 @@ trimming_statistics::operator+=(const trimming_statistics& other)
 {
   *read_1 += *other.read_1;
   *read_2 += *other.read_2;
+  *singleton += *other.singleton;
   *merged += *other.merged;
   *discarded += *other.discarded;
 

@@ -275,6 +275,38 @@ se_reads_processor::process(chunk_ptr chunk)
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `pe_reads_processor`
 
+void
+add_pe_statistics(const trimming_statistics& stats,
+                  const fastq& read,
+                  read_type type)
+{
+  switch (type) {
+    case read_type::mate_1:
+      stats.read_1->process(read);
+      break;
+    case read_type::mate_2:
+      stats.read_2->process(read);
+      break;
+
+    case read_type::merged:
+      stats.merged->process(read);
+      break;
+
+    case read_type::singleton_1:
+    case read_type::singleton_2:
+      stats.singleton->process(read);
+      break;
+
+    case read_type::discarded_1:
+    case read_type::discarded_2:
+      stats.discarded->process(read);
+      break;
+
+    default:
+      AR_DEBUG_FAIL("unhandled read type");
+  }
+}
+
 pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const output_sample_files& output,
                                        size_t nth)
@@ -387,17 +419,8 @@ pe_reads_processor::process(chunk_ptr chunk)
       type_2 = read_type::discarded_2;
     }
 
-    if (is_ok_1) {
-      stats->read_1->process(read_1);
-    } else {
-      stats->discarded->process(read_1);
-    }
-
-    if (is_ok_2) {
-      stats->read_2->process(read_2);
-    } else {
-      stats->discarded->process(read_2);
-    }
+    add_pe_statistics(*stats, read_1, type_1);
+    add_pe_statistics(*stats, read_2, type_2);
 
     // Queue reads last, since this result in modifications to lengths
     chunks.add(read_1, type_1);
