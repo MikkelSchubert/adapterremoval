@@ -32,7 +32,7 @@ import sys
 from pathlib import Path
 
 _RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z_]+)\s+-->", re.I)
-_RE_FIELD = re.compile(r"{{([a-z0-9_]+)}}", re.I)
+_RE_FIELD = re.compile(r"({{[a-z0-9_]+}}|\[\[[a-z0-9_]+\]\])", re.I)
 _CPP_ENCODED = {
     "\\": "\\\\",
     '"': '\\"',
@@ -62,10 +62,19 @@ def read_template(filepath):
     result = {}
     for key, lines in sections.items():
         text = "".join(lines)
-        fields = _RE_FIELD.findall(text)
+        fields = set()
+        repeaters = set()
+        for value in _RE_FIELD.findall(text):
+            name = value[2:-2].lower()
+            if value.startswith("{"):
+                fields.add(name)
+            else:
+                repeaters.add(name)
+
         result[key] = {
             "lines": lines,
-            "fields": sorted(frozenset(map(str.lower, fields))),
+            "fields": sorted(fields),
+            "repeaters": sorted(repeaters),
         }
 
     return result
@@ -85,10 +94,27 @@ def quote(value):
 
 
 def inject_variables(value):
-    def _to_variable(match):
-        return '" << m_{} << "'.format(match.group(1).lower())
+    result = [" ", "out"]
 
-    return _RE_FIELD.sub(_to_variable, value)
+    repeater = None
+    for field in _RE_FIELD.split(value):
+        result.append("<<")
+        if field.startswith("{{") and field.endswith("}}"):
+            name = field[2:-2].lower()
+            result.append("m_{}".format(name))
+        elif field.startswith("[[") and field.endswith("]]"):
+            assert repeater is None, repr(value)
+            repeater = field[2:-2].lower()
+            result.append("value")
+        else:
+            result.append(quote(field))
+
+    result = " ".join(result) + ";"
+
+    if repeater is None:
+        return result
+
+    return "  for (const auto& value : m_{}) {{\n  {}\n  }}".format(repeater, result)
 
 
 def to_classname(name):
@@ -105,6 +131,8 @@ def write_header(sections):
     tprint("#pragma once\n")
     tprint("#include <fstream>")
     tprint("#include <string>")
+    tprint("#include <vector>")
+
     for key, props in sections.items():
         classname = to_classname(key)
 
@@ -114,17 +142,26 @@ def write_header(sections):
         tprint("  {}();", classname)
         tprint("  ~{}();", classname)
 
-        if props["fields"]:
+        if props["fields"] or props["repeaters"]:
             tprint("")
-            for key in props["fields"]:
-                tprint("  void set_{}(const std::string& value);", key)
+
+        for key in props["fields"]:
+            tprint("  void set_{}(const std::string& value);", key)
+
+        for key in props["repeaters"]:
+            tprint("  void add_{}(const std::string& value);", key)
 
         tprint("\n  void write(std::ofstream& out);")
 
         tprint("\nprivate:")
         tprint("  bool m_written;")
+
         for key in props["fields"]:
             tprint("  std::string m_{};", key)
+            tprint("  bool m_{}_is_set;", key)
+
+        for key in props["repeaters"]:
+            tprint("  std::vector<std::string> m_{};", key)
             tprint("  bool m_{}_is_set;", key)
 
         tprint("}};")
@@ -146,10 +183,9 @@ def write_implementations(sections, header_name):
 
         tprint("\n{}::{}()", classname, classname)
         tprint("  : m_written()")
-        for field in props["fields"]:
+        for field in props["fields"] + props["repeaters"]:
             tprint("  , m_{}()", field)
             tprint("  , m_{}()", field + "_is_set")
-
         # Dummy comment to prevent re-formatting depending on num. of variables
         tprint("{{\n  //\n}}")
 
@@ -166,19 +202,27 @@ def write_implementations(sections, header_name):
             tprint("  m_{}_is_set = true;", field)
             tprint("}}\n")
 
+        for field in props["repeaters"]:
+            tprint("void")
+            tprint("{}::add_{}(const std::string& value)", classname, field)
+            tprint("{{")
+            tprint("  m_{}.push_back(value);", field)
+            tprint("  m_{}_is_set = true;", field)
+            tprint("}}\n")
+
         tprint("void")
         tprint("{}::write(std::ofstream& out)", classname)
         tprint("{{")
         tprint("  AR_DEBUG_ASSERT(!m_written);")
 
-        for field in props["fields"]:
+        for field in props["fields"] + props["repeaters"]:
             tprint("  AR_DEBUG_ASSERT(m_{}_is_set);", field)
 
         # prevent clang-format from adding linebreaks
         tprint("  // clang-format off")
 
         for line in props["lines"]:
-            tprint("  out << {};", inject_variables(quote(line)))
+            tprint("{}", inject_variables(line))
 
         tprint("  // clang-format on")
         tprint("  m_written = true;")

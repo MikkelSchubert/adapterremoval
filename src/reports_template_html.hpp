@@ -25,6 +25,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 class HTMLTmplHead
 {
