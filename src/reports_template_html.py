@@ -91,6 +91,10 @@ def inject_variables(value):
     return _RE_FIELD.sub(_to_variable, value)
 
 
+def to_classname(name):
+    return "HTMLTmpl{}".format(name.title().replace("_", ""))
+
+
 def write_header(sections):
     handle = io.StringIO()
 
@@ -102,7 +106,7 @@ def write_header(sections):
     tprint("#include <fstream>")
     tprint("#include <string>")
     for key, props in sections.items():
-        classname = "HTMLTmpl{}".format(key.title())
+        classname = to_classname(key)
 
         tprint("\nclass {}", classname)
         tprint("{{")
@@ -137,7 +141,7 @@ def write_implementations(sections, header_name):
     tprint('#include "{}"', header_name)
     tprint('#include "debug.hpp"', header_name)
     for key, props in sections.items():
-        classname = "HTMLTmpl{}".format(key.title())
+        classname = to_classname(key)
 
         tprint("\n{}::{}()", classname, classname)
         template = "  : m_{}()"
