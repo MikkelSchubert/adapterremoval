@@ -91,30 +91,11 @@ def inject_variables(value):
     return _RE_FIELD.sub(_to_variable, value)
 
 
-class HelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("width", 79)
+def write_header(sections):
+    handle = io.StringIO()
 
-        super().__init__(*args, **kwargs)
-
-
-def parse_args(argv):
-    parser = argparse.ArgumentParser(formatter_class=HelpFormatter)
-    parser.add_argument("template", type=Path, help="Path to HTML template")
-    parser.add_argument("output_prefix", type=Path, help="Path prefix for output files")
-
-    return parser.parse_args(argv)
-
-
-def main(argv):
-    args = parse_args(argv)
-    args.header = args.output_prefix.with_suffix(".hpp")
-    args.impl = args.output_prefix.with_suffix(".cpp")
-
-    sections = read_template(args.template)
-
-    header = io.StringIO()
-    tprint = lambda line, *args: print(line.format(*args), file=header)
+    def tprint(line, *args):
+        print(line.format(*args), file=handle)
 
     tprint(__doc__.strip())
     tprint("#pragma once\n")
@@ -143,14 +124,18 @@ def main(argv):
 
         tprint("}};")
 
-    args.header.write_text(header.getvalue())
+    return handle.getvalue()
 
-    impl = io.StringIO()
-    tprint = lambda line, *args: print(line.format(*args), file=impl)
+
+def write_implementations(sections, header_name):
+    handle = io.StringIO()
+
+    def tprint(line, *args):
+        print(line.format(*args), file=handle)
 
     tprint(__doc__.strip())
-    tprint('#include "{}"', args.header.name)
-    tprint('#include "debug.hpp"', args.header.name)
+    tprint('#include "{}"', header_name)
+    tprint('#include "debug.hpp"', header_name)
     for key, props in sections.items():
         classname = "HTMLTmpl{}".format(key.title())
 
@@ -188,7 +173,36 @@ def main(argv):
         tprint("  // clang-format on")
         tprint("}}")
 
-    args.impl.write_text(impl.getvalue())
+    return handle.getvalue()
+
+
+class HelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("width", 79)
+
+        super().__init__(*args, **kwargs)
+
+
+def parse_args(argv):
+    parser = argparse.ArgumentParser(formatter_class=HelpFormatter)
+    parser.add_argument("template", type=Path, help="Path to HTML template")
+    parser.add_argument("output_prefix", type=Path, help="Path prefix for output files")
+
+    return parser.parse_args(argv)
+
+
+def main(argv):
+    args = parse_args(argv)
+    args.header = args.output_prefix.with_suffix(".hpp")
+    args.impl = args.output_prefix.with_suffix(".cpp")
+
+    sections = read_template(args.template)
+
+    header = write_header(sections)
+    implementations = write_implementations(sections, args.header.name)
+
+    args.header.write_text(header)
+    args.impl.write_text(implementations)
 
     return 0
 
