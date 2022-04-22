@@ -25,12 +25,18 @@
 #include "debug.hpp"
 
 HTMLTmplHead::HTMLTmplHead()
-  : m_name()
+  : m_written()
+  , m_name()
   , m_name_is_set()
   , m_version()
   , m_version_is_set()
 {
   //
+}
+
+HTMLTmplHead::~HTMLTmplHead()
+{
+  AR_DEBUG_ASSERT(m_written);
 }
 
 void
@@ -50,9 +56,10 @@ HTMLTmplHead::set_version(const std::string& value)
 void
 HTMLTmplHead::write(std::ofstream& out)
 {
-  // clang-format off
+  AR_DEBUG_ASSERT(!m_written);
   AR_DEBUG_ASSERT(m_name_is_set);
   AR_DEBUG_ASSERT(m_version_is_set);
+  // clang-format off
   out << "<!DOCTYPE html>\n";
   out << "<html lang='en'>\n";
   out << "\n";
@@ -68,16 +75,24 @@ HTMLTmplHead::write(std::ofstream& out)
   out << "</head>\n";
   out << "\n";
   // clang-format on
+  m_written = true;
 }
 
 HTMLTmplBody::HTMLTmplBody()
+  : m_written()
 {
   //
+}
+
+HTMLTmplBody::~HTMLTmplBody()
+{
+  AR_DEBUG_ASSERT(m_written);
 }
 
 void
 HTMLTmplBody::write(std::ofstream& out)
 {
+  AR_DEBUG_ASSERT(!m_written);
   // clang-format off
   out << "\n";
   out << "<body>\n";
@@ -88,4 +103,5 @@ HTMLTmplBody::write(std::ofstream& out)
   out << "\n";
   out << "</html>";
   // clang-format on
+  m_written = true;
 }

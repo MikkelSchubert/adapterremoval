@@ -112,6 +112,7 @@ def write_header(sections):
         tprint("{{")
         tprint("public:")
         tprint("  {}();", classname)
+        tprint("  ~{}();", classname)
 
         if props["fields"]:
             tprint("")
@@ -120,11 +121,11 @@ def write_header(sections):
 
         tprint("\n  void write(std::ofstream& out);")
 
-        if props["fields"]:
-            tprint("\nprivate:")
-            for key in props["fields"]:
-                tprint("  std::string m_{};", key)
-                tprint("  bool m_{}_is_set;", key)
+        tprint("\nprivate:")
+        tprint("  bool m_written;")
+        for key in props["fields"]:
+            tprint("  std::string m_{};", key)
+            tprint("  bool m_{}_is_set;", key)
 
         tprint("}};")
 
@@ -144,14 +145,18 @@ def write_implementations(sections, header_name):
         classname = to_classname(key)
 
         tprint("\n{}::{}()", classname, classname)
-        template = "  : m_{}()"
+        tprint("  : m_written()")
         for field in props["fields"]:
-            tprint(template, field)
-            template = "  , m_{}()"
-            tprint(template, field + "_is_set")
+            tprint("  , m_{}()", field)
+            tprint("  , m_{}()", field + "_is_set")
 
         # Dummy comment to prevent re-formatting depending on num. of variables
-        tprint("{{\n  //\n}}\n")
+        tprint("{{\n  //\n}}")
+
+        tprint("\n{}::~{}()", classname, classname)
+        tprint("{{")
+        tprint("  AR_DEBUG_ASSERT(m_written);")
+        tprint("}}\n")
 
         for field in props["fields"]:
             tprint("void")
@@ -164,17 +169,19 @@ def write_implementations(sections, header_name):
         tprint("void")
         tprint("{}::write(std::ofstream& out)", classname)
         tprint("{{")
-
-        # prevent clang-format from adding linebreaks
-        tprint("  // clang-format off")
+        tprint("  AR_DEBUG_ASSERT(!m_written);")
 
         for field in props["fields"]:
             tprint("  AR_DEBUG_ASSERT(m_{}_is_set);", field)
+
+        # prevent clang-format from adding linebreaks
+        tprint("  // clang-format off")
 
         for line in props["lines"]:
             tprint("  out << {};", inject_variables(quote(line)))
 
         tprint("  // clang-format on")
+        tprint("  m_written = true;")
         tprint("}}")
 
     return handle.getvalue()

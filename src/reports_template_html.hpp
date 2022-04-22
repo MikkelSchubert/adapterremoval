@@ -30,6 +30,7 @@ class HTMLTmplHead
 {
 public:
   HTMLTmplHead();
+  ~HTMLTmplHead();
 
   void set_name(const std::string& value);
   void set_version(const std::string& value);
@@ -37,6 +38,7 @@ public:
   void write(std::ofstream& out);
 
 private:
+  bool m_written;
   std::string m_name;
   bool m_name_is_set;
   std::string m_version;
@@ -47,6 +49,10 @@ class HTMLTmplBody
 {
 public:
   HTMLTmplBody();
+  ~HTMLTmplBody();
 
   void write(std::ofstream& out);
+
+private:
+  bool m_written;
 };
