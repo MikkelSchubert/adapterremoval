@@ -36,7 +36,7 @@
 
 #include "debug.hpp" // for AR_DEBUG_ASSERT
 
-struct scheduler_step;
+class scheduler_step;
 
 /** Simple thread-safe storage backed by a vector. **/
 template<typename T>
