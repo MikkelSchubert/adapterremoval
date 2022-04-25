@@ -27,7 +27,7 @@
 #include <iostream>
 #include <string> // for string
 
-#include "debug.hpp"     // for AR_DEBUG_ASSERT
+#include "debug.hpp"     // for AR_REQUIRE
 #include "fastq.hpp"     // for ACGT_TO_IDX, fastq
 #include "fastq_enc.hpp" // for PHRED_OFFSET_33
 #include "statistics.hpp"
@@ -281,7 +281,7 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
 void
 fastq_statistics::init_duplication_stats(size_t max_unique_sequences)
 {
-  AR_DEBUG_ASSERT(!m_duplication);
+  AR_REQUIRE(!m_duplication);
   m_duplication = make_shared<duplication_statistics>(max_unique_sequences);
 }
 

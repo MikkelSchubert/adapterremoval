@@ -33,7 +33,7 @@
 #include <unistd.h>    // for STDERR_FILENO
 
 #include "argparse.hpp"
-#include "debug.hpp"    // for AR_DEBUG_ASSERT
+#include "debug.hpp"    // for AR_REQUIRE
 #include "strutils.hpp" // for cli_formatter, str_to_unsigned, toupper
 
 namespace argparse {
@@ -150,7 +150,7 @@ parser::parse_args(int argc, char const* const* argv)
       }
 
       it += static_cast<string_vec::iterator::difference_type>(consumed);
-      AR_DEBUG_ASSERT(it <= argvec.end());
+      AR_REQUIRE(it <= argvec.end());
     } else {
       return parse_result::error;
     }
@@ -195,7 +195,7 @@ bool
 parser::is_set(const std::string& key) const
 {
   const auto it = m_keys.find(key);
-  AR_DEBUG_ASSERT(it != m_keys.end());
+  AR_REQUIRE(it != m_keys.end());
 
   return it->second->is_set();
 }
@@ -302,7 +302,7 @@ parser::print_help() const
 void
 parser::set_ostream(std::ostream* stream)
 {
-  AR_DEBUG_ASSERT(stream);
+  AR_REQUIRE(stream);
 
   m_stream = stream;
 
@@ -328,7 +328,7 @@ parser::update_argument_map()
     if (it.argument) {
       for (const auto& key : it.argument->keys()) {
         const auto result = m_keys.emplace(key, it.argument);
-        AR_DEBUG_ASSERT(result.second);
+        AR_REQUIRE(result.second);
       }
     }
   }
@@ -354,9 +354,7 @@ parser::update_argument_map()
     }
   }
 
-  if (any_errors) {
-    AR_DEBUG_FAIL("bugs in argument parsing");
-  }
+  AR_REQUIRE(!any_errors, "bugs in argument parsing");
 }
 
 argument_ptr
@@ -416,7 +414,7 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_sink(new bool_sink(&m_default_sink))
   , m_stream(&std::cerr)
 {
-  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-');
 }
 
 argument&
@@ -566,7 +564,7 @@ argument::abbreviation(char key)
 argument&
 argument::deprecated_alias(const std::string& key)
 {
-  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-');
   m_deprecated_keys.emplace_back(key);
 
   return *this;
@@ -582,7 +580,7 @@ argument::deprecated()
 
 argument& argument::requires(const std::string& key)
 {
-  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-');
   m_requires.push_back(key);
 
   return *this;
@@ -591,7 +589,7 @@ argument& argument::requires(const std::string& key)
 argument&
 argument::conflicts(const std::string& key)
 {
-  AR_DEBUG_ASSERT(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-');
   m_conflicts.push_back(key);
 
   return *this;
@@ -623,11 +621,11 @@ n_args_error(std::ostream& out,
 size_t
 argument::parse(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_DEBUG_ASSERT(start != end);
+  AR_REQUIRE(start != end);
 
   bool is_deprecated = is_deprecated_alias(*start);
-  AR_DEBUG_ASSERT(is_deprecated || *start == m_key_long ||
-                  (m_key_short.size() && *start == m_key_short));
+  AR_REQUIRE(is_deprecated || *start == m_key_long ||
+             (m_key_short.size() && *start == m_key_short));
 
   if (m_deprecated) {
     *m_stream << "WARNING: Option " << *start << " is deprecated and will "
@@ -656,7 +654,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
   const auto min_values = m_sink->min_values();
   const auto max_values = m_sink->max_values();
 
-  AR_DEBUG_ASSERT(start < end_of_values);
+  AR_REQUIRE(start < end_of_values);
   auto n_values = static_cast<size_t>(end_of_values - start - 1);
 
   if (n_values != min_values && min_values == max_values) {
@@ -688,7 +686,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
 void
 argument::set_ostream(std::ostream* stream)
 {
-  AR_DEBUG_ASSERT(stream);
+  AR_REQUIRE(stream);
 
   m_stream = stream;
 }
@@ -742,7 +740,7 @@ bool_sink::bool_sink(bool* ptr)
   : sink(0)
   , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(ptr);
+  AR_REQUIRE(ptr);
 
   *m_sink = false;
 }
@@ -756,7 +754,7 @@ bool_sink::to_str() const
 size_t
 bool_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_DEBUG_ASSERT(start == end);
+  AR_REQUIRE(start == end);
   *m_sink = true;
 
   return 0;
@@ -769,7 +767,7 @@ uint_sink::uint_sink(unsigned* ptr)
   : sink(1)
   , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(ptr);
+  AR_REQUIRE(ptr);
 
   *m_sink = 0;
 }
@@ -792,7 +790,7 @@ uint_sink::to_str() const
 size_t
 uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_DEBUG_ASSERT(end - start == 1);
+  AR_REQUIRE(end - start == 1);
 
   try {
     *m_sink = str_to_unsigned(*start);
@@ -810,7 +808,7 @@ double_sink::double_sink(double* ptr)
   : sink(1)
   , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(ptr);
+  AR_REQUIRE(ptr);
 
   *m_sink = 0.0;
 }
@@ -837,7 +835,7 @@ double_sink::to_str() const
 size_t
 double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_DEBUG_ASSERT(end - start == 1);
+  AR_REQUIRE(end - start == 1);
 
   double value = 0;
   if (!to_double(*start, value)) {
@@ -855,7 +853,7 @@ str_sink::str_sink(std::string* ptr)
   : sink(1)
   , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(ptr);
+  AR_REQUIRE(ptr);
 
   m_sink->clear();
 }
@@ -878,7 +876,7 @@ str_sink::to_str() const
 size_t
 str_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_DEBUG_ASSERT(end - start == 1);
+  AR_REQUIRE(end - start == 1);
 
   *m_sink = *start;
 
@@ -889,7 +887,7 @@ vec_sink::vec_sink(string_vec* ptr)
   : sink(1, std::numeric_limits<size_t>::max())
   , m_sink(ptr)
 {
-  AR_DEBUG_ASSERT(ptr);
+  AR_REQUIRE(ptr);
 
   m_sink->clear();
 }
@@ -897,7 +895,7 @@ vec_sink::vec_sink(string_vec* ptr)
 vec_sink&
 vec_sink::max_values(size_t n)
 {
-  AR_DEBUG_ASSERT(n >= m_min_values);
+  AR_REQUIRE(n >= m_min_values);
   m_max_values = n;
 
   return *this;
@@ -906,7 +904,7 @@ vec_sink::max_values(size_t n)
 size_t
 vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_DEBUG_ASSERT(end - start >= 1);
+  AR_REQUIRE(end - start >= 1);
 
   m_sink->assign(start, end);
 

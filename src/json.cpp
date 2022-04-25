@@ -27,7 +27,7 @@
 #include <sstream>   // for operator<<, basic_ostream, stringstream, ostream
 #include <utility>   // for swap
 
-#include "debug.hpp"     // for AR_DEBUG_ASSERT
+#include "debug.hpp"     // for AR_REQUIRE
 #include "json.hpp"      // for definitions
 #include "utilities.hpp" // for make_shared
 
@@ -254,7 +254,7 @@ json_dict::json_dict()
 void
 json_dict::write(std::ostream& out, size_t indent_) const
 {
-  AR_DEBUG_ASSERT(m_keys.size() == m_values.size());
+  AR_REQUIRE(m_keys.size() == m_values.size());
   const auto indent = std::string(indent_, ' ');
 
   if (m_keys.empty()) {
@@ -264,7 +264,7 @@ json_dict::write(std::ostream& out, size_t indent_) const
 
     for (size_t i = 0; i < m_keys.size(); ++i) {
       const auto it = m_values.find(m_keys.at(i));
-      AR_DEBUG_ASSERT(it != m_values.end());
+      AR_REQUIRE(it != m_values.end());
 
       out << indent << "  " << _escape(it->first) << ": ";
       it->second->write(out, indent_ + 2);

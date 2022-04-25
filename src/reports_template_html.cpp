@@ -36,7 +36,7 @@ HTMLTmplHead::HTMLTmplHead()
 
 HTMLTmplHead::~HTMLTmplHead()
 {
-  AR_DEBUG_ASSERT(m_written);
+  AR_REQUIRE(m_written, "template HTMLTmplHead was not written");
 }
 
 void
@@ -56,9 +56,9 @@ HTMLTmplHead::set_version(const std::string& value)
 void
 HTMLTmplHead::write(std::ofstream& out)
 {
-  AR_DEBUG_ASSERT(!m_written);
-  AR_DEBUG_ASSERT(m_name_is_set);
-  AR_DEBUG_ASSERT(m_version_is_set);
+  AR_REQUIRE(!m_written, "template HTMLTmplHead already written");
+  AR_REQUIRE(m_name_is_set, "HTMLTmplHead::name not set");
+  AR_REQUIRE(m_version_is_set, "HTMLTmplHead::version not set");
   // clang-format off
   out << "<!DOCTYPE html>\n";
   out << "<html lang='en'>\n";
@@ -86,13 +86,13 @@ HTMLTmplBody::HTMLTmplBody()
 
 HTMLTmplBody::~HTMLTmplBody()
 {
-  AR_DEBUG_ASSERT(m_written);
+  AR_REQUIRE(m_written, "template HTMLTmplBody was not written");
 }
 
 void
 HTMLTmplBody::write(std::ofstream& out)
 {
-  AR_DEBUG_ASSERT(!m_written);
+  AR_REQUIRE(!m_written, "template HTMLTmplBody already written");
   // clang-format off
   out << "\n";
   out << "<body>\n";

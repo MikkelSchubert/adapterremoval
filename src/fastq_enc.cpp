@@ -28,7 +28,7 @@
 #include <sstream>   // for stringstream
 #include <stdexcept> // for invalid_argument
 
-#include "debug.hpp" // for AR_DEBUG_FAIL, AR_DEBUG_ASSERT
+#include "debug.hpp" // for AR_FAIL, AR_REQUIRE
 #include "fastq_enc.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,26 +98,22 @@ invalid_phred_33(const int max_score, const char raw_score)
 
   const int score = raw_score - PHRED_OFFSET_33;
   const char max_score_ascii = max_score + PHRED_OFFSET_33;
+  AR_REQUIRE(score > max_score, "invalid_phred called on valid PHRED score");
+
   std::stringstream ss;
+  ss << "Found Phred+33 encoded quality score of " << score << " ('"
+     << raw_score << "'), which is greater than the expected maximum score of "
+     << max_score << " ('" << max_score_ascii << "'). Please verify the format "
+     << "of these files.\n\n"
 
-  if (score > max_score) {
-    ss << "Found Phred+33 encoded quality score of " << score << " ('"
-       << raw_score << "'), which is greater than the expected "
-       << "maximum score of " << max_score << " ('" << max_score_ascii << "'). "
-       << "Please verify the format of these files.\n\n"
+     << "If the quality scores are actually Phred+64 encoded, which would mean "
+     << "that the Phred quality score is " << raw_score - PHRED_OFFSET_64
+     << ", then use the '--qualitybase 64' command-line option.\n\n"
 
-       << "If the quality scores are actually Phred+64 encoded, which would "
-       << "mean that the encoded Phred quality score is "
-       << raw_score - PHRED_OFFSET_64 << ", then use the '--qualitybase 64' "
-       << "command-line option.\n\n"
+     << "If the quality scores are Phred+33 encoded, but have higher than "
+        "expected scores, then increase the '--qualitymax' value.\n\n"
 
-       << "If the quality scores are Phred+33 encoded, but have higher than "
-       << "expected scores, then increase the '--qualitymax' value.\n\n"
-
-       << "See the documentation for more information.";
-  } else {
-    AR_DEBUG_FAIL("invalid_phred called on valid PHRED score");
-  }
+     << "See the documentation for more information.";
 
   throw fastq_error(ss.str());
 }
@@ -171,7 +167,7 @@ invalid_phred_64(const int max_score, const char raw_score)
 
        << "See the documentation for more information.";
   } else {
-    AR_DEBUG_FAIL("invalid_phred called on valid PHRED score");
+    AR_FAIL("invalid_phred called on valid PHRED score");
   }
 
   throw fastq_error(ss.str());
@@ -209,7 +205,7 @@ invalid_solexa(const int max_score, const char raw_score)
 
        << "See the documentation for more information.";
   } else {
-    AR_DEBUG_FAIL("invalid_phred called on valid PHRED score");
+    AR_FAIL("invalid_phred called on valid PHRED score");
   }
 
   throw fastq_error(ss.str());
@@ -233,12 +229,12 @@ fastq_encoding::fastq_encoding(quality_encoding encoding, char max_score)
       break;
 
     default:
-      AR_DEBUG_FAIL("unknown encoding");
+      AR_FAIL("unknown encoding");
   }
 
   m_max_score = std::min<char>(max_score, MAX_PHRED_SCORE - (m_offset - '!'));
 
-  AR_DEBUG_ASSERT(max_score >= MIN_PHRED_SCORE && max_score <= MAX_PHRED_SCORE);
+  AR_REQUIRE(max_score >= MIN_PHRED_SCORE && max_score <= MAX_PHRED_SCORE);
 }
 
 void

@@ -52,25 +52,46 @@ private:
  * instructions for how to report the problem.
  */
 [[noreturn]] void
-debug_raise_assert(const char* filename, size_t lineno, const char* what);
+debug_raise_assert(const char* filename,
+                   size_t lineno,
+                   const char* what,
+                   const char* test);
 
 /** Custom assert which prints various information on failure; always enabled.
  */
-#define AR_DEBUG_ASSERT(test)                                                  \
+#define _AR_ASSERT_2(test, what)                                               \
   do {                                                                         \
     if (!(test)) {                                                             \
-      debug_raise_assert(__FILE__, __LINE__, #test);                           \
+      debug_raise_assert(__FILE__, __LINE__, what, #test);                     \
     }                                                                          \
   } while (0)
 
+#define _AR_ASSERT_1(test) _AR_ASSERT_2(test, nullptr)
+
+#define _AR_ASSERT_GET(_1, _2, NAME, ...) NAME
+#define AR_REQUIRE(...)                                                        \
+  _AR_ASSERT_GET(__VA_ARGS__, _AR_ASSERT_2, _AR_ASSERT_1, )(__VA_ARGS__)
+
 /** Raise an assert failure with a user-specified message. */
-#define AR_DEBUG_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, msg)
+#define AR_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, msg, nullptr)
+
+#ifdef AR_DEBUG_BUILD
 
 /** Raise a failure if a scope is accessed more than once at the same time. */
-#define AR_DEBUG_LOCK(lock)                                                    \
+#define AR_ASSERT_SINGLE_THREAD(lock)                                          \
   std::unique_lock<std::mutex> locker(lock, std::defer_lock);                  \
   do {                                                                         \
     if (!locker.try_lock()) {                                                  \
-      AR_DEBUG_FAIL("race condition detected");                                \
+      AR_FAIL("race condition detected");                                      \
     }                                                                          \
   } while (0)
+
+#define AR_ASSERT(...)                                                         \
+  _AR_ASSERT_GET(__VA_ARGS__, _AR_ASSERT_2, _AR_ASSERT_1, )(__VA_ARGS__)
+
+#else
+
+#define AR_ASSERT_SINGLE_THREAD(lock)
+#define AR_ASSERT(...)
+
+#endif

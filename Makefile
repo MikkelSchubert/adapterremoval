@@ -210,7 +210,7 @@ TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-TEST_CXXFLAGS := -Isrc -DAR_TEST_BUILD -g
+TEST_CXXFLAGS := -Isrc -DAR_DEBUG_BUILD -g
 
 test: $(TEST_DIR)/main
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)

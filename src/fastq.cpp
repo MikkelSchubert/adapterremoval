@@ -27,7 +27,7 @@
 #include <numeric>   // for accumulate
 #include <sstream>   // for stringstream
 
-#include "debug.hpp" // for AR_DEBUG_ASSERT, AR_DEBUG_FAIL
+#include "debug.hpp" // for AR_REQUIRE, AR_FAIL
 #include "fastq.hpp"
 #include "linereader.hpp" // for line_reader_base
 
@@ -70,7 +70,7 @@ struct mate_info
       case read_mate::mate_2:
         return "mate 2";
       default:
-        AR_DEBUG_FAIL("Invalid mate in mate_info::desc");
+        AR_FAIL("Invalid mate in mate_info::desc");
     }
   }
 
@@ -232,7 +232,7 @@ fastq::trim_windowed_bases(const bool trim_ns,
                            const double window_size,
                            const bool preserve5p)
 {
-  AR_DEBUG_ASSERT(window_size >= 0.0);
+  AR_REQUIRE(window_size >= 0.0);
   if (m_sequence.empty()) {
     return ntrimmed();
   }
@@ -282,14 +282,14 @@ fastq::trim_windowed_bases(const bool trim_ns,
     left_inclusive = 0;
   }
 
-  AR_DEBUG_ASSERT(right_exclusive != std::string::npos);
+  AR_REQUIRE(right_exclusive != std::string::npos);
   return trim_sequence_and_qualities(left_inclusive, right_exclusive);
 }
 
 fastq::ntrimmed
 fastq::mott_trimming(const double error_limit, const bool preserve5p)
 {
-  AR_DEBUG_ASSERT(error_limit >= 0 && error_limit <= 1);
+  AR_REQUIRE(error_limit >= 0 && error_limit <= 1);
 
   size_t left_inclusive_temp = 0;
   size_t left_inclusive = 0;
@@ -329,7 +329,7 @@ fastq::mott_trimming(const double error_limit, const bool preserve5p)
 void
 fastq::truncate(size_t pos, size_t len)
 {
-  AR_DEBUG_ASSERT(pos == 0 || pos <= length());
+  AR_REQUIRE(pos == 0 || pos <= length());
 
   if (pos || len < length()) {
     m_sequence = m_sequence.substr(pos, len);
@@ -456,7 +456,7 @@ char
 fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
                             const std::vector<fastq>& reads_2)
 {
-  AR_DEBUG_ASSERT(reads_1.size() == reads_2.size());
+  AR_REQUIRE(reads_1.size() == reads_2.size());
 
   // Commonly used characters
   const std::string candidates = "/.:";
@@ -542,7 +542,7 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
       throw fastq_error(error.str());
     }
 
-    AR_DEBUG_ASSERT(info1.sep_pos == info2.sep_pos);
+    AR_REQUIRE(info1.sep_pos == info2.sep_pos);
     mate1.m_header.at(info1.sep_pos) = MATE_SEPARATOR;
     mate2.m_header.at(info2.sep_pos) = MATE_SEPARATOR;
   }

@@ -29,7 +29,7 @@
 #include "adapterset.hpp" // for adapter_set
 #include "alignment.hpp"  // for alignment_info, sequence_merger, align_pai...
 #include "counts.hpp"     // for counts
-#include "debug.hpp"      // for AR_DEBUG_ASSERT
+#include "debug.hpp"      // for AR_REQUIRE
 #include "fastq_io.hpp"   // for output_chunk_ptr, fastq_read_chunk, fastq_...
 #include "statistics.hpp" // for trimming_statistics, fastq_statistics
 #include "trimming.hpp"
@@ -160,11 +160,11 @@ trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
   : m_map(map)
   , m_chunks()
 {
-  AR_DEBUG_ASSERT(map.filenames.size() == map.steps.size());
+  AR_REQUIRE(map.filenames.size() == map.steps.size());
 
   for (size_t i = 0; i < map.steps.size(); ++i) {
-    AR_DEBUG_ASSERT(map.filenames.at(i).size());
-    AR_DEBUG_ASSERT(map.steps.at(i) != output_sample_files::disabled);
+    AR_REQUIRE(map.filenames.at(i).size());
+    AR_REQUIRE(map.steps.at(i) != output_sample_files::disabled);
 
     m_chunks.emplace_back(new fastq_output_chunk(eof));
   }
@@ -301,7 +301,7 @@ add_pe_statistics(const trimming_statistics& stats,
       break;
 
     default:
-      AR_DEBUG_FAIL("unhandled read type");
+      AR_FAIL("unhandled read type");
   }
 }
 
@@ -329,7 +329,7 @@ pe_reads_processor::process(chunk_ptr chunk)
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
   stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
-  AR_DEBUG_ASSERT(read_chunk.reads_1.size() == read_chunk.reads_2.size());
+  AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
   auto it_1 = read_chunk.reads_1.begin();
   auto it_2 = read_chunk.reads_2.begin();

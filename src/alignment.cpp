@@ -31,7 +31,7 @@
 
 #include "alignment.hpp"
 #include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
-#include "debug.hpp"            // for AR_DEBUG_ASSERT
+#include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for fastq, fastq_pair_vec
 
 #if defined(__AVX2__)
@@ -221,13 +221,13 @@ struct phred_scores
 phred_scores
 get_updated_phred_scores(char qual_1, char qual_2)
 {
-  AR_DEBUG_ASSERT(qual_1 >= qual_2);
+  AR_REQUIRE(qual_1 >= qual_2);
 
   const size_t phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_33);
   const size_t phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_33);
   const size_t index = (phred_1 * (MAX_PHRED_SCORE + 1)) + phred_2;
 
-  AR_DEBUG_ASSERT(index < PHRED_TABLE_SIZE);
+  AR_REQUIRE(index < PHRED_TABLE_SIZE);
 
   return phred_scores(index);
 }
@@ -297,7 +297,7 @@ alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
 size_t
 alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 {
-  AR_DEBUG_ASSERT(offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(offset <= static_cast<int>(read1.length()));
 
   return std::max<int>(0, static_cast<int>(read2.length()) + offset);
 }
@@ -420,7 +420,7 @@ sequence_merger::merge(const alignment_info& alignment,
                        const fastq& read2)
 {
   // Gap between the two reads is not allowed
-  AR_DEBUG_ASSERT(alignment.offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
 
   // Offset to the first base overlapping read 2
   const size_t read_1_offset =
@@ -429,12 +429,12 @@ sequence_merger::merge(const alignment_info& alignment,
   const size_t read_2_offset =
     static_cast<int>(read1.length()) - std::max(0, alignment.offset);
 
-  AR_DEBUG_ASSERT(read1.length() - read_1_offset == read_2_offset);
+  AR_REQUIRE(read1.length() - read_1_offset == read_2_offset);
 
   // Produce draft by merging r1 and the parts of r2 that extend past r1
   read1.m_sequence.append(read2.sequence(), read_2_offset, std::string::npos);
   read1.m_qualities.append(read2.qualities(), read_2_offset, std::string::npos);
-  AR_DEBUG_ASSERT(read1.m_sequence.length() == read1.m_qualities.length());
+  AR_REQUIRE(read1.m_sequence.length() == read1.m_qualities.length());
 
   // Pick the best bases for the overlapping part of the reads
   for (size_t i = 0; i < read_2_offset; ++i) {
@@ -525,7 +525,7 @@ extract_adapter_sequences(const alignment_info& alignment,
                           fastq& read1,
                           fastq& read2)
 {
-  AR_DEBUG_ASSERT(alignment.offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
   const int template_length =
     std::max(0, static_cast<int>(read2.length()) + alignment.offset);
 

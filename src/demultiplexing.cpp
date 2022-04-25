@@ -27,7 +27,7 @@
 
 #include "adapterset.hpp"  // for adapter_set
 #include "commontypes.hpp" // for fastq_vec
-#include "debug.hpp"       // for AR_DEBUG_ASSERT, AR_DEBUG_LOCK
+#include "debug.hpp"       // for AR_REQUIRE, AR_ASSERT_SINGLE_THREAD
 #include "demultiplexing.hpp"
 #include "fastq_io.hpp"   // for fastq_read_chunk, fastq_output_chunk, rea...
 #include "userconfig.hpp" // for userconfig, fastq_encoding_ptr
@@ -77,12 +77,12 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   , m_statistics(stats)
   , m_lock()
 {
-  AR_DEBUG_ASSERT(!m_barcodes.empty());
-  AR_DEBUG_ASSERT(m_barcodes.size() == m_steps.samples.size());
-  AR_DEBUG_ASSERT(m_statistics);
-  AR_DEBUG_ASSERT(m_statistics->barcodes.size() == m_barcodes.size());
+  AR_REQUIRE(!m_barcodes.empty());
+  AR_REQUIRE(m_barcodes.size() == m_steps.samples.size());
+  AR_REQUIRE(m_statistics);
+  AR_REQUIRE(m_statistics->barcodes.size() == m_barcodes.size());
 
-  AR_DEBUG_ASSERT(m_steps.unidentified_1 != post_demux_steps::disabled);
+  AR_REQUIRE(m_steps.unidentified_1 != post_demux_steps::disabled);
   m_unidentified_1.reset(new fastq_output_chunk());
 
   if (m_steps.unidentified_2 != post_demux_steps::disabled &&
@@ -91,7 +91,7 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   }
 
   for (const auto next_step : m_steps.samples) {
-    AR_DEBUG_ASSERT(next_step != post_demux_steps::disabled);
+    AR_REQUIRE(next_step != post_demux_steps::disabled);
 
     m_cache.push_back(read_chunk_ptr(new fastq_read_chunk()));
   }
@@ -129,7 +129,7 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
 chunk_vec
 demultiplex_se_reads::process(chunk_ptr chunk)
 {
-  AR_DEBUG_LOCK(m_lock);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
   for (auto& read : read_chunk.reads_1) {
@@ -170,9 +170,9 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
 chunk_vec
 demultiplex_pe_reads::process(chunk_ptr chunk)
 {
-  AR_DEBUG_LOCK(m_lock);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  AR_DEBUG_ASSERT(read_chunk.reads_1.size() == read_chunk.reads_2.size());
+  AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
   fastq_vec::iterator it_1 = read_chunk.reads_1.begin();
   fastq_vec::iterator it_2 = read_chunk.reads_2.begin();

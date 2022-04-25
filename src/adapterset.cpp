@@ -29,7 +29,7 @@
 #include <vector>    // for vector, vector<>::const_iterator
 
 #include "adapterset.hpp"
-#include "debug.hpp"      // for AR_DEBUG_ASSERT
+#include "debug.hpp"      // for AR_REQUIRE
 #include "fastq_enc.hpp"  // for fastq_error
 #include "linereader.hpp" // for line_reader
 #include "strutils.hpp"   // for cli_formatter
@@ -65,8 +65,8 @@ read_table(const std::string& filename,
            size_t max_col,
            bool row_names = false)
 {
-  AR_DEBUG_ASSERT(min_col <= max_col);
-  AR_DEBUG_ASSERT(min_col >= 1);
+  AR_REQUIRE(min_col <= max_col);
+  AR_REQUIRE(min_col >= 1);
 
   size_t last_row_size = 0;
   size_t line_num = 1;
@@ -394,8 +394,10 @@ adapter_set::barcode_count() const
 fastq_pair_vec
 adapter_set::get_adapter_set(size_t nth) const
 {
+  AR_REQUIRE(nth == 0 || !m_barcodes.empty(),
+             "tried to get non-existing adapter set");
+
   if (m_barcodes.empty()) {
-    AR_DEBUG_ASSERT(nth == 0);
     return m_adapters;
   }
 

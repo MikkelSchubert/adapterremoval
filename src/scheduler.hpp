@@ -34,8 +34,6 @@
 #include <utility>            // for pair
 #include <vector>             // for vector
 
-#include "debug.hpp" // for AR_DEBUG_ASSERT
-
 class scheduler_step;
 
 /** Simple thread-safe storage backed by a vector. **/
@@ -64,7 +62,7 @@ public:
   pointer acquire()
   {
     auto ptr = try_acquire();
-    AR_DEBUG_ASSERT(ptr);
+    AR_REQUIRE(ptr);
 
     return ptr;
   }

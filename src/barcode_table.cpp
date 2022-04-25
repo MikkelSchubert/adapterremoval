@@ -22,7 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "debug.hpp" // for AR_DEBUG_ASSERT
+#include "debug.hpp" // for AR_REQUIRE
 #include <algorithm> // for min, max, sort
 #include <utility>   // for pair
 
@@ -91,7 +91,7 @@ barcode_table::candidate::candidate(int barcode_, size_t mismatches_)
 barcode_vec
 sort_barcodes(const fastq_pair_vec& barcodes)
 {
-  AR_DEBUG_ASSERT(!barcodes.empty());
+  AR_REQUIRE(!barcodes.empty());
   barcode_vec sorted_barcodes;
 
   const size_t max_key_1_len = barcodes.front().first.length();

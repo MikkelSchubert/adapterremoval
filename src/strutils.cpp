@@ -30,7 +30,7 @@
 #include <unistd.h>    // for STDOUT_FILENO
 #include <vector>      // for vector
 
-#include "debug.hpp" // for AR_DEBUG_ASSERT
+#include "debug.hpp" // for AR_REQUIRE
 #include "strutils.hpp"
 
 size_t
@@ -144,7 +144,7 @@ template_replace(const std::string& haystack,
                  const std::string& needle,
                  const std::string& value)
 {
-  AR_DEBUG_ASSERT(needle.size());
+  AR_REQUIRE(needle.size());
 
   std::string result;
   std::size_t last = 0;

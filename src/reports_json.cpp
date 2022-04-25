@@ -31,7 +31,7 @@
 
 #include "adapterset.hpp" // for adapter_set
 #include "counts.hpp"     // for counts, counts_tmpl
-#include "debug.hpp"      // for AR_DEBUG_FAIL
+#include "debug.hpp"      // for AR_FAIL
 #include "fastq.hpp"      // for fastq_pair_vec, IDX_TO_ACGT, fastq
 #include "json.hpp"       // for json_writer, json_section
 #include "main.hpp"       // for NAME, VERSION
@@ -256,7 +256,7 @@ struct io_section
       case read_type::unidentified_2:
         return "unidentified_2";
       default:
-        AR_DEBUG_FAIL("unknown read type");
+        AR_FAIL("unknown read type");
     }
   }
 

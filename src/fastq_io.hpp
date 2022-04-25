@@ -150,11 +150,13 @@ private:
   //! Timer for displaying read progress.
   progress_timer m_timer;
 
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
-
   //! Number of reads to process
   unsigned m_head;
+
+#ifdef AR_DEBUG_BUILD
+  //! Lock used to verify that the analytical_step is only run sequentially.
+  std::mutex m_lock;
+#endif
 };
 
 /**
@@ -198,8 +200,11 @@ private:
 
   //! Used to track whether an EOF block has been received.
   bool m_eof;
+
+#ifdef AR_DEBUG_BUILD
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
+#endif
 };
 
 /**
@@ -229,8 +234,11 @@ private:
   z_stream m_stream;
   //! Used to track whether an EOF block has been received.
   bool m_eof;
+
+#ifdef AR_DEBUG_BUILD
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
+#endif
 };
 
 /**
@@ -260,8 +268,11 @@ private:
 
   //! Used to track whether an EOF block has been received.
   bool m_eof;
+
+#ifdef AR_DEBUG_BUILD
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
+#endif
 };
 
 /**
@@ -319,6 +330,9 @@ private:
 
   //! Used to track whether an EOF block has been received.
   bool m_eof;
+
+#ifdef AR_DEBUG_BUILD
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
+#endif
 };

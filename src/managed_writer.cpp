@@ -31,7 +31,7 @@
 #include <fcntl.h> // for posix_fadvise
 #endif
 
-#include "debug.hpp" // for AR_DEBUG_ASSERT
+#include "debug.hpp" // for AR_REQUIRE
 #include "managed_writer.hpp"
 #include "threads.hpp" // for print_locker
 
@@ -58,7 +58,7 @@ managed_writer::~managed_writer()
 FILE*
 managed_writer::fopen(const std::string& filename, const char* mode)
 {
-  AR_DEBUG_ASSERT(mode);
+  AR_REQUIRE(mode);
 
   while (true) {
     FILE* handle = ::fopen(filename.c_str(), mode);
@@ -158,9 +158,9 @@ managed_writer::open_writer(managed_writer* ptr)
 void
 managed_writer::remove_writer(managed_writer* ptr)
 {
-  AR_DEBUG_ASSERT(!s_head == !s_tail);
-  AR_DEBUG_ASSERT(!s_head || !s_head->m_prev);
-  AR_DEBUG_ASSERT(!s_tail || !s_tail->m_next);
+  AR_REQUIRE(!s_head == !s_tail);
+  AR_REQUIRE(!s_head || !s_head->m_prev);
+  AR_REQUIRE(!s_tail || !s_tail->m_next);
 
   if (ptr == s_head) {
     s_head = ptr->m_next;
@@ -170,7 +170,7 @@ managed_writer::remove_writer(managed_writer* ptr)
     s_tail = ptr->m_prev;
   }
 
-  AR_DEBUG_ASSERT(!s_head == !s_tail);
+  AR_REQUIRE(!s_head == !s_tail);
 
   if (ptr->m_prev) {
     ptr->m_prev->m_next = ptr->m_next;
@@ -183,20 +183,20 @@ managed_writer::remove_writer(managed_writer* ptr)
   ptr->m_prev = nullptr;
   ptr->m_next = nullptr;
 
-  AR_DEBUG_ASSERT(ptr != s_head);
-  AR_DEBUG_ASSERT(ptr != s_tail);
-  AR_DEBUG_ASSERT(!ptr->m_prev);
-  AR_DEBUG_ASSERT(!ptr->m_next);
-  AR_DEBUG_ASSERT(!s_head || !s_head->m_prev);
-  AR_DEBUG_ASSERT(!s_tail || !s_tail->m_next);
+  AR_REQUIRE(ptr != s_head);
+  AR_REQUIRE(ptr != s_tail);
+  AR_REQUIRE(!ptr->m_prev);
+  AR_REQUIRE(!ptr->m_next);
+  AR_REQUIRE(!s_head || !s_head->m_prev);
+  AR_REQUIRE(!s_tail || !s_tail->m_next);
 }
 
 void
 managed_writer::add_head_writer(managed_writer* ptr)
 {
-  AR_DEBUG_ASSERT(!ptr->m_prev);
-  AR_DEBUG_ASSERT(!ptr->m_next);
-  AR_DEBUG_ASSERT(!s_head == !s_tail);
+  AR_REQUIRE(!ptr->m_prev);
+  AR_REQUIRE(!ptr->m_next);
+  AR_REQUIRE(!s_head == !s_tail);
   if (s_head) {
     ptr->m_next = s_head;
     s_head->m_prev = ptr;
@@ -208,15 +208,15 @@ managed_writer::add_head_writer(managed_writer* ptr)
     s_tail = ptr;
   }
 
-  AR_DEBUG_ASSERT(s_head && s_tail);
-  AR_DEBUG_ASSERT(!s_head->m_prev);
-  AR_DEBUG_ASSERT(!s_tail->m_next);
+  AR_REQUIRE(s_head && s_tail);
+  AR_REQUIRE(!s_head->m_prev);
+  AR_REQUIRE(!s_tail->m_next);
 }
 
 void
 managed_writer::close_tail_writer()
 {
-  AR_DEBUG_ASSERT(!s_head == !s_tail);
+  AR_REQUIRE(!s_head == !s_tail);
   if (!s_warning_printed) {
     print_locker lock;
     std::cerr
@@ -230,7 +230,7 @@ managed_writer::close_tail_writer()
   }
 
   if (s_tail) {
-    AR_DEBUG_ASSERT(s_tail->m_stream.is_open());
+    AR_REQUIRE(s_tail->m_stream.is_open());
 
     s_tail->m_stream.close();
     managed_writer::remove_writer(s_tail);

@@ -32,7 +32,7 @@
 
 #include "adapterset.hpp"     // for adapter_set
 #include "commontypes.hpp"    // for fastq_vec, read_type, read_type::mate_1
-#include "debug.hpp"          // for AR_DEBUG_ASSERT
+#include "debug.hpp"          // for AR_REQUIRE
 #include "demultiplexing.hpp" // for post_demux_steps, demultiplex_pe_reads
 #include "fastq_io.hpp"       // for fastq_read_chunk, read_chunk_ptr, read...
 #include "reports.hpp"        // for write_report
@@ -91,7 +91,7 @@ public:
   chunk_vec process(chunk_ptr chunk) override
   {
     auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-    AR_DEBUG_ASSERT(read_chunk.reads_1.size() == read_chunk.reads_2.size());
+    AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
     auto stats = m_stats.acquire();
     trimmed_reads chunks(m_output, read_chunk.eof);

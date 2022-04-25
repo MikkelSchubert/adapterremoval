@@ -191,7 +191,7 @@ def write_implementations(sections, header_name):
 
         tprint("\n{}::~{}()", classname, classname)
         tprint("{{")
-        tprint("  AR_DEBUG_ASSERT(m_written);")
+        tprint('  AR_REQUIRE(m_written, "template {} was not written");', classname)
         tprint("}}\n")
 
         for field in props["fields"]:
@@ -213,10 +213,10 @@ def write_implementations(sections, header_name):
         tprint("void")
         tprint("{}::write(std::ofstream& out)", classname)
         tprint("{{")
-        tprint("  AR_DEBUG_ASSERT(!m_written);")
+        tprint('  AR_REQUIRE(!m_written, "template {} already written");', classname)
 
         for field in props["fields"] + props["repeaters"]:
-            tprint("  AR_DEBUG_ASSERT(m_{}_is_set);", field)
+            tprint('  AR_REQUIRE(m_{0}_is_set, "{1}::{0} not set");', field, classname)
 
         # prevent clang-format from adding linebreaks
         tprint("  // clang-format off")

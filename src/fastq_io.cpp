@@ -32,7 +32,7 @@
 #include <libdeflate.h>
 #endif
 
-#include "debug.hpp"     // for AR_DEBUG_ASSERT, AR_DEBUG_LOCK
+#include "debug.hpp"     // for AR_REQUIRE, AR_ASSERT_SINGLE_THREAD
 #include "fastq.hpp"     // for fastq
 #include "fastq_enc.hpp" // for fastq_error
 #include "fastq_io.hpp"
@@ -47,7 +47,7 @@
 void
 checked_deflate_init2(z_streamp stream, unsigned int level)
 {
-  AR_DEBUG_ASSERT(stream);
+  AR_REQUIRE(stream);
   stream->zalloc = nullptr;
   stream->zfree = nullptr;
   stream->opaque = nullptr;
@@ -184,26 +184,28 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_single_end(false)
   , m_eof(false)
   , m_timer("reads")
+#ifdef AR_DEBUG_BUILD
   , m_lock()
+#endif
   , m_head(config.head)
 {
   if (config.interleaved_input) {
-    AR_DEBUG_ASSERT(config.input_files_2.empty());
+    AR_REQUIRE(config.input_files_2.empty());
 
     m_io_input_2 = &m_io_input_1_base;
   } else if (config.input_files_2.empty()) {
     m_io_input_2 = &m_io_input_1_base;
     m_single_end = true;
   } else {
-    AR_DEBUG_ASSERT(config.input_files_1.size() == config.input_files_2.size());
+    AR_REQUIRE(config.input_files_1.size() == config.input_files_2.size());
   }
 }
 
 chunk_vec
 read_fastq::process(chunk_ptr chunk)
 {
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(!chunk);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(!chunk);
   if (m_eof) {
     return chunk_vec();
   }
@@ -278,8 +280,8 @@ read_fastq::read_paired_end(read_chunk_ptr& chunk)
 void
 read_fastq::finalize()
 {
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
 
   m_timer.finalize();
 }
@@ -297,7 +299,9 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   , m_statistics_2(stats ? stats->input_2 : nullptr)
   , m_next_step(next_step)
   , m_eof(false)
+#ifdef AR_DEBUG_BUILD
   , m_lock()
+#endif
 {
 }
 
@@ -305,8 +309,8 @@ chunk_vec
 post_process_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  AR_DEBUG_ASSERT(!m_eof);
-  AR_DEBUG_LOCK(m_lock);
+  AR_REQUIRE(!m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
 
   m_eof = file_chunk.eof;
 
@@ -316,7 +320,7 @@ post_process_fastq::process(chunk_ptr chunk)
   if (reads_1.size() == reads_2.size()) {
     process_paired_end(reads_1, reads_2);
   } else {
-    AR_DEBUG_ASSERT(reads_2.empty());
+    AR_REQUIRE(reads_2.empty());
     process_single_end(reads_1);
   }
 
@@ -341,7 +345,7 @@ post_process_fastq::process_single_end(fastq_vec& reads_1)
 void
 post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
 {
-  AR_DEBUG_ASSERT(reads_1.size() == reads_2.size());
+  AR_REQUIRE(reads_1.size() == reads_2.size());
 
   if (!m_mate_separator) {
     // Attempt to determine the mate separator character
@@ -373,8 +377,8 @@ post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
 void
 post_process_fastq::finalize()
 {
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -385,7 +389,9 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
+#ifdef AR_DEBUG_BUILD
   , m_lock()
+#endif
 {
   checked_deflate_init2(&m_stream, config.gzip_level);
 }
@@ -393,8 +399,8 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
 void
 gzip_fastq::finalize()
 {
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
 
   checked_deflate_end(&m_stream);
 }
@@ -404,8 +410,8 @@ gzip_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(!m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(!m_eof);
 
   m_eof = file_chunk.eof;
   if (file_chunk.reads.empty() && !m_eof) {
@@ -453,17 +459,19 @@ split_fastq::split_fastq(size_t next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
   , m_eof(false)
+#ifdef AR_DEBUG_BUILD
   , m_lock()
+#endif
 {
 }
 
 void
 split_fastq::finalize()
 {
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
 
-  AR_DEBUG_ASSERT(!m_buffer);
+  AR_REQUIRE(!m_buffer);
 }
 
 chunk_vec
@@ -471,8 +479,8 @@ split_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(!m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(!m_eof);
   m_eof = file_chunk.eof;
 
   chunk_vec chunks;
@@ -522,7 +530,7 @@ chunk_vec
 gzip_split_fastq::process(chunk_ptr chunk)
 {
   auto& input_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
-  AR_DEBUG_ASSERT(input_chunk.buffers.size() == 1);
+  AR_REQUIRE(input_chunk.buffers.size() == 1);
 
   buffer_pair& input_buffer = input_chunk.buffers.front();
   buffer_pair output_buffer;
@@ -544,7 +552,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
   libdeflate_free_compressor(compressor);
 
   // The easily compressible input should fit in a single output block
-  AR_DEBUG_ASSERT(compressed_size);
+  AR_REQUIRE(compressed_size);
 #else
   z_stream stream;
   checked_deflate_init2(&stream, m_config.gzip_level);
@@ -555,7 +563,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
   stream.next_out = output_buffer.second.get();
   // The easily compressible input should fit in a single output block
   const int returncode = checked_deflate(&stream, Z_FINISH);
-  AR_DEBUG_ASSERT(stream.avail_out && returncode == Z_STREAM_END);
+  AR_REQUIRE(stream.avail_out && returncode == Z_STREAM_END);
 
   const auto compressed_size = GZIP_BLOCK_SIZE - stream.avail_out;
   checked_deflate_end(&stream);
@@ -583,7 +591,9 @@ write_fastq::write_fastq(const std::string& filename)
                                        : processing_order::ordered_io)
   , m_output(filename)
   , m_eof(false)
+#ifdef AR_DEBUG_BUILD
   , m_lock()
+#endif
 {
 }
 
@@ -592,15 +602,15 @@ write_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(!m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(!m_eof);
 
   try {
     m_eof = file_chunk.eof;
     if (file_chunk.buffers.empty()) {
       m_output.write_string(file_chunk.reads, m_eof);
     } else {
-      AR_DEBUG_ASSERT(file_chunk.reads.empty());
+      AR_REQUIRE(file_chunk.reads.empty());
 
       m_output.write_buffers(file_chunk.buffers, m_eof);
     }
@@ -616,8 +626,8 @@ write_fastq::process(chunk_ptr chunk)
 void
 write_fastq::finalize()
 {
-  AR_DEBUG_LOCK(m_lock);
-  AR_DEBUG_ASSERT(m_eof);
+  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
 
   // Close file to trigger any exceptions due to badbit / failbit
   try {

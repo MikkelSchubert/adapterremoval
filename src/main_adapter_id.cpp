@@ -35,7 +35,7 @@
 #include "adapterset.hpp"  // for adapter_set
 #include "alignment.hpp"   // for align_paired_ended_sequences, extract_ada...
 #include "commontypes.hpp" // for fastq_vec
-#include "debug.hpp"       // for AR_DEBUG_ASSERT
+#include "debug.hpp"       // for AR_REQUIRE
 #include "fastq.hpp"       // for fastq, ACGT_TO_IDX, fastq_pair_vec, IDX_T...
 #include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
 #include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
@@ -338,7 +338,7 @@ public:
 
   chunk_vec process(chunk_ptr chunk) override
   {
-    AR_DEBUG_ASSERT(chunk);
+    AR_REQUIRE(chunk);
     auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
     const fastq empty_adapter("dummy", "", "");
@@ -350,7 +350,7 @@ public:
 
     auto stats = m_stats.acquire();
 
-    AR_DEBUG_ASSERT(file_chunk.reads_1.size() == file_chunk.reads_2.size());
+    AR_REQUIRE(file_chunk.reads_1.size() == file_chunk.reads_2.size());
     fastq_vec::iterator read_1 = file_chunk.reads_1.begin();
     fastq_vec::iterator read_2 = file_chunk.reads_2.begin();
 

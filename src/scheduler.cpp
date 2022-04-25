@@ -27,7 +27,7 @@
 #include <system_error> // for system_error
 #include <thread>       // for thread
 
-#include "debug.hpp" // for AR_DEBUG_ASSERT
+#include "debug.hpp" // for AR_REQUIRE
 #include "scheduler.hpp"
 #include "strutils.hpp" // for cli_formatter
 #include "threads.hpp"  // for print_locker, thread_abort
@@ -167,7 +167,7 @@ scheduler::~scheduler() {}
 size_t
 scheduler::add_step(const std::string& name, analytical_step* step)
 {
-  AR_DEBUG_ASSERT(step);
+  AR_REQUIRE(step);
 
   const size_t step_id = m_steps.size();
   m_steps.emplace_back(new scheduler_step(step, name));
@@ -178,9 +178,9 @@ scheduler::add_step(const std::string& name, analytical_step* step)
 bool
 scheduler::run(int nthreads)
 {
-  AR_DEBUG_ASSERT(!m_steps.empty());
-  AR_DEBUG_ASSERT(nthreads >= 1);
-  AR_DEBUG_ASSERT(!m_chunk_counter);
+  AR_REQUIRE(!m_steps.empty());
+  AR_REQUIRE(nthreads >= 1);
+  AR_REQUIRE(!m_chunk_counter);
 
   m_tasks_max = static_cast<size_t>(nthreads) * 3;
 
@@ -319,7 +319,7 @@ scheduler::do_run()
 
       // Schedule each of the resulting blocks
       for (auto& result : chunks) {
-        AR_DEBUG_ASSERT(result.first < m_steps.size());
+        AR_REQUIRE(result.first < m_steps.size());
         const step_ptr& recipient = m_steps.at(result.first);
 
         // Inherit reference count from source chunk
