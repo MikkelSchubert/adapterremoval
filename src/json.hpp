@@ -24,11 +24,145 @@
 #pragma once
 
 #include <cmath>    // for isnan
+#include <map>      // for map
+#include <memory>   // for shared_ptr
 #include <sstream>  // for operator<<, stringstream, basic_ostream, fixed
 #include <stddef.h> // for size_t
 #include <stdint.h> // for int64_t
 #include <string>   // for string, char_traits
-#include <vector>   // for vector
+
+#include "commontypes.hpp" // for string_vec
+#include "counts.hpp"      // for counts, rates
+
+class json_list;
+class json_dict;
+class json_value;
+
+using json_dict_ptr = std::shared_ptr<json_dict>;
+using json_list_ptr = std::shared_ptr<json_list>;
+using json_ptr = std::shared_ptr<json_value>;
+
+/** Base class for json values */
+class json_value
+{
+public:
+  virtual ~json_value();
+
+  /** Returns the value as a valid JSON string */
+  virtual std::string to_string() const;
+
+  /**
+   * Writes the object to a stream. The first line is not indented, but
+   * subsequent lines are indented by `indent` spaces.
+   */
+  virtual void write(std::ostream& out, size_t indent = 0) const = 0;
+};
+
+class json_token : public json_value
+{
+public:
+  /** Constructor takes a single assumed-to-be-valid JSON token/string */
+  json_token(const std::string& value);
+
+  /** Create a JSON token from a string; special characters are escaped */
+  static json_ptr from_str(const std::string& value);
+  /** Create a single-line JSON token representing a list strings */
+  static json_ptr from_str_vec(const string_vec& values);
+
+  /** Create a JSON token from an integer value. */
+  static json_ptr from_i64(const int64_t value);
+  /** Create a single-line JSON token representing a list of count values */
+  static json_ptr from_i64_vec(const counts& values);
+
+  /** Create a JSON token from a floating point value; formatted as '%.3f' */
+  static json_ptr from_f64(const double value);
+  /** Create a single-line JSON token representing a list of '%.3f' values */
+  static json_ptr from_f64_vec(const rates& values);
+
+  /** Create a JSON token from a boolean value */
+  static json_ptr from_boolean(const bool value);
+  /** Create a JSON token representing null */
+  static json_ptr from_null();
+
+  /** See json_value::to_string */
+  virtual std::string to_string() const override;
+  /** See json_value::write */
+  virtual void write(std::ostream& out, size_t indent = 0) const override;
+
+private:
+  /** Create a single-line JSON list from a set of JSON encoded values */
+  static json_ptr from_raw_vec(const string_vec& values);
+
+  //! A valid JSON token/string representing or more objects
+  const std::string m_value;
+};
+
+/** Represents a list of JSON objects written across multiple lines */
+class json_list : public json_value
+{
+public:
+  /** Creates empty list */
+  json_list();
+
+  /** See json_value::write */
+  virtual void write(std::ostream& out, size_t indent = 0) const override;
+
+  /** Appends an empty JSON dictionary to the list and returns it */
+  json_dict_ptr dict();
+
+private:
+  //! Items in the list
+  std::vector<json_ptr> m_values;
+};
+
+/**
+ * Simple write-only JSON dictionary serializer.
+ *
+ * Keys are written in the order they are (first) assigned.
+ */
+class json_dict : public json_value
+{
+public:
+  /** Creates empty dictionary */
+  json_dict();
+
+  /** See json_value::write */
+  void write(std::ostream& out, size_t indent = 0) const override;
+
+  /** Add and return a sub-dict with the specified key */
+  json_dict_ptr dict(const std::string& key);
+  /** Add and return a sub-list with the specified key */
+  json_list_ptr list(const std::string& key);
+
+  /** Set key with string value. */
+  void str(const std::string& key, const std::string& value);
+  /** Assign string value array. */
+  void str_vec(const std::string& key, const string_vec& value);
+
+  /** Assign integer value. */
+  void i64(const std::string& key, const int64_t value);
+  /** Assign integer value array. */
+  void i64_vec(const std::string& key, const counts& value);
+
+  /** Assign floating point value. */
+  void f64(const std::string& key, const double value);
+  /** Assign float value array. */
+  void f64_vec(const std::string& key, const rates& value);
+
+  /** Assign boolean value (true/false). */
+  void boolean(const std::string& key, const bool value);
+  /** Assign null value. */
+  void null(const std::string& key);
+
+private:
+  /** Assigns a JSON object to a given key and updates the list of keys */
+  void _set(const std::string& key, const json_ptr& ptr);
+
+  //! List of keys in insertion order
+  std::vector<std::string> m_keys;
+  //! Map of unencoded keys to JSON objects
+  std::map<std::string, json_ptr> m_values;
+};
 
 class json_writer;
 template<typename T>
@@ -63,9 +197,9 @@ private:
 /**
  * Writes pretty-printed JSON to a stream.
  *
- * Values are written as they are pushed and no checks for duplicate values are
- * performed. This class is meant as a simple alternative to writing simple JSON
- * output by hand, not as a full-fledged JSON serializer.
+ * Values are written as they are pushed and no checks for duplicate values
+ * are performed. This class is meant as a simple alternative to writing
+ * simple JSON output by hand, not as a full-fledged JSON serializer.
  */
 class json_writer
 {
@@ -110,7 +244,8 @@ private:
   void end(char c);
   /** Writes a (assumed to be) valid JSON value. */
   void _write(const std::string& value);
-  /** Writes a key and value. The value is assumed to be a valid JSON value. */
+  /** Writes a key and value. The value is assumed to be a valid JSON value.
+   */
   void _write(const std::string& key, const std::string& value);
 
   std::ostream& m_stream;
