@@ -40,22 +40,18 @@
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
 #include "utilities.hpp"  // for make_shared
 
-#define WITH_SECTION(writer, key)                                              \
-  if (const auto section##__LINE__ = (writer).start(key))
-
 void
-write_report_meta(const userconfig& config, json_writer& writer)
+write_report_meta(const userconfig& config, json_dict& report)
 {
-  WITH_SECTION(writer, "meta")
-  {
-    writer.write("version", NAME + " " + VERSION);
-    writer.write("command", config.args);
-    writer.write_float("runtime", config.runtime());
-  }
+  const auto meta = report.dict("meta");
+
+  meta->str("version", NAME + " " + VERSION);
+  meta->str_vec("command", config.args);
+  meta->f64("runtime", config.runtime());
 }
 
 void
-write_report_summary_stats(json_writer& writer,
+write_report_summary_stats(const json_dict_ptr& json,
                            const std::vector<fastq_stats_ptr>& stats)
 {
   size_t n_reads = 0;
@@ -85,188 +81,136 @@ write_report_summary_stats(json_writer& writer,
 
   const auto n_bases_s = n_a + n_c + n_g + n_t + n_n;
 
-  writer.write_int("reads", n_reads);
-  writer.write_int("bases", n_bases);
-  writer.write_float("mean_length", static_cast<double>(n_bases) / n_reads);
-  writer.write_int("reads_sampled", n_reads_s);
-  writer.write_float("q20_rate", static_cast<double>(n_q20) / n_bases_s);
-  writer.write_float("q30_rate", static_cast<double>(n_q30) / n_bases_s);
-  writer.write_float("uncalled_rate", static_cast<double>(n_n) / n_bases_s);
-  writer.write_float("gc_content", static_cast<double>(n_g + n_c) / n_bases_s);
+  json->i64("reads", n_reads);
+  json->i64("bases", n_bases);
+  json->f64("mean_length", static_cast<double>(n_bases) / n_reads);
+  json->i64("reads_sampled", n_reads_s);
+  json->f64("q20_rate", static_cast<double>(n_q20) / n_bases_s);
+  json->f64("q30_rate", static_cast<double>(n_q30) / n_bases_s);
+  json->f64("uncalled_rate", static_cast<double>(n_n) / n_bases_s);
+  json->f64("gc_content", static_cast<double>(n_g + n_c) / n_bases_s);
 }
 
 void
 write_report_trimming(const userconfig& config,
-                      json_writer& writer,
+                      const json_dict_ptr& json,
                       const trimming_statistics& totals,
                       const fastq_pair_vec& adapters)
 {
   if (config.run_type == ar_command::demultiplex_sequences ||
       config.run_type == ar_command::report_only) {
-    writer.write_null("trimming_and_filtering");
+    json->null("trimming_and_filtering");
     return;
   }
 
-  WITH_SECTION(writer, "trimming_and_filtering")
-  {
-    writer.start_list("adapter_sequences");
+  const auto trimming = json->dict("trimming_and_filtering");
+  const auto adapter_list = trimming->list("adapter_sequences");
 
-    for (size_t i = 0; i < adapters.size(); ++i) {
-      const auto _section = writer.start();
+  for (size_t i = 0; i < adapters.size(); ++i) {
+    const auto adapter = adapter_list->dict();
 
-      writer.write("adapter_sequence_1", adapters.at(i).first.sequence());
-      writer.write("adapter_sequence_2", adapters.at(i).second.sequence());
-      writer.write_int("adapter_trimmed_reads",
-                       totals.adapter_trimmed_reads.get(i));
-      writer.write_int("adapter_trimmed_bases",
-                       totals.adapter_trimmed_bases.get(i));
-    }
-
-    writer.end_list();
-
-    writer.write_int("overlapping_reads", totals.overlapping_reads);
-    writer.write_int("terminal_bases_trimmed", totals.terminal_bases_trimmed);
-    writer.write_int("low_quality_trimmed_reads",
-                     totals.low_quality_trimmed_reads);
-    writer.write_int("low_quality_trimmed_bases",
-                     totals.low_quality_trimmed_bases);
-    writer.write_int("filtered_min_length_reads",
-                     totals.filtered_min_length_reads);
-    writer.write_int("filtered_min_length_bases",
-                     totals.filtered_min_length_bases);
-    writer.write_int("filtered_max_length_reads",
-                     totals.filtered_max_length_reads);
-    writer.write_int("filtered_max_length_bases",
-                     totals.filtered_max_length_bases);
-    writer.write_int("filtered_ambiguous_reads",
-                     totals.filtered_ambiguous_reads);
-    writer.write_int("filtered_ambiguous_bases",
-                     totals.filtered_ambiguous_bases);
-    writer.write_int("filtered_low_complexity_reads",
-                     totals.filtered_low_complexity_reads);
-    writer.write_int("filtered_low_complexity_bases",
-                     totals.filtered_low_complexity_bases);
-
-    if (config.paired_ended_mode) {
-      writer.write("insert_sizes", totals.insert_sizes);
-    } else {
-      writer.write_null("insert_sizes");
-    }
+    adapter->str("adapter_sequence_1", adapters.at(i).first.sequence());
+    adapter->str("adapter_sequence_2", adapters.at(i).second.sequence());
+    adapter->i64("adapter_trimmed_reads", totals.adapter_trimmed_reads.get(i));
+    adapter->i64("adapter_trimmed_bases", totals.adapter_trimmed_bases.get(i));
   }
-}
 
-void
-write_read_length(json_writer& writer,
-                  const std::string& label,
-                  size_t reads,
-                  size_t bases)
-{
-  writer.write_int(label + "_reads", reads);
-  writer.write_float(label + "_mean_length",
-                     static_cast<double>(bases) / reads);
+  trimming->i64("overlapping_reads", totals.overlapping_reads);
+  trimming->i64("terminal_bases_trimmed", totals.terminal_bases_trimmed);
+  trimming->i64("low_quality_trimmed_reads", totals.low_quality_trimmed_reads);
+  trimming->i64("low_quality_trimmed_bases", totals.low_quality_trimmed_bases);
+  trimming->i64("filtered_min_length_reads", totals.filtered_min_length_reads);
+  trimming->i64("filtered_min_length_bases", totals.filtered_min_length_bases);
+  trimming->i64("filtered_max_length_reads", totals.filtered_max_length_reads);
+  trimming->i64("filtered_max_length_bases", totals.filtered_max_length_bases);
+  trimming->i64("filtered_ambiguous_reads", totals.filtered_ambiguous_reads);
+  trimming->i64("filtered_ambiguous_bases", totals.filtered_ambiguous_bases);
+  trimming->i64("filtered_low_complexity_reads",
+                totals.filtered_low_complexity_reads);
+  trimming->i64("filtered_low_complexity_bases",
+                totals.filtered_low_complexity_bases);
+
+  if (config.paired_ended_mode) {
+    trimming->i64_vec("insert_sizes", totals.insert_sizes);
+  } else {
+    trimming->null("insert_sizes");
+  }
 }
 
 void
 write_report_summary(const userconfig& config,
-                     json_writer& writer,
+                     json_dict& report,
                      const statistics& stats)
 {
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
 
-  WITH_SECTION(writer, "summary")
-  {
-    WITH_SECTION(writer, "input")
-    {
-      std::vector<fastq_stats_ptr> input = { stats.input_1, stats.input_2 };
-      write_report_summary_stats(writer, input);
+  const auto summary = report.dict("summary");
+
+  write_report_summary_stats(summary->dict("input"),
+                             { stats.input_1, stats.input_2 });
+
+  if (config.adapters.barcode_count()) {
+    const auto summary_demux = summary->dict("demultiplexing");
+    const auto& demux = *stats.demultiplexing;
+    const auto total = demux.total();
+
+    summary_demux->i64("total_reads", total);
+    summary_demux->i64("assigned_reads",
+                       total - demux.unidentified - demux.ambiguous);
+    summary_demux->i64("ambiguous_reads", demux.ambiguous);
+    summary_demux->i64("unassigned_reads", demux.unidentified);
+
+    const auto samples = summary_demux->dict("samples");
+    for (size_t i = 0; i < demux.barcodes.size(); ++i) {
+      summary_demux->i64(config.adapters.get_sample_name(i),
+                         demux.barcodes.at(i));
     }
+  } else {
+    summary->null("demultiplexing");
+  }
+
+  {
+    trimming_statistics totals;
+    for (const auto& it : stats.trimming) {
+      totals += *it;
+    }
+
+    write_report_trimming(
+      config, summary, totals, config.adapters.get_raw_adapters());
+  }
+
+  if (config.run_type == ar_command::report_only) {
+    summary->null("output");
+  } else {
+    const auto output = summary->dict("output");
+
+    std::vector<fastq_stats_ptr> passed;
+    for (const auto& it : stats.trimming) {
+      passed.push_back(it->read_1);
+      passed.push_back(it->read_2);
+      passed.push_back(it->merged);
+    }
+
+    write_report_summary_stats(output->dict("passed"), passed);
 
     if (config.adapters.barcode_count()) {
-      WITH_SECTION(writer, "demultiplexing")
-      {
-        const auto& demux = *stats.demultiplexing;
-        const auto total = demux.total();
-
-        writer.write_int("total_reads", total);
-        writer.write_int("assigned_reads",
-                         total - demux.unidentified - demux.ambiguous);
-        writer.write_int("ambiguous_reads", demux.ambiguous);
-        writer.write_int("unassigned_reads", demux.unidentified);
-
-        WITH_SECTION(writer, "samples")
-        {
-          for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-            writer.write_int(config.adapters.get_sample_name(i),
-                             demux.barcodes.at(i));
-          }
-        }
-      }
+      write_report_summary_stats(
+        output->dict("unidentified"),
+        { stats.demultiplexing->unidentified_stats_1,
+          stats.demultiplexing->unidentified_stats_2 });
     } else {
-      writer.write_null("demultiplexing");
+      output->null("unidentified");
     }
 
-    {
-      trimming_statistics totals;
+    if (demux_only) {
+      output->null("discarded");
+    } else {
+      std::vector<fastq_stats_ptr> discarded;
       for (const auto& it : stats.trimming) {
-        totals += *it;
+        discarded.push_back(it->discarded);
       }
 
-      write_report_trimming(
-        config, writer, totals, config.adapters.get_raw_adapters());
-    }
-
-    if (config.run_type != ar_command::report_only) {
-      WITH_SECTION(writer, "output")
-      {
-        WITH_SECTION(writer, "passed")
-        {
-          std::vector<fastq_stats_ptr> output;
-          for (const auto& it : stats.trimming) {
-            output.push_back(it->read_1);
-            output.push_back(it->read_2);
-            output.push_back(it->merged);
-          }
-
-          write_report_summary_stats(writer, output);
-        }
-
-        if (config.adapters.barcode_count()) {
-          WITH_SECTION(writer, "unidentified_1")
-          {
-            write_report_summary_stats(
-              writer, { stats.demultiplexing->unidentified_stats_1 });
-          }
-
-          if (config.paired_ended_mode) {
-            WITH_SECTION(writer, "unidentified_2")
-            {
-              write_report_summary_stats(
-                writer, { stats.demultiplexing->unidentified_stats_2 });
-            }
-          } else {
-            writer.write_null("unidentified_2");
-          }
-        } else {
-          writer.write_null("unidentified_1");
-          writer.write_null("unidentified_2");
-        }
-
-        if (demux_only) {
-          writer.write_null("discarded");
-        } else {
-          WITH_SECTION(writer, "discarded")
-          {
-            std::vector<fastq_stats_ptr> discarded;
-            for (const auto& it : stats.trimming) {
-              discarded.push_back(it->discarded);
-            }
-
-            write_report_summary_stats(writer, discarded);
-          }
-        }
-      }
-    } else {
-      writer.write_null("output");
+      write_report_summary_stats(output->dict("discarded"), discarded);
     }
   }
 }
@@ -316,167 +260,159 @@ struct io_section
     }
   }
 
-  void write_to_if(json_writer& writer, bool enabled = true)
+  void write_to_if(const json_dict_ptr& json, bool enabled = true)
   {
     if (!enabled) {
-      writer.write_null(name());
+      json->null(name());
       return;
     }
 
-    WITH_SECTION(writer, name())
+    const auto section = json->dict(name());
+    if (m_filenames.empty()) {
+      section->null("filenames");
+    } else {
+      section->str_vec("filenames", m_filenames);
+    }
+
+    section->i64("input_reads", m_stats->number_of_input_reads());
+    section->i64("output_reads", m_stats->number_of_output_reads());
+    section->i64("reads_sampled", m_stats->number_of_sampled_reads());
+    section->i64_vec("lengths", m_stats->length_dist());
+
+    auto total_bases = m_stats->uncalled_pos();
+    auto total_quality = m_stats->uncalled_quality_pos();
+
     {
-      if (m_filenames.empty()) {
-        writer.write_null("filenames");
+      const auto quality_curves = section->dict("quality_curves");
+
+      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+        const auto nuc = IDX_TO_ACGT(nuc_i);
+        const auto& nucleotides = m_stats->nucleotides_pos(nuc);
+        const auto& quality = m_stats->qualities_pos(nuc);
+
+        total_bases += nucleotides;
+        total_quality += quality;
+
+        quality_curves->f64_vec(std::string(1, tolower(nuc)),
+                                quality / nucleotides);
+      }
+
+      quality_curves->f64_vec("mean", total_quality / total_bases);
+    }
+
+    {
+      const auto content_curves = section->dict("content_curves");
+
+      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
+        const auto nuc = IDX_TO_ACGT(nuc_i);
+        const auto& bases = m_stats->nucleotides_pos(nuc);
+
+        content_curves->f64_vec(std::string(1, tolower(nuc)),
+                                bases / total_bases);
+      }
+
+      content_curves->f64_vec("n", m_stats->uncalled_pos() / total_bases);
+      content_curves->f64_vec(
+        "gc",
+        (m_stats->nucleotides_pos('G') + m_stats->nucleotides_pos('C')) /
+          total_bases);
+    }
+
+    const auto quality_dist = m_stats->quality_dist().trim();
+    section->i64_vec("quality_scores", quality_dist);
+    section->i64_vec("gc_content", m_stats->gc_content());
+
+    // Currently only for input 1/2
+    const auto dup_stats = m_stats->duplication();
+
+    if (dup_stats) {
+      // Must be enabled, but key is always written for applicable files
+      if (dup_stats->max_unique()) {
+        const auto duplication = section->dict("duplication");
+
+        const auto summary = dup_stats->summarize();
+        duplication->str_vec("labels", summary.labels);
+        duplication->f64_vec("unique_sequences", summary.unique_sequences);
+        duplication->f64_vec("total_sequences", summary.total_sequences);
+        duplication->f64("unique_frac", summary.unique_frac);
       } else {
-        writer.write("filenames", m_filenames);
-      }
-
-      writer.write_int("input_reads", m_stats->number_of_input_reads());
-      writer.write_int("output_reads", m_stats->number_of_output_reads());
-      writer.write_int("reads_sampled", m_stats->number_of_sampled_reads());
-      writer.write("lengths", m_stats->length_dist());
-
-      auto total_bases = m_stats->uncalled_pos();
-      auto total_quality = m_stats->uncalled_quality_pos();
-
-      WITH_SECTION(writer, "quality_curves")
-      {
-        for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
-          const auto nuc = IDX_TO_ACGT(nuc_i);
-          const auto& nucleotides = m_stats->nucleotides_pos(nuc);
-          const auto& quality = m_stats->qualities_pos(nuc);
-
-          total_bases += nucleotides;
-          total_quality += quality;
-
-          writer.write(std::string(1, tolower(nuc)), quality / nucleotides);
-        }
-
-        writer.write("mean", total_quality / total_bases);
-      }
-
-      WITH_SECTION(writer, "content_curves")
-      {
-        for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
-          const auto nuc = IDX_TO_ACGT(nuc_i);
-          const auto& bases = m_stats->nucleotides_pos(nuc);
-
-          writer.write(std::string(1, tolower(nuc)), bases / total_bases);
-        }
-
-        writer.write("n", m_stats->uncalled_pos() / total_bases);
-        writer.write(
-          "gc",
-          (m_stats->nucleotides_pos('G') + m_stats->nucleotides_pos('C')) /
-            total_bases);
-      }
-
-      const auto quality_dist = m_stats->quality_dist().trim();
-      writer.write("quality_scores", quality_dist);
-      writer.write("gc_content", m_stats->gc_content());
-
-      // Currently only for input 1/2
-      const auto duplication = m_stats->duplication();
-
-      if (duplication) {
-        // Must be enabled, but key is always written for applicable files
-        if (duplication->max_unique()) {
-          WITH_SECTION(writer, "duplication")
-          {
-            const auto summary = duplication->summarize();
-
-            writer.write("labels", summary.labels);
-            writer.write("unique_sequences", summary.unique_sequences);
-            writer.write("total_sequences", summary.total_sequences);
-            writer.write_float("unique_frac", summary.unique_frac);
-          }
-        } else {
-          writer.write_null("duplication");
-        }
+        section->null("duplication");
       }
     }
   }
 
 private:
   const read_type m_read_type;
+
   const fastq_stats_ptr m_stats;
   string_vec m_filenames;
 };
 
 void
 write_report_input(const userconfig& config,
-                   json_writer& writer,
+                   json_dict& report,
                    const statistics& stats)
 {
-  WITH_SECTION(writer, "input")
-  {
-    const auto mate_2_filenames =
-      config.interleaved_input ? config.input_files_1 : config.input_files_2;
+  const auto input = report.dict("input");
+  const auto mate_2_filenames =
+    config.interleaved_input ? config.input_files_1 : config.input_files_2;
 
-    io_section(read_type::mate_1, stats.input_1, config.input_files_1)
-      .write_to_if(writer);
-    io_section(read_type::mate_2, stats.input_2, mate_2_filenames)
-      .write_to_if(writer, config.paired_ended_mode);
-  }
+  io_section(read_type::mate_1, stats.input_1, config.input_files_1)
+    .write_to_if(input);
+  io_section(read_type::mate_2, stats.input_2, mate_2_filenames)
+    .write_to_if(input, config.paired_ended_mode);
 }
 
 void
 write_report_demultiplexing(const userconfig& config,
-                            json_writer& writer,
+                            json_dict& report,
                             const statistics& sample_stats)
 {
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
   const auto out_files = config.get_output_filenames();
 
   if (config.adapters.barcode_count()) {
-    WITH_SECTION(writer, "demultiplexing")
-    {
-      size_t assigned_reads = 0;
-      const auto& demux = *sample_stats.demultiplexing;
-      for (size_t it : demux.barcodes) {
-        assigned_reads += it;
-      }
+    const auto demultiplexing = report.dict("demultiplexing");
 
-      writer.write_int("assigned_reads", assigned_reads);
-      writer.write_int("ambiguous_reads", demux.ambiguous);
-      writer.write_int("unassigned_reads", demux.unidentified);
+    const auto& demux = *sample_stats.demultiplexing;
+    size_t assigned_reads = 0;
+    for (size_t it : demux.barcodes) {
+      assigned_reads += it;
+    }
 
-      WITH_SECTION(writer, "samples")
-      {
-        for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-          WITH_SECTION(writer, config.adapters.get_sample_name(i))
-          {
-            const auto& stats = *sample_stats.trimming.at(i);
-            const auto& files = out_files.samples.at(i);
+    demultiplexing->i64("assigned_reads", assigned_reads);
+    demultiplexing->i64("ambiguous_reads", demux.ambiguous);
+    demultiplexing->i64("unassigned_reads", demux.unidentified);
 
-            writer.write_int("reads", demux.barcodes.at(i));
+    const auto samples = demultiplexing->dict("samples");
+    for (size_t i = 0; i < demux.barcodes.size(); ++i) {
+      const auto sample = samples->dict(config.adapters.get_sample_name(i));
+      const auto& stats = *sample_stats.trimming.at(i);
+      const auto& files = out_files.samples.at(i);
 
-            write_report_trimming(
-              config, writer, stats, config.adapters.get_adapter_set(i));
+      sample->i64("reads", demux.barcodes.at(i));
 
-            WITH_SECTION(writer, "output")
-            {
-              io_section(read_type::mate_1, stats.read_1, files)
-                .write_to_if(writer);
+      write_report_trimming(
+        config, sample, stats, config.adapters.get_adapter_set(i));
 
-              io_section(read_type::mate_2, stats.read_2, files)
-                .write_to_if(writer, config.paired_ended_mode);
+      const auto output = sample->dict("output");
+      io_section(read_type::mate_1, stats.read_1, files)
+        .write_to_if(output, true);
 
-              io_section(read_type::singleton, stats.singleton, files)
-                .write_to_if(writer, config.paired_ended_mode);
+      io_section(read_type::mate_2, stats.read_2, files)
+        .write_to_if(output, config.paired_ended_mode);
 
-              io_section(read_type::merged, stats.merged, files)
-                .write_to_if(writer, config.merge && !demux_only);
+      io_section(read_type::singleton, stats.singleton, files)
+        .write_to_if(output, config.paired_ended_mode);
 
-              io_section(read_type::discarded, stats.discarded, files)
-                .write_to_if(writer, !demux_only);
-            }
-          }
-        }
-      }
+      io_section(read_type::merged, stats.merged, files)
+        .write_to_if(output, config.merge && !demux_only);
+
+      io_section(read_type::discarded, stats.discarded, files)
+        .write_to_if(output, !demux_only);
     }
   } else {
-    writer.write_null("demultiplexing");
+    report.null("demultiplexing");
   }
 }
 
@@ -497,11 +433,11 @@ collect_files(const output_files& files, read_type rtype)
 
 void
 write_report_output(const userconfig& config,
-                    json_writer& writer,
+                    json_dict& report,
                     const statistics& stats)
 {
   if (config.run_type == ar_command::report_only) {
-    writer.write_null("output");
+    report.null("output");
     return;
   }
 
@@ -528,31 +464,29 @@ write_report_output(const userconfig& config,
 
   const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
 
-  WITH_SECTION(writer, "output")
-  {
-    io_section(read_type::mate_1, output_1, mate_1_files)
-      .write_to_if(writer, true);
-    io_section(read_type::mate_2, output_2, mate_2_files)
-      .write_to_if(writer, config.paired_ended_mode);
-    io_section(read_type::merged, merged, merged_files)
-      .write_to_if(writer, config.merge && !demux_only);
+  const auto output = report.dict("output");
+  io_section(read_type::mate_1, output_1, mate_1_files)
+    .write_to_if(output, true);
+  io_section(read_type::mate_2, output_2, mate_2_files)
+    .write_to_if(output, config.paired_ended_mode);
+  io_section(read_type::merged, merged, merged_files)
+    .write_to_if(output, config.merge && !demux_only);
 
-    io_section(read_type::unidentified_1,
-               stats.demultiplexing->unidentified_stats_1,
-               { out_files.unidentified_1 })
-      .write_to_if(writer, config.adapters.barcode_count());
-    io_section(read_type::unidentified_2,
-               stats.demultiplexing->unidentified_stats_2,
-               { out_files.unidentified_2 })
-      .write_to_if(writer,
-                   config.adapters.barcode_count() && config.paired_ended_mode);
+  io_section(read_type::unidentified_1,
+             stats.demultiplexing->unidentified_stats_1,
+             { out_files.unidentified_1 })
+    .write_to_if(output, config.adapters.barcode_count());
+  io_section(read_type::unidentified_2,
+             stats.demultiplexing->unidentified_stats_2,
+             { out_files.unidentified_2 })
+    .write_to_if(output,
+                 config.adapters.barcode_count() && config.paired_ended_mode);
 
-    io_section(read_type::singleton, singleton, singleton_files)
-      .write_to_if(writer, !demux_only);
+  io_section(read_type::singleton, singleton, singleton_files)
+    .write_to_if(output, !demux_only);
 
-    io_section(read_type::discarded, discarded, discarded_files)
-      .write_to_if(writer, !demux_only);
-  }
+  io_section(read_type::discarded, discarded, discarded_files)
+    .write_to_if(output, !demux_only);
 }
 
 bool
@@ -569,12 +503,13 @@ write_json_report(const userconfig& config,
     output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
     {
-      json_writer writer(output);
-      write_report_meta(config, writer);
-      write_report_summary(config, writer, stats);
-      write_report_input(config, writer, stats);
-      write_report_demultiplexing(config, writer, stats);
-      write_report_output(config, writer, stats);
+      json_dict report;
+      write_report_meta(config, report);
+      write_report_summary(config, report, stats);
+      write_report_input(config, report, stats);
+      write_report_demultiplexing(config, report, stats);
+      write_report_output(config, report, stats);
+      report.write(output);
     }
 
     output << std::endl;
