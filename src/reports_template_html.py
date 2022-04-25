@@ -32,7 +32,10 @@ import sys
 from pathlib import Path
 
 _RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z_]+)\s+-->", re.I)
-_RE_FIELD = re.compile(r"({{[a-z0-9_]+}}|\[\[[a-z0-9_]+\]\])", re.I)
+_RE_FIELD = re.compile(
+    r"({{[a-z0-9_]+}}|\[\[[a-z0-9_]+\]\]|JS_TEMPLATE_[a-z0-9_]+)",
+    re.I,
+)
 _CPP_ENCODED = {
     "\\": "\\\\",
     '"': '\\"',
@@ -65,11 +68,13 @@ def read_template(filepath):
         fields = set()
         repeaters = set()
         for value in _RE_FIELD.findall(text):
-            name = value[2:-2].lower()
-            if value.startswith("{"):
-                fields.add(name)
+            value = value.lower()
+            if value.startswith("js_template_"):
+                fields.add(value[12:])
+            elif value.startswith("{"):
+                fields.add(value[2:-2])
             else:
-                repeaters.add(name)
+                repeaters.add(value[2:-2])
 
         result[key] = {
             "lines": lines,
@@ -99,7 +104,10 @@ def inject_variables(value):
     repeater = None
     for field in _RE_FIELD.split(value):
         result.append("<<")
-        if field.startswith("{{") and field.endswith("}}"):
+        if field.lower().startswith("js_template_"):
+            name = field[12:].lower()
+            result.append("m_{}".format(name))
+        elif field.startswith("{{") and field.endswith("}}"):
             name = field[2:-2].lower()
             result.append("m_{}".format(name))
         elif field.startswith("[[") and field.endswith("]]"):
