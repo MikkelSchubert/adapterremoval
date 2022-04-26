@@ -48,6 +48,10 @@ _CPP_ENCODED = {
     "\n": "\\n",
 }
 
+_BUILTIN_VARS = {
+    "id": "id",
+}
+
 
 def read_template(filepath):
     current = None
@@ -78,8 +82,8 @@ def read_template(filepath):
 
         result[key] = {
             "lines": lines,
-            "fields": sorted(fields),
-            "repeaters": sorted(repeaters),
+            "fields": sorted(fields - _BUILTIN_VARS.keys()),
+            "repeaters": sorted(repeaters - _BUILTIN_VARS.keys()),
         }
 
     return result
@@ -106,10 +110,10 @@ def inject_variables(value):
         result.append("<<")
         if field.lower().startswith("js_template_"):
             name = field[12:].lower()
-            result.append("m_{}".format(name))
+            result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
         elif field.startswith("{{") and field.endswith("}}"):
             name = field[2:-2].lower()
-            result.append("m_{}".format(name))
+            result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
         elif field.startswith("[[") and field.endswith("]]"):
             assert repeater is None, repr(value)
             repeater = field[2:-2].lower()
@@ -186,6 +190,8 @@ def write_implementations(sections, header_name):
     tprint(__doc__.strip())
     tprint('#include "{}"', header_name)
     tprint('#include "debug.hpp"', header_name)
+    tprint("\nsize_t g_html_id = 1;")
+
     for key, props in sections.items():
         classname = to_classname(key)
 
@@ -228,6 +234,8 @@ def write_implementations(sections, header_name):
 
         # prevent clang-format from adding linebreaks
         tprint("  // clang-format off")
+        # cast to void to silence unused-variable warnings when ID isn't used
+        tprint("  auto id = g_html_id++; (void)id;")
 
         for line in props["lines"]:
             tprint("{}", inject_variables(line))
