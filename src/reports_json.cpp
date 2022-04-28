@@ -74,7 +74,7 @@ write_report_summary_stats(const json_dict_ptr& json,
     n_c += it->nucleotides_pos('C').sum();
     n_g += it->nucleotides_pos('G').sum();
     n_t += it->nucleotides_pos('T').sum();
-    n_n += it->uncalled_pos().sum();
+    n_n += it->nucleotides_pos('N').sum();
     n_q20 += it->quality_dist().sum(20);
     n_q30 += it->quality_dist().sum(30);
   }
@@ -279,19 +279,15 @@ struct io_section
     section->i64("reads_sampled", m_stats->number_of_sampled_reads());
     section->i64_vec("lengths", m_stats->length_dist());
 
-    auto total_bases = m_stats->uncalled_pos();
-    auto total_quality = m_stats->uncalled_quality_pos();
+    const auto total_bases = m_stats->nucleotides_pos();
+    const auto total_quality = m_stats->qualities_pos();
 
     {
       const auto quality_curves = section->dict("quality_curves");
 
-      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
-        const auto nuc = IDX_TO_ACGT(nuc_i);
+      for (const auto nuc : ACGT) {
         const auto& nucleotides = m_stats->nucleotides_pos(nuc);
         const auto& quality = m_stats->qualities_pos(nuc);
-
-        total_bases += nucleotides;
-        total_quality += quality;
 
         quality_curves->f64_vec(std::string(1, tolower(nuc)),
                                 quality / nucleotides);
@@ -303,19 +299,15 @@ struct io_section
     {
       const auto content_curves = section->dict("content_curves");
 
-      for (size_t nuc_i = 0; nuc_i < 4; ++nuc_i) {
-        const auto nuc = IDX_TO_ACGT(nuc_i);
+      for (const auto nuc : ACGTN) {
         const auto& bases = m_stats->nucleotides_pos(nuc);
 
         content_curves->f64_vec(std::string(1, tolower(nuc)),
                                 bases / total_bases);
       }
 
-      content_curves->f64_vec("n", m_stats->uncalled_pos() / total_bases);
-      content_curves->f64_vec(
-        "gc",
-        (m_stats->nucleotides_pos('G') + m_stats->nucleotides_pos('C')) /
-          total_bases);
+      content_curves->f64_vec("gc",
+                              m_stats->nucleotides_gc_pos() / total_bases);
     }
 
     const auto quality_dist = m_stats->quality_dist().trim();

@@ -256,6 +256,9 @@ IDX_TO_ACGT(size_t idx)
   return "ACTG"[idx];
 }
 
+//! Nucleotides supported by ACGT_TO_IDX / IDX_TO_ACGT
+const std::string ACGT = "ACGT";
+
 /**
  * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
  * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
@@ -275,6 +278,9 @@ IDX_TO_ACGTN(size_t idx)
 {
   return "NACTG"[idx];
 }
+
+//! Nucleotides supported by ACGTN_TO_IDX / IDX_TO_ACGTN
+const std::string ACGTN = "ACGTN";
 
 ///////////////////////////////////////////////////////////////////////////////
 

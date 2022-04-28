@@ -128,26 +128,29 @@ public:
   /** Distribution of GC content in percent */
   inline const counts& gc_content() const { return m_gc_content_dist; }
 
-  /** Count of uncalled nucleotides (N) by position */
-  inline const counts& uncalled_pos() const { return m_uncalled_pos; }
-
-  /** Sum of qualities of uncalled bases (N) by position */
-  inline const counts& uncalled_quality_pos() const
-  {
-    return m_uncalled_quality_pos;
-  }
-
-  /** Counts of each nucleotype (ACGT) by position */
+  /** Counts of ACGTN nucleotides by position */
   inline const counts& nucleotides_pos(char nuc) const
   {
-    return m_called_pos.at(ACGT_TO_IDX(nuc));
+    return m_nucleotide_pos.at(ACGTN_TO_IDX(nuc));
   }
 
-  /** Sum of base qualities for each nucleotype (ACGT) by position */
+  /** Sum of nucleotide counts by position */
+  counts nucleotides_pos() const;
+
+  /** Sum of nucleotide counts by position for GC only */
+  inline const counts nucleotides_gc_pos() const
+  {
+    return nucleotides_pos('G') + nucleotides_pos('C');
+  }
+
+  /** Sum of base qualities for each nucleotide (ACGTN) by position */
   inline const counts& qualities_pos(char nuc) const
   {
-    return m_quality_pos.at(ACGT_TO_IDX(nuc));
+    return m_quality_pos.at(ACGTN_TO_IDX(nuc));
   }
+
+  /** Sum of base qualities for ACGTN by position */
+  counts qualities_pos() const;
 
   /** Count duplications with the given max number of unique sequences. */
   void init_duplication_stats(size_t max_unique);
@@ -176,13 +179,9 @@ private:
   counts m_quality_dist;
   /** GC content distribution. */
   counts m_gc_content_dist;
-  /** Count of uncalled bases per position. */
-  counts m_uncalled_pos;
-  /** Sum of qualities of Ns per position. */
-  counts m_uncalled_quality_pos;
-  /** Count of A/C/G/T per position; indexed using ACGT_TO_IDX. */
-  std::vector<counts> m_called_pos;
-  /** Sum of qualities of A/C/G/Ts per position; indexed using ACGT_TO_IDX. */
+  /** Count of A/C/G/T/N per position; indexed using ACGTN_TO_IDX. */
+  std::vector<counts> m_nucleotide_pos;
+  /** Sum of qualities of A/C/G/Ts per position; indexed using ACGTN_TO_IDX. */
   std::vector<counts> m_quality_pos;
 
   //! Maximum size of read processed; used to resize counters as needed
