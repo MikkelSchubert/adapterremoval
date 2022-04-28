@@ -256,6 +256,26 @@ IDX_TO_ACGT(size_t idx)
   return "ACTG"[idx];
 }
 
+/**
+ * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
+ * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
+ * only) will result in hash collisions.
+ */
+inline size_t
+ACGTN_TO_IDX(char nt)
+{
+  return ((nt >> 1) + 1) & 0x7;
+}
+
+/**
+ * Inverse of ACGTN_TO_IDX. Only values in the range 0 to 4 are allowed.
+ */
+inline char
+IDX_TO_ACGTN(size_t idx)
+{
+  return "NACTG"[idx];
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef std::pair<fastq, fastq> fastq_pair;

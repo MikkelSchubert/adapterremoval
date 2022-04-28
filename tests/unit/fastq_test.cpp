@@ -82,6 +82,36 @@ TEST_CASE("IDX_TO_ACGT", "[fastq::*]")
   REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('T')) == 'T');
 }
 
+TEST_CASE("ACGTN_TO_IDX", "[fastq::*]")
+{
+  // The exact encoding is unimportant, but it must be unique in the range 0-4
+  REQUIRE(ACGTN_TO_IDX('A') <= 4);
+  REQUIRE(ACGTN_TO_IDX('C') <= 4);
+  REQUIRE(ACGTN_TO_IDX('G') <= 4);
+  REQUIRE(ACGTN_TO_IDX('T') <= 4);
+  REQUIRE(ACGTN_TO_IDX('N') <= 4);
+
+  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('C'));
+  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('G'));
+  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('T'));
+  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('N'));
+  REQUIRE(ACGTN_TO_IDX('C') != ACGTN_TO_IDX('G'));
+  REQUIRE(ACGTN_TO_IDX('C') != ACGTN_TO_IDX('T'));
+  REQUIRE(ACGTN_TO_IDX('C') != ACGTN_TO_IDX('N'));
+  REQUIRE(ACGTN_TO_IDX('G') != ACGTN_TO_IDX('T'));
+  REQUIRE(ACGTN_TO_IDX('G') != ACGTN_TO_IDX('N'));
+  REQUIRE(ACGTN_TO_IDX('T') != ACGTN_TO_IDX('N'));
+}
+
+TEST_CASE("IDX_TO_ACGTN", "[fastq::*]")
+{
+  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('A')) == 'A');
+  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('C')) == 'C');
+  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('G')) == 'G');
+  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('T')) == 'T');
+  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('N')) == 'N');
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default constructor
 
