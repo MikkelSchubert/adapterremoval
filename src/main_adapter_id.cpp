@@ -36,7 +36,7 @@
 #include "alignment.hpp"   // for align_paired_ended_sequences, extract_ada...
 #include "commontypes.hpp" // for fastq_vec
 #include "debug.hpp"       // for AR_REQUIRE
-#include "fastq.hpp"       // for fastq, ACGT_TO_IDX, fastq_pair_vec, IDX_T...
+#include "fastq.hpp"       // for fastq, ACGT, fastq_pair_vec
 #include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
 #include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
 #include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
@@ -63,7 +63,7 @@ kmer_to_size_t(const std::string& kmer)
 {
   size_t index = 0;
   for (size_t i = 0; i < kmer.length(); ++i) {
-    index = (index << 2) | ACGT_TO_IDX(kmer.at(i));
+    index = (index << 2) | ACGT::to_idx(kmer.at(i));
   }
 
   return index;
@@ -94,7 +94,7 @@ struct nt_counts
   void increment(char nt)
   {
     if (nt != 'N') {
-      ++counts.at(ACGT_TO_IDX(nt));
+      ++counts.at(ACGT::to_idx(nt));
     }
   }
 
@@ -224,7 +224,7 @@ get_consensus_nt(const nt_counts& nts)
 
   const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
   const char phred = fastq::p_to_phred_33(pvalue);
-  const char best_nt = (best_nt_i == -1) ? 'N' : IDX_TO_ACGT(best_nt_i);
+  const char best_nt = (best_nt_i == -1) ? 'N' : ACGT::to_nuc(best_nt_i);
 
   return std::pair<char, char>(best_nt, phred);
 }

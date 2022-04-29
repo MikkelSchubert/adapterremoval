@@ -285,7 +285,7 @@ struct io_section
     {
       const auto quality_curves = section->dict("quality_curves");
 
-      for (const auto nuc : ACGT) {
+      for (const auto nuc : ACGT::values) {
         const auto nucleotides = m_stats->nucleotides_pos(nuc);
         const auto quality = m_stats->qualities_pos(nuc);
 
@@ -299,7 +299,7 @@ struct io_section
     {
       const auto content_curves = section->dict("content_curves");
 
-      for (const auto nuc : ACGTN) {
+      for (const auto nuc : ACGTN::values) {
         const auto bases = m_stats->nucleotides_pos(nuc);
 
         content_curves->f64_vec(std::string(1, tolower(nuc)),

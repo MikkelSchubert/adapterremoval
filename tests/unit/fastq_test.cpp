@@ -58,58 +58,58 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
-TEST_CASE("ACGT_TO_IDX", "[fastq::*]")
+TEST_CASE("ACGT::to_idx", "[fastq::*]")
 {
   // The exact encoding is unimportant, but it must be unique and 2 bit
-  REQUIRE(ACGT_TO_IDX('A') <= 3);
-  REQUIRE(ACGT_TO_IDX('C') <= 3);
-  REQUIRE(ACGT_TO_IDX('G') <= 3);
-  REQUIRE(ACGT_TO_IDX('T') <= 3);
+  REQUIRE(ACGT::to_idx('A') <= 3);
+  REQUIRE(ACGT::to_idx('C') <= 3);
+  REQUIRE(ACGT::to_idx('G') <= 3);
+  REQUIRE(ACGT::to_idx('T') <= 3);
 
-  REQUIRE(ACGT_TO_IDX('A') != ACGT_TO_IDX('C'));
-  REQUIRE(ACGT_TO_IDX('A') != ACGT_TO_IDX('G'));
-  REQUIRE(ACGT_TO_IDX('A') != ACGT_TO_IDX('T'));
-  REQUIRE(ACGT_TO_IDX('C') != ACGT_TO_IDX('G'));
-  REQUIRE(ACGT_TO_IDX('C') != ACGT_TO_IDX('T'));
-  REQUIRE(ACGT_TO_IDX('G') != ACGT_TO_IDX('T'));
+  REQUIRE(ACGT::to_idx('A') != ACGT::to_idx('C'));
+  REQUIRE(ACGT::to_idx('A') != ACGT::to_idx('G'));
+  REQUIRE(ACGT::to_idx('A') != ACGT::to_idx('T'));
+  REQUIRE(ACGT::to_idx('C') != ACGT::to_idx('G'));
+  REQUIRE(ACGT::to_idx('C') != ACGT::to_idx('T'));
+  REQUIRE(ACGT::to_idx('G') != ACGT::to_idx('T'));
 }
 
-TEST_CASE("IDX_TO_ACGT", "[fastq::*]")
+TEST_CASE("ACGT::to_nuc", "[fastq::*]")
 {
-  REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('A')) == 'A');
-  REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('C')) == 'C');
-  REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('G')) == 'G');
-  REQUIRE(IDX_TO_ACGT(ACGT_TO_IDX('T')) == 'T');
+  REQUIRE(ACGT::to_nuc(ACGT::to_idx('A')) == 'A');
+  REQUIRE(ACGT::to_nuc(ACGT::to_idx('C')) == 'C');
+  REQUIRE(ACGT::to_nuc(ACGT::to_idx('G')) == 'G');
+  REQUIRE(ACGT::to_nuc(ACGT::to_idx('T')) == 'T');
 }
 
-TEST_CASE("ACGTN_TO_IDX", "[fastq::*]")
+TEST_CASE("ACGTN::to_idx", "[fastq::*]")
 {
   // The exact encoding is unimportant, but it must be unique in the range 0-4
-  REQUIRE(ACGTN_TO_IDX('A') <= 4);
-  REQUIRE(ACGTN_TO_IDX('C') <= 4);
-  REQUIRE(ACGTN_TO_IDX('G') <= 4);
-  REQUIRE(ACGTN_TO_IDX('T') <= 4);
-  REQUIRE(ACGTN_TO_IDX('N') <= 4);
+  REQUIRE(ACGTN::to_idx('A') <= 4);
+  REQUIRE(ACGTN::to_idx('C') <= 4);
+  REQUIRE(ACGTN::to_idx('G') <= 4);
+  REQUIRE(ACGTN::to_idx('T') <= 4);
+  REQUIRE(ACGTN::to_idx('N') <= 4);
 
-  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('C'));
-  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('G'));
-  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('T'));
-  REQUIRE(ACGTN_TO_IDX('A') != ACGTN_TO_IDX('N'));
-  REQUIRE(ACGTN_TO_IDX('C') != ACGTN_TO_IDX('G'));
-  REQUIRE(ACGTN_TO_IDX('C') != ACGTN_TO_IDX('T'));
-  REQUIRE(ACGTN_TO_IDX('C') != ACGTN_TO_IDX('N'));
-  REQUIRE(ACGTN_TO_IDX('G') != ACGTN_TO_IDX('T'));
-  REQUIRE(ACGTN_TO_IDX('G') != ACGTN_TO_IDX('N'));
-  REQUIRE(ACGTN_TO_IDX('T') != ACGTN_TO_IDX('N'));
+  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('C'));
+  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('G'));
+  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('T'));
+  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('N'));
+  REQUIRE(ACGTN::to_idx('C') != ACGTN::to_idx('G'));
+  REQUIRE(ACGTN::to_idx('C') != ACGTN::to_idx('T'));
+  REQUIRE(ACGTN::to_idx('C') != ACGTN::to_idx('N'));
+  REQUIRE(ACGTN::to_idx('G') != ACGTN::to_idx('T'));
+  REQUIRE(ACGTN::to_idx('G') != ACGTN::to_idx('N'));
+  REQUIRE(ACGTN::to_idx('T') != ACGTN::to_idx('N'));
 }
 
-TEST_CASE("IDX_TO_ACGTN", "[fastq::*]")
+TEST_CASE("ACGTN::to_nuc", "[fastq::*]")
 {
-  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('A')) == 'A');
-  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('C')) == 'C');
-  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('G')) == 'G');
-  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('T')) == 'T');
-  REQUIRE(IDX_TO_ACGTN(ACGTN_TO_IDX('N')) == 'N');
+  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('A')) == 'A');
+  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('C')) == 'C');
+  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('G')) == 'G');
+  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('T')) == 'T');
+  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('N')) == 'N');
 }
 
 ///////////////////////////////////////////////////////////////////////////////

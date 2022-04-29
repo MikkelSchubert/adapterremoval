@@ -132,7 +132,7 @@ add_sequence_to_tree(demux_node_vec& tree,
                    ? barcode_id
                    : barcode_table::ambigious;
 
-    const auto nuc_idx = ACGT_TO_IDX(nuc);
+    const auto nuc_idx = ACGT::to_idx(nuc);
     auto child = node.children[nuc_idx];
 
     added_last_node = (child == barcode_table::no_match);
@@ -263,7 +263,7 @@ barcode_table::lookup(const char* seq,
       return candidate(no_match);
     }
 
-    const auto encoded_nuc = ACGT_TO_IDX(*seq);
+    const auto encoded_nuc = ACGT::to_idx(*seq);
     const auto& node = m_nodes.at(parent);
 
     parent = node.children.at(encoded_nuc);
@@ -310,7 +310,7 @@ barcode_table::lookup_with_mm(const char* seq,
       if (child != -1) {
         candidate current_candidate;
 
-        if (nucleotide == IDX_TO_ACGT(encoded_i)) {
+        if (nucleotide == ACGT::to_nuc(encoded_i)) {
           current_candidate = lookup_with_mm(
             seq + 1, child, max_global_mismatches, max_local_mismatches, next);
         } else if (max_local_mismatches == 1) {

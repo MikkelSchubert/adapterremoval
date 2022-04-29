@@ -28,7 +28,7 @@
 #include <string> // for string
 
 #include "debug.hpp"     // for AR_REQUIRE
-#include "fastq.hpp"     // for ACGTN_TO_IDX, fastq
+#include "fastq.hpp"     // for ACGTN, fastq
 #include "fastq_enc.hpp" // for PHRED_OFFSET_33
 #include "statistics.hpp"
 #include "userconfig.hpp" // for userconfig
@@ -242,9 +242,9 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
     const std::string& sequence = read.sequence();
     const std::string& qualities = read.qualities();
 
-    std::vector<size_t> counts(ACGTN.size());
+    std::vector<size_t> counts(ACGTN::size);
     for (size_t i = 0; i < sequence.length(); ++i) {
-      const auto nuc_i = ACGTN_TO_IDX(sequence.at(i));
+      const auto nuc_i = ACGTN::to_idx(sequence.at(i));
 
       counts.at(nuc_i)++;
       m_nucleotide_pos.inc(nuc_i, i);
@@ -254,8 +254,8 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       m_quality_dist.inc(quality);
     }
 
-    auto n_at = counts.at(ACGTN_TO_IDX('A')) + counts.at(ACGTN_TO_IDX('T'));
-    auto n_gc = counts.at(ACGTN_TO_IDX('G')) + counts.at(ACGTN_TO_IDX('C'));
+    auto n_at = counts.at(ACGTN::to_idx('A')) + counts.at(ACGTN::to_idx('T'));
+    auto n_gc = counts.at(ACGTN::to_idx('G')) + counts.at(ACGTN::to_idx('C'));
     if (n_at || n_gc) {
       m_gc_content_dist.inc((100.0 * n_gc) / (n_at + n_gc) + 0.5);
     }

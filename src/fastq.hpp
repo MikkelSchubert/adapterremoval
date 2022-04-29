@@ -236,28 +236,38 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace ACGT {
+//! The number of nucleotides
+const size_t size = 4;
+//! Nucleotides supported by hashing function
+const char values[size] = { 'A', 'C', 'G', 'T' };
+
 /**
  * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
  * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
  * only) will result in hash collisions.
  */
 inline size_t
-ACGT_TO_IDX(char nt)
+to_idx(char nt)
 {
   return (nt >> 1) & 0x3;
 }
 
 /**
- * Inverse of ACGT_TO_IDX. Only values in the range 0 to 3 are allowed.
+ * Inverse of to_idx. Only values in the range 0 to 3 are allowed.
  */
 inline char
-IDX_TO_ACGT(size_t idx)
+to_nuc(size_t idx)
 {
   return "ACTG"[idx];
 }
+};
 
-//! Nucleotides supported by ACGT_TO_IDX / IDX_TO_ACGT
-const std::string ACGT = "ACGT";
+namespace ACGTN {
+//! The number of nucleotides
+const size_t size = 5;
+//! Nucleotides supported by hashing function
+const char values[size] = { 'A', 'C', 'G', 'T', 'N' };
 
 /**
  * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
@@ -265,22 +275,20 @@ const std::string ACGT = "ACGT";
  * only) will result in hash collisions.
  */
 inline size_t
-ACGTN_TO_IDX(char nt)
+to_idx(char nt)
 {
   return ((nt >> 1) + 1) & 0x7;
 }
 
 /**
- * Inverse of ACGTN_TO_IDX. Only values in the range 0 to 4 are allowed.
+ * Inverse of to_idx. Only values in the range 0 to 4 are allowed.
  */
 inline char
-IDX_TO_ACGTN(size_t idx)
+to_nuc(size_t idx)
 {
   return "NACTG"[idx];
 }
-
-//! Nucleotides supported by ACGTN_TO_IDX / IDX_TO_ACGTN
-const std::string ACGTN = "ACGTN";
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
