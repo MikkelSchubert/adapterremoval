@@ -129,9 +129,9 @@ public:
   inline const counts& gc_content() const { return m_gc_content_dist; }
 
   /** Counts of ACGTN nucleotides by position */
-  inline const counts& nucleotides_pos(char nuc) const
+  inline counts nucleotides_pos(char nuc) const
   {
-    return m_nucleotide_pos.at(ACGTN_TO_IDX(nuc));
+    return m_nucleotide_pos.to_counts(ACGTN_TO_IDX(nuc));
   }
 
   /** Sum of nucleotide counts by position */
@@ -144,9 +144,9 @@ public:
   }
 
   /** Sum of base qualities for each nucleotide (ACGTN) by position */
-  inline const counts& qualities_pos(char nuc) const
+  inline counts qualities_pos(char nuc) const
   {
-    return m_quality_pos.at(ACGTN_TO_IDX(nuc));
+    return m_quality_pos.to_counts(ACGTN_TO_IDX(nuc));
   }
 
   /** Sum of base qualities for ACGTN by position */
@@ -179,10 +179,11 @@ private:
   counts m_quality_dist;
   /** GC content distribution. */
   counts m_gc_content_dist;
-  /** Count of A/C/G/T/N per position; indexed using ACGTN_TO_IDX. */
-  std::vector<counts> m_nucleotide_pos;
-  /** Sum of qualities of A/C/G/Ts per position; indexed using ACGTN_TO_IDX. */
-  std::vector<counts> m_quality_pos;
+
+  /** Per position nucleotide counts indexed using ACGTN_TO_IDX. */
+  acgtn_counts m_nucleotide_pos;
+  /** Per position quality score sums indexed using ACGTN_TO_IDX. */
+  acgtn_counts m_quality_pos;
 
   //! Maximum size of read processed; used to resize counters as needed
   size_t m_max_sequence_len;

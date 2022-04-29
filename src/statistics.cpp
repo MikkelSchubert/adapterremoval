@@ -212,8 +212,8 @@ fastq_statistics::fastq_statistics(double sample_rate)
   , m_length_dist()
   , m_quality_dist(MAX_PHRED_SCORE + 1)
   , m_gc_content_dist(101)
-  , m_nucleotide_pos(ACGTN.size())
-  , m_quality_pos(ACGTN.size())
+  , m_nucleotide_pos()
+  , m_quality_pos()
   , m_max_sequence_len()
   , m_duplication()
 {
@@ -230,10 +230,8 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
 
     m_length_dist.resize_up_to(m_max_sequence_len + 1);
 
-    for (size_t nuc_i = 0; nuc_i < m_nucleotide_pos.size(); ++nuc_i) {
-      m_nucleotide_pos.at(nuc_i).resize_up_to(m_max_sequence_len);
-      m_quality_pos.at(nuc_i).resize_up_to(m_max_sequence_len);
-    }
+    m_nucleotide_pos.resize_up_to(m_max_sequence_len);
+    m_quality_pos.resize_up_to(m_max_sequence_len);
   }
 
   m_length_dist.inc(read.length());
@@ -249,10 +247,11 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       const auto nuc_i = ACGTN_TO_IDX(sequence.at(i));
 
       counts.at(nuc_i)++;
-      m_nucleotide_pos.at(nuc_i).inc(i);
-      m_quality_pos.at(nuc_i).inc(i, qualities.at(i) - PHRED_OFFSET_33);
+      m_nucleotide_pos.inc(nuc_i, i);
 
-      m_quality_dist.inc(qualities.at(i) - PHRED_OFFSET_33);
+      const auto quality = qualities.at(i) - PHRED_OFFSET_33;
+      m_quality_pos.inc(nuc_i, i, quality);
+      m_quality_dist.inc(quality);
     }
 
     auto n_at = counts.at(ACGTN_TO_IDX('A')) + counts.at(ACGTN_TO_IDX('T'));
@@ -270,23 +269,13 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
 counts
 fastq_statistics::nucleotides_pos() const
 {
-  counts sum;
-  for (const auto& it : m_nucleotide_pos) {
-    sum += it;
-  }
-
-  return sum;
+  return m_nucleotide_pos.merge();
 }
 
 counts
 fastq_statistics::qualities_pos() const
 {
-  counts sum;
-  for (const auto& it : m_quality_pos) {
-    sum += it;
-  }
-
-  return sum;
+  return m_quality_pos.merge();
 }
 
 void
@@ -310,11 +299,8 @@ fastq_statistics::operator+=(const fastq_statistics& other)
   m_number_of_sampled_reads += other.m_number_of_sampled_reads;
   m_length_dist += other.m_length_dist;
   m_quality_dist += other.m_quality_dist;
-
-  for (size_t i = 0; i < m_nucleotide_pos.size(); ++i) {
-    m_nucleotide_pos.at(i) += other.m_nucleotide_pos.at(i);
-    m_quality_pos.at(i) += other.m_quality_pos.at(i);
-  }
+  m_nucleotide_pos += other.m_nucleotide_pos;
+  m_quality_pos += other.m_quality_pos;
 
   return *this;
 }

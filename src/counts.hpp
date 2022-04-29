@@ -34,7 +34,7 @@ public:
   }
 
   /** Increase the storage size to accomondate at least size items. */
-  void resize_up_to(size_t size)
+  inline void resize_up_to(size_t size)
   {
     if (m_values.size() < size) {
       m_values.resize(size);
@@ -42,7 +42,7 @@ public:
   }
 
   /** Increment the specified value. */
-  void inc(size_t n, T x = 1) { m_values.at(n) += x; }
+  inline void inc(size_t n, T x = 1) { m_values.at(n) += x; }
 
   /** The sum of values in the specified range. */
   uint64_t sum(size_t from = 0,
@@ -69,7 +69,7 @@ public:
   }
 
   /** Returns the count for n. */
-  T get(size_t n) const
+  inline T get(size_t n) const
   {
     if (n >= m_values.size()) {
       return T();
@@ -79,7 +79,7 @@ public:
   }
 
   /** Returns the number of values. */
-  size_t size() const { return m_values.size(); }
+  inline size_t size() const { return m_values.size(); }
 
   /** Return counts with trailing zero values trimmed. */
   counts_tmpl<T> trim() const
@@ -150,7 +150,76 @@ private:
   std::vector<T> m_values;
 };
 
+/**
+ * Counter for multiple classes of values, e.g. nucleotides. Allows for more
+ * cache-efficient counting of several types along a sequence. However this
+ * comes at the cost of making retrival of counter objects for each value type
+ * more expensive, since a new instance has to be created.
+ *
+ * Template variable N defines the number of value classes.
+ */
+template<typename T, size_t N>
+class indexed_counts
+{
+public:
+  /* Creates a counter of the specified size for each value class. */
+  explicit indexed_counts(size_t size = 0)
+    : m_counts(size * N)
+  {
+  }
+
+  /** Increase the storage size to accomondate at least size items. */
+  inline void resize_up_to(size_t size) { m_counts.resize_up_to(size * N); }
+
+  /** Increment the specified value for a given index. */
+  inline void inc(size_t i, size_t n, T x = 1) { m_counts.inc(i + n * N, x); }
+
+  /** Returns the count for n for a given index. */
+  inline T get(size_t i, size_t n) const { return m_counts.get(i + n * N); }
+
+  /** Create a standard counter object for a given value class */
+  counts_tmpl<T> to_counts(size_t i) const
+  {
+    counts_tmpl<T> counts(size());
+    for (size_t j = 0; j < counts.size(); ++j) {
+      counts.inc(j, get(i, j));
+    }
+
+    return counts;
+  }
+
+  /** Merges all value classes into a single counter */
+  counts_tmpl<T> merge() const
+  {
+    counts_tmpl<T> counts(size());
+    for (size_t i = 0; i < m_counts.size(); ++i) {
+      counts.inc(i / N, m_counts.get(i));
+    }
+
+    return counts;
+  }
+
+  /** Returns the number of values per index. */
+  inline size_t size() const { return m_counts.size() / N; }
+
+  /** += operator. */
+  indexed_counts<T, N>& operator+=(const indexed_counts<T, N>& other)
+  {
+    m_counts += other.m_counts;
+
+    return *this;
+  }
+
+private:
+  counts_tmpl<T> m_counts;
+};
+
 //! Standard class for counts data
 typedef counts_tmpl<int64_t> counts;
 //! Standard class for rates, averages, etc.
 typedef counts_tmpl<double> rates;
+
+//! Counter indexed by ACGT nucleotides using ACGT_TO_IDX
+using acgt_counts = indexed_counts<int64_t, 4>;
+//! Counter indexed by ACGTN nucleotides using ACGTN_TO_IDX
+using acgtn_counts = indexed_counts<int64_t, 5>;
