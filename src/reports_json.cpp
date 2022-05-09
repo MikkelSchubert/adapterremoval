@@ -475,7 +475,7 @@ write_report_output(const userconfig& config,
                  config.adapters.barcode_count() && config.paired_ended_mode);
 
   io_section(read_type::singleton, singleton, singleton_files)
-    .write_to_if(output, !demux_only);
+    .write_to_if(output, config.paired_ended_mode && !demux_only);
 
   io_section(read_type::discarded, discarded, discarded_files)
     .write_to_if(output, !demux_only);
