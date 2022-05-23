@@ -204,9 +204,9 @@ public:
   size_t max_values() const;
 
   /** Options that MUST be specified along with this argument. */
-  const string_vec& requires() const;
+  const string_vec& depends_on() const;
   /** Options that must NOT be specified along with this argument. */
-  const string_vec& conflicts() const;
+  const string_vec& conflicts_with() const;
 
   /** Returns the value associated with the argument as a string. */
   std::string to_str() const;
@@ -223,9 +223,9 @@ public:
   argument& deprecated();
 
   /** Option `key` MUST be specified along with this argument. */
-  argument& requires(const std::string& key);
+  argument& depends_on(const std::string& key);
   /** Option `key` must NOT be specified along with this argument. */
-  argument& conflicts(const std::string& key);
+  argument& conflicts_with(const std::string& key);
 
   bool_sink& bind_bool(bool* sink);
   uint_sink& bind_uint(unsigned* sink);
@@ -265,9 +265,9 @@ protected:
   std::string m_help;
 
   //! This argument must be specified along with these arguments.
-  string_vec m_requires;
+  string_vec m_depends_on;
   //! This argument cannot be specified along with these arguments.
-  string_vec m_conflicts;
+  string_vec m_conflicts_with;
 
   std::unique_ptr<sink> m_sink;
 

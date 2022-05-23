@@ -42,10 +42,10 @@ public:
   barcode_error(const std::string& message);
   barcode_error(const barcode_error& error);
 
-  virtual ~barcode_error() noexcept;
+  virtual ~barcode_error() override;
 
   /** Returns error message; string is owned by exception. */
-  virtual const char* what() const noexcept;
+  virtual const char* what() const noexcept override;
 
 private:
   //! Error message associated with exception.

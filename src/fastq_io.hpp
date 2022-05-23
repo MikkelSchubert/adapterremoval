@@ -62,6 +62,8 @@ public:
   /** Create chunk representing lines starting at line offset (1-based). */
   fastq_read_chunk(bool eof_ = false);
 
+  virtual ~fastq_read_chunk() override;
+
   //! Indicates that EOF has been reached.
   bool eof;
 
@@ -82,6 +84,8 @@ class fastq_output_chunk : public analytical_chunk
 public:
   /** Constructor; does nothing. */
   fastq_output_chunk(bool eof_ = false);
+
+  virtual ~fastq_output_chunk() override;
 
   /** Add FASTQ read to output buffer. */
   void add(const fastq& read);

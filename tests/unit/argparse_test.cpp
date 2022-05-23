@@ -573,19 +573,19 @@ TEST_CASE("deprecated argument alias", "[argparse::argument]")
 TEST_CASE("argument requires", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
-  arg.requires("--bar");
-  arg.requires("--zod");
+  arg.depends_on("--bar");
+  arg.depends_on("--zod");
 
-  REQUIRE(arg.requires() == string_vec{ "--bar", "--zod" });
+  REQUIRE(arg.depends_on() == string_vec{ "--bar", "--zod" });
 }
 
 TEST_CASE("argument conflicts with", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
-  arg.conflicts("--bar");
-  arg.conflicts("--zod");
+  arg.conflicts_with("--bar");
+  arg.conflicts_with("--zod");
 
-  REQUIRE(arg.conflicts() == string_vec{ "--bar", "--zod" });
+  REQUIRE(arg.conflicts_with() == string_vec{ "--bar", "--zod" });
 }
 
 TEST_CASE("default bind", "[argparse::argument]")
@@ -942,7 +942,7 @@ TEST_CASE("required option missing", "[argparse::parser]")
 {
   std::stringstream ss;
   argparse::parser p("My App", "v1234", "basic help");
-  p.add("--foo").requires("--bar");
+  p.add("--foo").depends_on("--bar");
   p.add("--bar");
   p.set_ostream(&ss);
 
@@ -955,7 +955,7 @@ TEST_CASE("required option missing", "[argparse::parser]")
 TEST_CASE("required option supplied", "[argparse::parser]")
 {
   argparse::parser p("My App", "v1234", "basic help");
-  p.add("--foo").requires("--bar");
+  p.add("--foo").depends_on("--bar");
   p.add("--bar");
 
   const char* args[] = { "exe", "--foo", "--bar" };
@@ -965,7 +965,7 @@ TEST_CASE("required option supplied", "[argparse::parser]")
 TEST_CASE("conflicting option missing", "[argparse::parser]")
 {
   argparse::parser p("My App", "v1234", "basic help");
-  p.add("--foo").conflicts("--bar");
+  p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
 
   const char* args[] = { "exe", "--foo" };
@@ -976,7 +976,7 @@ TEST_CASE("conflicting option supplied", "[argparse::parser]")
 {
   std::stringstream ss;
   argparse::parser p("My App", "v1234", "basic help");
-  p.add("--foo").conflicts("--bar");
+  p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
   p.set_ostream(&ss);
 

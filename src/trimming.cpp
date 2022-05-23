@@ -69,8 +69,15 @@ trim_read_termini(const userconfig& config,
       }
       break;
 
+    case read_type::discarded:
+    case read_type::singleton:
+    case read_type::unidentified_1:
+    case read_type::unidentified_2:
+    case read_type::max:
+      AR_FAIL("unsupported read type in trim_read_termini");
+
     default:
-      throw std::invalid_argument("Invalid read type in trim_read_termini");
+      AR_FAIL("invalid read type in trim_read_termini");
   }
 
   const auto length = read.length();
@@ -300,8 +307,13 @@ add_pe_statistics(const trimming_statistics& stats,
       stats.discarded->process(read);
       break;
 
-    default:
+    case read_type::max:
+    case read_type::unidentified_1:
+    case read_type::unidentified_2:
       AR_FAIL("unhandled read type");
+
+    default:
+      AR_FAIL("invalid read type");
   }
 }
 

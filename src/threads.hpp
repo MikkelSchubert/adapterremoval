@@ -39,10 +39,10 @@ public:
   /** Copy-constructor; takes an exiting error. */
   thread_error(const thread_error& error);
   /** Destructor; does nothing. */
-  ~thread_error() noexcept;
+  virtual ~thread_error() override;
 
   /** Returns error message; lifetime is the same as the object. */
-  virtual const char* what() const noexcept;
+  virtual const char* what() const noexcept override;
 
 private:
   //! User provided error message
@@ -58,6 +58,9 @@ class thread_abort : public thread_error
 {
 public:
   thread_abort();
+  thread_abort(const thread_abort& other) = default;
+
+  virtual ~thread_abort() override;
 };
 
 /**

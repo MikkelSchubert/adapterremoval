@@ -175,7 +175,7 @@ private:
    * @param best_alignment Do not return alignments worse than this alignment.
    * @param seq1 First sequence to align (mate 1).
    * @param seq2 Second sequence to align (mate 2 or adapter).
-   * @param offset Search for alignments from this offset.
+   * @param min_offset Search for alignments from this offset.
    */
   alignment_info pairwise_align_sequences(const alignment_info& best_alignment,
                                           const std::string& seq1,

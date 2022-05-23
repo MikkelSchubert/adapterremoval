@@ -114,7 +114,7 @@ public:
    *
    * @param trim_ns If true, ambiguous bases ('N') are trimmed.
    * @param low_quality Trim bases with a quality score at or below this value.
-   * @param winlen The length of the sliding window.
+   * @param window_size The length of the sliding window.
    * @param preserve5p Only trim from the 3p end if true.
    * @return A pair containing the number of 5' and 3' bases trimmed.
    */
@@ -261,7 +261,7 @@ to_nuc(size_t idx)
 {
   return "ACTG"[idx];
 }
-};
+}
 
 namespace ACGTN {
 //! The number of nucleotides
@@ -288,7 +288,7 @@ to_nuc(size_t idx)
 {
   return "NACTG"[idx];
 }
-};
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

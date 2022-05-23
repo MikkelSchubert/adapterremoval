@@ -46,7 +46,7 @@ fastq_error::fastq_error(const fastq_error& error)
 {
 }
 
-fastq_error::~fastq_error() noexcept {}
+fastq_error::~fastq_error() {}
 
 const char*
 fastq_error::what() const noexcept

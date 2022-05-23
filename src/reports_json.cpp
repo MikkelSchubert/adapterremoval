@@ -255,8 +255,10 @@ struct io_section
         return "unidentified_1";
       case read_type::unidentified_2:
         return "unidentified_2";
+      case read_type::max:
+        AR_FAIL("unsupported read type");
       default:
-        AR_FAIL("unknown read type");
+        AR_FAIL("invalid read type");
     }
   }
 

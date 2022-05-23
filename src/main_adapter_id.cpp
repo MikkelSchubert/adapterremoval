@@ -232,13 +232,13 @@ get_consensus_nt(const nt_counts& nts)
 /**
  * Prints description of consensus adapter sequence.
  *
- * @param counts Observed nucleotide frequencies.
+ * @param nt_counts Observed nucleotide frequencies.
  * @param kmers Observed kmer frequencies.
  * @param name Argument name for adapter (--adapter1 / adapter2)
  * @param ref Default sequence for the inferred adapter
  */
 void
-print_consensus_adapter(const nt_count_vec& counts,
+print_consensus_adapter(const nt_count_vec& nt_counts,
                         const kmer_map& kmers,
                         const std::string& name,
                         const std::string& ref)
@@ -246,8 +246,7 @@ print_consensus_adapter(const nt_count_vec& counts,
   std::stringstream sequence;
   std::stringstream qualities;
 
-  for (nt_count_vec::const_iterator it = counts.begin(); it != counts.end();
-       ++it) {
+  for (auto it = nt_counts.begin(); it != nt_counts.end(); ++it) {
     const std::pair<char, char> consensus = get_consensus_nt(*it);
 
     sequence << consensus.first;
@@ -336,6 +335,8 @@ public:
     }
   }
 
+  virtual ~adapter_identification() override;
+
   chunk_vec process(chunk_ptr chunk) override
   {
     AR_REQUIRE(chunk);
@@ -351,8 +352,8 @@ public:
     auto stats = m_stats.acquire();
 
     AR_REQUIRE(file_chunk.reads_1.size() == file_chunk.reads_2.size());
-    fastq_vec::iterator read_1 = file_chunk.reads_1.begin();
-    fastq_vec::iterator read_2 = file_chunk.reads_2.begin();
+    auto read_1 = file_chunk.reads_1.begin();
+    auto read_2 = file_chunk.reads_2.begin();
 
     while (read_1 != file_chunk.reads_1.end()) {
       process_reads(aligner, *stats, *read_1++, *read_2++);
@@ -422,15 +423,15 @@ private:
   }
 
   void process_adapter(const std::string& sequence,
-                       nt_count_vec& counts,
+                       nt_count_vec& nt_counts,
                        kmer_map& kmers)
   {
-    if (counts.size() < sequence.length()) {
-      counts.resize(sequence.length());
+    if (nt_counts.size() < sequence.length()) {
+      nt_counts.resize(sequence.length());
     }
 
-    for (size_t i = 0; i < std::min(counts.size(), sequence.length()); ++i) {
-      counts.at(i).increment(sequence.at(i));
+    for (size_t i = 0; i < std::min(nt_counts.size(), sequence.length()); ++i) {
+      nt_counts.at(i).increment(sequence.at(i));
     }
 
     if (sequence.length() >= KMER_LENGTH) {
@@ -466,3 +467,6 @@ identify_adapter_sequences(const userconfig& config)
 
   return !sch.run(config.max_threads);
 }
+
+// Out-of-line definition to make -Wweak-vtables happy
+adapter_identification::~adapter_identification() {}

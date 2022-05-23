@@ -64,10 +64,10 @@ public:
   fastq_error(const std::string& message);
   fastq_error(const fastq_error& error);
 
-  virtual ~fastq_error() noexcept;
+  virtual ~fastq_error() override;
 
   /** Returns error message; string is owned by exception. */
-  virtual const char* what() const noexcept;
+  virtual const char* what() const noexcept override;
 
 private:
   //! Error message associated with exception.

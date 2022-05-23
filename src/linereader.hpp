@@ -37,6 +37,9 @@ class io_error : public std::ios_base::failure
 {
 public:
   io_error(const std::string& message, int error_number = 0);
+  io_error(const io_error& other) = default;
+
+  virtual ~io_error() override;
 };
 
 /** Represents errors during GZip (de)compression. */
@@ -44,6 +47,9 @@ class gzip_error : public io_error
 {
 public:
   gzip_error(const std::string& message);
+  gzip_error(const gzip_error& other) = default;
+
+  virtual ~gzip_error() override;
 };
 
 /** Base-class for line reading; used by receivers. */
@@ -51,10 +57,10 @@ class line_reader_base
 {
 public:
   /** Does nothing. */
-  line_reader_base();
+  line_reader_base() {}
 
   /** Closes the file, if still open. */
-  virtual ~line_reader_base();
+  virtual ~line_reader_base() {}
 
   /** Reads a lien into dst, returning false on EOF. */
   virtual bool getline(std::string& dst) = 0;
@@ -136,9 +142,3 @@ private:
   //! Indicates if a read across the EOF has been attempted.
   bool m_eof;
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-inline line_reader_base::line_reader_base() {}
-
-inline line_reader_base::~line_reader_base() {}

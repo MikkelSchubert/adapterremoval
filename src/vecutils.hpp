@@ -38,8 +38,8 @@ merge_vectors(std::vector<T>& dst, const std::vector<T>& src)
     dst.resize(src.size());
   }
 
-  typename std::vector<T>::iterator dst_it = dst.begin();
-  typename std::vector<T>::const_iterator src_it = src.begin();
+  auto dst_it = dst.begin();
+  auto src_it = src.begin();
   while (src_it != src.end()) {
     *dst_it++ += *src_it++;
   }
@@ -59,8 +59,8 @@ merge_sub_vectors(std::vector<std::vector<T>>& dst,
     dst.resize(src.size());
   }
 
-  typename std::vector<std::vector<T>>::iterator dst_it = dst.begin();
-  typename std::vector<std::vector<T>>::const_iterator src_it = src.begin();
+  auto dst_it = dst.begin();
+  auto src_it = src.begin();
   while (src_it != src.end()) {
     merge_vectors(*dst_it++, *src_it++);
   }

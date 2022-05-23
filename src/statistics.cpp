@@ -102,32 +102,32 @@ duplication_statistics::summarize() const
     histogram[it.second]++;
   }
 
-  duplication_statistics::summary summary;
+  duplication_statistics::summary result;
 
-  summary.total_sequences.resize_up_to(DUPLICATION_LEVELS);
-  summary.unique_sequences.resize_up_to(DUPLICATION_LEVELS);
+  result.total_sequences.resize_up_to(DUPLICATION_LEVELS);
+  result.unique_sequences.resize_up_to(DUPLICATION_LEVELS);
 
   for (const auto& it : histogram) {
     const auto level = it.first;
     const auto count = correct_count(level, it.second);
 
     const auto slot = duplication_level(level);
-    summary.total_sequences.inc(slot, count * level);
-    summary.unique_sequences.inc(slot, count);
+    result.total_sequences.inc(slot, count * level);
+    result.unique_sequences.inc(slot, count);
   }
 
-  const auto unique_count = summary.unique_sequences.sum();
-  const auto total_count = summary.total_sequences.sum();
+  const auto unique_count = result.unique_sequences.sum();
+  const auto total_count = result.total_sequences.sum();
 
   if (total_count) {
-    summary.unique_frac = unique_count / static_cast<double>(total_count);
-    summary.total_sequences = summary.total_sequences / total_count;
-    summary.unique_sequences = summary.unique_sequences / unique_count;
+    result.unique_frac = unique_count / static_cast<double>(total_count);
+    result.total_sequences = result.total_sequences / total_count;
+    result.unique_sequences = result.unique_sequences / unique_count;
   } else {
-    summary.unique_frac = 1.0;
+    result.unique_frac = 1.0;
   }
 
-  return summary;
+  return result;
 }
 
 size_t
@@ -242,11 +242,11 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
     const std::string& sequence = read.sequence();
     const std::string& qualities = read.qualities();
 
-    std::vector<size_t> counts(ACGTN::size);
+    std::vector<size_t> nucls(ACGTN::size);
     for (size_t i = 0; i < sequence.length(); ++i) {
       const auto nuc_i = ACGTN::to_idx(sequence.at(i));
 
-      counts.at(nuc_i)++;
+      nucls.at(nuc_i)++;
       m_nucleotide_pos.inc(nuc_i, i);
 
       const auto quality = qualities.at(i) - PHRED_OFFSET_33;
@@ -254,9 +254,10 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       m_quality_dist.inc(quality);
     }
 
-    auto n_at = counts.at(ACGTN::to_idx('A')) + counts.at(ACGTN::to_idx('T'));
-    auto n_gc = counts.at(ACGTN::to_idx('G')) + counts.at(ACGTN::to_idx('C'));
+    auto n_at = nucls.at(ACGTN::to_idx('A')) + nucls.at(ACGTN::to_idx('T'));
+    auto n_gc = nucls.at(ACGTN::to_idx('G')) + nucls.at(ACGTN::to_idx('C'));
     if (n_at || n_gc) {
+      // FIXME: Causes dip at 50% if effective length == 99
       m_gc_content_dist.inc((100.0 * n_gc) / (n_at + n_gc) + 0.5);
     }
   }

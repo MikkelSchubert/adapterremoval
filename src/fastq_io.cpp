@@ -128,6 +128,8 @@ fastq_read_chunk::fastq_read_chunk(bool eof_)
 {
 }
 
+fastq_read_chunk::~fastq_read_chunk() {}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_output_chunk'
 
@@ -145,6 +147,8 @@ fastq_output_chunk::add(const fastq& read)
   nucleotides += read.length();
   read.into_string(reads);
 }
+
+fastq_output_chunk::~fastq_output_chunk() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'read_fastq'

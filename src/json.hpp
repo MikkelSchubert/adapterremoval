@@ -126,7 +126,7 @@ public:
   json_dict();
 
   /** See json_value::write */
-  void write(std::ostream& out, size_t indent = 0) const override;
+  virtual void write(std::ostream& out, size_t indent = 0) const override;
 
   /** Add and return a sub-dict with the specified key */
   json_dict_ptr dict(const std::string& key);

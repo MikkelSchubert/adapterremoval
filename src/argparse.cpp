@@ -157,11 +157,11 @@ parser::parse_args(int argc, char const* const* argv)
   }
 
   parse_result result = parse_result::ok;
-  for (const auto& it : m_args) {
-    if (it.argument && it.argument->is_set()) {
-      const auto& key = it.argument->key();
+  for (const auto& arg : m_args) {
+    if (arg.argument && arg.argument->is_set()) {
+      const auto& key = arg.argument->key();
 
-      for (const auto& requirement : it.argument->requires()) {
+      for (const auto& requirement : arg.argument->depends_on()) {
         if (!is_set(requirement)) {
           result = parse_result::error;
           *m_stream << "ERROR: Option " << requirement << " is required when "
@@ -169,7 +169,7 @@ parser::parse_args(int argc, char const* const* argv)
         }
       }
 
-      for (const auto& prohibited : it.argument->conflicts()) {
+      for (const auto& prohibited : arg.argument->conflicts_with()) {
         if (is_set(prohibited)) {
           result = parse_result::error;
           *m_stream << "ERROR: Option " << prohibited
@@ -336,7 +336,7 @@ parser::update_argument_map()
   bool any_errors = false;
   for (auto& it : m_args) {
     if (it.argument) {
-      for (const auto& key : it.argument->conflicts()) {
+      for (const auto& key : it.argument->conflicts_with()) {
         if (!m_keys.count(key)) {
           any_errors = true;
           *m_stream << "ERROR: " << it.argument->key() << " conflicts with "
@@ -344,7 +344,7 @@ parser::update_argument_map()
         }
       }
 
-      for (const auto& key : it.argument->requires()) {
+      for (const auto& key : it.argument->depends_on()) {
         if (!m_keys.count(key)) {
           any_errors = true;
           *m_stream << "ERROR: " << it.argument->key() << " requires "
@@ -386,8 +386,8 @@ parser::find_argument(const std::string& key)
     if (!candidates.empty()) {
       *m_stream << "\n    Did you mean" << std::endl;
 
-      for (const auto& key : candidates) {
-        *m_stream << "      " << key << std::endl;
+      for (const auto& candidate : candidates) {
+        *m_stream << "      " << candidate << std::endl;
       }
     }
   } else {
@@ -409,8 +409,8 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_key_short()
   , m_metavar(metavar)
   , m_help()
-  , m_requires()
-  , m_conflicts()
+  , m_depends_on()
+  , m_conflicts_with()
   , m_sink(new bool_sink(&m_default_sink))
   , m_stream(&std::cerr)
 {
@@ -494,15 +494,16 @@ argument::max_values() const
   return m_sink->max_values();
 }
 
-const string_vec& argument::requires() const
+const string_vec&
+argument::depends_on() const
 {
-  return m_requires;
+  return m_depends_on;
 }
 
 const string_vec&
-argument::conflicts() const
+argument::conflicts_with() const
 {
-  return m_conflicts;
+  return m_conflicts_with;
 }
 
 std::string
@@ -578,19 +579,20 @@ argument::deprecated()
   return *this;
 }
 
-argument& argument::requires(const std::string& key)
+argument&
+argument::depends_on(const std::string& key)
 {
   AR_REQUIRE(key.size() && key.at(0) == '-');
-  m_requires.push_back(key);
+  m_depends_on.push_back(key);
 
   return *this;
 }
 
 argument&
-argument::conflicts(const std::string& key)
+argument::conflicts_with(const std::string& key)
 {
   AR_REQUIRE(key.size() && key.at(0) == '-');
-  m_conflicts.push_back(key);
+  m_conflicts_with.push_back(key);
 
   return *this;
 }

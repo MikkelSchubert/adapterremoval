@@ -2584,7 +2584,7 @@ private:
     }
   }
 
-  ROBIN_HOOD(NOINLINE) void throwOverflowError() const
+  [[noreturn]] ROBIN_HOOD(NOINLINE)  void throwOverflowError() const
   {
 #if ROBIN_HOOD(HAS_EXCEPTIONS)
     throw std::overflow_error("robin_hood::map overflow");

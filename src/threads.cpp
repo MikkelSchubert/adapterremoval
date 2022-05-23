@@ -40,7 +40,7 @@ thread_error::thread_error(const thread_error& error)
 {
 }
 
-thread_error::~thread_error() noexcept {}
+thread_error::~thread_error() {}
 
 const char*
 thread_error::what() const noexcept
@@ -52,6 +52,8 @@ thread_abort::thread_abort()
   : thread_error("abort thread")
 {
 }
+
+thread_abort::~thread_abort() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 // print_locker

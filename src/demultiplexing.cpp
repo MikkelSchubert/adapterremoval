@@ -174,8 +174,8 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
   AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 
-  fastq_vec::iterator it_1 = read_chunk.reads_1.begin();
-  fastq_vec::iterator it_2 = read_chunk.reads_2.begin();
+  auto it_1 = read_chunk.reads_1.begin();
+  auto it_2 = read_chunk.reads_2.begin();
   for (; it_1 != read_chunk.reads_1.end(); ++it_1, ++it_2) {
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 

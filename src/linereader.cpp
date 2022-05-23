@@ -57,8 +57,23 @@ io_error::io_error(const std::string& message, int error_number)
 {
 }
 
+io_error::~io_error() {}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_error'
+
+#if defined(USE_LIBISAL)
+
+[[noreturn]] void
+throw_isal_error(const char* func, const char* msg)
+{
+  std::stringstream stream;
+  stream << func << " (isa-l): " << msg;
+
+  throw gzip_error(stream.str());
+}
+
+#else
 
 [[noreturn]] void
 throw_gzip_error(const char* func, z_stream* zstream, const char* msg)
@@ -72,22 +87,17 @@ throw_gzip_error(const char* func, z_stream* zstream, const char* msg)
   throw gzip_error(stream.str());
 }
 
-[[noreturn]] void
-throw_isal_error(const char* func, const char* msg)
-{
-  std::stringstream stream;
-  stream << func << " (isa-l): " << msg;
-
-  throw gzip_error(stream.str());
-}
-
 #define THROW_GZIP_ERROR(msg)                                                  \
   throw_gzip_error(__func__, m_gzip_stream.get(), (msg))
+
+#endif
 
 gzip_error::gzip_error(const std::string& message)
   : io_error(message)
 {
 }
+
+gzip_error::~gzip_error() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions for zlib/isa-l

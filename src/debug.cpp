@@ -38,7 +38,7 @@ assert_failed::assert_failed(const std::string& what)
 {
 }
 
-assert_failed::~assert_failed() noexcept {}
+assert_failed::~assert_failed() {}
 
 const char*
 assert_failed::what() const noexcept

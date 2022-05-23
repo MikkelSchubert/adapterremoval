@@ -39,6 +39,8 @@ public:
   {
   }
 
+  virtual ~reads_sink() override;
+
   chunk_vec process(chunk_ptr) override { return chunk_vec(); }
 };
 
@@ -75,3 +77,6 @@ fastq_report_only(const userconfig& config)
 
   return !write_html_report(config, stats, out_files.settings_html);
 }
+
+// Out-of-line definition to make -Wweak-vtables happy
+reads_sink::~reads_sink() {}

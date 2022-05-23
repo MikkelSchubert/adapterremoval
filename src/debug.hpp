@@ -37,10 +37,10 @@ public:
   assert_failed(const std::string& what);
 
   /** Does nothing. */
-  virtual ~assert_failed() noexcept;
+  virtual ~assert_failed() override;
 
   /** Returns user supplied error message; owned by object. */
-  virtual const char* what() const noexcept;
+  virtual const char* what() const noexcept override;
 
 private:
   //! User supplied error message
@@ -59,18 +59,18 @@ debug_raise_assert(const char* filename,
 
 /** Custom assert which prints various information on failure; always enabled.
  */
-#define _AR_ASSERT_2(test, what)                                               \
+#define AR_ASSERT_2_(test, what)                                               \
   do {                                                                         \
     if (!(test)) {                                                             \
       debug_raise_assert(__FILE__, __LINE__, what, #test);                     \
     }                                                                          \
   } while (0)
 
-#define _AR_ASSERT_1(test) _AR_ASSERT_2(test, nullptr)
+#define AR_ASSERT_1_(test) AR_ASSERT_2_(test, nullptr)
 
-#define _AR_ASSERT_GET(_1, _2, NAME, ...) NAME
+#define AR_ASSERT_GET_(_1, _2, NAME, ...) NAME
 #define AR_REQUIRE(...)                                                        \
-  _AR_ASSERT_GET(__VA_ARGS__, _AR_ASSERT_2, _AR_ASSERT_1, )(__VA_ARGS__)
+  AR_ASSERT_GET_(__VA_ARGS__, AR_ASSERT_2_, AR_ASSERT_1_, )(__VA_ARGS__)
 
 /** Raise an assert failure with a user-specified message. */
 #define AR_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, msg, nullptr)
@@ -87,7 +87,7 @@ debug_raise_assert(const char* filename,
   } while (0)
 
 #define AR_ASSERT(...)                                                         \
-  _AR_ASSERT_GET(__VA_ARGS__, _AR_ASSERT_2, _AR_ASSERT_1, )(__VA_ARGS__)
+  AR_ASSERT_GET_(__VA_ARGS__, AR_ASSERT_2_, AR_ASSERT_1_, )(__VA_ARGS__)
 
 #else
 

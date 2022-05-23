@@ -59,7 +59,7 @@ barcode_error::barcode_error(const barcode_error& error)
 {
 }
 
-barcode_error::~barcode_error() noexcept {}
+barcode_error::~barcode_error() {}
 
 const char*
 barcode_error::what() const noexcept

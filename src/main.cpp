@@ -25,8 +25,9 @@
 #include <iostream> // for operator<<, endl, basic_ostream, cerr, ost...
 #include <stddef.h> // for size_t
 
-#include "argparse.hpp" // for parse_result, parse_result::error
-#include "main.hpp"
+#include "argparse.hpp"   // for parse_result, parse_result::error
+#include "debug.hpp"      // for AR_FAIL
+#include "main.hpp"       // header
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
 
 // See main_adapter_rm.cpp
@@ -49,18 +50,19 @@ main(int argc, char* argv[])
 
   userconfig config(NAME, VERSION, HELPTEXT);
   switch (config.parse_args(argc, argv)) {
-    case argparse::parse_result::error: {
+    case argparse::parse_result::error:
       return 1;
-    }
 
-    case argparse::parse_result::exit: {
+    case argparse::parse_result::exit:
       // --version, --help, or similar used.
       return 0;
-    }
 
-    default: {
+    case argparse::parse_result::ok:
       // Ok
-    }
+      break;
+
+    default:
+      AR_FAIL("invalid argparse::parse_result");
   }
 
   auto returncode = 0;

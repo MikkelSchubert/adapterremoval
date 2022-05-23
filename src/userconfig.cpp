@@ -264,8 +264,8 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--identify-adapters")
     .help("Attempt to identify the adapter pair of PE reads, by searching for "
           "overlapping mate reads")
-    .conflicts("--demultiplex-only")
-    .conflicts("--report-only");
+    .conflicts_with("--demultiplex-only")
+    .conflicts_with("--report-only");
 
   argparser.add("--threads", "N")
     .help("Maximum number of threads")
@@ -295,21 +295,21 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--interleaved")
     .help("This option enables both the --interleaved-input option and the "
           "--interleaved-output option")
-    .conflicts("--file2")
-    .conflicts("--output2")
+    .conflicts_with("--file2")
+    .conflicts_with("--output2")
     .bind_bool(&interleaved);
   argparser.add("--interleaved-input")
     .help("The (single) input file provided contains both the mate 1 and mate "
           "2 reads, one pair after the other, with one mate 1 reads followed "
           "by one mate 2 read. This option is implied by the --interleaved "
           "option")
-    .conflicts("--file2")
+    .conflicts_with("--file2")
     .bind_bool(&interleaved_input);
   argparser.add("--interleaved-output")
     .help("If set, trimmed paired-end reads are written to a single file "
           "containing mate 1 and mate 2 reads, one pair after the other. This "
           "option is implied by the --interleaved option")
-    .conflicts("--output2")
+    .conflicts_with("--output2")
     .bind_bool(&interleaved_output);
 
   argparser.add_header("OUTPUT FILES:");
@@ -440,9 +440,9 @@ userconfig::userconfig(const std::string& name,
           "trimming using the modified Mott's algorithm. A value of zero or "
           "less disables trimming; a value greater than one is assumed to be "
           "a Phred encoded error rate (e.g. 13 ~= 0.05)")
-    .conflicts("--trimwindows")
-    .conflicts("--trimqualities")
-    .conflicts("--trimns")
+    .conflicts_with("--trimwindows")
+    .conflicts_with("--trimqualities")
+    .conflicts_with("--trimns")
     .bind_double(&trim_error_rate)
     .with_default(0);
 
@@ -531,17 +531,17 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--demultiplex-only")
     .help("Only carry out demultiplexing using the list of barcodes "
           "supplied with --barcode-list. No other processing is done")
-    .requires("--barcode-list")
-    .conflicts("--identify-adapters")
-    .conflicts("--report-only");
+    .depends_on("--barcode-list")
+    .conflicts_with("--identify-adapters")
+    .conflicts_with("--report-only");
 
   argparser.add_header("REPORTS:");
   argparser.add("--report-only")
     .help("Write a report of the input data without performing any processing "
           "of the FASTQ reads. Report-only post-trimming/demultiplexing runs "
           "can be accomplished by setting --output options to /dev/null")
-    .conflicts("--demultiplex-only")
-    .conflicts("--identify-adapters");
+    .conflicts_with("--demultiplex-only")
+    .conflicts_with("--identify-adapters");
 
   argparser.add("--report-sample-rate", "X")
     .help("Fraction of reads to use when generating base quality/composition "

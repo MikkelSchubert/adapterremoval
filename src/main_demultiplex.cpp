@@ -60,6 +60,8 @@ public:
   {
   }
 
+  virtual ~se_demuxed_processor() override;
+
   chunk_vec process(chunk_ptr chunk) override
   {
     auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
@@ -88,6 +90,8 @@ public:
   {
   }
 
+  virtual ~pe_demuxed_processor() override;
+
   chunk_vec process(chunk_ptr chunk) override
   {
     auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
@@ -96,8 +100,8 @@ public:
     auto stats = m_stats.acquire();
     trimmed_reads chunks(m_output, read_chunk.eof);
 
-    fastq_vec::iterator it_1 = read_chunk.reads_1.begin();
-    fastq_vec::iterator it_2 = read_chunk.reads_2.begin();
+    auto it_1 = read_chunk.reads_1.begin();
+    auto it_2 = read_chunk.reads_2.begin();
     while (it_1 != read_chunk.reads_1.end()) {
       fastq& read_1 = *it_1++;
       fastq& read_2 = *it_2++;
@@ -199,3 +203,9 @@ demultiplex_sequences(const userconfig& config)
 
   return !write_html_report(config, stats, out_files.settings_html);
 }
+
+// Out-of-line definition to make -Wweak-vtables happy
+se_demuxed_processor::~se_demuxed_processor() {}
+
+// Out-of-line definition to make -Wweak-vtables happy
+pe_demuxed_processor::~pe_demuxed_processor() {}
