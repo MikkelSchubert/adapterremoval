@@ -24,8 +24,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <cstdlib> // for size_t
-#include <iostream>
-#include <string> // for string
+#include <memory>  // for make_shared
+#include <string>  // for string
 
 #include "debug.hpp"     // for AR_REQUIRE
 #include "fastq.hpp"     // for ACGTN, fastq
@@ -283,7 +283,8 @@ void
 fastq_statistics::init_duplication_stats(size_t max_unique_sequences)
 {
   AR_REQUIRE(!m_duplication);
-  m_duplication = make_shared<duplication_statistics>(max_unique_sequences);
+  m_duplication =
+    std::make_shared<duplication_statistics>(max_unique_sequences);
 }
 
 const duplication_stats_ptr&
@@ -307,11 +308,11 @@ fastq_statistics::operator+=(const fastq_statistics& other)
 }
 
 trimming_statistics::trimming_statistics(double sample_rate)
-  : read_1(make_shared<fastq_statistics>(sample_rate))
-  , read_2(make_shared<fastq_statistics>(sample_rate))
-  , singleton(make_shared<fastq_statistics>(sample_rate))
-  , merged(make_shared<fastq_statistics>(sample_rate))
-  , discarded(make_shared<fastq_statistics>(sample_rate))
+  : read_1(std::make_shared<fastq_statistics>(sample_rate))
+  , read_2(std::make_shared<fastq_statistics>(sample_rate))
+  , singleton(std::make_shared<fastq_statistics>(sample_rate))
+  , merged(std::make_shared<fastq_statistics>(sample_rate))
+  , discarded(std::make_shared<fastq_statistics>(sample_rate))
   , insert_sizes()
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
@@ -362,8 +363,8 @@ demux_statistics::demux_statistics(double sample_rate)
   : barcodes()
   , unidentified(0)
   , ambiguous(0)
-  , unidentified_stats_1(make_shared<fastq_statistics>(sample_rate))
-  , unidentified_stats_2(make_shared<fastq_statistics>(sample_rate))
+  , unidentified_stats_1(std::make_shared<fastq_statistics>(sample_rate))
+  , unidentified_stats_2(std::make_shared<fastq_statistics>(sample_rate))
 {
 }
 
@@ -379,9 +380,9 @@ demux_statistics::total() const
 }
 
 statistics::statistics(double sample_rate)
-  : input_1(make_shared<fastq_statistics>(sample_rate))
-  , input_2(make_shared<fastq_statistics>(sample_rate))
-  , demultiplexing(make_shared<demux_statistics>(sample_rate))
+  : input_1(std::make_shared<fastq_statistics>(sample_rate))
+  , input_2(std::make_shared<fastq_statistics>(sample_rate))
+  , demultiplexing(std::make_shared<demux_statistics>(sample_rate))
   , trimming()
 {
 }

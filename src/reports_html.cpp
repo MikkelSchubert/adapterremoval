@@ -25,6 +25,7 @@
 #include <errno.h>  // for errno
 #include <fstream>  // for ofstream
 #include <iostream> // for ofstream, operator<<, basic_ostream, endl
+#include <memory>   // for make_shared
 #include <string>   // for operator+, string, operator<<
 #include <vector>   // for vector
 
@@ -38,7 +39,6 @@
 #include "statistics.hpp"            // for fastq_statistics, ...
 #include "strutils.hpp"              // for cli_formatter
 #include "userconfig.hpp"            // for userconfig, ...
-#include "utilities.hpp"             // for make_shared
 
 bool
 write_html_report(const userconfig& config,

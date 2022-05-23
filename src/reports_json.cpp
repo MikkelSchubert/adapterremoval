@@ -26,6 +26,7 @@
 #include <errno.h>  // for errno
 #include <fstream>  // for ofstream
 #include <iostream> // for ofstream, operator<<, basic_ostream, endl
+#include <memory>   // for make_shared
 #include <string>   // for operator+, string, operator<<
 #include <vector>   // for vector
 
@@ -38,7 +39,6 @@
 #include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
 #include "strutils.hpp"   // for cli_formatter
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
-#include "utilities.hpp"  // for make_shared
 
 void
 write_report_meta(const userconfig& config, json_dict& report)
@@ -435,11 +435,11 @@ write_report_output(const userconfig& config,
     return;
   }
 
-  fastq_stats_ptr output_1 = make_shared<fastq_statistics>();
-  fastq_stats_ptr output_2 = make_shared<fastq_statistics>();
-  fastq_stats_ptr merged = make_shared<fastq_statistics>();
-  fastq_stats_ptr singleton = make_shared<fastq_statistics>();
-  fastq_stats_ptr discarded = make_shared<fastq_statistics>();
+  fastq_stats_ptr output_1 = std::make_shared<fastq_statistics>();
+  fastq_stats_ptr output_2 = std::make_shared<fastq_statistics>();
+  fastq_stats_ptr merged = std::make_shared<fastq_statistics>();
+  fastq_stats_ptr singleton = std::make_shared<fastq_statistics>();
+  fastq_stats_ptr discarded = std::make_shared<fastq_statistics>();
 
   for (const auto& it : stats.trimming) {
     *output_1 += *it->read_1;

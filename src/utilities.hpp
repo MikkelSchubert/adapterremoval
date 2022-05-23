@@ -23,18 +23,8 @@
 \*************************************************************************/
 #pragma once
 
-#include <memory>   // for shared_ptr, unique_ptr
 #include <stdint.h> // for uint32_t
 
 /** Returns a seed value for a PRNG; not intended to be strongly random. */
 uint32_t
 prng_seed();
-
-template<typename T, typename... Args>
-std::unique_ptr<T>
-make_unique(Args&&... args)
-{
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-using std::make_shared;

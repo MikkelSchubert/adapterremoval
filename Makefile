@@ -5,7 +5,7 @@
 PREFIX := /usr/local
 
 # Default compilation flags
-CXXFLAGS := ${CXXFLAGS} -std=c++11 -O3
+CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 

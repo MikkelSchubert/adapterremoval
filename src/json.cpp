@@ -24,12 +24,12 @@
 #include <algorithm> // for find
 #include <cmath>     // for isnan
 #include <iomanip>   // for operator<<, setw
+#include <memory>    // for make_shared
 #include <sstream>   // for operator<<, basic_ostream, stringstream, ostream
 #include <utility>   // for swap
 
-#include "debug.hpp"     // for AR_REQUIRE
-#include "json.hpp"      // for definitions
-#include "utilities.hpp" // for make_shared
+#include "debug.hpp" // for AR_REQUIRE
+#include "json.hpp"  // for definitions
 
 std::string
 _escape(const std::string& value)
@@ -114,7 +114,7 @@ json_token::json_token(const std::string& value)
 json_ptr
 json_token::from_str(const std::string& value)
 {
-  return make_shared<json_token>(_escape(value));
+  return std::make_shared<json_token>(_escape(value));
 }
 
 json_ptr
@@ -131,7 +131,7 @@ json_token::from_str_vec(const string_vec& values)
 json_ptr
 json_token::from_i64(const int64_t value)
 {
-  return make_shared<json_token>(std::to_string(value));
+  return std::make_shared<json_token>(std::to_string(value));
 }
 
 json_ptr
@@ -148,7 +148,7 @@ json_token::from_i64_vec(const counts& values)
 json_ptr
 json_token::from_f64(const double value)
 {
-  return make_shared<json_token>(format_f64(value));
+  return std::make_shared<json_token>(format_f64(value));
 }
 
 json_ptr
@@ -165,13 +165,13 @@ json_token::from_f64_vec(const rates& values)
 json_ptr
 json_token::from_boolean(const bool value)
 {
-  return make_shared<json_token>(value ? "true" : "false");
+  return std::make_shared<json_token>(value ? "true" : "false");
 }
 
 json_ptr
 json_token::from_null()
 {
-  return make_shared<json_token>("null");
+  return std::make_shared<json_token>("null");
 }
 
 std::string
@@ -200,7 +200,7 @@ json_token::from_raw_vec(const string_vec& values)
   }
   ss << "]";
 
-  return make_shared<json_token>(ss.str());
+  return std::make_shared<json_token>(ss.str());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +238,7 @@ json_list::write(std::ostream& out, size_t indent_) const
 json_dict_ptr
 json_list::dict()
 {
-  auto ptr = make_shared<json_dict>();
+  auto ptr = std::make_shared<json_dict>();
   m_values.push_back(ptr);
 
   return ptr;
@@ -282,7 +282,7 @@ json_dict::write(std::ostream& out, size_t indent_) const
 json_dict_ptr
 json_dict::dict(const std::string& key)
 {
-  auto ptr = make_shared<json_dict>();
+  auto ptr = std::make_shared<json_dict>();
   _set(key, ptr);
 
   return ptr;
@@ -291,7 +291,7 @@ json_dict::dict(const std::string& key)
 json_list_ptr
 json_dict::list(const std::string& key)
 {
-  auto ptr = make_shared<json_list>();
+  auto ptr = std::make_shared<json_list>();
   _set(key, ptr);
 
   return ptr;
