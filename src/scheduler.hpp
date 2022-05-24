@@ -26,11 +26,12 @@
 #include <algorithm>          // for copy, max, copy_backward
 #include <atomic>             // for atomic_bool
 #include <condition_variable> // for condition_variable
-#include <memory>             // for unique_ptr, shared_ptr
+#include <memory>             // for unique_ptr, shared_ptr, make_unique
 #include <mutex>              // for mutex, lock_guard
 #include <queue>              // for queue
 #include <stddef.h>           // for size_t
 #include <string>             // for string
+#include <type_traits>        // for is_base_of
 #include <utility>            // for pair
 #include <vector>             // for vector
 
@@ -55,7 +56,7 @@ public:
   {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_values.emplace_back(new T(args...));
+    m_values.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
   }
 
   /** Acquire ownership of a value. **/
@@ -144,7 +145,7 @@ public:
    *                   ordered in order to ensure that output order matches
    *                   input order.
    */
-  analytical_step(processing_order step_order);
+  analytical_step(processing_order step_order, const std::string& name);
 
   /** Destructor; does nothing in base class. **/
   virtual ~analytical_step();
@@ -181,6 +182,9 @@ public:
   /** Returns the expected ordering (ordered / unordered) for input data. **/
   processing_order ordering() const;
 
+  /** Returns the name of the analytical step (type) */
+  const std::string& name() const;
+
   //! Copy construction not supported
   analytical_step(const analytical_step&) = delete;
   //! Assignment not supported
@@ -189,6 +193,8 @@ public:
 private:
   //! Stores the ordering of data chunks expected by the step
   const processing_order m_step_order;
+  //! Human readable name for step; for debugging purposes
+  const std::string m_name;
 };
 
 /**
@@ -209,13 +215,14 @@ public:
    * Adds a step to the pipeline.
    *
    * @param name Textual name for the (type) of step being added.
-   * @param step A analytical step; is deleted when scheduler is destroyed.
+   * @param args Arguments passed to the analytical step constructor.
    * @return The unique ID of the newly added step.
    *
    * The ID specified here is specified as the first value of 'chunk_pair's
    * in order to determine to which analytical step a chunk is assigned.
    **/
-  size_t add_step(const std::string& name, analytical_step* step);
+  template<typename T, typename... Args>
+  size_t add(Args&&... args);
 
   /** Runs the pipeline with n threads; return false on error. */
   bool run(int nthreads);
@@ -229,6 +236,8 @@ private:
   typedef std::shared_ptr<scheduler_step> step_ptr;
   typedef std::queue<step_ptr> runables;
   typedef std::vector<step_ptr> pipeline;
+
+  size_t add_step(std::unique_ptr<analytical_step> step);
 
   /** Wrapper function which calls do_run on the provided thread. */
   static void run_wrapper(scheduler*);
@@ -267,6 +276,19 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'scheduler'
+
+template<typename T, typename... Args>
+size_t
+scheduler::add(Args&&... args)
+{
+  static_assert(std::is_base_of<analytical_step, T>(),
+                "requires analytical_step sub-class");
+
+  return add_step(std::make_unique<T>(std::forward<Args>(args)...));
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'analytical_step'
 
 inline void
@@ -278,6 +300,12 @@ inline processing_order
 analytical_step::ordering() const
 {
   return m_step_order;
+}
+
+inline const std::string&
+analytical_step::name() const
+{
+  return m_name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

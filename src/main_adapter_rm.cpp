@@ -26,7 +26,7 @@
 #include <cstring>   // for size_t
 #include <iostream>  // for operator<<, endl, basic_ostream, cerr
 #include <limits>    // for numeric_limits
-#include <memory>    // for unique_ptr
+#include <memory>    // for unique_ptr, make_unique
 #include <string>    // for operator+, string
 #include <vector>    // for vector
 
@@ -41,20 +41,17 @@
 #include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
 
 size_t
-add_write_step(const userconfig& config,
-               scheduler& sch,
-               const std::string& name,
+add_write_step(scheduler& sch,
+               const userconfig& config,
                const std::string& filename)
 {
-  size_t step_id = sch.add_step("write_" + name, new write_fastq(filename));
+  size_t step_id = sch.add<write_fastq>(filename);
 
   if (config.gzip_stream) {
-    step_id = sch.add_step("gzip_" + name, new gzip_fastq(config, step_id));
+    step_id = sch.add<gzip_fastq>(config, step_id);
   } else if (config.gzip) {
-    step_id =
-      sch.add_step("gzip_" + name, new gzip_split_fastq(config, step_id));
-
-    step_id = sch.add_step("split_" + name, new split_fastq(step_id));
+    step_id = sch.add<gzip_split_fastq>(config, step_id);
+    step_id = sch.add<split_fastq>(step_id);
   }
 
   return step_id;
@@ -66,7 +63,6 @@ remove_adapter_sequences(const userconfig& config)
   std::cerr << "Trimming reads" << std::endl;
 
   scheduler sch;
-  std::vector<reads_processor*> processors;
 
   statistics stats = statistics_builder()
                        .sample_rate(config.report_sample_rate)
@@ -81,41 +77,39 @@ remove_adapter_sequences(const userconfig& config)
 
   // Step 4 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    const std::string& sample = config.adapters.get_sample_name(nth);
     auto& mapping = out_files.samples.at(nth);
 
     for (const auto& filename : mapping.filenames) {
-      mapping.steps.push_back(add_write_step(config, sch, sample, filename));
+      mapping.steps.push_back(add_write_step(sch, config, filename));
     }
+
+    stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
     if (config.paired_ended_mode) {
-      processors.push_back(new pe_reads_processor(config, mapping, nth));
+      steps.samples.push_back(sch.add<pe_reads_processor>(
+        config, mapping, nth, stats.trimming.back()));
     } else {
-      processors.push_back(new se_reads_processor(config, mapping, nth));
+      steps.samples.push_back(sch.add<se_reads_processor>(
+        config, mapping, nth, stats.trimming.back()));
     }
-
-    steps.samples.push_back(sch.add_step("trim_" + sample, processors.back()));
   }
 
   // Step 3: Parse and demultiplex reads based on single or double indices
   if (config.adapters.barcode_count()) {
-    steps.unidentified_1 = add_write_step(
-      config, sch, "unidentified_mate_1", out_files.unidentified_1);
+    steps.unidentified_1 =
+      add_write_step(sch, config, out_files.unidentified_1);
 
     if (config.paired_ended_mode && !config.interleaved_output) {
-      steps.unidentified_2 = add_write_step(
-        config, sch, "unidentified_mate_2", out_files.unidentified_2);
+      steps.unidentified_2 =
+        add_write_step(sch, config, out_files.unidentified_2);
     }
 
     if (config.paired_ended_mode) {
-      processing_step = sch.add_step(
-        "demultiplex",
-        new demultiplex_pe_reads(config, steps, stats.demultiplexing));
-
+      processing_step =
+        sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
     } else {
-      processing_step = sch.add_step(
-        "demultiplex",
-        new demultiplex_se_reads(config, steps, stats.demultiplexing));
+      processing_step =
+        sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
     }
   } else {
     processing_step = steps.samples.back();
@@ -123,18 +117,13 @@ remove_adapter_sequences(const userconfig& config)
 
   // Step 2: Post-process, validate, and collect statistics on FASTQ reads
   const size_t postproc_step =
-    sch.add_step("post_process_fastq",
-                 new post_process_fastq(config, processing_step, &stats));
+    sch.add<post_process_fastq>(config, processing_step, &stats);
 
   // Step 1: Read input file(s)
-  sch.add_step("read_fastq", new read_fastq(config, postproc_step));
+  sch.add<read_fastq>(config, postproc_step);
 
   if (!sch.run(config.max_threads)) {
     return 1;
-  }
-
-  for (auto ptr : processors) {
-    stats.trimming.push_back(ptr->get_final_statistics());
   }
 
   if (!write_json_report(config, stats, out_files.settings_json)) {

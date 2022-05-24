@@ -63,7 +63,7 @@ const size_t post_demux_steps::disabled = static_cast<size_t>(-1);
 demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
                                      demux_stats_ptr stats)
-  : analytical_step(processing_order::ordered)
+  : analytical_step(processing_order::ordered, "demultiplex_reads")
   , m_barcodes(config.adapters.get_barcodes())
   , m_barcode_table(m_barcodes,
                     config.barcode_mm,

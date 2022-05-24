@@ -35,7 +35,7 @@ class reads_sink : public analytical_step
 {
 public:
   reads_sink()
-    : analytical_step(processing_order::unordered)
+    : analytical_step(processing_order::unordered, "reads_sink")
   {
   }
 
@@ -57,14 +57,14 @@ fastq_report_only(const userconfig& config)
                        .initialize();
 
   // Discard all written reads
-  size_t sink_step = sch.add_step("sink", new reads_sink());
+  size_t sink_step = sch.add<reads_sink>();
 
   // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
-  const size_t postproc_step = sch.add_step(
-    "post_process_fastq", new post_process_fastq(config, sink_step, &stats));
+  const size_t postproc_step =
+    sch.add<post_process_fastq>(config, sink_step, &stats);
 
   // Step 1: Read input file(s)
-  sch.add_step("read_fastq", new read_fastq(config, postproc_step));
+  sch.add<read_fastq>(config, postproc_step);
 
   if (!sch.run(config.max_threads)) {
     return 1;

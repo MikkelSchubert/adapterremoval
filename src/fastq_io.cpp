@@ -180,7 +180,7 @@ read_record(joined_line_readers& reader,
 }
 
 read_fastq::read_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(processing_order::ordered_io)
+  : analytical_step(processing_order::ordered_io, "read_fastq")
   , m_io_input_1_base(config.input_files_1)
   , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
@@ -297,7 +297,7 @@ read_fastq::finalize()
 post_process_fastq::post_process_fastq(const userconfig& config,
                                        size_t next_step,
                                        statistics* stats)
-  : analytical_step(processing_order::ordered)
+  : analytical_step(processing_order::ordered, "post_process_fastq")
   , m_encoding(config.io_encoding)
   , m_mate_separator(config.mate_separator)
   , m_statistics_1(stats ? stats->input_1 : nullptr)
@@ -390,7 +390,7 @@ post_process_fastq::finalize()
 // Implementations for 'gzip_fastq'
 
 gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(processing_order::ordered)
+  : analytical_step(processing_order::ordered, "gzip_fastq")
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
@@ -459,7 +459,7 @@ gzip_fastq::process(chunk_ptr chunk)
 // Implementations for 'split_fastq'
 
 split_fastq::split_fastq(size_t next_step)
-  : analytical_step(processing_order::ordered)
+  : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
@@ -524,7 +524,7 @@ split_fastq::process(chunk_ptr chunk)
 // Implementations for 'gzip_split_fastq'
 
 gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(processing_order::unordered)
+  : analytical_step(processing_order::unordered, "gzip_split_fastq")
   , m_config(config)
   , m_next_step(next_step)
   , m_buffers()
@@ -593,7 +593,8 @@ const std::string STDOUT = "/dev/stdout";
 write_fastq::write_fastq(const std::string& filename)
   // Allow disk IO and writing to STDOUT at the same time
   : analytical_step(filename == STDOUT ? processing_order::ordered
-                                       : processing_order::ordered_io)
+                                       : processing_order::ordered_io,
+                    "write_fastq")
   , m_output(filename)
   , m_eof(false)
 #ifdef AR_DEBUG_BUILD

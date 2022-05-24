@@ -66,16 +66,19 @@ class reads_processor : public analytical_step
 public:
   reads_processor(const userconfig& config,
                   const output_sample_files& output,
-                  size_t nth);
+                  const size_t nth,
+                  trim_stats_ptr sink);
 
-  trim_stats_ptr get_final_statistics();
+  virtual void finalize() override;
 
 protected:
   const userconfig& m_config;
   const fastq_pair_vec m_adapters;
-  threadstate<trimming_statistics> m_stats;
   const output_sample_files& m_output;
   const size_t m_nth;
+
+  threadstate<trimming_statistics> m_stats;
+  trim_stats_ptr m_stats_sink;
 };
 
 class se_reads_processor : public reads_processor
@@ -83,7 +86,8 @@ class se_reads_processor : public reads_processor
 public:
   se_reads_processor(const userconfig& config,
                      const output_sample_files& output,
-                     size_t nth);
+                     const size_t nth,
+                     trim_stats_ptr sink);
 
   chunk_vec process(chunk_ptr chunk) override;
 };
@@ -93,7 +97,8 @@ class pe_reads_processor : public reads_processor
 public:
   pe_reads_processor(const userconfig& config,
                      const output_sample_files& output,
-                     size_t nth);
+                     const size_t nth,
+                     trim_stats_ptr sink);
 
   chunk_vec process(chunk_ptr chunk) override;
 };

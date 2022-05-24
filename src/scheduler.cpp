@@ -24,6 +24,7 @@
 #include <algorithm>    // for max
 #include <exception>    // for exception
 #include <iostream>     // for operator<<, basic_ostream, endl, cerr
+#include <memory>       // for make_unique
 #include <system_error> // for system_error
 #include <thread>       // for thread
 
@@ -42,8 +43,10 @@ analytical_chunk::~analytical_chunk() {}
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
-analytical_step::analytical_step(processing_order step_order)
+analytical_step::analytical_step(processing_order step_order,
+                                 const std::string& name)
   : m_step_order(step_order)
+  , m_name(name)
 {
 }
 
@@ -59,13 +62,13 @@ class scheduler_step
 {
 public:
   /** Constructor; name is used in error messages related to bugs */
-  scheduler_step(analytical_step* value, const std::string& name)
-    : m_ptr(value)
+  scheduler_step(std::unique_ptr<analytical_step> value)
+    : m_ptr(std::move(value))
     , m_next_chunk(0)
     , m_last_chunk(0)
     , m_queue()
-    , m_name(name)
   {
+    AR_REQUIRE(m_ptr);
   }
 
   /** Returns true if the chunk can be executed now; requires locking */
@@ -104,7 +107,7 @@ public:
   }
 
   /** Name of the analytical task; for error messages when bugs are detected */
-  const std::string name() const { return m_name; }
+  const std::string name() const { return m_ptr->name(); }
 
   /** Name of the analytical task; for error messages when bugs are detected */
   processing_order ordering() const { return m_ptr->ordering(); }
@@ -141,8 +144,6 @@ private:
   size_t m_last_chunk;
   //! (Ordered) vector of chunks to be processed
   std::vector<chunk_pair> m_queue;
-  //! Short name for step used for error reporting
-  std::string m_name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,12 +166,12 @@ scheduler::scheduler()
 scheduler::~scheduler() {}
 
 size_t
-scheduler::add_step(const std::string& name, analytical_step* step)
+scheduler::add_step(std::unique_ptr<analytical_step> step)
 {
   AR_REQUIRE(step);
 
   const size_t step_id = m_steps.size();
-  m_steps.emplace_back(new scheduler_step(step, name));
+  m_steps.push_back(std::make_shared<scheduler_step>(std::move(step)));
 
   return step_id;
 }

@@ -326,7 +326,7 @@ class adapter_identification : public analytical_step
 {
 public:
   adapter_identification(const userconfig& config)
-    : analytical_step(processing_order::unordered)
+    : analytical_step(processing_order::unordered, "adapter_identification")
     , m_config(config)
     , m_stats()
   {
@@ -455,15 +455,13 @@ identify_adapter_sequences(const userconfig& config)
   scheduler sch;
 
   // Step 3: Attempt to identify adapters through pair-wise alignments
-  const size_t identification_step =
-    sch.add_step("identify_adapters", new adapter_identification(config));
+  const size_t id_step = sch.add<adapter_identification>(config);
 
   // Step 2: Post-process and validate FASTQ reads
-  const size_t postproc_step = sch.add_step(
-    "post_process_fastq", new post_process_fastq(config, identification_step));
+  const size_t postproc_step = sch.add<post_process_fastq>(config, id_step);
 
   // Step 1: Read input file(s)
-  sch.add_step("read_fastq", new read_fastq(config, postproc_step));
+  sch.add<read_fastq>(config, postproc_step);
 
   return !sch.run(config.max_threads);
 }

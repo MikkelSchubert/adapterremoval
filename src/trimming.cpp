@@ -23,6 +23,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm> // for min
+#include <memory>    // for make_unique
 #include <stdexcept> // for invalid_argument
 #include <utility>   // for pair, move
 
@@ -203,28 +204,29 @@ trimmed_reads::finalize()
 
 reads_processor::reads_processor(const userconfig& config,
                                  const output_sample_files& output,
-                                 size_t nth)
-  : analytical_step(processing_order::unordered)
+                                 const size_t nth,
+                                 trim_stats_ptr sink)
+  : analytical_step(processing_order::unordered, "reads_processor")
   , m_config(config)
   , m_adapters(config.adapters.get_adapter_set(nth))
-  , m_stats()
   , m_output(output)
   , m_nth(nth)
+  , m_stats()
+  , m_stats_sink(sink)
 {
+  AR_REQUIRE(m_stats_sink);
+
   for (size_t i = 0; i < m_config.max_threads; ++i) {
     m_stats.emplace_back(m_config.report_sample_rate);
   }
 }
 
-trim_stats_ptr
-reads_processor::get_final_statistics()
+void
+reads_processor::finalize()
 {
-  auto stats = m_stats.acquire();
   while (auto next = m_stats.try_acquire()) {
-    *stats += *next;
+    *m_stats_sink += *next;
   }
-
-  return stats;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -232,8 +234,9 @@ reads_processor::get_final_statistics()
 
 se_reads_processor::se_reads_processor(const userconfig& config,
                                        const output_sample_files& output,
-                                       size_t nth)
-  : reads_processor(config, output, nth)
+                                       const size_t nth,
+                                       trim_stats_ptr sink)
+  : reads_processor(config, output, nth, sink)
 {
 }
 
@@ -319,8 +322,9 @@ add_pe_statistics(const trimming_statistics& stats,
 
 pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const output_sample_files& output,
-                                       size_t nth)
-  : reads_processor(config, output, nth)
+                                       const size_t nth,
+                                       trim_stats_ptr sink)
+  : reads_processor(config, output, nth, sink)
 {
 }
 
