@@ -54,34 +54,38 @@ private:
 [[noreturn]] void
 debug_raise_assert(const char* filename,
                    size_t lineno,
-                   const char* what,
-                   const char* test);
+                   const std::string& test,
+                   const std::string& msg);
 
 /** Custom assert which prints various information on failure; always enabled.
  */
-#define AR_ASSERT_2_(test, what)                                               \
+#define AR_ASSERT_2_(test, msg)                                                \
   do {                                                                         \
     if (!(test)) {                                                             \
-      debug_raise_assert(__FILE__, __LINE__, what, #test);                     \
+      debug_raise_assert(__FILE__, __LINE__, #test, msg);                      \
     }                                                                          \
   } while (0)
 
-#define AR_ASSERT_1_(test) AR_ASSERT_2_(test, nullptr)
+#define AR_ASSERT_1_(test) AR_ASSERT_2_(test, std::string())
 
 #define AR_ASSERT_GET_(_1, _2, NAME, ...) NAME
 #define AR_REQUIRE(...)                                                        \
   AR_ASSERT_GET_(__VA_ARGS__, AR_ASSERT_2_, AR_ASSERT_1_, )(__VA_ARGS__)
 
 /** Raise an assert failure with a user-specified message. */
-#define AR_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, msg, nullptr)
+#define AR_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, std::string(), msg)
 
 #ifdef AR_DEBUG_BUILD
 
+#define AR_MERGE1_(a, b) a##b
+#define AR_MERGE_(a, b) AR_MERGE1_(a, b)
+
 /** Raise a failure if a scope is accessed more than once at the same time. */
 #define AR_ASSERT_SINGLE_THREAD(lock)                                          \
-  std::unique_lock<std::mutex> locker(lock, std::defer_lock);                  \
+  std::unique_lock<std::mutex> AR_MERGE_(locker, __LINE__)(lock,               \
+                                                           std::defer_lock);   \
   do {                                                                         \
-    if (!locker.try_lock()) {                                                  \
+    if (!AR_MERGE_(locker, __LINE__).try_lock()) {                             \
       AR_FAIL("race condition detected");                                      \
     }                                                                          \
   } while (0)

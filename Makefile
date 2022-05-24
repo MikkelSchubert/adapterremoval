@@ -194,6 +194,7 @@ build/$(PROG): $(OBJS)
 TEST_DIR := build/tests
 TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/debug.o \
+             $(TEST_DIR)/debug_test.o \
              $(TEST_DIR)/alignment.o \
              $(TEST_DIR)/alignment_tables.o \
              $(TEST_DIR)/alignment_test.o \

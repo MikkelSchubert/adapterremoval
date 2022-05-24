@@ -1,7 +1,7 @@
 /*************************************************************************\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
  *                                                                       *
- * Copyright (C) 2015 by Mikkel Schubert - mikkelsch@gmail.com           *
+ * Copyright (C) 2022 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
  * If you use the program, please cite the paper:                        *
  * S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation *
@@ -21,54 +21,99 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdlib>  // for abort, size_t
-#include <iostream> // for operator<<, basic_ostream, stringstream, endl
-#include <sstream>  // for stringstream
-#include <string>   // for string
+#include <mutex>
+#include <sstream>
 
 #include "debug.hpp"
+#include "testing.hpp"
 
-assert_failed::assert_failed(const assert_failed& errror)
-  : m_what(errror.m_what)
+TEST_CASE("assert on true value")
 {
+  AR_ASSERT(1 == 1);
 }
 
-assert_failed::assert_failed(const std::string& what)
-  : m_what(what)
+TEST_CASE("assert on false value")
 {
-}
+  std::string what;
+  try {
+    AR_ASSERT(1 == 2);
+  } catch (const assert_failed& error) {
+    what = error.what();
+  }
 
-assert_failed::~assert_failed() {}
-
-const char*
-assert_failed::what() const noexcept
-{
-  return m_what.c_str();
-}
-
-void
-debug_raise_assert(const char* filename,
-                   size_t lineno,
-                   const std::string& test,
-                   const std::string& msg)
-{
   std::stringstream message;
-  message << "Assertion failed at " << filename << ":" << lineno << ": ";
-  if (test.empty() || msg.empty()) {
-    message << test << msg;
-  } else {
-    message << msg << ": " << test;
+  message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
+          << ": 1 == 2";
+
+  REQUIRE(what == message.str());
+}
+
+TEST_CASE("assert on true value with message")
+{
+  AR_ASSERT(!false, "this is dummy message");
+}
+
+TEST_CASE("assert on false value with message")
+{
+  std::string what;
+  try {
+    AR_ASSERT(!!false, "message goes here");
+  } catch (const assert_failed& error) {
+    what = error.what();
+  }
+
+  std::stringstream message;
+  message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
+          << ": message goes here: !!false";
+
+  REQUIRE(what == message.str());
+}
+
+TEST_CASE("assert fail")
+{
+  std::string what;
+  try {
+    AR_FAIL("big fail");
+  } catch (const assert_failed& error) {
+    what = error.what();
+  }
+
+  std::stringstream message;
+  message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
+          << ": big fail";
+
+  REQUIRE(what == message.str());
+}
+
+TEST_CASE("assert single thread")
+{
+  std::mutex lock;
+
+  {
+    AR_ASSERT_SINGLE_THREAD(lock);
+  }
+
+  {
+    AR_ASSERT_SINGLE_THREAD(lock);
+  }
+}
+
+TEST_CASE("assert single thread failed")
+{
+  std::mutex lock;
+
+  AR_ASSERT_SINGLE_THREAD(lock);
+
+  bool caught_exception = false;
+  try {
+    AR_ASSERT_SINGLE_THREAD(lock);
+  } catch (const assert_failed&) {
+    caught_exception = true;
   }
 
 #ifdef AR_DEBUG_BUILD
-  throw assert_failed(message.str());
+  REQUIRE(caught_exception);
 #else
-  std::cerr << "\nFATAL ERROR:\n"
-            << message.str() << "\n\n"
-            << "This should not happen! Please file a bug-report at\n    "
-            << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
-            << std::endl;
-
-  std::abort();
+  REQUIRE_FALSE(caught_exception);
 #endif
 }
