@@ -26,6 +26,7 @@
 #include <cerrno>    // for errno
 #include <cstring>   // for size_t, strerror, memcpy
 #include <iostream>  // for operator<<, basic_ostream, char_traits, endl
+#include <memory>    // for make_unique
 #include <utility>   // for move, swap
 
 #ifdef USE_LIBDEFLATE
@@ -214,7 +215,7 @@ read_fastq::process(chunk_ptr chunk)
     return chunk_vec();
   }
 
-  read_chunk_ptr file_chunk(new fastq_read_chunk());
+  auto file_chunk = std::make_unique<fastq_read_chunk>();
   if (m_single_end) {
     read_single_end(file_chunk);
   } else {
@@ -498,7 +499,7 @@ split_fastq::process(chunk_ptr chunk)
     m_offset += n;
 
     if (m_offset == GZIP_BLOCK_SIZE) {
-      output_chunk_ptr block(new fastq_output_chunk());
+      auto block = std::make_unique<fastq_output_chunk>();
       block->buffers.emplace_back(GZIP_BLOCK_SIZE, std::move(m_buffer));
 
       chunks.emplace_back(m_next_step, std::move(block));
@@ -509,7 +510,7 @@ split_fastq::process(chunk_ptr chunk)
   }
 
   if (m_eof) {
-    output_chunk_ptr block(new fastq_output_chunk(true));
+    auto block = std::make_unique<fastq_output_chunk>(true);
     block->buffers.emplace_back(m_offset, std::move(m_buffer));
     chunks.emplace_back(m_next_step, std::move(block));
 

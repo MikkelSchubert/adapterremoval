@@ -21,6 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <memory> // for make_unique
 #include <vector> // for vector
 
 #include "linereader_joined.hpp"
@@ -68,7 +69,7 @@ joined_line_readers::open_next_file()
     return false;
   }
 
-  m_reader.reset(new line_reader(m_filenames.back()));
+  m_reader = std::make_unique<line_reader>(m_filenames.back());
   m_filename = m_filenames.back();
   m_current_line = 1;
 

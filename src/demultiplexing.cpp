@@ -22,15 +22,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <memory>  // for unique_ptr
+#include <memory>  // for unique_ptr, make_unique
 #include <utility> // for move
 
-#include "adapterset.hpp"  // for adapter_set
-#include "commontypes.hpp" // for fastq_vec
-#include "debug.hpp"       // for AR_REQUIRE, AR_ASSERT_SINGLE_THREAD
-#include "demultiplexing.hpp"
-#include "fastq_io.hpp"   // for fastq_read_chunk, fastq_output_chunk, rea...
-#include "userconfig.hpp" // for userconfig, fastq_encoding_ptr
+#include "adapterset.hpp"     // for adapter_set
+#include "commontypes.hpp"    // for fastq_vec
+#include "debug.hpp"          // for AR_REQUIRE, AR_ASSERT_SINGLE_THREAD
+#include "demultiplexing.hpp" // header
+#include "fastq_io.hpp"       // for fastq_read_chunk, fastq_output_chunk, ...
+#include "userconfig.hpp"     // for userconfig, fastq_encoding_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -41,7 +41,7 @@ flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
   if (eof || ptr->nucleotides >= INPUT_BLOCK_SIZE) {
     ptr->eof = eof;
     output.push_back(chunk_pair(step, std::move(ptr)));
-    ptr.reset(new T());
+    ptr = std::make_unique<T>();
   }
 }
 
@@ -83,17 +83,17 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   AR_REQUIRE(m_statistics->barcodes.size() == m_barcodes.size());
 
   AR_REQUIRE(m_steps.unidentified_1 != post_demux_steps::disabled);
-  m_unidentified_1.reset(new fastq_output_chunk());
+  m_unidentified_1 = std::make_unique<fastq_output_chunk>();
 
   if (m_steps.unidentified_2 != post_demux_steps::disabled &&
       m_steps.unidentified_1 != m_steps.unidentified_2) {
-    m_unidentified_2.reset(new fastq_output_chunk());
+    m_unidentified_2 = std::make_unique<fastq_output_chunk>();
   }
 
   for (const auto next_step : m_steps.samples) {
     AR_REQUIRE(next_step != post_demux_steps::disabled);
 
-    m_cache.push_back(read_chunk_ptr(new fastq_read_chunk()));
+    m_cache.push_back(std::make_unique<fastq_read_chunk>());
   }
 }
 

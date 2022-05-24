@@ -26,13 +26,14 @@
 #include <iomanip>     // for operator<<, setw
 #include <iostream>    // for operator<<, basic_ostream, endl, cerr, ostream
 #include <limits>      // for numeric_limits
+#include <memory>      // for make_unique, make_shared
 #include <set>         // for set
 #include <sstream>     // for stringstream
 #include <stdexcept>   // for invalid_argument
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>    // for STDERR_FILENO
 
-#include "argparse.hpp"
+#include "argparse.hpp" // header
 #include "debug.hpp"    // for AR_REQUIRE
 #include "strutils.hpp" // for cli_formatter, str_to_unsigned, toupper
 
@@ -203,7 +204,7 @@ parser::is_set(const std::string& key) const
 argument&
 parser::add(const std::string& name, const std::string& metavar)
 {
-  argument_ptr ptr = argument_ptr(new argument(name, metavar));
+  auto ptr = std::make_shared<argument>(name, metavar);
   m_args.push_back({ std::string(), ptr });
   ptr->set_ostream(m_stream);
 
@@ -411,7 +412,7 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_help()
   , m_depends_on()
   , m_conflicts_with()
-  , m_sink(new bool_sink(&m_default_sink))
+  , m_sink(std::make_unique<bool_sink>(&m_default_sink))
   , m_stream(&std::cerr)
 {
   AR_REQUIRE(key.size() && key.at(0) == '-');
@@ -516,10 +517,9 @@ template<typename A, typename B>
 A&
 bind(std::unique_ptr<sink>& ptr, B* sink)
 {
-  auto* argsink = new A(sink);
-  ptr.reset(argsink);
+  ptr = std::make_unique<A>(sink);
 
-  return *argsink;
+  return static_cast<A&>(*ptr);
 }
 
 bool_sink&

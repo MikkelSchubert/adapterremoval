@@ -173,7 +173,7 @@ trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
     AR_REQUIRE(map.filenames.at(i).size());
     AR_REQUIRE(map.steps.at(i) != output_sample_files::disabled);
 
-    m_chunks.emplace_back(new fastq_output_chunk(eof));
+    m_chunks.emplace_back(std::make_unique<fastq_output_chunk>(eof));
   }
 }
 
