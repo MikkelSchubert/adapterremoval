@@ -301,6 +301,7 @@ fastq_statistics::operator+=(const fastq_statistics& other)
   m_number_of_sampled_reads += other.m_number_of_sampled_reads;
   m_length_dist += other.m_length_dist;
   m_quality_dist += other.m_quality_dist;
+  m_gc_content_dist += other.m_gc_content_dist;
   m_nucleotide_pos += other.m_nucleotide_pos;
   m_quality_pos += other.m_quality_pos;
 
