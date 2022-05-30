@@ -162,8 +162,7 @@ write_report_summary(const userconfig& config,
 
     const auto samples = summary_demux->dict("samples");
     for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-      summary_demux->i64(config.adapters.get_sample_name(i),
-                         demux.barcodes.at(i));
+      samples->i64(config.adapters.get_sample_name(i), demux.barcodes.at(i));
     }
   } else {
     summary->null("demultiplexing");
