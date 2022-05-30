@@ -22,19 +22,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <cerrno>   // for errno
-#include <cstdio>   // for BUFSIZ
 #include <cstdlib>  // for exit
 #include <cstring>  // for strerror
 #include <iostream> // for operator<<, basic_ostream, endl, cerr
+#include <memory>   // for make_unique
 #include <sstream>  // for stringstream
 
-#include "debug.hpp" // for AR_DEBUG_ASSSERT
-#include "linereader.hpp"
+#include "debug.hpp"          // for AR_DEBUG_ASSSERT
+#include "linereader.hpp"     // header
 #include "managed_writer.hpp" // for managed_writer
 #include "threads.hpp"        // for print_locker
-
-//! Size of compressed and uncompressed buffers.
-const int BUF_SIZE = 10 * BUFSIZ;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'io_error'
@@ -166,8 +163,8 @@ line_reader::line_reader(const std::string& fpath)
   , m_buffer(nullptr)
   , m_buffer_ptr(nullptr)
   , m_buffer_end(nullptr)
-  , m_raw_buffer(new char[BUF_SIZE])
-  , m_raw_buffer_end(m_raw_buffer + BUF_SIZE)
+  , m_raw_buffer(std::make_shared<line_buffer>())
+  , m_raw_buffer_end(m_raw_buffer->end())
   , m_eof(false)
 {
   if (!m_file) {
@@ -177,19 +174,25 @@ line_reader::line_reader(const std::string& fpath)
 
 line_reader::~line_reader()
 {
-  try {
-    close_buffers_gzip();
+  // Pending input is ignored
 
-    delete[] m_raw_buffer;
-    m_raw_buffer = nullptr;
+  if (m_gzip_stream) {
+#if !defined(USE_LIBISAL)
+    switch (inflateEnd(m_gzip_stream.get())) {
+      case Z_OK:
+        break;
 
-    if (fclose(m_file)) {
-      throw io_error("line_reader::close: error closing file", errno);
+      case Z_STREAM_ERROR:
+        AR_FAIL("stream error while closing input file");
+
+      default:
+        AR_FAIL("unknown error while closing input file");
     }
-  } catch (const std::exception& error) {
-    print_locker lock;
-    std::cerr << "Error closing file: " << error.what() << std::endl;
-    std::exit(1);
+#endif
+  }
+
+  if (fclose(m_file)) {
+    AR_FAIL(format_io_msg("error closing input file", errno));
   }
 }
 
@@ -248,32 +251,31 @@ void
 line_reader::refill_buffers_uncompressed()
 {
   m_buffer = m_raw_buffer;
-  m_buffer_ptr = m_raw_buffer;
+  m_buffer_ptr = m_raw_buffer->data();
   m_buffer_end = m_raw_buffer_end;
 }
 
 void
 line_reader::refill_raw_buffer()
 {
-  const int nread = fread(m_raw_buffer, 1, BUF_SIZE, m_file);
+  const int nread =
+    fread(m_raw_buffer->data(), 1, m_raw_buffer->size(), m_file);
 
-  if (nread == BUF_SIZE) {
-    m_raw_buffer_end = m_raw_buffer + BUF_SIZE;
-  } else if (ferror(m_file)) {
+  if (ferror(m_file)) {
     throw io_error("line_reader::refill_buffer: error reading file", errno);
   } else {
     // EOF set only once all data has been consumed
     m_eof = (nread == 0);
-    m_raw_buffer_end = m_raw_buffer + nread;
+    m_raw_buffer_end = m_raw_buffer->data() + nread;
   }
 }
 
 bool
 line_reader::identify_gzip() const
 {
-  if (m_raw_buffer_end - m_raw_buffer < 2) {
+  if (m_raw_buffer_end - m_raw_buffer->data() < 2) {
     return false;
-  } else if (m_raw_buffer[0] != '\x1f' || m_raw_buffer[1] != '\x8b') {
+  } else if (m_raw_buffer->at(0) != '\x1f' || m_raw_buffer->at(1) != '\x8b') {
     return false;
   }
 
@@ -283,29 +285,29 @@ line_reader::identify_gzip() const
 void
 line_reader::initialize_buffers_gzip()
 {
-  m_buffer = new char[BUF_SIZE];
-  m_buffer_ptr = m_buffer + BUF_SIZE;
-  m_buffer_end = m_buffer + BUF_SIZE;
+  m_buffer = std::make_shared<line_buffer>();
+  m_buffer_ptr = m_buffer->end();
+  m_buffer_end = m_buffer->end();
 
 #if defined(USE_LIBISAL)
-  m_gzip_stream.reset(new inflate_state());
-  m_gzip_header.reset(new isal_gzip_header());
+  m_gzip_stream = std::make_unique<inflate_state>();
+  m_gzip_header = std::make_unique<isal_gzip_header>();
 
   isal_inflate_init(m_gzip_stream.get());
   m_gzip_stream->crc_flag = ISAL_GZIP_NO_HDR_VER;
-  m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-  m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer);
+  m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
+  m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
 
   auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
   check_isal_return_code(__func__, result);
 #else
-  m_gzip_stream.reset(new z_stream());
+  m_gzip_stream = std::make_unique<z_stream>();
   m_gzip_stream->zalloc = nullptr;
   m_gzip_stream->zfree = nullptr;
   m_gzip_stream->opaque = nullptr;
 
-  m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-  m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer);
+  m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
+  m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer->data());
 
   switch (inflateInit2(m_gzip_stream.get(), 15 + 16)) {
     case Z_OK:
@@ -332,12 +334,12 @@ line_reader::refill_buffers_gzip()
 #if defined(USE_LIBISAL)
   if (!m_gzip_stream->avail_in) {
     refill_raw_buffer();
-    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-    m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer);
+    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
+    m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
   }
 
-  m_gzip_stream->avail_out = BUF_SIZE;
-  m_gzip_stream->next_out = reinterpret_cast<uint8_t*>(m_buffer);
+  m_gzip_stream->avail_out = m_buffer->size();
+  m_gzip_stream->next_out = reinterpret_cast<uint8_t*>(m_buffer->data());
 
   if (m_gzip_stream->avail_in &&
       m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
@@ -346,17 +348,17 @@ line_reader::refill_buffers_gzip()
 
   check_isal_return_code(__func__, isal_inflate(m_gzip_stream.get()));
 
-  m_buffer_ptr = m_buffer;
-  m_buffer_end = m_buffer + (BUF_SIZE - m_gzip_stream->avail_out);
+  m_buffer_ptr = m_buffer->data();
+  m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
 #else
   if (!m_gzip_stream->avail_in) {
     refill_raw_buffer();
-    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer;
-    m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer);
+    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
+    m_gzip_stream->next_in = reinterpret_cast<Bytef*>(m_raw_buffer->data());
   }
 
-  m_gzip_stream->avail_out = BUF_SIZE;
-  m_gzip_stream->next_out = reinterpret_cast<Bytef*>(m_buffer);
+  m_gzip_stream->avail_out = m_buffer->size();
+  m_gzip_stream->next_out = reinterpret_cast<Bytef*>(m_buffer->data());
   switch (inflate(m_gzip_stream.get(), Z_NO_FLUSH)) {
     case Z_OK:
     case Z_BUF_ERROR: /* input buffer empty or output buffer full */
@@ -376,36 +378,7 @@ line_reader::refill_buffers_gzip()
       THROW_GZIP_ERROR("unknown error");
   }
 
-  m_buffer_ptr = m_buffer;
-  m_buffer_end = m_buffer + (BUF_SIZE - m_gzip_stream->avail_out);
+  m_buffer_ptr = m_buffer->data();
+  m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
 #endif
-}
-
-void
-line_reader::close_buffers_gzip()
-{
-  // Pending input is ignored
-
-  if (m_gzip_stream) {
-#if defined(USE_LIBISAL)
-    m_gzip_stream.reset();
-    m_gzip_header.reset();
-#else
-    switch (inflateEnd(m_gzip_stream.get())) {
-      case Z_OK:
-        break;
-
-      case Z_STREAM_ERROR:
-        THROW_GZIP_ERROR("stream error");
-
-      default:
-        THROW_GZIP_ERROR("unknown error");
-    }
-
-    m_gzip_stream.reset();
-#endif
-
-    delete[] m_buffer;
-    m_buffer = nullptr;
-  }
 }

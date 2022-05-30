@@ -23,14 +23,19 @@
 \*************************************************************************/
 #pragma once
 
+#include <array>  // for array
+#include <cstdio> // for BUFSIZ
 #include <ios>    // for ios_base, ios_base::failure
-#include <memory> // for unique_ptr
+#include <memory> // for unique_ptr, shared_ptr
 #include <string> // for string
 #include <zlib.h> // for gzFile
 
 #if defined(USE_LIBISAL)
 #include <isa-l/igzip_lib.h> // for inflate_state, etc.
 #endif
+
+//! Buffer used for compressed and uncompressed line data
+typedef std::array<char, 10 * BUFSIZ> line_buffer;
 
 /** Represents errors during basic IO. */
 class io_error : public std::ios_base::failure
@@ -124,20 +129,18 @@ private:
   void initialize_buffers_gzip();
   /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
   void refill_buffers_gzip();
-  /** Closes gzip buffers and frees associated memory. */
-  void close_buffers_gzip();
 
-  //! Pointer to buffer of decompressed data.
-  char* m_buffer;
+  //! Pointer to buffer of decompressed data; may be equal to m_raw_buffer.
+  std::shared_ptr<line_buffer> m_buffer;
   //! Pointer to current location in input buffer.
-  char* m_buffer_ptr;
+  line_buffer::iterator m_buffer_ptr;
   //! Pointer to end of current buffer.
-  char* m_buffer_end;
+  line_buffer::iterator m_buffer_end;
 
   //! Pointer to buffer of raw data.
-  char* m_raw_buffer;
+  std::shared_ptr<line_buffer> m_raw_buffer;
   //! Pointer to end of current raw buffer.
-  char* m_raw_buffer_end;
+  line_buffer::iterator m_raw_buffer_end;
 
   //! Indicates if a read across the EOF has been attempted.
   bool m_eof;
