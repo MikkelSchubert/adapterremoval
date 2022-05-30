@@ -33,8 +33,8 @@ public:
   HTMLTmplHead();
   ~HTMLTmplHead();
 
-  void set_name(const std::string& value);
-  void set_version(const std::string& value);
+  HTMLTmplHead& set_name(const std::string& value);
+  HTMLTmplHead& set_version(const std::string& value);
 
   void write(std::ofstream& out);
 

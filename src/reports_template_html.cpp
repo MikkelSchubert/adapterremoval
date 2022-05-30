@@ -24,6 +24,8 @@
 #include "reports_template_html.hpp"
 #include "debug.hpp"
 
+size_t g_html_id = 1;
+
 HTMLTmplHead::HTMLTmplHead()
   : m_written()
   , m_name()
@@ -39,18 +41,20 @@ HTMLTmplHead::~HTMLTmplHead()
   AR_REQUIRE(m_written, "template HTMLTmplHead was not written");
 }
 
-void
+HTMLTmplHead&
 HTMLTmplHead::set_name(const std::string& value)
 {
   m_name = value;
   m_name_is_set = true;
+  return *this;
 }
 
-void
+HTMLTmplHead&
 HTMLTmplHead::set_version(const std::string& value)
 {
   m_version = value;
   m_version_is_set = true;
+  return *this;
 }
 
 void
@@ -60,6 +64,7 @@ HTMLTmplHead::write(std::ofstream& out)
   AR_REQUIRE(m_name_is_set, "HTMLTmplHead::name not set");
   AR_REQUIRE(m_version_is_set, "HTMLTmplHead::version not set");
   // clang-format off
+  auto id = g_html_id++; (void)id;
   out << "<!DOCTYPE html>\n";
   out << "<html lang='en'>\n";
   out << "\n";
@@ -94,6 +99,7 @@ HTMLTmplBody::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template HTMLTmplBody already written");
   // clang-format off
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "<body>\n";
   out << "    <div id='layout'>\n";
