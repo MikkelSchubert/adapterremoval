@@ -214,7 +214,6 @@ public:
   /**
    * Adds a step to the pipeline.
    *
-   * @param name Textual name for the (type) of step being added.
    * @param args Arguments passed to the analytical step constructor.
    * @return The unique ID of the newly added step.
    *
