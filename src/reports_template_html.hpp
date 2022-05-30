@@ -33,6 +33,9 @@ public:
   HTMLTmplHead();
   ~HTMLTmplHead();
 
+  HTMLTmplHead(const HTMLTmplHead&) = delete;
+  HTMLTmplHead& operator=(const HTMLTmplHead&) = delete;
+
   HTMLTmplHead& set_name(const std::string& value);
   HTMLTmplHead& set_version(const std::string& value);
 
@@ -51,6 +54,9 @@ class HTMLTmplBody
 public:
   HTMLTmplBody();
   ~HTMLTmplBody();
+
+  HTMLTmplBody(const HTMLTmplBody&) = delete;
+  HTMLTmplBody& operator=(const HTMLTmplBody&) = delete;
 
   void write(std::ofstream& out);
 

@@ -154,6 +154,10 @@ def write_header(sections):
         tprint("  {}();", classname)
         tprint("  ~{}();", classname)
 
+        tprint("")
+        tprint("  {}(const {}&) = delete;", classname, classname)
+        tprint("  {}& operator=(const {}&) = delete;", classname, classname)
+
         if props["fields"] or props["repeaters"]:
             tprint("")
 
