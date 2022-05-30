@@ -31,7 +31,7 @@ import re
 import sys
 from pathlib import Path
 
-_RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z_]+)\s+-->", re.I)
+_RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z0-9_]+)\s+-->", re.I)
 _RE_FIELD = re.compile(
     r"({{[a-z0-9_]+}}|\[\[[a-z0-9_]+\]\]|JS_TEMPLATE_[a-z0-9_]+)",
     re.I,
