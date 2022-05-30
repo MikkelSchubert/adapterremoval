@@ -29,44 +29,137 @@
 #include <string>    // for string, operator+
 #include <utility>   // for swap, pair
 
+#include <emmintrin.h> // for _mm_cmpeq_epi8, __m128i, _mm_loadu_s...
+#include <immintrin.h> // for _mm256_set1_epi8, __m256i, _mm256_lo...
+
 #include "alignment.hpp"
 #include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for fastq, fastq_pair_vec
 
-#if defined(__AVX2__)
-#include <immintrin.h>
-
-//! Mask of all Ns
-const __m256i N_MASK_256 = _mm256_set1_epi8('N');
-
 /** Counts the number of masked bytes **/
-inline size_t
-COUNT_MASKED_256(__m256i value)
-{
-  // Generate 16 bit mask from most significant bits of each byte and count bits
-  return std::bitset<32>(_mm256_movemask_epi8(value)).count();
-}
-#else
-#warning AVX2 optimizations disabled!
-#endif
-
-#if defined(__SSE__) && defined(__SSE2__)
-#include <emmintrin.h> // for _mm_cmpeq_epi8, __m128i, _mm_loadu_s...
-
-//! Mask of all Ns
-const __m128i N_MASK_128 = _mm_set1_epi8('N');
-
-/** Counts the number of masked bytes **/
-inline size_t
-COUNT_MASKED(__m128i value)
+__attribute__((target("sse2"))) inline size_t
+COUNT_MASKED_128(const __m128i& value)
 {
   // Generate 16 bit mask from most significant bits of each byte and count bits
   return std::bitset<16>(_mm_movemask_epi8(value)).count();
 }
-#else
-#warning SEE optimizations disabled!
-#endif
+
+/** Counts the number of masked bytes **/
+__attribute__((target("avx2"))) inline size_t
+COUNT_MASKED_256(const __m256i& value)
+{
+  // Generate 16 bit mask from most significant bits of each byte and count bits
+  return std::bitset<32>(_mm256_movemask_epi8(value)).count();
+}
+
+__attribute__((target("default"))) bool
+compare_subsequences_sse2(const alignment_info& /* best */,
+                          alignment_info& /* current */,
+                          const char*& /* seq_1_ptr */,
+                          const char*& /* seq_2_ptr */,
+                          double /* mismatch_threshold */,
+                          int& /* remaining_bases */)
+{
+  return true;
+}
+
+__attribute__((target("default"))) bool
+compare_subsequences_avx2(const alignment_info& /* best */,
+                          alignment_info& /* current */,
+                          const char*& /* seq_1_ptr */,
+                          const char*& /* seq_2_ptr */,
+                          double /* mismatch_threshold */,
+                          int& /* remaining_bases */)
+{
+  return true;
+}
+
+__attribute__((target("avx2"))) bool
+compare_subsequences_avx2(const alignment_info& best,
+                          alignment_info& current,
+                          const char*& seq_1_ptr,
+                          const char*& seq_2_ptr,
+                          const double mismatch_threshold,
+                          int& remaining_bases)
+{
+  //! Mask of all Ns
+  const __m256i n_mask = _mm256_set1_epi8('N');
+
+  while (remaining_bases >= 32 && current.score >= best.score) {
+    const __m256i s1 =
+      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_1_ptr));
+    const __m256i s2 =
+      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_2_ptr));
+
+    // Sets 0xFF for every byte where one or both nts is N
+    const __m256i ns_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, n_mask),
+                                            _mm256_cmpeq_epi8(s2, n_mask));
+
+    // Sets 0xFF for every byte where bytes are equal or N
+    const __m256i eq_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
+
+    current.n_ambiguous += COUNT_MASKED_256(ns_mask);
+    current.n_mismatches += 32 - COUNT_MASKED_256(eq_mask);
+    if (current.n_mismatches >
+        (current.length - current.n_ambiguous) * mismatch_threshold) {
+      return false;
+    }
+
+    // Matches count for 1, Ns for 0, and mismatches for -1
+    current.score =
+      current.length - current.n_ambiguous - (current.n_mismatches * 2);
+
+    seq_1_ptr += 32;
+    seq_2_ptr += 32;
+    remaining_bases -= 32;
+  }
+
+  return true;
+}
+
+__attribute__((target("sse2"))) bool
+compare_subsequences_sse2(const alignment_info& best,
+                          alignment_info& current,
+                          const char*& seq_1_ptr,
+                          const char*& seq_2_ptr,
+                          const double mismatch_threshold,
+                          int& remaining_bases)
+{
+  //! Mask of all Ns
+  const __m128i n_mask = _mm_set1_epi8('N');
+
+  while (remaining_bases >= 16 && current.score >= best.score) {
+    const __m128i s1 =
+      _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
+    const __m128i s2 =
+      _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
+
+    // Sets 0xFF for every byte where one or both nts is N
+    const __m128i ns_mask =
+      _mm_or_si128(_mm_cmpeq_epi8(s1, n_mask), _mm_cmpeq_epi8(s2, n_mask));
+
+    // Sets 0xFF for every byte where bytes are equal or N
+    const __m128i eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
+
+    current.n_ambiguous += COUNT_MASKED_128(ns_mask);
+    current.n_mismatches += 16 - COUNT_MASKED_128(eq_mask);
+    if (current.n_mismatches >
+        (current.length - current.n_ambiguous) * mismatch_threshold) {
+      return false;
+    }
+
+    // Matches count for 1, Ns for 0, and mismatches for -1
+    current.score =
+      current.length - current.n_ambiguous - (current.n_mismatches * 2);
+
+    seq_1_ptr += 16;
+    seq_2_ptr += 16;
+    remaining_bases -= 16;
+  }
+
+  return true;
+}
 
 /**
  * Compares two subsequences in an alignment to a previous (best) alignment.
@@ -87,71 +180,29 @@ compare_subsequences(const alignment_info& best,
                      alignment_info& current,
                      const char* seq_1_ptr,
                      const char* seq_2_ptr,
-                     double mismatch_threshold = 1.0)
+                     const double mismatch_threshold = 1.0)
 {
   int remaining_bases = current.score = current.length;
 
-#if defined(__AVX2__)
-  while (remaining_bases >= 32 && current.score >= best.score) {
-    const __m256i s1 =
-      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_1_ptr));
-    const __m256i s2 =
-      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_2_ptr));
-
-    // Sets 0xFF for every byte where one or both nts is N
-    const __m256i ns_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, N_MASK_256),
-                                            _mm256_cmpeq_epi8(s2, N_MASK_256));
-
-    // Sets 0xFF for every byte where bytes are equal or N
-    const __m256i eq_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
-
-    current.n_ambiguous += COUNT_MASKED_256(ns_mask);
-    current.n_mismatches += 32 - COUNT_MASKED_256(eq_mask);
-    if (current.n_mismatches >
-        (current.length - current.n_ambiguous) * mismatch_threshold) {
-      return false;
-    }
-
-    // Matches count for 1, Ns for 0, and mismatches for -1
-    current.score =
-      current.length - current.n_ambiguous - (current.n_mismatches * 2);
-
-    seq_1_ptr += 32;
-    seq_2_ptr += 32;
-    remaining_bases -= 32;
+  // Compare 32 bp at a time (if supported)
+  if (!compare_subsequences_avx2(best,
+                                 current,
+                                 seq_1_ptr,
+                                 seq_2_ptr,
+                                 mismatch_threshold,
+                                 remaining_bases)) {
+    return false;
   }
-#endif
 
-#if defined(__SSE__) && defined(__SSE2__)
-  while (remaining_bases >= 16 && current.score >= best.score) {
-    const __m128i s1 =
-      _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
-    const __m128i s2 =
-      _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
-
-    // Sets 0xFF for every byte where one or both nts is N
-    const __m128i ns_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, N_MASK_128),
-                                         _mm_cmpeq_epi8(s2, N_MASK_128));
-
-    // Sets 0xFF for every byte where bytes are equal or N
-    const __m128i eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
-
-    current.n_ambiguous += COUNT_MASKED(ns_mask);
-    current.n_mismatches += 16 - COUNT_MASKED(eq_mask);
-    if (current.n_mismatches >
-        (current.length - current.n_ambiguous) * mismatch_threshold) {
-      return false;
-    }
-
-    // Matches count for 1, Ns for 0, and mismatches for -1
-    current.score =
-      current.length - current.n_ambiguous - (current.n_mismatches * 2);
-
-    seq_1_ptr += 16;
-    seq_2_ptr += 16;
-    remaining_bases -= 16;
+  // Compare 16 bp at a time (if supported)
+  if (!compare_subsequences_sse2(best,
+                                 current,
+                                 seq_1_ptr,
+                                 seq_2_ptr,
+                                 mismatch_threshold,
+                                 remaining_bases)) {
+    return false;
   }
-#endif
 
   for (; remaining_bases && current.score >= best.score; --remaining_bases) {
     const char nt_1 = *seq_1_ptr++;

@@ -9,9 +9,6 @@ CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
-# Enable SSE, SSE2, and AVX2 instructions for a significant performance gain (YMMV)
-VECTORIZE := yes
-
 # Use Intelligent Storage Acceleration Library (ISA-L) for gzip decompression
 LIBISAL := yes
 
@@ -53,14 +50,6 @@ COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
-endif
-
-
-ifeq ($(strip ${VECTORIZE}),yes)
-$(info Building AdapterRemoval with SSE/SSE2/AVX2 extensions: yes)
-CXXFLAGS := $(CXXFLAGS) -msse -msse2 -mavx2
-else
-$(info Building AdapterRemoval with SSE/SSE2/AVX2 extensions: no)
 endif
 
 
