@@ -158,10 +158,10 @@ def write_header(sections):
             tprint("")
 
         for key in props["fields"]:
-            tprint("  void set_{}(const std::string& value);", key)
+            tprint("  {}& set_{}(const std::string& value);", classname, key)
 
         for key in props["repeaters"]:
-            tprint("  void add_{}(const std::string& value);", key)
+            tprint("  {}& add_{}(const std::string& value);", classname, key)
 
         tprint("\n  void write(std::ofstream& out);")
 
@@ -209,19 +209,21 @@ def write_implementations(sections, header_name):
         tprint("}}\n")
 
         for field in props["fields"]:
-            tprint("void")
+            tprint("{}&", classname)
             tprint("{}::set_{}(const std::string& value)", classname, field)
             tprint("{{")
             tprint("  m_{} = value;", field)
             tprint("  m_{}_is_set = true;", field)
+            tprint("  return *this;")
             tprint("}}\n")
 
         for field in props["repeaters"]:
-            tprint("void")
+            tprint("{}&", classname)
             tprint("{}::add_{}(const std::string& value)", classname, field)
             tprint("{{")
             tprint("  m_{}.push_back(value);", field)
             tprint("  m_{}_is_set = true;", field)
+            tprint("  return *this;")
             tprint("}}\n")
 
         tprint("void")
