@@ -26,7 +26,7 @@
 
 size_t g_html_id = 1;
 
-HTMLTmplHead::HTMLTmplHead()
+html_head::html_head()
   : m_written()
   , m_name()
   , m_name_is_set()
@@ -36,21 +36,21 @@ HTMLTmplHead::HTMLTmplHead()
   //
 }
 
-HTMLTmplHead::~HTMLTmplHead()
+html_head::~html_head()
 {
-  AR_REQUIRE(m_written, "template HTMLTmplHead was not written");
+  AR_REQUIRE(m_written, "template html_head was not written");
 }
 
-HTMLTmplHead&
-HTMLTmplHead::set_name(const std::string& value)
+html_head&
+html_head::set_name(const std::string& value)
 {
   m_name = value;
   m_name_is_set = true;
   return *this;
 }
 
-HTMLTmplHead&
-HTMLTmplHead::set_version(const std::string& value)
+html_head&
+html_head::set_version(const std::string& value)
 {
   m_version = value;
   m_version_is_set = true;
@@ -58,11 +58,11 @@ HTMLTmplHead::set_version(const std::string& value)
 }
 
 void
-HTMLTmplHead::write(std::ofstream& out)
+html_head::write(std::ofstream& out)
 {
-  AR_REQUIRE(!m_written, "template HTMLTmplHead already written");
-  AR_REQUIRE(m_name_is_set, "HTMLTmplHead::name not set");
-  AR_REQUIRE(m_version_is_set, "HTMLTmplHead::version not set");
+  AR_REQUIRE(!m_written, "template html_head already written");
+  AR_REQUIRE(m_name_is_set, "html_head::name not set");
+  AR_REQUIRE(m_version_is_set, "html_head::version not set");
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "<!DOCTYPE html>\n";
@@ -83,21 +83,21 @@ HTMLTmplHead::write(std::ofstream& out)
   m_written = true;
 }
 
-HTMLTmplBody::HTMLTmplBody()
+html_body::html_body()
   : m_written()
 {
   //
 }
 
-HTMLTmplBody::~HTMLTmplBody()
+html_body::~html_body()
 {
-  AR_REQUIRE(m_written, "template HTMLTmplBody was not written");
+  AR_REQUIRE(m_written, "template html_body was not written");
 }
 
 void
-HTMLTmplBody::write(std::ofstream& out)
+html_body::write(std::ofstream& out)
 {
-  AR_REQUIRE(!m_written, "template HTMLTmplBody already written");
+  AR_REQUIRE(!m_written, "template html_body already written");
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";

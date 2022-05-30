@@ -27,17 +27,17 @@
 #include <string>
 #include <vector>
 
-class HTMLTmplHead
+class html_head
 {
 public:
-  HTMLTmplHead();
-  ~HTMLTmplHead();
+  html_head();
+  ~html_head();
 
-  HTMLTmplHead(const HTMLTmplHead&) = delete;
-  HTMLTmplHead& operator=(const HTMLTmplHead&) = delete;
+  html_head(const html_head&) = delete;
+  html_head& operator=(const html_head&) = delete;
 
-  HTMLTmplHead& set_name(const std::string& value);
-  HTMLTmplHead& set_version(const std::string& value);
+  html_head& set_name(const std::string& value);
+  html_head& set_version(const std::string& value);
 
   void write(std::ofstream& out);
 
@@ -49,14 +49,14 @@ private:
   bool m_version_is_set;
 };
 
-class HTMLTmplBody
+class html_body
 {
 public:
-  HTMLTmplBody();
-  ~HTMLTmplBody();
+  html_body();
+  ~html_body();
 
-  HTMLTmplBody(const HTMLTmplBody&) = delete;
-  HTMLTmplBody& operator=(const HTMLTmplBody&) = delete;
+  html_body(const html_body&) = delete;
+  html_body& operator=(const html_body&) = delete;
 
   void write(std::ofstream& out);
 

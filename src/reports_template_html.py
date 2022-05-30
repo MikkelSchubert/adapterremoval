@@ -130,7 +130,7 @@ def inject_variables(value):
 
 
 def to_classname(name):
-    return "HTMLTmpl{}".format(name.title().replace("_", ""))
+    return "html_{}".format(name.lower())
 
 
 def write_header(sections):
