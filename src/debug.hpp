@@ -59,23 +59,23 @@ debug_raise_assert(const char* filename,
 
 /** Custom assert which prints various information on failure; always enabled.
  */
-#define AR_ASSERT_2_(test, msg)                                                \
+#define AR_REQUIRE_2_(test, msg)                                               \
   do {                                                                         \
     if (!(test)) {                                                             \
       debug_raise_assert(__FILE__, __LINE__, #test, msg);                      \
     }                                                                          \
   } while (0)
 
-#define AR_ASSERT_1_(test) AR_ASSERT_2_(test, std::string())
+#define AR_REQUIRE_1_(test) AR_REQUIRE_2_(test, std::string())
 
-#define AR_ASSERT_GET_(_1, _2, NAME, ...) NAME
+#define AR_REQUIRE_GET_(_1, _2, NAME, ...) NAME
 #define AR_REQUIRE(...)                                                        \
-  AR_ASSERT_GET_(__VA_ARGS__, AR_ASSERT_2_, AR_ASSERT_1_, )(__VA_ARGS__)
+  AR_REQUIRE_GET_(__VA_ARGS__, AR_REQUIRE_2_, AR_REQUIRE_1_, )(__VA_ARGS__)
 
 /** Raise an assert failure with a user-specified message. */
 #define AR_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, std::string(), msg)
 
-#ifdef AR_DEBUG_BUILD
+#ifdef DEBUG
 
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)
@@ -91,7 +91,7 @@ debug_raise_assert(const char* filename,
   } while (0)
 
 #define AR_ASSERT(...)                                                         \
-  AR_ASSERT_GET_(__VA_ARGS__, AR_ASSERT_2_, AR_ASSERT_1_, )(__VA_ARGS__)
+  AR_REQUIRE_GET_(__VA_ARGS__, AR_REQUIRE_2_, AR_REQUIRE_1_, )(__VA_ARGS__)
 
 #else
 

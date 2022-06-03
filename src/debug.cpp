@@ -60,7 +60,7 @@ debug_raise_assert(const char* filename,
     message << msg << ": " << test;
   }
 
-#ifdef AR_DEBUG_BUILD
+#ifdef UNIT_TEST
   throw assert_failed(message.str());
 #else
   std::cerr << "\nFATAL ERROR:\n"

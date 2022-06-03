@@ -80,10 +80,11 @@ endif
 
 ifeq ($(strip ${DEBUG_BUILD}), yes)
 $(info Building AdapterRemoval with debug information: yes)
-CXXFLAGS := ${CXXFLAGS} -g -pedantic -Wall -Wextra -Wcast-align -Wcast-qual \
-	-Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self \
-	-Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-promo \
-	-Wstrict-overflow=2 -Wswitch-default -Wundef -Weffc++ -Wdeprecated
+CXXFLAGS := ${CXXFLAGS} -g -DDEBUG \
+	-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
+	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
+	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=2 \
+	-Wswitch-default -Wundef -Weffc++ -Wdeprecated
 else
 $(info Building AdapterRemoval with debug information: no)
 endif
@@ -200,7 +201,7 @@ TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-TEST_CXXFLAGS := -Isrc -DAR_DEBUG_BUILD -g
+TEST_CXXFLAGS := -Isrc -DUNIT_TEST -g
 
 test: $(TEST_DIR)/main
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)

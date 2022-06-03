@@ -111,7 +111,7 @@ TEST_CASE("assert single thread failed")
     caught_exception = true;
   }
 
-#ifdef AR_DEBUG_BUILD
+#ifdef DEBUG
   REQUIRE(caught_exception);
 #else
   REQUIRE_FALSE(caught_exception);

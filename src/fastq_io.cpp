@@ -189,10 +189,10 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_single_end(false)
   , m_eof(false)
   , m_timer("reads")
-#ifdef AR_DEBUG_BUILD
+  , m_head(config.head)
+#ifdef DEBUG
   , m_lock()
 #endif
-  , m_head(config.head)
 {
   if (config.interleaved_input) {
     AR_REQUIRE(config.input_files_2.empty());
@@ -304,7 +304,7 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   , m_statistics_2(stats ? stats->input_2 : nullptr)
   , m_next_step(next_step)
   , m_eof(false)
-#ifdef AR_DEBUG_BUILD
+#ifdef DEBUG
   , m_lock()
 #endif
 {
@@ -394,7 +394,7 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
-#ifdef AR_DEBUG_BUILD
+#ifdef DEBUG
   , m_lock()
 #endif
 {
@@ -464,7 +464,7 @@ split_fastq::split_fastq(size_t next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
   , m_eof(false)
-#ifdef AR_DEBUG_BUILD
+#ifdef DEBUG
   , m_lock()
 #endif
 {
@@ -597,7 +597,7 @@ write_fastq::write_fastq(const std::string& filename)
                     "write_fastq")
   , m_output(filename)
   , m_eof(false)
-#ifdef AR_DEBUG_BUILD
+#ifdef DEBUG
   , m_lock()
 #endif
 {
