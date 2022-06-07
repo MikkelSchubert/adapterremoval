@@ -250,3 +250,45 @@ TEST_CASE("Partials ignored", "[strutils::template_replace]")
   REQUIRE(template_replace("{tmpl.", "tmpl", "abc") == "{tmpl.");
   REQUIRE(template_replace("tmpl", "tmpl", "") == "tmpl");
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'shell_escape'
+
+TEST_CASE("shell_escape preserves empty values")
+{
+  REQUIRE(shell_escape("") == "''");
+}
+
+TEST_CASE("shell_escape passes simple values unchanged")
+{
+  REQUIRE(shell_escape("my_file.txt") == "my_file.txt");
+}
+
+TEST_CASE("shell_escape escapes whitespace")
+{
+  REQUIRE(shell_escape("my file.txt") == "'my file.txt'");
+}
+
+TEST_CASE("shell_escape escapes single quotes")
+{
+  REQUIRE(shell_escape("bob's_file.txt") == "'bob\\'s_file.txt'");
+}
+
+TEST_CASE("shell_escape escapes multiple values")
+{
+  REQUIRE(shell_escape("bob's file.txt") == "'bob\\'s file.txt'");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'shell_escape'
+
+TEST_CASE("shell_escape_command with empty list")
+{
+  REQUIRE(shell_escape_command({}) == "");
+}
+
+TEST_CASE("shell_escape_command with mixed command")
+{
+  REQUIRE(shell_escape_command({ "echo", "a", "m$x", "of", "$(things)" }) ==
+          "echo a 'm$x' of '$(things)'");
+}

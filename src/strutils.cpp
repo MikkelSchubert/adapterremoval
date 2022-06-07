@@ -324,3 +324,54 @@ cli_formatter::fmt(const std::string& prefix, const std::string& value)
 
   return prefix + value;
 }
+
+std::string
+shell_escape(const std::string& s)
+{
+  if (s.empty()) {
+    return "''";
+  }
+
+  bool must_escape = false;
+  for (const auto c : s) {
+    // Conservative list of safe values; better safe than sorry
+    if (!isalnum(c) && c != '_' && c != '.' && c != '/' && c != '-') {
+      must_escape = true;
+      break;
+    }
+  }
+
+  if (!must_escape) {
+    return s;
+  }
+
+  std::string out;
+  out.push_back('\'');
+
+  for (const auto c : s) {
+    if (c == '\'') {
+      out.push_back('\\');
+    }
+
+    out.push_back(c);
+  }
+
+  out.push_back('\'');
+
+  return out;
+}
+
+std::string
+shell_escape_command(const std::vector<std::string>& values)
+{
+  std::stringstream ss;
+  for (size_t i = 0; i < values.size(); ++i) {
+    if (i) {
+      ss << ' ';
+    }
+
+    ss << shell_escape(values.at(i));
+  }
+
+  return ss.str();
+}

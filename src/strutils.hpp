@@ -25,6 +25,7 @@
 
 #include <stddef.h> // for size_t
 #include <string>   // for string
+#include <vector>   // for vector
 
 const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
@@ -129,3 +130,11 @@ private:
   //! The number of spaces to indent each line (see also m_indent_first_line)
   size_t m_indentation;
 };
+
+/** Escapes a string to make safe to use in copy/pasted commands */
+std::string
+shell_escape(const std::string& s);
+
+/** Escapes a full shell command using shell_escape */
+std::string
+shell_escape_command(const std::vector<std::string>& v);
