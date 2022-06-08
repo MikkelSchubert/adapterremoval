@@ -21,6 +21,8 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include <algorithm>   // for reverse
+#include <cmath>       // for floor
 #include <iomanip>     // for operator<<, setw
 #include <limits>      // for numeric_limits
 #include <sstream>     // for stringstream, basic_ostream, operator<<, basi...
@@ -374,4 +376,83 @@ shell_escape_command(const std::vector<std::string>& values)
   }
 
   return ss.str();
+}
+
+std::string
+format_thousand_sep(size_t count)
+{
+  if (!count) {
+    return "0";
+  }
+
+  std::string ss;
+  for (size_t i = 0; count; ++i) {
+    ss.push_back('0' + (count % 10));
+    count /= 10;
+    if (count && i && i % 3 == 2) {
+      ss.push_back(',');
+    }
+  }
+
+  std::reverse(ss.begin(), ss.end());
+
+  return ss;
+}
+
+static const std::vector<std::pair<double, char>> rough_units = {
+  { 1e3, 'K' }, { 1e6, 'M' }, { 1e9, 'G' }, { 1e12, 'T' }, { 1e15, 'P' },
+};
+
+std::string
+format_rough_number(size_t count, size_t precision)
+{
+  if (count < 1000) {
+    return std::to_string(count);
+  }
+
+  size_t scale_i = 0;
+  for (size_t i = 0; i < rough_units.size(); ++i) {
+    if (rough_units.at(i).first >= count) {
+      break;
+    }
+
+    scale_i = i;
+  }
+
+  const double shift = std::pow(10, precision);
+  const double scale = rough_units.at(scale_i).first;
+  double tmp = std::round((count / scale) * shift);
+
+  if (tmp >= shift * 1e3 && scale_i + 1 < rough_units.size()) {
+    // count was rounded up so that it falls into the next unit
+    scale_i++;
+    tmp /= 1e3;
+  }
+
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(precision) << (tmp / shift) << ' '
+     << rough_units.at(scale_i).second;
+
+  return ss.str();
+}
+
+std::string
+format_fraction(uint64_t num, uint64_t denom, size_t precision)
+{
+  if (denom) {
+    const double fraction = static_cast<double>(num) / denom;
+
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(precision) << fraction;
+
+    return ss.str();
+  } else {
+    return "NA";
+  }
+}
+
+std::string
+format_percentage(uint64_t num, uint64_t denom, size_t precision)
+{
+  return format_fraction(num * 100, denom, precision);
 }

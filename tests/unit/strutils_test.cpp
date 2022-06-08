@@ -280,7 +280,7 @@ TEST_CASE("shell_escape escapes multiple values")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'shell_escape'
+// Tests for 'shell_escape_command'
 
 TEST_CASE("shell_escape_command with empty list")
 {
@@ -291,4 +291,73 @@ TEST_CASE("shell_escape_command with mixed command")
 {
   REQUIRE(shell_escape_command({ "echo", "a", "m$x", "of", "$(things)" }) ==
           "echo a 'm$x' of '$(things)'");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'format_thousand_sep'
+
+TEST_CASE("format_thousand_sep")
+{
+  REQUIRE(format_thousand_sep(0) == "0");
+  REQUIRE(format_thousand_sep(999) == "999");
+  REQUIRE(format_thousand_sep(1000) == "1,000");
+  REQUIRE(format_thousand_sep(999999) == "999,999");
+  REQUIRE(format_thousand_sep(1000000) == "1,000,000");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'format_rough_number'
+
+TEST_CASE("format_rough_number")
+{
+  REQUIRE(format_rough_number(0) == "0");
+  REQUIRE(format_rough_number(999) == "999");
+  REQUIRE(format_rough_number(1000) == "1.0 K");
+  REQUIRE(format_rough_number(999900) == "999.9 K");
+  REQUIRE(format_rough_number(999999) == "1.0 M");
+  REQUIRE(format_rough_number(1000000) == "1.0 M");
+  REQUIRE(format_rough_number(999900000) == "999.9 M");
+  REQUIRE(format_rough_number(999999999) == "1.0 G");
+  REQUIRE(format_rough_number(1000000000) == "1.0 G");
+  REQUIRE(format_rough_number(999900000000) == "999.9 G");
+  REQUIRE(format_rough_number(999999999999) == "1.0 T");
+  REQUIRE(format_rough_number(1000000000000) == "1.0 T");
+  REQUIRE(format_rough_number(999900000000000) == "999.9 T");
+  REQUIRE(format_rough_number(999999999999999) == "1.0 P");
+  REQUIRE(format_rough_number(1000000000000000) == "1.0 P");
+}
+
+TEST_CASE("format_rough_number with precision")
+{
+  REQUIRE(format_rough_number(12349, 0) == "12 K");
+  REQUIRE(format_rough_number(12349, 1) == "12.3 K");
+  REQUIRE(format_rough_number(12349, 2) == "12.35 K");
+  REQUIRE(format_rough_number(12349, 3) == "12.349 K");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'format_fraction'
+
+TEST_CASE("format_fraction")
+{
+  REQUIRE(format_fraction(0, 0) == "NA");
+  REQUIRE(format_fraction(1, 0) == "NA");
+  REQUIRE(format_fraction(55, 300) == "0.18");
+  REQUIRE(format_fraction(55, 300, 0) == "0");
+  REQUIRE(format_fraction(55, 300, 1) == "0.2");
+  REQUIRE(format_fraction(55, 300, 2) == "0.18");
+  REQUIRE(format_fraction(55, 300, 3) == "0.183");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'format_fraction'
+
+TEST_CASE("format_percentage")
+{
+  REQUIRE(format_percentage(0, 0) == "NA");
+  REQUIRE(format_percentage(1, 0) == "NA");
+  REQUIRE(format_percentage(55, 300) == "18.3");
+  REQUIRE(format_percentage(55, 300, 0) == "18");
+  REQUIRE(format_percentage(55, 300, 1) == "18.3");
+  REQUIRE(format_percentage(55, 300, 2) == "18.33");
 }

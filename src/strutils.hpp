@@ -138,3 +138,19 @@ shell_escape(const std::string& s);
 /** Escapes a full shell command using shell_escape */
 std::string
 shell_escape_command(const std::vector<std::string>& v);
+
+/** Adds thousand separators to a number */
+std::string
+format_thousand_sep(size_t count);
+
+/** Rounds a number using K, M, etc. units. */
+std::string
+format_rough_number(size_t count, size_t precision = 1);
+
+/** Formats a fraction, returning "NA" if denominator is 0 */
+std::string
+format_fraction(uint64_t num, uint64_t denom, size_t precision = 2);
+
+/** Formats a percentage, returning "NA" if denominator is 0 */
+std::string
+format_percentage(uint64_t num, uint64_t denom, size_t precision = 1);
