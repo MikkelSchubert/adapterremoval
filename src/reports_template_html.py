@@ -29,12 +29,23 @@ import argparse
 import io
 import re
 import sys
+from enum import Enum
 from pathlib import Path
+from typing import NamedTuple, Optional
+
 
 _RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z0-9_]+)\s+-->", re.I)
 _RE_FIELD = re.compile(
-    r"({{[a-z0-9_]+}}|\[\[[a-z0-9_]+\]\]|JS_TEMPLATE_[a-z0-9_]+)",
-    re.I,
+    r"""
+    (
+        {{\w+}}                           # Single template value
+        | \[\[\w+\]\]                     # One or more template values (repeated line)
+        | JS_TEMPLATE_[a-z0-9_]+          # Single value embedded in JS
+        | JS_DEFAULT_\w+\s*=\s*\w+        # Single value with default token embedded in JS
+        | JS_DEFAULT_\w+\s*=\s*".*[^\\]"  # Single value with default quoted value embedded in JS
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE | re.ASCII,
 )
 _CPP_ENCODED = {
     "\\": "\\\\",
@@ -53,6 +64,18 @@ _BUILTIN_VARS = {
 }
 
 
+class FieldType(Enum):
+    REQUIRED = "required"
+    REPEATED = "repeated"
+    DEFAULT = "default"
+
+
+class Field(NamedTuple):
+    name: str
+    kind: FieldType
+    default: Optional[str]
+
+
 def read_template(filepath):
     current = None
     sections = {}
@@ -69,21 +92,39 @@ def read_template(filepath):
     result = {}
     for key, lines in sections.items():
         text = "".join(lines)
-        fields = set()
-        repeaters = set()
+        variables = {}
         for value in _RE_FIELD.findall(text):
-            value = value.lower()
-            if value.startswith("js_template_"):
-                fields.add(value[12:])
+            default = None
+
+            if value.lower().startswith("js_template_"):
+                name = value[12:]
+                kind = FieldType.REQUIRED
+            elif value.lower().startswith("js_default_"):
+                name, default = value[11:].split("=", 1)
+                kind = FieldType.DEFAULT
+
+                default = default.strip()
+                if default.startswith('"'):
+                    default = default[1:-1]
             elif value.startswith("{"):
-                fields.add(value[2:-2])
+                name = value[2:-2]
+                kind = FieldType.REQUIRED
             else:
-                repeaters.add(value[2:-2])
+                name = value[2:-2]
+                kind = FieldType.REPEATED
+
+            name = name.strip().lower()
+            if name not in _BUILTIN_VARS:
+                assert variables.get(name, kind) == kind, name
+                variables[name] = Field(
+                    name=name,
+                    kind=kind,
+                    default=default,
+                )
 
         result[key] = {
             "lines": lines,
-            "fields": sorted(fields - _BUILTIN_VARS.keys()),
-            "repeaters": sorted(repeaters - _BUILTIN_VARS.keys()),
+            "variables": sorted(variables.values(), key=lambda it: it.name),
         }
 
     return result
@@ -107,9 +148,14 @@ def inject_variables(value):
 
     repeater = None
     for field in _RE_FIELD.split(value):
+        lc_field = field.lower()
+
         result.append("<<")
-        if field.lower().startswith("js_template_"):
+        if lc_field.startswith("js_template_"):
             name = field[12:].lower()
+            result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
+        elif lc_field.startswith("js_default_"):
+            name, _ = field[11:].lower().split("=", 1)
             result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
         elif field.startswith("{{") and field.endswith("}}"):
             name = field[2:-2].lower()
@@ -158,27 +204,28 @@ def write_header(sections):
         tprint("  {}(const {}&) = delete;", classname, classname)
         tprint("  {}& operator=(const {}&) = delete;", classname, classname)
 
-        if props["fields"] or props["repeaters"]:
+        if props["variables"]:
             tprint("")
 
-        for key in props["fields"]:
-            tprint("  {}& set_{}(const std::string& value);", classname, key)
-
-        for key in props["repeaters"]:
-            tprint("  {}& add_{}(const std::string& value);", classname, key)
+        for field in props["variables"]:
+            if field.kind == FieldType.REPEATED:
+                tprint("  {}& add_{}(const std::string& value);", classname, field.name)
+            else:
+                tprint("  {}& set_{}(const std::string& value);", classname, field.name)
 
         tprint("\n  void write(std::ofstream& out);")
 
         tprint("\nprivate:")
         tprint("  bool m_written;")
 
-        for key in props["fields"]:
-            tprint("  std::string m_{};", key)
-            tprint("  bool m_{}_is_set;", key)
+        for field in props["variables"]:
+            if field.kind == FieldType.REPEATED:
+                tprint("  std::vector<std::string> m_{};", field.name)
+            else:
+                tprint("  std::string m_{};", field.name)
 
-        for key in props["repeaters"]:
-            tprint("  std::vector<std::string> m_{};", key)
-            tprint("  bool m_{}_is_set;", key)
+            if field.kind != FieldType.DEFAULT:
+                tprint("  bool m_{}_is_set;", field.name)
 
         tprint("}};")
 
@@ -201,9 +248,12 @@ def write_implementations(sections, header_name):
 
         tprint("\n{}::{}()", classname, classname)
         tprint("  : m_written()")
-        for field in props["fields"] + props["repeaters"]:
-            tprint("  , m_{}()", field)
-            tprint("  , m_{}()", field + "_is_set")
+        for field in props["variables"]:
+            if field.kind == FieldType.DEFAULT:
+                tprint('  , m_{}("{}")', field.name, field.default)
+            else:
+                tprint("  , m_{}()", field.name)
+                tprint("  , m_{}_is_set()", field.name)
         # Dummy comment to prevent re-formatting depending on num. of variables
         tprint("{{\n  //\n}}")
 
@@ -212,21 +262,20 @@ def write_implementations(sections, header_name):
         tprint('  AR_REQUIRE(m_written, "template {} was not written");', classname)
         tprint("}}\n")
 
-        for field in props["fields"]:
+        for field in props["variables"]:
             tprint("{}&", classname)
-            tprint("{}::set_{}(const std::string& value)", classname, field)
-            tprint("{{")
-            tprint("  m_{} = value;", field)
-            tprint("  m_{}_is_set = true;", field)
-            tprint("  return *this;")
-            tprint("}}\n")
+            if field.kind == FieldType.REPEATED:
+                tprint("{}::add_{}(const std::string& value)", classname, field.name)
+                tprint("{{")
+                tprint("  m_{}.push_back(value);", field.name)
+            else:
+                tprint("{}::set_{}(const std::string& value)", classname, field.name)
+                tprint("{{")
+                tprint("  m_{} = value;", field.name)
 
-        for field in props["repeaters"]:
-            tprint("{}&", classname)
-            tprint("{}::add_{}(const std::string& value)", classname, field)
-            tprint("{{")
-            tprint("  m_{}.push_back(value);", field)
-            tprint("  m_{}_is_set = true;", field)
+            if field.kind != FieldType.DEFAULT:
+                tprint("  m_{}_is_set = true;", field.name)
+
             tprint("  return *this;")
             tprint("}}\n")
 
@@ -235,8 +284,13 @@ def write_implementations(sections, header_name):
         tprint("{{")
         tprint('  AR_REQUIRE(!m_written, "template {} already written");', classname)
 
-        for field in props["fields"] + props["repeaters"]:
-            tprint('  AR_REQUIRE(m_{0}_is_set, "{1}::{0} not set");', field, classname)
+        for field in props["variables"]:
+            if field.kind != FieldType.DEFAULT:
+                tprint(
+                    '  AR_REQUIRE(m_{0}_is_set, "{1}::{0} not set");',
+                    field.name,
+                    classname,
+                )
 
         # prevent clang-format from adding linebreaks
         tprint("  // clang-format off")
