@@ -308,10 +308,13 @@ class TestCase(object):
         )
 
         try:
-            stdout, stderr = proc.communicate()
+            stdout, stderr = proc.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
+            raise TestError("Test took too long to run")
         except:
-            proc.terminate()
             raise
+        finally:
+            proc.terminate()
 
         stdout = stdout.decode("utf-8")
         stderr = stderr.decode("utf-8")
@@ -689,7 +692,10 @@ def main(argv):
     cleanup_dirs(args.work_dir)
 
     if n_failures >= args.max_failures:
-        print_err("\nAborted after %i of %i tests failed." % (n_failures, n_successes))
+        print_err(
+            "\nAborted after %i of %i tests failed."
+            % (n_failures, n_failures + n_successes + n_skipped)
+        )
     elif n_failures:
         print_err("\n%i of %i tests failed." % (n_failures, len(tests)))
     else:
@@ -698,7 +704,7 @@ def main(argv):
     if n_skipped:
         print_warn("Skipped {} tests!".format(n_skipped))
 
-    return n_failures
+    return 1 if n_failures else 0
 
 
 if __name__ == "__main__":
