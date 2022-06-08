@@ -12,11 +12,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, macos-11 ]
-        cxx: [ g++, clang++ ]
         include:
           - os: ubuntu-18.04
+            cxx: g++
+          - os: ubuntu-18.04
+            cxx: clang++
           - os: macos-11
+            cxx: clang++
     env:
       CXX: ${{ matrix.cxx }}
       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
