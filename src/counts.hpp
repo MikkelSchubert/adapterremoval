@@ -93,6 +93,9 @@ public:
     return result;
   }
 
+  /* Normalize counts to frequencies in the range [0; 1] */
+  counts_tmpl<double> normalize() const { return *this / sum(); }
+
   /** + operator. */
   counts_tmpl<T> operator+(const counts_tmpl<T>& other) const
   {
