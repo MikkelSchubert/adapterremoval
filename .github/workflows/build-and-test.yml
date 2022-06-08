@@ -32,9 +32,9 @@ jobs:
       run: sudo apt-get install zlib1g-dev
 
     - name: make test
-      run: make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no QUIET=no
+      run: make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no VERBOSE=no
     - name: make regression
-      run: make regression COVERAGE=yes LIBISAL=no LIBDEFLATE=no QUIET=no
+      run: make regression COVERAGE=yes LIBISAL=no LIBDEFLATE=no VERBOSE=no
 
     - name: setup coveralls
       if: ${{ matrix.os == 'ubuntu-18.04' && matrix.cxx == 'g++' }}

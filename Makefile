@@ -15,8 +15,8 @@ LIBISAL := yes
 # Use libdeflate for block compression
 LIBDEFLATE := yes
 
-# Hide individual commands during build; only shows summaries instead.
-QUIET_BUILD := yes
+# Show individual commands during build; otherwise shows summaries instead.
+VERBOSE := no
 
 # Use of colored output during build
 COLOR_BUILD := yes
@@ -41,7 +41,7 @@ LIBRARIES := -pthread -lz
 # Build directory; modified depending on build options
 BDIR     := build/main
 
-ifeq ($(strip ${QUIET_BUILD}),yes)
+ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
 endif
 
