@@ -26,6 +26,16 @@
 
 size_t g_html_id = 1;
 
+html_template::html_template()
+{
+  //
+}
+
+html_template::~html_template()
+{
+  //
+}
+
 html_head::html_head()
   : m_written()
   , m_name()

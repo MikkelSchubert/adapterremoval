@@ -64,6 +64,27 @@ _BUILTIN_VARS = {
 }
 
 
+_BASE_CLASS_HEADER = """
+class html_template
+{
+public:
+  html_template();
+  virtual ~html_template();
+  virtual void write(std::ofstream& out) = 0;
+};"""
+
+_BASE_CLASS_BODY = """
+html_template::html_template()
+{
+  //
+}
+
+html_template::~html_template()
+{
+  //
+}"""
+
+
 class FieldType(Enum):
     REQUIRED = "required"
     REPEATED = "repeated"
@@ -191,10 +212,12 @@ def write_header(sections):
     tprint("#include <string>")
     tprint("#include <vector>")
 
+    tprint("{}", _BASE_CLASS_HEADER)
+
     for key, props in sections.items():
         classname = to_classname(key)
 
-        tprint("\nclass {}", classname)
+        tprint("\nclass {} : public html_template", classname)
         tprint("{{")
         tprint("public:")
         tprint("  {}();", classname)
@@ -213,7 +236,7 @@ def write_header(sections):
             else:
                 tprint("  {}& set_{}(const std::string& value);", classname, field.name)
 
-        tprint("\n  void write(std::ofstream& out);")
+        tprint("\n  virtual void write(std::ofstream& out) override;")
 
         tprint("\nprivate:")
         tprint("  bool m_written;")
@@ -242,6 +265,8 @@ def write_implementations(sections, header_name):
     tprint('#include "{}"', header_name)
     tprint('#include "debug.hpp"', header_name)
     tprint("\nsize_t g_html_id = 1;")
+
+    tprint("{}", _BASE_CLASS_BODY)
 
     for key, props in sections.items():
         classname = to_classname(key)

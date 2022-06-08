@@ -27,7 +27,15 @@
 #include <string>
 #include <vector>
 
-class html_head
+class html_template
+{
+public:
+  html_template();
+  virtual ~html_template();
+  virtual void write(std::ofstream& out) = 0;
+};
+
+class html_head : public html_template
 {
 public:
   html_head();
@@ -39,7 +47,7 @@ public:
   html_head& set_name(const std::string& value);
   html_head& set_version(const std::string& value);
 
-  void write(std::ofstream& out);
+  virtual void write(std::ofstream& out) override;
 
 private:
   bool m_written;
@@ -49,7 +57,7 @@ private:
   bool m_version_is_set;
 };
 
-class html_body
+class html_body : public html_template
 {
 public:
   html_body();
@@ -58,7 +66,7 @@ public:
   html_body(const html_body&) = delete;
   html_body& operator=(const html_body&) = delete;
 
-  void write(std::ofstream& out);
+  virtual void write(std::ofstream& out) override;
 
 private:
   bool m_written;
