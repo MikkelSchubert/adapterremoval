@@ -16,9 +16,7 @@ jobs:
         cxx: [ g++, clang++ ]
         include:
           - os: ubuntu-18.04
-            vectorize: yes
           - os: macos-11
-            vectorize: no
     env:
       CXX: ${{ matrix.cxx }}
       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
@@ -34,9 +32,9 @@ jobs:
       run: sudo apt-get install zlib1g-dev
 
     - name: make test
-      run: make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no VECTORIZE=${{ matrix.vectorize }}
+      run: make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no QUIET=no
     - name: make regression
-      run: make regression COVERAGE=yes LIBISAL=no LIBDEFLATE=no VECTORIZE=${{ matrix.vectorize }}
+      run: make regression COVERAGE=yes LIBISAL=no LIBDEFLATE=no QUIET=no
 
     - name: setup coveralls
       if: ${{ matrix.os == 'ubuntu-18.04' && matrix.cxx == 'g++' }}
