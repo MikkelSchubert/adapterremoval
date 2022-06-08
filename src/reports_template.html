@@ -8,17 +8,516 @@
     <title>{{NAME}} {{VERSION}}</title>
     <link rel='stylesheet' href='https://unpkg.com/purecss@2.1.0/build/pure-min.css'
         integrity='sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH' crossorigin='anonymous'>
+    <script src="https://unpkg.com/vega@5.21.0/build/vega.min.js"
+        integrity="sha384-s2nYi9D0FfKNopEKsfINeS1Ffhcf+5uvwIrb7Zqso2II+HPhzBTWvXClt+NdUwFc"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vega-lite@5.2.0/build/vega-lite.min.js"
+        integrity="sha384-tU6fj0fI2gxrcWwC7uBMp70QvipC9ukjcXyOs85VMmdCq33CrA7xQ3nJkJu0SmDm"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vega-embed@6.20.2/build/vega-embed.min.js"
+        integrity="sha384-oP1rwLY7weRZ5jvAVzfnJsAn+sYA69rQC4geH82Y9oMvr8ruA1oeE9Jkft2noCHR"
+        crossorigin="anonymous"></script>
     <style type='text/css'>
+        body {
+            background-color: #E3E2DE;
+        }
 
+        div#layout {
+            max-width: 920px;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: smaller;
+        }
+
+        div.title {
+            background-color: #8C9CC0;
+            margin: -10px !important;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        div.title>h1,
+        div.title>h2 {
+            padding: 5px;
+        }
+
+        h5 {
+            margin-bottom: 2px;
+            margin-left: 6px;
+        }
+
+        .pure-table thead>tr>th {
+            font-weight: bold;
+            background-color: #C4CCDB;
+        }
+
+        .summary-table tr>td:first-child {
+            font-weight: bold;
+        }
+
+        .io-table tr>td:first-child {
+            font-weight: bold;
+        }
+
+        .io-table tr>td:not(:first-child) {
+            text-align: right;
+            width: 100px;
+        }
+
+        .fixed-height-table {
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+
+        .fixed-height-table>table {
+            width: 100%;
+        }
+
+        .fixed-height-table>table>thead>tr>th {
+            position: sticky;
+            top: 0;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+        }
+
+        .section {
+            background-color: #FFF;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            padding: 10px;
+            padding-top: 0px;
+        }
+
+        .epilogue,
+        .note {
+            color: #777;
+            font-size: small;
+            padding-top: 10px;
+        }
     </style>
 </head>
 
-<!-- TEMPLATE: BODY -->
+<!-- TEMPLATE: BODY_START -->
 
 <body>
     <div id='layout'>
+        <div class="title">
+            <h1>AdapterRemoval</h1>
+        </div>
 
-    </div>
+        <!-- TEMPLATE: SUMMARY -->
+        <div class="section">
+            <div class="title">
+                <h2>Summary</h2>
+            </div>
+
+            <h4>Runtime</h4>
+            <table class="pure-table pure-table-striped summary-table">
+                <tbody>
+                    <tr>
+                        <td>Date</td>
+                        <td>{{DATE_AND_TIME}}</td>
+                    </tr>
+                    <tr>
+                        <td>Command</td>
+                        <td>{{COMMAND}}</td>
+                    </tr>
+                    <tr>
+                        <td>Version</td>
+                        <td>{{VERSION}}</td>
+                    </tr>
+                    <tr>
+                        <td>Runtime</td>
+                        <td>{{RUNTIME}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- TEMPLATE: SUMMARY_IO -->
+            <h4>{{TITLE}}</h4>
+            <table class="pure-table io-table pure-table-striped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>[[COLUMNS]]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#Reads</td>
+                        <td>[[N_READS]]</td>
+                    </tr>
+                    <tr>
+                        <td>#Bases</td>
+                        <td>[[N_BASES]]</td>
+                    </tr>
+                    <tr>
+                        <td>Read length</td>
+                        <td>[[LENGTHS]] bp</td>
+                    </tr>
+                    <tr>
+                        <td>Q20</td>
+                        <td>[[Q20]] %</td>
+                    </tr>
+                    <tr>
+                        <td>Q30</td>
+                        <td>[[Q30]] %</td>
+                    </tr>
+                    <tr>
+                        <td>GC</td>
+                        <td>[[GC]] %</td>
+                    </tr>
+                    <tr>
+                        <td>N</td>
+                        <td>[[NS]] %</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- TEMPLATE: OUTPUT_NOTE_PE -->
+
+            <p class="note">
+                <b>*</b> The <b>Passed</b> column sums all output columns except for the <b>Discarded</b> column.
+            </p>
+
+            <!-- TEMPLATE: OUTPUT_NOTE_SE -->
+
+            <p class="note">
+                <b>*</b> The <b>Discarded</b> column is not included in the <b>Output</b> column.
+            </p>
+
+            <!-- TEMPLATE: SUMMARY_PROCESSING -->
+            <h4>Trimming and filtering</h4>
+            <table class="pure-table io-table pure-table-striped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Reads</th>
+                        <th>Bases</th>
+                        <th>Bases/Read</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Adapter trimming</td>
+                        <td>{{ADAPTER_TRIMMING_READS}}</td>
+                        <td>{{ADAPTER_TRIMMING_BASES}}</td>
+                        <td>{{ADAPTER_TRIMMING_AVG}}</td>
+                    </tr>
+                    <tr>
+                        <td>Low quality bases trimmed</td>
+                        <td>{{LOW_QUALITY_READS}}</td>
+                        <td>{{LOW_QUALITY_BASES}}</td>
+                        <td>{{LOW_QUALITY_AVG}}</td>
+                    </tr>
+                    <tr>
+                        <td>Short reads filtered</td>
+                        <td>{{MIN_LENGTH_READS}}</td>
+                        <td>{{MIN_LENGTH_BASES}}</td>
+                        <td>{{MIN_LENGTH_AVG}}</td>
+                    </tr>
+                    <tr>
+                        <td>Long reads filtered</td>
+                        <td>{{MAX_LENGTH_READS}}</td>
+                        <td>{{MAX_LENGTH_BASES}}</td>
+                        <td>{{MAX_LENGTH_AVG}}</td>
+                    </tr>
+                    <tr>
+                        <td>Ambiguous reads filtered</td>
+                        <td>{{AMBIGUOUS_READS}}</td>
+                        <td>{{AMBIGUOUS_BASES}}</td>
+                        <td>{{AMBIGUOUS_AVG}}</td>
+                    </tr>
+                    <tr>
+                        <td>Low-complexity reads filtered</td>
+                        <td>{{COMPLEXITY_READS}}</td>
+                        <td>{{COMPLEXITY_BASES}}</td>
+                        <td>{{COMPLEXITY_AVG}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!--
+
+            "overlapping_reads": 93272,
+            "terminal_bases_trimmed": 0,
+
+            -->
+
+            <!-- TEMPLATE: H2_TAG -->
+        </div>
+
+        <div class="section">
+            <div class="title">
+                <h2>{{TITLE}}</h2>
+            </div>
+
+            <!-- TEMPLATE: LINE_PLOT -->
+
+            <div id="vis_{{ID}}"></div>
+
+            <script>
+                var schema = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "title": {
+                        "text": JS_TEMPLATE_TITLE,
+                        "subtitle": JS_DEFAULT_SUB_TITLE = null,
+                        "anchor": JS_DEFAULT_TITLE_ANCHOR = null,
+                    },
+                    "width": JS_TEMPLATE_WIDTH,
+                    "height": 250,
+                    "padding": 5,
+                    "autosize": "pad",
+                    "encoding": {
+                        "x": {
+                            "title": JS_DEFAULT_X_AXIS = null,
+                            "field": "x",
+                            "type": "quantitative",
+                            "axis": { "offset": 5 },
+                        },
+                    },
+                    "layer": [
+                        {
+                            "encoding": {
+                                "y": {
+                                    "title": JS_DEFAULT_Y_AXIS = null,
+                                    "field": "y",
+                                    "type": "quantitative",
+                                    "axis": { "offset": 5, "minExtent": 40 }
+                                },
+                                "color": {
+                                    "field": "group",
+                                    "sort": null,
+                                    "legend": JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }"
+                                }
+                            },
+                            "layer": [
+                                { "mark": "line" },
+                                {
+                                    "transform": [{ "filter": { "param": "hover", "empty": false } }],
+                                    "mark": "point"
+                                }
+                            ]
+                        },
+                        {
+                            "transform": [{ "pivot": "group", "value": "y", "groupby": ["x"] }],
+                            "mark": { "type": "rule", "tooltip": { "content": "data" } },
+                            "encoding": {
+                                "opacity": {
+                                    "condition": { "value": 0.3, "param": "hover", "empty": false },
+                                    "value": 0
+                                }
+                            },
+                            "params": [
+                                {
+                                    "name": "hover",
+                                    "select": {
+                                        "type": "point",
+                                        "fields": ["x"],
+                                        "nearest": true,
+                                        "on": "mouseover",
+                                        "clear": "mouseout"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "transform": [
+                        { "flatten": ["y"] },
+                        { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
+                        { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
+                    ],
+                    "data": {
+                        "values": JS_TEMPLATE_VALUES
+                    }
+                };
+
+                vegaEmbed('#vis_{{ID}}', schema);
+            </script>
+
+            <!-- TEMPLATE: FACET_LINE_PLOT -->
+
+            <div id="vis_{{ID}}"></div>
+
+            <script>
+                var schema = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "title": JS_TEMPLATE_TITLE,
+                    "padding": 5,
+                    "spec": {
+                        "width": JS_TEMPLATE_WIDTH,
+                        "height": 250,
+                        "encoding": {
+                            "x": {
+                                "title": JS_DEFAULT_X_AXIS = null,
+                                "field": "x",
+                                "type": "quantitative",
+                                "axis": { "offset": 5 }
+                            }
+                        },
+                        "layer": [
+                            {
+                                "encoding": {
+                                    "y": {
+                                        "title": JS_DEFAULT_Y_AXIS = null,
+                                        "field": "y",
+                                        "type": "quantitative",
+                                        "sort": null,
+                                        "axis": { "offset": 5, "minExtent": 40 }
+                                    },
+                                    "color": {
+                                        "field": "group",
+                                        "sort": null,
+                                        "legend": JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }"
+                                    }
+                                },
+                                "layer": [
+                                    { "mark": "line" },
+                                    {
+                                        "transform": [{ "filter": { "param": "hover", "empty": false } }],
+                                        "mark": "point"
+                                    }
+                                ]
+                            },
+                            {
+                                "transform": [{ "pivot": "group", "value": "y", "groupby": ["x"] }],
+                                "mark": { "type": "rule", "tooltip": { "content": "data" } },
+                                "encoding": {
+                                    "opacity": {
+                                        "condition": { "value": 0.3, "param": "hover", "empty": false },
+                                        "value": 0
+                                    }
+                                },
+                                "params": [
+                                    {
+                                        "name": "hover",
+                                        "select": {
+                                            "type": "point",
+                                            "fields": ["x"],
+                                            "nearest": true,
+                                            "on": "mouseover",
+                                            "clear": "mouseout"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "facet": { "field": "read", "type": "ordinal", "title": "", "sort": [] },
+                    "columns": 2,
+                    "transform": [
+                        { "flatten": ["y"] },
+                        { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
+                        { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
+                    ],
+                    "data": {
+                        "values": JS_TEMPLATE_VALUES
+                    }
+                };
+
+                vegaEmbed('#vis_{{ID}}', schema);
+            </script>
+
+            <!-- TEMPLATE: BAR_PLOT -->
+
+            <div id="vis_{{ID}}"></div>
+
+            <script>
+                var schema = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "title": { "text": JS_TEMPLATE_TITLE, "anchor": "start" },
+                    "width": JS_TEMPLATE_WIDTH,
+                    "height": 250,
+                    "padding": 5,
+                    "autosize": "pad",
+                    "mark": "bar",
+                    "encoding": {
+                        "x": {
+                            "title": JS_DEFAULT_X_AXIS = null,
+                            "field": "x",
+                            "type": "nominal",
+                            "title": "",
+                            "axis": { "labels": false }
+                        },
+                        "y": {
+                            "title": JS_DEFAULT_Y_AXIS = null,
+                            "field": "y",
+                            "type": "quantitative",
+                            "axis": { "offset": 5, "minExtent": 40 }
+                        },
+                        "tooltip": { "field": "x" }
+                    },
+                    "data": {
+                        "values": JS_TEMPLATE_VALUES
+                    }
+                };
+
+                vegaEmbed('#vis_{{ID}}', schema);
+            </script>
+
+            <!-- TEMPLATE: DEMULTIPLEXING_HEAD -->
+
+            <h5>Per sample statistics</h5>
+
+            <div class="fixed-height-table">
+                <table class="pure-table pure-table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Barcode #1</th>
+                            <th>Barcode #2</th>
+                            <th>Sample</th>
+                            <th>%</th>
+                            <th>#Reads</th>
+                            <th>#Bases</th>
+                            <th>Read length</th>
+                            <th>GC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- TEMPLATE: DEMULTIPLEXING_ROW -->
+
+                        <tr>
+                            <td>{{N}}</td>
+                            <td>{{BARCODE_1}}</td>
+                            <td>{{BARCODE_2}}</td>
+                            <td>{{NAME}}</td>
+                            <td>{{PCT}}</td>
+                            <td>{{READS}}</td>
+                            <td>{{BP}}</td>
+                            <td>{{LENGTH}} bp</td>
+                            <td>{{GC}} %</td>
+                        </tr>
+
+                        <!-- TEMPLATE: DEMULTIPLEXING_TAIL -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TEMPLATE: BODY_END -->
+        </div>
+
+        <div class="section epilogue">
+            <p>
+                If you use AdapterRemoval, please cite
+                <a href="https://doi.org/10.1186/s13104-016-1900-2">Schubert et. al. 2016</a>:
+
+            <pre>    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid
+    adapter trimming, identification, and read merging.
+    BMC Research Notes, 12;9(1):88.</pre>
+            </p>
+
+            <p>
+                For comments, suggestions, or feedback, please use
+                <a href="https://github.com/MikkelSchubert/adapterremoval/issues/new">GitHub Issues</a>.
+            </p>
+            <p>
+                This report was generated using <a href="https://purecss.io/">Pure</a> (<a
+                    href="https://github.com/pure-css/pure/blob/v2.1.0/LICENSE">license</a>) and <a
+                    href="https://vega.github.io/">Vega-Lite</a> (<a
+                    href="https://github.com/vega/vega-lite/blob/v5.2.0/LICENSE">license</a>).
+            </p>
+        </div>
+
 </body>
 
 </html>
