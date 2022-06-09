@@ -201,7 +201,7 @@ TEST_OBJS := $(TEST_DIR)/main_test.o \
              $(TEST_DIR)/strutils_test.o
 TEST_DEPS := $(TEST_OBJS:.o=.deps)
 
-TEST_CXXFLAGS := -Isrc -DUNIT_TEST -g
+TEST_CXXFLAGS := -Isrc -DUNIT_TEST
 
 test: $(TEST_DIR)/main
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
