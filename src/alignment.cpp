@@ -29,17 +29,13 @@
 #include <string>    // for string, operator+
 #include <utility>   // for swap, pair
 
-#if !defined(__APPLE_)
 #include <emmintrin.h> // for _mm_cmpeq_epi8, __m128i, _mm_loadu_s...
 #include <immintrin.h> // for _mm256_set1_epi8, __m256i, _mm256_lo...
-#endif
 
 #include "alignment.hpp"
 #include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for fastq, fastq_pair_vec
-
-#if !defined(__APPLE_)
 
 /** Counts the number of masked bytes **/
 __attribute__((target("sse2"))) inline size_t
@@ -165,8 +161,6 @@ compare_subsequences_sse2(const alignment_info& best,
   return true;
 }
 
-#endif
-
 /**
  * Compares two subsequences in an alignment to a previous (best) alignment.
  *
@@ -190,7 +184,6 @@ compare_subsequences(const alignment_info& best,
 {
   int remaining_bases = current.score = current.length;
 
-#if !defined(__APPLE_)
   // Compare 32 bp at a time (if supported)
   if (!compare_subsequences_avx2(best,
                                  current,
@@ -210,8 +203,6 @@ compare_subsequences(const alignment_info& best,
                                  remaining_bases)) {
     return false;
   }
-
-#endif
 
   for (; remaining_bases && current.score >= best.score; --remaining_bases) {
     const char nt_1 = *seq_1_ptr++;
