@@ -15,10 +15,13 @@ jobs:
         include:
           - os: ubuntu-18.04
             cxx: g++
+            coverage: "yes"
           - os: ubuntu-18.04
             cxx: clang++
+            coverage: "no"
           - os: macos-11
             cxx: clang++
+            coverage: "no"
     env:
       CXX: ${{ matrix.cxx }}
       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
@@ -34,12 +37,12 @@ jobs:
       run: sudo apt-get install zlib1g-dev
 
     - name: make test
-      run: make test COVERAGE=yes LIBISAL=no LIBDEFLATE=no VERBOSE=yes
+      run: make test LIBISAL=no LIBDEFLATE=no VERBOSE=yes COVERAGE=${{ matrix.coverage }}
     - name: make regression
-      run: make regression COVERAGE=yes LIBISAL=no LIBDEFLATE=no VERBOSE=yes
+      run: make regression LIBISAL=no LIBDEFLATE=no VERBOSE=yes COVERAGE=${{ matrix.coverage }}
 
     - name: setup coveralls
-      if: ${{ matrix.os == 'ubuntu-18.04' && matrix.cxx == 'g++' }}
+      if: ${{ matrix.coverage == 'yes' }}
       run: |
         python3 -m pip install cpp-coveralls
         coveralls --exclude tests --gcov-options '\-lpbc'
