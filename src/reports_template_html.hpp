@@ -39,7 +39,7 @@ class html_head : public html_template
 {
 public:
   html_head();
-  ~html_head();
+  virtual ~html_head() override;
 
   html_head(const html_head&) = delete;
   html_head& operator=(const html_head&) = delete;
@@ -61,7 +61,7 @@ class html_body_start : public html_template
 {
 public:
   html_body_start();
-  ~html_body_start();
+  virtual ~html_body_start() override;
 
   html_body_start(const html_body_start&) = delete;
   html_body_start& operator=(const html_body_start&) = delete;
@@ -76,7 +76,7 @@ class html_summary : public html_template
 {
 public:
   html_summary();
-  ~html_summary();
+  virtual ~html_summary() override;
 
   html_summary(const html_summary&) = delete;
   html_summary& operator=(const html_summary&) = delete;
@@ -104,7 +104,7 @@ class html_summary_io : public html_template
 {
 public:
   html_summary_io();
-  ~html_summary_io();
+  virtual ~html_summary_io() override;
 
   html_summary_io(const html_summary_io&) = delete;
   html_summary_io& operator=(const html_summary_io&) = delete;
@@ -147,7 +147,7 @@ class html_output_note_pe : public html_template
 {
 public:
   html_output_note_pe();
-  ~html_output_note_pe();
+  virtual ~html_output_note_pe() override;
 
   html_output_note_pe(const html_output_note_pe&) = delete;
   html_output_note_pe& operator=(const html_output_note_pe&) = delete;
@@ -162,7 +162,7 @@ class html_output_note_se : public html_template
 {
 public:
   html_output_note_se();
-  ~html_output_note_se();
+  virtual ~html_output_note_se() override;
 
   html_output_note_se(const html_output_note_se&) = delete;
   html_output_note_se& operator=(const html_output_note_se&) = delete;
@@ -177,7 +177,7 @@ class html_summary_processing : public html_template
 {
 public:
   html_summary_processing();
-  ~html_summary_processing();
+  virtual ~html_summary_processing() override;
 
   html_summary_processing(const html_summary_processing&) = delete;
   html_summary_processing& operator=(const html_summary_processing&) = delete;
@@ -247,7 +247,7 @@ class html_h2_tag : public html_template
 {
 public:
   html_h2_tag();
-  ~html_h2_tag();
+  virtual ~html_h2_tag() override;
 
   html_h2_tag(const html_h2_tag&) = delete;
   html_h2_tag& operator=(const html_h2_tag&) = delete;
@@ -266,7 +266,7 @@ class html_line_plot : public html_template
 {
 public:
   html_line_plot();
-  ~html_line_plot();
+  virtual ~html_line_plot() override;
 
   html_line_plot(const html_line_plot&) = delete;
   html_line_plot& operator=(const html_line_plot&) = delete;
@@ -301,7 +301,7 @@ class html_facet_line_plot : public html_template
 {
 public:
   html_facet_line_plot();
-  ~html_facet_line_plot();
+  virtual ~html_facet_line_plot() override;
 
   html_facet_line_plot(const html_facet_line_plot&) = delete;
   html_facet_line_plot& operator=(const html_facet_line_plot&) = delete;
@@ -332,7 +332,7 @@ class html_bar_plot : public html_template
 {
 public:
   html_bar_plot();
-  ~html_bar_plot();
+  virtual ~html_bar_plot() override;
 
   html_bar_plot(const html_bar_plot&) = delete;
   html_bar_plot& operator=(const html_bar_plot&) = delete;
@@ -361,7 +361,7 @@ class html_demultiplexing_head : public html_template
 {
 public:
   html_demultiplexing_head();
-  ~html_demultiplexing_head();
+  virtual ~html_demultiplexing_head() override;
 
   html_demultiplexing_head(const html_demultiplexing_head&) = delete;
   html_demultiplexing_head& operator=(const html_demultiplexing_head&) = delete;
@@ -376,7 +376,7 @@ class html_demultiplexing_row : public html_template
 {
 public:
   html_demultiplexing_row();
-  ~html_demultiplexing_row();
+  virtual ~html_demultiplexing_row() override;
 
   html_demultiplexing_row(const html_demultiplexing_row&) = delete;
   html_demultiplexing_row& operator=(const html_demultiplexing_row&) = delete;
@@ -419,7 +419,7 @@ class html_demultiplexing_tail : public html_template
 {
 public:
   html_demultiplexing_tail();
-  ~html_demultiplexing_tail();
+  virtual ~html_demultiplexing_tail() override;
 
   html_demultiplexing_tail(const html_demultiplexing_tail&) = delete;
   html_demultiplexing_tail& operator=(const html_demultiplexing_tail&) = delete;
@@ -434,7 +434,7 @@ class html_body_end : public html_template
 {
 public:
   html_body_end();
-  ~html_body_end();
+  virtual ~html_body_end() override;
 
   html_body_end(const html_body_end&) = delete;
   html_body_end& operator=(const html_body_end&) = delete;

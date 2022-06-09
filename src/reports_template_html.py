@@ -221,7 +221,7 @@ def write_header(sections):
         tprint("{{")
         tprint("public:")
         tprint("  {}();", classname)
-        tprint("  ~{}();", classname)
+        tprint("  virtual ~{}() override;", classname)
 
         tprint("")
         tprint("  {}(const {}&) = delete;", classname, classname)
