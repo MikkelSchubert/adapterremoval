@@ -27,7 +27,7 @@
 
 #include "adapterset.hpp"     // for adapter_set
 #include "commontypes.hpp"    // for fastq_vec
-#include "debug.hpp"          // for AR_REQUIRE, AR_ASSERT_SINGLE_THREAD
+#include "debug.hpp"          // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "demultiplexing.hpp" // header
 #include "fastq_io.hpp"       // for fastq_read_chunk, fastq_output_chunk, ...
 #include "userconfig.hpp"     // for userconfig, fastq_encoding_ptr
@@ -129,7 +129,7 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
 chunk_vec
 demultiplex_se_reads::process(chunk_ptr chunk)
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
   for (auto& read : read_chunk.reads_1) {
@@ -170,7 +170,7 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
 chunk_vec
 demultiplex_pe_reads::process(chunk_ptr chunk)
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
   AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
 

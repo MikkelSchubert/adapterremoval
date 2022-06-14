@@ -159,10 +159,8 @@ private:
   //! Number of reads to process
   unsigned m_head;
 
-#ifdef DEBUG
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
-#endif
 };
 
 /**
@@ -207,10 +205,8 @@ private:
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 
-#ifdef DEBUG
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
-#endif
 };
 
 /**
@@ -241,10 +237,8 @@ private:
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 
-#ifdef DEBUG
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
-#endif
 };
 
 /**
@@ -275,10 +269,8 @@ private:
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 
-#ifdef DEBUG
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
-#endif
 };
 
 /**
@@ -337,10 +329,8 @@ private:
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 
-#ifdef DEBUG
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
-#endif
 };
 
 } // namespace adapterremoval

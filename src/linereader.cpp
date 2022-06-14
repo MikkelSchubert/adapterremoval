@@ -28,7 +28,7 @@
 #include <memory>   // for make_unique
 #include <sstream>  // for stringstream
 
-#include "debug.hpp"          // for AR_DEBUG_ASSSERT
+#include "debug.hpp"          // for AR_FAIL
 #include "linereader.hpp"     // header
 #include "managed_writer.hpp" // for managed_writer
 #include "threads.hpp"        // for print_locker

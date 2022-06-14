@@ -31,14 +31,14 @@ namespace adapterremoval {
 
 TEST_CASE("assert on true value")
 {
-  AR_ASSERT(1 == 1);
+  AR_REQUIRE(1 == 1);
 }
 
 TEST_CASE("assert on false value")
 {
   std::string what;
   try {
-    AR_ASSERT(1 == 2);
+    AR_REQUIRE(1 == 2);
   } catch (const assert_failed& error) {
     what = error.what();
   }
@@ -52,14 +52,14 @@ TEST_CASE("assert on false value")
 
 TEST_CASE("assert on true value with message")
 {
-  AR_ASSERT(!false, "this is dummy message");
+  AR_REQUIRE(!false, "this is dummy message");
 }
 
 TEST_CASE("assert on false value with message")
 {
   std::string what;
   try {
-    AR_ASSERT(!!false, "message goes here");
+    AR_REQUIRE(!!false, "message goes here");
   } catch (const assert_failed& error) {
     what = error.what();
   }
@@ -92,11 +92,11 @@ TEST_CASE("assert single thread")
   std::mutex lock;
 
   {
-    AR_ASSERT_SINGLE_THREAD(lock);
+    AR_REQUIRE_SINGLE_THREAD(lock);
   }
 
   {
-    AR_ASSERT_SINGLE_THREAD(lock);
+    AR_REQUIRE_SINGLE_THREAD(lock);
   }
 }
 
@@ -104,20 +104,16 @@ TEST_CASE("assert single thread failed")
 {
   std::mutex lock;
 
-  AR_ASSERT_SINGLE_THREAD(lock);
+  AR_REQUIRE_SINGLE_THREAD(lock);
 
   bool caught_exception = false;
   try {
-    AR_ASSERT_SINGLE_THREAD(lock);
+    AR_REQUIRE_SINGLE_THREAD(lock);
   } catch (const assert_failed&) {
     caught_exception = true;
   }
 
-#ifdef DEBUG
   REQUIRE(caught_exception);
-#else
-  REQUIRE_FALSE(caught_exception);
-#endif
 }
 
 } // namespace adapterremoval

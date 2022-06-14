@@ -33,7 +33,7 @@
 #include <libdeflate.h>
 #endif
 
-#include "debug.hpp"     // for AR_REQUIRE, AR_ASSERT_SINGLE_THREAD
+#include "debug.hpp"     // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "fastq.hpp"     // for fastq
 #include "fastq_enc.hpp" // for fastq_error
 #include "fastq_io.hpp"
@@ -192,9 +192,7 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_eof(false)
   , m_timer("reads")
   , m_head(config.head)
-#ifdef DEBUG
   , m_lock()
-#endif
 {
   if (config.interleaved_input) {
     AR_REQUIRE(config.input_files_2.empty());
@@ -211,7 +209,7 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
 chunk_vec
 read_fastq::process(chunk_ptr chunk)
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!chunk);
   if (m_eof) {
     return chunk_vec();
@@ -287,7 +285,7 @@ read_fastq::read_paired_end(read_chunk_ptr& chunk)
 void
 read_fastq::finalize()
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
 
   m_timer.finalize();
@@ -306,9 +304,7 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   , m_statistics_2(stats ? stats->input_2 : nullptr)
   , m_next_step(next_step)
   , m_eof(false)
-#ifdef DEBUG
   , m_lock()
-#endif
 {
 }
 
@@ -317,7 +313,7 @@ post_process_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
   AR_REQUIRE(!m_eof);
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
 
   m_eof = file_chunk.eof;
 
@@ -384,7 +380,7 @@ post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
 void
 post_process_fastq::finalize()
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
 }
 
@@ -396,9 +392,7 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
   , m_next_step(next_step)
   , m_stream()
   , m_eof(false)
-#ifdef DEBUG
   , m_lock()
-#endif
 {
   checked_deflate_init2(&m_stream, config.gzip_level);
 }
@@ -406,7 +400,7 @@ gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
 void
 gzip_fastq::finalize()
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
 
   checked_deflate_end(&m_stream);
@@ -417,7 +411,7 @@ gzip_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
 
   m_eof = file_chunk.eof;
@@ -466,16 +460,14 @@ split_fastq::split_fastq(size_t next_step)
   , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
   , m_offset()
   , m_eof(false)
-#ifdef DEBUG
   , m_lock()
-#endif
 {
 }
 
 void
 split_fastq::finalize()
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
 
   AR_REQUIRE(!m_buffer);
@@ -486,7 +478,7 @@ split_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
   m_eof = file_chunk.eof;
 
@@ -599,9 +591,7 @@ write_fastq::write_fastq(const std::string& filename)
                     "write_fastq")
   , m_output(filename)
   , m_eof(false)
-#ifdef DEBUG
   , m_lock()
-#endif
 {
 }
 
@@ -610,7 +600,7 @@ write_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
 
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
 
   try {
@@ -634,7 +624,7 @@ write_fastq::process(chunk_ptr chunk)
 void
 write_fastq::finalize()
 {
-  AR_ASSERT_SINGLE_THREAD(m_lock);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
 
   // Close file to trigger any exceptions due to badbit / failbit

@@ -78,13 +78,11 @@ debug_raise_assert(const char* filename,
 #define AR_FAIL(msg)                                                           \
   adapterremoval::debug_raise_assert(__FILE__, __LINE__, std::string(), msg)
 
-#ifdef DEBUG
-
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)
 
 /** Raise a failure if a scope is accessed more than once at the same time. */
-#define AR_ASSERT_SINGLE_THREAD(lock)                                          \
+#define AR_REQUIRE_SINGLE_THREAD(lock)                                         \
   std::unique_lock<std::mutex> AR_MERGE_(locker, __LINE__)(lock,               \
                                                            std::defer_lock);   \
   do {                                                                         \
@@ -92,15 +90,5 @@ debug_raise_assert(const char* filename,
       AR_FAIL("race condition detected");                                      \
     }                                                                          \
   } while (0)
-
-#define AR_ASSERT(...)                                                         \
-  AR_REQUIRE_GET_(__VA_ARGS__, AR_REQUIRE_2_, AR_REQUIRE_1_, )(__VA_ARGS__)
-
-#else
-
-#define AR_ASSERT_SINGLE_THREAD(lock)
-#define AR_ASSERT(...)
-
-#endif
 
 } // namespace adapterremoval
