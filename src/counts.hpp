@@ -23,6 +23,8 @@
 
 #include "vecutils.hpp"
 
+namespace adapterremoval {
+
 /** Helper class for working with simple count statistics. */
 template<typename T>
 class counts_tmpl
@@ -226,3 +228,5 @@ typedef counts_tmpl<double> rates;
 using acgt_counts = indexed_counts<int64_t, 4>;
 //! Counter indexed by ACGTN nucleotides using ACGTN_TO_IDX
 using acgtn_counts = indexed_counts<int64_t, 5>;
+
+} // namespace adapterremoval

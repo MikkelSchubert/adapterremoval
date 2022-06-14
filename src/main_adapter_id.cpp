@@ -42,6 +42,8 @@
 #include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
 #include "vecutils.hpp"    // for merge_vectors
 
+namespace adapterremoval {
+
 ///////////////////////////////////////////////////////////////////////////////
 // KMer related functions and constants
 
@@ -468,3 +470,5 @@ identify_adapter_sequences(const userconfig& config)
 
 // Out-of-line definition to make -Wweak-vtables happy
 adapter_identification::~adapter_identification() {}
+
+} // namespace adapterremoval

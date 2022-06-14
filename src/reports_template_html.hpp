@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+namespace adapterremoval {
+
 class html_template
 {
 public:
@@ -444,3 +446,5 @@ public:
 private:
   bool m_written;
 };
+
+} // namespace adapterremoval

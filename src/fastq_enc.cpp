@@ -31,6 +31,8 @@
 #include "debug.hpp" // for AR_FAIL, AR_REQUIRE
 #include "fastq_enc.hpp"
 
+namespace adapterremoval {
+
 ///////////////////////////////////////////////////////////////////////////////
 // fastq_error
 
@@ -270,3 +272,5 @@ fastq_encoding::decode(std::string& qualities) const
     }
   }
 }
+
+} // namespace adapterremoval

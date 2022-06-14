@@ -31,6 +31,8 @@
 #include "linereader.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 class vec_reader : public line_reader_base
 {
 public:
@@ -1374,3 +1376,5 @@ TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
   REQUIRE(mate1.header() == name);
   REQUIRE(mate2.header() == name);
 }
+
+} // namespace adapterremoval

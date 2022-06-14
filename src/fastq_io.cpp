@@ -42,6 +42,8 @@
 #include "threads.hpp"    // for thread_error, print_locker, thread_abort
 #include "userconfig.hpp" // for userconfig
 
+namespace adapterremoval {
+
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions for 'zlib'
 
@@ -644,3 +646,5 @@ write_fastq::finalize()
     throw std::ofstream::failure(message + std::strerror(errno));
   }
 }
+
+} // namespace adapterremoval

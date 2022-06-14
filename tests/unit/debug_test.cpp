@@ -27,6 +27,8 @@
 #include "debug.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 TEST_CASE("assert on true value")
 {
   AR_ASSERT(1 == 1);
@@ -117,3 +119,5 @@ TEST_CASE("assert single thread failed")
   REQUIRE_FALSE(caught_exception);
 #endif
 }
+
+} // namespace adapterremoval

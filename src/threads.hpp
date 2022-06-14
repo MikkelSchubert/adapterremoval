@@ -27,6 +27,8 @@
 #include <mutex>     // for lock_guard, mutex
 #include <string>    // for string
 
+namespace adapterremoval {
+
 /**
  * Exception thrown for threading related errors, including errors with
  * threads, mutexes, and conditionals.
@@ -94,3 +96,5 @@ public:
 private:
   std::lock_guard<std::mutex> m_lock;
 };
+
+} // namespace adapterremoval

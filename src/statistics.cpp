@@ -34,6 +34,8 @@
 #include "userconfig.hpp" // for userconfig
 #include "utilities.hpp"  // for prng_seed
 
+namespace adapterremoval {
+
 ////////////////////////////////////////////////////////////////////////////////
 
 const size_t DUPLICATION_LEVELS = 16;
@@ -432,3 +434,5 @@ statistics_builder::initialize() const
 
   return stats;
 }
+
+} // namespace adapterremoval

@@ -27,6 +27,8 @@
 #include <string>   // for string
 #include <vector>   // for vector
 
+namespace adapterremoval {
+
 const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
@@ -154,3 +156,5 @@ format_fraction(uint64_t num, uint64_t denom, size_t precision = 2);
 /** Formats a percentage, returning "NA" if denominator is 0 */
 std::string
 format_percentage(uint64_t num, uint64_t denom, size_t precision = 1);
+
+} // namespace adapterremoval

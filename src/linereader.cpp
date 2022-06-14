@@ -33,6 +33,8 @@
 #include "managed_writer.hpp" // for managed_writer
 #include "threads.hpp"        // for print_locker
 
+namespace adapterremoval {
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'io_error'
 
@@ -382,3 +384,5 @@ line_reader::refill_buffers_gzip()
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
 #endif
 }
+
+} // namespace adapterremoval

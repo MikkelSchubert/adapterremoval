@@ -7,3 +7,5 @@ Language: Cpp
 # InsertBraces: true
 # Add newlines between function definitions (requires clang-format v14)
 SeparateDefinitionBlocks: Always
+# Automatically add namespace comments
+FixNamespaceComments: true

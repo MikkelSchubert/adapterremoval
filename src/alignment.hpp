@@ -28,6 +28,8 @@
 #include "fastq.hpp"     // for fastq_pair_vec, fastq
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 
+namespace adapterremoval {
+
 /**
  * Summarizes an alignment.
  *
@@ -256,3 +258,5 @@ bool
 extract_adapter_sequences(const alignment_info& alignment,
                           fastq& pcr1,
                           fastq& pcr2);
+
+} // namespace adapterremoval

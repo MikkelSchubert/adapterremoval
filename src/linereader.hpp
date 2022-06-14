@@ -34,6 +34,8 @@
 #include <isa-l/igzip_lib.h> // for inflate_state, etc.
 #endif
 
+namespace adapterremoval {
+
 //! Buffer used for compressed and uncompressed line data
 typedef std::array<char, 10 * BUFSIZ> line_buffer;
 
@@ -145,3 +147,5 @@ private:
   //! Indicates if a read across the EOF has been attempted.
   bool m_eof;
 };
+
+} // namespace adapterremoval

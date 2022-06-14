@@ -30,7 +30,7 @@
 #include "fastq.hpp"
 
 inline std::ostream&
-operator<<(std::ostream& stream, const fastq& record)
+operator<<(std::ostream& stream, const adapterremoval::fastq& record)
 {
   return stream << "'@" << record.header() << "\\n"
                 << record.sequence() << "\\n+\\n"

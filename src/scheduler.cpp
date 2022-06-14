@@ -33,6 +33,8 @@
 #include "strutils.hpp" // for cli_formatter
 #include "threads.hpp"  // for print_locker, thread_abort
 
+namespace adapterremoval {
+
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_chunk
 
@@ -363,3 +365,5 @@ scheduler::do_run()
   // Signal any waiting threads
   m_condition.notify_all();
 }
+
+} // namespace adapterremoval

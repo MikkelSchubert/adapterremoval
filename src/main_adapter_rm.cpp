@@ -40,6 +40,8 @@
 #include "trimming.hpp"       // for pe_reads_processor, reads_processor
 #include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
 
+namespace adapterremoval {
+
 size_t
 add_write_step(scheduler& sch,
                const userconfig& config,
@@ -132,3 +134,5 @@ remove_adapter_sequences(const userconfig& config)
 
   return !write_html_report(config, stats, out_files.settings_html);
 }
+
+} // namespace adapterremoval

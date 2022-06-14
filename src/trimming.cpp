@@ -36,6 +36,8 @@
 #include "trimming.hpp"
 #include "userconfig.hpp" // for userconfig, output_sample_files, output_sa...
 
+namespace adapterremoval {
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
@@ -445,3 +447,5 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   return chunks.finalize();
 }
+
+} // namespace adapterremoval

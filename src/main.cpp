@@ -30,6 +30,8 @@
 #include "main.hpp"       // header
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
 
+namespace adapterremoval {
+
 // See main_adapter_rm.cpp
 int
 remove_adapter_sequences(const userconfig& config);
@@ -43,12 +45,17 @@ demultiplex_sequences(const userconfig& config);
 int
 fastq_report_only(const userconfig& config);
 
+} // namespace adapterremoval
+
 int
 main(int argc, char* argv[])
 {
+  using namespace adapterremoval;
+
   std::ios_base::sync_with_stdio(false);
 
   userconfig config(NAME, VERSION, HELPTEXT);
+
   switch (config.parse_args(argc, argv)) {
     case argparse::parse_result::error:
       return 1;

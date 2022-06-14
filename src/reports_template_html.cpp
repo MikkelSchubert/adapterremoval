@@ -24,6 +24,8 @@
 #include "reports_template_html.hpp"
 #include "debug.hpp"
 
+namespace adapterremoval {
+
 size_t g_html_id = 1;
 
 html_template::html_template()
@@ -1526,3 +1528,5 @@ html_body_end::write(std::ofstream& out)
   // clang-format on
   m_written = true;
 }
+
+} // namespace adapterremoval

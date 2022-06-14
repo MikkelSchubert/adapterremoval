@@ -26,6 +26,8 @@
 
 #include <vector>
 
+namespace adapterremoval {
+
 class statistics;
 class userconfig;
 
@@ -38,3 +40,5 @@ bool
 write_html_report(const userconfig& config,
                   const statistics& stats,
                   const std::string& filename);
+
+} // namespace adapterremoval

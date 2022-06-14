@@ -31,6 +31,8 @@
 #include <utility>  // for pair
 #include <vector>   // for vector
 
+namespace adapterremoval {
+
 typedef std::unique_ptr<unsigned char[]> buffer_ptr;
 typedef std::pair<size_t, buffer_ptr> buffer_pair;
 typedef std::vector<buffer_pair> buffer_vec;
@@ -96,3 +98,5 @@ private:
   //! Indicates if a performance warning has been printed
   static bool s_warning_printed;
 };
+
+} // namespace adapterremoval

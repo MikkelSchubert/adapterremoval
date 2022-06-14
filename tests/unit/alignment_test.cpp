@@ -31,6 +31,8 @@
 #include "fastq.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 #define TEST_ALIGNMENT_SETTER(TYPE, NAME)                                      \
   ALN& NAME(TYPE value)                                                        \
   {                                                                            \
@@ -1407,3 +1409,5 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
     }
   }
 }
+
+} // namespace adapterremoval

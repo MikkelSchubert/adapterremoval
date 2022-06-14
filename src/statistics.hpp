@@ -35,6 +35,8 @@
 #include "fastq.hpp"       // for ACGT_TO_IDX
 #include "robin_hood.hpp"  // for unordered_flat_map
 
+namespace adapterremoval {
+
 class demux_statistics;
 class duplication_statistics;
 class fastq_statistics;
@@ -318,3 +320,5 @@ private:
   //! The max number of unique sequences counted when estimating duplication.
   size_t m_max_unique;
 };
+
+} // namespace adapterremoval

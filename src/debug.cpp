@@ -28,6 +28,8 @@
 
 #include "debug.hpp"
 
+namespace adapterremoval {
+
 assert_failed::assert_failed(const assert_failed& errror)
   : m_what(errror.m_what)
 {
@@ -72,3 +74,5 @@ debug_raise_assert(const char* filename,
   std::abort();
 #endif
 }
+
+} // namespace adapterremoval

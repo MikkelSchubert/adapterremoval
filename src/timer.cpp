@@ -31,6 +31,8 @@
 #include "threads.hpp" // for print_locker
 #include "timer.hpp"
 
+namespace adapterremoval {
+
 //! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
 
@@ -162,3 +164,5 @@ highres_timer::duration() const
 
   return diff.count();
 }
+
+} // namespace adapterremoval

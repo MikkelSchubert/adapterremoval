@@ -33,6 +33,8 @@
 #include "commontypes.hpp" // for string_vec
 #include "counts.hpp"      // for counts, rates
 
+namespace adapterremoval {
+
 class json_list;
 class json_dict;
 class json_value;
@@ -162,3 +164,5 @@ private:
   //! Map of unencoded keys to JSON objects
   std::map<std::string, json_ptr> m_values;
 };
+
+} // namespace adapterremoval

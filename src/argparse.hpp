@@ -34,6 +34,8 @@
 
 #include "commontypes.hpp" // for string_vec_citer, string_vec
 
+namespace adapterremoval {
+
 namespace argparse {
 
 class argument;
@@ -416,4 +418,7 @@ private:
 
   string_vec* m_sink;
 };
+
 } // namespace argparse
+
+} // namespace adapterremoval

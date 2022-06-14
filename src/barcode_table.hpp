@@ -33,6 +33,8 @@
 
 #include "fastq.hpp" // for fastq_pair_vec
 
+namespace adapterremoval {
+
 struct next_subsequence;
 
 /** Exception raised for FASTQ parsing and validation errors. */
@@ -112,3 +114,5 @@ protected:
   size_t m_barcode_1_len;
   size_t m_barcode_2_len;
 };
+
+} // namespace adapterremoval

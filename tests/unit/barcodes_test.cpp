@@ -31,6 +31,8 @@
 #include "fastq.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 TEST_CASE("what()", "[barcodes::errors]")
 {
   barcode_error err("test error");
@@ -627,3 +629,5 @@ TEST_CASE("Mismatch resulting in apparent match", "[barcodes::inexact::se]")
   REQUIRE(table.identify(fastq("A", "TCCCA")) == 0);
   REQUIRE(table.identify(fastq("A", "ACCTT")) == 1);
 }
+
+} // namespace adapterremoval

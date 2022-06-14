@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+namespace adapterremoval {
+
 class fastq;
 
 typedef std::vector<std::string> string_vec;
@@ -59,3 +61,5 @@ enum class read_type : size_t
   //! Demultiplexed mate 2 reads that could not be assigned to a sample
   unidentified_2,
 };
+
+} // namespace adapterremoval

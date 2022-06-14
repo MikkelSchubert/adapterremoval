@@ -29,6 +29,8 @@
 #include "json.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 template<typename T>
 std::string
 _write_json(const T& json)
@@ -476,3 +478,5 @@ TEST_CASE("complex json_list ")
   }
 ])");
 }
+
+} // namespace adapterremoval

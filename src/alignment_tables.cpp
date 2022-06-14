@@ -25,6 +25,8 @@
 
 #include "alignment_tables.hpp"
 
+namespace adapterremoval {
+
 // Original algorithm:
 // Hardcoded results are used to ensure identical results across architectures.
 
@@ -1442,3 +1444,5 @@ const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE] = {
   0x36, 0x35, 0x34, 0x33, 0x32, 0x31, 0x30, 0x2f, 0x2e, 0x2d, 0x2c, 0x2b, 0x2a,
   0x29, 0x28, 0x27, 0x27, 0x26, 0x25, 0x25, 0x24, 0x24,
 };
+
+} // namespace adapterremoval

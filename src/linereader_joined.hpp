@@ -30,6 +30,8 @@
 #include "commontypes.hpp" // for string_vec
 #include "linereader.hpp"  // for line_reader_base
 
+namespace adapterremoval {
+
 /**
  * Multi-file line-reader
  *
@@ -79,3 +81,5 @@ private:
   //! Current line across all files.
   size_t m_current_line;
 };
+
+} // namespace adapterremoval

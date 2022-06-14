@@ -35,6 +35,8 @@
 #include "debug.hpp" // for AR_REQUIRE
 #include "strutils.hpp"
 
+namespace adapterremoval {
+
 size_t
 levenshtein(const std::string& s, const std::string& t)
 {
@@ -456,3 +458,5 @@ format_percentage(uint64_t num, uint64_t denom, size_t precision)
 {
   return format_fraction(num * 100, denom, precision);
 }
+
+} // namespace adapterremoval

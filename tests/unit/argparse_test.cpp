@@ -31,6 +31,8 @@
 #include "debug.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 using argparse::argument;
 using argparse::argument_ptr;
 
@@ -1012,3 +1014,5 @@ TEST_CASE("invalid value", "[argparse::parser]")
   REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
   REQUIRE(ss.str() == "ERROR: Invalid value for --foo: \"one\"\n");
 }
+
+} // namespace adapterremoval

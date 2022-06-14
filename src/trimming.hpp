@@ -34,6 +34,8 @@
 #include "scheduler.hpp"   // for chunk_vec, analytical_step, threadstate
 #include "statistics.hpp"  // for trimming_statistics
 
+namespace adapterremoval {
+
 class output_sample_files;
 class userconfig;
 
@@ -102,3 +104,5 @@ public:
 
   chunk_vec process(chunk_ptr chunk) override;
 };
+
+} // namespace adapterremoval

@@ -31,6 +31,8 @@
 
 #include "fastq_enc.hpp" // for FASTQ_ENCODING_33, MATE_SEPARATOR
 
+namespace adapterremoval {
+
 class line_reader_base;
 struct mate_info;
 
@@ -261,7 +263,7 @@ to_nuc(size_t idx)
 {
   return "ACTG"[idx];
 }
-}
+} // namespace ACGT
 
 namespace ACGTN {
 //! The number of nucleotides
@@ -288,7 +290,7 @@ to_nuc(size_t idx)
 {
   return "NACTG"[idx];
 }
-}
+} // namespace ACGTN
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -330,3 +332,5 @@ fastq::length() const
 {
   return m_sequence.length();
 }
+
+} // namespace adapterremoval

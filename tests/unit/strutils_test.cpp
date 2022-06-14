@@ -28,6 +28,8 @@
 #include "strutils.hpp"
 #include "testing.hpp"
 
+namespace adapterremoval {
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for 'levenshtein'
 
@@ -361,3 +363,5 @@ TEST_CASE("format_percentage")
   REQUIRE(format_percentage(55, 300, 1) == "18.3");
   REQUIRE(format_percentage(55, 300, 2) == "18.33");
 }
+
+} // namespace adapterremoval

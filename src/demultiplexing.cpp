@@ -32,7 +32,7 @@
 #include "fastq_io.hpp"       // for fastq_read_chunk, fastq_output_chunk, ...
 #include "userconfig.hpp"     // for userconfig, fastq_encoding_ptr
 
-///////////////////////////////////////////////////////////////////////////////
+namespace adapterremoval {
 
 template<typename T>
 void
@@ -211,3 +211,5 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
 
   return flush_cache(read_chunk.eof);
 }
+
+} // namespace adapterremoval

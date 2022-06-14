@@ -41,6 +41,8 @@
 #include "trimming.hpp"       // for trimmed_reads, reads_processor
 #include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
 
+namespace adapterremoval {
+
 class fastq;
 
 //! Implemented in main_adapter_rm.cpp
@@ -201,3 +203,5 @@ se_demuxed_processor::~se_demuxed_processor() {}
 
 // Out-of-line definition to make -Wweak-vtables happy
 pe_demuxed_processor::~pe_demuxed_processor() {}
+
+} // namespace adapterremoval

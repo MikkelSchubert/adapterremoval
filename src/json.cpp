@@ -31,6 +31,8 @@
 #include "debug.hpp" // for AR_REQUIRE
 #include "json.hpp"  // for definitions
 
+namespace adapterremoval {
+
 std::string
 _escape(const std::string& value)
 {
@@ -355,3 +357,5 @@ json_dict::_set(const std::string& key, const json_ptr& ptr)
 
   m_values[key] = ptr;
 }
+
+} // namespace adapterremoval

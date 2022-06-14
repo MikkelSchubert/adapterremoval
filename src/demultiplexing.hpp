@@ -35,6 +35,8 @@
 #include "scheduler.hpp"     // for chunk_vec, analytical_step
 #include "statistics.hpp"    // for demux_statistics, fastq_statistics
 
+namespace adapterremoval {
+
 class userconfig;
 class demux_statistics;
 
@@ -145,3 +147,5 @@ public:
    */
   chunk_vec process(chunk_ptr chunk) override;
 };
+
+} // namespace adapterremoval

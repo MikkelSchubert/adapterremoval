@@ -27,6 +27,8 @@
 #include <chrono>
 #include <string>
 
+namespace adapterremoval {
+
 /**
  * Simply class for reporting current progress of a run.
  *
@@ -87,3 +89,5 @@ private:
   //! Starting time of the timer.
   time_point m_start_time;
 };
+
+} // namespace adapterremoval

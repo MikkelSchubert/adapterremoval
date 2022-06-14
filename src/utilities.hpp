@@ -25,6 +25,10 @@
 
 #include <stdint.h> // for uint32_t
 
+namespace adapterremoval {
+
 /** Returns a seed value for a PRNG; not intended to be strongly random. */
 uint32_t
 prng_seed();
+
+} // namespace adapterremoval

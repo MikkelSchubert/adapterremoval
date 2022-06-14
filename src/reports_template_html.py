@@ -211,6 +211,8 @@ def write_header(sections):
     tprint("#include <fstream>")
     tprint("#include <string>")
     tprint("#include <vector>")
+    tprint("")
+    tprint("namespace adapterremoval {{")
 
     tprint("{}", _BASE_CLASS_HEADER)
 
@@ -252,6 +254,9 @@ def write_header(sections):
 
         tprint("}};")
 
+    tprint("")
+    tprint("}} // namespace adapterremoval")
+
     return handle.getvalue()
 
 
@@ -264,7 +269,10 @@ def write_implementations(sections, header_name):
     tprint(__doc__.strip())
     tprint('#include "{}"', header_name)
     tprint('#include "debug.hpp"', header_name)
-    tprint("\nsize_t g_html_id = 1;")
+    tprint("")
+    tprint("namespace adapterremoval {{")
+    tprint("")
+    tprint("size_t g_html_id = 1;")
 
     tprint("{}", _BASE_CLASS_BODY)
 
@@ -328,6 +336,9 @@ def write_implementations(sections, header_name):
         tprint("  // clang-format on")
         tprint("  m_written = true;")
         tprint("}}")
+
+    tprint("")
+    tprint("}} // namespace adapterremoval")
 
     return handle.getvalue()
 

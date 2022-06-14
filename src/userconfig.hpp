@@ -36,6 +36,8 @@
 #include "fastq_enc.hpp"   // for fastq_encoding
 #include "timer.hpp"       // for highres_timer
 
+namespace adapterremoval {
+
 struct alignment_info;
 class trimming_statistics;
 
@@ -294,3 +296,5 @@ private:
   //! Sink for deprecated knobs
   unsigned m_deprecated_knobs;
 };
+
+} // namespace adapterremoval

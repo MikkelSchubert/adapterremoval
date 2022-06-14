@@ -36,6 +36,8 @@
 #include "strutils.hpp"  // for template_replace, str_to_unsigned, toupper
 #include "userconfig.hpp"
 
+namespace adapterremoval {
+
 const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -946,3 +948,5 @@ userconfig::runtime() const
 {
   return m_runtime.duration();
 }
+
+} // namespace adapterremoval

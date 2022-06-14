@@ -26,6 +26,8 @@
 
 #include "utilities.hpp"
 
+namespace adapterremoval {
+
 uint32_t
 prng_seed()
 {
@@ -34,3 +36,5 @@ prng_seed()
 
   return rng();
 }
+
+} // namespace adapterremoval

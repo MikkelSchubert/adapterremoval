@@ -37,6 +37,8 @@
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for fastq, fastq_pair_vec
 
+namespace adapterremoval {
+
 /** Counts the number of masked bytes **/
 __attribute__((target("sse2"))) inline size_t
 COUNT_MASKED_128(const __m128i& value)
@@ -586,3 +588,5 @@ extract_adapter_sequences(const alignment_info& alignment,
 
   return read1.sequence().length() || read2.sequence().length();
 }
+
+} // namespace adapterremoval

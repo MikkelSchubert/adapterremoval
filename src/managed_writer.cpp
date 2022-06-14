@@ -35,6 +35,8 @@
 #include "managed_writer.hpp"
 #include "threads.hpp" // for print_locker
 
+namespace adapterremoval {
+
 static std::mutex g_writer_lock;
 managed_writer* managed_writer::s_head = nullptr;
 managed_writer* managed_writer::s_tail = nullptr;
@@ -240,3 +242,5 @@ managed_writer::close_tail_writer()
   throw std::runtime_error(
     "available number of file-handles too low; could not open any files");
 }
+
+} // namespace adapterremoval

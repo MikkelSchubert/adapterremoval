@@ -35,6 +35,8 @@
 #include <utility>            // for pair
 #include <vector>             // for vector
 
+namespace adapterremoval {
+
 class scheduler_step;
 
 /** Simple thread-safe storage backed by a vector. **/
@@ -321,3 +323,5 @@ scheduler::set_errors_occured()
 {
   m_errors.store(true, std::memory_order::memory_order_relaxed);
 }
+
+} // namespace adapterremoval

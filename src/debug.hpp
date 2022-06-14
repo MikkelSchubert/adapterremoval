@@ -27,6 +27,8 @@
 
 #include <string> // for string
 
+namespace adapterremoval {
+
 /** Exception explaining 'abort' calls when running unit-tests. */
 class assert_failed : public std::exception
 {
@@ -73,7 +75,8 @@ debug_raise_assert(const char* filename,
   AR_REQUIRE_GET_(__VA_ARGS__, AR_REQUIRE_2_, AR_REQUIRE_1_, )(__VA_ARGS__)
 
 /** Raise an assert failure with a user-specified message. */
-#define AR_FAIL(msg) debug_raise_assert(__FILE__, __LINE__, std::string(), msg)
+#define AR_FAIL(msg)                                                           \
+  adapterremoval::debug_raise_assert(__FILE__, __LINE__, std::string(), msg)
 
 #ifdef DEBUG
 
@@ -99,3 +102,5 @@ debug_raise_assert(const char* filename,
 #define AR_ASSERT(...)
 
 #endif
+
+} // namespace adapterremoval

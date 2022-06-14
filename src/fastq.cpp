@@ -31,6 +31,8 @@
 #include "fastq.hpp"
 #include "linereader.hpp" // for line_reader_base
 
+namespace adapterremoval {
+
 std::vector<double>
 init_phred_to_p_values()
 {
@@ -577,3 +579,5 @@ fastq::trim_sequence_and_qualities(const size_t left_inclusive,
 
   return summary;
 }
+
+} // namespace adapterremoval

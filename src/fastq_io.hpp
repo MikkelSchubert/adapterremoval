@@ -37,6 +37,8 @@
 #include "statistics.hpp"        // for fastq_stats_ptr, fastq_statistics, ...
 #include "timer.hpp"             // for progress_timer
 
+namespace adapterremoval {
+
 class fastq;
 class fastq_encoding;
 class fastq_output_chunk;
@@ -340,3 +342,5 @@ private:
   std::mutex m_lock;
 #endif
 };
+
+} // namespace adapterremoval

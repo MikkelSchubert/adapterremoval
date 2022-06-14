@@ -37,6 +37,8 @@
 #include "debug.hpp"    // for AR_REQUIRE
 #include "strutils.hpp" // for cli_formatter, str_to_unsigned, toupper
 
+namespace adapterremoval {
+
 namespace argparse {
 
 const size_t parsing_failed = static_cast<size_t>(-1);
@@ -930,3 +932,5 @@ vec_sink::to_str() const
 }
 
 } // namespace argparse
+
+} // namespace adapterremoval

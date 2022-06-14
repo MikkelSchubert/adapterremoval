@@ -42,6 +42,8 @@
 #include "strutils.hpp"              // for cli_formatter, ...
 #include "userconfig.hpp"            // for userconfig, ...
 
+namespace adapterremoval {
+
 using fastq_stats_vec = std::vector<fastq_stats_ptr>;
 using template_ptr = std::unique_ptr<html_template>;
 
@@ -175,7 +177,7 @@ build_base_qualities(const fastq_stats_vec& reads, const string_vec& names)
       auto dict = qualities.dict();
       dict->str("read", names.at(i));
       dict->i64("offset", 1);
-      dict->str("group", std::string(1, toupper(nuc)));
+      dict->str("group", std::string(1, ::toupper(nuc)));
       dict->f64_vec("y", quality / nucleotides);
     }
 
@@ -730,3 +732,5 @@ write_html_report(const userconfig& config,
 
   return true;
 }
+
+} // namespace adapterremoval

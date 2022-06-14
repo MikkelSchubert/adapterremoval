@@ -31,6 +31,8 @@
 #include "statistics.hpp" // for ar_statistics
 #include "userconfig.hpp" // for userconfig, output_files
 
+namespace adapterremoval {
+
 class reads_sink : public analytical_step
 {
 public:
@@ -80,3 +82,5 @@ fastq_report_only(const userconfig& config)
 
 // Out-of-line definition to make -Wweak-vtables happy
 reads_sink::~reads_sink() {}
+
+} // namespace adapterremoval
