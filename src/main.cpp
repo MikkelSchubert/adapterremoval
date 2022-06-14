@@ -45,6 +45,18 @@ demultiplex_sequences(const userconfig& config);
 int
 fastq_report_only(const userconfig& config);
 
+[[noreturn]] void
+terminate(const std::string& message)
+{
+  std::cerr << "\nFATAL ERROR:\n"
+            << message << "\n\n"
+            << "This should not happen! Please file a bug-report at\n    "
+            << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
+            << std::endl;
+
+  std::abort();
+}
+
 } // namespace adapterremoval
 
 int

@@ -30,6 +30,9 @@
 
 namespace adapterremoval {
 
+[[noreturn]] void
+terminate(const std::string& message);
+
 assert_failed::assert_failed(const assert_failed& errror)
   : m_what(errror.m_what)
 {
@@ -62,17 +65,7 @@ debug_raise_assert(const char* filename,
     message << msg << ": " << test;
   }
 
-#ifdef UNIT_TEST
-  throw assert_failed(message.str());
-#else
-  std::cerr << "\nFATAL ERROR:\n"
-            << message.str() << "\n\n"
-            << "This should not happen! Please file a bug-report at\n    "
-            << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
-            << std::endl;
-
-  std::abort();
-#endif
+  terminate(message.str());
 }
 
 } // namespace adapterremoval
