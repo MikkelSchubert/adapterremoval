@@ -30,6 +30,7 @@ COVERAGE := no
 
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
+
 INSTALLEXE = install -m 0755
 INSTALLDAT = install -m 0644
 INSTALLDOC = install -m 0644
@@ -37,9 +38,6 @@ MKDIR      = install -d  # act as mkdir -p
 
 # Libraries required by AdapterRemoval
 LIBRARIES := -pthread -lz
-
-# Build directory; modified depending on build options
-BDIR     := build/main
 
 ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
@@ -91,63 +89,92 @@ else
 $(info Building AdapterRemoval with debug information: no)
 endif
 
-PROG     := AdapterRemoval
-LIBOBJS  := $(BDIR)/adapterset.o \
-            $(BDIR)/alignment.o \
-            $(BDIR)/alignment_tables.o \
-            $(BDIR)/argparse.o \
-            $(BDIR)/barcode_table.o \
-            $(BDIR)/debug.o \
-            $(BDIR)/demultiplexing.o \
-            $(BDIR)/fastq.o \
-            $(BDIR)/fastq_enc.o \
-            $(BDIR)/fastq_io.o \
-            $(BDIR)/json.o \
-            $(BDIR)/linereader.o \
-            $(BDIR)/linereader_joined.o \
-            $(BDIR)/main_adapter_id.o \
-            $(BDIR)/main_adapter_rm.o \
-            $(BDIR)/main_demultiplex.o \
-            $(BDIR)/main_fastq_ro.o \
-            $(BDIR)/managed_writer.o \
-            $(BDIR)/reports_html.o \
-            $(BDIR)/reports_json.o \
-            $(BDIR)/reports_template_html.o \
-            $(BDIR)/scheduler.o \
-            $(BDIR)/statistics.o \
-            $(BDIR)/strutils.o \
-            $(BDIR)/threads.o \
-            $(BDIR)/timer.o \
-            $(BDIR)/trimming.o \
-            $(BDIR)/userconfig.o \
-            $(BDIR)/utilities.o
-OBJS     := ${LIBOBJS} $(BDIR)/main.o
-DFILES   := $(OBJS:.o=.deps)
+################################################################################
 
+EXEC_MAIN   := AdapterRemoval
+EXEC_TEST   := unit_tests
 
-.PHONY: all install clean test clean_tests static regression docs
+BUILD_DIR   := build
+OBJS_DIR    := $(BUILD_DIR)/objects
+EXECUTABLE  := $(BUILD_DIR)/$(EXEC_MAIN)
+TEST_RUNNER := $(BUILD_DIR)/$(EXEC_TEST)
 
-all: build/$(PROG)
+REGRESSION_TESTS := tests/regression
+REGRESSION_DIR   := $(BUILD_DIR)/regression
 
-everything: all static test regression docs
+# Build objects shared between unit tests and executable
+CORE_OBJS := \
+	$(OBJS_DIR)/alignment_tables.o \
+	$(OBJS_DIR)/alignment.o \
+	$(OBJS_DIR)/argparse.o \
+	$(OBJS_DIR)/barcode_table.o \
+	$(OBJS_DIR)/debug.o \
+	$(OBJS_DIR)/fastq_enc.o \
+	$(OBJS_DIR)/fastq.o \
+	$(OBJS_DIR)/json.o \
+	$(OBJS_DIR)/strutils.o
 
-# Clean
-clean: clean_tests clean_docs
-	@echo $(COLOR_GREEN)"Cleaning ..."$(COLOR_END)
-	$(QUIET) rm -f build/$(PROG)
-	$(QUIET) rm -rvf build/regression
-	$(QUIET) rm -rvf $(BDIR)
+# Build objects used only by the executable
+EXEC_OBJS := \
+	$(OBJS_DIR)/adapterset.o \
+	$(OBJS_DIR)/demultiplexing.o \
+	$(OBJS_DIR)/fastq_io.o \
+	$(OBJS_DIR)/linereader_joined.o \
+	$(OBJS_DIR)/linereader.o \
+	$(OBJS_DIR)/main_adapter_id.o \
+	$(OBJS_DIR)/main_adapter_rm.o \
+	$(OBJS_DIR)/main_demultiplex.o \
+	$(OBJS_DIR)/main_fastq_ro.o \
+	$(OBJS_DIR)/main.o \
+	$(OBJS_DIR)/managed_writer.o \
+	$(OBJS_DIR)/reports_html.o \
+	$(OBJS_DIR)/reports_json.o \
+	$(OBJS_DIR)/reports_template_html.o \
+	$(OBJS_DIR)/scheduler.o \
+	$(OBJS_DIR)/statistics.o \
+	$(OBJS_DIR)/threads.o \
+	$(OBJS_DIR)/timer.o \
+	$(OBJS_DIR)/trimming.o \
+	$(OBJS_DIR)/userconfig.o \
+	$(OBJS_DIR)/utilities.o
 
-# Install
-install: build/$(PROG)
+# Build objects used only by the test runner
+TEST_OBJS := \
+	$(OBJS_DIR)/alignment_test.o \
+	$(OBJS_DIR)/argparse_test.o \
+	$(OBJS_DIR)/barcodes_test.o \
+	$(OBJS_DIR)/debug_test.o \
+	$(OBJS_DIR)/fastq_test.o \
+	$(OBJS_DIR)/json_test.o \
+	$(OBJS_DIR)/main_test.o \
+	$(OBJS_DIR)/strutils_test.o
+
+################################################################################
+
+.PHONY: all clean docs everything examples install regression test
+
+all: $(EXECUTABLE)
+
+clean:
+	@echo $(COLOR_GREEN)"Cleaning"$(COLOR_END)
+	$(QUIET) rm -rf $(BUILD_DIR)
+	$(QUIET) make -C examples clean
+
+everything: all test regression docs examples
+
+examples: $(EXECUTABLE)
+	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
+	$(QUIET) make -C examples EXE=$(PWD)/$(EXECUTABLE)
+
+install: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
 	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/bin/
-	$(QUIET) $(INSTALLEXE) build/$(PROG) ${PREFIX}/bin/
+	$(QUIET) $(INSTALLEXE) $(EXECUTABLE) ${PREFIX}/bin/
 
 	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/share/man/man1/
-	$(QUIET) $(INSTALLDOC) $(PROG).1 ${PREFIX}/share/man/man1/
+	$(QUIET) $(INSTALLDOC) $(EXEC_MAIN).1 ${PREFIX}/share/man/man1/
 
 	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/
@@ -165,88 +192,41 @@ src/reports_template.intermediate: src/reports_template.html src/reports_templat
 	@echo $(COLOR_CYAN)"Building HTML templates from $<"$(COLOR_END)
 	$(QUIET) python3 src/reports_template_html.py $< src/reports_template_html
 
-# Object files
-$(BDIR)/%.o: src/%.cpp
-	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) $(MKDIR) $(BDIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
+regression: $(EXECUTABLE)
+	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(REGRESSION_DIR)
+	$(QUIET) python3 $(REGRESSION_TESTS)/run $(REGRESSION_DIR) $(REGRESSION_TESTS)
 
-# Executable
-build/$(PROG): $(OBJS)
+test: $(TEST_RUNNER)
+	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
+	$(QUIET) $(TEST_RUNNER)
+
+$(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
 
-# Automatic header depencencies
--include $(DFILES)
-
-
-###############################################################################
-# Unit testing
-TEST_DIR := build/tests
-TEST_OBJS := $(TEST_DIR)/main_test.o \
-             $(TEST_DIR)/debug.o \
-             $(TEST_DIR)/debug_test.o \
-             $(TEST_DIR)/alignment.o \
-             $(TEST_DIR)/alignment_tables.o \
-             $(TEST_DIR)/alignment_test.o \
-             $(TEST_DIR)/argparse.o \
-             $(TEST_DIR)/argparse_test.o \
-             $(TEST_DIR)/barcodes_test.o \
-             $(TEST_DIR)/barcode_table.o \
-             $(TEST_DIR)/fastq.o \
-             $(TEST_DIR)/fastq_test.o \
-             $(TEST_DIR)/fastq_enc.o \
-             $(TEST_DIR)/json.o \
-             $(TEST_DIR)/json_test.o \
-             $(TEST_DIR)/strutils.o \
-             $(TEST_DIR)/strutils_test.o
-TEST_DEPS := $(TEST_OBJS:.o=.deps)
-
-TEST_CXXFLAGS := -Isrc -DUNIT_TEST
-
-test: $(TEST_DIR)/main
-	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
-	$(QUIET) $(TEST_DIR)/main
-
-clean_tests:
-	@echo $(COLOR_GREEN)"Cleaning tests ..."$(COLOR_END)
-	$(QUIET) rm -rvf $(TEST_DIR)
-
-$(TEST_DIR)/main: $(TEST_OBJS)
+$(TEST_RUNNER): $(CORE_OBJS) $(TEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LIBRARIES} $^ -o $@
 
-$(TEST_DIR)/%.o: tests/unit/%.cpp
+# Main object files 
+$(OBJS_DIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) $(MKDIR) $(TEST_DIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
+	$(QUIET) $(MKDIR) $(OBJS_DIR)
+	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
 
-$(TEST_DIR)/%.o: src/%.cpp
+# Unit test object files
+$(OBJS_DIR)/%.o: tests/unit/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
-	$(QUIET) $(MKDIR) $(TEST_DIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) $(TEST_CXXFLAGS) -w -MM -MT $@ -MF $(@:.o=.deps) $<
-
-
-###############################################################################
-# Validation
-VALIDATION_BDIR=./build/regression
-VALIDATION_SDIR=./tests/regression
-
-regression: build/$(PROG)
-	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
-	@$(MKDIR) $(VALIDATION_BDIR)
-	@python3 $(VALIDATION_SDIR)/run $(VALIDATION_BDIR) $(VALIDATION_SDIR)
-
-
-# Automatic header dependencies for tests
--include $(TEST_DEPS)
+	$(QUIET) $(MKDIR) $(OBJS_DIR)
+	$(QUIET) $(CXX) $(CXXFLAGS) -Isrc -pthread -c -o $@ $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -Isrc -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
 
 
 ###############################################################################
 # Documentation
+
 SPHINXOPTS  = -n -q
 SPHINXBUILD = sphinx-build
 
@@ -255,6 +235,9 @@ docs:
 	$(QUIET) @$(SPHINXBUILD) -M man docs build/docs $(SPHINXOPTS)
 	$(QUIET) cp -v "build/docs/man/AdapterRemoval.1" .
 
-clean_docs:
-	@echo $(COLOR_GREEN)"Cleaning documentation ..."$(COLOR_END)
-	$(QUIET) rm -rvf build/docs
+###############################################################################
+
+# Automatic tracking of include-file dependencies
+-include $(CORE_OBJS:.o=.d)
+-include $(EXEC_OBJS:.o=.d)
+-include $(TEST_OBJS:.o=.d)
