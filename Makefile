@@ -46,10 +46,12 @@ QUIET := @
 endif
 
 ifeq ($(strip ${COLOR_BUILD}),yes)
+ifneq ($(strip $(MAKE_TERMOUT)),)
 COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
+endif
 endif
 
 
