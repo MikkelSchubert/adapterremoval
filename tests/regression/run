@@ -110,7 +110,6 @@ def decompress(filename):
 
 
 #############################################################################
-_EXEC = "./build/AdapterRemoval"
 _INFO_FILE = "info.json"
 _INFO_FIELDS = {
     "arguments": list,
@@ -183,7 +182,7 @@ class TestCase(object):
             }
         )
 
-    def build(self, root, delete_folder):
+    def build(self, root, executable, delete_folder):
         root = os.path.join(root, *self.path)
 
         interleaved_tests = [False]
@@ -206,6 +205,7 @@ class TestCase(object):
             args = ()
             kwargs = {
                 "root": root,
+                "executable": executable,
                 "in_compression": in_compression,
                 "out_compression": out_compression,
                 "interleaved": interleaved,
@@ -219,6 +219,7 @@ class TestCase(object):
     def __call__(
         self,
         root,
+        executable,
         in_compression=UNCOMPRESSED,
         out_compression=UNCOMPRESSED,
         interleaved=False,
@@ -241,7 +242,12 @@ class TestCase(object):
 
         input_1, input_2 = self._setup_input(root, in_compression, interleaved)
         command = self._build_command(
-            root, input_1, input_2, out_compression, interleaved
+            root,
+            executable,
+            input_1,
+            input_2,
+            out_compression,
+            interleaved,
         )
 
         try:
@@ -418,8 +424,16 @@ class TestCase(object):
                 % (self.root, exp_filename, obs_filename, pretty_output(lines, 4))
             )
 
-    def _build_command(self, root, input_1, input_2, compression, interleaved):
-        command = [os.path.abspath(_EXEC)]
+    def _build_command(
+        self,
+        root,
+        executable,
+        input_1,
+        input_2,
+        compression,
+        interleaved,
+    ):
+        command = [executable]
         if interleaved:
             command.append("--interleaved-input")
 
@@ -598,6 +612,12 @@ def parse_args(argv):
     parser.add_argument("work_dir", help="Directory in which to run test-cases.")
     parser.add_argument("source_dir", help="Directory containing test-cases.")
     parser.add_argument(
+        "--executable",
+        type=os.path.abspath,
+        default=os.path.abspath("./build/AdapterRemoval"),
+        help="Path to AdapterRemoval executable",
+    )
+    parser.add_argument(
         "--max-failures",
         type=int,
         default=5,
@@ -620,8 +640,8 @@ def parse_args(argv):
 
 def main(argv):
     args = parse_args(argv)
-    if not os.path.exists(_EXEC):
-        print_err("ERROR: Executable does not exist: %r" % (_EXEC,))
+    if not os.path.exists(args.executable):
+        print_err("ERROR: Executable does not exist: %r" % (args.executable,))
         return 1
 
     if args.max_failures <= 0:
@@ -640,7 +660,13 @@ def main(argv):
     tests_calls = []
     print("Building tests functions")
     for test in tests:
-        tests_calls.extend(test.build(args.work_dir, not args.keep_all))
+        tests_calls.extend(
+            test.build(
+                root=args.work_dir,
+                executable=args.executable,
+                delete_folder=not args.keep_all,
+            )
+        )
 
     n_failures = 0
     n_successes = 0

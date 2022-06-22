@@ -208,7 +208,8 @@ src/reports_template.intermediate: src/reports_template.html src/reports_templat
 regression: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(REGRESSION_DIR)
-	$(QUIET) python3 $(REGRESSION_TESTS)/run $(REGRESSION_DIR) $(REGRESSION_TESTS)
+	$(QUIET) python3 $(REGRESSION_TESTS)/run $(REGRESSION_DIR) $(REGRESSION_TESTS) \
+		--executable $(EXECUTABLE)
 
 test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
