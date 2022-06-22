@@ -9,6 +9,9 @@ CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
+# Generate statically linked binary
+STATIC := no
+
 # Use Intelligent Storage Acceleration Library (ISA-L) for gzip decompression
 LIBISAL := yes
 
@@ -31,6 +34,17 @@ COVERAGE := no
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
 
+EXEC_MAIN   := AdapterRemoval
+EXEC_TEST   := unit_tests
+
+BUILD_DIR   := build
+OBJS_DIR    := $(BUILD_DIR)/objects
+EXECUTABLE  := $(BUILD_DIR)/$(EXEC_MAIN)
+TEST_RUNNER := $(BUILD_DIR)/$(EXEC_TEST)
+
+REGRESSION_TESTS := tests/regression
+REGRESSION_DIR   := $(BUILD_DIR)/regression
+
 INSTALLEXE = install -m 0755
 INSTALLDAT = install -m 0644
 INSTALLDOC = install -m 0644
@@ -50,6 +64,16 @@ COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
 endif
+endif
+
+ifeq ($(strip ${STATIC}),yes)
+$(info Building static AdapterRemoval binary: yes)
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58909
+CXXFLAGS := $(CXXFLAGS) -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+OBJS_DIR := $(BUILD_DIR)/static
+EXECUTABLE := $(BUILD_DIR)/$(EXEC_MAIN).static
+else
+$(info Building static AdapterRemoval binary: no)
 endif
 
 
@@ -90,17 +114,6 @@ $(info Building AdapterRemoval with debug information: no)
 endif
 
 ################################################################################
-
-EXEC_MAIN   := AdapterRemoval
-EXEC_TEST   := unit_tests
-
-BUILD_DIR   := build
-OBJS_DIR    := $(BUILD_DIR)/objects
-EXECUTABLE  := $(BUILD_DIR)/$(EXEC_MAIN)
-TEST_RUNNER := $(BUILD_DIR)/$(EXEC_TEST)
-
-REGRESSION_TESTS := tests/regression
-REGRESSION_DIR   := $(BUILD_DIR)/regression
 
 # Build objects shared between unit tests and executable
 CORE_OBJS := \
