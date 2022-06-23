@@ -34,7 +34,6 @@
 #include "debug.hpp"          // for AR_REQUIRE
 #include "demultiplexing.hpp" // for post_demux_steps, demultiplex_pe_reads
 #include "fastq_io.hpp"       // for fastq_read_chunk, read_chunk_ptr, read...
-#include "logging.hpp"        // for log
 #include "reports.hpp"        // for write_report
 #include "scheduler.hpp"      // for scheduler, threadstate, analytical_chunk
 #include "statistics.hpp"     // for trimming_statistics, ar_statistics
@@ -125,8 +124,6 @@ public:
 int
 demultiplex_sequences(const userconfig& config)
 {
-  log::info() << "Demultiplexing reads";
-
   scheduler sch;
 
   statistics stats = statistics_builder()

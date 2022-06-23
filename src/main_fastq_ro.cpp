@@ -25,7 +25,6 @@
 #include <cstring> // for size_t
 
 #include "fastq_io.hpp"   // for read_fastq
-#include "logging.hpp"    // for log
 #include "reports.hpp"    // for write_report
 #include "scheduler.hpp"  // for scheduler
 #include "statistics.hpp" // for ar_statistics
@@ -49,8 +48,6 @@ public:
 int
 fastq_report_only(const userconfig& config)
 {
-  log::info() << "Reading FASTQ files";
-
   scheduler sch;
 
   statistics stats = statistics_builder()

@@ -33,7 +33,6 @@
 #include "commontypes.hpp"    // for string_vec
 #include "demultiplexing.hpp" // for post_demux_steps, demultiplex_pe_reads
 #include "fastq_io.hpp"       // for gzip_fastq, gzip_split_fastq, read_fastq
-#include "logging.hpp"        // for log
 #include "reports.hpp"        // for write_report
 #include "scheduler.hpp"      // for scheduler
 #include "statistics.hpp"     // for trimming_statistics, ar_statistics
@@ -62,8 +61,6 @@ add_write_step(scheduler& sch,
 int
 remove_adapter_sequences(const userconfig& config)
 {
-  log::info() << "Trimming reads";
-
   scheduler sch;
 
   statistics stats = statistics_builder()

@@ -38,7 +38,6 @@
 #include "debug.hpp"       // for AR_REQUIRE
 #include "fastq.hpp"       // for fastq, ACGT, fastq_pair_vec
 #include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
-#include "logging.hpp"     // for log
 #include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
 #include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
 #include "vecutils.hpp"    // for merge_vectors
@@ -453,8 +452,6 @@ private:
 int
 identify_adapter_sequences(const userconfig& config)
 {
-  log::info() << "Attempting to identify adapter sequences";
-
   scheduler sch;
 
   // Step 3: Attempt to identify adapters through pair-wise alignments

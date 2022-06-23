@@ -28,6 +28,7 @@
 #include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log
 #include "main.hpp"       // header
+#include "reports.hpp"    // for print_terminal_preamble
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
 
 namespace adapterremoval {
@@ -81,6 +82,8 @@ main(int argc, char* argv[])
     default:
       AR_FAIL("invalid argparse::parse_result");
   }
+
+  print_terminal_preamble(config);
 
   auto returncode = 0;
   switch (config.run_type) {

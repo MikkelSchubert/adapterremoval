@@ -143,6 +143,7 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/managed_writer.o \
 	$(OBJS_DIR)/reports_html.o \
 	$(OBJS_DIR)/reports_json.o \
+	$(OBJS_DIR)/reports_terminal.o \
 	$(OBJS_DIR)/reports_template_html.o \
 	$(OBJS_DIR)/scheduler.o \
 	$(OBJS_DIR)/statistics.o \
