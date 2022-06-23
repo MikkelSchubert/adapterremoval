@@ -65,36 +65,4 @@ public:
   virtual ~thread_abort() override;
 };
 
-/**
- * Locker for using stdout / stderr.
- *
- * Any useage of stdout and / or stderr should be preceded by creating a
- * print_locker object. This ensures that output from different threads is
- * not interleaved, regardless of the destination of these pipes.
- */
-class print_locker
-{
-public:
-  /*
-   * Locks the mutex (blocking). If flush_stderr is true, and
-   * partial_stderr_output has been called, then a newline is first
-   * written to stderr.
-   */
-  print_locker(bool flush_stderr = true);
-
-  //! Unlocks the mutex
-  ~print_locker();
-
-  //! Call to indicate that a partial line has been written to STDERR.
-  void partial_stderr_output();
-
-  //! Copy construction not supported
-  print_locker(const print_locker&) = delete;
-  //! Assignment not supported
-  print_locker& operator=(const print_locker&) = delete;
-
-private:
-  std::lock_guard<std::mutex> m_lock;
-};
-
 } // namespace adapterremoval
