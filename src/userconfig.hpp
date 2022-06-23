@@ -290,6 +290,11 @@ private:
   //! Sink for --trim3p
   string_vec trim3p;
 
+  //! Sink for log color (on/off/auto)
+  std::string log_color;
+  //! Sink for log levels
+  std::string log_level;
+
   //! Measures runtime since the program was started
   highres_timer m_runtime;
 

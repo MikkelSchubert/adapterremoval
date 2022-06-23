@@ -246,6 +246,8 @@ userconfig::userconfig(const std::string& name,
   , interleaved()
   , trim5p()
   , trim3p()
+  , log_color()
+  , log_level()
   , m_runtime()
   , m_deprecated_knobs()
 {
@@ -558,6 +560,19 @@ userconfig::userconfig(const std::string& name,
     .bind_uint(&report_duplication)
     .with_default(0);
 
+  argparser.add_header("LOGGING:");
+  argparser.add("--log-level", "X")
+    .help("The minimum severity of messagest to be written to stderr. Possible "
+          "choices are debug, info, warning, and error")
+    .bind_str(&log_level)
+    .with_default("info");
+  argparser.add("--log-colors", "X")
+    .help("Enable/disable the use of colors when writing log messages. "
+          "Possible choices are auto, always, or never. If set to auto, colors "
+          "will only be disabled if stderr is not a terminal")
+    .bind_str(&log_color)
+    .with_default("auto");
+
   argparser.add("--trimwindows", "X")
     .deprecated()
     .bind_double(&trim_window_length)
@@ -580,6 +595,36 @@ userconfig::parse_args(int argc, char* argv[])
   const argparse::parse_result result = argparser.parse_args(argc, argv);
   if (result != argparse::parse_result::ok) {
     return result;
+  }
+
+  log_color = tolower(log_color);
+  if (log_color == "always") {
+    log::set_colors(true);
+  } else if (log_color == "never") {
+    log::set_colors(false);
+  } else if (log_color == "auto") {
+    log::set_colors(::isatty(STDERR_FILENO));
+  } else {
+    log::error() << "Invalid value for --log-level; arguments must be one of "
+                    "always, never, or auto, but was '"
+                 << log_color << "'";
+    return argparse::parse_result::error;
+  }
+
+  log_level = tolower(log_level);
+  if (log_level == "debug") {
+    log::set_level(log::level::debug);
+  } else if (log_level == "info") {
+    log::set_level(log::level::info);
+  } else if (log_level == "warning") {
+    log::set_level(log::level::warning);
+  } else if (log_level == "error") {
+    log::set_level(log::level::error);
+  } else {
+    log::error() << "Invalid value for --log-level; arguments must be one of "
+                    "debug, info, warning, or error, but was '"
+                 << log_level << "'";
+    return argparse::parse_result::error;
   }
 
   // --qualitybase is not always used (e.g. when identifying adapters), but is
