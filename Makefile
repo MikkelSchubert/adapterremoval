@@ -125,6 +125,7 @@ CORE_OBJS := \
 	$(OBJS_DIR)/fastq_enc.o \
 	$(OBJS_DIR)/fastq.o \
 	$(OBJS_DIR)/json.o \
+	$(OBJS_DIR)/logging.o \
 	$(OBJS_DIR)/strutils.o
 
 # Build objects used only by the executable
@@ -159,6 +160,7 @@ TEST_OBJS := \
 	$(OBJS_DIR)/debug_test.o \
 	$(OBJS_DIR)/fastq_test.o \
 	$(OBJS_DIR)/json_test.o \
+	$(OBJS_DIR)/logging_test.o \
 	$(OBJS_DIR)/main_test.o \
 	$(OBJS_DIR)/strutils_test.o
 
