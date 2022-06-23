@@ -22,10 +22,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iomanip>    // for operator<<, setfill, setw
-#include <locale>     // for numpunct, use_facet, locale
-#include <sstream>    // for ostringstream
-#include <sys/time.h> // for gettimeofday, timeval
+#include <iomanip> // for operator<<, setfill, setw
+#include <locale>  // for numpunct, use_facet, locale
+#include <sstream> // for ostringstream
 
 #include "logging.hpp" // for log
 #include "threads.hpp" // for print_locker
@@ -35,15 +34,6 @@ namespace adapterremoval {
 
 //! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
-
-double
-get_current_time()
-{
-  struct timeval timestamp;
-  gettimeofday(&timestamp, nullptr);
-
-  return timestamp.tv_sec + timestamp.tv_usec / 1e6;
-}
 
 std::string
 thousands_sep(size_t number)
@@ -96,8 +86,8 @@ progress_timer::progress_timer(const std::string& what)
   : m_what(what)
   , m_total(0)
   , m_current(0)
-  , m_first_time(get_current_time())
-  , m_last_time(m_first_time)
+  , m_timer()
+  , m_last_time()
 {
 }
 
@@ -108,7 +98,7 @@ progress_timer::increment(size_t inc)
   m_current += inc;
 
   if (m_current >= REPORT_EVERY) {
-    const double current_time = get_current_time();
+    const double current_time = m_timer.duration();
 
     do_print(m_current, current_time - m_last_time);
 
@@ -120,9 +110,7 @@ progress_timer::increment(size_t inc)
 void
 progress_timer::finalize() const
 {
-  const auto current_time = get_current_time();
-
-  do_print(m_total, current_time - m_first_time, true);
+  do_print(m_total, m_timer.duration(), true);
 }
 
 void
@@ -133,28 +121,26 @@ progress_timer::do_print(size_t items, double seconds, bool finalize) const
     rate = (rate / 1000) * 1000;
   }
 
-  const double total_time = get_current_time() - m_first_time;
-
   if (finalize) {
     log::info() << "Processed " << thousands_sep(m_total) << " " << m_what
-                << " in " << format_time(total_time) << "; "
+                << " in " << format_time(m_timer.duration()) << "; "
                 << thousands_sep(rate) << " " << m_what << "/s on average";
   } else {
     log::info() << "Processed " << thousands_sep(m_total) << " " << m_what
-                << " in " << format_time(total_time) << "; "
+                << " in " << format_time(m_timer.duration()) << "; "
                 << thousands_sep(rate) << " " << m_what << "/s";
   }
 }
 
-highres_timer::highres_timer()
-  : m_start_time(highres_clock::now())
+monotonic_timer::monotonic_timer()
+  : m_start_time(steady_clock::now())
 {
 }
 
 double
-highres_timer::duration() const
+monotonic_timer::duration() const
 {
-  const auto end = highres_clock::now();
+  const auto end = steady_clock::now();
   const std::chrono::duration<double> diff = end - m_start_time;
 
   return diff.count();

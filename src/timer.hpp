@@ -30,6 +30,26 @@
 namespace adapterremoval {
 
 /**
+ * Steady timer for measuring durations.
+ */
+class monotonic_timer
+{
+  using steady_clock = std::chrono::steady_clock;
+  using time_point = std::chrono::time_point<steady_clock>;
+
+public:
+  /** Constructor. */
+  monotonic_timer();
+
+  /** Returns the duration in seconds since the timer was created. */
+  double duration() const;
+
+private:
+  //! Starting time of the timer.
+  time_point m_start_time;
+};
+
+/**
  * Simply class for reporting current progress of a run.
  *
  * Every 1 million records / reads / etc processed, when the counter is
@@ -65,29 +85,9 @@ private:
   //! Number of items processed since last update
   size_t m_current;
   //! Starting time (in seconds) of the timer.
-  double m_first_time;
+  monotonic_timer m_timer;
   //! Time (in seconds) of the last update
   double m_last_time;
-};
-
-/**
- * High-resolution timer for measuring durations.
- */
-class highres_timer
-{
-  typedef std::chrono::high_resolution_clock highres_clock;
-  typedef std::chrono::time_point<highres_clock> time_point;
-
-public:
-  /** Constructor. */
-  highres_timer();
-
-  /** Returns the duration in seconds since the timer was created. */
-  double duration() const;
-
-private:
-  //! Starting time of the timer.
-  time_point m_start_time;
 };
 
 } // namespace adapterremoval

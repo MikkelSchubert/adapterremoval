@@ -34,7 +34,7 @@
 #include "argparse.hpp"    // for parse_result, parser
 #include "commontypes.hpp" // for string_vec, read_type, read_type::max
 #include "fastq_enc.hpp"   // for fastq_encoding
-#include "timer.hpp"       // for highres_timer
+#include "timer.hpp"       // for monotonic_timer
 
 namespace adapterremoval {
 
@@ -296,7 +296,7 @@ private:
   std::string log_level;
 
   //! Measures runtime since the program was started
-  highres_timer m_runtime;
+  monotonic_timer m_runtime;
 
   //! Sink for deprecated knobs
   unsigned m_deprecated_knobs;
