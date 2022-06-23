@@ -5,7 +5,7 @@
 	],
 	"return_code": 1,
 	"stderr": [
-		"ERROR: Option --identify-adapters cannot be used together with option --demultiplex-only"
+		"[ERROR] Option --identify-adapters cannot be used together with option --demultiplex-only"
 	],
 	"exhaustive": false
 }

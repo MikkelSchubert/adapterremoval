@@ -181,6 +181,63 @@ output_sample_files::add(const std::string& filename)
   return it - filenames.begin();
 }
 
+/**
+ * Tries to parse a simple command-line argument while ignoring the validity
+ * of the overall command-line. This is only intended to make pre-configured
+ * logging output consistent with post-configured output if possible.
+ */
+std::string
+try_parse_argument(const string_vec& args,
+                   const std::string& key,
+                   const std::string& fallback)
+{
+  auto it = std::find(args.begin(), args.end(), key);
+  if (it != args.end() && (it + 1) != args.end()) {
+    return *(it + 1);
+  }
+
+  return fallback;
+}
+
+bool
+configure_log_levels(const std::string& value)
+{
+  const auto log_level = tolower(value);
+
+  if (log_level == "debug") {
+    log::set_level(log::level::debug);
+  } else if (log_level == "info") {
+    log::set_level(log::level::info);
+  } else if (log_level == "warning") {
+    log::set_level(log::level::warning);
+  } else if (log_level == "error") {
+    log::set_level(log::level::error);
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+bool
+configure_log_colors(const std::string& value)
+{
+  const auto colors = tolower(value);
+
+  if (colors == "always") {
+    log::set_colors(true);
+  } else if (colors == "never") {
+    log::set_colors(false);
+  } else if (colors == "auto") {
+    // NO_COLOR is checked as suggested by https://no-color.org/
+    log::set_colors(::isatty(STDERR_FILENO) && !::getenv("NO_COLOR"));
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `userconfig`
 
@@ -592,35 +649,24 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   args = string_vec(argv, argv + argc);
+
+  // ad-hoc arg parsing to make argparse output consistent with rest of run
+  configure_log_colors(try_parse_argument(args, "--log-color", "auto"));
+  configure_log_levels(try_parse_argument(args, "--log-level", "info"));
+
   const argparse::parse_result result = argparser.parse_args(argc, argv);
   if (result != argparse::parse_result::ok) {
     return result;
   }
 
-  log_color = tolower(log_color);
-  if (log_color == "always") {
-    log::set_colors(true);
-  } else if (log_color == "never") {
-    log::set_colors(false);
-  } else if (log_color == "auto") {
-    log::set_colors(::isatty(STDERR_FILENO));
-  } else {
+  if (!configure_log_colors(log_color)) {
     log::error() << "Invalid value for --log-level; arguments must be one of "
                     "always, never, or auto, but was '"
                  << log_color << "'";
     return argparse::parse_result::error;
   }
 
-  log_level = tolower(log_level);
-  if (log_level == "debug") {
-    log::set_level(log::level::debug);
-  } else if (log_level == "info") {
-    log::set_level(log::level::info);
-  } else if (log_level == "warning") {
-    log::set_level(log::level::warning);
-  } else if (log_level == "error") {
-    log::set_level(log::level::error);
-  } else {
+  if (!configure_log_levels(log_level)) {
     log::error() << "Invalid value for --log-level; arguments must be one of "
                     "debug, info, warning, or error, but was '"
                  << log_level << "'";

@@ -23,8 +23,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>   // for min, copy, max, replace
-#include <iomanip>     // for operator<<, setw
-#include <iostream>    // for operator<<, basic_ostream, endl, cerr, ostream
 #include <limits>      // for numeric_limits
 #include <memory>      // for make_unique, make_shared
 #include <set>         // for set
@@ -35,6 +33,7 @@
 
 #include "argparse.hpp" // header
 #include "debug.hpp"    // for AR_REQUIRE
+#include "logging.hpp"  // for log
 #include "strutils.hpp" // for cli_formatter, str_to_unsigned, toupper
 
 namespace adapterremoval {
@@ -125,7 +124,6 @@ parser::parser(const std::string& name,
   , m_name(name)
   , m_version(version)
   , m_help(help)
-  , m_stream(&std::cerr)
   , m_terminal_width(100)
 {
   add_header("OPTIONS:");
@@ -167,17 +165,16 @@ parser::parse_args(int argc, char const* const* argv)
       for (const auto& requirement : arg.argument->depends_on()) {
         if (!is_set(requirement)) {
           result = parse_result::error;
-          *m_stream << "ERROR: Option " << requirement << " is required when "
-                    << "using option " << key << std::endl;
+          log::error() << "Option " << requirement << " is required when "
+                       << "using option " << key;
         }
       }
 
       for (const auto& prohibited : arg.argument->conflicts_with()) {
         if (is_set(prohibited)) {
           result = parse_result::error;
-          *m_stream << "ERROR: Option " << prohibited
-                    << " cannot be used together with option " << key
-                    << std::endl;
+          log::error() << "Option " << prohibited
+                       << " cannot be used together with option " << key;
         }
       }
     }
@@ -208,7 +205,6 @@ parser::add(const std::string& name, const std::string& metavar)
 {
   auto ptr = std::make_shared<argument>(name, metavar);
   m_args.push_back({ std::string(), ptr });
-  ptr->set_ostream(m_stream);
 
   return *ptr;
 }
@@ -229,14 +225,16 @@ parser::add_header(const std::string& header)
 void
 parser::print_version() const
 {
-  *m_stream << m_name << " " << m_version << std::endl;
+  log::cerr() << m_name << " " << m_version << "\n";
 }
 
 void
 parser::print_help() const
 {
   print_version();
-  *m_stream << "\n" << m_help;
+
+  auto cerr = log::cerr();
+  cerr << "\n" << m_help;
 
   string_vec signatures;
 
@@ -283,35 +281,19 @@ parser::print_help() const
         const auto& arg = *entry.argument;
         const auto signature = signatures.at(i);
 
-        *m_stream << signature;
+        cerr << signature;
 
         const std::string help = arg.help();
         if (!help.empty()) {
           // Format into columns and indent lines (except the first line)
-          *m_stream << std::string(indentation - signature.length(), ' ')
-                    << fmt.format(help);
+          cerr << std::string(indentation - signature.length(), ' ')
+               << fmt.format(help);
         }
 
-        *m_stream << "\n";
+        cerr << "\n";
       }
     } else {
-      *m_stream << entry.header << "\n";
-    }
-  }
-
-  m_stream->flush();
-}
-
-void
-parser::set_ostream(std::ostream* stream)
-{
-  AR_REQUIRE(stream);
-
-  m_stream = stream;
-
-  for (auto& it : m_args) {
-    if (it.argument) {
-      it.argument->set_ostream(stream);
+      cerr << entry.header << "\n";
     }
   }
 }
@@ -342,16 +324,16 @@ parser::update_argument_map()
       for (const auto& key : it.argument->conflicts_with()) {
         if (!m_keys.count(key)) {
           any_errors = true;
-          *m_stream << "ERROR: " << it.argument->key() << " conflicts with "
-                    << "unknown command-line option " << key << std::endl;
+          log::error() << it.argument->key() << " conflicts with "
+                       << "unknown command-line option " << key;
         }
       }
 
       for (const auto& key : it.argument->depends_on()) {
         if (!m_keys.count(key)) {
           any_errors = true;
-          *m_stream << "ERROR: " << it.argument->key() << " requires "
-                    << "unknown command-line option " << key << std::endl;
+          log::error() << it.argument->key() << " requires "
+                       << "unknown command-line option " << key;
         }
       }
     }
@@ -383,19 +365,19 @@ parser::find_argument(const std::string& key)
       }
     }
 
-    *m_stream << "ERROR: Unknown argument '" << key << "'" << std::endl;
+    auto error = log::error();
+    error << "Unknown argument '" << key << "'\n";
 
     std::sort(candidates.begin(), candidates.end());
     if (!candidates.empty()) {
-      *m_stream << "\n    Did you mean" << std::endl;
+      error << "\n    Did you mean\n";
 
       for (const auto& candidate : candidates) {
-        *m_stream << "      " << candidate << std::endl;
+        error << "      " << candidate << "\n";
       }
     }
   } else {
-    *m_stream << "ERROR: Unexpected positional argument '" << key << "'"
-              << std::endl;
+    log::error() << "Unexpected positional argument '" << key << "'";
   }
 
   return argument_ptr();
@@ -415,7 +397,6 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_depends_on()
   , m_conflicts_with()
   , m_sink(std::make_unique<bool_sink>(&m_default_sink))
-  , m_stream(&std::cerr)
 {
   AR_REQUIRE(key.size() && key.at(0) == '-');
 }
@@ -600,14 +581,15 @@ argument::conflicts_with(const std::string& key)
 }
 
 void
-n_args_error(std::ostream& out,
-             const std::string& key,
+n_args_error(const std::string& key,
              size_t limit,
              const char* relation,
              size_t n)
 {
-  out << "ERROR: Command-line argument " << key << " takes" << relation << " "
-      << limit << " value";
+  auto out = log::error();
+
+  out << "Command-line argument " << key << " takes" << relation << " " << limit
+      << " value";
 
   if (limit != 1) {
     out << "s";
@@ -618,8 +600,6 @@ n_args_error(std::ostream& out,
   } else {
     out << ", but " << n << " values were provided!";
   }
-
-  out << std::endl;
 }
 
 size_t
@@ -632,17 +612,17 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
              (m_key_short.size() && *start == m_key_short));
 
   if (m_deprecated) {
-    *m_stream << "WARNING: Option " << *start << " is deprecated and will "
-              << "be removed in the future." << std::endl;
+    log::warn() << "Option " << *start << " is deprecated and will "
+                << "be removed in the future.";
   } else if (is_deprecated) {
-    *m_stream << "WARNING: Option " << *start << " is deprecated and will "
-              << "be removed in the future. Please use " << key() << " instead."
-              << std::endl;
+    log::warn() << "Option " << *start << " is deprecated and will "
+                << "be removed in the future. Please use " << key()
+                << " instead.";
   }
 
   if (m_times_set == 1) {
-    *m_stream << "WARNING: Command-line option " << key()
-              << " has been specified more than once." << std::endl;
+    log::warn() << "Command-line option " << key()
+                << " has been specified more than once.";
   }
 
   double numeric_sink = 0;
@@ -662,37 +642,29 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
   auto n_values = static_cast<size_t>(end_of_values - start - 1);
 
   if (n_values != min_values && min_values == max_values) {
-    n_args_error(*m_stream, *start, min_values, "", n_values);
+    n_args_error(*start, min_values, "", n_values);
 
     return parsing_failed;
   } else if (n_values < min_values) {
-    n_args_error(*m_stream, *start, min_values, " at least", n_values);
+    n_args_error(*start, min_values, " at least", n_values);
 
     return parsing_failed;
   } else if (n_values > max_values) {
-    n_args_error(*m_stream, *start, max_values, " at most", n_values);
+    n_args_error(*start, max_values, " at most", n_values);
 
     return parsing_failed;
   }
 
   const auto result = m_sink->consume(start + 1, end_of_values);
   if (result == parsing_failed) {
-    *m_stream << "ERROR: Invalid value for " << *start << ": "
-              << escape(*(start + 1)) << std::endl;
+    log::error() << "Invalid value for " << *start << ": "
+                 << escape(*(start + 1));
 
     return result;
   }
 
   m_times_set++;
   return result + 1;
-}
-
-void
-argument::set_ostream(std::ostream* stream)
-{
-  AR_REQUIRE(stream);
-
-  m_stream = stream;
 }
 
 bool

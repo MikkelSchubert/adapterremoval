@@ -4,7 +4,7 @@
 	],
 	"return_code": 1,
 	"stderr": [
-		"ERROR: Option --barcode-list is required when using option --demultiplex-only"
+		"[ERROR] Option --barcode-list is required when using option --demultiplex-only"
 	],
 	"exhaustive": false
 }

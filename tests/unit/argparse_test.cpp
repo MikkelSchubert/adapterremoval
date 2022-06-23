@@ -29,6 +29,7 @@
 
 #include "argparse.hpp"
 #include "debug.hpp"
+#include "logging.hpp" // for log
 #include "testing.hpp"
 
 namespace adapterremoval {
@@ -39,6 +40,9 @@ using argparse::argument_ptr;
 const size_t parsing_failed = static_cast<size_t>(-1);
 
 using Catch::Matchers::Contains;
+
+#define REQUIRE_POSTFIX(a, b) REQUIRE_THAT((a), Catch::Matchers::EndsWith(b))
+#define REQUIRE_CONTAINS(a, b) REQUIRE_THAT((a), Catch::Matchers::Contains(b))
 
 ///////////////////////////////////////////////////////////////////////////////
 // boolean sink
@@ -524,13 +528,13 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
   arg.deprecated();
   REQUIRE(arg.is_deprecated());
 
-  std::stringstream ss;
-  arg.set_ostream(&ss);
+  log::log_capture ss;
 
   string_vec values{ "--12345" };
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE(ss.str() == "WARNING: Option --12345 is deprecated and will be "
-                      "removed in the future.\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[WARNING] Option --12345 is deprecated and will be "
+                  "removed in the future.\n");
 }
 
 TEST_CASE("default argument sink", "[argparse::argument]")
@@ -703,18 +707,19 @@ TEST_CASE("warning on first duplicate argument", "[argparse::argument]")
   argparse::argument arg("--12345");
   string_vec values{ "--12345" };
 
-  std::stringstream ss;
-  arg.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE(ss.str() == "");
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE(ss.str() == "WARNING: Command-line option --12345 has been specified "
-                      "more than once.\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[WARNING] Command-line option --12345 has been specified "
+                  "more than once.\n");
   // Only display the warning once per argument
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE(ss.str() == "WARNING: Command-line option --12345 has been specified "
-                      "more than once.\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[WARNING] Command-line option --12345 has been specified "
+                  "more than once.\n");
 }
 
 TEST_CASE("no warning on main alias", "[argparse::argument]")
@@ -723,8 +728,7 @@ TEST_CASE("no warning on main alias", "[argparse::argument]")
   arg.deprecated_alias("--foo");
   string_vec values{ "--12345" };
 
-  std::stringstream ss;
-  arg.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE(ss.str() == "");
@@ -736,12 +740,12 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
   arg.deprecated_alias("--foo");
   string_vec values{ "--foo" };
 
-  std::stringstream ss;
-  arg.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE(ss.str() == "WARNING: Option --foo is deprecated and will be removed "
-                      "in the future. Please use --12345 instead.\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[WARNING] Option --foo is deprecated and will be removed "
+                  "in the future. Please use --12345 instead.\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -760,8 +764,7 @@ TEST_CASE("--version", "[argparse::parser]")
   const auto arg = GENERATE("-v", "--version");
   const char* args[] = { "exe", arg };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
   REQUIRE(ss.str() == "My App v1234\n");
@@ -773,8 +776,7 @@ TEST_CASE("--help", "[argparse::parser]")
   const auto arg = GENERATE("-h", "--help");
   const char* args[] = { "exe", arg };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
   REQUIRE(ss.str() == HELP_HEADER);
@@ -786,8 +788,7 @@ TEST_CASE("--help with deprecated argument", "[argparse::parser]")
   p.add("--foo").deprecated();
   const char* args[] = { "exe", "--help" };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
   REQUIRE_THAT(ss.str(), !Contains("--foo"));
@@ -798,11 +799,10 @@ TEST_CASE("unexpected positional argument", "[argparse::parser]")
   argparse::parser p("My App", "v1234", "basic help");
   const char* args[] = { "exe", "foo" };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() == "ERROR: Unexpected positional argument 'foo'\n");
+  REQUIRE_POSTFIX(ss.str(), "[ERROR] Unexpected positional argument 'foo'\n");
 }
 
 TEST_CASE("unexpected argument", "[argparse::parser]")
@@ -810,11 +810,10 @@ TEST_CASE("unexpected argument", "[argparse::parser]")
   argparse::parser p("My App", "v1234", "basic help");
   const char* args[] = { "exe", "--foo" };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() == "ERROR: Unknown argument '--foo'\n");
+  REQUIRE_POSTFIX(ss.str(), "[ERROR] Unknown argument '--foo'\n");
 }
 
 TEST_CASE("typo in argument", "[argparse::parser]")
@@ -822,13 +821,19 @@ TEST_CASE("typo in argument", "[argparse::parser]")
   argparse::parser p("My App", "v1234", "basic help");
   const char* args[] = { "exe", "--halp" };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(
-    ss.str() ==
-    "ERROR: Unknown argument '--halp'\n\n    Did you mean\n      --help\n");
+
+  const auto str = ss.str();
+  size_t i = str.find("[ERROR] Unknown argument '--halp'\n");
+  REQUIRE(i != std::string::npos);
+  i = str.find("[ERROR] \n", i + 1);
+  REQUIRE(i != std::string::npos);
+  i = str.find("[ERROR]     Did you mean\n", i + 1);
+  REQUIRE(i != std::string::npos);
+  i = str.find("[ERROR]       --help\n", i + 1);
+  REQUIRE(i != std::string::npos);
 }
 
 TEST_CASE("partial argument", "[argparse::parser]")
@@ -837,12 +842,19 @@ TEST_CASE("partial argument", "[argparse::parser]")
   p.add("--partofalongargument");
   const char* args[] = { "exe", "--part" };
 
-  std::stringstream ss;
-  p.set_ostream(&ss);
+  log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() == "ERROR: Unknown argument '--part'\n\n    Did you mean\n  "
-                      "    --partofalongargument\n");
+
+  const auto str = ss.str();
+  size_t i = str.find("[ERROR] Unknown argument '--part'\n");
+  REQUIRE(i != std::string::npos);
+  i = str.find("[ERROR] \n", i + 1);
+  REQUIRE(i != std::string::npos);
+  i = str.find("[ERROR]     Did you mean\n", i + 1);
+  REQUIRE(i != std::string::npos);
+  i = str.find("[ERROR]       --partofalongargument\n", i + 1);
+  REQUIRE(i != std::string::npos);
 }
 
 TEST_CASE("parse multiple arguments", "[argparse::parser]")
@@ -863,10 +875,10 @@ TEST_CASE("parse multiple arguments", "[argparse::parser]")
 
 TEST_CASE("user supplied argument", "[argparse::parser]")
 {
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--test");
-  p.set_ostream(&ss);
+
   p.print_help();
 
   REQUIRE(ss.str() == HELP_HEADER + "   --test\n");
@@ -875,10 +887,10 @@ TEST_CASE("user supplied argument", "[argparse::parser]")
 TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 {
   unsigned sink = 0;
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--test", "META").bind_uint(&sink);
-  p.set_ostream(&ss);
+
   p.print_help();
 
   REQUIRE(ss.str() == "My App v1234\n\n"
@@ -892,13 +904,13 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 {
   unsigned sink = 0;
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
     .bind_uint(&sink);
-  p.set_ostream(&ss);
+
   p.set_terminal_width(60);
   p.print_help();
 
@@ -917,14 +929,14 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 TEST_CASE("help with default value", "[argparse::parser]")
 {
   unsigned sink = 0;
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
     .bind_uint(&sink)
     .with_default(1234);
-  p.set_ostream(&ss);
+
   p.set_terminal_width(60);
   p.print_help();
 
@@ -942,16 +954,15 @@ TEST_CASE("help with default value", "[argparse::parser]")
 
 TEST_CASE("required option missing", "[argparse::parser]")
 {
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--foo").depends_on("--bar");
   p.add("--bar");
-  p.set_ostream(&ss);
 
   const char* args[] = { "exe", "--foo" };
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() ==
-          "ERROR: Option --bar is required when using option --foo\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[ERROR] Option --bar is required when using option --foo\n");
 }
 
 TEST_CASE("required option supplied", "[argparse::parser]")
@@ -976,43 +987,42 @@ TEST_CASE("conflicting option missing", "[argparse::parser]")
 
 TEST_CASE("conflicting option supplied", "[argparse::parser]")
 {
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
-  p.set_ostream(&ss);
 
   const char* args[] = { "exe", "--foo", "--bar" };
   REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() ==
-          "ERROR: Option --bar cannot be used together with option --foo\n");
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Option --bar cannot be used together with option --foo\n");
 }
 
 TEST_CASE("missing value", "[argparse::parser]")
 {
   unsigned sink = 0;
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--foo").bind_uint(&sink);
-  p.set_ostream(&ss);
 
   const char* args[] = { "exe", "--foo" };
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() == "ERROR: Command-line argument --foo takes 1 value, but 0 "
-                      "values were provided!\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[ERROR] Command-line argument --foo takes 1 value, but 0 "
+                  "values were provided!\n");
 }
 
 TEST_CASE("invalid value", "[argparse::parser]")
 {
   unsigned sink = 0;
-  std::stringstream ss;
+  log::log_capture ss;
   argparse::parser p("My App", "v1234", "basic help");
   p.add("--foo").bind_uint(&sink);
-  p.set_ostream(&ss);
 
   const char* args[] = { "exe", "--foo", "one" };
   REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
-  REQUIRE(ss.str() == "ERROR: Invalid value for --foo: \"one\"\n");
+  REQUIRE_POSTFIX(ss.str(), "[ERROR] Invalid value for --foo: \"one\"\n");
 }
 
 } // namespace adapterremoval

@@ -127,8 +127,6 @@ public:
   /** Helper functions; prints the full set of help-text. */
   void print_help() const;
 
-  /** Set the stream used for printing help and error messages. */
-  void set_ostream(std::ostream* stream);
   /** Set the maximum terminal width. */
   void set_terminal_width(unsigned w);
 
@@ -157,8 +155,6 @@ private:
   std::string m_version;
   //! Help text for the program.
   std::string m_help;
-  //! Stream used for printing help and error messages. Defaults to cerr
-  std::ostream* m_stream;
   //! Maximum terminal width used for printing help messages
   unsigned m_terminal_width;
 };
@@ -238,9 +234,6 @@ public:
   /** Parse the next arguments, returning the number of items parsed or -1. */
   size_t parse(string_vec_citer start, const string_vec_citer& end);
 
-  /** Set the stream used for printing help and error messages. */
-  void set_ostream(std::ostream* stream);
-
   //! Copy construction not supported
   argument(const argument&) = delete;
   //! Assignment not supported
@@ -272,9 +265,6 @@ protected:
   string_vec m_conflicts_with;
 
   std::unique_ptr<sink> m_sink;
-
-  //! Stream used for printing help and error messages. Defaults to cerr
-  std::ostream* m_stream;
 };
 
 class sink
