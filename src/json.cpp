@@ -25,7 +25,7 @@
 #include <cmath>     // for isnan
 #include <iomanip>   // for operator<<, setw
 #include <memory>    // for make_shared
-#include <sstream>   // for operator<<, basic_ostream, stringstream, ostream
+#include <sstream>   // for operator<<, basic_ostream, ostringstream, ostream
 #include <utility>   // for swap
 
 #include "debug.hpp" // for AR_REQUIRE
@@ -36,7 +36,7 @@ namespace adapterremoval {
 std::string
 _escape(const std::string& value)
 {
-  std::stringstream stream;
+  std::ostringstream stream;
 
   stream << '"';
 
@@ -99,7 +99,7 @@ json_value::~json_value() {}
 std::string
 json_value::to_string() const
 {
-  std::stringstream ss;
+  std::ostringstream ss;
 
   write(ss);
 
@@ -191,7 +191,7 @@ json_token::write(std::ostream& out, size_t /* indent */) const
 json_ptr
 json_token::from_raw_vec(const string_vec& values)
 {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << "[";
   for (size_t i = 0; i < values.size(); ++i) {
     if (i) {

@@ -24,7 +24,7 @@
 \*************************************************************************/
 #include <algorithm> // for min, max
 #include <cmath>     // for log10, pow, round
-#include <sstream>   // for stringstream
+#include <sstream>   // for ostringstream
 #include <stdexcept> // for invalid_argument
 
 #include "debug.hpp" // for AR_FAIL, AR_REQUIRE
@@ -82,7 +82,7 @@ void
 validate_phred_format(char raw_score)
 {
   if (raw_score < '!' || raw_score > '~') {
-    std::stringstream ss;
+    std::ostringstream ss;
 
     ss << "Found FASTQ quality score outside of the range of valid ASCII "
        << "encoded values (min = '!', max = '~'). Input file is either corrupt "
@@ -101,7 +101,7 @@ invalid_phred_33(const int max_score, const char raw_score)
   const char max_score_ascii = max_score + PHRED_OFFSET_33;
   AR_REQUIRE(score > max_score, "invalid_phred called on valid PHRED score");
 
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << "Found Phred+33 encoded quality score of " << score << " ('"
      << raw_score << "'), which is greater than the expected maximum score of "
      << max_score << " ('" << max_score_ascii << "'). Please verify the format "
@@ -126,7 +126,7 @@ invalid_phred_64(const int max_score, const char raw_score)
 
   const int score = raw_score - PHRED_OFFSET_64;
   const char max_score_ascii = max_score + PHRED_OFFSET_64;
-  std::stringstream ss;
+  std::ostringstream ss;
 
   if (score < MIN_SOLEXA_SCORE) {
     ss << "Found Phred+64 encoded quality score of " << score << " ('"
@@ -181,7 +181,7 @@ invalid_solexa(const int max_score, const char raw_score)
 
   const int score = raw_score - PHRED_OFFSET_64;
   const char max_score_ascii = max_score + PHRED_OFFSET_64;
-  std::stringstream ss;
+  std::ostringstream ss;
 
   if (score < MIN_SOLEXA_SCORE) {
     ss << "Found Solexa encoded quality score of " << score << " ('"

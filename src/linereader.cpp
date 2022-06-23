@@ -25,7 +25,7 @@
 #include <cstdlib> // for exit
 #include <cstring> // for strerror
 #include <memory>  // for make_unique
-#include <sstream> // for stringstream
+#include <sstream> // for ostringstream
 
 #include "debug.hpp"          // for AR_FAIL
 #include "linereader.hpp"     // header
@@ -41,7 +41,7 @@ std::string
 format_io_msg(const std::string& message, int error_number)
 {
   if (error_number) {
-    std::stringstream stream;
+    std::ostringstream stream;
     stream << message << " ('" << std::strerror(error_number) << "')";
 
     return stream.str();
@@ -65,7 +65,7 @@ io_error::~io_error() {}
 [[noreturn]] void
 throw_isal_error(const char* func, const char* msg)
 {
-  std::stringstream stream;
+  std::ostringstream stream;
   stream << func << " (isa-l): " << msg;
 
   throw gzip_error(stream.str());
@@ -76,7 +76,7 @@ throw_isal_error(const char* func, const char* msg)
 [[noreturn]] void
 throw_gzip_error(const char* func, z_stream* zstream, const char* msg)
 {
-  std::stringstream stream;
+  std::ostringstream stream;
   stream << func << " (zlib): " << msg;
   if (zstream && zstream->msg) {
     stream << " ('" << zstream->msg << "')";

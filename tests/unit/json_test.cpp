@@ -35,7 +35,7 @@ template<typename T>
 std::string
 _write_json(const T& json)
 {
-  std::stringstream ss;
+  std::ostringstream ss;
   json.write(ss);
 
   return ss.str();

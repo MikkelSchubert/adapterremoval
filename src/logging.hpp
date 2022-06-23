@@ -23,7 +23,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <sstream> // for stringstream
+#include <sstream> // for ostringstream
 #include <string>  // for string
 
 namespace adapterremoval {
@@ -80,7 +80,7 @@ private:
   //! Log level of the current message
   const level m_level;
   //! Stream for caching log output prior to writing
-  std::stringstream m_stream;
+  std::ostringstream m_stream;
 };
 
 /**
@@ -114,7 +114,7 @@ private:
   //! Original timestamps setting
   bool m_timestamps;
   //! Stream containing text written using `log_stream`
-  std::stringstream m_stream;
+  std::ostringstream m_stream;
 };
 
 /**

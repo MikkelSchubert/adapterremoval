@@ -25,7 +25,7 @@
 #include <cmath>       // for floor
 #include <iomanip>     // for operator<<, setw
 #include <limits>      // for numeric_limits
-#include <sstream>     // for stringstream, basic_ostream, operator<<, basi...
+#include <sstream>     // for istringstream, ostringstream
 #include <stdexcept>   // for invalid_argument
 #include <stdint.h>    // for int64_t
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
@@ -67,7 +67,7 @@ levenshtein(const std::string& s, const std::string& t)
 unsigned
 str_to_unsigned(const std::string& s)
 {
-  std::stringstream stream(s);
+  std::istringstream stream(s);
   int64_t temp = 0;
 
   if (!(stream >> temp)) {
@@ -117,7 +117,7 @@ std::string
 indent_lines(const std::string& lines, size_t n_indent)
 {
   std::string line;
-  std::stringstream lines_out;
+  std::ostringstream lines_out;
   const std::string indentation = std::string(n_indent, ' ');
 
   size_t last_pos = 0;
@@ -199,8 +199,8 @@ columnize_text(const std::string& value, size_t max_width, size_t ljust)
 {
   size_t current_width = 0;
   size_t current_ljust = 0;
-  std::stringstream lines_out;
-  std::stringstream lines_in(value);
+  std::ostringstream lines_out;
+  std::istringstream lines_in(value);
   std::string substr;
 
   while (lines_in >> substr) {
@@ -274,7 +274,7 @@ std::string
 cli_formatter::format(const std::string& lines) const
 {
   std::string line;
-  std::stringstream lines_out;
+  std::ostringstream lines_out;
 
   size_t last_pos = 0;
   while (true) {
@@ -368,7 +368,7 @@ shell_escape(const std::string& s)
 std::string
 shell_escape_command(const std::vector<std::string>& values)
 {
-  std::stringstream ss;
+  std::ostringstream ss;
   for (size_t i = 0; i < values.size(); ++i) {
     if (i) {
       ss << ' ';
@@ -431,7 +431,7 @@ format_rough_number(size_t count, size_t precision)
     tmp /= 1e3;
   }
 
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << std::fixed << std::setprecision(precision) << (tmp / shift) << ' '
      << rough_units.at(scale_i).second;
 
@@ -444,7 +444,7 @@ format_fraction(uint64_t num, uint64_t denom, size_t precision)
   if (denom) {
     const double fraction = static_cast<double>(num) / denom;
 
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << std::fixed << std::setprecision(precision) << fraction;
 
     return ss.str();

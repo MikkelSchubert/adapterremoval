@@ -23,7 +23,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm> // for sort, max
-#include <sstream>   // for stringstream
+#include <sstream>   // for istringstream, ostringstream
 #include <utility>   // for pair
 #include <vector>    // for vector, vector<>::const_iterator
 
@@ -41,7 +41,7 @@ typedef std::vector<named_fastq_row> fastq_table;
 typedef fastq_table::const_iterator fastq_table_citer;
 
 bool
-print_parse_error(const std::stringstream& message)
+print_parse_error(const std::ostringstream& message)
 {
   log::error() << "Error reading table: " << cli_formatter::fmt(message.str());
 
@@ -78,7 +78,7 @@ read_table(const std::string& filename,
       fastq_vec row;
       std::string name;
       std::string field;
-      std::stringstream instream(trim_comments(line));
+      std::istringstream instream(trim_comments(line));
 
       for (size_t index = 1; instream >> field; ++index) {
         try {
@@ -88,7 +88,7 @@ read_table(const std::string& filename,
             row.push_back(fastq("sequence", field));
           }
         } catch (const fastq_error& error) {
-          std::stringstream message;
+          std::ostringstream message;
           message << "Failed to parse sequence in '" << filename << "' at line "
                   << line_num << ", column " << index << ": " << error.what();
 
@@ -100,21 +100,21 @@ read_table(const std::string& filename,
         // Ignore empty lines, e.g. those containing only comments
         continue;
       } else if (row.size() < min_col) {
-        std::stringstream message;
+        std::ostringstream message;
         message << "Expected at least " << min_col << " columns in "
                 << "table '" << filename << "' at line " << line_num
                 << ", but only found " << row.size() << " column(s)!";
 
         return print_parse_error(message);
       } else if (row.size() > max_col) {
-        std::stringstream message;
+        std::ostringstream message;
         message << "Expected at most " << min_col << " columns in "
                 << "table '" << filename << "' at line " << line_num
                 << ", but found " << row.size() << " column(s)!";
 
         return print_parse_error(message);
       } else if (last_row_size && last_row_size != row.size()) {
-        std::stringstream message;
+        std::ostringstream message;
         message << "Error reading '" << filename << "' at line " << line_num
                 << "; rows contain unequal number of "
                 << "columns; last row contained " << last_row_size
@@ -129,7 +129,7 @@ read_table(const std::string& filename,
       dst.push_back(named_fastq_row(name, row));
     }
   } catch (const std::ios_base::failure& error) {
-    std::stringstream message;
+    std::ostringstream message;
     message << "IO error reading '" << filename << "' at line " << line_num
             << ": " << error.what();
 
@@ -159,21 +159,21 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
     const std::string& mate_2 = it->second.sequence();
 
     if (mate_1.find('N') != std::string::npos) {
-      std::stringstream error;
+      std::ostringstream error;
       error << "Degenerate base (N) found in mate 1 barcode sequence '"
             << mate_1 << "'. Degenerate bases are not supported for "
             << "demultiplexing; please remove before continuing!";
 
       return print_parse_error(error);
     } else if (mate_2.find('N') != std::string::npos) {
-      std::stringstream error;
+      std::ostringstream error;
       error << "Degenerate base (N) found in mate 2 barcode sequence '"
             << mate_2 << "'. Degenerate bases are not supported for "
             << "demultiplexing; please remove before continuing!";
 
       return print_parse_error(error);
     } else if (mate_1.length() != mate_1_len) {
-      std::stringstream error;
+      std::ostringstream error;
       error << "Inconsistent mate 1 barcode lengths found; last barcode "
                "was "
             << mate_1_len << " basepairs long, but barcode "
@@ -184,7 +184,7 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
 
       return print_parse_error(error);
     } else if (mate_2.length() != mate_2_len) {
-      std::stringstream error;
+      std::ostringstream error;
       error << "Inconsistent mate 2 barcode lengths found; last barcode "
                "was "
             << mate_2_len << " basepairs long, but barcode "
@@ -208,7 +208,7 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
     if (prev->first == curr->first) {
       if (paired_end) {
         if (prev->second == curr->second) {
-          std::stringstream error;
+          std::ostringstream error;
           error << "Duplicate barcode pairs found in '" << filename
                 << "' with barcodes " << prev->first << " and " << prev->second
                 << ". please verify "
@@ -218,7 +218,7 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
           return print_parse_error(error);
         }
       } else {
-        std::stringstream error;
+        std::ostringstream error;
         error << "Duplicate mate 1 barcodes found in '" << filename
               << "': " << prev->first
               << ". Even if these "
@@ -243,7 +243,7 @@ valid_sample_name(const std::string& name)
       continue;
     }
 
-    std::stringstream error;
+    std::ostringstream error;
     error << "The sample name '" << name
           << "' is not a valid sample "
              "name; only letters ('a' to 'z' and 'A' to 'Z'), numbers (0 "
@@ -253,7 +253,7 @@ valid_sample_name(const std::string& name)
   }
 
   if (name == "unidentified") {
-    std::stringstream error;
+    std::ostringstream error;
     error << "The sample name '" << name
           << "' is a reserved name, and "
              "cannot be used!";
@@ -284,7 +284,7 @@ check_sample_names(const string_vec& names)
   string_vec::const_iterator curr = prev + 1;
   for (; curr != sorted_names.end(); ++prev, ++curr) {
     if (*prev == *curr) {
-      std::stringstream error;
+      std::ostringstream error;
       error << "Duplicate sample name '" << *prev
             << "'; combining "
                "different barcodes for one sample is not supported. "

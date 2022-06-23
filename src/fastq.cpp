@@ -25,7 +25,7 @@
 #include <algorithm> // for reverse, count, max, min
 #include <cmath>     // for log10, pow
 #include <numeric>   // for accumulate
-#include <sstream>   // for stringstream
+#include <sstream>   // for ostringstream
 
 #include "debug.hpp" // for AR_REQUIRE, AR_FAIL
 #include "fastq.hpp"
@@ -514,7 +514,7 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
   const mate_info info2 = get_mate_info(mate2, mate_separator);
 
   if (info1.name != info2.name) {
-    std::stringstream error;
+    std::ostringstream error;
     error << "Pair contains reads with mismatching names:\n"
           << " - '" << info1.name << "'\n"
           << " - '" << info2.name << "'";
@@ -535,7 +535,7 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 
   if (info1.mate != read_mate::unknown || info2.mate != read_mate::unknown) {
     if (info1.mate != read_mate::mate_1 || info2.mate != read_mate::mate_2) {
-      std::stringstream error;
+      std::ostringstream error;
       error << "Inconsistent mate numbering; please verify data:\n"
             << "\nRead 1 identified as " << info1.desc() << ": " << mate1.name()
             << "\nRead 2 identified as " << info2.desc() << ": "

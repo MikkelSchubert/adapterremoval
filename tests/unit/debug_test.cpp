@@ -43,7 +43,7 @@ TEST_CASE("assert on false value")
     what = error.what();
   }
 
-  std::stringstream message;
+  std::ostringstream message;
   message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
           << ": 1 == 2";
 
@@ -64,7 +64,7 @@ TEST_CASE("assert on false value with message")
     what = error.what();
   }
 
-  std::stringstream message;
+  std::ostringstream message;
   message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
           << ": message goes here: !!false";
 
@@ -80,7 +80,7 @@ TEST_CASE("assert fail")
     what = error.what();
   }
 
-  std::stringstream message;
+  std::ostringstream message;
   message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
           << ": big fail";
 

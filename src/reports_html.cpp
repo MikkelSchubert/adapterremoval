@@ -26,7 +26,7 @@
 #include <fstream> // for ofstream
 #include <iomanip> // for setprecision
 #include <memory>  // for make_shared, make_unique
-#include <sstream> // for stringstream
+#include <sstream> // for ostringstream
 #include <string>  // for operator+, string, operator<<
 #include <vector>  // for vector
 
@@ -72,7 +72,7 @@ std::string operator""_json(const char* s, size_t length)
 std::string
 runtime_to_str(double seconds)
 {
-  std::stringstream ss;
+  std::ostringstream ss;
 
   if (seconds >= 3600.0) {
     ss << static_cast<size_t>(seconds / 3600.0) << " "
@@ -106,7 +106,7 @@ mean_of_counts(const counts& count)
     return std::to_string(bases / reads);
   }
 
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << std::fixed << std::setprecision(1)
      << (bases / static_cast<double>(reads));
 
@@ -263,7 +263,7 @@ write_html_summary_section(const userconfig& config,
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X");
 
     html_summary()
@@ -541,7 +541,7 @@ write_html_input_section(const userconfig& config,
 
     // FIXME: Specify "identified reads" when in demultiplexing mode and correct
     //        format_percentage to merged / n_identified.
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "Insert sizes inferred for "
        << format_percentage(insert_sizes.sum(),
                             stats.input_1->number_of_input_reads())

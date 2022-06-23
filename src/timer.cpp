@@ -24,7 +24,7 @@
 \*************************************************************************/
 #include <iomanip>    // for operator<<, setfill, setw
 #include <locale>     // for numpunct, use_facet, locale
-#include <sstream>    // for stringstream
+#include <sstream>    // for ostringstream
 #include <sys/time.h> // for gettimeofday, timeval
 
 #include "logging.hpp" // for log
@@ -72,7 +72,7 @@ thousands_sep(size_t number)
 std::string
 format_time(double seconds)
 {
-  std::stringstream stream;
+  std::ostringstream stream;
   stream.precision(1);
   stream << std::setfill('0');
 

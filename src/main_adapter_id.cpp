@@ -26,7 +26,7 @@
 #include <iostream>  // for operator<<, basic_ostream, char_traits
 #include <memory>    // for unique_ptr
 #include <queue>     // for priority_queue
-#include <sstream>   // for stringstream
+#include <sstream>   // for ostringstream
 #include <stddef.h>  // for size_t
 #include <string>    // for string, basic_string, operator<<
 #include <utility>   // for pair
@@ -185,7 +185,7 @@ print_most_common_kmers(const kmer_map& kmers, size_t print_n = TOP_N_KMERS)
 std::string
 compare_consensus_with_ref(const std::string& ref, const std::string& consensus)
 {
-  std::stringstream identity;
+  std::ostringstream identity;
   for (size_t i = 0, size = std::min(consensus.size(), ref.size()); i < size;
        ++i) {
     if (ref.at(i) == 'N' || consensus.at(i) == 'N') {
@@ -246,8 +246,8 @@ print_consensus_adapter(const nt_count_vec& nt_counts,
                         const std::string& name,
                         const std::string& ref)
 {
-  std::stringstream sequence;
-  std::stringstream qualities;
+  std::ostringstream sequence;
+  std::ostringstream qualities;
 
   for (auto it = nt_counts.begin(); it != nt_counts.end(); ++it) {
     const std::pair<char, char> consensus = get_consensus_nt(*it);

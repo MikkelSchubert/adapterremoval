@@ -26,7 +26,7 @@
 #include <limits>      // for numeric_limits
 #include <memory>      // for make_unique, make_shared
 #include <set>         // for set
-#include <sstream>     // for stringstream
+#include <sstream>     // for istringstream, ostringstream
 #include <stdexcept>   // for invalid_argument
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>    // for STDERR_FILENO
@@ -77,7 +77,7 @@ is_similar_argument(const std::string& user,
 bool
 to_double(const std::string& value, double& out)
 {
-  std::stringstream stream(value);
+  std::istringstream stream(value);
   if (!(stream >> out)) {
     return false;
   }
@@ -243,7 +243,7 @@ parser::print_help() const
     if (entry.argument && !entry.argument->is_deprecated()) {
       const auto& arg = *entry.argument;
 
-      std::stringstream ss;
+      std::ostringstream ss;
       if (arg.short_key().empty()) {
         ss << "   " << arg.key();
       } else {
@@ -457,7 +457,7 @@ argument::help() const
 {
   if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
     // Append string representation of current (default) value
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << m_help << " [default: " << to_str() << "]";
 
     return ss.str();

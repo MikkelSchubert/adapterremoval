@@ -22,7 +22,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <cstdlib> // for abort, size_t
-#include <sstream> // for stringstream
+#include <sstream> // for ostringstream
 #include <string>  // for string
 
 #include "debug.hpp"
@@ -56,7 +56,7 @@ debug_raise_assert(const char* filename,
                    const std::string& test,
                    const std::string& msg)
 {
-  std::stringstream message;
+  std::ostringstream message;
   message << "Assertion failed at " << filename << ":" << lineno << ": ";
   if (test.empty() || msg.empty()) {
     message << test << msg;
