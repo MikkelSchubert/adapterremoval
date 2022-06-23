@@ -345,6 +345,8 @@ line_reader::refill_buffers_gzip()
   if (m_gzip_stream->avail_in &&
       m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
     isal_inflate_reset(m_gzip_stream.get());
+    // Handle headers in subsequent blocks
+    m_gzip_stream->crc_flag = ISAL_GZIP;
   }
 
   check_isal_return_code(__func__, isal_inflate(m_gzip_stream.get()));
