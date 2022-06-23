@@ -23,15 +23,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm> // for sort, max
-#include <iostream>  // for operator<<, basic_ostream, char_traits
 #include <sstream>   // for stringstream
 #include <utility>   // for pair
 #include <vector>    // for vector, vector<>::const_iterator
 
-#include "adapterset.hpp"
+#include "adapterset.hpp" // declarations
 #include "debug.hpp"      // for AR_REQUIRE
 #include "fastq_enc.hpp"  // for fastq_error
 #include "linereader.hpp" // for line_reader
+#include "logging.hpp"    // for log
 #include "strutils.hpp"   // for cli_formatter
 
 namespace adapterremoval {
@@ -43,8 +43,7 @@ typedef fastq_table::const_iterator fastq_table_citer;
 bool
 print_parse_error(const std::stringstream& message)
 {
-  std::cerr << "ERROR READING TABLE:\n"
-            << cli_formatter::fmt(message.str()) << std::endl;
+  log::error() << "Error reading table: " << cli_formatter::fmt(message.str());
 
   return false;
 }

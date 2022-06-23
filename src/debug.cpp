@@ -21,10 +21,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdlib>  // for abort, size_t
-#include <iostream> // for operator<<, basic_ostream, stringstream, endl
-#include <sstream>  // for stringstream
-#include <string>   // for string
+#include <cstdlib> // for abort, size_t
+#include <sstream> // for stringstream
+#include <string>  // for string
 
 #include "debug.hpp"
 

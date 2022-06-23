@@ -21,12 +21,11 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cerrno>   // for errno
-#include <cstdlib>  // for exit
-#include <cstring>  // for strerror
-#include <iostream> // for operator<<, basic_ostream, endl, cerr
-#include <memory>   // for make_unique
-#include <sstream>  // for stringstream
+#include <cerrno>  // for errno
+#include <cstdlib> // for exit
+#include <cstring> // for strerror
+#include <memory>  // for make_unique
+#include <sstream> // for stringstream
 
 #include "debug.hpp"          // for AR_FAIL
 #include "linereader.hpp"     // header

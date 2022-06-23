@@ -24,7 +24,6 @@
 \*************************************************************************/
 #include <algorithm> // for min, max
 #include <cmath>     // for log10, pow, round
-#include <iostream>  // for operator<<, basic_ostream, basic_ostream::opera...
 #include <sstream>   // for stringstream
 #include <stdexcept> // for invalid_argument
 

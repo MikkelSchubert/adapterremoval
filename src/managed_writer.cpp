@@ -22,7 +22,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <cerrno>       // for errno, EMFILE
-#include <iostream>     // for cerr
 #include <mutex>        // for mutex, lock_guard
 #include <stdexcept>    // for runtime_error
 #include <system_error> // for errc, errc::too_many_files_open
@@ -31,9 +30,9 @@
 #include <fcntl.h> // for posix_fadvise
 #endif
 
-#include "debug.hpp" // for AR_REQUIRE
-#include "managed_writer.hpp"
-#include "threads.hpp" // for print_locker
+#include "debug.hpp"          // for AR_REQUIRE
+#include "logging.hpp"        // for log
+#include "managed_writer.hpp" // declarations
 
 namespace adapterremoval {
 
@@ -220,13 +219,10 @@ managed_writer::close_tail_writer()
 {
   AR_REQUIRE(!s_head == !s_tail);
   if (!s_warning_printed) {
-    print_locker lock;
-    std::cerr
-      << "\n"
-      << "WARNING: Number of available file-handles (ulimit -n) is too low.\n"
-      << "         AdapterRemoval will dynamically close/re-open files as\n"
-      << "         required, but performance may suffer as a result.\n"
-      << std::endl;
+    log::warn()
+      << "\nNumber of available file-handles (ulimit -n) is too low.\n"
+      << "AdapterRemoval will dynamically close/re-open files as\n"
+      << "required, but performance may suffer as a result.";
 
     s_warning_printed = true;
   }

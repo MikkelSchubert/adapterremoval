@@ -22,11 +22,11 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iostream> // for operator<<, endl, basic_ostream, cerr, ost...
 #include <stddef.h> // for size_t
 
 #include "argparse.hpp"   // for parse_result, parse_result::error
 #include "debug.hpp"      // for AR_FAIL
+#include "logging.hpp"    // for log
 #include "main.hpp"       // header
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
 
@@ -48,11 +48,9 @@ fastq_report_only(const userconfig& config);
 [[noreturn]] void
 terminate(const std::string& message)
 {
-  std::cerr << "\nFATAL ERROR:\n"
-            << message << "\n\n"
-            << "This should not happen! Please file a bug-report at\n    "
-            << "https://github.com/MikkelSchubert/adapterremoval/issues/new"
-            << std::endl;
+  log::error() << message
+               << "This should not happen! Please file a bug-report at\n    "
+               << "https://github.com/MikkelSchubert/adapterremoval/issues/new";
 
   std::abort();
 }
@@ -105,16 +103,15 @@ main(int argc, char* argv[])
     }
 
     default: {
-      std::cerr << "ERROR: Unknown run-type: "
-                << static_cast<size_t>(config.run_type) << std::endl;
+      log::error() << "Unknown run-type: "
+                   << static_cast<size_t>(config.run_type);
       return 1;
     }
   }
 
   if (returncode) {
-    std::cerr << "ERROR: AdapterRemoval did not run to completion;\n"
-              << "       do NOT make use of resulting trimmed reads!"
-              << std::endl;
+    log::error() << "AdapterRemoval did not run to completion;\n"
+                 << "    do NOT make use of the trimmed reads!";
   }
 
   return returncode;

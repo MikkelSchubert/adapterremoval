@@ -25,7 +25,6 @@
 #include <algorithm> // for max, min
 #include <cerrno>    // for errno
 #include <cstring>   // for size_t, strerror, memcpy
-#include <iostream>  // for operator<<, basic_ostream, char_traits, endl
 #include <memory>    // for make_unique
 #include <utility>   // for move, swap
 
@@ -33,10 +32,11 @@
 #include <libdeflate.h>
 #endif
 
-#include "debug.hpp"     // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "fastq.hpp"     // for fastq
-#include "fastq_enc.hpp" // for fastq_error
-#include "fastq_io.hpp"
+#include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "fastq.hpp"      // for fastq
+#include "fastq_enc.hpp"  // for fastq_error
+#include "fastq_io.hpp"   // declarations
+#include "logging.hpp"    // for log
 #include "statistics.hpp" // for fastq_statistics
 #include "strutils.hpp"   // for cli_formatter
 #include "threads.hpp"    // for thread_error, print_locker, thread_abort
@@ -172,10 +172,9 @@ read_record(joined_line_readers& reader,
       return false;
     }
   } catch (const fastq_error& error) {
-    print_locker lock;
-    std::cerr << "Error reading FASTQ record from '" << reader.filename()
-              << "' at line " << reader.linenumber() << "; aborting:\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
+    log::error() << "Error reading FASTQ record from '" << reader.filename()
+                 << "' at line " << reader.linenumber() << "; aborting:\n"
+                 << cli_formatter::fmt(error.what());
 
     throw thread_abort();
   }
@@ -261,17 +260,15 @@ read_fastq::read_paired_end(read_chunk_ptr& chunk)
     bool eof_2 = !read_record(*m_io_input_2, reads_2, record, n_nucleotides);
 
     if (m_eof && !eof_2) {
-      print_locker lock;
-      std::cerr << "ERROR: More mate 2 reads than mate 1 reads found in '"
-                << m_io_input_1->filename() << "'; file may be truncated. "
-                << "Please fix before continuing." << std::endl;
+      log::error() << "More mate 2 reads than mate 1 reads found in '"
+                   << m_io_input_1->filename() << "'; file may be truncated. "
+                   << "Please fix before continuing.";
 
       throw thread_abort();
     } else if (eof_2 && !m_eof) {
-      print_locker lock;
-      std::cerr << "ERROR: More mate 1 reads than mate 2 reads found in '"
-                << m_io_input_2->filename() << "'; file may be truncated. "
-                << "Please fix before continuing." << std::endl;
+      log::error() << "More mate 1 reads than mate 2 reads found in '"
+                   << m_io_input_2->filename() << "'; file may be truncated. "
+                   << "Please fix before continuing.";
 
       throw thread_abort();
     }

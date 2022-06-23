@@ -24,7 +24,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <iostream>
+#include <ostream>
 
 #include "catch.hpp"
 #include "fastq.hpp"

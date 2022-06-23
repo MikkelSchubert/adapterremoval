@@ -23,15 +23,15 @@
 \*************************************************************************/
 #include <algorithm>    // for max
 #include <exception>    // for exception
-#include <iostream>     // for operator<<, basic_ostream, endl, cerr
 #include <memory>       // for make_unique
 #include <system_error> // for system_error
 #include <thread>       // for thread
 
-#include "debug.hpp" // for AR_REQUIRE
-#include "scheduler.hpp"
-#include "strutils.hpp" // for cli_formatter
-#include "threads.hpp"  // for print_locker, thread_abort
+#include "debug.hpp"     // for AR_REQUIRE
+#include "logging.hpp"   // for log
+#include "scheduler.hpp" // declarations
+#include "strutils.hpp"  // for cli_formatter
+#include "threads.hpp"   // for thread_abort
 
 namespace adapterremoval {
 
@@ -194,9 +194,8 @@ scheduler::run(int nthreads)
       threads.emplace_back(run_wrapper, this);
     }
   } catch (const std::system_error& error) {
-    print_locker lock;
-    std::cerr << "ERROR: Failed to create threads:\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
+    log::error() << "Failed to create threads:\n"
+                 << cli_formatter::fmt(error.what());
 
     set_errors_occured();
   }
@@ -208,8 +207,7 @@ scheduler::run(int nthreads)
     try {
       thread.join();
     } catch (const std::system_error& error) {
-      std::cerr << "ERROR: Failed to join thread: " << error.what()
-                << std::endl;
+      log::error() << "Failed to join thread: " << error.what();
       set_errors_occured();
     }
   }
@@ -220,9 +218,8 @@ scheduler::run(int nthreads)
 
   for (auto& step : m_steps) {
     if (step->chunks_queued()) {
-      print_locker lock;
-      std::cerr << "ERROR: Not all parts run for step " << step->name() << "; "
-                << step->chunks_queued() << " parts left" << std::endl;
+      log::error() << "Not all parts run for step " << step->name() << "; "
+                   << step->chunks_queued() << " parts left";
 
       set_errors_occured();
     }
@@ -237,7 +234,7 @@ scheduler::run(int nthreads)
     try {
       (*it)->finalize();
     } catch (const std::exception&) {
-      std::cerr << "ERROR: Failed to finalize " << (*it)->name() << ":\n";
+      log::error() << "Failed to finalize task: " << (*it)->name();
       throw;
     }
   }
@@ -251,16 +248,12 @@ scheduler::run_wrapper(scheduler* sch)
   try {
     return sch->do_run();
   } catch (const thread_abort&) {
-    print_locker lock;
-    std::cerr << "Aborting thread due to error." << std::endl;
+    log::error() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
-    print_locker lock;
-    std::cerr << "ERROR: Unhandled exception in thread:\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
+    log::error() << "Unhandled exception in thread:\n"
+                 << cli_formatter::fmt(error.what());
   } catch (...) {
-    print_locker lock;
-    std::cerr << "ERROR: Unhandled, non-standard exception in thread"
-              << std::endl;
+    log::error() << "Unhandled, non-standard exception in thread";
   }
 
   sch->set_errors_occured();

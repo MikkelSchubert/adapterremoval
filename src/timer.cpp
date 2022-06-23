@@ -23,13 +23,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <iomanip>    // for operator<<, setfill, setw
-#include <iostream>   // for operator<<, basic_ostream, stringstream, cerr
 #include <locale>     // for numpunct, use_facet, locale
 #include <sstream>    // for stringstream
 #include <sys/time.h> // for gettimeofday, timeval
 
+#include "logging.hpp" // for log
 #include "threads.hpp" // for print_locker
-#include "timer.hpp"
+#include "timer.hpp"   // declarations
 
 namespace adapterremoval {
 
@@ -110,7 +110,6 @@ progress_timer::increment(size_t inc)
   if (m_current >= REPORT_EVERY) {
     const double current_time = get_current_time();
 
-    print_locker lock(false);
     do_print(m_current, current_time - m_last_time);
 
     m_current = 0;
@@ -121,12 +120,7 @@ progress_timer::increment(size_t inc)
 void
 progress_timer::finalize() const
 {
-  print_locker lock(false);
   const auto current_time = get_current_time();
-
-  if (m_current != m_total) {
-    do_print(m_current, current_time - m_last_time);
-  }
 
   do_print(m_total, current_time - m_first_time, true);
 }
@@ -139,15 +133,16 @@ progress_timer::do_print(size_t items, double seconds, bool finalize) const
     rate = (rate / 1000) * 1000;
   }
 
+  const double total_time = get_current_time() - m_first_time;
+
   if (finalize) {
-    std::cerr << "\rProcessed a total of " << thousands_sep(items) << " "
-              << m_what << " in " << format_time(seconds) << "; "
-              << thousands_sep(rate) << " " << m_what << "/s on average"
-              << std::endl;
+    log::info() << "Processed " << thousands_sep(m_total) << " " << m_what
+                << " in " << format_time(total_time) << "; "
+                << thousands_sep(rate) << " " << m_what << "/s on average";
   } else {
-    std::cerr << "\rProcessed " << thousands_sep(items) << " " << m_what
-              << " in " << format_time(seconds) << "; " << thousands_sep(rate)
-              << " " << m_what << "/s" << std::endl;
+    log::info() << "Processed " << thousands_sep(m_total) << " " << m_what
+                << " in " << format_time(total_time) << "; "
+                << thousands_sep(rate) << " " << m_what << "/s";
   }
 }
 

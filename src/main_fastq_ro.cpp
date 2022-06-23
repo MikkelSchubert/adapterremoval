@@ -22,10 +22,10 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstring>  // for size_t
-#include <iostream> // for operator<<, endl, basic_ostream, cerr
+#include <cstring> // for size_t
 
 #include "fastq_io.hpp"   // for read_fastq
+#include "logging.hpp"    // for log
 #include "reports.hpp"    // for write_report
 #include "scheduler.hpp"  // for scheduler
 #include "statistics.hpp" // for ar_statistics
@@ -49,7 +49,7 @@ public:
 int
 fastq_report_only(const userconfig& config)
 {
-  std::cerr << "Reading FASTQ files" << std::endl;
+  log::info() << "Reading FASTQ files";
 
   scheduler sch;
 

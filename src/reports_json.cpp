@@ -22,19 +22,19 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstring>  // for size_t, strerror
-#include <errno.h>  // for errno
-#include <fstream>  // for ofstream
-#include <iostream> // for ofstream, operator<<, basic_ostream, endl
-#include <memory>   // for make_shared
-#include <string>   // for operator+, string, operator<<
-#include <vector>   // for vector
+#include <cstring> // for size_t, strerror
+#include <errno.h> // for errno
+#include <fstream> // for ofstream
+#include <memory>  // for make_shared
+#include <string>  // for operator+, string, operator<<
+#include <vector>  // for vector
 
 #include "adapterset.hpp" // for adapter_set
 #include "counts.hpp"     // for counts, counts_tmpl
 #include "debug.hpp"      // for AR_FAIL
 #include "fastq.hpp"      // for fastq_pair_vec, IDX_TO_ACGT, fastq
 #include "json.hpp"       // for json_writer, json_section
+#include "logging.hpp"    // for log
 #include "main.hpp"       // for NAME, VERSION
 #include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
 #include "strutils.hpp"   // for cli_formatter
@@ -509,8 +509,8 @@ write_json_report(const userconfig& config,
 
     output << std::endl;
   } catch (const std::ios_base::failure& error) {
-    std::cerr << "Error writing JSON report to '" << filename << "':\n"
-              << cli_formatter::fmt(error.what()) << std::endl;
+    log::error() << "Error writing JSON report to '" << filename << "':\n"
+                 << cli_formatter::fmt(error.what());
     return false;
   }
 

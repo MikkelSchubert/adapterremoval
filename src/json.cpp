@@ -29,7 +29,7 @@
 #include <utility>   // for swap
 
 #include "debug.hpp" // for AR_REQUIRE
-#include "json.hpp"  // for definitions
+#include "json.hpp"  // for declarations
 
 namespace adapterremoval {
 

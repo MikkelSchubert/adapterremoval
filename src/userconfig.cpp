@@ -26,15 +26,15 @@
 #include <cmath>     // for pow
 #include <cstring>   // for size_t, strerror
 #include <errno.h>   // for errno
-#include <iostream>  // for operator<<, basic_ostream, endl, cerr, ostream
 #include <limits>    // for numeric_limits
 #include <stdexcept> // for invalid_argument
 #include <string>    // for string, operator<<, char_traits, operator==
-#include <unistd.h>  // for access, R_OK
+#include <unistd.h>  // for access, isatty, R_OK, STDERR_FILENO
 
-#include "alignment.hpp" // for alignment_info
-#include "strutils.hpp"  // for template_replace, str_to_unsigned, toupper
-#include "userconfig.hpp"
+#include "alignment.hpp"  // for alignment_info
+#include "logging.hpp"    // for log
+#include "strutils.hpp"   // for template_replace, str_to_unsigned, toupper
+#include "userconfig.hpp" // declarations
 
 namespace adapterremoval {
 
@@ -58,8 +58,8 @@ select_encoding(const std::string& value,
   } else if (uppercase_value == "SOLEXA") {
     encoding = quality_encoding::solexa;
   } else {
-    std::cerr << "Error: Invalid value for --qualitybase: '" << value << "'\n"
-              << "   expected values 33, 64, or solexa." << std::endl;
+    log::error() << "Invalid value for --qualitybase: '" << value << "'\n"
+                 << "   expected values 33, 64, or solexa.";
 
     return false;
   }
@@ -100,8 +100,8 @@ check_no_clobber(const std::string& label,
 {
   for (const auto& in_file : in_files) {
     if (in_file == out_file) {
-      std::cerr << "ERROR: Input file would be overwritten: " << label << " "
-                << in_file << std::endl;
+      log::error() << "Input file would be overwritten: " << label << " "
+                   << in_file;
       return false;
     }
   }
@@ -116,8 +116,8 @@ check_input_and_output(const std::string& label,
 {
   for (const auto& filename : filenames) {
     if (access(filename.c_str(), R_OK)) {
-      std::cerr << "ERROR: Cannot read file: " << label << " " << filename
-                << "': " << std::strerror(errno) << std::endl;
+      log::error() << "Cannot read file: " << label << " " << filename
+                   << "': " << std::strerror(errno);
 
       return false;
     }
@@ -590,9 +590,9 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (argparser.is_set("--mate-separator")) {
     if (mate_separator_str.size() != 1) {
-      std::cerr << "Error: The argument for --mate-separator must be "
-                   "exactly one character long, not "
-                << mate_separator_str.size() << " characters!" << std::endl;
+      log::error() << "The argument for --mate-separator must be "
+                      "exactly one character long, not "
+                   << mate_separator_str.size() << " characters!";
       return argparse::parse_result::error;
     } else {
       mate_separator = mate_separator_str.at(0);
@@ -611,32 +611,29 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
-    std::cerr << "Error: Invalid value for --minquality: " << low_quality_score
-              << "\n"
-              << "   must be in the range 0 .. " << MAX_PHRED_SCORE
-              << std::endl;
+    log::error() << "Invalid value for --minquality: " << low_quality_score
+                 << "\n"
+                 << "   must be in the range 0 .. " << MAX_PHRED_SCORE;
     return argparse::parse_result::error;
   } else if (trim_window_length >= 0) {
     trim_by_quality = true;
   } else if (argparser.is_set("--trimwindows")) {
-    std::cerr << "Error: Invalid value for --trimwindows ("
-              << trim_window_length << "); value must be >= 0." << std::endl;
+    log::error() << "Invalid value for --trimwindows (" << trim_window_length
+                 << "); value must be >= 0.";
     return argparse::parse_result::error;
   }
 
   // Check for invalid combinations of settings
   if (input_files_1.empty() && input_files_2.empty()) {
-    std::cerr
-      << "Error: No input files (--file1 / --file2) specified.\n"
-      << "Please specify at least one input file using --file1 FILENAME."
-      << std::endl;
+    log::error()
+      << "No input files (--file1 / --file2) specified.\n"
+      << "Please specify at least one input file using --file1 FILENAME.";
 
     return argparse::parse_result::error;
   } else if (!input_files_2.empty() &&
              (input_files_1.size() != input_files_2.size())) {
-    std::cerr
-      << "Error: Different number of files specified for --file1 and --file2."
-      << std::endl;
+    log::error()
+      << "Different number of files specified for --file1 and --file2.";
 
     return argparse::parse_result::error;
   } else if (!input_files_2.empty()) {
@@ -669,10 +666,9 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   if (run_type == ar_command::identify_adapters && !paired_ended_mode) {
-    std::cerr << "Error: Both input files (--file1 / --file2) must be "
-              << "specified when using --identify-adapters, or input must "
-              << "be interleaved FASTQ reads (requires --interleaved)."
-              << std::endl;
+    log::error() << "Both input files (--file1 / --file2) must be "
+                 << "specified when using --identify-adapters, or input must "
+                 << "be interleaved FASTQ reads (requires --interleaved).";
 
     return argparse::parse_result::error;
   }
@@ -697,13 +693,13 @@ userconfig::parse_args(int argc, char* argv[])
   gzip |= gzip_stream;
 
   if (gzip_level > 9) {
-    std::cerr << "Error: --gzip-level must be in the range 0 to 9, not "
-              << gzip_level << std::endl;
+    log::error() << "--gzip-level must be in the range 0 to 9, not "
+                 << gzip_level;
     return argparse::parse_result::error;
   }
 
   if (!max_threads) {
-    std::cerr << "Error: --threads must be at least 1!" << std::endl;
+    log::error() << "--threads must be at least 1!";
     return argparse::parse_result::error;
   }
 
@@ -712,8 +708,7 @@ userconfig::parse_args(int argc, char* argv[])
       trim_fixed_5p = parse_trim_argument(trim5p);
     }
   } catch (const std::invalid_argument& error) {
-    std::cerr << "Error: Could not parse --trim5p argument(s): " << error.what()
-              << std::endl;
+    log::error() << "Could not parse --trim5p argument(s): " << error.what();
 
     return argparse::parse_result::error;
   }
@@ -723,8 +718,7 @@ userconfig::parse_args(int argc, char* argv[])
       trim_fixed_3p = parse_trim_argument(trim3p);
     }
   } catch (const std::invalid_argument& error) {
-    std::cerr << "Error: Could not parse --trim3p argument(s): " << error.what()
-              << std::endl;
+    log::error() << "Could not parse --trim3p argument(s): " << error.what();
 
     return argparse::parse_result::error;
   }
@@ -857,12 +851,11 @@ check_and_set_barcode_mm(const argparse::parser& argparser,
   if (!argparser.is_set(key)) {
     dst = barcode_mm;
   } else if (dst > barcode_mm) {
-    std::cerr
+    log::error()
       << "The maximum number of errors for " << key
       << " is set \n"
          "to a higher value than the total number of mismatches allowed\n"
-         "for barcodes (--barcode-mm). Please correct these settings."
-      << std::endl;
+         "for barcodes (--barcode-mm). Please correct these settings.";
     return false;
   }
 
@@ -877,9 +870,8 @@ userconfig::setup_adapter_sequences()
   const bool adapter_list_is_set = argparser.is_set("--adapter-list");
 
   if (adapters_is_set && adapter_list_is_set) {
-    std::cerr << "ERROR: "
-              << "Use either --adapter1 and --adapter2, or "
-              << "--adapter-list, not both!" << std::endl;
+    log::error() << "Use either --adapter1 and --adapter2, or "
+                 << "--adapter-list, not both!";
 
     return false;
   }
@@ -888,19 +880,18 @@ userconfig::setup_adapter_sequences()
     if (!adapters.load_adapters(adapter_list, paired_ended_mode)) {
       return false;
     } else if (adapters.adapter_count()) {
-      std::cerr << "Read " << adapters.adapter_count()
-                << " adapters / adapter pairs from '" << adapter_list << "'"
-                << std::endl;
+      log::info() << "Read " << adapters.adapter_count()
+                  << " adapters / adapter pairs from '" << adapter_list << "'";
     } else {
-      std::cerr << "Error: No adapter sequences found in table!" << std::endl;
+      log::error() << "No adapter sequences found in table!";
       return false;
     }
   } else {
     try {
       adapters.add_adapters(adapter_1, adapter_2);
     } catch (const fastq_error& error) {
-      std::cerr << "Error parsing adapter sequence(s):\n"
-                << "   " << error.what() << std::endl;
+      log::error() << "Error parsing adapter sequence(s):\n"
+                   << "   " << error.what();
 
       return false;
     }
@@ -924,11 +915,10 @@ userconfig::setup_adapter_sequences()
     if (!adapters.load_barcodes(barcode_list, paired_ended_mode)) {
       return false;
     } else if (adapters.adapter_count()) {
-      std::cerr << "Read " << adapters.barcode_count()
-                << " barcodes / barcode pairs from '" << barcode_list << "'"
-                << std::endl;
+      log::error() << "Read " << adapters.barcode_count()
+                   << " barcodes / barcode pairs from '" << barcode_list << "'";
     } else {
-      std::cerr << "Error: No barcodes sequences found in table!" << std::endl;
+      log::error() << "No barcodes sequences found in table!";
       return false;
     }
   }
