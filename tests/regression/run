@@ -330,7 +330,7 @@ class TestCase(object):
 
         for name, output in (("stdout", stdout), ("stderr", stderr)):
             for value in self._info[name]:
-                if re.search(value, output) is None:
+                if value not in output:
                     raise TestError(
                         "Expected value not found in output:\n"
                         "  Searching for:\n%s\n  %s:\n%s"
