@@ -4,9 +4,9 @@
  * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
  * If you use the program, please cite the paper:                        *
- * S. Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation *
- * Sequencing Reads, BMC Research Notes, 5:337                           *
- * http://www.biomedcentral.com/1756-0500/5/337/                         *
+ * Schubert et al. (2016). AdapterRemoval v2: rapid adapter trimming,    *
+ * identification, and read merging. BMC Research Notes, 12;9(1):88      *
+ * https://doi.org/10.1186/s13104-016-1900-2                             *
  *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
  * it under the terms of the GNU General Public License as published by  *
