@@ -94,19 +94,16 @@ void
 progress_timer::do_print(size_t items, double seconds, bool finalize) const
 {
   size_t rate = static_cast<size_t>(items / seconds);
-  if (rate >= 10000) {
-    rate = (rate / 1000) * 1000;
-  }
 
   if (finalize) {
     log::info() << "Processed " << format_thousand_sep(m_total) << " " << m_what
                 << " in " << format_time(m_timer.duration()) << "; "
-                << format_thousand_sep(rate) << " " << m_what
+                << format_rough_number(rate) << " " << m_what
                 << "/s on average";
   } else {
-    log::info() << "Processed " << format_thousand_sep(m_total) << " " << m_what
-                << " in " << format_time(m_timer.duration()) << "; "
-                << format_thousand_sep(rate) << " " << m_what << "/s";
+    log::info() << "Processed " << static_cast<size_t>(m_total / REPORT_EVERY)
+                << " M " << m_what << " in " << format_time(m_timer.duration())
+                << "; " << format_rough_number(rate) << " " << m_what << "/s";
   }
 }
 
