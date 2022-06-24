@@ -67,7 +67,7 @@ level_color(level l)
 {
   switch (l) {
     case level::debug:
-      return color::white;
+      return color::cyan;
     case level::info:
       return color::green;
     case level::warning:
