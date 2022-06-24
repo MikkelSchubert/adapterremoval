@@ -22,7 +22,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <algorithm>   // for reverse
-#include <cmath>       // for floor
+#include <cmath>       // for floor, log10
 #include <iomanip>     // for operator<<, setw
 #include <limits>      // for numeric_limits
 #include <sstream>     // for istringstream, ostringstream
@@ -401,39 +401,37 @@ format_thousand_sep(size_t count)
   return ss;
 }
 
-static const std::vector<std::pair<double, char>> rough_units = {
-  { 1e3, 'K' }, { 1e6, 'M' }, { 1e9, 'G' }, { 1e12, 'T' }, { 1e15, 'P' },
-};
-
 std::string
-format_rough_number(size_t count, size_t precision)
+format_rough_number(size_t value, size_t out_digits)
 {
-  if (count < 1000) {
-    return std::to_string(count);
+  AR_REQUIRE(out_digits > 0);
+
+  double rounded = value;
+  size_t in_digits = static_cast<size_t>(std::log10(rounded));
+
+  if (out_digits > in_digits || !value) {
+    return std::to_string(value);
+  } else if (in_digits >= out_digits) {
+    // Round to desired number of significant digits
+    const auto tmp = std::pow(10, in_digits - out_digits + 1);
+    rounded = std::round(rounded / tmp) * tmp;
   }
 
-  size_t scale_i = 0;
-  for (size_t i = 0; i < rough_units.size(); ++i) {
-    if (rough_units.at(i).first >= count) {
-      break;
-    }
+  // Rounding up may result in the number of digits increasing
+  in_digits = static_cast<size_t>(std::log10(rounded));
 
-    scale_i = i;
-  }
-
-  const double shift = std::pow(10, precision);
-  const double scale = rough_units.at(scale_i).first;
-  double tmp = std::round((count / scale) * shift);
-
-  if (tmp >= shift * 1e3 && scale_i + 1 < rough_units.size()) {
-    // count was rounded up so that it falls into the next unit
-    scale_i++;
-    tmp /= 1e3;
-  }
+  const std::string units = "KMGTP";
+  const size_t unit = std::min<size_t>(units.size(), in_digits / 3);
+  const double scaled = rounded / std::pow(10.0, unit * 3);
+  const size_t precision =
+    out_digits - std::min<size_t>(out_digits, in_digits - unit * 3 + 1);
 
   std::ostringstream ss;
-  ss << std::fixed << std::setprecision(precision) << (tmp / shift) << ' '
-     << rough_units.at(scale_i).second;
+  ss << std::fixed << std::setprecision(precision) << scaled;
+
+  if (unit) {
+    ss << " " << units.at(unit - 1);
+  }
 
   return ss.str();
 }

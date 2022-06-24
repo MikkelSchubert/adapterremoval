@@ -25,6 +25,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include "debug.hpp"
 #include "strutils.hpp"
 #include "testing.hpp"
 
@@ -314,27 +315,52 @@ TEST_CASE("format_rough_number")
 {
   REQUIRE(format_rough_number(0) == "0");
   REQUIRE(format_rough_number(999) == "999");
-  REQUIRE(format_rough_number(1000) == "1.0 K");
-  REQUIRE(format_rough_number(999900) == "999.9 K");
-  REQUIRE(format_rough_number(999999) == "1.0 M");
-  REQUIRE(format_rough_number(1000000) == "1.0 M");
-  REQUIRE(format_rough_number(999900000) == "999.9 M");
-  REQUIRE(format_rough_number(999999999) == "1.0 G");
-  REQUIRE(format_rough_number(1000000000) == "1.0 G");
-  REQUIRE(format_rough_number(999900000000) == "999.9 G");
-  REQUIRE(format_rough_number(999999999999) == "1.0 T");
-  REQUIRE(format_rough_number(1000000000000) == "1.0 T");
-  REQUIRE(format_rough_number(999900000000000) == "999.9 T");
-  REQUIRE(format_rough_number(999999999999999) == "1.0 P");
-  REQUIRE(format_rough_number(1000000000000000) == "1.0 P");
+  REQUIRE(format_rough_number(1230) == "1.23 K");
+  REQUIRE(format_rough_number(12300) == "12.3 K");
+  REQUIRE(format_rough_number(999100) == "999 K");
+  REQUIRE(format_rough_number(999999) == "1.00 M");
+  REQUIRE(format_rough_number(1234000) == "1.23 M");
+  REQUIRE(format_rough_number(12340000) == "12.3 M");
+  REQUIRE(format_rough_number(999100000) == "999 M");
+  REQUIRE(format_rough_number(999999999) == "1.00 G");
+  REQUIRE(format_rough_number(1234000000) == "1.23 G");
+  REQUIRE(format_rough_number(12340000000) == "12.3 G");
+  REQUIRE(format_rough_number(999100000000) == "999 G");
+  REQUIRE(format_rough_number(999999999999) == "1.00 T");
+  REQUIRE(format_rough_number(1234000000000) == "1.23 T");
+  REQUIRE(format_rough_number(12340000000000) == "12.3 T");
+  REQUIRE(format_rough_number(999100000000000) == "999 T");
+  REQUIRE(format_rough_number(999999999999999) == "1.00 P");
+  REQUIRE(format_rough_number(1234000000000000) == "1.23 P");
+  REQUIRE(format_rough_number(12340000000000000) == "12.3 P");
+  REQUIRE(format_rough_number(1234000000000000000) == "1230 P");
 }
 
 TEST_CASE("format_rough_number with precision")
 {
-  REQUIRE(format_rough_number(12349, 0) == "12 K");
-  REQUIRE(format_rough_number(12349, 1) == "12.3 K");
-  REQUIRE(format_rough_number(12349, 2) == "12.35 K");
-  REQUIRE(format_rough_number(12349, 3) == "12.349 K");
+  REQUIRE(format_rough_number(0, 1) == "0");
+  REQUIRE(format_rough_number(0, 2) == "0");
+
+  REQUIRE(format_rough_number(129, 1) == "100");
+  REQUIRE(format_rough_number(129, 2) == "130");
+  REQUIRE(format_rough_number(129, 3) == "129");
+  REQUIRE(format_rough_number(129, 4) == "129");
+
+  REQUIRE(format_rough_number(1239, 1) == "1 K");
+  REQUIRE(format_rough_number(1239, 2) == "1.2 K");
+  REQUIRE(format_rough_number(1239, 3) == "1.24 K");
+  REQUIRE(format_rough_number(1239, 4) == "1239");
+
+  REQUIRE(format_rough_number(12349, 1) == "10 K");
+  REQUIRE(format_rough_number(12349, 2) == "12 K");
+  REQUIRE(format_rough_number(12349, 3) == "12.3 K");
+  REQUIRE(format_rough_number(12349, 4) == "12.35 K");
+  REQUIRE(format_rough_number(12349, 5) == "12349");
+}
+
+TEST_CASE("format_rough_number with no precision")
+{
+  REQUIRE_THROWS_AS(format_rough_number(12349, 0), assert_failed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

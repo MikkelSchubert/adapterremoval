@@ -147,7 +147,7 @@ format_thousand_sep(size_t count);
 
 /** Rounds a number using K, M, etc. units. */
 std::string
-format_rough_number(size_t count, size_t precision = 1);
+format_rough_number(size_t count, size_t digits = 3);
 
 /** Formats a fraction, returning "NA" if denominator is 0 */
 std::string
