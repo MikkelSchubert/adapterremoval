@@ -352,8 +352,8 @@ pe_reads_processor::process(chunk_ptr chunk)
   auto it_1 = read_chunk.reads_1.begin();
   auto it_2 = read_chunk.reads_2.begin();
   while (it_1 != read_chunk.reads_1.end()) {
-    fastq read_1 = *it_1++;
-    fastq read_2 = *it_2++;
+    fastq& read_1 = *it_1++;
+    fastq& read_2 = *it_2++;
 
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
