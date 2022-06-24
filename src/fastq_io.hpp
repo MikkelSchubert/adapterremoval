@@ -33,9 +33,9 @@
 #include "fastq_enc.hpp"         // for fastq_encoding
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_writer.hpp"    // for buffer_ptr, buffer_vec, managed_writer
+#include "progress.hpp"          // for progress_timer
 #include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
 #include "statistics.hpp"        // for fastq_stats_ptr, fastq_statistics, ...
-#include "timer.hpp"             // for progress_timer
 
 namespace adapterremoval {
 

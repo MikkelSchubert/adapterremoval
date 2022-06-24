@@ -27,26 +27,49 @@
 #include <chrono>
 #include <string>
 
+#include "timer.hpp"
+
 namespace adapterremoval {
 
 /**
- * Steady timer for measuring durations.
+ * Simply class for reporting current progress of a run.
+ *
+ * Every 1 million records / reads / etc processed, when the counter is
+ * incremented using the 'increment' function, a progress report is printed:
+ *   "Processed last 1,000,000 pairs in 14.1s; 2,000,000 pairs in 28.9s"
+ *
+ * A final summary is printed using the 'finalize' function:
+ *   "Processed a total of 4,000,000 reads in 31.9s"
  */
-class monotonic_timer
+class progress_timer
 {
-  using steady_clock = std::chrono::steady_clock;
-  using time_point = std::chrono::time_point<steady_clock>;
-
 public:
-  /** Constructor. */
-  monotonic_timer();
+  /* Constructor.
+   *
+   * @param what Short name of what is being processed, for use in reports.
+   */
+  progress_timer(const std::string& what);
 
-  /** Returns the duration in seconds since the timer was created. */
-  double duration() const;
+  /** Increment the progress, and (possibly) print a status report. */
+  void increment(size_t inc = 1);
+
+  /** Print final summary based on the number of increments. */
+  void finalize() const;
 
 private:
-  //! Starting time of the timer.
-  time_point m_start_time;
+  /** Print summary based on current rate; finalize to end with newline. */
+  void do_print(size_t items, double seconds, bool finalize = false) const;
+
+  //! Description of what is being processed.
+  std::string m_what;
+  //! Total number of items processed
+  size_t m_total;
+  //! Number of items processed since last update
+  size_t m_current;
+  //! Starting time (in seconds) of the timer.
+  monotonic_timer m_timer;
+  //! Time (in seconds) of the last update
+  double m_last_time;
 };
 
 } // namespace adapterremoval

@@ -149,6 +149,7 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/statistics.o \
 	$(OBJS_DIR)/threads.o \
 	$(OBJS_DIR)/timer.o \
+	$(OBJS_DIR)/progress.o \
 	$(OBJS_DIR)/trimming.o \
 	$(OBJS_DIR)/userconfig.o \
 	$(OBJS_DIR)/utilities.o
