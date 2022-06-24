@@ -28,36 +28,13 @@
 
 #include "logging.hpp"  // for log
 #include "progress.hpp" // declarations
+#include "strutils.hpp" // for
 #include "threads.hpp"  // for print_locker
 
 namespace adapterremoval {
 
 //! Print progress report every N items
 const size_t REPORT_EVERY = 1e6;
-
-std::string
-thousands_sep(size_t number)
-{
-  if (!number) {
-    return std::string(1, '0');
-  }
-
-  static const std::locale locale;
-  static const std::numpunct<char>& facet =
-    std::use_facet<std::numpunct<char>>(locale);
-
-  std::string str;
-  for (size_t i = 1; number; ++i) {
-    str.append(1, '0' + number % 10);
-    number /= 10;
-
-    if (number && (i % 3 == 0)) {
-      str.append(1, facet.thousands_sep());
-    }
-  }
-
-  return std::string(str.rbegin(), str.rend());
-}
 
 std::string
 format_time(double seconds)
@@ -122,13 +99,14 @@ progress_timer::do_print(size_t items, double seconds, bool finalize) const
   }
 
   if (finalize) {
-    log::info() << "Processed " << thousands_sep(m_total) << " " << m_what
+    log::info() << "Processed " << format_thousand_sep(m_total) << " " << m_what
                 << " in " << format_time(m_timer.duration()) << "; "
-                << thousands_sep(rate) << " " << m_what << "/s on average";
+                << format_thousand_sep(rate) << " " << m_what
+                << "/s on average";
   } else {
-    log::info() << "Processed " << thousands_sep(m_total) << " " << m_what
+    log::info() << "Processed " << format_thousand_sep(m_total) << " " << m_what
                 << " in " << format_time(m_timer.duration()) << "; "
-                << thousands_sep(rate) << " " << m_what << "/s";
+                << format_thousand_sep(rate) << " " << m_what << "/s";
   }
 }
 
