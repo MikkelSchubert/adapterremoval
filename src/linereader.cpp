@@ -171,6 +171,8 @@ line_reader::line_reader(const std::string& fpath)
   if (!m_file) {
     throw io_error("line_reader::open: failed to open file", errno);
   }
+
+  refill_buffers();
 }
 
 line_reader::~line_reader()
