@@ -112,10 +112,7 @@ main(int argc, char* argv[])
     }
   }
 
-  if (returncode) {
-    log::error() << "AdapterRemoval did not run to completion;\n"
-                 << "    do NOT make use of the trimmed reads!";
-  }
+  print_terminal_postamble(config, returncode);
 
   return returncode;
 }

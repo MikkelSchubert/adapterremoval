@@ -44,4 +44,7 @@ write_html_report(const userconfig& config,
 bool
 print_terminal_preamble(const userconfig& config);
 
+bool
+print_terminal_postamble(const userconfig& config, bool any_errors = false);
+
 } // namespace adapterremoval
