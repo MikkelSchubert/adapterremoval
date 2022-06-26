@@ -405,6 +405,9 @@ std::string
 format_rough_number(size_t value, size_t out_digits)
 {
   AR_REQUIRE(out_digits > 0);
+  if (value == 0) {
+    return "0";
+  }
 
   double rounded = value;
   size_t in_digits = static_cast<size_t>(std::log10(rounded));
