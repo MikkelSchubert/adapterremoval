@@ -98,11 +98,13 @@ main(int argc, char* argv[])
     }
 
     case ar_command::identify_adapters: {
-      return identify_adapter_sequences(config);
+      returncode = identify_adapter_sequences(config);
+      break;
     }
 
     case ar_command::report_only: {
-      return fastq_report_only(config);
+      returncode = fastq_report_only(config);
+      break;
     }
 
     default: {

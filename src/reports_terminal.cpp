@@ -95,25 +95,36 @@ void
 print_terminal_postamble(const userconfig& config, bool any_errors)
 {
   if (any_errors) {
-    log::error() << "AdapterRemoval did not run to completion;\n"
-                 << "    do NOT make use of the trimmed reads!";
-  } else {
     switch (config.run_type) {
       case ar_command::trim_adapters:
-        log::info() << "Adapter trimming complete";
-        break;
       case ar_command::demultiplex_sequences:
-        log::info() << "Demultiplexing complete";
-        break;
+        log::error() << "AdapterRemoval did not run to completion;\n"
+                     << "    do NOT make use of the resulting reads!";
       case ar_command::identify_adapters:
-        log::info() << "Adapter identification complete";
-        break;
       case ar_command::report_only:
-        log::info() << "FASTQ quality report generation complete";
         break;
       default:
         AR_FAIL("invalid run type");
     }
+
+    return;
+  }
+
+  switch (config.run_type) {
+    case ar_command::trim_adapters:
+      log::info() << "Adapter trimming complete";
+      break;
+    case ar_command::demultiplex_sequences:
+      log::info() << "Demultiplexing complete";
+      break;
+    case ar_command::identify_adapters:
+      log::info() << "Adapter identification complete";
+      break;
+    case ar_command::report_only:
+      log::info() << "FASTQ quality report generation complete";
+      break;
+    default:
+      AR_FAIL("invalid run type");
   }
 }
 

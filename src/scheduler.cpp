@@ -248,7 +248,7 @@ scheduler::run_wrapper(scheduler* sch)
   try {
     return sch->do_run();
   } catch (const thread_abort&) {
-    log::error() << "Aborting thread due to errors";
+    log::debug() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
     log::error() << "Unhandled exception in thread:\n"
                  << cli_formatter::fmt(error.what());
