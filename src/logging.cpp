@@ -46,6 +46,8 @@ level g_log_level = level::debug;
 bool g_log_timestamps = true;
 //! Use ANSI colors when writing log lines
 bool g_log_colors = false;
+//! Indicates if the last message was transient
+bool g_log_transient = false;
 
 //! ANSI color codes: https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 enum class color
@@ -163,6 +165,7 @@ set_timestamps(bool enabled)
 
 log_stream::log_stream(level lvl)
   : m_level(lvl)
+  , m_transient()
   , m_stream()
 {
 }
@@ -171,9 +174,15 @@ log_stream::~log_stream()
 {
   std::unique_lock<std::mutex> lock(g_log_mutex);
 
+  if (g_log_transient) {
+    *g_log_out << "\r\033[K";
+    g_log_transient = false;
+  }
+
   if (m_level == level::none) {
     *g_log_out << m_stream.str();
     g_log_out->flush();
+    g_log_transient = m_transient;
   } else if (m_level >= g_log_level) {
     const auto head = log_header(m_level, g_log_colors);
 
@@ -195,6 +204,15 @@ log_stream::~log_stream()
 
     g_log_out->flush();
   }
+}
+
+log_stream&
+log_stream::transient()
+{
+  AR_REQUIRE(m_level == level::none);
+  m_transient = true;
+
+  return *this;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

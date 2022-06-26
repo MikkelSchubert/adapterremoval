@@ -60,6 +60,15 @@ public:
   /** Writes the message if the corresponding log-level is enabled */
   ~log_stream();
 
+  /**
+   * Indicates that a message is transient.
+   *
+   * The message is assumed to contain no new-lines. In addition, this message
+   * will be cleared before any further messages are printed. This can only be
+   * used with level::none.
+   */
+  log_stream& transient();
+
   /** Writes value to a cache */
   template<typename T>
   log_stream& operator<<(const T& value)
@@ -79,6 +88,8 @@ public:
 private:
   //! Log level of the current message
   const level m_level;
+  //! Indicates if the message is transient
+  bool m_transient;
   //! Stream for caching log output prior to writing
   std::ostringstream m_stream;
 };

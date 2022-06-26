@@ -24,6 +24,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include "debug.hpp"
 #include "logging.hpp"
 #include "testing.hpp"
 
@@ -116,6 +117,66 @@ TEST_CASE("log capture levels")
                          "[WARNING] test 3\n"
                          "[ERROR] test 4\n");
   }
+}
+
+TEST_CASE("log::cerr is written as is")
+{
+  SECTION("no newlines")
+  {
+    log::log_capture cap;
+    log::cerr() << "message without newlines";
+    REQUIRE(cap.str() == "message without newlines");
+  }
+
+  SECTION("one newline")
+  {
+    log::log_capture cap;
+    log::cerr() << "message with newline\n";
+    REQUIRE(cap.str() == "message with newline\n");
+  }
+
+  SECTION("multiple newlines")
+  {
+    log::log_capture cap;
+    log::cerr() << "message with multiple newlines\n\n";
+    REQUIRE(cap.str() == "message with multiple newlines\n\n");
+  }
+}
+
+TEST_CASE("transient messages are cleared by log messages")
+{
+  log::log_capture cap;
+  log::cerr().transient() << "Transient message\n";
+  log::info() << "Standard message 1";
+  log::info() << "Standard message 2";
+
+  REQUIRE(cap.str() == "Transient message\n"
+                       "\r\033[K"
+                       "[INFO] Standard message 1\n"
+                       "[INFO] Standard message 2\n");
+}
+
+TEST_CASE("transient messages are cleared by transient messages")
+{
+  log::log_capture cap;
+  log::cerr().transient() << "Transient message 1\n";
+  log::cerr().transient() << "Transient message 2\n";
+  log::info() << "Standard message 1";
+
+  REQUIRE(cap.str() == "Transient message 1\n"
+                       "\r\033[K"
+                       "Transient message 2\n"
+                       "\r\033[K"
+                       "[INFO] Standard message 1\n");
+}
+
+TEST_CASE("transient logging not allowed for log messages")
+{
+  log::log_capture cap;
+  REQUIRE_THROWS_AS(log::debug().transient(), assert_failed);
+  REQUIRE_THROWS_AS(log::info().transient(), assert_failed);
+  REQUIRE_THROWS_AS(log::warn().transient(), assert_failed);
+  REQUIRE_THROWS_AS(log::error().transient(), assert_failed);
 }
 
 } // namespace adapterremoval
