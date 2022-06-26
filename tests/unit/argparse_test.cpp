@@ -646,7 +646,7 @@ TEST_CASE("bind double", "[argparse::argument]")
   REQUIRE_FALSE(arg.is_set());
   REQUIRE(arg.parse(values.begin(), values.end()) == 2);
   REQUIRE(arg.is_set());
-  REQUIRE(sink == 7.913);
+  REQUIRE_THAT(sink, Catch::WithinAbs(7.913, 1e-6));
 }
 
 TEST_CASE("bound double takes negative values", "[argparse::argument]")

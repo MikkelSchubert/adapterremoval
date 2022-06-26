@@ -22,8 +22,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <stdexcept>
+#include <cstdint> // for INTPTR_MAX, INT64_MAX
 
 #include "debug.hpp"
 #include "strutils.hpp"
@@ -324,6 +323,9 @@ TEST_CASE("format_rough_number")
   REQUIRE(format_rough_number(999100000) == "999 M");
   REQUIRE(format_rough_number(999999999) == "1.00 G");
   REQUIRE(format_rough_number(1234000000) == "1.23 G");
+
+  // 64 bit platforms only
+#if INTPTR_MAX >= INT64_MAX
   REQUIRE(format_rough_number(12340000000) == "12.3 G");
   REQUIRE(format_rough_number(999100000000) == "999 G");
   REQUIRE(format_rough_number(999999999999) == "1.00 T");
@@ -334,6 +336,7 @@ TEST_CASE("format_rough_number")
   REQUIRE(format_rough_number(1234000000000000) == "1.23 P");
   REQUIRE(format_rough_number(12340000000000000) == "12.3 P");
   REQUIRE(format_rough_number(1234000000000000000) == "1230 P");
+#endif
 }
 
 TEST_CASE("format_rough_number with precision")

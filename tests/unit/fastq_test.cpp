@@ -316,22 +316,25 @@ TEST_CASE("count_ns", "[fastq::fastq]")
 
 TEST_CASE("complexity", "[fastq::fastq]")
 {
-  REQUIRE(fastq("c", "").complexity() == 0.0);
-  REQUIRE(fastq("c", "A").complexity() == 0.0);
-  REQUIRE(fastq("c", "AA").complexity() == 0.0);
-  REQUIRE(fastq("c", "AAA").complexity() == 0.0);
+  using Catch::WithinAbs;
 
-  REQUIRE(fastq("c", "N").complexity() == 0.0);
-  REQUIRE(fastq("c", "NA").complexity() == 0.0);
-  REQUIRE(fastq("c", "NAN").complexity() == 0.0);
+  REQUIRE_THAT(fastq("c", "").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "A").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "AA").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "AAA").complexity(), WithinAbs(0.0, 1e-6));
 
-  REQUIRE(fastq("c", "AT").complexity() == 1.0 / 1.0);
-  REQUIRE(fastq("c", "ACGT").complexity() == 3.0 / 3.0);
-  REQUIRE(fastq("c", "AACGT").complexity() == 3.0 / 4.0);
-  REQUIRE(fastq("c", "ANCGT").complexity() == 3.0 / 4.0);
-  REQUIRE(fastq("c", "AGACCGT").complexity() == 5.0 / 6.0);
-  REQUIRE(fastq("c", "AGACCGGT").complexity() == 5.0 / 7.0);
-  REQUIRE(fastq("c", "AGACCGGTN").complexity() == 5.0 / 8.0);
+  REQUIRE_THAT(fastq("c", "N").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "NA").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "NAN").complexity(), WithinAbs(0.0, 1e-6));
+
+  REQUIRE_THAT(fastq("c", "AT").complexity(), WithinAbs(1.0 / 1.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "ACGT").complexity(), WithinAbs(3.0 / 3.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "AACGT").complexity(), WithinAbs(3.0 / 4.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "ANCGT").complexity(), WithinAbs(3.0 / 4.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "AGACCGT").complexity(), WithinAbs(5.0 / 6.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "AGACCGGT").complexity(), WithinAbs(5.0 / 7.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "AGACCGGTN").complexity(),
+               WithinAbs(5.0 / 8.0, 1e-6));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
