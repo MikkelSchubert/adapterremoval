@@ -24,44 +24,61 @@
 \*************************************************************************/
 #pragma once
 
-#include <chrono>
+#include <deque>
+#include <mutex>
 #include <string>
+#include <thread>
 
 #include "timer.hpp"
 
 namespace adapterremoval {
 
+enum class progress_type
+{
+  //! No progress reports
+  none,
+  //! Messages written to the log
+  simple,
+  //! An animated spinner plus messages
+  spinner,
+};
+
 /**
- * Simply class for reporting current progress of a run.
+ * Timer for reporting current progress of a run.
  *
- * Every 1 million records / reads / etc processed, when the counter is
- * incremented using the 'increment' function, a progress report is printed:
- *   "Processed last 1,000,000 pairs in 14.1s; 2,000,000 pairs in 28.9s"
+ * The timer takes two forms:
+ *  1. A log based timer that prints the current progress every 1M reads.
+ *  2. An animated timer (spinner) that updates the current number of processed
+ *     reads once every second. This rate is intentionaly lower than the speed
+ *     of the since it feels noisy to have the statistics constantly updating.
  *
- * A final summary is printed using the 'finalize' function:
- *   "Processed a total of 4,000,000 reads in 31.9s"
+ * A final summary is printed using the 'finalize' function for both modes
  */
 class progress_timer
 {
 public:
-  /* Constructor.
-   *
-   * @param what Short name of what is being processed, for use in reports.
-   */
-  progress_timer(const std::string& what);
+  /** Initializes a progress timer and starts the animation if enabled */
+  progress_timer(progress_type type);
+
+  /** Destructor. Silently ends the animation if not finalized. */
+  ~progress_timer();
 
   /** Increment the progress, and (possibly) print a status report. */
   void increment(size_t inc = 1);
 
-  /** Print final summary based on the number of increments. */
-  void finalize() const;
+  /** Print final summary of the reads processed and ends the animation. */
+  void finalize();
 
 private:
-  /** Print summary based on current rate; finalize to end with newline. */
-  void do_print(size_t items, double seconds, bool finalize = false) const;
+  /** Starts the loop (if enabled) and hides the cursor */
+  void start();
+  /** Loop function for spinning thread */
+  void loop();
+  /** Stop the looping animation */
+  void stop();
 
-  //! Description of what is being processed.
-  std::string m_what;
+  //! The kind of progress messages to be printed
+  const progress_type m_type;
   //! Total number of items processed
   size_t m_total;
   //! Number of items processed since last update
@@ -70,6 +87,13 @@ private:
   monotonic_timer m_timer;
   //! Time (in seconds) of the last update
   double m_last_time;
+
+  //! Thread used for animated spinner
+  std::thread m_spinner;
+  //! Mutex protecting the following member variables when using a spinner
+  std::mutex m_lock;
+  //! Indicates if the spinner is active
+  bool m_spinning;
 };
 
 } // namespace adapterremoval
