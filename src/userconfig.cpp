@@ -33,6 +33,7 @@
 
 #include "alignment.hpp"  // for alignment_info
 #include "logging.hpp"    // for log
+#include "progress.hpp"   // for progress_type
 #include "strutils.hpp"   // for template_replace, str_to_unsigned, toupper
 #include "userconfig.hpp" // declarations
 
@@ -200,6 +201,13 @@ try_parse_argument(const string_vec& args,
 }
 
 bool
+fancy_output_allowed()
+{
+  // NO_COLOR is checked as suggested by https://no-color.org/
+  return ::isatty(STDERR_FILENO) && !::getenv("NO_COLOR");
+}
+
+bool
 configure_log_levels(const std::string& value)
 {
   const auto log_level = tolower(value);
@@ -229,8 +237,31 @@ configure_log_colors(const std::string& value)
   } else if (colors == "never") {
     log::set_colors(false);
   } else if (colors == "auto") {
-    // NO_COLOR is checked as suggested by https://no-color.org/
-    log::set_colors(::isatty(STDERR_FILENO) && !::getenv("NO_COLOR"));
+    log::set_colors(fancy_output_allowed());
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+bool
+configure_log_progress(const std::string& value, progress_type& out)
+{
+  const auto progress = tolower(value);
+
+  if (progress == "never") {
+    out = progress_type::none;
+  } else if (progress == "spin") {
+    out = progress_type::spinner;
+  } else if (progress == "log") {
+    out = progress_type::simple;
+  } else if (progress == "auto") {
+    if (fancy_output_allowed()) {
+      out = progress_type::spinner;
+    } else {
+      out = progress_type::simple;
+    }
   } else {
     return false;
   }
@@ -293,6 +324,7 @@ userconfig::userconfig(const std::string& name,
   , adapters()
   , report_sample_rate()
   , report_duplication()
+  , log_progress()
   , argparser(name, version, help)
   , adapter_1()
   , adapter_2()
@@ -305,6 +337,7 @@ userconfig::userconfig(const std::string& name,
   , trim3p()
   , log_color()
   , log_level()
+  , log_progress_sink()
   , m_runtime()
   , m_deprecated_knobs()
 {
@@ -626,8 +659,16 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--log-colors", "X")
     .help("Enable/disable the use of colors when writing log messages. "
           "Possible choices are auto, always, or never. If set to auto, colors "
-          "will only be disabled if stderr is not a terminal")
+          "will only be enabled if STDOUT is a terminal and the NO_COLORS is "
+          "environmetal variable is not set")
     .bind_str(&log_color)
+    .with_default("auto");
+  argparser.add("--log-progress", "X")
+    .help("Specify the type of progress reports used. Possible choices are "
+          "auto, log, spin, and never. If set to auto, then a spinner will be "
+          "used if STDERR is a terminal and the NO_COLORS environmetal "
+          "variable is not set, otherwise logging will be used")
+    .bind_str(&log_progress_sink)
     .with_default("auto");
 
   argparser.add("--trimwindows", "X")
@@ -670,6 +711,13 @@ userconfig::parse_args(int argc, char* argv[])
     log::error() << "Invalid value for --log-level; arguments must be one of "
                     "debug, info, warning, or error, but was '"
                  << log_level << "'";
+    return argparse::parse_result::error;
+  }
+
+  if (!configure_log_progress(log_progress_sink, log_progress)) {
+    log::error() << "Invalid value for --log-progress; arguments must be one "
+                    "of auto, log, spin, or never, but was '"
+                 << log_progress_sink << "'";
     return argparse::parse_result::error;
   }
 

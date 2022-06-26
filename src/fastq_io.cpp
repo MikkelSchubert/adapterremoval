@@ -189,7 +189,7 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_next_step(next_step)
   , m_single_end(false)
   , m_eof(false)
-  , m_timer(progress_type::spinner)
+  , m_timer(config.log_progress)
   , m_head(config.head)
   , m_lock()
 {

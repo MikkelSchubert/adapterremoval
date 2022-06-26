@@ -40,6 +40,7 @@ namespace adapterremoval {
 
 struct alignment_info;
 class trimming_statistics;
+enum class progress_type;
 
 enum class ar_command
 {
@@ -252,6 +253,9 @@ public:
   //! Number of reads used to estimate duplication in input files
   unsigned report_duplication;
 
+  //! The kind of progress indicator to use
+  progress_type log_progress;
+
   //! Copy construction not supported
   userconfig(const userconfig&) = delete;
   //! Assignment not supported
@@ -294,6 +298,8 @@ private:
   std::string log_color;
   //! Sink for log levels
   std::string log_level;
+  //! Sink for progress indicators
+  std::string log_progress_sink;
 
   //! Measures runtime since the program was started
   monotonic_timer m_runtime;
