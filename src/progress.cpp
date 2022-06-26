@@ -149,7 +149,7 @@ progress_timer::finalize()
   stop();
 
   const double rate = m_total / m_timer.duration();
-  log::info() << format_progress(m_total, m_timer.duration(), rate);
+  log::info() << format_progress(m_total, m_timer.duration(), rate, true);
 }
 
 void
