@@ -21,6 +21,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log
 #include "main.hpp"       // for NAME, VERSION
 #include "userconfig.hpp" // for userconfig
@@ -35,7 +36,8 @@ supports_sse2()
   return true;
 }
 
-__attribute__((target("default"))) bool
+// May be unused depending on target
+__attribute__((target("default"))) __attribute__((unused)) bool
 supports_sse2()
 {
   return false;
@@ -84,6 +86,8 @@ print_terminal_preamble(const userconfig& config)
     case ar_command::report_only:
       log::info() << "Generating FASTQ quality report";
       break;
+    default:
+      AR_FAIL("invalid run type");
   }
 }
 
@@ -107,6 +111,8 @@ print_terminal_postamble(const userconfig& config, bool any_errors)
       case ar_command::report_only:
         log::info() << "FASTQ quality report generation complete";
         break;
+      default:
+        AR_FAIL("invalid run type");
     }
   }
 }
