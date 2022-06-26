@@ -36,8 +36,7 @@ supports_sse2()
   return true;
 }
 
-// May be unused depending on target
-__attribute__((target("default"))) __attribute__((unused)) bool
+__attribute__((target("default"))) bool
 supports_sse2()
 {
   return false;
