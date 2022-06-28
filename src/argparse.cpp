@@ -80,29 +80,6 @@ to_double(const std::string& value, double& out)
   return true;
 }
 
-std::string
-escape(const std::string& s)
-{
-  std::string out;
-  out.append("\"");
-  for (auto c : s) {
-    switch (c) {
-      case '\\':
-        out.push_back('\\');
-        break;
-      case '\"':
-        out.append("\\\"");
-        break;
-      default:
-        out.push_back(c);
-    }
-  }
-
-  out.append("\"");
-
-  return out;
-}
-
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -664,7 +641,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
   const auto result = m_sink->consume(start + 1, end_of_values);
   if (result == parsing_failed) {
     log::error() << "Invalid value for " << *start << ": "
-                 << escape(*(start + 1));
+                 << shell_escape(*(start + 1));
 
     return result;
   }
@@ -867,7 +844,7 @@ str_sink::with_choices(const string_vec& value)
 std::string
 str_sink::to_str() const
 {
-  return escape(*m_sink);
+  return shell_escape(*m_sink);
 }
 
 string_vec
@@ -935,7 +912,7 @@ vec_sink::to_str() const
       output.push_back(';');
     }
 
-    output.append(escape(s));
+    output.append(shell_escape(s));
   }
 
   return output;
