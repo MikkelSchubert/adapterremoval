@@ -32,6 +32,7 @@
 #include <unistd.h>  // for access, isatty, R_OK, STDERR_FILENO
 
 #include "alignment.hpp"  // for alignment_info
+#include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log
 #include "progress.hpp"   // for progress_type
 #include "strutils.hpp"   // for template_replace, str_to_unsigned, toupper
@@ -43,32 +44,6 @@ const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
-
-bool
-select_encoding(const std::string& value,
-                size_t quality_max,
-                fastq_encoding& out)
-{
-  quality_encoding encoding;
-
-  const std::string uppercase_value = toupper(value);
-  if (uppercase_value == "33") {
-    encoding = quality_encoding::phred_33;
-  } else if (uppercase_value == "64") {
-    encoding = quality_encoding::phred_64;
-  } else if (uppercase_value == "SOLEXA") {
-    encoding = quality_encoding::solexa;
-  } else {
-    log::error() << "Invalid value for --qualitybase: '" << value << "'\n"
-                 << "   expected values 33, 64, or solexa.";
-
-    return false;
-  }
-
-  out = fastq_encoding(encoding, quality_max);
-
-  return true;
-}
 
 std::pair<unsigned, unsigned>
 parse_trim_argument(const string_vec& values)
@@ -200,6 +175,8 @@ try_parse_argument(const string_vec& args,
   return fallback;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 bool
 fancy_output_allowed()
 {
@@ -207,8 +184,8 @@ fancy_output_allowed()
   return ::isatty(STDERR_FILENO) && !::getenv("NO_COLOR");
 }
 
-bool
-configure_log_levels(const std::string& value)
+void
+configure_log_levels(const std::string& value, bool fallible = false)
 {
   const auto log_level = tolower(value);
 
@@ -221,17 +198,13 @@ configure_log_levels(const std::string& value)
   } else if (log_level == "error") {
     log::set_level(log::level::error);
   } else {
-    return false;
+    AR_REQUIRE(fallible, "unhandled log_level value");
   }
-
-  return true;
 }
 
-bool
-configure_log_colors(const std::string& value)
+void
+configure_log_colors(const std::string& colors, bool fallible = false)
 {
-  const auto colors = tolower(value);
-
   if (colors == "always") {
     log::set_colors(true);
   } else if (colors == "never") {
@@ -239,34 +212,42 @@ configure_log_colors(const std::string& value)
   } else if (colors == "auto") {
     log::set_colors(fancy_output_allowed());
   } else {
-    return false;
+    AR_REQUIRE(fallible, "unhandled log_colors value");
   }
-
-  return true;
 }
 
-bool
-configure_log_progress(const std::string& value, progress_type& out)
+progress_type
+configure_log_progress(const std::string& progress)
 {
-  const auto progress = tolower(value);
-
   if (progress == "never") {
-    out = progress_type::none;
+    return progress_type::none;
   } else if (progress == "spin") {
-    out = progress_type::spinner;
+    return progress_type::spinner;
   } else if (progress == "log") {
-    out = progress_type::simple;
+    return progress_type::simple;
   } else if (progress == "auto") {
     if (fancy_output_allowed()) {
-      out = progress_type::spinner;
+      return progress_type::spinner;
     } else {
-      out = progress_type::simple;
+      return progress_type::simple;
     }
-  } else {
-    return false;
   }
 
-  return true;
+  AR_FAIL("unhandled log_progress value");
+}
+
+fastq_encoding
+configure_encoding(const std::string& value, size_t quality_max)
+{
+  if (value == "33") {
+    return fastq_encoding(quality_encoding::phred_33, quality_max);
+  } else if (value == "64") {
+    return fastq_encoding(quality_encoding::phred_64, quality_max);
+  } else if (value == "solexa") {
+    return fastq_encoding(quality_encoding::solexa, quality_max);
+  }
+
+  AR_FAIL("unhandled qualitybase value");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -368,9 +349,9 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add_header("FASTQ OPTIONS:");
   argparser.add("--qualitybase", "N")
-    .help("Quality base/offset used to encode Phred scores in input; either "
-          "33, 64, or solexa [default: 33]")
+    .help("Quality base/offset used to encode Phred scores in input")
     .bind_str(&quality_input_base)
+    .with_choices({ "33", "64", "solexa" })
     .with_default("33");
 
   argparser.add("--qualitymax", "N")
@@ -652,23 +633,24 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add_header("LOGGING:");
   argparser.add("--log-level", "X")
-    .help("The minimum severity of messagest to be written to stderr. Possible "
-          "choices are debug, info, warning, and error")
+    .help("The minimum severity of messagest to be written to stderr")
     .bind_str(&log_level)
+    .with_choices({ "debug", "info", "warning", "error" })
     .with_default("info");
+
   argparser.add("--log-colors", "X")
-    .help("Enable/disable the use of colors when writing log messages. "
-          "Possible choices are auto, always, or never. If set to auto, colors "
-          "will only be enabled if STDOUT is a terminal and the NO_COLORS is "
-          "environmetal variable is not set")
+    .help("Enable/disable the use of colors when writing log messages. If set "
+          "to auto, colors will only be enabled if STDOUT is a terminal and "
+          "the NO_COLORS is environmetal variable is not set")
     .bind_str(&log_color)
+    .with_choices({ "auto", "always", "never" })
     .with_default("auto");
   argparser.add("--log-progress", "X")
-    .help("Specify the type of progress reports used. Possible choices are "
-          "auto, log, spin, and never. If set to auto, then a spinner will be "
-          "used if STDERR is a terminal and the NO_COLORS environmetal "
-          "variable is not set, otherwise logging will be used")
+    .help("Specify the type of progress reports used. If set to auto, then a "
+          "spinner will be  used if STDERR is a terminal and the NO_COLORS "
+          "environmetal variable is not set, otherwise logging will be used")
     .bind_str(&log_progress_sink)
+    .with_choices({ "auto", "log", "spin", "never" })
     .with_default("auto");
 
   argparser.add("--trimwindows", "X")
@@ -692,40 +674,18 @@ userconfig::parse_args(int argc, char* argv[])
   args = string_vec(argv, argv + argc);
 
   // ad-hoc arg parsing to make argparse output consistent with rest of run
-  configure_log_colors(try_parse_argument(args, "--log-color", "auto"));
-  configure_log_levels(try_parse_argument(args, "--log-level", "info"));
+  configure_log_colors(try_parse_argument(args, "--log-color", "auto"), true);
+  configure_log_levels(try_parse_argument(args, "--log-level", "info"), true);
 
   const argparse::parse_result result = argparser.parse_args(argc, argv);
   if (result != argparse::parse_result::ok) {
     return result;
   }
 
-  if (!configure_log_colors(log_color)) {
-    log::error() << "Invalid value for --log-level; arguments must be one of "
-                    "always, never, or auto, but was '"
-                 << log_color << "'";
-    return argparse::parse_result::error;
-  }
-
-  if (!configure_log_levels(log_level)) {
-    log::error() << "Invalid value for --log-level; arguments must be one of "
-                    "debug, info, warning, or error, but was '"
-                 << log_level << "'";
-    return argparse::parse_result::error;
-  }
-
-  if (!configure_log_progress(log_progress_sink, log_progress)) {
-    log::error() << "Invalid value for --log-progress; arguments must be one "
-                    "of auto, log, spin, or never, but was '"
-                 << log_progress_sink << "'";
-    return argparse::parse_result::error;
-  }
-
-  // --qualitybase is not always used (e.g. when identifying adapters), but is
-  // always checked in order to catch invalid argument.
-  if (!select_encoding(quality_input_base, quality_max, io_encoding)) {
-    return argparse::parse_result::error;
-  }
+  configure_log_colors(log_color);
+  configure_log_levels(log_level);
+  log_progress = configure_log_progress(log_progress_sink);
+  io_encoding = configure_encoding(quality_input_base, quality_max);
 
   if (argparser.is_set("--mate-separator")) {
     if (mate_separator_str.size() != 1) {
