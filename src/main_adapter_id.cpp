@@ -84,34 +84,6 @@ size_t_to_kmer(size_t kmer)
   return kmer_s;
 }
 
-/** Simple structure for counting the frequency of A, C, G, and Ts. */
-struct nt_counts
-{
-  nt_counts()
-    : counts(4, 0)
-  {
-  }
-
-  /** Increment count of a nucleotide A, C, G, or T (uppercase only). */
-  void increment(char nt)
-  {
-    if (nt != 'N') {
-      ++counts.at(ACGT::to_idx(nt));
-    }
-  }
-
-  /** Merge count objects. */
-  nt_counts& operator+=(const nt_counts& other)
-  {
-    merge_vectors(counts, other.counts);
-    return *this;
-  }
-
-  //! Fixed sized vector (4)
-  std::vector<size_t> counts;
-};
-
-typedef std::vector<nt_counts> nt_count_vec;
 typedef std::vector<unsigned> kmer_map;
 typedef std::pair<size_t, unsigned> nt_count;
 
@@ -204,7 +176,7 @@ compare_consensus_with_ref(const std::string& ref, const std::string& consensus)
  * majority nucleotide can be found, 'N' is returned instead.
  */
 std::pair<char, char>
-get_consensus_nt(const nt_counts& nts)
+get_consensus_nt(const acgtn_counts& nts, size_t i)
 {
   // Always assume one non-consensus observation; this is more reasonable
   // than allowing an error-rate of 0, especially for few observations.
@@ -212,8 +184,9 @@ get_consensus_nt(const nt_counts& nts)
 
   char best_nt_i = -1;
   size_t best_count = 0;
-  for (char nt_i = 0; nt_i < 4; ++nt_i) {
-    const size_t cur_count = nts.counts.at(nt_i);
+  for (char nuc : ACGT::values) {
+    const auto nt_i = ACGTN::to_idx(nuc);
+    const size_t cur_count = nts.get(nt_i, i);
     total_count += cur_count;
 
     if (cur_count > best_count) {
@@ -226,7 +199,7 @@ get_consensus_nt(const nt_counts& nts)
 
   const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
   const char phred = fastq::p_to_phred_33(pvalue);
-  const char best_nt = (best_nt_i == -1) ? 'N' : ACGT::to_nuc(best_nt_i);
+  const char best_nt = (best_nt_i == -1) ? 'N' : ACGTN::to_nuc(best_nt_i);
 
   return std::pair<char, char>(best_nt, phred);
 }
@@ -240,7 +213,7 @@ get_consensus_nt(const nt_counts& nts)
  * @param ref Default sequence for the inferred adapter
  */
 void
-print_consensus_adapter(const nt_count_vec& nt_counts,
+print_consensus_adapter(const acgtn_counts& nt_counts,
                         const kmer_map& kmers,
                         const std::string& name,
                         const std::string& ref)
@@ -248,8 +221,8 @@ print_consensus_adapter(const nt_count_vec& nt_counts,
   std::ostringstream sequence;
   std::ostringstream qualities;
 
-  for (auto it = nt_counts.begin(); it != nt_counts.end(); ++it) {
-    const std::pair<char, char> consensus = get_consensus_nt(*it);
+  for (size_t i = 0; i < nt_counts.size(); ++i) {
+    const std::pair<char, char> consensus = get_consensus_nt(nt_counts, i);
 
     sequence << consensus.first;
     qualities << consensus.second;
@@ -288,8 +261,8 @@ public:
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   adapter_stats& operator+=(const adapter_stats& other)
   {
-    merge_vectors(pcr1_counts, other.pcr1_counts);
-    merge_vectors(pcr2_counts, other.pcr2_counts);
+    pcr1_counts += other.pcr1_counts;
+    pcr2_counts += other.pcr2_counts;
     merge_vectors(pcr1_kmers, other.pcr1_kmers);
     merge_vectors(pcr2_kmers, other.pcr2_kmers);
 
@@ -301,9 +274,9 @@ public:
   }
 
   //! Nucleotide frequencies of putative adapter 1 fragments
-  nt_count_vec pcr1_counts;
+  acgtn_counts pcr1_counts;
   //! Nucleotide frequencies of putative adapter 2 fragments
-  nt_count_vec pcr2_counts;
+  acgtn_counts pcr2_counts;
   //! 5' KMer frequencies of putative adapter 1 fragments
   kmer_map pcr1_kmers;
   //! 5' KMer frequencies of putative adapter 2 fragments
@@ -425,15 +398,14 @@ private:
   }
 
   void process_adapter(const std::string& sequence,
-                       nt_count_vec& nt_counts,
+                       acgtn_counts& nt_counts,
                        kmer_map& kmers)
   {
-    if (nt_counts.size() < sequence.length()) {
-      nt_counts.resize(sequence.length());
-    }
+    nt_counts.resize_up_to(sequence.length());
+    for (size_t i = 0; i < sequence.length(); ++i) {
+      const auto nuc_i = ACGTN::to_idx(sequence.at(i));
 
-    for (size_t i = 0; i < std::min(nt_counts.size(), sequence.length()); ++i) {
-      nt_counts.at(i).increment(sequence.at(i));
+      nt_counts.inc(nuc_i, i);
     }
 
     if (sequence.length() >= KMER_LENGTH) {
