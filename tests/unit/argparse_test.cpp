@@ -401,6 +401,61 @@ TEST_CASE("str sink consumes empty string", "[argparse::str_sink]")
   REQUIRE(value == "");
 }
 
+TEST_CASE("str sink accepts any value if no choices", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_choices({});
+
+  string_vec values{ "ghi" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "ghi");
+}
+
+TEST_CASE("str sink accepts value in choices", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_choices({ "abc", "def", "ghi" });
+
+  string_vec values{ "ghi" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "ghi");
+}
+
+TEST_CASE("str sink rejectes values not in choices", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_choices({ "abc", "def", "ghi" });
+
+  string_vec values{ "foo" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(value == "");
+}
+
+TEST_CASE("str sink case-insenstive, returns choice", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_choices({ "Abc", "dEf", "ghI" });
+
+  string_vec values{ "Ghi" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "ghI");
+}
+
+TEST_CASE("str sink choices are set", "[argparse::str_sink]")
+{
+  const string_vec choices{ "Abc", "dEf", "ghI" };
+
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_choices(choices);
+
+  REQUIRE(sink.choices() == choices);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // vec sink
 
@@ -518,6 +573,31 @@ TEST_CASE("help with custom default", "[argparse::argument]")
     .with_default(7913);
 
   REQUIRE(arg.help() == "pointless gibberish [default: foo]");
+}
+
+TEST_CASE("help with choices", "[argparse::argument]")
+{
+  std::string value;
+  argparse::argument arg("--12345", "67890");
+  auto& sink = arg.help("gibberish").bind_str(&value);
+
+  SECTION("single choice")
+  {
+    sink.with_choices({ "foo" });
+    REQUIRE(arg.help() == "gibberish. Possible values are foo");
+  }
+
+  SECTION("two choices")
+  {
+    sink.with_choices({ "foo", "bar" });
+    REQUIRE(arg.help() == "gibberish. Possible values are foo, and bar");
+  }
+
+  SECTION("three choices")
+  {
+    sink.with_choices({ "foo", "bar", "x" });
+    REQUIRE(arg.help() == "gibberish. Possible values are foo, bar, and x");
+  }
 }
 
 TEST_CASE("deprecated argument", "[argparse::argument]")

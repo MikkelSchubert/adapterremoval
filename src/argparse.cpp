@@ -455,15 +455,30 @@ argument::metavar() const
 std::string
 argument::help() const
 {
-  if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
-    // Append string representation of current (default) value
-    std::ostringstream ss;
-    ss << m_help << " [default: " << to_str() << "]";
+  // Append string representation of current (default) value
+  std::ostringstream ss(m_help);
+  ss << m_help;
 
-    return ss.str();
-  } else {
-    return m_help;
+  const auto choices = m_sink->choices();
+  if (!choices.empty()) {
+    ss << ". Possible values are ";
+
+    for (size_t i = 0; i < choices.size(); ++i) {
+      if (i && i == choices.size() - 1) {
+        ss << ", and ";
+      } else if (i) {
+        ss << ", ";
+      }
+
+      ss << choices.at(i);
+    }
   }
+
+  if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
+    ss << " [default: " << to_str() << "]";
+  }
+
+  return ss.str();
 }
 
 size_t
@@ -697,6 +712,12 @@ sink::has_default() const
   return m_has_default;
 }
 
+string_vec
+sink::choices() const
+{
+  return string_vec();
+}
+
 size_t
 sink::min_values() const
 {
@@ -828,6 +849,7 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 str_sink::str_sink(std::string* ptr)
   : sink(1)
   , m_sink(ptr)
+  , m_choices()
 {
   AR_REQUIRE(ptr);
 
@@ -843,10 +865,24 @@ str_sink::with_default(const char* value)
   return *this;
 }
 
+str_sink&
+str_sink::with_choices(const string_vec& value)
+{
+  m_choices = value;
+
+  return *this;
+}
+
 std::string
 str_sink::to_str() const
 {
   return escape(*m_sink);
+}
+
+string_vec
+str_sink::choices() const
+{
+  return m_choices;
 }
 
 size_t
@@ -854,9 +890,20 @@ str_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(end - start == 1);
 
-  *m_sink = *start;
+  if (m_choices.empty()) {
+    *m_sink = *start;
+    return 1;
+  } else {
+    const auto value = tolower(*start);
+    for (const auto& it : m_choices) {
+      if (value == tolower(it)) {
+        *m_sink = it;
+        return 1;
+      }
+    }
 
-  return 1;
+    return parsing_failed;
+  }
 }
 
 vec_sink::vec_sink(string_vec* ptr)

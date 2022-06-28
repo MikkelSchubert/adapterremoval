@@ -287,6 +287,9 @@ public:
   /** Indicates if the sink has been supplied with a default value. */
   virtual bool has_default() const;
 
+  /** Returns the list of valid choices, if any, formatted as strings */
+  virtual string_vec choices() const;
+
   /** Indicates the minimum number of values taken by this sink */
   size_t min_values() const;
   /** Indicates the maximum number of values taken by this sink */
@@ -373,8 +376,10 @@ public:
   str_sink(std::string* sink);
 
   str_sink& with_default(const char* value);
+  str_sink& with_choices(const string_vec& choices);
 
   virtual std::string to_str() const override;
+  virtual string_vec choices() const override;
 
   virtual size_t consume(string_vec_citer start,
                          const string_vec_citer& end) override;
@@ -386,6 +391,7 @@ private:
   str_sink& operator=(const str_sink&) = delete;
 
   std::string* m_sink;
+  string_vec m_choices;
 };
 
 class vec_sink : public sink
