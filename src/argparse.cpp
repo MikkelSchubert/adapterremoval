@@ -40,20 +40,9 @@ namespace adapterremoval {
 
 namespace argparse {
 
+namespace {
+
 const size_t parsing_failed = static_cast<size_t>(-1);
-
-/** Returns the number of columns available in the terminal. */
-size_t
-get_terminal_columns()
-{
-  struct winsize params;
-  if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params)) {
-    // Default to 80 columns if the parameters could not be retrieved.
-    return 80;
-  }
-
-  return std::min<size_t>(100, std::max<size_t>(80, params.ws_col));
-}
 
 /** Detect similar arguments based on prefixes or max edit distance. */
 bool
@@ -113,6 +102,8 @@ escape(const std::string& s)
 
   return out;
 }
+
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 
