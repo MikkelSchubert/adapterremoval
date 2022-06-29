@@ -23,6 +23,7 @@
 \*************************************************************************/
 #pragma once
 
+#include <memory>   // for allocator
 #include <stdint.h> // for uint32_t
 
 namespace adapterremoval {
@@ -30,5 +31,41 @@ namespace adapterremoval {
 /** Returns a seed value for a PRNG; not intended to be strongly random. */
 uint32_t
 prng_seed();
+
+template<typename A>
+typename std::enable_if<std::is_integral<A>::value ||
+                        std::is_floating_point<A>::value>::type
+merge(A& dst, const A& src)
+{
+  dst += src;
+}
+
+template<typename T, std::size_t N>
+void
+merge(std::array<T, N>& dst, const std::array<T, N>& src)
+{
+  auto dst_it = std::begin(dst);
+  auto src_it = std::begin(src);
+  while (src_it != std::end(src)) {
+    merge(*dst_it++, *src_it++);
+  }
+}
+
+template<template<typename, typename> class C,
+         typename T,
+         typename A = std::allocator<T>>
+void
+merge(C<T, A>& dst, const C<T, A>& src)
+{
+  if (dst.size() < src.size()) {
+    dst.resize(src.size());
+  }
+
+  auto dst_it = std::begin(dst);
+  auto src_it = std::begin(src);
+  while (src_it != std::end(src)) {
+    merge(*dst_it++, *src_it++);
+  }
+}
 
 } // namespace adapterremoval

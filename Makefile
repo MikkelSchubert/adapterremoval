@@ -126,7 +126,8 @@ CORE_OBJS := \
 	$(OBJS_DIR)/fastq.o \
 	$(OBJS_DIR)/json.o \
 	$(OBJS_DIR)/logging.o \
-	$(OBJS_DIR)/strutils.o
+	$(OBJS_DIR)/strutils.o \
+	$(OBJS_DIR)/utilities.o
 
 # Build objects used only by the executable
 EXEC_OBJS := \
@@ -151,8 +152,7 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/timer.o \
 	$(OBJS_DIR)/progress.o \
 	$(OBJS_DIR)/trimming.o \
-	$(OBJS_DIR)/userconfig.o \
-	$(OBJS_DIR)/utilities.o
+	$(OBJS_DIR)/userconfig.o
 
 # Build objects used only by the test runner
 TEST_OBJS := \
@@ -164,7 +164,8 @@ TEST_OBJS := \
 	$(OBJS_DIR)/json_test.o \
 	$(OBJS_DIR)/logging_test.o \
 	$(OBJS_DIR)/main_test.o \
-	$(OBJS_DIR)/strutils_test.o
+	$(OBJS_DIR)/strutils_test.o \
+	$(OBJS_DIR)/utilities_test.o
 
 ################################################################################
 
