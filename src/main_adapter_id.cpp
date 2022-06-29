@@ -40,7 +40,7 @@
 #include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
 #include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
 #include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
-#include "vecutils.hpp"    // for merge_vectors
+#include "utilities.hpp"   // for merge
 
 namespace adapterremoval {
 
@@ -263,8 +263,8 @@ public:
   {
     pcr1_counts += other.pcr1_counts;
     pcr2_counts += other.pcr2_counts;
-    merge_vectors(pcr1_kmers, other.pcr1_kmers);
-    merge_vectors(pcr2_kmers, other.pcr2_kmers);
+    merge(pcr1_kmers, other.pcr1_kmers);
+    merge(pcr2_kmers, other.pcr2_kmers);
 
     aligned_pairs += other.aligned_pairs;
     unaligned_pairs += other.unaligned_pairs;

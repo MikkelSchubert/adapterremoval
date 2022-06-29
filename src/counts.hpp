@@ -21,7 +21,7 @@
 #include <limits>
 #include <vector>
 
-#include "vecutils.hpp"
+#include "utilities.hpp"
 
 namespace adapterremoval {
 
@@ -110,7 +110,7 @@ public:
   /** += operator. */
   counts_tmpl<T>& operator+=(const counts_tmpl<T>& other)
   {
-    merge_vectors(m_values, other.m_values);
+    merge(m_values, other.m_values);
 
     return *this;
   }
