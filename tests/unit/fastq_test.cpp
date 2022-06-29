@@ -60,58 +60,58 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
-TEST_CASE("ACGT::to_idx", "[fastq::*]")
+TEST_CASE("ACGT::to_index", "[fastq::*]")
 {
   // The exact encoding is unimportant, but it must be unique and 2 bit
-  REQUIRE(ACGT::to_idx('A') <= 3);
-  REQUIRE(ACGT::to_idx('C') <= 3);
-  REQUIRE(ACGT::to_idx('G') <= 3);
-  REQUIRE(ACGT::to_idx('T') <= 3);
+  REQUIRE(ACGT::to_index('A') <= 3);
+  REQUIRE(ACGT::to_index('C') <= 3);
+  REQUIRE(ACGT::to_index('G') <= 3);
+  REQUIRE(ACGT::to_index('T') <= 3);
 
-  REQUIRE(ACGT::to_idx('A') != ACGT::to_idx('C'));
-  REQUIRE(ACGT::to_idx('A') != ACGT::to_idx('G'));
-  REQUIRE(ACGT::to_idx('A') != ACGT::to_idx('T'));
-  REQUIRE(ACGT::to_idx('C') != ACGT::to_idx('G'));
-  REQUIRE(ACGT::to_idx('C') != ACGT::to_idx('T'));
-  REQUIRE(ACGT::to_idx('G') != ACGT::to_idx('T'));
+  REQUIRE(ACGT::to_index('A') != ACGT::to_index('C'));
+  REQUIRE(ACGT::to_index('A') != ACGT::to_index('G'));
+  REQUIRE(ACGT::to_index('A') != ACGT::to_index('T'));
+  REQUIRE(ACGT::to_index('C') != ACGT::to_index('G'));
+  REQUIRE(ACGT::to_index('C') != ACGT::to_index('T'));
+  REQUIRE(ACGT::to_index('G') != ACGT::to_index('T'));
 }
 
-TEST_CASE("ACGT::to_nuc", "[fastq::*]")
+TEST_CASE("ACGT::to_value", "[fastq::*]")
 {
-  REQUIRE(ACGT::to_nuc(ACGT::to_idx('A')) == 'A');
-  REQUIRE(ACGT::to_nuc(ACGT::to_idx('C')) == 'C');
-  REQUIRE(ACGT::to_nuc(ACGT::to_idx('G')) == 'G');
-  REQUIRE(ACGT::to_nuc(ACGT::to_idx('T')) == 'T');
+  REQUIRE(ACGT::to_value(ACGT::to_index('A')) == 'A');
+  REQUIRE(ACGT::to_value(ACGT::to_index('C')) == 'C');
+  REQUIRE(ACGT::to_value(ACGT::to_index('G')) == 'G');
+  REQUIRE(ACGT::to_value(ACGT::to_index('T')) == 'T');
 }
 
-TEST_CASE("ACGTN::to_idx", "[fastq::*]")
+TEST_CASE("ACGTN::to_index", "[fastq::*]")
 {
   // The exact encoding is unimportant, but it must be unique in the range 0-4
-  REQUIRE(ACGTN::to_idx('A') <= 4);
-  REQUIRE(ACGTN::to_idx('C') <= 4);
-  REQUIRE(ACGTN::to_idx('G') <= 4);
-  REQUIRE(ACGTN::to_idx('T') <= 4);
-  REQUIRE(ACGTN::to_idx('N') <= 4);
+  REQUIRE(ACGTN::to_index('A') <= 4);
+  REQUIRE(ACGTN::to_index('C') <= 4);
+  REQUIRE(ACGTN::to_index('G') <= 4);
+  REQUIRE(ACGTN::to_index('T') <= 4);
+  REQUIRE(ACGTN::to_index('N') <= 4);
 
-  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('C'));
-  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('G'));
-  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('T'));
-  REQUIRE(ACGTN::to_idx('A') != ACGTN::to_idx('N'));
-  REQUIRE(ACGTN::to_idx('C') != ACGTN::to_idx('G'));
-  REQUIRE(ACGTN::to_idx('C') != ACGTN::to_idx('T'));
-  REQUIRE(ACGTN::to_idx('C') != ACGTN::to_idx('N'));
-  REQUIRE(ACGTN::to_idx('G') != ACGTN::to_idx('T'));
-  REQUIRE(ACGTN::to_idx('G') != ACGTN::to_idx('N'));
-  REQUIRE(ACGTN::to_idx('T') != ACGTN::to_idx('N'));
+  REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('C'));
+  REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('G'));
+  REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('T'));
+  REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('N'));
+  REQUIRE(ACGTN::to_index('C') != ACGTN::to_index('G'));
+  REQUIRE(ACGTN::to_index('C') != ACGTN::to_index('T'));
+  REQUIRE(ACGTN::to_index('C') != ACGTN::to_index('N'));
+  REQUIRE(ACGTN::to_index('G') != ACGTN::to_index('T'));
+  REQUIRE(ACGTN::to_index('G') != ACGTN::to_index('N'));
+  REQUIRE(ACGTN::to_index('T') != ACGTN::to_index('N'));
 }
 
-TEST_CASE("ACGTN::to_nuc", "[fastq::*]")
+TEST_CASE("ACGTN::to_value", "[fastq::*]")
 {
-  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('A')) == 'A');
-  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('C')) == 'C');
-  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('G')) == 'G');
-  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('T')) == 'T');
-  REQUIRE(ACGTN::to_nuc(ACGTN::to_idx('N')) == 'N');
+  REQUIRE(ACGTN::to_value(ACGTN::to_index('A')) == 'A');
+  REQUIRE(ACGTN::to_value(ACGTN::to_index('C')) == 'C');
+  REQUIRE(ACGTN::to_value(ACGTN::to_index('G')) == 'G');
+  REQUIRE(ACGTN::to_value(ACGTN::to_index('T')) == 'T');
+  REQUIRE(ACGTN::to_value(ACGTN::to_index('N')) == 'N');
 }
 
 ///////////////////////////////////////////////////////////////////////////////

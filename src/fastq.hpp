@@ -238,59 +238,49 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ACGT {
-//! The number of nucleotides
-const size_t size = 4;
-//! Nucleotides supported by hashing function
-const char values[size] = { 'A', 'C', 'G', 'T' };
-
-/**
- * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
- * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
- * only) will result in hash collisions.
- */
-inline size_t
-to_idx(char nt)
+struct ACGT
 {
-  return (nt >> 1) & 0x3;
-}
+  using value_type = char;
 
-/**
- * Inverse of to_idx. Only values in the range 0 to 3 are allowed.
- */
-inline char
-to_nuc(size_t idx)
+  //! The number of nucleotides
+  static const size_t size = 4;
+  //! Nucleotides supported by hashing function
+  static const value_type values[size];
+
+  /**
+   * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
+   * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
+   * only) will result in hash collisions.
+   */
+  static inline size_t to_index(value_type nt) { return (nt >> 1) & 0x3; }
+
+  /**
+   * Inverse of to_index. Only values in the range 0 to 3 are allowed.
+   */
+  static inline value_type to_value(size_t idx) { return "ACTG"[idx]; }
+};
+
+struct ACGTN
 {
-  return "ACTG"[idx];
-}
-} // namespace ACGT
+  using value_type = char;
 
-namespace ACGTN {
-//! The number of nucleotides
-const size_t size = 5;
-//! Nucleotides supported by hashing function
-const char values[size] = { 'A', 'C', 'G', 'T', 'N' };
+  //! The number of nucleotides
+  static const size_t size = 5;
+  //! Nucleotides supported by hashing function
+  static const value_type values[size];
 
-/**
- * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
- * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
- * only) will result in hash collisions.
- */
-inline size_t
-to_idx(char nt)
-{
-  return ((nt >> 1) + 1) & 0x7;
-}
+  /**
+   * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
+   * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
+   * only) will result in hash collisions.
+   */
+  static inline size_t to_index(value_type nt) { return ((nt >> 1) + 1) & 0x7; }
 
-/**
- * Inverse of to_idx. Only values in the range 0 to 4 are allowed.
- */
-inline char
-to_nuc(size_t idx)
-{
-  return "NACTG"[idx];
-}
-} // namespace ACGTN
+  /**
+   * Inverse of to_index. Only values in the range 0 to 4 are allowed.
+   */
+  static inline value_type to_value(size_t idx) { return "NACTG"[idx]; }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

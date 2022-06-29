@@ -33,6 +33,11 @@
 
 namespace adapterremoval {
 
+const ACGT::value_type ACGT::values[ACGT::size] = { 'A', 'C', 'G', 'T' };
+const ACGTN::value_type ACGTN::values[ACGTN::size] = {
+  'A', 'C', 'G', 'T', 'N',
+};
+
 std::vector<double>
 init_phred_to_p_values()
 {

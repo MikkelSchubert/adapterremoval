@@ -65,7 +65,7 @@ kmer_to_size_t(const std::string& kmer)
 {
   size_t index = 0;
   for (size_t i = 0; i < kmer.length(); ++i) {
-    index = (index << 2) | ACGT::to_idx(kmer.at(i));
+    index = (index << 2) | ACGT::to_index(kmer.at(i));
   }
 
   return index;
@@ -185,7 +185,7 @@ get_consensus_nt(const acgtn_counts& nts, size_t i)
   char best_nt_i = -1;
   size_t best_count = 0;
   for (char nuc : ACGT::values) {
-    const auto nt_i = ACGTN::to_idx(nuc);
+    const auto nt_i = ACGTN::to_index(nuc);
     const size_t cur_count = nts.get(nt_i, i);
     total_count += cur_count;
 
@@ -199,7 +199,7 @@ get_consensus_nt(const acgtn_counts& nts, size_t i)
 
   const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
   const char phred = fastq::p_to_phred_33(pvalue);
-  const char best_nt = (best_nt_i == -1) ? 'N' : ACGTN::to_nuc(best_nt_i);
+  const char best_nt = (best_nt_i == -1) ? 'N' : ACGTN::to_value(best_nt_i);
 
   return std::pair<char, char>(best_nt, phred);
 }
@@ -403,7 +403,7 @@ private:
   {
     nt_counts.resize_up_to(sequence.length());
     for (size_t i = 0; i < sequence.length(); ++i) {
-      const auto nuc_i = ACGTN::to_idx(sequence.at(i));
+      const auto nuc_i = ACGTN::to_index(sequence.at(i));
 
       nt_counts.inc(nuc_i, i);
     }
