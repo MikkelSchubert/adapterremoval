@@ -180,8 +180,14 @@ try_parse_argument(const string_vec& args,
 bool
 fancy_output_allowed()
 {
-  // NO_COLOR is checked as suggested by https://no-color.org/
-  return ::isatty(STDERR_FILENO) && !::getenv("NO_COLOR");
+  if (::isatty(STDERR_FILENO)) {
+    // NO_COLOR is checked as suggested by https://no-color.org/
+    const char* no_color = ::getenv("NO_COLOR");
+
+    return !(no_color && no_color[0] != '\0');
+  }
+
+  return false;
 }
 
 void
