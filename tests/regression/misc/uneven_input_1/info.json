@@ -1,5 +1,6 @@
 {
-	"arguments": [],
-	"return_code": 1,
-	"stderr": ["More mate 1 reads than mate 2 reads"]
+  "arguments": [],
+  "return_code": 1,
+  "stderr": ["More mate 1 reads than mate 2 reads"],
+  "files": {"input_1": ["input_1.fastq"], "input_2": ["input_2.fastq"]}
 }

@@ -1,8 +1,6 @@
 {
-	"arguments": [],
-	"return_code": 1,
-	"stderr": [
-		"This program searches for"
-	],
-	"exhaustive": false
+  "arguments": [],
+  "return_code": 1,
+  "stderr": ["This program searches for"],
+  "files": {}
 }

@@ -1,10 +1,8 @@
 {
-	"arguments": [
-		"--demultiplex-only"
-	],
-	"return_code": 1,
-	"stderr": [
-		"[ERROR] Option --barcode-list is required when using option --demultiplex-only"
-	],
-	"exhaustive": false
+  "arguments": ["--demultiplex-only"],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Option --barcode-list is required when using option --demultiplex-only"
+  ],
+  "files": {"input_1": ["input_1.fastq"], "input_2": ["input_2.fastq"]}
 }

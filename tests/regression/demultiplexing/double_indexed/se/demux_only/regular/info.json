@@ -1,6 +1,14 @@
 {
-	"arguments": ["--demultiplex-only"],
-	"return_code": 0,
-	"stderr": [
-	]
+  "arguments": ["--demultiplex-only"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "barcodes": ["barcodes.txt"],
+    "output": [
+      "your_output.sample_1.r1.fastq",
+      "your_output.sample_2.r1.fastq",
+      "your_output.unidentified.r1.fastq"
+    ],
+    "json": ["your_output.json"],
+    "html": ["your_output.html"]
+  }
 }

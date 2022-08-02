@@ -1,9 +1,9 @@
 {
-	"arguments": [
-		"--trimns",
-		"--basename",
-		"alternative"
-	],
-	"return_code": 0,
-	"stderr": []
+  "arguments": ["--trimns", "--basename", "alternative"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "output": ["alternative.discarded.fastq", "alternative.r1.fastq"],
+    "json": ["alternative.json"],
+    "html": ["alternative.html"]
+  }
 }

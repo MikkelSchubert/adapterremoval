@@ -1,22 +1,28 @@
 {
-	"skip": true,
-	"arguments": [
-		"--collapse",
-		"--trimns",
-		"--discarded",
-		"disc",
-		"--output1",
-		"out1",
-		"--output2",
-		"out2",
-		"--outputcollapsed",
-		"oc",
-		"--settings",
-		"out_settings",
-		"--singleton",
-		"singles"
-	],
-	"return_code": 0,
-	"stderr": [],
-	"exhaustive": false
+  "exhaustive": false,
+  "arguments": [
+    "--collapse",
+    "--trimns",
+    "--discarded",
+    "disc",
+    "--output1",
+    "out1",
+    "--output2",
+    "out2",
+    "--outputcollapsed",
+    "oc",
+    "--settings",
+    "out_settings",
+    "--singleton",
+    "singles",
+    "--out-html",
+    "out_html"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": ["disc", "oc", "out1", "out2", "singles"],
+    "json": ["out_settings"],
+    "html": ["out_html"]
+  }
 }

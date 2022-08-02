@@ -1,13 +1,8 @@
 {
-	"arguments": [
-		"--trimns",
-		"--interleaved-output",
-		"--output1",
-		"interleaved.fastq",
-		"--output2",
-		"this_is_not_allowed.fastq"
-	],
-	"return_code": 1,
-	"stderr": ["[ERROR] Option --output2 cannot be used together with option --interleaved-output"],
-	"exhaustive": false
+  "arguments": ["--trimns", "--interleaved-output", "--output1", "interleaved.fastq", "--output2", "this_is_not_allowed.fastq"],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Option --output2 cannot be used together with option --interleaved-output"
+  ],
+  "files": {"input_1": ["input_1.fastq"], "input_2": ["input_2.fastq"]}
 }

@@ -1,11 +1,20 @@
 {
-	"arguments": [
-		"--trimns",
-		"--interleaved-output",
-		"--output1",
-		"interleaved.fastq"
-	],
-	"return_code": 0,
-	"stderr": [],
-	"exhaustive": false
+  "exhaustive": false,
+  "arguments": [
+    "--trimns",
+    "--interleaved-output",
+    "--output1",
+    "interleaved.fastq"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": [
+      "interleaved.fastq",
+      "your_output.discarded.fastq",
+      "your_output.singleton.fastq"
+    ],
+    "json": ["your_output.json"],
+    "html": ["your_output.html"]
+  }
 }

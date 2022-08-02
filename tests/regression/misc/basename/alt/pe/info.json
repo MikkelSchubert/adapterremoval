@@ -1,6 +1,16 @@
 {
-	"arguments": ["--collapse", "--trimns", "--basename", "alternative"],
-	"return_code": 0,
-	"stderr": [
-	]
+  "arguments": ["--collapse", "--trimns", "--basename", "alternative"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": [
+      "alternative.discarded.fastq",
+      "alternative.merged.fastq",
+      "alternative.r1.fastq",
+      "alternative.r2.fastq",
+      "alternative.singleton.fastq"
+    ],
+    "json": ["alternative.json"],
+    "html": ["alternative.html"]
+  }
 }

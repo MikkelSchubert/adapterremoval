@@ -1,6 +1,16 @@
 {
-	"arguments": ["--collapse", "--trimns"],
-	"return_code": 0,
-	"stderr": [
-	]
+  "arguments": ["--collapse", "--trimns"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": [
+      "your_output.discarded.fastq",
+      "your_output.merged.fastq",
+      "your_output.r1.fastq",
+      "your_output.r2.fastq",
+      "your_output.singleton.fastq"
+    ],
+    "json": ["your_output.json"],
+    "html": ["your_output.html"]
+  }
 }
