@@ -812,8 +812,10 @@ def parse_args(argv):
 
 def main(argv):
     args = parse_args(argv)
+
+    print("Testing executable %r" % (args.executable,))
     if not os.path.exists(args.executable):
-        print_err("ERROR: Executable does not exist: %r" % (args.executable,))
+        print_err("ERROR: Executable does not exist")
         return 1
 
     if args.max_failures <= 0:
