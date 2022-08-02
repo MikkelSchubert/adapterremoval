@@ -282,55 +282,68 @@ struct io_section
     section->i64("reads_sampled", m_stats->number_of_sampled_reads());
     section->i64_vec("lengths", m_stats->length_dist());
 
-    const auto total_bases = m_stats->nucleotides_pos();
-    const auto total_quality = m_stats->qualities_pos();
+    if (m_stats->length_dist().product()) {
+      const auto total_bases = m_stats->nucleotides_pos();
+      const auto total_quality = m_stats->qualities_pos();
 
-    {
-      const auto quality_curves = section->dict("quality_curves");
+      {
+        const auto quality_curves = section->dict("quality_curves");
 
-      for (const auto nuc : ACGT::values) {
-        const auto nucleotides = m_stats->nucleotides_pos(nuc);
-        const auto quality = m_stats->qualities_pos(nuc);
+        for (const auto nuc : ACGT::values) {
+          const auto nucleotides = m_stats->nucleotides_pos(nuc);
+          const auto quality = m_stats->qualities_pos(nuc);
 
-        quality_curves->f64_vec(std::string(1, ::tolower(nuc)),
-                                quality / nucleotides);
+          quality_curves->f64_vec(std::string(1, ::tolower(nuc)),
+                                  quality / nucleotides);
+        }
+
+        quality_curves->f64_vec("mean", total_quality / total_bases);
       }
 
-      quality_curves->f64_vec("mean", total_quality / total_bases);
-    }
+      {
+        const auto content_curves = section->dict("content_curves");
 
-    {
-      const auto content_curves = section->dict("content_curves");
+        for (const auto nuc : ACGTN::values) {
+          const auto bases = m_stats->nucleotides_pos(nuc);
 
-      for (const auto nuc : ACGTN::values) {
-        const auto bases = m_stats->nucleotides_pos(nuc);
+          content_curves->f64_vec(std::string(1, ::tolower(nuc)),
+                                  bases / total_bases);
+        }
 
-        content_curves->f64_vec(std::string(1, ::tolower(nuc)),
-                                bases / total_bases);
+        content_curves->f64_vec("gc",
+                                m_stats->nucleotides_gc_pos() / total_bases);
       }
 
-      content_curves->f64_vec("gc",
-                              m_stats->nucleotides_gc_pos() / total_bases);
-    }
+      const auto quality_dist = m_stats->quality_dist().trim();
+      section->i64_vec("quality_scores", quality_dist);
+      section->i64_vec("gc_content", m_stats->gc_content());
 
-    const auto quality_dist = m_stats->quality_dist().trim();
-    section->i64_vec("quality_scores", quality_dist);
-    section->i64_vec("gc_content", m_stats->gc_content());
+      // Currently only for input 1/2
+      const auto dup_stats = m_stats->duplication();
 
-    // Currently only for input 1/2
-    const auto dup_stats = m_stats->duplication();
+      if (dup_stats) {
+        // Must be enabled, but key is always written for applicable files
+        if (dup_stats->max_unique()) {
+          const auto duplication = section->dict("duplication");
 
-    if (dup_stats) {
-      // Must be enabled, but key is always written for applicable files
-      if (dup_stats->max_unique()) {
-        const auto duplication = section->dict("duplication");
+          const auto summary = dup_stats->summarize();
+          duplication->str_vec("labels", summary.labels);
+          duplication->f64_vec("unique_sequences", summary.unique_sequences);
+          duplication->f64_vec("total_sequences", summary.total_sequences);
+          duplication->f64("unique_frac", summary.unique_frac);
+        } else {
+          section->null("duplication");
+        }
+      }
+    } else {
+      section->null("quality_curves");
+      section->null("content_curves");
+      section->null("quality_scores");
+      section->null("gc_content");
 
-        const auto summary = dup_stats->summarize();
-        duplication->str_vec("labels", summary.labels);
-        duplication->f64_vec("unique_sequences", summary.unique_sequences);
-        duplication->f64_vec("total_sequences", summary.total_sequences);
-        duplication->f64("unique_frac", summary.unique_frac);
-      } else {
+      // Currently only for input 1/2
+
+      if (m_stats->duplication()) {
         section->null("duplication");
       }
     }
