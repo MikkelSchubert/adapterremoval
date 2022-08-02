@@ -398,7 +398,7 @@ write_report_demultiplexing(const userconfig& config,
         .write_to_if(output, config.paired_ended_mode);
 
       io_section(read_type::singleton, stats.singleton, files)
-        .write_to_if(output, config.paired_ended_mode);
+        .write_to_if(output, config.paired_ended_mode && !demux_only);
 
       io_section(read_type::merged, stats.merged, files)
         .write_to_if(output, config.merge && !demux_only);
