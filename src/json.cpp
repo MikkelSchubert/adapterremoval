@@ -81,6 +81,7 @@ _escape(const std::string& value)
 std::string
 format_f64(double value)
 {
+  AR_REQUIRE(!std::isinf(value));
   if (std::isnan(value)) {
     return "null";
   }
