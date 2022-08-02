@@ -34,7 +34,7 @@ COVERAGE := no
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
 
-EXEC_MAIN   := AdapterRemoval
+EXEC_MAIN   := adapterremoval3
 EXEC_TEST   := unit_tests
 
 BUILD_DIR   := build

@@ -25,11 +25,11 @@ The difference between these two options is that ``--adapter2`` expects the mate
 
 Using the common 13 bp Illumina adapter sequence (AGATCGGAAGAGC) as an example, this is how the options would be used in AdapterRemoval v2.x::
 
-	AdapterRemoval --adapter1 AGATCGGAAGAGC --adapter2 AGATCGGAAGAGC ...
+	adapterremoval3 --adapter1 AGATCGGAAGAGC --adapter2 AGATCGGAAGAGC ...
 
 And in AdapterRemoval v1.x::
 
-	AdapterRemoval --adapter1 AGATCGGAAGAGC --adapter2 GCTCTTCCGATCT ...
+	adapterremoval3 --adapter1 AGATCGGAAGAGC --adapter2 GCTCTTCCGATCT ...
 
 
 .. _sickle: https://github.com/najoshi/sickle

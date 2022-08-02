@@ -1,4 +1,4 @@
-EXE := AdapterRemoval
+EXE := adapterremoval3
 
 TARGETS := single_end paired_end phred_64_encoded \
 	collapsed_q50 multiple_adapters identify_adapters \

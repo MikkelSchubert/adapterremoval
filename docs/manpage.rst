@@ -4,7 +4,7 @@ AdapterRemoval manpage
 Synopsis
 --------
 
-**AdapterRemoval** [*options*...] --file1 <*filenames*> [--file2 <*filenames*>]
+**adapterremoval3** [*options*...] --file1 <*filenames*> [--file2 <*filenames*>]
 
 
 Description

@@ -27,12 +27,12 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ADAPTERREMOVAL" "1" "Nov 16, 2021" "2.3.2" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Aug 02, 2022" "2.3.2" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .SH SYNOPSIS
 .sp
-\fBAdapterRemoval\fP [\fIoptions\fP\&...] \-\-file1 <\fIfilenames\fP> [\-\-file2 <\fIfilenames\fP>]
+\fBadapterremoval3\fP [\fIoptions\fP\&...] \-\-file1 <\fIfilenames\fP> [\-\-file2 <\fIfilenames\fP>]
 .SH DESCRIPTION
 .sp
 \fBAdapterRemoval\fP removes residual adapter sequences from single\-end (SE) or paired\-end (PE) FASTQ reads, optionally trimming Ns and low qualities bases and/or collapsing overlapping paired\-end mates into one read. Low quality reads are filtered based on the resulting length and the number of ambigious nucleotides (\(aqN\(aq) present following trimming. These operations may be combined with simultaneous demultiplexing using 5\(aq barcode sequences. Alternatively, \fBAdapterRemoval\fP may attempt to reconstruct a consensus adapter sequences from paired\-end data, in order to allow the identification of the adapter sequences originally used.

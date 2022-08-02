@@ -780,7 +780,7 @@ def parse_args(argv):
     parser.add_argument(
         "--executable",
         type=os.path.abspath,
-        default=os.path.abspath("./build/AdapterRemoval"),
+        default=os.path.abspath("./build/adapterremoval3"),
         help="Path to AdapterRemoval executable",
     )
     parser.add_argument(
