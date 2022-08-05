@@ -1,0 +1,10 @@
+{
+  "exhaustive": false,
+  "arguments": [],
+  "return_code": 1,
+  "stderr": ["[ERROR] Different number of files specified for --file1 and --file2."],
+  "files": {
+    "input_1": ["input_1a.fastq"],
+    "input_2": ["input_2a.fastq", "input_2b.fastq"]
+  }
+}
