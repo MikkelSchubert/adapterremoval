@@ -33,7 +33,10 @@
 
 namespace adapterremoval {
 
+const size_t ACGT::size;
 const ACGT::value_type ACGT::values[ACGT::size] = { 'A', 'C', 'G', 'T' };
+
+const size_t ACGTN::size;
 const ACGTN::value_type ACGTN::values[ACGTN::size] = {
   'A', 'C', 'G', 'T', 'N',
 };
