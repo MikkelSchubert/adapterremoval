@@ -736,6 +736,17 @@ class TestRunner:
 ################################################################################
 
 
+def test_name(root, current, filename):
+    postfix = current[len(root) :]
+    name = [v.strip() for v in postfix.split("/") if v.strip()]
+    if filename != "info.json":
+        name.append(filename[4:-5].strip("_"))
+    elif not name:
+        name = [os.path.basename(current)]
+
+    return tuple(name)
+
+
 def collect_tests(root):
     tests = []
     for dirname, _, filenames in os.walk(root):
@@ -743,9 +754,8 @@ def collect_tests(root):
             normalized = filename.lower()
 
             if normalized.startswith("info") and normalized.endswith(".json"):
+                name = test_name(root, dirname, normalized)
                 filepath = os.path.join(dirname, filename)
-                name, _ = os.path.splitext(filepath[len(root) :])
-                name = tuple(v.strip() for v in name.split("/") if v.strip())
 
                 try:
                     test = TestConfig.load(name=name, filepath=filepath)
