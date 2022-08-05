@@ -133,7 +133,7 @@ public:
   /** Counts of ACGTN nucleotides by position */
   inline counts nucleotides_pos(char nuc) const
   {
-    return m_nucleotide_pos.to_counts(ACGTN::to_index(nuc));
+    return m_nucleotide_pos.to_counts(nuc);
   }
 
   /** Sum of nucleotide counts by position */
@@ -148,7 +148,7 @@ public:
   /** Sum of base qualities for each nucleotide (ACGTN) by position */
   inline counts qualities_pos(char nuc) const
   {
-    return m_quality_pos.to_counts(ACGTN::to_index(nuc));
+    return m_quality_pos.to_counts(nuc);
   }
 
   /** Sum of base qualities for ACGTN by position */
@@ -183,9 +183,9 @@ private:
   counts m_gc_content_dist;
 
   /** Per position nucleotide counts indexed using ACGTN_TO_IDX. */
-  acgtn_counts m_nucleotide_pos;
+  indexed_counts<ACGTN> m_nucleotide_pos;
   /** Per position quality score sums indexed using ACGTN_TO_IDX. */
-  acgtn_counts m_quality_pos;
+  indexed_counts<ACGTN> m_quality_pos;
 
   //! Maximum size of read processed; used to resize counters as needed
   size_t m_max_sequence_len;

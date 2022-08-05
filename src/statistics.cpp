@@ -244,20 +244,20 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
     const std::string& sequence = read.sequence();
     const std::string& qualities = read.qualities();
 
-    std::vector<size_t> nucls(ACGTN::size);
+    indexed_count<ACGTN> nucls;
     for (size_t i = 0; i < sequence.length(); ++i) {
-      const auto nuc_i = ACGTN::to_index(sequence.at(i));
+      const auto nuc = sequence.at(i);
 
-      nucls.at(nuc_i)++;
-      m_nucleotide_pos.inc(nuc_i, i);
+      nucls.inc(nuc);
+      m_nucleotide_pos.inc(nuc, i);
 
       const auto quality = qualities.at(i) - PHRED_OFFSET_33;
-      m_quality_pos.inc(nuc_i, i, quality);
+      m_quality_pos.inc(nuc, i, quality);
       m_quality_dist.inc(quality);
     }
 
-    auto n_at = nucls.at(ACGTN::to_index('A')) + nucls.at(ACGTN::to_index('T'));
-    auto n_gc = nucls.at(ACGTN::to_index('G')) + nucls.at(ACGTN::to_index('C'));
+    auto n_at = nucls.get('A') + nucls.get('T');
+    auto n_gc = nucls.get('G') + nucls.get('C');
     if (n_at || n_gc) {
       // FIXME: Causes dip at 50% if effective length == 99
       m_gc_content_dist.inc((100.0 * n_gc) / (n_at + n_gc) + 0.5);

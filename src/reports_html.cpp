@@ -113,6 +113,21 @@ mean_of_counts(const counts& count)
   return ss.str();
 }
 
+/**
+ * VEGA-lite will omit plots if there are no values; this function therefore
+ * ensures that at least one value is written for a given measurement.
+ */
+template<typename T>
+counts_tmpl<T>
+require_values(counts_tmpl<T> r, T fallback = T())
+{
+  if (r.size()) {
+    return r;
+  }
+
+  return counts_tmpl<T>({ fallback });
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class io_summary_writer
@@ -165,10 +180,8 @@ build_base_qualities(const fastq_stats_vec& reads, const string_vec& names)
   for (size_t i = 0; i < reads.size(); ++i) {
     const auto& stats = *reads.at(i);
 
-    const auto total_quality = stats.qualities_pos();
+    auto total_quality = stats.qualities_pos();
     auto total_bases = stats.nucleotides_pos();
-    // Ensure that values get written, to prevent the plot being omitted
-    total_bases.resize_up_to(1);
 
     for (const auto nuc : ACGT::values) {
       const auto nucleotides = stats.nucleotides_pos(nuc);
@@ -185,7 +198,9 @@ build_base_qualities(const fastq_stats_vec& reads, const string_vec& names)
     dict->str("read", names.at(i));
     dict->i64("offset", 1);
     dict->str("group", "Mean");
-    dict->f64_vec("y", total_quality / total_bases);
+
+    // Ensure that values get written, to prevent the plot being omitted
+    dict->f64_vec("y", require_values(total_quality / total_bases));
   }
 
   return qualities.to_string();
@@ -221,8 +236,6 @@ build_base_content(const fastq_stats_vec& reads, const string_vec& names)
     const auto& stats = *reads.at(i);
 
     auto total_bases = stats.nucleotides_pos();
-    // Ensure that values get written, to prevent the plot being omitted
-    total_bases.resize_up_to(1);
 
     for (const auto nuc : ACGTN::values) {
       const auto bases = stats.nucleotides_pos(nuc);
@@ -231,15 +244,20 @@ build_base_content(const fastq_stats_vec& reads, const string_vec& names)
       dict->str("read", names.at(i));
       dict->i64("offset", 1);
       dict->str("group", std::string(1, nuc));
-      dict->f64_vec("y", bases / total_bases);
+
+      // Ensure that values get written, to prevent the plot being omitted
+      dict->f64_vec("y", require_values(bases / total_bases));
     }
 
     {
+      const auto gc_content = stats.nucleotides_gc_pos();
       auto dict = content.dict();
       dict->str("read", names.at(i));
       dict->i64("offset", 1);
       dict->str("group", "GC");
-      dict->f64_vec("y", stats.nucleotides_gc_pos() / total_bases);
+
+      // Ensure that values get written, to prevent the plot being omitted
+      dict->f64_vec("y", require_values(gc_content / total_bases));
     }
   }
 

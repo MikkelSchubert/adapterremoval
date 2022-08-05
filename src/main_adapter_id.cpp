@@ -176,32 +176,30 @@ compare_consensus_with_ref(const std::string& ref, const std::string& consensus)
  * majority nucleotide can be found, 'N' is returned instead.
  */
 std::pair<char, char>
-get_consensus_nt(const acgtn_counts& nts, size_t i)
+get_consensus_nt(const indexed_counts<ACGTN>& nts, size_t i)
 {
   // Always assume one non-consensus observation; this is more reasonable
   // than allowing an error-rate of 0, especially for few observations.
   size_t total_count = 1;
 
-  char best_nt_i = -1;
+  char best_nuc = 'N';
   size_t best_count = 0;
-  for (char nuc : ACGT::values) {
-    const auto nt_i = ACGTN::to_index(nuc);
-    const size_t cur_count = nts.get(nt_i, i);
+  for (const char nuc : ACGT::values) {
+    const size_t cur_count = nts.get(nuc, i);
     total_count += cur_count;
 
     if (cur_count > best_count) {
-      best_nt_i = nt_i;
+      best_nuc = nuc;
       best_count = cur_count;
     } else if (cur_count == best_count) {
-      best_nt_i = -1;
+      best_nuc = 'N';
     }
   }
 
   const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
   const char phred = fastq::p_to_phred_33(pvalue);
-  const char best_nt = (best_nt_i == -1) ? 'N' : ACGTN::to_value(best_nt_i);
 
-  return std::pair<char, char>(best_nt, phred);
+  return std::pair<char, char>(best_nuc, phred);
 }
 
 /**
@@ -213,7 +211,7 @@ get_consensus_nt(const acgtn_counts& nts, size_t i)
  * @param ref Default sequence for the inferred adapter
  */
 void
-print_consensus_adapter(const acgtn_counts& nt_counts,
+print_consensus_adapter(const indexed_counts<ACGTN>& nt_counts,
                         const kmer_map& kmers,
                         const std::string& name,
                         const std::string& ref)
@@ -274,9 +272,9 @@ public:
   }
 
   //! Nucleotide frequencies of putative adapter 1 fragments
-  acgtn_counts pcr1_counts;
+  indexed_counts<ACGTN> pcr1_counts;
   //! Nucleotide frequencies of putative adapter 2 fragments
-  acgtn_counts pcr2_counts;
+  indexed_counts<ACGTN> pcr2_counts;
   //! 5' KMer frequencies of putative adapter 1 fragments
   kmer_map pcr1_kmers;
   //! 5' KMer frequencies of putative adapter 2 fragments
@@ -398,14 +396,12 @@ private:
   }
 
   void process_adapter(const std::string& sequence,
-                       acgtn_counts& nt_counts,
+                       indexed_counts<ACGTN>& nt_counts,
                        kmer_map& kmers)
   {
     nt_counts.resize_up_to(sequence.length());
     for (size_t i = 0; i < sequence.length(); ++i) {
-      const auto nuc_i = ACGTN::to_index(sequence.at(i));
-
-      nt_counts.inc(nuc_i, i);
+      nt_counts.inc(sequence.at(i), i);
     }
 
     if (sequence.length() >= KMER_LENGTH) {
