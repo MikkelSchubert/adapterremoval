@@ -169,7 +169,7 @@ line_reader::line_reader(const std::string& fpath)
   , m_eof(false)
 {
   if (!m_file) {
-    throw io_error("line_reader::open: failed to open file", errno);
+    throw io_error("could not open file", errno);
   }
 
   refill_buffers();
@@ -265,7 +265,7 @@ line_reader::refill_raw_buffer()
     fread(m_raw_buffer->data(), 1, m_raw_buffer->size(), m_file);
 
   if (ferror(m_file)) {
-    throw io_error("line_reader::refill_buffer: error reading file", errno);
+    throw io_error("read error while filling buffer", errno);
   } else {
     // EOF set only once all data has been consumed
     m_eof = (nread == 0);
