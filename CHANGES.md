@@ -33,7 +33,12 @@
   based on a prefix. I.e. `--th` will no longer be accepted for `--threads`.
   With many changes to the CLI planned, this would risk unintended behavior.
 * Dropped undocumented support for '.' as equivalent to 'N' in FASTQ reads.
-* The `--combined-output` has been removed.
+* The `--combined-output` option has been removed.
+* Defaulting to `--merge-conservatively` for a more conservative quality scoring
+  algorithm for merged bases, where `Q_match = max(Q_a, Q_b)` instead of
+  `Q_match ~= Q_a + Q_b`. Motivated in part by `doi:10.1186/s12859-018-2579-2`.
+  Recalculation of quality scores can be enabled using the (deprecated) option 
+  `--merge-recalculates-scores`.
 
 ### Other major changes
 * The term "merging" is now used consistently instead of "collapsing", including
@@ -49,9 +54,6 @@
 * AVX2 enabled alignment algorithm for a significant performance boost (YMMV).
 
 ### Breaking changes under consideration
-* Defaulting to `--merge-conservatively` for a more conservative quality scoring
-  algorithm for merged bases, where `Q_match = max(Q_a, Q_b)` instead of
-  `Q_match ~= Q_a + Q_b`. Motivated in part by `doi:10.1186/s12859-018-2579-2`
 * Changes to default output, e.g. not writing discarded reads by default.
 * Enabling (more stringent) trimming of low-quality bases by default
 * Enabling filtering of short reads by default

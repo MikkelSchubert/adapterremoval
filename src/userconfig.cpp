@@ -568,14 +568,6 @@ userconfig::userconfig(const std::string& name,
           "in single-end mode")
     .deprecated_alias("--collapse")
     .bind_bool(&merge);
-  argparser.add("--merge-conservatively")
-    .help("Enables a more conservative merging algorithm inspired by "
-          "fastq-join, in which the higher quality score is picked for "
-          "matching bases and the max score minus the min score is picked for "
-          "mismatching bases. For more details, see the documentation. Setting "
-          "this option also sets --merge")
-    .deprecated_alias("--collapse-conservatively")
-    .bind_bool(&merge_conservatively);
   argparser.add("--minalignmentlength", "N")
     .help("If --merge is set, paired reads must overlap at least this "
           "number of bases to be merged, and single-ended reads must "
@@ -665,8 +657,15 @@ userconfig::userconfig(const std::string& name,
     .with_default(-1.0);
   argparser.add("--trimns").deprecated().bind_bool(&trim_ambiguous_bases);
   argparser.add("--trimqualities").deprecated().bind_bool(&trim_by_quality);
-  argparser.add("--collapse-deterministic").deprecated();
   argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
+
+  argparser.add("--collapse-deterministic").deprecated();
+  argparser.add("--collapse-conservatively")
+    .conflicts_with("--merge-recalculates-scores")
+    .deprecated();
+  argparser.add("--merge-recalculates-scores")
+    .conflicts_with("--collapse-conservatively")
+    .deprecated();
 }
 
 argparse::parse_result
@@ -761,10 +760,14 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
-    // --collapse-deterministic implies --merge
+
+    // merge related options implies --merge
     merge |= argparser.is_set("--collapse-deterministic");
-    // --merge-conservatively implies --merge
-    merge |= merge_conservatively;
+    merge |= argparser.is_set("--collapse-conservatively");
+    merge |= argparser.is_set("--merge-recalculates-scores");
+
+    // Default to merging conservatively
+    merge_conservatively = !argparser.is_set("--merge-recalculates-scores");
   } else {
     merge = false;
     merge_conservatively = false;
