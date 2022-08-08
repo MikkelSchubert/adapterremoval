@@ -770,6 +770,23 @@ def collect_tests(root):
     return tests
 
 
+def collect_unused_files(root, tests):
+    observed_files = set()
+    for dirname, _, filenames in os.walk(root):
+        if dirname != root:
+            for filename in filenames:
+                observed_files.add(os.path.join(dirname, filename))
+
+    recorded_files = set()
+    for test in tests:
+        recorded_files.add(test.path)
+        dirname = os.path.dirname(test.path)
+        for it in test.files:
+            recorded_files.add(os.path.join(dirname, it.name))
+
+    return observed_files - recorded_files
+
+
 def run_test(runner: TestRunner):
     try:
         runner.run()
@@ -835,6 +852,14 @@ def main(argv):
     tests = collect_tests(args.source_dir)
     tests.sort(key=lambda it: it.path)
     print("  {:,} tests found".format(len(tests)))
+
+    unused_files = collect_unused_files(args.source_dir, tests)
+    if unused_files:
+        print_err("Found {} unused files:".format(len(unused_files)))
+        for idx, filepath in enumerate(unused_files, start=1):
+            print("  {}. {}".format(idx, shlex.quote(filepath)))
+
+        return 1
 
     os.makedirs(args.work_dir, exist_ok=True)
     args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
