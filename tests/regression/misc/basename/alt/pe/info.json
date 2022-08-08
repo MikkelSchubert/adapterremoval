@@ -1,4 +1,5 @@
 {
+  "exhaustive": true,
   "arguments": ["--collapse", "--trimns", "--basename", "alternative"],
   "files": {
     "input_1": ["input_1.fastq"],

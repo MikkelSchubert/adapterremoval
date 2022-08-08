@@ -238,7 +238,7 @@ Default = namedtuple("Default", ("spec", "value"))
 _TEST_SPECIFICATION = {
     "arguments": [str],
     "skip": Default(bool, False),
-    "exhaustive": Default(bool, True),
+    "exhaustive": Default((bool, type(None)), None),
     "return_code": Default(int, 0),
     "stdout": Default([str], []),
     "stderr": Default([str], []),
@@ -438,9 +438,11 @@ class TestConfig(
 
 class TestMutator:
     @classmethod
-    def create_exhaustive_tests(cls, it: TestConfig):
-        assert isinstance(it, TestConfig)
-        if not (it.exhaustive and it.files):
+    def create_exhaustive_tests(cls, it, exhaustive):
+        if it.exhaustive is not None:
+            exhaustive = it.exhaustive
+
+        if not (exhaustive and it.files):
             yield it
             return
 
@@ -866,12 +868,7 @@ def main(argv):
 
     exhaustive_tests = []
     for template in tests:
-        if args.exhaustive:
-            test_variants = TestMutator.create_exhaustive_tests(template)
-        else:
-            test_variants = [template]
-
-        for test in test_variants:
+        for test in TestMutator.create_exhaustive_tests(template, args.exhaustive):
             exhaustive_tests.append(
                 TestRunner(
                     test=test,

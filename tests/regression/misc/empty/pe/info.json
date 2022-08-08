@@ -1,4 +1,5 @@
 {
+  "exhaustive": true,
   "arguments": [],
   "files": {
     "input_1": ["input_1.fastq"],

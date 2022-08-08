@@ -1,4 +1,5 @@
 {
+  "exhaustive": true,
   "arguments": ["--threads", "1"],
   "files": {
     "input_1": ["input_1.fastq"],
