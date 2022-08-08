@@ -775,9 +775,8 @@ def collect_tests(root):
 def collect_unused_files(root, tests):
     observed_files = set()
     for dirname, _, filenames in os.walk(root):
-        if dirname != root:
-            for filename in filenames:
-                observed_files.add(os.path.join(dirname, filename))
+        for filename in filenames:
+            observed_files.add(os.path.join(dirname, filename))
 
     recorded_files = set()
     for test in tests:
