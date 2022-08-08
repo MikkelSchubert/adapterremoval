@@ -107,6 +107,7 @@ def pretty_output(
     max_lines=float("inf"),
     padding=0,
 ):
+    lines = list(lines)
     prefix = " " * padding
     if len(lines) > max_lines:
         lines = lines[:max_lines]
