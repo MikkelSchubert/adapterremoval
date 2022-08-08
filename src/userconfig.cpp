@@ -1032,8 +1032,8 @@ userconfig::setup_adapter_sequences()
     if (!adapters.load_barcodes(barcode_list, paired_ended_mode)) {
       return false;
     } else if (adapters.adapter_count()) {
-      log::error() << "Read " << adapters.barcode_count()
-                   << " barcodes / barcode pairs from '" << barcode_list << "'";
+      log::info() << "Read " << adapters.barcode_count()
+                  << " sets of barcodes from " << shell_escape(barcode_list);
     } else {
       log::error() << "No barcodes sequences found in table!";
       return false;
