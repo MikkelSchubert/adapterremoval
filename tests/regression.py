@@ -102,6 +102,31 @@ def read_lines(filename):
     return io.StringIO(value.decode("utf-8")).readlines()
 
 
+def escape_whitespace(line):
+    out = []
+    whitespace = {
+        "\n": "\\n",
+        "\r": "\\r",
+        "\t": "\\t",
+        "\b": "\\b",
+        "\f": "\\f",
+        " ": " ",
+        "\\": "\\\\",
+    }
+
+    for char in line:
+        escaped = whitespace.get(char)
+        if escaped is None:
+            if char.isspace():
+                escaped = "\\{:o}".format(ord(char))
+            else:
+                escaped = char
+
+        out.append(escaped)
+
+    return "".join(out)
+
+
 def pretty_output(
     lines,
     max_lines=float("inf"),
@@ -115,7 +140,7 @@ def pretty_output(
 
     result = []
     for line in lines:
-        result.append("%s>  %s" % (prefix, line))
+        result.append("%s>  %s" % (prefix, escape_whitespace(line)))
 
     return "\n".join(result)
 
