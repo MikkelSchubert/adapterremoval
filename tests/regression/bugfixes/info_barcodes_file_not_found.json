@@ -1,0 +1,5 @@
+{
+  "arguments": ["--barcode-list", "not_found.txt", "--file1", "/dev/null"],
+  "return_code": 1,
+  "stderr": ["[ERROR] Error reading table", "could not open file"]
+}
