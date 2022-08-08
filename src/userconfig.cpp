@@ -833,6 +833,18 @@ userconfig::parse_args(int argc, char* argv[])
     // TODO: Log resulting error rate limit
   }
 
+  // Required since a missing filename part results in the creation of dot-files
+  if (out_basename.empty()) {
+    log::error() << "--basename must be a non-empty value.";
+
+    return argparse::parse_result::error;
+  } else if (out_basename.back() == '/') {
+    log::error() << "--basename must not be a directory: "
+                 << shell_escape(out_basename);
+
+    return argparse::parse_result::error;
+  }
+
   return argparse::parse_result::ok;
 }
 

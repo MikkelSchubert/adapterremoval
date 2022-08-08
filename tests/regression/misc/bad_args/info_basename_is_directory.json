@@ -1,0 +1,10 @@
+{
+  "exhaustive": false,
+  "arguments": ["--basename", "./foo/"],
+  "return_code": 1,
+  "stderr": ["[ERROR] --basename must not be a directory: ./foo/"],
+  "files": {
+    "input_1": ["input_1a.fastq"],
+    "input_2": ["input_2a.fastq"]
+  }
+}
