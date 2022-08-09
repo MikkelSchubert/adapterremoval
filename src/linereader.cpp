@@ -156,9 +156,9 @@ check_isal_return_code(const char* func, int returncode)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'line_reader'
 
-line_reader::line_reader(const std::string& fpath)
-  : m_filename(fpath)
-  , m_file(managed_writer::fopen(fpath, "rb"))
+line_reader::line_reader(FILE* handle)
+  : m_filename("<unnamed file>")
+  , m_file(handle)
   , m_gzip_stream(nullptr)
 #if defined(USE_LIBISAL)
   , m_gzip_header(nullptr)
@@ -177,6 +177,12 @@ line_reader::line_reader(const std::string& fpath)
   }
 
   refill_buffers();
+}
+
+line_reader::line_reader(const std::string& fpath)
+  : line_reader(managed_writer::fopen(fpath, "rb"))
+{
+  m_filename = fpath;
 }
 
 line_reader::~line_reader()

@@ -125,7 +125,9 @@ CORE_OBJS := \
 	$(OBJS_DIR)/fastq_enc.o \
 	$(OBJS_DIR)/fastq.o \
 	$(OBJS_DIR)/json.o \
+	$(OBJS_DIR)/linereader.o \
 	$(OBJS_DIR)/logging.o \
+	$(OBJS_DIR)/managed_writer.o \
 	$(OBJS_DIR)/strutils.o \
 	$(OBJS_DIR)/utilities.o
 
@@ -135,13 +137,11 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/demultiplexing.o \
 	$(OBJS_DIR)/fastq_io.o \
 	$(OBJS_DIR)/linereader_joined.o \
-	$(OBJS_DIR)/linereader.o \
 	$(OBJS_DIR)/main_adapter_id.o \
 	$(OBJS_DIR)/main_adapter_rm.o \
 	$(OBJS_DIR)/main_demultiplex.o \
 	$(OBJS_DIR)/main_fastq_ro.o \
 	$(OBJS_DIR)/main.o \
-	$(OBJS_DIR)/managed_writer.o \
 	$(OBJS_DIR)/reports_html.o \
 	$(OBJS_DIR)/reports_json.o \
 	$(OBJS_DIR)/reports_terminal.o \
@@ -159,10 +159,11 @@ TEST_OBJS := \
 	$(OBJS_DIR)/alignment_test.o \
 	$(OBJS_DIR)/argparse_test.o \
 	$(OBJS_DIR)/barcodes_test.o \
-	$(OBJS_DIR)/debug_test.o \
 	$(OBJS_DIR)/counts_test.o \
+	$(OBJS_DIR)/debug_test.o \
 	$(OBJS_DIR)/fastq_test.o \
 	$(OBJS_DIR)/json_test.o \
+	$(OBJS_DIR)/linereader_test.o \
 	$(OBJS_DIR)/logging_test.o \
 	$(OBJS_DIR)/main_test.o \
 	$(OBJS_DIR)/strutils_test.o \

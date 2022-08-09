@@ -90,6 +90,9 @@ public:
 class line_reader : public line_reader_base
 {
 public:
+  /** Creates a line handler from an existing handle */
+  line_reader(FILE* handle);
+
   /** Constructor; opens file and throws on errors. */
   line_reader(const std::string& fpath);
 
