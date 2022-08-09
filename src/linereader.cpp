@@ -29,7 +29,9 @@
 
 #include "debug.hpp"          // for AR_FAIL
 #include "linereader.hpp"     // header
+#include "logging.hpp"        // for log::warn
 #include "managed_writer.hpp" // for managed_writer
+#include "strutils.hpp"       // for shell_escape
 #include "threads.hpp"        // for print_locker
 
 namespace adapterremoval {
@@ -160,6 +162,8 @@ line_reader::line_reader(const std::string& fpath)
   , m_gzip_stream(nullptr)
 #if defined(USE_LIBISAL)
   , m_gzip_header(nullptr)
+#else
+  , m_gzip_state(Z_OK)
 #endif
   , m_buffer(nullptr)
   , m_buffer_ptr(nullptr)
@@ -346,9 +350,13 @@ line_reader::refill_buffers_gzip()
 
   if (m_gzip_stream->avail_in &&
       m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
-    isal_inflate_reset(m_gzip_stream.get());
-    // Handle headers in subsequent blocks
-    m_gzip_stream->crc_flag = ISAL_GZIP;
+    if (check_next_gzip_block()) {
+      isal_inflate_reset(m_gzip_stream.get());
+      // Handle headers in subsequent blocks
+      m_gzip_stream->crc_flag = ISAL_GZIP;
+    } else {
+      return;
+    }
   }
 
   check_isal_return_code(__func__, isal_inflate(m_gzip_stream.get()));
@@ -364,16 +372,22 @@ line_reader::refill_buffers_gzip()
 
   m_gzip_stream->avail_out = m_buffer->size();
   m_gzip_stream->next_out = reinterpret_cast<Bytef*>(m_buffer->data());
-  switch (inflate(m_gzip_stream.get(), Z_NO_FLUSH)) {
-    case Z_OK:
-    case Z_BUF_ERROR: /* input buffer empty or output buffer full */
-      break;
 
-    case Z_STREAM_END:
-      // Handle concatenated streams; causes unnecessary reset at EOF
+  if (m_gzip_state == Z_STREAM_END) {
+    if (check_next_gzip_block()) {
       if (inflateReset(m_gzip_stream.get()) != Z_OK) {
         THROW_GZIP_ERROR("failed to reset stream");
       }
+    } else {
+      return;
+    }
+  }
+
+  m_gzip_state = inflate(m_gzip_stream.get(), Z_NO_FLUSH);
+  switch (m_gzip_state) {
+    case Z_OK:
+    case Z_BUF_ERROR: /* input buffer empty or output buffer full */
+    case Z_STREAM_END:
       break;
 
     case Z_STREAM_ERROR:
@@ -386,6 +400,25 @@ line_reader::refill_buffers_gzip()
   m_buffer_ptr = m_buffer->data();
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
 #endif
+}
+
+bool
+line_reader::check_next_gzip_block()
+{
+  // This matches the behavior of zcat / gzip / igzip
+  if ((m_gzip_stream->avail_in > 0 && m_gzip_stream->next_in[0] != 0x1f) ||
+      (m_gzip_stream->avail_in > 1 && m_gzip_stream->next_in[1] != 0x8b)) {
+    log::warn() << "Ignoring trailing garbage at the end of "
+                << shell_escape(m_filename);
+
+    m_buffer_ptr = m_buffer->data();
+    m_buffer_end = m_buffer_ptr;
+    m_eof = true;
+
+    return false;
+  }
+
+  return true;
 }
 
 } // namespace adapterremoval

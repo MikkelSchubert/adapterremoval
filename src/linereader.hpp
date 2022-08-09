@@ -123,6 +123,8 @@ private:
 #else
   //! GZip stream pointer; used if input it detected to be gzip compressed.
   std::unique_ptr<z_stream> m_gzip_stream;
+  //! The last state returned by inflate
+  int m_gzip_state;
 #endif
 
   /** Returns true if the raw buffer contains gzip'd data. */
@@ -131,6 +133,8 @@ private:
   void initialize_buffers_gzip();
   /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
   void refill_buffers_gzip();
+  /** Checks if the next block is valid or trailing garbage to be skipped */
+  bool check_next_gzip_block();
 
   //! Pointer to buffer of decompressed data; may be equal to m_raw_buffer.
   std::shared_ptr<line_buffer> m_buffer;
