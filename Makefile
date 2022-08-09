@@ -228,7 +228,7 @@ $(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
 
 $(TEST_RUNNER): $(CORE_OBJS) $(TEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) ${LIBRARIES} $^ -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
 
 # Main object files 
 $(OBJS_DIR)/%.o: src/%.cpp
