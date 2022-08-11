@@ -31,7 +31,12 @@
 #include <zlib.h> // for gzFile
 
 #if defined(USE_LIBISAL)
-#include <isa-l/igzip_lib.h> // for inflate_state, etc.
+#include <isa-l.h> // for inflate_state, etc.
+
+// Required due to 2.30 fixing issues when reading concatenated gzip files
+static_assert((ISAL_MAJOR_VERSION > 2 ||
+               (ISAL_MAJOR_VERSION == 2 && ISAL_MINOR_VERSION >= 30)),
+              "isa-l v2.30+ required");
 #endif
 
 namespace adapterremoval {
