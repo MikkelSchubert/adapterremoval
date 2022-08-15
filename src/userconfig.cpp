@@ -525,15 +525,10 @@ userconfig::userconfig(const std::string& name,
           "trimming are discarded")
     .bind_uint(&max_ambiguous_bases)
     .with_default(1000);
-  argparser.add("--minquality", "N")
-    .help("Inclusive minimum; see --trimqualities for details")
-    .bind_uint(&low_quality_score)
-    .with_default(2);
   argparser.add("--preserve5p")
-    .help("If set, bases at the 5p will not be trimmed by --trimns, "
-          "--trimqualities, and --trimwindows. Merged reads will not be "
-          "quality trimmed when this option is enabled "
-          "[default: 5p bases are trimmed]")
+    .help("If set, bases at the 5p will not be trimmed by when performing "
+          "quality based trimming of reads. Merged reads will not be quality "
+          "trimmed when this option is enabled [default: 5p bases are trimmed]")
     .bind_bool(&preserve5p);
 
   argparser.add_separator();
@@ -650,8 +645,12 @@ userconfig::userconfig(const std::string& name,
     .with_default(-1.0);
   argparser.add("--trimns").deprecated().bind_bool(&trim_ambiguous_bases);
   argparser.add("--trimqualities").deprecated().bind_bool(&trim_by_quality);
-  argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
+  argparser.add("--minquality", "N")
+    .deprecated()
+    .bind_uint(&low_quality_score)
+    .with_default(2);
 
+  argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
   argparser.add("--collapse-deterministic").deprecated();
   argparser.add("--collapse-conservatively")
     .conflicts_with("--merge-recalculates-scores")
