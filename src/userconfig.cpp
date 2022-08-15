@@ -243,14 +243,16 @@ configure_log_progress(const std::string& progress)
 }
 
 fastq_encoding
-configure_encoding(const std::string& value, size_t quality_max)
+configure_encoding(const std::string& value)
 {
   if (value == "33") {
-    return fastq_encoding(quality_encoding::phred_33, quality_max);
+    return FASTQ_ENCODING_33;
   } else if (value == "64") {
-    return fastq_encoding(quality_encoding::phred_64, quality_max);
+    return FASTQ_ENCODING_64;
   } else if (value == "solexa") {
-    return fastq_encoding(quality_encoding::solexa, quality_max);
+    return FASTQ_ENCODING_SOLEXA;
+  } else if (value == "sam") {
+    return FASTQ_ENCODING_SAM;
   }
 
   AR_FAIL("unhandled qualitybase value");
@@ -357,17 +359,8 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--qualitybase", "N")
     .help("Quality base/offset used to encode Phred scores in input")
     .bind_str(&quality_input_base)
-    .with_choices({ "33", "64", "solexa" })
+    .with_choices({ "33", "64", "solexa", "sam" })
     .with_default("33");
-
-  argparser.add("--qualitymax", "N")
-    .help("Specifies the maximum Phred score expected in input files, and used "
-          "when writing output. ASCII encoded values are limited to the "
-          "characters '!' (ASCII = 33) to '~' (ASCII = 126), meaning that "
-          "possible scores are 0 - 93 with offset 33, and 0 - 62 for offset 64 "
-          "scores")
-    .bind_uint(&quality_max)
-    .with_default(MAX_PHRED_SCORE_DEFAULT);
   argparser.add("--mate-separator", "CHAR")
     .help("Character separating the mate number (1 or 2) from the read name in "
           "FASTQ records. Will be determined automatically if not specified")
@@ -663,9 +656,12 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--collapse-conservatively")
     .conflicts_with("--merge-recalculates-scores")
     .deprecated();
+
   argparser.add("--merge-recalculates-scores")
     .conflicts_with("--collapse-conservatively")
+    .depends_on("--qualitymax")
     .deprecated();
+  argparser.add("--qualitymax", "N").deprecated().bind_uint(&quality_max);
 }
 
 argparse::parse_result
@@ -690,7 +686,7 @@ userconfig::parse_args(int argc, char* argv[])
   configure_log_colors(log_color);
   configure_log_levels(log_level);
   log_progress = configure_log_progress(log_progress_sink);
-  io_encoding = configure_encoding(quality_input_base, quality_max);
+  io_encoding = configure_encoding(quality_input_base);
 
   if (argparser.is_set("--mate-separator")) {
     if (mate_separator_str.size() != 1) {
@@ -714,10 +710,10 @@ userconfig::parse_args(int argc, char* argv[])
     run_type = ar_command::report_only;
   }
 
-  if (low_quality_score > static_cast<unsigned>(MAX_PHRED_SCORE)) {
+  if (low_quality_score > static_cast<unsigned>(PHRED_SCORE_MAX)) {
     log::error() << "Invalid value for --minquality: " << low_quality_score
                  << "\n"
-                 << "   must be in the range 0 .. " << MAX_PHRED_SCORE;
+                 << "   must be in the range 0 .. " << PHRED_SCORE_MAX;
     return argparse::parse_result::error;
   } else if (trim_window_length >= 0) {
     trim_by_quality = true;

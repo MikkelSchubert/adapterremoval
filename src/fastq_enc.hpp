@@ -30,33 +30,24 @@
 
 namespace adapterremoval {
 
-//! Offset used by Phred+33 and SAM encodings
-const int PHRED_OFFSET_33 = '!';
-//! Offset used by Phred+64 and Solexa encodings
-const int PHRED_OFFSET_64 = '@';
-
-//! Minimum Phred score allowed; encodes to '!'
-const int MIN_PHRED_SCORE = 0;
-//! Maximum Phred score allowed by default, to ensure backwards compatibility
-//! with AdapterRemoval v1.x.
-const int MAX_PHRED_SCORE_DEFAULT = 41;
-//! Maximum Phred score allowed, as this encodes to the last printable
-//! character '~', when using an offset of 33.
-const int MAX_PHRED_SCORE = '~' - '!';
-
-//! Minimum Solexa score allowed; encodes to ';' with an offset of 64
-const int MIN_SOLEXA_SCORE = -5;
-//! Maximum Solexa score allowed; encodes to 'h' with an offset of 64
-const int MAX_SOLEXA_SCORE = 40;
+//! Offset used by Phred scores in SAM files
+const int PHRED_OFFSET_MIN = '!';
+//! The maximum ASCII value allowed for encoded Phred scores in SAM files
+const int PHRED_OFFSET_MAX = '~';
+//! Minimum Phred score allowed for SAM files; encodes to '!'
+const int PHRED_SCORE_MIN = 0;
+//! Maximum Phred score allowed for SAM files; encodes to '~'
+const int PHRED_SCORE_MAX = PHRED_OFFSET_MAX - PHRED_OFFSET_MIN;
 
 //! Default character used to separate mate number
 const char MATE_SEPARATOR = '/';
 
 enum class quality_encoding
 {
-  solexa = -1,
-  phred_33 = 33,
-  phred_64 = 64,
+  phred_33,
+  phred_64,
+  solexa,
+  sam,
 };
 
 /** Exception raised for FASTQ parsing and validation errors. */
@@ -84,29 +75,23 @@ public:
    * quality-scores up to a given value (0 - N). Input with higher scores
    * is rejected, and output is truncated to this score.
    */
-  fastq_encoding(quality_encoding encoding, char max_score);
+  fastq_encoding(quality_encoding encoding);
 
-  /** Appends Phred+33 encoded qualities to dst. */
-  static void encode(const std::string& qualities, std::string& dst);
   /** Decodes a string of ASCII values in-place. */
   void decode(std::string& qualities) const;
 
 protected:
   //! Quality score encoding expected when decoding data
   quality_encoding m_encoding;
-  //! Offset used by the given encoding
-  char m_offset;
-  //! Maximum allowed score; used for checking input / truncating output
-  char m_max_score;
+  //! Offset of the lowest ASCII value used by the given encoding
+  char m_offset_min;
+  //! Offset of the maximum ASCII value used by the given encoding
+  char m_offset_max;
 };
 
-static const fastq_encoding FASTQ_ENCODING_33(quality_encoding::phred_33,
-                                              MAX_PHRED_SCORE_DEFAULT);
-static const fastq_encoding FASTQ_ENCODING_64(quality_encoding::phred_64,
-                                              MAX_PHRED_SCORE_DEFAULT);
-static const fastq_encoding FASTQ_ENCODING_SAM(quality_encoding::phred_33,
-                                               MAX_PHRED_SCORE);
-static const fastq_encoding FASTQ_ENCODING_SOLEXA(quality_encoding::solexa,
-                                                  MAX_SOLEXA_SCORE);
+static const fastq_encoding FASTQ_ENCODING_33(quality_encoding::phred_33);
+static const fastq_encoding FASTQ_ENCODING_64(quality_encoding::phred_64);
+static const fastq_encoding FASTQ_ENCODING_SAM(quality_encoding::sam);
+static const fastq_encoding FASTQ_ENCODING_SOLEXA(quality_encoding::solexa);
 
 } // namespace adapterremoval

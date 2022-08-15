@@ -1,5 +1,10 @@
 {
-  "arguments": ["--collapse", "--merge-recalculates-scores"],
+  "arguments": [
+    "--collapse",
+    "--merge-recalculates-scores",
+    "--qualitymax",
+    "41"
+  ],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],

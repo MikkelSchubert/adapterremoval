@@ -45,7 +45,7 @@ std::vector<double>
 init_phred_to_p_values()
 {
   std::vector<double> result;
-  for (size_t i = 0; i <= MAX_PHRED_SCORE; ++i) {
+  for (size_t i = PHRED_SCORE_MIN; i <= PHRED_SCORE_MAX; ++i) {
     result.push_back(std::pow(10.0, i / -10.0));
   }
 
@@ -192,7 +192,7 @@ fastq::trim_trailing_bases(const bool trim_ns,
                            char low_quality,
                            const bool preserve5p)
 {
-  low_quality += PHRED_OFFSET_33;
+  low_quality += PHRED_OFFSET_MIN;
   auto is_quality_base = [&](size_t i) {
     return m_qualities.at(i) > low_quality &&
            (!trim_ns || m_sequence.at(i) != 'N');
@@ -247,7 +247,7 @@ fastq::trim_windowed_bases(const bool trim_ns,
     return ntrimmed();
   }
 
-  low_quality += PHRED_OFFSET_33;
+  low_quality += PHRED_OFFSET_MIN;
   auto is_quality_base = [&](size_t i) {
     return m_qualities.at(i) > low_quality &&
            (!trim_ns || m_sequence.at(i) != 'N');
@@ -309,7 +309,7 @@ fastq::mott_trimming(const double error_limit, const bool preserve5p)
   double error_sum_max = 0.0;
 
   for (size_t i = 0; i < length(); i++) {
-    char phred = m_qualities.at(i) - PHRED_OFFSET_33;
+    char phred = m_qualities.at(i) - PHRED_OFFSET_MIN;
 
     // Reduce weighting of very low-quality bases (inspired by seqtk) and
     // normalize Ns. The latter is not expected to matter for most data, but may
@@ -419,7 +419,7 @@ fastq::into_string(std::string& dst) const
   dst.push_back('\n');
   dst.append(m_sequence);
   dst.append("\n+\n", 3);
-  fastq_encoding::encode(m_qualities, dst);
+  dst.append(m_qualities);
   dst.push_back('\n');
 }
 
@@ -459,7 +459,8 @@ fastq::p_to_phred_33(double p)
   // Lowest possible error rate representable is '~' (~5e-10)
   const auto min_p = std::max(5e-10, p);
   const auto raw_score = static_cast<int>(-10.0 * std::log10(min_p));
-  return std::min<int>('~', raw_score + PHRED_OFFSET_33);
+
+  return std::min<int>(PHRED_OFFSET_MAX, PHRED_OFFSET_MIN + raw_score);
 }
 
 char

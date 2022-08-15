@@ -22,14 +22,28 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <stdexcept>
-
 #include "commontypes.hpp"
 #include "debug.hpp"
 #include "fastq.hpp"
 #include "linereader.hpp"
 #include "testing.hpp"
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+
+namespace Catch {
+template<>
+struct StringMaker<adapterremoval::fastq::ntrimmed>
+{
+  static std::string convert(adapterremoval::fastq::ntrimmed const& value)
+  {
+    std::stringstream ss;
+    ss << "ntrimmed{" << value.first << ", " << value.second << "}";
+    return ss.str();
+  }
+};
+} // namespace Catch
 
 namespace adapterremoval {
 
@@ -173,8 +187,8 @@ TEST_CASE("constructor_score_boundries_phred_33", "[fastq::fastq]")
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_33),
                     fastq_error);
 
-  REQUIRE_NOTHROW(fastq("Rec", "CAT", "IJJ", FASTQ_ENCODING_33));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "IJK", FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_NOTHROW(fastq("Rec", "CAT", "IJN", FASTQ_ENCODING_33));
+  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "IJO", FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("constructor_score_boundries_phred_64", "[fastq::fastq]")
@@ -182,8 +196,9 @@ TEST_CASE("constructor_score_boundries_phred_64", "[fastq::fastq]")
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "@@A", FASTQ_ENCODING_64));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", "?@A", FASTQ_ENCODING_64), fastq_error);
 
-  REQUIRE_NOTHROW(fastq("Rec", "CAT", "ghi", FASTQ_ENCODING_64));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "ghj", FASTQ_ENCODING_64), fastq_error);
+  REQUIRE_NOTHROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_64));
+  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_64),
+                    fastq_error);
 }
 
 TEST_CASE("constructor_score_boundries_solexa", "[fastq::fastq]")
@@ -194,6 +209,17 @@ TEST_CASE("constructor_score_boundries_solexa", "[fastq::fastq]")
 
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "fgh", FASTQ_ENCODING_SOLEXA));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", "fgi", FASTQ_ENCODING_SOLEXA),
+                    fastq_error);
+}
+
+TEST_CASE("constructor_score_boundries_phred_sam", "[fastq::fastq]")
+{
+  REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
+  REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
+                    fastq_error);
+
+  REQUIRE_NOTHROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_SAM));
+  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM),
                     fastq_error);
 }
 

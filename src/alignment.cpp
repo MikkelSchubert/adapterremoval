@@ -276,9 +276,9 @@ get_updated_phred_scores(char qual_1, char qual_2)
 {
   AR_REQUIRE(qual_1 >= qual_2);
 
-  const size_t phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_33);
-  const size_t phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_33);
-  const size_t index = (phred_1 * (MAX_PHRED_SCORE + 1)) + phred_2;
+  const size_t phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
+  const size_t phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
+  const size_t index = (phred_1 * (PHRED_SCORE_MAX + 1)) + phred_2;
 
   AR_REQUIRE(index < PHRED_TABLE_SIZE);
 
@@ -445,7 +445,7 @@ strip_mate_info(std::string& header, const char mate_sep)
 sequence_merger::sequence_merger()
   : m_mate_sep(MATE_SEPARATOR)
   , m_conservative(false)
-  , m_max_score(MAX_PHRED_SCORE + '!')
+  , m_max_score(PHRED_OFFSET_MAX)
 {
 }
 
@@ -519,14 +519,14 @@ sequence_merger::original_merge(char& nt_1,
     // If one of the bases are N, then we suppose that we just have (at
     // most) a single read at that site and choose that.
     if (nt_1 == 'N' && nt_2 == 'N') {
-      qual_1 = PHRED_OFFSET_33;
+      qual_1 = PHRED_OFFSET_MIN;
     } else if (nt_1 == 'N') {
       nt_1 = nt_2;
       qual_1 = qual_2;
     }
   } else if (nt_1 != nt_2 && qual_1 == qual_2) {
     nt_1 = 'N';
-    qual_1 = PHRED_OFFSET_33;
+    qual_1 = PHRED_OFFSET_MIN;
   } else {
     // Ensure that nt_1 / qual_1 always contains the preferred nt / score
     // This is an assumption of the g_updated_phred_scores cache.
@@ -552,7 +552,7 @@ sequence_merger::conservative_merge(char& nt_1,
 
   if (nt_2 == 'N' || nt_1 == 'N') {
     if (nt_1 == 'N' && nt_2 == 'N') {
-      qual_1 = PHRED_OFFSET_33;
+      qual_1 = PHRED_OFFSET_MIN;
     } else if (nt_1 == 'N') {
       nt_1 = nt_2;
       qual_1 = qual_2;
@@ -562,13 +562,13 @@ sequence_merger::conservative_merge(char& nt_1,
   } else {
     if (qual_1 < qual_2) {
       nt_1 = nt_2;
-      qual_1 = qual_2 - qual_1 + PHRED_OFFSET_33;
+      qual_1 = qual_2 - qual_1 + PHRED_OFFSET_MIN;
     } else if (qual_1 > qual_2) {
-      qual_1 = qual_1 - qual_2 + PHRED_OFFSET_33;
+      qual_1 = qual_1 - qual_2 + PHRED_OFFSET_MIN;
     } else {
       // No way to reasonably pick a base
       nt_1 = 'N';
-      qual_1 = PHRED_OFFSET_33;
+      qual_1 = PHRED_OFFSET_MIN;
     }
   }
 }

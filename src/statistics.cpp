@@ -212,7 +212,7 @@ fastq_statistics::fastq_statistics(double sample_rate)
   , m_number_of_output_reads()
   , m_number_of_sampled_reads()
   , m_length_dist()
-  , m_quality_dist(MAX_PHRED_SCORE + 1)
+  , m_quality_dist(PHRED_SCORE_MAX + 1)
   , m_gc_content_dist(101)
   , m_nucleotide_pos()
   , m_quality_pos()
@@ -251,7 +251,7 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       nucls.inc(nuc);
       m_nucleotide_pos.inc(nuc, i);
 
-      const auto quality = qualities.at(i) - PHRED_OFFSET_33;
+      const auto quality = qualities.at(i) - PHRED_OFFSET_MIN;
       m_quality_pos.inc(nuc, i, quality);
       m_quality_dist.inc(quality);
     }
