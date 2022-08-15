@@ -43,7 +43,7 @@ typedef fastq_table::const_iterator fastq_table_citer;
 bool
 print_parse_error(const std::ostringstream& message)
 {
-  log::error() << "Error reading table:\n" << cli_formatter::fmt(message.str());
+  log::error() << "Error reading table:\n" << indent_lines(message.str());
 
   return false;
 }

@@ -523,7 +523,7 @@ write_json_report(const userconfig& config,
     output << std::endl;
   } catch (const std::ios_base::failure& error) {
     log::error() << "Error writing JSON report to '" << filename << "':\n"
-                 << cli_formatter::fmt(error.what());
+                 << indent_lines(error.what());
     return false;
   }
 

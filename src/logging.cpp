@@ -21,13 +21,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <chrono>   // for system_clock
-#include <iomanip>  // for put_time
-#include <iostream> // for cerr, cout, endl
-#include <mutex>    // for mutex, unique_lock
+#include <chrono>      // for system_clock
+#include <iomanip>     // for put_time
+#include <iostream>    // for cerr, cout, endl
+#include <mutex>       // for mutex, unique_lock
+#include <sys/ioctl.h> // for ioctl
+#include <unistd.h>    // for STDERR_FILENO
+#include <vector>      // for vector
 
-#include "debug.hpp"   // for AR_FAIL
-#include "logging.hpp" // declarations
+#include "debug.hpp"    // for AR_FAIL
+#include "logging.hpp"  // declarations
+#include "strutils.hpp" // for cli_formatter
 
 namespace adapterremoval {
 
@@ -133,6 +137,65 @@ log_header(level l, bool colors = false)
   return prefixss.str();
 }
 
+size_t
+log_linewidth()
+{
+  // Piped logs are not pretty-printed, to make analyses easier
+  if (g_log_out == &std::cerr) {
+    struct winsize params;
+    // Atempt to retrieve the number of columns in the terminal
+    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
+      return std::min<size_t>(120, std::max<size_t>(60, params.ws_col));
+    }
+  }
+
+  return static_cast<size_t>(-1);
+}
+
+std::vector<std::string>
+log_split_lines(const std::string& msg)
+{
+  std::vector<std::string> lines;
+
+  size_t start = 0;
+  size_t end = std::string::npos;
+  do {
+    end = msg.find('\n', start);
+
+    lines.push_back(msg.substr(start, end - start));
+
+    start = end + 1;
+  } while (end != std::string::npos);
+
+  return lines;
+}
+
+std::vector<std::string>
+log_linebreak(const std::string& head, const std::string& line)
+{
+  const auto indent = line.find_first_not_of(' ');
+  if (indent == std::string::npos) {
+    return { head };
+  }
+
+  cli_formatter fmt;
+  fmt.set_indent(indent);
+  fmt.set_ljust(2);
+
+  // Acount for unprinted color codes:
+  // Size of color ("\033[0;XXm" = 7) + reset ("\033[0m" = 4)
+  const int color_width = g_log_colors ? 11 : 0;
+
+  fmt.set_column_width(log_linewidth() - indent - (head.size() - color_width));
+
+  std::vector<std::string> lines;
+  for (auto fragment : log_split_lines(fmt.format(line))) {
+    lines.push_back(head + fragment);
+  }
+
+  return lines;
+}
+
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -194,14 +257,11 @@ log_stream::~log_stream()
       msg.pop_back();
     }
 
-    size_t start = 0;
-    size_t end = std::string::npos;
-    do {
-      end = msg.find('\n', start);
-
-      *g_log_out << head << msg.substr(start, end - start) << "\n";
-      start = end + 1;
-    } while (end != std::string::npos);
+    for (const auto& long_line : log_split_lines(msg)) {
+      for (const auto& line : log_linebreak(head, long_line)) {
+        *g_log_out << line << "\n";
+      }
+    }
 
     g_log_out->flush();
   }

@@ -194,8 +194,7 @@ scheduler::run(int nthreads)
       threads.emplace_back(run_wrapper, this);
     }
   } catch (const std::system_error& error) {
-    log::error() << "Failed to create threads:\n"
-                 << cli_formatter::fmt(error.what());
+    log::error() << "Failed to create threads:\n" << indent_lines(error.what());
 
     set_errors_occured();
   }
@@ -251,7 +250,7 @@ scheduler::run_wrapper(scheduler* sch)
     log::debug() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
     log::error() << "Unhandled exception in thread:\n"
-                 << cli_formatter::fmt(error.what());
+                 << indent_lines(error.what());
   } catch (...) {
     log::error() << "Unhandled, non-standard exception in thread";
   }

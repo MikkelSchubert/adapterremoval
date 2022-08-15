@@ -174,7 +174,7 @@ read_record(joined_line_readers& reader,
   } catch (const fastq_error& error) {
     log::error() << "Error reading FASTQ record from '" << reader.filename()
                  << "' at line " << reader.linenumber() << "; aborting:\n"
-                 << cli_formatter::fmt(error.what());
+                 << indent_lines(error.what());
 
     throw thread_abort();
   }

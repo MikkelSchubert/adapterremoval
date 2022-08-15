@@ -743,7 +743,7 @@ write_html_report(const userconfig& config,
     html_body_end().write(output);
   } catch (const std::ios_base::failure& error) {
     log::error() << "Error writing JSON report to '" << filename << "':\n"
-                 << cli_formatter::fmt(error.what());
+                 << indent_lines(error.what());
     return false;
   }
 
