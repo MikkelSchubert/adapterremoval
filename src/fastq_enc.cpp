@@ -24,6 +24,7 @@
 \*************************************************************************/
 #include "fastq_enc.hpp" // header
 #include "debug.hpp"     // for AR_FAIL, AR_REQUIRE
+#include "strutils.hpp"  // for shell_escape
 #include <algorithm>     // for min, max
 #include <array>         // for array
 #include <cmath>         // for log10, pow, round
@@ -106,18 +107,26 @@ const auto g_solexa_to_phred33 = calc_solexa_to_phred33();
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/** Returns the quality score in a form that is human readable */
+std::string
+escape_raw_score(char raw)
+{
+  return shell_escape(std::string(1, raw));
+}
+
 [[noreturn]] void
 throw_invalid_phred_33(const char raw)
 {
   const int score = raw - PHRED_33_OFFSET_MIN;
   const int alt_score = raw - PHRED_64_OFFSET_MIN;
   const int max_score = PHRED_33_SCORE_MAX;
-  const char raw_max = PHRED_33_OFFSET_MAX;
+  const auto esc = escape_raw_score(raw);
+  const auto esc_max = escape_raw_score(PHRED_33_OFFSET_MAX);
 
   std::ostringstream ss;
   ss << "Found Phred+33 encoded quality score of " << score << " (encoded as "
-     << raw << "), which is greater than the expected maximum score of "
-     << max_score << " (encoded as " << raw_max << "). This suggests that "
+     << esc << "), which is greater than the expected maximum score of "
+     << max_score << " (encoded as " << esc_max << "). This suggests that "
      << "input may be Phred+64 encoded.\n\n"
 
      << "If the quality scores are actually Phred+64 encoded, which would "
@@ -142,12 +151,13 @@ throw_invalid_phred_64(const char raw)
   const int score = raw - PHRED_64_OFFSET_MIN;
   const int alt_score = raw - PHRED_33_OFFSET_MIN;
   const int min_score = PHRED_64_SCORE_MIN;
-  const char raw_min = PHRED_64_OFFSET_MIN;
+  const auto esc = escape_raw_score(raw);
+  const auto esc_min = escape_raw_score(PHRED_64_OFFSET_MIN);
 
   std::ostringstream ss;
   ss << "Found Phred+64 encoded quality score of " << score << " (encoded as "
-     << raw << "), which is less than the expected minimum score of "
-     << min_score << " (encoded as " << raw_min << "). This suggests that "
+     << esc << "), which is less than the expected minimum score of "
+     << min_score << " (encoded as " << esc_min << "). This suggests that "
      << "input may be Phred+33 encoded.\n\n"
 
      << "If the quality scores are actually Phred+33 encoded, which would "
@@ -155,7 +165,7 @@ throw_invalid_phred_64(const char raw)
      << ", then omit the '--qualitybase' command-line option or use "
      << "'--qualitybase 33' to explicitly set the format.\n\n";
 
-  if (raw >= SOLEXA_OFFSET_MIN) {
+  if (score >= SOLEXA_SCORE_MIN) {
     ss << "The quality score could also be the older Solexa format, which has "
        << "a minimum score of -5, but data of this type is rare. If it is "
        << "actually Solexa encoded FASTQ data, then use the '--qualitybase "
@@ -173,13 +183,15 @@ throw_invalid_solexa(const char raw)
   const int score = raw - SOLEXA_OFFSET_MIN;
   const int alt_score = raw - PHRED_33_OFFSET_MIN;
   const int min_score = SOLEXA_SCORE_MIN;
-  const char raw_min = SOLEXA_OFFSET_MIN;
+  const auto esc = escape_raw_score(raw);
+  const auto esc_min = escape_raw_score(SOLEXA_OFFSET_MIN + SOLEXA_SCORE_MIN);
+  const auto esc_max = escape_raw_score(SOLEXA_OFFSET_MAX);
 
   std::ostringstream ss;
   if (score < SOLEXA_SCORE_MIN) {
     ss << "Found Solexa encoded quality score of " << score << " (encoded as "
-       << raw << "), which is less than the expected minimum score of "
-       << min_score << " (encoded as " << raw_min << "). This suggests that "
+       << esc << "), which is less than the expected minimum score of "
+       << min_score << " (encoded as " << esc_min << "). This suggests that "
        << "input may be Phred+33 encoded.\n\n"
 
        << "If the quality scores are actually Phred+33 encoded, which would "
@@ -189,9 +201,9 @@ throw_invalid_solexa(const char raw)
 
        << "See the documentation for more information.";
   } else if (raw > SOLEXA_OFFSET_MAX) {
-    ss << "Found Solexa encoded quality score of " << score << " (" << raw
-       << "), which is greater than the expected maximum score of "
-       << SOLEXA_SCORE_MAX << " (" << SOLEXA_OFFSET_MAX << ").\n\n"
+    ss << "Found Solexa encoded quality score of " << score << " (encoded as "
+       << esc << "), which is greater than the expected maximum score of "
+       << SOLEXA_SCORE_MAX << " (encoded as " << esc_max << ").\n\n"
 
        << "See the documentation for more information.";
   } else {
@@ -208,10 +220,10 @@ throw_invalid_score(const quality_encoding encoding, const char raw_score)
     std::ostringstream ss;
 
     ss << "Found raw FASTQ quality score of " << static_cast<int>(raw_score)
-       << ". This is outside of the range of valid ASCII encoded quality "
-       << "scores (" << PHRED_OFFSET_MIN << " to " << PHRED_OFFSET_MAX << "), "
-       << "meaning that the Input file is either corrupt or not in FASTQ "
-          "format!";
+       << " (" << escape_raw_score(raw_score) << "). This is outside of the "
+       << "range of valid ASCII encoded quality scores (" << PHRED_OFFSET_MIN
+       << " to " << PHRED_OFFSET_MAX << "), meaning that the input file is "
+       << "either corrupt or not in FASTQ format!";
 
     throw fastq_error(ss.str());
   }

@@ -201,6 +201,14 @@ TEST_CASE("constructor_score_boundries_phred_64", "[fastq::fastq]")
                     fastq_error);
 }
 
+TEST_CASE("constructor_score_boundries_phred_64 suggests solexa")
+{
+  REQUIRE_THROWS_WITH(fastq("Rec", "A", ":", FASTQ_ENCODING_64),
+                      !Catch::Contains("Solexa format"));
+  REQUIRE_THROWS_WITH(fastq("Rec", "A", ";", FASTQ_ENCODING_64),
+                      Catch::Contains("Solexa format"));
+}
+
 TEST_CASE("constructor_score_boundries_solexa", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", ";;<", FASTQ_ENCODING_SOLEXA));
