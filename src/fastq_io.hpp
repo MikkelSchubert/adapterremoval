@@ -133,10 +133,15 @@ public:
 
 private:
   /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
-  void read_single_end(read_chunk_ptr& chunk);
+  bool read_single_end(fastq_vec& reads_1);
   /** Fills a chunk with PE reads; stops on EOF or after `head` reads. */
-  void read_paired_end(read_chunk_ptr& chunk);
+  bool read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2);
+  /** Attempt to identify the mate separator for the provided reads */
+  char identify_mate_separators(const fastq_vec& reads_1,
+                                const fastq_vec& reads_2) const;
 
+  //! Encoding used to parse FASTQ reads.
+  const fastq_encoding m_encoding;
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_io_input_1_base;
   //! The underlying file reader for mate 2 read (if not interleaved)
@@ -148,6 +153,8 @@ private:
   //! The analytical step following this step
   const size_t m_next_step;
 
+  //! Character used to join read-names with mate numbers, e.g. '/'
+  char m_mate_separator;
   //! True if input is single-end
   bool m_single_end;
   //! Used to track whether an EOF block has been received.
@@ -158,23 +165,23 @@ private:
 
   //! Number of reads to process
   unsigned m_head;
+  //! Indicates whether a head value has been specified
+  bool m_head_set;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;
 };
 
 /**
- * Class responsible for validating FASTQ records and collecting statistics.
- * This is split into a separate step to minimize the amount of time that IO
- * is blocked by the FASTQ reading step.
+ * Class responsible for collecting statistics on input FASTQ. This is split
+ * into a separate step to minimize the amount of time that IO is blocked by the
+ * FASTQ reading step.
  */
 class post_process_fastq : public analytical_step
 {
 public:
   /** Constructor. */
-  post_process_fastq(const userconfig& config,
-                     size_t next_step,
-                     statistics* stats = nullptr);
+  post_process_fastq(size_t next_step, statistics& stats);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -191,10 +198,6 @@ private:
   void process_single_end(fastq_vec& reads_1);
   void process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2);
 
-  //! Encoding used to parse FASTQ reads.
-  const fastq_encoding m_encoding;
-  //! Character used to join read-names with mate numbers, e.g. '/'
-  char m_mate_separator;
   //! Statistics collected from raw mate 1 reads
   fastq_stats_ptr m_statistics_1;
   //! Statistics collected from raw mate 2 reads

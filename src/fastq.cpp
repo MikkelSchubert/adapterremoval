@@ -361,7 +361,7 @@ fastq::reverse_complement()
 }
 
 bool
-fastq::read_unsafe(line_reader_base& reader)
+fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {
   std::string line;
   do {
@@ -394,16 +394,6 @@ fastq::read_unsafe(line_reader_base& reader)
     throw fastq_error("no qualities");
   } else if (m_qualities.length() != m_sequence.length()) {
     throw fastq_error("sequence/quality lengths do not match");
-  }
-
-  return true;
-}
-
-bool
-fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
-{
-  if (!read_unsafe(reader)) {
-    return false;
   }
 
   post_process(encoding);
@@ -491,9 +481,10 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
 
       if (mate_1 != read_mate::unknown || mate_2 != read_mate::unknown) {
         if (mate_1 == mate_2) {
-          // This could be valid data that just happens to include a known mate
-          // separator in the name. But this could also happen if the same reads
-          // are used for both mate 1 and mate 2, so we cannot safely guess.
+          // This could be valid data that just happens to include a known
+          // mate separator in the name. But this could also happen if the
+          // same reads are used for both mate 1 and mate 2, so we cannot
+          // safely guess.
           return 0;
         } else if (mate_1 != read_mate::mate_1 || mate_2 != read_mate::mate_2) {
           // The mate separator seems to be correct, but the mate information

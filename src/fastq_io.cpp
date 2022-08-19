@@ -158,17 +158,20 @@ fastq_output_chunk::~fastq_output_chunk() {}
 
 bool
 read_record(joined_line_readers& reader,
-            fastq_vec* chunk,
-            fastq& record,
-            size_t& n_nucleotides)
+            fastq_vec& chunk,
+            size_t& n_nucleotides,
+            const fastq_encoding& encoding)
 {
   try {
-    if (record.read_unsafe(reader)) {
-      chunk->push_back(record);
+    chunk.emplace_back();
+    auto& record = chunk.back();
+
+    if (record.read(reader, encoding)) {
       n_nucleotides += record.length();
 
       return true;
     } else {
+      chunk.pop_back();
       return false;
     }
   } catch (const fastq_error& error) {
@@ -182,15 +185,18 @@ read_record(joined_line_readers& reader,
 
 read_fastq::read_fastq(const userconfig& config, size_t next_step)
   : analytical_step(processing_order::ordered_io, "read_fastq")
+  , m_encoding(config.io_encoding)
   , m_io_input_1_base(config.input_files_1)
   , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
   , m_io_input_2(&m_io_input_2_base)
   , m_next_step(next_step)
+  , m_mate_separator(config.mate_separator)
   , m_single_end(false)
   , m_eof(false)
   , m_timer(config.log_progress)
   , m_head(config.head)
+  , m_head_set(m_head != std::numeric_limits<decltype(m_head)>::max())
   , m_lock()
 {
   if (config.interleaved_input) {
@@ -216,12 +222,15 @@ read_fastq::process(chunk_ptr chunk)
 
   auto file_chunk = std::make_unique<fastq_read_chunk>();
   if (m_single_end) {
-    read_single_end(file_chunk);
+    m_eof = !read_single_end(file_chunk->reads_1);
   } else {
-    read_paired_end(file_chunk);
+    m_eof = !read_paired_end(file_chunk->reads_1, file_chunk->reads_2);
   }
 
-  m_eof |= !m_head;
+  if (!m_head_set) {
+    m_head = std::numeric_limits<decltype(m_head)>::max();
+  }
+
   file_chunk->eof = m_eof;
 
   m_timer.increment(file_chunk->reads_1.size() + file_chunk->reads_2.size());
@@ -232,51 +241,73 @@ read_fastq::process(chunk_ptr chunk)
   return chunks;
 }
 
-void
-read_fastq::read_single_end(read_chunk_ptr& chunk)
+bool
+read_fastq::read_single_end(fastq_vec& reads_1)
 {
-  fastq record;
+  bool eof = false;
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof) {
-    m_eof = !read_record(*m_io_input_1, &chunk->reads_1, record, n_nucleotides);
-
-    if (m_head != std::numeric_limits<unsigned>::max()) {
-      m_head--;
-    }
+  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head-- && !eof) {
+    eof = !read_record(*m_io_input_1, reads_1, n_nucleotides, m_encoding);
   }
+
+  return !eof && (m_head || !m_head_set);
 }
 
-void
-read_fastq::read_paired_end(read_chunk_ptr& chunk)
+bool
+read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
 {
-  auto reads_1 = &chunk->reads_1;
-  auto reads_2 = &chunk->reads_2;
+  bool eof_1 = false;
+  bool eof_2 = false;
 
-  fastq record;
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof) {
-    m_eof = !read_record(*m_io_input_1, reads_1, record, n_nucleotides);
-
-    bool eof_2 = !read_record(*m_io_input_2, reads_2, record, n_nucleotides);
-
-    if (m_eof && !eof_2) {
-      log::error() << "More mate 2 reads than mate 1 reads found in '"
-                   << m_io_input_1->filename() << "'; file may be truncated. "
-                   << "Please fix before continuing.";
-
-      throw thread_abort();
-    } else if (eof_2 && !m_eof) {
-      log::error() << "More mate 1 reads than mate 2 reads found in '"
-                   << m_io_input_2->filename() << "'; file may be truncated. "
-                   << "Please fix before continuing.";
-
-      throw thread_abort();
-    }
-
-    if (m_head != std::numeric_limits<unsigned>::max()) {
-      m_head--;
-    }
+  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head-- && !eof_1 && !eof_2) {
+    eof_1 = !read_record(*m_io_input_1, reads_1, n_nucleotides, m_encoding);
+    eof_2 = !read_record(*m_io_input_2, reads_2, n_nucleotides, m_encoding);
   }
+
+  if (eof_1 && !eof_2) {
+    log::error() << "More mate 2 reads than mate 1 reads found in '"
+                 << m_io_input_1->filename() << "'; file may be truncated. "
+                 << "Please fix before continuing.";
+
+    throw thread_abort();
+  } else if (eof_2 && !eof_1) {
+    log::error() << "More mate 1 reads than mate 2 reads found in '"
+                 << m_io_input_2->filename() << "'; file may be truncated. "
+                 << "Please fix before continuing.";
+
+    throw thread_abort();
+  }
+
+  if (!m_mate_separator) {
+    m_mate_separator = identify_mate_separators(reads_1, reads_2);
+  }
+
+  auto it_1 = reads_1.begin();
+  auto it_2 = reads_2.begin();
+  while (it_1 != reads_1.end()) {
+    fastq::normalize_paired_reads(*it_1++, *it_2++, m_mate_separator);
+  }
+
+  return !eof_1 && !eof_2 && (m_head || !m_head_set);
+}
+
+char
+read_fastq::identify_mate_separators(const fastq_vec& reads_1,
+                                     const fastq_vec& reads_2) const
+{
+  AR_REQUIRE(reads_1.size() == reads_2.size());
+
+  // Attempt to determine the mate separator character
+  char mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
+
+  if (!mate_separator) {
+    // Fall back to the default so that a human-readable error will be thrown
+    // during normalization below.
+    mate_separator = MATE_SEPARATOR;
+  }
+
+  return mate_separator;
 }
 
 void
@@ -291,14 +322,10 @@ read_fastq::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
-post_process_fastq::post_process_fastq(const userconfig& config,
-                                       size_t next_step,
-                                       statistics* stats)
+post_process_fastq::post_process_fastq(size_t next_step, statistics& stats)
   : analytical_step(processing_order::ordered, "post_process_fastq")
-  , m_encoding(config.io_encoding)
-  , m_mate_separator(config.mate_separator)
-  , m_statistics_1(stats ? stats->input_1 : nullptr)
-  , m_statistics_2(stats ? stats->input_2 : nullptr)
+  , m_statistics_1(stats.input_1)
+  , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
   , m_eof(false)
   , m_lock()
@@ -334,11 +361,7 @@ void
 post_process_fastq::process_single_end(fastq_vec& reads_1)
 {
   for (auto& read : reads_1) {
-    read.post_process(m_encoding);
-
-    if (m_statistics_1) {
-      m_statistics_1->process(read);
-    }
+    m_statistics_1->process(read);
   }
 }
 
@@ -347,30 +370,12 @@ post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
 {
   AR_REQUIRE(reads_1.size() == reads_2.size());
 
-  if (!m_mate_separator) {
-    // Attempt to determine the mate separator character
-    m_mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
-
-    if (!m_mate_separator) {
-      // Fall back to the default so that a human-readable error will be thrown
-      // during normalization below.
-      m_mate_separator = MATE_SEPARATOR;
-    }
+  for (const auto& read_1 : reads_1) {
+    m_statistics_1->process(read_1);
   }
 
-  auto it_1 = reads_1.begin();
-  auto it_2 = reads_2.begin();
-  while (it_1 != reads_1.end()) {
-    fastq& read_1 = *it_1++;
-    fastq& read_2 = *it_2++;
-
-    // Throws if read-names or mate numbering does not match
-    fastq::normalize_paired_reads(read_1, read_2, m_mate_separator);
-
-    if (m_statistics_1) {
-      m_statistics_1->process(read_1);
-      m_statistics_2->process(read_2);
-    }
+  for (const auto& read_2 : reads_2) {
+    m_statistics_2->process(read_2);
   }
 }
 

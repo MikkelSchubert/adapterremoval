@@ -422,14 +422,11 @@ identify_adapter_sequences(const userconfig& config)
 {
   scheduler sch;
 
-  // Step 3: Attempt to identify adapters through pair-wise alignments
+  // Step 2: Attempt to identify adapters through pair-wise alignments
   const size_t id_step = sch.add<adapter_identification>(config);
 
-  // Step 2: Post-process and validate FASTQ reads
-  const size_t postproc_step = sch.add<post_process_fastq>(config, id_step);
-
   // Step 1: Read input file(s)
-  sch.add<read_fastq>(config, postproc_step);
+  sch.add<read_fastq>(config, id_step);
 
   return !sch.run(config.max_threads);
 }

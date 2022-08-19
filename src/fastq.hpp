@@ -159,21 +159,6 @@ public:
             const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
   /**
-   * Reads a FASTQ record from a list of lines (without newlines).
-   *
-   * This is equivalent to `read` except that only minimal validation is
-   * performed. `post_process` *must* be called before using bases or quality
-   * scores.
-   */
-  bool read_unsafe(line_reader_base& reader);
-
-  /**
-   * Finalizes read, validates sequence and transforms qualities. This function
-   * *must* be called for all reads produced by calling `read_unsafe`.
-   */
-  void post_process(const fastq_encoding& encoding);
-
-  /**
    * Converts a FASTQ record to a string ending with a newline.
    *
    * Only the phred_33 and phred_64 encodings are supported. For phred_64,
@@ -210,6 +195,12 @@ public:
                                      char mate_separator = MATE_SEPARATOR);
 
 private:
+  /**
+   * Finalizes read, validates sequence and transforms qualities. This function
+   * *must* be called for all reads produced by calling `read_unsafe`.
+   */
+  void post_process(const fastq_encoding& encoding);
+
   /**
    * Converting lower-case nucleotides to uppercase.
    *
