@@ -106,6 +106,8 @@ TEST_CASE("line_reader throws on missing file")
 ////////////////////////////////////////////////////////////////////////////////
 // Newlines (LF and CRLF)
 
+#ifdef USE_LIBDEFLATE
+
 TEST_CASE("temporary_gzip_file returns gzipped file")
 {
   FILE* handle = temporary_gzip_file({ "foo" });
@@ -117,6 +119,8 @@ TEST_CASE("temporary_gzip_file returns gzipped file")
   REQUIRE(buffer.at(0) == '\x1f');
   REQUIRE(buffer.at(1) == '\x8b');
 }
+
+#endif
 
 TEST_CASE("line_reader on empty file returns no lines")
 {
