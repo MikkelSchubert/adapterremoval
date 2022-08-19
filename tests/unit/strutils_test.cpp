@@ -281,6 +281,12 @@ TEST_CASE("shell_escape escapes multiple values")
   REQUIRE(shell_escape("bob's file.txt") == "'bob\\'s file.txt'");
 }
 
+TEST_CASE("shell_escape escapes unprintable values")
+{
+  REQUIRE(shell_escape("\1") == "'\\x1'");
+  REQUIRE(shell_escape("\x7f") == "'\\x7f'");
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for 'shell_escape_command'
 

@@ -355,9 +355,15 @@ shell_escape(const std::string& s)
   for (const auto c : s) {
     if (c == '\'') {
       out.push_back('\\');
-    }
+      out.push_back(c);
+    } else if (!std::isprint(c)) {
+      std::ostringstream ss;
+      ss << "\\x" << std::hex << static_cast<int>(c);
 
-    out.push_back(c);
+      out.append(ss.str());
+    } else {
+      out.push_back(c);
+    }
   }
 
   out.push_back('\'');
