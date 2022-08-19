@@ -21,40 +21,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "alignment.hpp"  // for supports_sse2, supports_avx2
 #include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log
 #include "main.hpp"       // for NAME, VERSION
 #include "userconfig.hpp" // for userconfig
 
 namespace adapterremoval {
-
-namespace {
-
-__attribute__((target("sse2"))) bool
-supports_sse2()
-{
-  return true;
-}
-
-__attribute__((target("default"))) bool
-supports_sse2()
-{
-  return false;
-}
-
-__attribute__((target("avx2"))) bool
-supports_avx2()
-{
-  return true;
-}
-
-__attribute__((target("default"))) bool
-supports_avx2()
-{
-  return false;
-}
-
-} // namespace
 
 void
 print_terminal_preamble(const userconfig& config)

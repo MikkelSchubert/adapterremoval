@@ -117,6 +117,8 @@ endif
 
 # Build objects shared between unit tests and executable
 CORE_OBJS := \
+	$(OBJS_DIR)/alignment_avx2.o \
+	$(OBJS_DIR)/alignment_sse2.o \
 	$(OBJS_DIR)/alignment_tables.o \
 	$(OBJS_DIR)/alignment.o \
 	$(OBJS_DIR)/argparse.o \
@@ -236,6 +238,13 @@ $(OBJS_DIR)/%.o: src/%.cpp
 	$(QUIET) $(MKDIR) $(OBJS_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
+
+# Objects built with support for specific CPU instructions
+$(OBJS_DIR)/alignment_avx2.o $(OBJS_DIR)/alignment_sse2.o : $(OBJS_DIR)/alignment_%.o: src/alignment_%.cpp
+	@echo $(COLOR_CYAN)"Building $@ from $< (-m$*)"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(OBJS_DIR)
+	$(QUIET) $(CXX) $(CXXFLAGS) -m$* -pthread -c -o $@ $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -m$* -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
 
 # Unit test object files
 $(OBJS_DIR)/%.o: tests/unit/%.cpp

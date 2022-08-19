@@ -30,6 +30,14 @@
 
 namespace adapterremoval {
 
+/** Returns true if the current CPU supports SSE2 instructions */
+bool
+supports_sse2();
+
+/** Returns true if the current CPU supports AVX2 instructions */
+bool
+supports_avx2();
+
 /**
  * Summarizes an alignment.
  *
