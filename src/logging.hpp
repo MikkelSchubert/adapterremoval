@@ -43,7 +43,7 @@ enum class level
   // should always be followed by the program terminating.
   error,
   // Non-log messages; this is for raw text written to stderr
-  stderr,
+  cerr,
   // Disables log messages when used with log::set_level; not usable or messages
   none
 };
@@ -138,7 +138,7 @@ private:
 inline log_stream
 cerr()
 {
-  return log_stream(level::stderr);
+  return log_stream(level::cerr);
 }
 
 /** Logs a debug-level message; only output when verbose logging is enabled */

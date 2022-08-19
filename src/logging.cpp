@@ -243,7 +243,7 @@ log_stream::~log_stream()
     g_log_transient = false;
   }
 
-  if (m_level == level::stderr) {
+  if (m_level == level::cerr) {
     *g_log_out << m_stream.str();
     g_log_out->flush();
     g_log_transient = m_transient;
@@ -270,7 +270,7 @@ log_stream::~log_stream()
 log_stream&
 log_stream::transient()
 {
-  AR_REQUIRE(m_level == level::stderr);
+  AR_REQUIRE(m_level == level::cerr);
   m_transient = true;
 
   return *this;
