@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "version": "...",
+    "command": "...[str]",
+    "runtime": "...float"
+  },
+  "summary": "...",
+  "input": {
+    "read1": {
+      "filenames": ["input_1.fastq"],
+      "input_reads": 1,
+      "output_reads": 1,
+      "reads_sampled": 1,
+      "lengths": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      "quality_curves": {
+        "a": [null, 35.000, null, 11.000, null, null, 25.000, 24.000, 6.000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 23.000, null, null, null, 19.000, null, 33.000, null, null, null, 10.000, null, 34.000, null, 18.000, null, 4.000, null],
+        "c": [null, null, null, null, null, null, null, null, null, null, 10.000, null, 26.000, null, null, null, 12.000, 3.000, null, null, null, null, null, null, null, null, null, null, null, null, 28.000, null, null, 39.000, null, null, null, null, null, null, null, null, null, null, null, null],
+        "g": [1.000, null, null, null, null, 16.000, null, null, null, null, null, 36.000, null, null, null, 29.000, null, null, null, null, null, 37.000, 8.000, 14.000, null, 38.000, null, null, null, 2.000, null, 17.000, null, null, null, null, null, null, null, null, null, null, null, 32.000, null, 21.000],
+        "t": [null, null, null, null, null, null, null, null, null, 1.000, null, null, null, null, 15.000, null, null, null, null, null, null, null, null, null, null, null, null, 2.000, null, null, null, null, null, null, null, 13.000, 5.000, 27.000, null, null, null, 20.000, null, null, null, null],
+        "mean": [1.000, 35.000, 4.000, 11.000, 9.000, 16.000, 25.000, 24.000, 6.000, 1.000, 10.000, 36.000, 26.000, 22.000, 15.000, 29.000, 12.000, 3.000, 5.000, 40.000, 3.000, 37.000, 8.000, 14.000, 31.000, 38.000, 30.000, 2.000, 23.000, 2.000, 28.000, 17.000, 19.000, 39.000, 33.000, 13.000, 5.000, 27.000, 10.000, 7.000, 34.000, 20.000, 18.000, 32.000, 4.000, 21.000]
+      },
+      "content_curves": "...",
+      "quality_scores": [0, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      "gc_content": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "duplication": null
+    },
+    "read2": {
+      "filenames": ["input_2.fastq"],
+      "input_reads": 1,
+      "output_reads": 1,
+      "reads_sampled": 1,
+      "lengths": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      "quality_curves": {
+        "a": [null, null, 5.000, 13.000, null, null, 16.000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 32.000, null, 19.000, null, null, null, null, null, null, 9.000, 38.000, null, null, null, null, null, null, 1.000, null, null, 18.000],
+        "c": [26.000, null, null, null, null, 4.000, null, null, null, null, null, null, 3.000, null, null, 37.000, 4.000, null, null, null, null, null, null, null, null, null, null, null, null, null, 11.000, 20.000, null, null, null, null, null, null, null, null, null, 15.000, null, null, null, null],
+        "g": [null, null, null, null, null, null, null, 5.000, null, null, 25.000, 2.000, null, null, 17.000, null, null, null, null, null, 29.000, null, null, null, null, null, null, null, null, null, null, null, 1.000, null, null, null, null, null, 21.000, null, 6.000, null, null, 39.000, null, null],
+        "t": [null, null, null, null, 7.000, null, null, null, 14.000, null, null, null, null, null, null, null, null, null, null, 3.000, null, null, 10.000, null, 12.000, null, 27.000, null, null, 30.000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+        "mean": [26.000, 2.000, 5.000, 13.000, 7.000, 4.000, 16.000, 5.000, 14.000, 31.000, 25.000, 2.000, 3.000, 28.000, 17.000, 37.000, 4.000, 40.000, 35.000, 3.000, 29.000, 34.000, 10.000, 33.000, 12.000, 32.000, 27.000, 19.000, 36.000, 30.000, 11.000, 20.000, 1.000, 10.000, 9.000, 38.000, 8.000, 24.000, 21.000, 22.000, 6.000, 15.000, 1.000, 39.000, 23.000, 18.000]
+      },
+      "content_curves": "...",
+      "quality_scores": [0, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      "gc_content": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "duplication": null
+    }
+  },
+  "demultiplexing": null,
+  "output": null
+}

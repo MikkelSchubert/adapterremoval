@@ -1,0 +1,11 @@
+{
+  "arguments": ["--report-only", "--qualitybase", "sam"],
+  "return_code": 1,
+  "stderr": [
+    "Found raw FASTQ quality score of 32 (' '). This is outside of the range of valid ASCII encoded quality scores (33 to 126), meaning that the input file is either corrupt or not in FASTQ format!"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_low.fastq"]
+  }
+}

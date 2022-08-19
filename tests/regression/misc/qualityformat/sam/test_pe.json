@@ -1,0 +1,9 @@
+{
+  "arguments": ["--report-only", "--out-json", "report_pe.json", "--qualitybase", "sam"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "json": ["report_pe.json"],
+    "html": ["your_output.html"]
+  }
+}

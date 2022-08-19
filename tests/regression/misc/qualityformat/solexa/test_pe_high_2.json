@@ -1,0 +1,11 @@
+{
+  "arguments": ["--report-only", "--qualitybase", "solexa"],
+  "return_code": 1,
+  "stderr": [
+    "Found Solexa encoded quality score of 41 (encoded as i), which is greater than the expected maximum score of 40 (encoded as h)."
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_high.fastq"]
+  }
+}
