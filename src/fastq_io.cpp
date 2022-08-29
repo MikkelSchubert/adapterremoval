@@ -246,8 +246,9 @@ read_fastq::read_single_end(fastq_vec& reads_1)
 {
   bool eof = false;
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head-- && !eof) {
+  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !eof) {
     eof = !read_record(*m_io_input_1, reads_1, n_nucleotides, m_encoding);
+    m_head--;
   }
 
   return !eof && (m_head || !m_head_set);
@@ -260,9 +261,10 @@ read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
   bool eof_2 = false;
 
   size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head-- && !eof_1 && !eof_2) {
+  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !eof_1 && !eof_2) {
     eof_1 = !read_record(*m_io_input_1, reads_1, n_nucleotides, m_encoding);
     eof_2 = !read_record(*m_io_input_2, reads_2, n_nucleotides, m_encoding);
+    m_head--;
   }
 
   if (eof_1 && !eof_2) {

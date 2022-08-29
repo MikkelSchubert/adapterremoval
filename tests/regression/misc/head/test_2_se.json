@@ -1,0 +1,8 @@
+{
+  "arguments": ["--report-only", "--out-json", "head_2_se.json", "--head", "2"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "json": ["head_2_se.json"],
+    "html": ["your_output.html"]
+  }
+}

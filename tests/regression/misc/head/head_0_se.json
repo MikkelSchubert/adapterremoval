@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float"
+  },
+  "summary": {
+    "input": {
+      "reads": 0,
+      "bases": 0,
+      "mean_length": null,
+      "reads_sampled": 0,
+      "q20_rate": null,
+      "q30_rate": null,
+      "uncalled_rate": null,
+      "gc_content": null
+    },
+    "demultiplexing": null,
+    "trimming_and_filtering": null,
+    "output": null
+  },
+  "input": {
+    "read1": {
+      "filenames": ["input_1.fastq"],
+      "input_reads": 0,
+      "output_reads": 0,
+      "reads_sampled": 0,
+      "lengths": [],
+      "quality_curves": null,
+      "content_curves": null,
+      "quality_scores": null,
+      "gc_content": null,
+      "duplication": null
+    },
+    "read2": null
+  },
+  "demultiplexing": null,
+  "output": null
+}

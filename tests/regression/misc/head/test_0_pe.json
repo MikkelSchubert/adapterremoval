@@ -1,0 +1,9 @@
+{
+  "arguments": ["--report-only", "--out-json", "head_0_pe.json", "--head", "0"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "json": ["head_0_pe.json"],
+    "html": ["your_output.html"]
+  }
+}
