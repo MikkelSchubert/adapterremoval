@@ -1,9 +1,9 @@
 name: build
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build-and-test:
@@ -13,39 +13,47 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-22.04
             cxx: g++
             coverage: "yes"
-          - os: ubuntu-18.04
+          - os: ubuntu-22.04
             cxx: clang++
             coverage: "no"
           - os: macos-11
             cxx: clang++
             coverage: "no"
+      # Do not auto-cancel other runners if one fails
+      fail-fast: false
     env:
       CXX: ${{ matrix.cxx }}
       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+      - uses: actions/checkout@v3
 
-    - name: dependencies
-      if: ${{ matrix.os == 'ubuntu-18.04' }}
-      run: sudo apt-get install zlib1g-dev
+      - name: dependencies
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev
+      - name: dependencies
+        if: ${{ matrix.os == 'macos-11' }}
+        run: brew install isa-l libdeflate
 
-    - name: make test
-      run: make test LIBISAL=no LIBDEFLATE=no VERBOSE=yes COVERAGE=${{ matrix.coverage }}
-    - name: make regression
-      run: make regression LIBISAL=no LIBDEFLATE=no VERBOSE=yes COVERAGE=${{ matrix.coverage }}
+      - name: make test
+        run: make test VERBOSE=yes COVERAGE=${{ matrix.coverage }}
+      - name: make regression
+        run: make regression VERBOSE=yes COVERAGE=${{ matrix.coverage }}
 
-    - name: setup coveralls
-      if: ${{ matrix.coverage == 'yes' }}
-      run: |
-        python3 -m pip install cpp-coveralls
-        coveralls --exclude tests --gcov-options '\-lpbc'
+      # Coverage statistics
+      - if: ${{ matrix.coverage == 'yes' }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
-    - name: examples
-      run: PATH=$PATH:$PWD/build/ make -C examples
+      - name: setup coveralls
+        if: ${{ matrix.coverage == 'yes' }}
+        run: |
+          python3 -m pip install cpp-coveralls
+          coveralls --exclude tests --gcov-options '\-lpbc'
+
+      - name: examples
+        run: PATH=$PATH:$PWD/build/ make -C examples
