@@ -236,22 +236,19 @@ $(TEST_RUNNER): $(CORE_OBJS) $(TEST_OBJS)
 $(OBJS_DIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(OBJS_DIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -MMD -MQ $@ -MF $(@:.o=.d) -o $@ $<
 
 # Objects built with support for specific CPU instructions
 $(OBJS_DIR)/alignment_avx2.o $(OBJS_DIR)/alignment_sse2.o : $(OBJS_DIR)/alignment_%.o: src/alignment_%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $< (-m$*)"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(OBJS_DIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) -m$* -pthread -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) -m$* -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -MMD -MQ $@ -MF $(@:.o=.d) -o $@ $< -m$*
 
 # Unit test object files
 $(OBJS_DIR)/%.o: tests/unit/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(OBJS_DIR)
-	$(QUIET) $(CXX) $(CXXFLAGS) -Isrc -pthread -c -o $@ $<
-	$(QUIET) $(CXX) $(CXXFLAGS) -Isrc -pthread -w -MM -MT $@ -MF $(@:.o=.d) $<
+	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -MMD -MQ $@ -MF $(@:.o=.d) -o $@ $< -Isrc
 
 
 ###############################################################################
