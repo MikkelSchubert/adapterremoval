@@ -88,8 +88,8 @@ managed_writer::write_buffers(const buffer_vec& buffers, bool flush)
     managed_writer::open_writer(this);
 
     for (auto& buf : buffers) {
-      if (buf.first) {
-        m_stream.write(reinterpret_cast<char*>(buf.second.get()), buf.first);
+      if (buf.size()) {
+        m_stream.write(buf.get_signed(), buf.size());
       }
     }
 

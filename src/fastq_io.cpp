@@ -423,24 +423,21 @@ gzip_fastq::process(chunk_ptr chunk)
     return chunk_vec();
   }
 
-  buffer_pair output_buffer;
-
   m_stream.avail_in = file_chunk.reads.size();
   m_stream.next_in = reinterpret_cast<unsigned char*>(
     const_cast<char*>(file_chunk.reads.data()));
 
   int returncode = -1;
   do {
-    output_buffer.first = OUTPUT_BLOCK_SIZE;
-    output_buffer.second.reset(new unsigned char[OUTPUT_BLOCK_SIZE]);
+    buffer output_buffer(OUTPUT_BLOCK_SIZE);
 
-    m_stream.avail_out = output_buffer.first;
-    m_stream.next_out = output_buffer.second.get();
+    m_stream.avail_out = output_buffer.size();
+    m_stream.next_out = output_buffer.get();
 
     returncode = checked_deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
 
-    output_buffer.first = OUTPUT_BLOCK_SIZE - m_stream.avail_out;
-    if (output_buffer.first) {
+    output_buffer.resize(output_buffer.size() - m_stream.avail_out);
+    if (output_buffer.size()) {
       file_chunk.buffers.push_back(std::move(output_buffer));
     }
   } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
@@ -461,7 +458,7 @@ gzip_fastq::process(chunk_ptr chunk)
 split_fastq::split_fastq(size_t next_step)
   : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
-  , m_buffer(new unsigned char[GZIP_BLOCK_SIZE])
+  , m_buffer(GZIP_BLOCK_SIZE)
   , m_offset()
   , m_eof(false)
   , m_lock()
@@ -472,9 +469,9 @@ void
 split_fastq::finalize()
 {
   AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(m_eof);
 
-  AR_REQUIRE(!m_buffer);
+  AR_REQUIRE(m_eof);
+  AR_REQUIRE(m_buffer.capacity() == 0);
 }
 
 chunk_vec
@@ -490,26 +487,28 @@ split_fastq::process(chunk_ptr chunk)
   const auto& src = file_chunk.reads;
   for (size_t src_offset = 0; src_offset < src.size();) {
     const auto n =
-      std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_offset);
+      std::min(src.size() - src_offset, m_buffer.size() - m_offset);
     std::memcpy(m_buffer.get() + m_offset, src.data() + src_offset, n);
 
     src_offset += n;
     m_offset += n;
 
-    if (m_offset == GZIP_BLOCK_SIZE) {
+    if (m_offset == m_buffer.size()) {
       auto block = std::make_unique<fastq_output_chunk>();
-      block->buffers.emplace_back(GZIP_BLOCK_SIZE, std::move(m_buffer));
+      block->buffers.emplace_back(std::move(m_buffer));
 
       chunks.emplace_back(m_next_step, std::move(block));
 
-      m_buffer.reset(new unsigned char[GZIP_BLOCK_SIZE]);
+      m_buffer = buffer(GZIP_BLOCK_SIZE);
       m_offset = 0;
     }
   }
 
   if (m_eof) {
+    m_buffer.resize(m_offset);
+
     auto block = std::make_unique<fastq_output_chunk>(true);
-    block->buffers.emplace_back(m_offset, std::move(m_buffer));
+    block->buffers.emplace_back(std::move(m_buffer));
     chunks.emplace_back(m_next_step, std::move(block));
 
     m_offset = 0;
@@ -525,7 +524,6 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
   : analytical_step(processing_order::unordered, "gzip_split_fastq")
   , m_config(config)
   , m_next_step(next_step)
-  , m_buffers()
 {
 }
 
@@ -535,23 +533,18 @@ gzip_split_fastq::process(chunk_ptr chunk)
   auto& input_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
   AR_REQUIRE(input_chunk.buffers.size() == 1);
 
-  buffer_pair& input_buffer = input_chunk.buffers.front();
-  buffer_pair output_buffer;
-
-  // Try to re-use a previous input-buffer
-  output_buffer.first = GZIP_BLOCK_SIZE;
-  output_buffer.second = m_buffers.try_acquire();
-  if (!output_buffer.second) {
-    output_buffer.second.reset(new unsigned char[GZIP_BLOCK_SIZE]);
-  }
+  // Enable re-use of the fastq_output_chunk
+  buffer& output_buffer = input_chunk.buffers.front();
+  buffer input_buffer(GZIP_BLOCK_SIZE);
+  std::swap(input_buffer, output_buffer);
 
 #ifdef USE_LIBDEFLATE
   auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
   auto compressed_size = libdeflate_gzip_compress(compressor,
-                                                  input_buffer.second.get(),
-                                                  input_buffer.first,
-                                                  output_buffer.second.get(),
-                                                  output_buffer.first);
+                                                  input_buffer.get(),
+                                                  input_buffer.size(),
+                                                  output_buffer.get(),
+                                                  output_buffer.size());
   libdeflate_free_compressor(compressor);
 
   // The easily compressible input should fit in a single output block
@@ -560,22 +553,19 @@ gzip_split_fastq::process(chunk_ptr chunk)
   z_stream stream;
   checked_deflate_init2(&stream, m_config.gzip_level);
 
-  stream.avail_in = input_buffer.first;
-  stream.next_in = input_buffer.second.get();
-  stream.avail_out = output_buffer.first;
-  stream.next_out = output_buffer.second.get();
+  stream.avail_in = input_buffer.size();
+  stream.next_in = input_buffer.get();
+  stream.avail_out = output_buffer.size();
+  stream.next_out = output_buffer.get();
   // The easily compressible input should fit in a single output block
   const int returncode = checked_deflate(&stream, Z_FINISH);
   AR_REQUIRE(stream.avail_out && returncode == Z_STREAM_END);
 
-  const auto compressed_size = GZIP_BLOCK_SIZE - stream.avail_out;
+  const auto compressed_size = output_buffer.size() - stream.avail_out;
   checked_deflate_end(&stream);
 #endif
 
-  // Re-use the input chunk and make its buffer available for re-use above
-  output_buffer.first = compressed_size;
-  std::swap(input_buffer, output_buffer);
-  m_buffers.release(output_buffer.second);
+  output_buffer.resize(compressed_size);
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));

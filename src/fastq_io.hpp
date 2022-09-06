@@ -32,7 +32,7 @@
 #include "commontypes.hpp"       // for fastq_vec, string_vec
 #include "fastq_enc.hpp"         // for fastq_encoding
 #include "linereader_joined.hpp" // for joined_line_readers
-#include "managed_writer.hpp"    // for buffer_ptr, buffer_vec, managed_writer
+#include "managed_writer.hpp"    // for managed_writer
 #include "progress.hpp"          // for progress_timer
 #include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
 #include "statistics.hpp"        // for fastq_stats_ptr, fastq_statistics, ...
@@ -265,7 +265,7 @@ private:
   //! The analytical step following this step
   const size_t m_next_step;
   //! Buffer used to store partial blocks
-  buffer_ptr m_buffer;
+  buffer m_buffer;
   //! Offset in current buffer
   size_t m_offset;
 
@@ -297,8 +297,6 @@ private:
   const userconfig& m_config;
   //! The analytical step following this step
   const size_t m_next_step;
-  //! Already allocated buffers usable for compressed output
-  threadstate<unsigned char[]> m_buffers;
 };
 
 /**

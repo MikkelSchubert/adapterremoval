@@ -31,11 +31,9 @@
 #include <utility>  // for pair
 #include <vector>   // for vector
 
-namespace adapterremoval {
+#include "buffer.hpp" // for buffer_vec
 
-typedef std::unique_ptr<unsigned char[]> buffer_ptr;
-typedef std::pair<size_t, buffer_ptr> buffer_pair;
-typedef std::vector<buffer_pair> buffer_vec;
+namespace adapterremoval {
 
 /**
  * Writer that manages open handles if open files exceeds ulimits.
