@@ -103,54 +103,56 @@ TEST_CASE("Mixed lines are partially indented", "[strutils::indent_lines]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'columnize_text'
+// Tests for 'wrap_text'
 
-TEST_CASE("Whitespace only is stripped", "[strutils::columnize_text]")
+using vec = std::vector<std::string>;
+
+TEST_CASE("Whitespace only is stripped", "[strutils::wrap_text]")
 {
-  REQUIRE(columnize_text("") == "");
-  REQUIRE(columnize_text(" ") == "");
-  REQUIRE(columnize_text("\n") == "");
-  REQUIRE(columnize_text("\n\n") == "");
-  REQUIRE(columnize_text("\n \n") == "");
-  REQUIRE(columnize_text("\n ") == "");
-  REQUIRE(columnize_text(" \n") == "");
-  REQUIRE(columnize_text(" \n ") == "");
+  REQUIRE(wrap_text("") == vec{});
+  REQUIRE(wrap_text(" ") == vec{});
+  REQUIRE(wrap_text("\n") == vec{});
+  REQUIRE(wrap_text("\n\n") == vec{});
+  REQUIRE(wrap_text("\n \n") == vec{});
+  REQUIRE(wrap_text("\n ") == vec{});
+  REQUIRE(wrap_text(" \n") == vec{});
+  REQUIRE(wrap_text(" \n ") == vec{});
 }
 
-TEST_CASE("Whitespace between words is stripped", "[strutils::columnize_text]")
+TEST_CASE("Whitespace between words is stripped", "[strutils::wrap_text]")
 {
-  REQUIRE(columnize_text("foo bar") == "foo bar");
-  REQUIRE(columnize_text("foo  bar") == "foo bar");
-  REQUIRE(columnize_text("foo\nbar") == "foo bar");
-  REQUIRE(columnize_text("foo\nbar\n") == "foo bar");
-  REQUIRE(columnize_text("\nfoo\nbar") == "foo bar");
-  REQUIRE(columnize_text("foo\nbar\n\n") == "foo bar");
-  REQUIRE(columnize_text("\nfoo\nbar\n") == "foo bar");
-  REQUIRE(columnize_text("\n \n foo \n bar \n") == "foo bar");
+  REQUIRE(wrap_text("foo bar") == vec{ "foo bar" });
+  REQUIRE(wrap_text("foo  bar") == vec{ "foo bar" });
+  REQUIRE(wrap_text("foo\nbar") == vec{ "foo bar" });
+  REQUIRE(wrap_text("foo\nbar\n") == vec{ "foo bar" });
+  REQUIRE(wrap_text("\nfoo\nbar") == vec{ "foo bar" });
+  REQUIRE(wrap_text("foo\nbar\n\n") == vec{ "foo bar" });
+  REQUIRE(wrap_text("\nfoo\nbar\n") == vec{ "foo bar" });
+  REQUIRE(wrap_text("\n \n foo \n bar \n") == vec{ "foo bar" });
 }
 
-TEST_CASE("Linebreaks are added by max width", "[strutils::columnize_text]")
+TEST_CASE("Linebreaks are added by max width", "[strutils::wrap_text]")
 {
-  REQUIRE(columnize_text("foo bar\nzood", 12) == "foo bar zood");
-  REQUIRE(columnize_text("foo bar\nzood", 11) == "foo bar\nzood");
-  REQUIRE(columnize_text("foo bar\nzood", 7) == "foo bar\nzood");
-  REQUIRE(columnize_text("foo bar\nzood", 6) == "foo\nbar\nzood");
-  REQUIRE(columnize_text("foo bar\nzood", 3) == "foo\nbar\nzood");
-  REQUIRE(columnize_text("foo bar\nzood", 1) == "foo\nbar\nzood");
-  REQUIRE(columnize_text("foo bar\nzood", 0) == "foo\nbar\nzood");
+  REQUIRE(wrap_text("foo bar\nzood", 12) == vec{ "foo bar zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 11) == vec{ "foo bar", "zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 7) == vec{ "foo bar", "zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 6) == vec{ "foo", "bar", "zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 3) == vec{ "foo", "bar", "zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 1) == vec{ "foo", "bar", "zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 0) == vec{ "foo", "bar", "zood" });
 }
 
-TEST_CASE("Subsequent lines are indented", "[strutils::columnize_text]")
+TEST_CASE("Subsequent lines are indented", "[strutils::wrap_text]")
 {
-  REQUIRE(columnize_text("foo bar\nzood", 12, 2) == "foo bar zood");
-  REQUIRE(columnize_text("foo bar\nzood", 11, 0) == "foo bar\nzood");
-  REQUIRE(columnize_text("foo bar\nzood", 11, 1) == "foo bar\n zood");
-  REQUIRE(columnize_text("foo bar\nzood", 11, 2) == "foo bar\n  zood");
-  REQUIRE(columnize_text("foo bar\nzood", 7, 2) == "foo bar\n  zood");
-  REQUIRE(columnize_text("foo bar\nzood", 6, 2) == "foo\n  bar\n  zood");
-  REQUIRE(columnize_text("foo bar\nzood", 3, 2) == "foo\n  bar\n  zood");
-  REQUIRE(columnize_text("foo bar\nzood", 1, 2) == "foo\n  bar\n  zood");
-  REQUIRE(columnize_text("foo bar\nzood", 0, 2) == "foo\n  bar\n  zood");
+  REQUIRE(wrap_text("foo bar\nzood", 12, 2) == vec{ "foo bar zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 11, 0) == vec{ "foo bar", "zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 11, 1) == vec{ "foo bar", " zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 11, 2) == vec{ "foo bar", "  zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 7, 2) == vec{ "foo bar", "  zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 6, 2) == vec{ "foo", "  bar", "  zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 3, 2) == vec{ "foo", "  bar", "  zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 1, 2) == vec{ "foo", "  bar", "  zood" });
+  REQUIRE(wrap_text("foo bar\nzood", 0, 2) == vec{ "foo", "  bar", "  zood" });
 }
 
 TEST_CASE("Proper numbers are converted", "[strutils::str_to_unsigned]")

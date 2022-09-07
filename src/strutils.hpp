@@ -82,18 +82,18 @@ template_replace(const std::string& haystack,
  * seperated by a single space, and the terminal line does not end with a
  * newline.
  */
-std::string
-columnize_text(const std::string& value,
-               size_t max_width = DEFAULT_MAX_COLUMNS,
-               size_t ljust = 0);
+std::vector<std::string>
+wrap_text(const std::string& value,
+          size_t max_width = DEFAULT_MAX_COLUMNS,
+          size_t ljust = 0);
 
 /**
- * Wrapper around 'indent_lines' and 'columnize_text'.
+ * Wrapper around 'indent_lines' and 'wrap_text'.
  *
- * Defaults to 78 character columns, with 4 character indentation, and
- * no ljust, corresponding to function defaults. Unlike simply combining
- * 'indent_lines' and 'columnize_text', the 'format' function preserves
- * newlines, allowing paragraphs to be printed easily.
+ * Defaults to 78 character columns, with 4 character indentation, and no ljust,
+ * corresponding to function defaults. Unlike simply combining 'indent_lines'
+ * and 'wrap_text', the 'format' function preserves newlines, allowing
+ * paragraphs to be printed easily.
  */
 class cli_formatter
 {

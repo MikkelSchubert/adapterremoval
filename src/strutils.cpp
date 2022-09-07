@@ -194,33 +194,34 @@ template_replace(const std::string& haystack,
   return result;
 }
 
-std::string
-columnize_text(const std::string& value, size_t max_width, size_t ljust)
+std::vector<std::string>
+wrap_text(const std::string& value, size_t max_width, size_t ljust)
 {
   size_t current_width = 0;
   size_t current_ljust = 0;
-  std::ostringstream lines_out;
   std::istringstream lines_in(value);
-  std::string substr;
+  std::vector<std::string> lines_out;
 
+  std::string substr;
   while (lines_in >> substr) {
     if (current_width) {
       if (current_ljust + current_width + 1 + substr.length() > max_width) {
         current_ljust = ljust;
-        lines_out << "\n"
-                  << std::left << std::setw(current_ljust) << "" << substr;
+        lines_out.emplace_back(current_ljust, ' ');
+        lines_out.back().append(substr);
         current_width = substr.length();
       } else {
-        lines_out << " " << substr;
+        lines_out.back().push_back(' ');
+        lines_out.back().append(substr);
         current_width += substr.length() + 1;
       }
     } else {
-      lines_out << substr;
+      lines_out.push_back(substr);
       current_width += substr.length();
     }
   }
 
-  return lines_out.str();
+  return lines_out;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -275,6 +276,7 @@ cli_formatter::format(const std::string& lines) const
 {
   std::string line;
   std::ostringstream lines_out;
+  const std::string indentation(m_indentation, ' ');
 
   size_t last_pos = 0;
   while (true) {
@@ -286,14 +288,15 @@ cli_formatter::format(const std::string& lines) const
     line = lines.substr(last_pos, end_pos);
 
     // Format into fixed width columns, indenting by ljust after first line
-    line = columnize_text(line, m_columns, m_ljust);
+    bool first_line = true;
+    for (const auto& fragment : wrap_text(line, m_columns, m_ljust)) {
+      if (!first_line) {
+        lines_out << '\n';
+      }
 
-    // Add fixed width indentation
-    if (m_indentation) {
-      line = indent_lines(line, m_indentation);
+      lines_out << indentation << fragment;
+      first_line = false;
     }
-
-    lines_out << line;
 
     if (next_pos == std::string::npos) {
       break;
