@@ -29,6 +29,8 @@
 
 namespace adapterremoval {
 
+using string_vec = std::vector<std::string>;
+
 const size_t DEFAULT_MAX_COLUMNS = 78;
 const size_t DEFAULT_INDENTATION = 4;
 
@@ -53,6 +55,10 @@ tolower(const std::string& str);
 /** Uppercases letters in the range a-z */
 std::string
 toupper(const std::string& str);
+
+/** Split text by newlines */
+string_vec
+split_lines(const std::string& text);
 
 /** Split text by newlines and add fixed indentation following newlines. */
 std::string
@@ -82,7 +88,7 @@ template_replace(const std::string& haystack,
  * seperated by a single space, and the terminal line does not end with a
  * newline.
  */
-std::vector<std::string>
+string_vec
 wrap_text(const std::string& value,
           size_t max_width = DEFAULT_MAX_COLUMNS,
           size_t ljust = 0);
@@ -113,15 +119,6 @@ public:
   /** Formats string using the current settings. */
   std::string format(const std::string& value) const;
 
-  /** Format string using default parameters. */
-  static std::string fmt(const std::string& value);
-
-  /**
-   * Format string using default parameters, but include prefix on first line
-   * and indent subsequent lines using the width of the prefix.
-   */
-  static std::string fmt(const std::string& prefix, const std::string& value);
-
 private:
   //! Specifices whether or not to indent the first line of output.
   bool m_indent_first;
@@ -139,7 +136,7 @@ shell_escape(const std::string& s);
 
 /** Escapes a full shell command using shell_escape */
 std::string
-shell_escape_command(const std::vector<std::string>& v);
+shell_escape_command(const string_vec& v);
 
 /** Adds thousand separators to a number */
 std::string

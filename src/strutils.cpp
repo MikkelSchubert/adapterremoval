@@ -37,6 +37,35 @@
 
 namespace adapterremoval {
 
+namespace {
+
+string_vec
+indent(string_vec lines, size_t n_indent, bool indent_first)
+{
+  const std::string indentation(n_indent, ' ');
+  for (auto it = lines.begin(); it != lines.end(); ++it) {
+    if (it->size() && (indent_first || it != lines.begin())) {
+      it->insert(0, indentation);
+    }
+  }
+
+  return lines;
+}
+
+void
+join(std::ostringstream& lines_out, string_vec lines)
+{
+  for (auto it = lines.begin(); it != lines.end(); ++it) {
+    if (it != lines.begin()) {
+      lines_out << "\n";
+    }
+
+    lines_out << *it;
+  }
+}
+
+} // namespace
+
 size_t
 levenshtein(const std::string& s, const std::string& t)
 {
@@ -113,32 +142,29 @@ toupper(const std::string& str)
   return uppercased;
 }
 
-std::string
-indent_lines(const std::string& lines, size_t n_indent)
+string_vec
+split_lines(const std::string& text)
 {
-  std::string line;
+  string_vec lines;
+
+  size_t start = 0;
+  size_t end = std::string::npos;
+  do {
+    end = text.find('\n', start);
+
+    lines.push_back(text.substr(start, end - start));
+
+    start = end + 1;
+  } while (end != std::string::npos);
+
+  return lines;
+}
+
+std::string
+indent_lines(const std::string& text, size_t n_indent)
+{
   std::ostringstream lines_out;
-  const std::string indentation = std::string(n_indent, ' ');
-
-  size_t last_pos = 0;
-  while (true) {
-    const size_t next_pos = lines.find('\n', last_pos);
-    if (next_pos == std::string::npos) {
-      if (lines.size() - last_pos) {
-        lines_out << indentation;
-      }
-
-      lines_out << lines.substr(last_pos);
-      break;
-    } else {
-      if (next_pos - last_pos) {
-        lines_out << indentation;
-      }
-
-      lines_out << lines.substr(last_pos, next_pos - last_pos + 1);
-      last_pos = next_pos + 1;
-    }
-  }
+  join(lines_out, indent(split_lines(text), n_indent, true));
 
   return lines_out.str();
 }
@@ -194,13 +220,13 @@ template_replace(const std::string& haystack,
   return result;
 }
 
-std::vector<std::string>
+string_vec
 wrap_text(const std::string& value, size_t max_width, size_t ljust)
 {
   size_t current_width = 0;
   size_t current_ljust = 0;
   std::istringstream lines_in(value);
-  std::vector<std::string> lines_out;
+  string_vec lines_out;
 
   std::string substr;
   while (lines_in >> substr) {
@@ -276,60 +302,14 @@ cli_formatter::format(const std::string& lines) const
 {
   std::string line;
   std::ostringstream lines_out;
-  const std::string indentation(m_indentation, ' ');
 
-  size_t last_pos = 0;
-  while (true) {
-    const size_t next_pos = lines.find('\n', last_pos);
+  for (const auto& line : split_lines(lines)) {
+    auto lines = wrap_text(line, m_columns, m_ljust);
 
-    // Current line, excluding terminal newline
-    const size_t end_pos =
-      (next_pos == std::string::npos) ? next_pos : (next_pos - last_pos);
-    line = lines.substr(last_pos, end_pos);
-
-    // Format into fixed width columns, indenting by ljust after first line
-    bool first_line = true;
-    for (const auto& fragment : wrap_text(line, m_columns, m_ljust)) {
-      if (!first_line) {
-        lines_out << '\n';
-      }
-
-      lines_out << indentation << fragment;
-      first_line = false;
-    }
-
-    if (next_pos == std::string::npos) {
-      break;
-    } else if (lines.at(next_pos) == '\n') {
-      lines_out << '\n';
-      last_pos = next_pos + 1;
-    }
+    join(lines_out, indent(lines, m_indentation, m_indent_first));
   }
 
-  line = lines_out.str();
-  if (!m_indent_first) {
-    line = line.substr(m_indentation);
-  }
-
-  return line;
-}
-
-std::string
-cli_formatter::fmt(const std::string& value)
-{
-  cli_formatter formatter;
-
-  return formatter.format(value);
-}
-
-std::string
-cli_formatter::fmt(const std::string& prefix, const std::string& value)
-{
-  cli_formatter formatter;
-  formatter.set_indent(prefix.size());
-  formatter.set_indent_first_line(false);
-
-  return prefix + value;
+  return lines_out.str();
 }
 
 std::string
@@ -375,7 +355,7 @@ shell_escape(const std::string& s)
 }
 
 std::string
-shell_escape_command(const std::vector<std::string>& values)
+shell_escape_command(const string_vec& values)
 {
   std::ostringstream ss;
   for (size_t i = 0; i < values.size(); ++i) {

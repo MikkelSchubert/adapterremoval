@@ -153,24 +153,6 @@ log_linewidth()
 }
 
 std::vector<std::string>
-log_split_lines(const std::string& msg)
-{
-  std::vector<std::string> lines;
-
-  size_t start = 0;
-  size_t end = std::string::npos;
-  do {
-    end = msg.find('\n', start);
-
-    lines.push_back(msg.substr(start, end - start));
-
-    start = end + 1;
-  } while (end != std::string::npos);
-
-  return lines;
-}
-
-std::vector<std::string>
 log_linebreak(const std::string& head, const std::string& line)
 {
   const auto indent = line.find_first_not_of(' ');
@@ -189,7 +171,7 @@ log_linebreak(const std::string& head, const std::string& line)
   fmt.set_column_width(log_linewidth() - indent - (head.size() - color_width));
 
   std::vector<std::string> lines;
-  for (auto fragment : log_split_lines(fmt.format(line))) {
+  for (auto fragment : split_lines(fmt.format(line))) {
     lines.push_back(head + fragment);
   }
 
@@ -257,7 +239,7 @@ log_stream::~log_stream()
       msg.pop_back();
     }
 
-    for (const auto& long_line : log_split_lines(msg)) {
+    for (const auto& long_line : split_lines(msg)) {
       for (const auto& line : log_linebreak(head, long_line)) {
         *g_log_out << line << "\n";
       }
