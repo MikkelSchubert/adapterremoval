@@ -356,8 +356,9 @@ userconfig::userconfig(const std::string& name,
     .with_default(1);
 
   argparser.add_header("FASTQ OPTIONS:");
-  argparser.add("--qualitybase", "N")
-    .help("Quality base/offset used to encode Phred scores in input")
+  argparser.add("--quality-format", "N")
+    .help("Format used to encode Phred scores in input")
+    .deprecated_alias("--qualitybase")
     .bind_str(&quality_input_base)
     .with_choices({ "33", "64", "solexa", "sam" })
     .with_default("33");
