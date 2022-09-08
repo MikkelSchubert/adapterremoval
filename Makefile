@@ -161,6 +161,7 @@ TEST_OBJS := \
 	$(OBJS_DIR)/alignment_test.o \
 	$(OBJS_DIR)/argparse_test.o \
 	$(OBJS_DIR)/barcodes_test.o \
+	$(OBJS_DIR)/buffer_test.o \
 	$(OBJS_DIR)/counts_test.o \
 	$(OBJS_DIR)/debug_test.o \
 	$(OBJS_DIR)/fastq_test.o \
