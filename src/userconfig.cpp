@@ -439,12 +439,7 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add_header("OUTPUT COMPRESSION:");
   argparser.add("--gzip")
-    .help("Enable block-based gzip-compression. This allows for "
-#ifdef USE_LIBDEFLATE
-          "faster compression using libdeflate and "
-#endif
-          "greater throughput in multi-threaded mode at the cost of about 3% "
-          "greater file sizes and possible incompatibility with some programs")
+    .help("Enable block-based gzip-compression")
     .bind_bool(&gzip);
   argparser.add("--gzip-stream")
     .help("Enable gzip-compression using a single GZip streams instead of "

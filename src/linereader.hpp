@@ -28,16 +28,13 @@
 #include <ios>    // for ios_base, ios_base::failure
 #include <memory> // for unique_ptr, shared_ptr
 #include <string> // for string
-#include <zlib.h> // for gzFile
 
-#if defined(USE_LIBISAL)
 #include <isa-l.h> // for inflate_state, etc.
 
 // Required due to 2.30 fixing issues when reading concatenated gzip files
 static_assert((ISAL_MAJOR_VERSION > 2 ||
                (ISAL_MAJOR_VERSION == 2 && ISAL_MINOR_VERSION >= 30)),
               "isa-l v2.30+ required");
-#endif
 
 namespace adapterremoval {
 
@@ -125,15 +122,8 @@ private:
   /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */
   void refill_buffers_uncompressed();
 
-#if defined(USE_LIBISAL)
   std::unique_ptr<inflate_state> m_gzip_stream;
   std::unique_ptr<isal_gzip_header> m_gzip_header;
-#else
-  //! GZip stream pointer; used if input it detected to be gzip compressed.
-  std::unique_ptr<z_stream> m_gzip_stream;
-  //! The last state returned by inflate
-  int m_gzip_state;
-#endif
 
   /** Returns true if the raw buffer contains gzip'd data. */
   bool identify_gzip() const;

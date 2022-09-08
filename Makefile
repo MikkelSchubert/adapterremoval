@@ -12,9 +12,6 @@ CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
 # Generate statically linked binary
 STATIC := no
 
-# Use Intelligent Storage Acceleration Library (ISA-L) for gzip decompression
-LIBISAL := yes
-
 # Use libdeflate for block compression
 LIBDEFLATE := yes
 
@@ -51,7 +48,7 @@ INSTALLDOC = install -m 0644
 MKDIR      = install -d  # act as mkdir -p
 
 # Libraries required by AdapterRemoval
-LIBRARIES := -pthread -lz
+LIBRARIES := -pthread -lz -lisal
 
 ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
@@ -74,15 +71,6 @@ OBJS_DIR := $(BUILD_DIR)/static
 EXECUTABLE := $(BUILD_DIR)/$(EXEC_MAIN).static
 else
 $(info Building static AdapterRemoval binary: no)
-endif
-
-
-ifeq ($(strip ${LIBISAL}),yes)
-$(info Building AdapterRemoval with isa-l: yes)
-CXXFLAGS := $(CXXFLAGS) -DUSE_LIBISAL
-LIBRARIES := $(LIBRARIES) -lisal
-else
-$(info Building AdapterRemoval with isa-l: no)
 endif
 
 
