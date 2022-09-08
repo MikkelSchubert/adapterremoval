@@ -138,10 +138,10 @@ log_header(level l, bool colors = false)
 }
 
 size_t
-log_linewidth()
+log_linewidth(const std::ostream& out)
 {
   // Piped logs are not pretty-printed, to make analyses easier
-  if (g_log_out == &std::cerr) {
+  if (&out == &std::cerr) {
     struct winsize params;
     // Atempt to retrieve the number of columns in the terminal
     if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
@@ -152,30 +152,39 @@ log_linewidth()
   return static_cast<size_t>(-1);
 }
 
-std::vector<std::string>
-log_linebreak(const std::string& head, const std::string& line)
+void
+log_print_lines(std::ostream& out,
+                const std::string& head,
+                const std::string& msg)
 {
-  const auto indent = line.find_first_not_of(' ');
-  if (indent == std::string::npos) {
-    return { head };
-  }
-
-  cli_formatter fmt;
-  fmt.set_indent(indent);
-  fmt.set_ljust(2);
-
   // Acount for unprinted color codes:
   // Size of color ("\033[0;XXm" = 7) + reset ("\033[0m" = 4)
   const int color_width = g_log_colors ? 11 : 0;
+  const int head_width = head.size() - color_width;
+  const int line_width = log_linewidth(out);
 
-  fmt.set_column_width(log_linewidth() - indent - (head.size() - color_width));
+  for (const auto& line : split_lines(msg)) {
+    const auto indent = line.find_first_not_of(' ');
+    if (indent == std::string::npos) {
+      out << head << "\n";
+      continue;
+    }
 
-  std::vector<std::string> lines;
-  for (auto fragment : split_lines(fmt.format(line))) {
-    lines.push_back(head + fragment);
+    cli_formatter fmt;
+    fmt.set_ljust(2);
+    fmt.set_indent(indent);
+    fmt.set_column_width(line_width - indent - head_width);
+
+    bool first_line = true;
+    for (const auto& fragment : split_lines(fmt.format(line))) {
+      if (first_line) {
+        out << head + fragment << "\n";
+        first_line = false;
+      } else {
+        out << std::string(head_width, ' ') << fragment << "\n";
+      }
+    }
   }
-
-  return lines;
 }
 
 } // namespace
@@ -239,11 +248,7 @@ log_stream::~log_stream()
       msg.pop_back();
     }
 
-    for (const auto& long_line : split_lines(msg)) {
-      for (const auto& line : log_linebreak(head, long_line)) {
-        *g_log_out << line << "\n";
-      }
-    }
+    log_print_lines(*g_log_out, head, msg);
 
     g_log_out->flush();
   }
