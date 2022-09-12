@@ -21,9 +21,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-
 #include "buffer.hpp"
 #include "testing.hpp"
+#include <cstring>
 
 namespace adapterremoval {
 
@@ -128,6 +128,56 @@ TEST_CASE("buffer move assignment to self is no-op")
   REQUIRE(buf.capacity() == 7);
   REQUIRE(buf.get() == buf_ptr);
   REQUIRE(buf.get_signed() == buf_signed_ptr);
+}
+
+TEST_CASE("buffer write_u32 is le")
+{
+  buffer buf(4);
+  buf.write_u32(0, 0xDEADBEEF);
+  auto ptr = buf.get();
+
+  REQUIRE(ptr[3] == 0xDE);
+  REQUIRE(ptr[2] == 0xAD);
+  REQUIRE(ptr[1] == 0xBE);
+  REQUIRE(ptr[0] == 0xEF);
+}
+
+TEST_CASE("buffer write_u32 with offset")
+{
+  buffer buf(6);
+  auto ptr = buf.get();
+  ::bzero(ptr, buf.size());
+
+  buf.write_u32(1, 0xDEADBEEF);
+
+  REQUIRE(ptr[5] == 0);
+  REQUIRE(ptr[4] == 0xDE);
+  REQUIRE(ptr[3] == 0xAD);
+  REQUIRE(ptr[2] == 0xBE);
+  REQUIRE(ptr[1] == 0xEF);
+  REQUIRE(ptr[0] == 0);
+}
+
+TEST_CASE("buffer write_u32 requires space")
+{
+  SECTION("capacity must be sufficient")
+  {
+    buffer buf(3);
+    REQUIRE_THROWS_AS(buf.write_u32(0, 0xDEADBEEF), assert_failed);
+  }
+
+  SECTION("size must be sufficient")
+  {
+    buffer buf(4);
+    buf.resize(3);
+    REQUIRE_THROWS_AS(buf.write_u32(0, 0xDEADBEEF), assert_failed);
+  }
+
+  SECTION("size from offset must be sufficient")
+  {
+    buffer buf(4);
+    REQUIRE_THROWS_AS(buf.write_u32(1, 0xDEADBEEF), assert_failed);
+  }
 }
 
 } // namespace adapterremoval

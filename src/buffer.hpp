@@ -52,6 +52,9 @@ public:
   /** Changes the reported size of the buffer; must be 0 <= x <= capacity. */
   void resize(size_t size);
 
+  /** Copies uint32 into buffer */
+  void write_u32(size_t offset, uint32_t value);
+
   buffer(buffer&& other) noexcept;
   buffer& operator=(buffer&& other) noexcept;
 
@@ -145,6 +148,17 @@ buffer::resize(size_t size)
 {
   AR_REQUIRE(size <= m_capacity);
   m_size = size;
+}
+
+inline void
+buffer::write_u32(size_t offset, uint32_t value)
+{
+  AR_REQUIRE(offset + 4 <= m_size);
+
+  m_buffer[offset + 0] = value & 0xFF;
+  m_buffer[offset + 1] = (value >> 8) & 0xFF;
+  m_buffer[offset + 2] = (value >> 16) & 0xFF;
+  m_buffer[offset + 3] = (value >> 24) & 0xFF;
 }
 
 } // namespace adapterremoval
