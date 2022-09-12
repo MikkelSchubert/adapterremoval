@@ -359,7 +359,10 @@ TEST_CASE("complexity", "[fastq::fastq]")
 
   REQUIRE_THAT(fastq("c", "N").complexity(), WithinAbs(0.0, 1e-6));
   REQUIRE_THAT(fastq("c", "NA").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "NN").complexity(), WithinAbs(0.0, 1e-6));
   REQUIRE_THAT(fastq("c", "NAN").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "NNN").complexity(), WithinAbs(0.0, 1e-6));
+  REQUIRE_THAT(fastq("c", "NANT").complexity(), WithinAbs(1.0 / 3.0, 1e-6));
 
   REQUIRE_THAT(fastq("c", "AT").complexity(), WithinAbs(1.0 / 1.0, 1e-6));
   REQUIRE_THAT(fastq("c", "ACGT").complexity(), WithinAbs(3.0 / 3.0, 1e-6));

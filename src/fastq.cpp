@@ -171,20 +171,16 @@ fastq::complexity() const
     return 0.0;
   }
 
-  auto prev = m_sequence.begin();
-  while (prev != m_sequence.end() && *prev == 'N') {
-    ++prev;
-  }
-
+  char prev = 'N';
   size_t score = 0;
-  for (auto it = prev + 1; it != m_sequence.end(); ++it) {
-    if (*it != 'N' && *it != *prev) {
-      prev = it;
+  for (const auto nuc : m_sequence) {
+    if (nuc != 'N' && nuc != prev) {
+      prev = nuc;
       score++;
     }
   }
 
-  return score / (m_sequence.length() - 1.0);
+  return std::max(0.0, (score - 1.0) / (m_sequence.length() - 1.0));
 }
 
 fastq::ntrimmed
