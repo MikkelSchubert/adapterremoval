@@ -593,9 +593,10 @@ write_fastq::process(chunk_ptr chunk)
       m_output.write_buffer(trailer, true);
     }
   } catch (const std::ios_base::failure&) {
-    const std::string message =
-      std::string("Error writing FASTQ file '") + m_output.filename() + "': ";
-    throw std::ofstream::failure(message + std::strerror(errno));
+    std::ostringstream msg;
+    msg << "Error writing to FASTQ file " << shell_escape(m_output.filename());
+
+    throw io_error(msg.str(), errno);
   }
 
   return chunk_vec();
@@ -611,9 +612,10 @@ write_fastq::finalize()
   try {
     m_output.close();
   } catch (const std::ios_base::failure&) {
-    const std::string message =
-      std::string("Error closing FASTQ file '") + m_output.filename() + "': ";
-    throw std::ofstream::failure(message + std::strerror(errno));
+    std::ostringstream msg;
+    msg << "Error closing FASTQ file " << shell_escape(m_output.filename());
+
+    throw io_error(msg.str(), errno);
   }
 }
 
