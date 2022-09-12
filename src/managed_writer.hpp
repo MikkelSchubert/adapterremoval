@@ -57,6 +57,7 @@ public:
    */
   static FILE* fopen(const std::string& filename, const char* mode);
 
+  void write_buffer(const buffer& buf, bool flush);
   void write_buffers(const buffer_vec& buffers, bool flush);
   void write_string(const std::string& buffer, bool flush);
 

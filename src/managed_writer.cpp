@@ -81,10 +81,27 @@ managed_writer::fopen(const std::string& filename, const char* mode)
 }
 
 void
+managed_writer::write_buffer(const buffer& buf, bool flush)
+{
+  if (buf.size() || flush) {
+    std::lock_guard<std::mutex> lock(g_writer_lock);
+    managed_writer::open_writer(this);
+
+    if (buf.size()) {
+      m_stream.write(buf.get_signed(), buf.size());
+    }
+
+    if (flush) {
+      m_stream.flush();
+    }
+  }
+}
+
+void
 managed_writer::write_buffers(const buffer_vec& buffers, bool flush)
 {
-  std::lock_guard<std::mutex> lock(g_writer_lock);
   if (buffers.size() || flush) {
+    std::lock_guard<std::mutex> lock(g_writer_lock);
     managed_writer::open_writer(this);
 
     for (auto& buf : buffers) {
