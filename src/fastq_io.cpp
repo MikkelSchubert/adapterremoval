@@ -24,7 +24,7 @@
 
 #include <algorithm> // for max, min
 #include <cerrno>    // for errno
-#include <cstring>   // for size_t, strerror, memcpy
+#include <cstring>   // for size_t, memcpy
 #include <memory>    // for make_unique
 #include <utility>   // for move, swap
 
@@ -44,81 +44,48 @@
 
 namespace adapterremoval {
 
-///////////////////////////////////////////////////////////////////////////////
-// Helper functions for 'zlib'
+////////////////////////////////////////////////////////////////////////////////
+// Helper function for isa-l
 
-void
-checked_deflate_init2(z_streamp stream, unsigned int level)
+namespace {
+
+//! Supported ISAL compression level; used rather than ISAL_DEF_MAX_LEVEL since
+//! the ISAL source code implies that may be increased
+const uint32_t MAX_ISAL_LEVEL = 3;
+
+uint32_t
+isal_level(uint32_t gzip_level)
 {
-  AR_REQUIRE(stream);
-  stream->zalloc = nullptr;
-  stream->zfree = nullptr;
-  stream->opaque = nullptr;
+  return std::min<uint32_t>(gzip_level, MAX_ISAL_LEVEL);
+}
 
-  const int errorcode = deflateInit2(/* strm       = */ stream,
-                                     /* level      = */ level,
-                                     /* method     = */ Z_DEFLATED,
-                                     /* windowBits = */ 15 + 16,
-                                     /* memLevel   = */ 8,
-                                     /* strategy   = */ Z_DEFAULT_STRATEGY);
-
-  switch (errorcode) {
-    case Z_OK:
-      break;
-
-    case Z_MEM_ERROR:
-      throw thread_error("gzip deflateInit2: not enough memory");
-
-    case Z_STREAM_ERROR:
-      throw thread_error("gzip deflateInit2: invalid parameters");
-
-    case Z_VERSION_ERROR:
-      throw thread_error("gzip deflateInit2: incompatible zlib version");
-
+size_t
+isal_buffer_size(size_t level)
+{
+  switch (level) {
     default:
-      throw thread_error("gzip deflateInit2: unknown error");
+    case 3:
+      return ISAL_DEF_LVL3_DEFAULT;
+    case 2:
+      return ISAL_DEF_LVL2_DEFAULT;
+    case 1:
+      return ISAL_DEF_LVL1_DEFAULT;
+    case 0:
+      return ISAL_DEF_LVL0_DEFAULT;
   }
 }
 
-int
-checked_deflate(z_streamp stream, int flush)
+bool
+isal_enabled(const userconfig& config)
 {
-  const int errorcode = deflate(stream, flush);
-  switch (errorcode) {
-    case Z_OK:
-    case Z_STREAM_END:
-      break;
-
-    case Z_BUF_ERROR:
-      throw thread_error("gzip deflate: buf error");
-
-    case Z_STREAM_ERROR:
-      throw thread_error("gzip deflate: stream error");
-
-    default:
-      throw thread_error("gzip deflate: unknown error");
-  }
-
-  return errorcode;
+  return config.gzip
+#ifdef USE_LIBDEFLATE
+         && config.gzip_level <= MAX_ISAL_LEVEL;
+#endif
+  ;
 }
 
-void
-checked_deflate_end(z_streamp stream)
-{
-  switch (deflateEnd(stream)) {
-    case Z_OK:
-      break;
-
-    case Z_STREAM_ERROR:
-      throw thread_error("gzip deflateEnd: stream error");
-
-    case Z_DATA_ERROR:
-      throw thread_error("gzip deflateEnd: data error");
-
-    default:
-      throw thread_error("gzip deflateEnd: unknown error");
-  }
-}
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_read_chunk'
@@ -136,11 +103,13 @@ fastq_read_chunk::~fastq_read_chunk() {}
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_output_chunk'
 
-fastq_output_chunk::fastq_output_chunk(bool eof_)
+fastq_output_chunk::fastq_output_chunk(bool eof_, uint32_t crc32_)
   : eof(eof_)
-  , nucleotides(0)
+  , crc32(crc32_)
+  , nucleotides()
   , reads()
   , buffers()
+  , uncompressed_size()
 {
 }
 
@@ -389,77 +358,15 @@ post_process_fastq::finalize()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'gzip_fastq'
-
-gzip_fastq::gzip_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(processing_order::ordered, "gzip_fastq")
-  , m_next_step(next_step)
-  , m_stream()
-  , m_eof(false)
-  , m_lock()
-{
-  checked_deflate_init2(&m_stream, config.gzip_level);
-}
-
-void
-gzip_fastq::finalize()
-{
-  AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(m_eof);
-
-  checked_deflate_end(&m_stream);
-}
-
-chunk_vec
-gzip_fastq::process(chunk_ptr chunk)
-{
-  auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
-
-  AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(!m_eof);
-
-  m_eof = file_chunk.eof;
-  if (file_chunk.reads.empty() && !m_eof) {
-    return chunk_vec();
-  }
-
-  m_stream.avail_in = file_chunk.reads.size();
-  m_stream.next_in = reinterpret_cast<unsigned char*>(
-    const_cast<char*>(file_chunk.reads.data()));
-
-  int returncode = -1;
-  do {
-    buffer output_buffer(OUTPUT_BLOCK_SIZE);
-
-    m_stream.avail_out = output_buffer.size();
-    m_stream.next_out = output_buffer.get();
-
-    returncode = checked_deflate(&m_stream, m_eof ? Z_FINISH : Z_NO_FLUSH);
-
-    output_buffer.resize(output_buffer.size() - m_stream.avail_out);
-    if (output_buffer.size()) {
-      file_chunk.buffers.push_back(std::move(output_buffer));
-    }
-  } while (m_stream.avail_out == 0 || (m_eof && returncode != Z_STREAM_END));
-
-  file_chunk.reads.clear();
-
-  chunk_vec chunks;
-  if (!file_chunk.buffers.empty() || m_eof) {
-    chunks.emplace_back(m_next_step, std::move(chunk));
-  }
-
-  return chunks;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'split_fastq'
 
-split_fastq::split_fastq(size_t next_step)
+split_fastq::split_fastq(const userconfig& config, size_t next_step)
   : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
   , m_buffer(GZIP_BLOCK_SIZE)
   , m_offset()
+  , m_isal_enabled(isal_enabled(config))
+  , m_isal_crc32()
   , m_eof(false)
   , m_lock()
 {
@@ -495,6 +402,13 @@ split_fastq::process(chunk_ptr chunk)
 
     if (m_offset == m_buffer.size()) {
       auto block = std::make_unique<fastq_output_chunk>();
+
+      if (m_isal_enabled) {
+        m_isal_crc32 =
+          crc32_gzip_refl(m_isal_crc32, m_buffer.get(), m_buffer.size());
+      }
+
+      block->uncompressed_size = m_offset;
       block->buffers.emplace_back(std::move(m_buffer));
 
       chunks.emplace_back(m_next_step, std::move(block));
@@ -505,10 +419,18 @@ split_fastq::process(chunk_ptr chunk)
   }
 
   if (m_eof) {
-    m_buffer.resize(m_offset);
-
     auto block = std::make_unique<fastq_output_chunk>(true);
+
+    m_buffer.resize(m_offset);
+    if (m_isal_enabled) {
+      m_isal_crc32 =
+        crc32_gzip_refl(m_isal_crc32, m_buffer.get(), m_buffer.size());
+    }
+
+    block->crc32 = m_isal_crc32;
+    block->uncompressed_size = m_offset;
     block->buffers.emplace_back(std::move(m_buffer));
+
     chunks.emplace_back(m_next_step, std::move(block));
 
     m_offset = 0;
@@ -538,31 +460,56 @@ gzip_split_fastq::process(chunk_ptr chunk)
   buffer input_buffer(GZIP_BLOCK_SIZE);
   std::swap(input_buffer, output_buffer);
 
+  size_t compressed_size = 0;
+
+  if (isal_enabled(m_config)) {
+    isal_zstream stream;
+    isal_deflate_stateless_init(&stream);
+
+    stream.flush = FULL_FLUSH;
+    stream.end_of_stream = input_chunk.eof;
+
+    stream.level = isal_level(m_config.gzip_level);
+    stream.level_buf_size = isal_buffer_size(stream.level);
+    buffer level_buffer(stream.level_buf_size);
+    stream.level_buf = level_buffer.get();
+
+    stream.avail_in = input_buffer.size();
+    stream.next_in = input_buffer.get();
+    stream.next_out = output_buffer.get();
+    stream.avail_out = output_buffer.size();
+
+    switch (isal_deflate_stateless(&stream)) {
+      case COMP_OK:
+        break;
+      case INVALID_FLUSH:
+        throw thread_error("isal_deflate_stateless: invalid flush");
+      case ISAL_INVALID_LEVEL:
+        throw thread_error("isal_deflate_stateless: invalid level");
+      case ISAL_INVALID_LEVEL_BUF:
+        throw thread_error("isal_deflate_stateless: invalid buffer size");
+      default:
+        throw thread_error("isal_deflate_stateless: unexpected error");
+    }
+
+    // The easily compressible input should fit in a single output block
+    AR_REQUIRE(stream.avail_in == 0);
+
+    compressed_size = stream.total_out;
+  }
 #ifdef USE_LIBDEFLATE
-  auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
-  auto compressed_size = libdeflate_gzip_compress(compressor,
-                                                  input_buffer.get(),
-                                                  input_buffer.size(),
-                                                  output_buffer.get(),
-                                                  output_buffer.size());
-  libdeflate_free_compressor(compressor);
+  else {
+    auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
+    compressed_size = libdeflate_gzip_compress(compressor,
+                                               input_buffer.get(),
+                                               input_buffer.size(),
+                                               output_buffer.get(),
+                                               output_buffer.size());
+    libdeflate_free_compressor(compressor);
 
-  // The easily compressible input should fit in a single output block
-  AR_REQUIRE(compressed_size);
-#else
-  z_stream stream;
-  checked_deflate_init2(&stream, m_config.gzip_level);
-
-  stream.avail_in = input_buffer.size();
-  stream.next_in = input_buffer.get();
-  stream.avail_out = output_buffer.size();
-  stream.next_out = output_buffer.get();
-  // The easily compressible input should fit in a single output block
-  const int returncode = checked_deflate(&stream, Z_FINISH);
-  AR_REQUIRE(stream.avail_out && returncode == Z_STREAM_END);
-
-  const auto compressed_size = output_buffer.size() - stream.avail_out;
-  checked_deflate_end(&stream);
+    // The easily compressible input should fit in a single output block
+    AR_REQUIRE(compressed_size);
+  }
 #endif
 
   output_buffer.resize(compressed_size);
@@ -578,15 +525,42 @@ gzip_split_fastq::process(chunk_ptr chunk)
 
 const std::string STDOUT = "/dev/stdout";
 
-write_fastq::write_fastq(const std::string& filename)
+write_fastq::write_fastq(const userconfig& config, const std::string& filename)
   // Allow disk IO and writing to STDOUT at the same time
   : analytical_step(filename == STDOUT ? processing_order::ordered
                                        : processing_order::ordered_io,
                     "write_fastq")
   , m_output(filename)
+  , m_isal_enabled(isal_enabled(config))
+  , m_uncompressed_bytes()
   , m_eof(false)
   , m_lock()
 {
+  if (m_isal_enabled) {
+    buffer level_buf(isal_buffer_size(config.gzip_level));
+    buffer output_buf(OUTPUT_BLOCK_SIZE);
+
+    struct isal_zstream stream;
+    struct isal_gzip_header header;
+
+    isal_gzip_header_init(&header);
+    isal_deflate_init(&stream);
+    stream.avail_in = 0;
+    stream.flush = NO_FLUSH;
+    stream.level = isal_level(config.gzip_level);
+    stream.level_buf = level_buf.get();
+    stream.level_buf_size = level_buf.size();
+    stream.gzip_flag = IGZIP_GZIP_NO_HDR;
+    stream.next_out = output_buf.get();
+    stream.avail_out = output_buf.size();
+
+    const auto ret = isal_write_gzip_header(&stream, &header);
+    AR_REQUIRE(ret == 0, "buffer was not large enough for gzip header");
+
+    output_buf.resize(stream.total_out);
+
+    m_output.write_buffer(output_buf, false);
+  }
 }
 
 chunk_vec
@@ -599,12 +573,24 @@ write_fastq::process(chunk_ptr chunk)
 
   try {
     m_eof = file_chunk.eof;
+    m_uncompressed_bytes += file_chunk.uncompressed_size;
+
+    const bool flush = m_eof && !m_isal_enabled;
+
     if (file_chunk.buffers.empty()) {
-      m_output.write_string(file_chunk.reads, m_eof);
+      m_output.write_string(file_chunk.reads, flush);
     } else {
       AR_REQUIRE(file_chunk.reads.empty());
 
-      m_output.write_buffers(file_chunk.buffers, m_eof);
+      m_output.write_buffers(file_chunk.buffers, flush);
+    }
+
+    if (m_eof && m_isal_enabled) {
+      buffer trailer(8);
+      trailer.write_u32(0, file_chunk.crc32);
+      trailer.write_u32(4, m_uncompressed_bytes);
+
+      m_output.write_buffer(trailer, true);
     }
   } catch (const std::ios_base::failure&) {
     const std::string message =

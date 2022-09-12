@@ -27,7 +27,6 @@
 #include <mutex>    // for mutex
 #include <stddef.h> // for size_t
 #include <string>   // for string
-#include <zlib.h>   // for z_stream
 
 #include "commontypes.hpp"       // for fastq_vec, string_vec
 #include "fastq_enc.hpp"         // for fastq_encoding
@@ -85,7 +84,7 @@ class fastq_output_chunk : public analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  fastq_output_chunk(bool eof_ = false);
+  fastq_output_chunk(bool eof_ = false, uint32_t crc32 = 0);
 
   virtual ~fastq_output_chunk() override;
 
@@ -94,6 +93,8 @@ public:
 
   //! Indicates that EOF has been reached.
   bool eof;
+  //! CRC32 of (uncompressed) data; only set if eof is true
+  uint32_t crc32;
 
   //! Total number of nucleotides in this chunk
   size_t nucleotides;
@@ -103,6 +104,9 @@ public:
 
   //! Buffers of (compressed) FASTQ reads
   buffer_vec buffers;
+
+  //! Size of (uncompressed) data in buffers;
+  size_t uncompressed_size;
 };
 
 /**
@@ -235,8 +239,6 @@ public:
 private:
   //! The analytical step following this step
   const size_t m_next_step;
-  //! GZip stream object
-  z_stream m_stream;
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 
@@ -251,7 +253,7 @@ class split_fastq : public analytical_step
 {
 public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
-  split_fastq(size_t next_step);
+  split_fastq(const userconfig& config, size_t next_step);
 
   chunk_vec process(chunk_ptr chunk) override;
   void finalize() override;
@@ -268,6 +270,11 @@ private:
   buffer m_buffer;
   //! Offset in current buffer
   size_t m_offset;
+
+  //! Set if compression is carried out using isa-l
+  bool m_isal_enabled;
+  //! CRC32 calculated across all input data (if using isa-l)
+  uint32_t m_isal_crc32;
 
   //! Used to track whether an EOF block has been received.
   bool m_eof;
@@ -315,7 +322,7 @@ public:
    * The filename "/dev/stdout" is handled specially and does not count as IO
    * for the purpose of scheduling the pipeline.
    */
-  write_fastq(const std::string& filename);
+  write_fastq(const userconfig& config, const std::string& filename);
 
   /** Writes the reads of the type specified in the constructor. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -327,6 +334,10 @@ private:
   //! Lazily opened / automatically closed handle
   managed_writer m_output;
 
+  //! Set if compression is carried out using isa-l
+  bool m_isal_enabled;
+  //! Used to track the total number of (uncompressed) bytes written
+  size_t m_uncompressed_bytes;
   //! Used to track whether an EOF block has been received.
   bool m_eof;
 

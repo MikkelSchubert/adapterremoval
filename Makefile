@@ -48,7 +48,7 @@ INSTALLDOC = install -m 0644
 MKDIR      = install -d  # act as mkdir -p
 
 # Libraries required by AdapterRemoval
-LIBRARIES := -pthread -lz -lisal
+LIBRARIES := -pthread -lisal
 
 ifeq ($(strip ${VERBOSE}),no)
 QUIET := @

@@ -46,13 +46,11 @@ add_write_step(scheduler& sch,
                const userconfig& config,
                const std::string& filename)
 {
-  size_t step_id = sch.add<write_fastq>(filename);
+  size_t step_id = sch.add<write_fastq>(config, filename);
 
-  if (config.gzip_stream) {
-    step_id = sch.add<gzip_fastq>(config, step_id);
-  } else if (config.gzip) {
+  if (config.gzip) {
     step_id = sch.add<gzip_split_fastq>(config, step_id);
-    step_id = sch.add<split_fastq>(step_id);
+    step_id = sch.add<split_fastq>(config, step_id);
   }
 
   return step_id;

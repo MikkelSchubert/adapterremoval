@@ -305,7 +305,6 @@ userconfig::userconfig(const std::string& name,
   , shift()
   , max_threads()
   , gzip()
-  , gzip_stream()
   , gzip_level()
   , barcode_mm()
   , barcode_mm_r1()
@@ -439,18 +438,21 @@ userconfig::userconfig(const std::string& name,
     .with_default("{basename}{.sample}.discarded.fastq");
 
   argparser.add_header("OUTPUT COMPRESSION:");
-  argparser.add("--gzip")
-    .help("Enable block-based gzip-compression")
-    .bind_bool(&gzip);
-  argparser.add("--gzip-stream")
-    .help("Enable gzip-compression using a single GZip streams instead of "
-          "compressing independent blocks of 64kb data (see --gzip). This may "
-          "be required for compatibility in some cases")
-    .bind_bool(&gzip_stream);
-  argparser.add("--gzip-level", "N")
-    .help("GZip compression level, 0 - 9")
+  argparser.add("--gzip").help("Enable gzip-compression.").bind_bool(&gzip);
+  argparser
+    .add("--gzip-level", "N")
+#ifdef USE_LIBDEFLATE
+    .help("GZip compression level, 0 - 9. For compression levels 4 - 9, output "
+          "consist of concatenated GZip blocks, which may cause compatibility "
+          "problems in some rare cases. See the documentaiton for more "
+          "information")
     .bind_uint(&gzip_level)
     .with_default(6);
+#else
+    .help("GZip compression level, 0 - 3")
+    .bind_uint(&gzip_level)
+    .with_default(3);
+#endif
 
   argparser.add_header("TRIMMING SETTINGS:");
   argparser.add("--adapter1", "SEQ")
@@ -789,8 +791,9 @@ userconfig::parse_args(int argc, char* argv[])
     }
   }
 
-  gzip |= gzip_stream;
-
+  // The actual max depends on the presence of libdeflate, but it does not seem
+  // justified to blow up even if the user specifies a level above that
+  // supported by isa-l.
   if (gzip_level > 9) {
     log::error() << "--gzip-level must be in the range 0 to 9, not "
                  << gzip_level;
