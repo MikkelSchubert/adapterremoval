@@ -142,6 +142,25 @@ toupper(const std::string& str)
   return uppercased;
 }
 
+/** Returns true if str1 endswith str2 (case sensitive) */
+bool
+ends_with(const std::string& str1, const std::string& str2)
+{
+  if (str1.size() < str2.size()) {
+    return false;
+  }
+
+  auto it1 = str1.rbegin();
+  auto it2 = str2.rbegin();
+  for (; it2 != str2.rend(); ++it1, ++it2) {
+    if (*it1 != *it2) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 string_vec
 split_lines(const std::string& text)
 {

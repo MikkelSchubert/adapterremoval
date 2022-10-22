@@ -68,6 +68,27 @@ TEST_CASE("ASCII letters are uppercased", "[strutils::toupper]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for 'ends_with'
+
+TEST_CASE("ends_with")
+{
+  REQUIRE(ends_with("", ""));
+  REQUIRE(ends_with("morb", ""));
+  REQUIRE(ends_with("morb", "b"));
+  REQUIRE(ends_with("morb", "rb"));
+  REQUIRE(ends_with("morb", "orb"));
+  REQUIRE(ends_with("morb", "morb"));
+
+  REQUIRE_FALSE(ends_with("", "x"));
+  REQUIRE_FALSE(ends_with("morb", "x"));
+  REQUIRE_FALSE(ends_with("morb", "xb"));
+  REQUIRE_FALSE(ends_with("morb", "xrb"));
+  REQUIRE_FALSE(ends_with("morb", "xorb"));
+  REQUIRE_FALSE(ends_with("morb", "xmorb"));
+  REQUIRE_FALSE(ends_with("morb", "MORB"));
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for 'indent_lines'
 
 TEST_CASE("Empty lines are not indented", "[strutils::indent_lines]")

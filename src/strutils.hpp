@@ -56,6 +56,10 @@ tolower(const std::string& str);
 std::string
 toupper(const std::string& str);
 
+/** Returns true if str1 ends with str2 (case sensitive) */
+bool
+ends_with(const std::string& str1, const std::string& str2);
+
 /** Split text by newlines */
 string_vec
 split_lines(const std::string& text);
