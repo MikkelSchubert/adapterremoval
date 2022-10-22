@@ -51,17 +51,22 @@ assert_failed::what() const noexcept
 }
 
 void
-debug_raise_assert(const char* filename,
+debug_raise_assert(const char* funcname,
+                   const char* filename,
                    size_t lineno,
                    const std::string& test,
                    const std::string& msg)
 {
   std::ostringstream message;
-  message << "Assertion failed at " << filename << ":" << lineno << ": ";
-  if (test.empty() || msg.empty()) {
-    message << test << msg;
-  } else {
-    message << msg << ": " << test;
+
+  message << "Assertion ";
+  if (!test.empty()) {
+    message << "'" << test << "' ";
+  }
+
+  message << "failed in " << funcname << " at " << filename << ":" << lineno;
+  if (!msg.empty()) {
+    message << ": " << msg;
   }
 
   terminate(message.str());

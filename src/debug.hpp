@@ -54,7 +54,8 @@ private:
  * instructions for how to report the problem.
  */
 [[noreturn]] void
-debug_raise_assert(const char* filename,
+debug_raise_assert(const char* funcname,
+                   const char* filename,
                    size_t lineno,
                    const std::string& test,
                    const std::string& msg);
@@ -64,7 +65,7 @@ debug_raise_assert(const char* filename,
 #define AR_REQUIRE_2_(test, msg)                                               \
   do {                                                                         \
     if (!(test)) {                                                             \
-      debug_raise_assert(__FILE__, __LINE__, #test, msg);                      \
+      debug_raise_assert(__FUNCTION__, __FILE__, __LINE__, #test, msg);        \
     }                                                                          \
   } while (0)
 
@@ -76,7 +77,8 @@ debug_raise_assert(const char* filename,
 
 /** Raise an assert failure with a user-specified message. */
 #define AR_FAIL(msg)                                                           \
-  adapterremoval::debug_raise_assert(__FILE__, __LINE__, std::string(), msg)
+  adapterremoval::debug_raise_assert(                                          \
+    __FUNCTION__, __FILE__, __LINE__, std::string(), msg)
 
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)

@@ -44,8 +44,8 @@ TEST_CASE("assert on false value")
   }
 
   std::ostringstream message;
-  message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
-          << ": 1 == 2";
+  message << "Assertion '1 == 2' failed in " << __FUNCTION__ << " at "
+          << __FILE__ << ":" << __LINE__ - 7;
 
   REQUIRE(what == message.str());
 }
@@ -65,8 +65,8 @@ TEST_CASE("assert on false value with message")
   }
 
   std::ostringstream message;
-  message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
-          << ": message goes here: !!false";
+  message << "Assertion '!!false' failed in " << __FUNCTION__ << " at "
+          << __FILE__ << ":" << __LINE__ - 7 << ": message goes here";
 
   REQUIRE(what == message.str());
 }
@@ -81,8 +81,8 @@ TEST_CASE("assert fail")
   }
 
   std::ostringstream message;
-  message << "Assertion failed at " << __FILE__ << ":" << __LINE__ - 6
-          << ": big fail";
+  message << "Assertion failed in " << __FUNCTION__ << " at " << __FILE__ << ":"
+          << __LINE__ - 7 << ": big fail";
 
   REQUIRE(what == message.str());
 }
