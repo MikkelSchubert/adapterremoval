@@ -253,7 +253,9 @@ class split_fastq : public analytical_step
 {
 public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
-  split_fastq(const userconfig& config, size_t next_step);
+  split_fastq(const userconfig& config,
+              const std::string& filename,
+              size_t next_step);
 
   chunk_vec process(chunk_ptr chunk) override;
   void finalize() override;
@@ -290,7 +292,9 @@ class gzip_split_fastq : public analytical_step
 {
 public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
-  gzip_split_fastq(const userconfig& config, size_t next_step);
+  gzip_split_fastq(const userconfig& config,
+                   const std::string& filename,
+                   size_t next_step);
 
   /** Compresses input lines, saving compressed chunks to chunk->buffers. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -302,6 +306,8 @@ public:
 
 private:
   const userconfig& m_config;
+  //! Set if compression is carried out using isa-l
+  bool m_isal_enabled;
   //! The analytical step following this step
   const size_t m_next_step;
 };

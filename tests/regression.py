@@ -97,7 +97,7 @@ def read_lines(filename):
 
         value = gzip.decompress(value)
     elif filename.endswith(".gz"):
-        raise TestError("{} has .gz extension, is not compressed".format(filename))
+        raise TestError("{} has .gz extension, but is not compressed".format(filename))
 
     return io.StringIO(value.decode("utf-8")).readlines()
 
@@ -251,6 +251,7 @@ _OUTPUT_FILES_FQ = {
 _OUTPUT_FILES = {
     "json",
     "html",
+    "ignore",
 } | _OUTPUT_FILES_FQ
 
 _TEST_FILES = _INPUT_FILES | _OUTPUT_FILES
@@ -277,6 +278,7 @@ _TEST_SPECIFICATION = {
             "output": Default([str], []),
             "json": Default([str], []),
             "html": Default([str], []),
+            "ignore": Default([str], []),
         },
         {},
     ),
@@ -328,7 +330,7 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
     @classmethod
     def parse(cls, root, name, kind):
         json_data = None
-        if kind == "html":
+        if kind in ("html", "ignore"):
             # Currently not compared in detail
             data = None
         else:

@@ -76,9 +76,9 @@ isal_buffer_size(size_t level)
 }
 
 bool
-isal_enabled(const userconfig& config)
+isal_enabled(const userconfig& config, const std::string& filename)
 {
-  return config.gzip
+  return (config.gzip || ends_with(tolower(filename), ".gz"))
 #ifdef USE_LIBDEFLATE
          && config.gzip_level <= MAX_ISAL_LEVEL;
 #endif
@@ -360,12 +360,14 @@ post_process_fastq::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'split_fastq'
 
-split_fastq::split_fastq(const userconfig& config, size_t next_step)
+split_fastq::split_fastq(const userconfig& config,
+                         const std::string& filename,
+                         size_t next_step)
   : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
   , m_buffer(GZIP_BLOCK_SIZE)
   , m_offset()
-  , m_isal_enabled(isal_enabled(config))
+  , m_isal_enabled(isal_enabled(config, filename))
   , m_isal_crc32()
   , m_eof(false)
   , m_lock()
@@ -442,9 +444,12 @@ split_fastq::process(chunk_ptr chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_split_fastq'
 
-gzip_split_fastq::gzip_split_fastq(const userconfig& config, size_t next_step)
+gzip_split_fastq::gzip_split_fastq(const userconfig& config,
+                                   const std::string& filename,
+                                   size_t next_step)
   : analytical_step(processing_order::unordered, "gzip_split_fastq")
   , m_config(config)
+  , m_isal_enabled(isal_enabled(config, filename))
   , m_next_step(next_step)
 {
 }
@@ -462,7 +467,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
 
   size_t compressed_size = 0;
 
-  if (isal_enabled(m_config)) {
+  if (m_isal_enabled) {
     isal_zstream stream;
     isal_deflate_stateless_init(&stream);
 
@@ -531,7 +536,7 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
                                        : processing_order::ordered_io,
                     "write_fastq")
   , m_output(filename)
-  , m_isal_enabled(isal_enabled(config))
+  , m_isal_enabled(isal_enabled(config, filename))
   , m_uncompressed_bytes()
   , m_eof(false)
   , m_lock()

@@ -36,6 +36,7 @@
 #include "reports.hpp"        // for write_report
 #include "scheduler.hpp"      // for scheduler
 #include "statistics.hpp"     // for trimming_statistics, ar_statistics
+#include "strutils.hpp"       // for ends_with
 #include "trimming.hpp"       // for pe_reads_processor, reads_processor
 #include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
 
@@ -49,9 +50,9 @@ add_write_step(scheduler& sch,
   AR_REQUIRE(filename != DEV_NULL);
   size_t step_id = sch.add<write_fastq>(config, filename);
 
-  if (config.gzip) {
-    step_id = sch.add<gzip_split_fastq>(config, step_id);
-    step_id = sch.add<split_fastq>(config, step_id);
+  if (config.gzip || ends_with(tolower(filename), ".gz")) {
+    step_id = sch.add<gzip_split_fastq>(config, filename, step_id);
+    step_id = sch.add<split_fastq>(config, filename, step_id);
   }
 
   return step_id;
