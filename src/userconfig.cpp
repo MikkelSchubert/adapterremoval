@@ -815,7 +815,6 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (trim_error_rate > 1) {
     trim_error_rate = std::pow(10.0, trim_error_rate / -10.0);
-    // TODO: Log resulting error rate limit
   }
 
   // Required since a missing filename part results in the creation of dot-files

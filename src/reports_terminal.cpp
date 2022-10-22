@@ -30,6 +30,17 @@
 namespace adapterremoval {
 
 void
+print_trimming_parameters(const userconfig& config)
+{
+  if (config.trim_error_rate > 0) {
+    log::info() << "  - Quality based trimming is performed using a max "
+                << "error-rate of " << config.trim_error_rate;
+  } else {
+    log::info() << "  - Quality based trimming disabled";
+  }
+}
+
+void
 print_terminal_preamble(const userconfig& config)
 {
   if (supports_sse2() || supports_avx2()) {
@@ -44,10 +55,12 @@ print_terminal_preamble(const userconfig& config)
   switch (config.run_type) {
     case ar_command::trim_adapters:
       if (config.paired_ended_mode) {
-        log::info() << "Trimming adapters from PE reads";
+        log::info() << "Trimming adapters from PE reads:";
       } else {
-        log::info() << "Trimming adapters from SE reads";
+        log::info() << "Trimming adapters from SE reads:";
       }
+
+      print_trimming_parameters(config);
       break;
     case ar_command::demultiplex_sequences:
       log::info() << "Demultiplexing reads";
