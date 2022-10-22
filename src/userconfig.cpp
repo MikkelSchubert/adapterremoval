@@ -108,7 +108,7 @@ check_input_and_output(const std::string& label,
   }
 
   for (const auto& sample : output_files.samples) {
-    for (const auto& out_file : sample.filenames) {
+    for (const auto& out_file : sample.filenames()) {
       if (!check_no_clobber(label, filenames, out_file)) {
         return false;
       }
@@ -131,31 +131,61 @@ output_files::output_files()
 }
 
 output_sample_files::output_sample_files()
-  : filenames()
-  , steps()
-  , offsets()
+  : m_filenames()
+  , m_pipeline_steps()
+  , m_offsets()
 {
-  offsets.fill(output_sample_files::disabled);
+  m_offsets.fill(output_sample_files::disabled);
+}
+
+void
+output_sample_files::set_filename(const read_type rtype,
+                                  const std::string& filename)
+{
+  const auto index = static_cast<size_t>(rtype);
+  AR_REQUIRE(m_offsets.at(index) == output_sample_files::disabled);
+
+  // If the file type isn't being saved, then there is no need to process the
+  // reads. This saves time especially when output compression is enabled.
+  if (filename != DEV_NULL) {
+    // FIXME: This assumes that filesystem is case sensitive
+    auto it = std::find(m_filenames.begin(), m_filenames.end(), filename);
+    if (it == m_filenames.end()) {
+      m_filenames.push_back(filename);
+
+      m_offsets.at(index) = m_filenames.size() - 1;
+    } else {
+      m_offsets.at(index) = it - m_filenames.begin();
+    }
+  }
+}
+
+const string_vec&
+output_sample_files::filenames() const
+{
+  return m_filenames;
+}
+
+const std::vector<size_t>&
+output_sample_files::pipeline_steps() const
+{
+  return m_pipeline_steps;
+}
+
+void
+output_sample_files::push_pipeline_step(size_t step)
+{
+  AR_REQUIRE(m_pipeline_steps.size() < m_filenames.size());
+  m_pipeline_steps.push_back(step);
 }
 
 size_t
-output_sample_files::add(const std::string& filename)
+output_sample_files::offset(read_type value) const
 {
-  // If discarded then no post processing is needed; this saves time especially
-  // when output compression is enabled.
-  if (filename == DEV_NULL) {
-    return output_sample_files::disabled;
-  }
-
-  auto it = std::find(filenames.begin(), filenames.end(), filename);
-  if (it == filenames.end()) {
-    filenames.push_back(filename);
-
-    return filenames.size() - 1;
-  }
-
-  return it - filenames.begin();
+  return m_offsets.at(static_cast<size_t>(value));
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Tries to parse a simple command-line argument while ignoring the validity
@@ -933,29 +963,32 @@ userconfig::get_output_filenames() const
     const auto sample = demultiplexing ? adapters.get_sample_name(i) : "";
     auto& map = files.samples.at(i);
 
-    map.offset(read_type::mate_1) =
-      map.add(new_filename("--out-file1", sample, out1));
+    const auto mate_1_filename = new_filename("--out-file1", sample, out1);
+    map.set_filename(read_type::mate_1, mate_1_filename);
 
     if (paired_ended_mode) {
       if (interleaved_output) {
-        map.offset(read_type::mate_2) = map.offset(read_type::mate_1);
+        map.set_filename(read_type::mate_2, mate_1_filename);
       } else {
-        map.offset(read_type::mate_2) =
-          map.add(new_filename("--out-file2", sample, out2));
+        map.set_filename(read_type::mate_2,
+                         new_filename("--out-file2", sample, out2));
       }
     }
 
     if (run_type == ar_command::trim_adapters) {
-      map.offset(read_type::discarded) =
-        map.add(new_filename("--out-discarded", sample, ".discarded" + ext));
+      map.set_filename(
+        read_type::discarded,
+        new_filename("--out-discarded", sample, ".discarded" + ext));
 
       if (paired_ended_mode) {
-        map.offset(read_type::singleton) =
-          map.add(new_filename("--out-singleton", sample, ".singleton" + ext));
+        map.set_filename(
+          read_type::singleton,
+          new_filename("--out-singleton", sample, ".singleton" + ext));
 
         if (merge) {
-          map.offset(read_type::merged) =
-            map.add(new_filename("--out-merged", sample, ".merged" + ext));
+          map.set_filename(
+            read_type::merged,
+            new_filename("--out-merged", sample, ".merged" + ext));
         }
       }
     }

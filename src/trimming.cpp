@@ -170,12 +170,11 @@ trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
   : m_map(map)
   , m_chunks()
 {
-  AR_REQUIRE(map.filenames.size() == map.steps.size());
+  const auto& filenames = map.filenames();
+  const auto& pipeline_steps = map.pipeline_steps();
+  AR_REQUIRE(filenames.size() == pipeline_steps.size());
 
-  for (size_t i = 0; i < map.steps.size(); ++i) {
-    AR_REQUIRE(map.filenames.at(i).size());
-    AR_REQUIRE(map.steps.at(i) != output_sample_files::disabled);
-
+  for (size_t i = 0; i < pipeline_steps.size(); ++i) {
     m_chunks.emplace_back(std::make_unique<fastq_output_chunk>(eof));
   }
 }
@@ -195,7 +194,8 @@ trimmed_reads::finalize()
   chunk_vec chunks;
 
   for (size_t i = 0; i < m_chunks.size(); ++i) {
-    chunks.emplace_back(m_map.steps.at(i), std::move(m_chunks.at(i)));
+    chunks.emplace_back(m_map.pipeline_steps().at(i),
+                        std::move(m_chunks.at(i)));
   }
 
   return chunks;

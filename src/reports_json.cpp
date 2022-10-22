@@ -226,7 +226,7 @@ struct io_section
   {
     const auto offset = sample_files.offset(rtype);
     if (offset != output_sample_files::disabled) {
-      m_filenames.push_back(sample_files.filenames.at(offset));
+      m_filenames.push_back(sample_files.filenames().at(offset));
     }
   }
 
@@ -432,7 +432,7 @@ collect_files(const output_files& files, read_type rtype)
   for (const auto& sample_files : files.samples) {
     const auto offset = sample_files.offset(rtype);
     if (offset != output_sample_files::disabled) {
-      filenames.push_back(sample_files.filenames.at(offset));
+      filenames.push_back(sample_files.filenames().at(offset));
     }
   }
 

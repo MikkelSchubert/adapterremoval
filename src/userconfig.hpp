@@ -59,32 +59,29 @@ class output_sample_files
 public:
   output_sample_files();
 
-  //! Add a new (non-unique) filename and returns the index in the unique set;
-  size_t add(const std::string& filename);
+  /** Sets the output filename for a given read type. */
+  void set_filename(read_type rtype, const std::string& filename);
+  /** Pushes a pipeline step for a given output filename. There can  */
+  void push_pipeline_step(size_t step);
 
-  //! Vector of unique output filenames; filenames may be shared
-  string_vec filenames;
-  //! Vector of unique output steps IDs; steps may be shared
-  std::vector<size_t> steps;
+  /** Unique output filenames, indexed using `offset` */
+  const string_vec& filenames() const;
+  /** Unique pipeline steps, indexed using `offset` */
+  const std::vector<size_t>& pipeline_steps() const;
 
-  /** Returns mutable offset to step/filename. */
-  size_t& offset(read_type value)
-  {
-    return offsets.at(static_cast<size_t>(value));
-  }
-
-  /** Returns offset to step/filename. */
-  size_t offset(read_type value) const
-  {
-    return offsets.at(static_cast<size_t>(value));
-  }
+  /** Returns the offset to the pipeline step/filename for a given read type. */
+  size_t offset(read_type value) const;
 
   //! Constant used to represent disabled output files/steps.
   static const size_t disabled;
 
 private:
+  //! Unique output filenames. Multiple read types may be mapped to a filename
+  string_vec m_filenames;
+  //! Unique pipeline steps IDs. Multiple read types may be mapped to a step
+  std::vector<size_t> m_pipeline_steps;
   //! Mapping of read types to filenames/steps.
-  std::array<size_t, static_cast<size_t>(read_type::max)> offsets;
+  std::array<size_t, static_cast<size_t>(read_type::max)> m_offsets;
 };
 
 /** Class used to organize filenames of output files. */

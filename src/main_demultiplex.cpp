@@ -139,8 +139,8 @@ demultiplex_sequences(const userconfig& config)
   // Step 4 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
     auto& mapping = out_files.samples.at(nth);
-    for (const auto& filename : mapping.filenames) {
-      mapping.steps.push_back(add_write_step(sch, config, filename));
+    for (const auto& filename : mapping.filenames()) {
+      mapping.push_pipeline_step(add_write_step(sch, config, filename));
     }
 
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
