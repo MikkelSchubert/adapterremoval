@@ -168,6 +168,15 @@ parser::is_set(const std::string& key) const
   return it->second->is_set();
 }
 
+std::string
+parser::to_str(const std::string& key) const
+{
+  const auto it = m_keys.find(key);
+  AR_REQUIRE(it != m_keys.end());
+
+  return it->second->to_str();
+}
+
 argument&
 parser::add(const std::string& name, const std::string& metavar)
 {
@@ -844,7 +853,7 @@ str_sink::with_choices(const string_vec& value)
 std::string
 str_sink::to_str() const
 {
-  return shell_escape(*m_sink);
+  return *m_sink;
 }
 
 string_vec

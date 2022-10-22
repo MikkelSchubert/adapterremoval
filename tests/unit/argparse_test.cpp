@@ -347,7 +347,7 @@ TEST_CASE("str sink to_str escapes", "[argparse::str_sink]")
   std::string value;
   argparse::str_sink sink(&value);
   value = "foo bar";
-  REQUIRE(sink.to_str() == "'foo bar'");
+  REQUIRE(sink.to_str() == "foo bar");
 }
 
 TEST_CASE("str sink with_default", "[argparse::str_sink]")
@@ -969,6 +969,20 @@ TEST_CASE("parse multiple arguments", "[argparse::parser]")
   REQUIRE_FALSE(p.is_set("--arg2"));
   REQUIRE(p.is_set("--arg3"));
   REQUIRE(sink == 1234);
+}
+
+TEST_CASE("to_str returns value as str", "[argparse::parser]")
+{
+  unsigned usink = 0;
+  std::string ssink;
+  argparse::parser p("My App", "v1234", "basic help");
+  p.add("--arg1").bind_uint(&usink);
+  p.add("--arg2").bind_str(&ssink);
+  const char* args[] = { "exe", "--arg1", "1234", "--arg2", "foo bar*" };
+
+  REQUIRE(p.parse_args(5, args) == argparse::parse_result::ok);
+  REQUIRE(p.to_str("--arg1") == "1234");
+  REQUIRE(p.to_str("--arg2") == "foo bar*");
 }
 
 TEST_CASE("user supplied argument", "[argparse::parser]")

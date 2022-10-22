@@ -112,6 +112,8 @@ public:
 
   /** Returns true if the option with the given key has been set. */
   bool is_set(const std::string& key) const;
+  /** Returns the value associated with the argument as a string. */
+  std::string to_str(const std::string& key) const;
 
   /** Add argument with metavar. By default this takes no values. */
   argument& add(const std::string& name, const std::string& metavar = "");
