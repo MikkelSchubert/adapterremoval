@@ -49,9 +49,12 @@ fastq_report_only(const userconfig& config);
 [[noreturn]] void
 terminate(const std::string& message)
 {
-  log::error() << message << "\n"
-               << "This should not happen! Please file a bug-report at\n    "
-               << "https://github.com/MikkelSchubert/adapterremoval/issues/new";
+  log::error()
+    << message << "\n"
+    << "This should not happen! Please file a bug-report at\n"
+    << "    https://github.com/MikkelSchubert/adapterremoval/issues/new\n\n"
+    << "Please specify the AdapterRemoval version used (" << VERSION << ")\n"
+    << "and if possible describe the steps taken to reproduce this problem.";
 
   std::abort();
 }
