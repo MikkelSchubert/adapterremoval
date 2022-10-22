@@ -169,57 +169,6 @@ indent_lines(const std::string& text, size_t n_indent)
   return lines_out.str();
 }
 
-std::string
-template_replace(const std::string& haystack,
-                 const std::string& needle,
-                 const std::string& value)
-{
-  AR_REQUIRE(needle.size());
-
-  std::string result;
-  std::size_t last = 0;
-  std::size_t pos = haystack.find(needle, 1);
-  while (pos != std::string::npos) {
-    bool prefix = false;
-    if (pos >= 2 && haystack.at(pos - 2) == '{') {
-      prefix = true;
-    } else if (haystack.at(pos - 1) != '{') {
-      pos = haystack.find(needle, pos + 1);
-      continue;
-    }
-
-    bool postfix = false;
-    const size_t end = pos + needle.size();
-    if (end + 1 < haystack.size() && haystack.at(end + 1) == '}') {
-      postfix = true;
-    } else if (end >= haystack.size() || haystack.at(end) != '}') {
-      pos = haystack.find(needle, pos + 1);
-      continue;
-    }
-
-    result.append(haystack.substr(last, pos - last - 1 - prefix));
-
-    if (value.size()) {
-      if (prefix) {
-        result.push_back(haystack.at(pos - 1));
-      }
-
-      result.append(value);
-
-      if (postfix) {
-        result.push_back(haystack.at(pos + needle.length()));
-      }
-    }
-
-    last = pos + needle.size() + 1 + postfix;
-    pos = haystack.find(needle, last);
-  }
-
-  result.append(haystack.substr(last));
-
-  return result;
-}
-
 string_vec
 wrap_text(const std::string& value, size_t max_width, size_t ljust)
 {

@@ -35,7 +35,7 @@
 #include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log
 #include "progress.hpp"   // for progress_type
-#include "strutils.hpp"   // for template_replace, str_to_unsigned, toupper
+#include "strutils.hpp"   // for str_to_unsigned, toupper
 #include "userconfig.hpp" // declarations
 
 namespace adapterremoval {
@@ -143,7 +143,7 @@ output_sample_files::add(const std::string& filename)
 {
   // If discarded then no post processing is needed; this saves time especially
   // when output compression is enabled.
-  if (filename == "/dev/null") {
+  if (filename == DEV_NULL) {
     return output_sample_files::disabled;
   }
 
@@ -271,7 +271,6 @@ userconfig::userconfig(const std::string& name,
   , out_basename()
   , out_json()
   , out_html()
-  , out_interleaved("{basename}{.sample}.fastq")
   , out_pair_1()
   , out_pair_2()
   , out_merged()
@@ -395,29 +394,30 @@ userconfig::userconfig(const std::string& name,
           "in JSON format")
     .deprecated_alias("--settings")
     .bind_str(&out_json)
-    .with_default("{basename}{.sample}.json");
+    .with_default("{basename}[.sample].json");
   argparser.add("--out-html", "FILE")
     .help("Output report containing statistics about trimming, merging, and "
           "more in HTML format")
     .bind_str(&out_html)
-    .with_default("{basename}{.sample}.html");
+    .with_default("{basename}[.sample].html");
 
   argparser.add("--out-file1", "FILE")
-    .help("Output file containing trimmed mate1 reads")
+    .help("Output file containing trimmed mate 1 reads. When performing "
+          "demultiplexing, this path is treated as a prefix for output files ")
     .deprecated_alias("--output1")
     .bind_str(&out_pair_1)
-    .with_default("{basename}{.sample}.r1.fastq");
+    .with_default("{basename}[.sample].r1.fastq");
   argparser.add("--out-file2", "FILE")
     .help("Output file containing trimmed mate 2 reads")
     .deprecated_alias("--output2")
     .bind_str(&out_pair_2)
-    .with_default("{basename}{.sample}.r2.fastq");
+    .with_default("{basename}[.sample].r2.fastq");
   argparser.add("--out-singleton", "FILE")
     .help("Output file to which containing paired reads for which the mate "
           "has been discarded")
     .deprecated_alias("--singleton")
     .bind_str(&out_singleton)
-    .with_default("{basename}{.sample}.singleton.fastq");
+    .with_default("{basename}[.sample].singleton.fastq");
   argparser.add("--out-merged", "FILE")
     .help("If --merge is set, contains overlapping mate-pairs which "
           "have been merged into a single read (PE mode) or reads for which "
@@ -427,13 +427,13 @@ userconfig::userconfig(const std::string& name,
           "ambiguous nucleotides")
     .deprecated_alias("--outputcollapsed")
     .bind_str(&out_merged)
-    .with_default("{basename}{.sample}.merged.fastq");
+    .with_default("{basename}[.sample].merged.fastq");
   argparser.add("--out-discarded", "FILE")
     .help("Contains reads discarded due to the --minlength, --maxlength or "
           "--maxns options")
     .deprecated_alias("--discarded")
     .bind_str(&out_discarded)
-    .with_default("{basename}{.sample}.discarded.fastq");
+    .with_default("{basename}[.sample].discarded.fastq");
 
   argparser.add_header("OUTPUT COMPRESSION:");
   argparser.add("--gzip").help("Enable gzip-compression.").bind_bool(&gzip);
@@ -567,6 +567,9 @@ userconfig::userconfig(const std::string& name,
           "both single-end and paired-end trimming, if double-indexed "
           "multiplexing was used, in order to ensure that the demultiplexed "
           "reads can be trimmed correctly")
+#if 0
+    .depends_on("--basename")
+#endif
     .bind_str(&barcode_list);
   argparser.add("--barcode-mm", "N")
     .help("Maximum number of mismatches allowed when counting mismatches in "
@@ -739,11 +742,6 @@ userconfig::parse_args(int argc, char* argv[])
     paired_ended_mode = true;
   }
 
-  // Interleaved output has it's own default filename, but can be overwritten
-  if (interleaved_output && argparser.is_set("--out-file1")) {
-    out_interleaved = out_pair_1;
-  }
-
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
 
@@ -829,6 +827,26 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   }
 
+  if (adapters.barcode_count()) {
+    bool any_keys_set = false;
+    const string_vec keys = {
+      "--out-json",      "--out-html",   "--out-file1",     "--out-file2",
+      "--out-singleton", "--out-merged", "--out-discarded",
+    };
+
+    for (const auto& key : keys) {
+      if (argparser.is_set(key) && argparser.to_str(key) != DEV_NULL) {
+        log::error() << "Command-line option " << key << " can only be set to "
+                     << "/dev/null when demultiplexing!";
+        any_keys_set = true;
+      }
+    }
+
+    if (any_keys_set) {
+      return argparse::parse_result::error;
+    }
+  }
+
   return argparse::parse_result::ok;
 }
 
@@ -877,49 +895,46 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings_json = template_replace(out_json, "basename", out_basename);
-  files.settings_json = template_replace(files.settings_json, "sample", "");
+  files.settings_json = new_filename("--out-json", ".json");
+  files.settings_html = new_filename("--out-html", ".html");
 
-  files.settings_html = template_replace(out_html, "basename", out_basename);
-  files.settings_html = template_replace(files.settings_html, "sample", "");
+  const std::string ext = gzip ? ".fastq.gz" : ".fastq";
+  const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
+  const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
 
-  const std::string out1 = interleaved_output ? out_interleaved : out_pair_1;
-  const std::string out2 = interleaved_output ? out_interleaved : out_pair_2;
-
-  files.unidentified_1 = get_output_filename("--output1", out1, "unidentified");
-  files.unidentified_2 = get_output_filename("--output2", out2, "unidentified");
+  files.unidentified_1 = new_filename("--output1", ".unidentified" + out1);
+  files.unidentified_2 = new_filename("--output2", ".unidentified" + out2);
 
   const bool demultiplexing = adapters.barcode_count();
+  files.samples.resize(adapters.adapter_set_count());
 
-  for (size_t i = 0; i < adapters.adapter_set_count(); ++i) {
-    const std::string name = demultiplexing ? adapters.get_sample_name(i) : "";
-
-    files.samples.emplace_back();
-    auto& map = files.samples.back();
+  for (size_t i = 0; i < files.samples.size(); ++i) {
+    const auto sample = demultiplexing ? adapters.get_sample_name(i) : "";
+    auto& map = files.samples.at(i);
 
     map.offset(read_type::mate_1) =
-      map.add(get_output_filename("--out-file1", out1, name));
+      map.add(new_filename("--out-file1", sample, out1));
 
     if (paired_ended_mode) {
       if (interleaved_output) {
         map.offset(read_type::mate_2) = map.offset(read_type::mate_1);
       } else {
         map.offset(read_type::mate_2) =
-          map.add(get_output_filename("--out-file2", out2, name));
+          map.add(new_filename("--out-file2", sample, out2));
       }
     }
 
     if (run_type == ar_command::trim_adapters) {
       map.offset(read_type::discarded) =
-        map.add(get_output_filename("--out-discarded", out_discarded, name));
+        map.add(new_filename("--out-discarded", sample, ".discarded" + ext));
 
       if (paired_ended_mode) {
         map.offset(read_type::singleton) =
-          map.add(get_output_filename("--out-singleton", out_singleton, name));
+          map.add(new_filename("--out-singleton", sample, ".singleton" + ext));
 
         if (merge) {
           map.offset(read_type::merged) =
-            map.add(get_output_filename("--out-merged", out_merged, name));
+            map.add(new_filename("--out-merged", sample, ".merged" + ext));
         }
       }
     }
@@ -929,18 +944,27 @@ userconfig::get_output_filenames() const
 }
 
 std::string
-userconfig::get_output_filename(const std::string& key,
-                                const std::string& filename,
-                                const std::string& sample) const
+userconfig::new_filename(const std::string& key,
+                         const std::string& first,
+                         const std::string& second) const
 {
-  auto tmp = template_replace(filename, "basename", out_basename);
-  tmp = template_replace(tmp, "sample", sample);
-
-  if (gzip && !argparser.is_set(key)) {
-    tmp.append(".gz");
+  if (argparser.is_set(key)) {
+    return argparser.to_str(key);
+#if 0
+  } else if (!argparser.is_set("--basename")) {
+    return DEV_NULL;
+#endif
   }
 
-  return tmp;
+  std::string out = out_basename;
+  if (first.size() && first.front() != '.') {
+    out.push_back('.');
+  }
+
+  out.append(first);
+  out.append(second);
+
+  return out;
 }
 
 bool

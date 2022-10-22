@@ -42,6 +42,9 @@ struct alignment_info;
 class trimming_statistics;
 enum class progress_type;
 
+//! Path used to indicate that a file is not needed
+const std::string DEV_NULL = "/dev/null";
+
 enum class ar_command
 {
   trim_adapters,
@@ -149,8 +152,6 @@ public:
   std::string out_json;
   //! Template filename used for writing HTML report
   std::string out_html;
-  //! Template filename used for writing interleaved reads
-  std::string out_interleaved;
   //! Template filename used for writing mate 1 reads
   std::string out_pair_1;
   //! Template filename used for writing mate 2 reads
@@ -258,9 +259,9 @@ private:
   /** Sets up adapter sequences based on user settings. */
   bool setup_adapter_sequences();
 
-  std::string get_output_filename(const std::string& key,
-                                  const std::string& filename,
-                                  const std::string& sample) const;
+  std::string new_filename(const std::string& key,
+                           const std::string& first,
+                           const std::string& second = std::string()) const;
 
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser;
