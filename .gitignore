@@ -1,4 +1,4 @@
-lcov.info
+*.gcov
 *~
 /.vscode
 /build

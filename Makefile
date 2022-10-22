@@ -36,6 +36,8 @@ EXEC_TEST   := unit_tests
 
 BUILD_DIR   := build
 OBJS_DIR    := $(BUILD_DIR)/objects
+COV_DIR     := $(BUILD_DIR)/coverage
+
 EXECUTABLE  := $(BUILD_DIR)/$(EXEC_MAIN)
 TEST_RUNNER := $(BUILD_DIR)/$(EXEC_TEST)
 
@@ -210,7 +212,25 @@ regression: $(EXECUTABLE)
 
 test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
-	$(QUIET) $(TEST_RUNNER)
+	$(QUIET) $(TEST_RUNNER) --invisibles
+ifeq ($(strip ${COVERAGE}), yes)
+ifneq ($(shell which gcovr), )
+	@echo $(COLOR_GREEN)"Running coverage analysis"$(COLOR_END)
+	$(QUIET) mkdir -p "$(COV_DIR)"
+	$(QUIET) gcovr \
+		--txt $(COV_DIR)/index.txt \
+		--xml $(COV_DIR)/coverage.xml \
+		--exclude-throw-branches \
+		--exclude-lines-by-pattern ".*\\sREQUIRE[_A-Z]*\\(.*" \
+		--sort-percentage \
+		--exclude tests/unit/catch.hpp  \
+		--html-details $(COV_DIR)/index.html \
+		--delete
+	$(QUIET) cat "$(COV_DIR)/index.txt"
+else
+	@echo $(COLOR_YELLOW)"Cannot analyse coverage: gcovr not found"$(COLOR_END)
+endif
+endif
 
 $(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
