@@ -157,10 +157,13 @@ demultiplex_sequences(const userconfig& config)
 
   // Step 3: Parse and demultiplex reads based on single or double indices
   if (config.adapters.barcode_count()) {
-    steps.unidentified_1 =
-      add_write_step(sch, config, out_files.unidentified_1);
+    if (out_files.unidentified_1 != DEV_NULL) {
+      steps.unidentified_1 =
+        add_write_step(sch, config, out_files.unidentified_1);
+    }
 
-    if (config.paired_ended_mode && !config.interleaved_output) {
+    if (config.paired_ended_mode && !config.interleaved_output &&
+        out_files.unidentified_2 != DEV_NULL) {
       steps.unidentified_2 =
         add_write_step(sch, config, out_files.unidentified_2);
     }

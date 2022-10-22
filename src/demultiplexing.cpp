@@ -82,8 +82,9 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   AR_REQUIRE(m_statistics);
   AR_REQUIRE(m_statistics->barcodes.size() == m_barcodes.size());
 
-  AR_REQUIRE(m_steps.unidentified_1 != post_demux_steps::disabled);
-  m_unidentified_1 = std::make_unique<fastq_output_chunk>();
+  if (m_steps.unidentified_1 != post_demux_steps::disabled) {
+    m_unidentified_1 = std::make_unique<fastq_output_chunk>();
+  }
 
   if (m_steps.unidentified_2 != post_demux_steps::disabled &&
       m_steps.unidentified_1 != m_steps.unidentified_2) {
@@ -104,7 +105,9 @@ demultiplex_reads::flush_cache(bool eof)
 {
   chunk_vec output;
 
-  flush_chunk(output, m_unidentified_1, m_steps.unidentified_1, eof);
+  if (m_unidentified_1) {
+    flush_chunk(output, m_unidentified_1, m_steps.unidentified_1, eof);
+  }
 
   if (m_unidentified_2) {
     flush_chunk(output, m_unidentified_2, m_steps.unidentified_2, eof);
@@ -136,7 +139,9 @@ demultiplex_se_reads::process(chunk_ptr chunk)
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
-      m_unidentified_1->add(read);
+      if (m_unidentified_1) {
+        m_unidentified_1->add(read);
+      }
 
       if (best_barcode == -1) {
         m_statistics->unidentified += 1;
@@ -180,10 +185,15 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 
     if (best_barcode < 0) {
-      m_unidentified_1->add(*it_1);
+      if (m_unidentified_1) {
+        m_unidentified_1->add(*it_1);
+      }
+
       if (m_config.interleaved_output) {
-        m_unidentified_1->add(*it_2);
-      } else {
+        if (m_unidentified_1) {
+          m_unidentified_1->add(*it_2);
+        }
+      } else if (m_unidentified_2) {
         m_unidentified_2->add(*it_2);
       }
 

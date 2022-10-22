@@ -175,6 +175,25 @@ try_parse_argument(const string_vec& args,
   return fallback;
 }
 
+/** Returns vector of keys for output files that have been set by the user. */
+string_vec
+output_files_set(const argparse::parser& argparser)
+{
+  const string_vec keys = {
+    "--out-json",      "--out-html",   "--out-file1",     "--out-file2",
+    "--out-singleton", "--out-merged", "--out-discarded",
+  };
+
+  string_vec result;
+  for (const auto& key : keys) {
+    if (argparser.is_set(key)) {
+      result.push_back(key);
+    }
+  }
+
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 bool
@@ -567,9 +586,7 @@ userconfig::userconfig(const std::string& name,
           "both single-end and paired-end trimming, if double-indexed "
           "multiplexing was used, in order to ensure that the demultiplexed "
           "reads can be trimmed correctly")
-#if 0
     .depends_on("--basename")
-#endif
     .bind_str(&barcode_list);
   argparser.add("--barcode-mm", "N")
     .help("Maximum number of mismatches allowed when counting mismatches in "
@@ -828,23 +845,27 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   if (adapters.barcode_count()) {
-    bool any_keys_set = false;
-    const string_vec keys = {
-      "--out-json",      "--out-html",   "--out-file1",     "--out-file2",
-      "--out-singleton", "--out-merged", "--out-discarded",
-    };
-
-    for (const auto& key : keys) {
-      if (argparser.is_set(key) && argparser.to_str(key) != DEV_NULL) {
+    bool any_illegal_keys = false;
+    for (const auto& key : output_files_set(argparser)) {
+      if (argparser.to_str(key) != DEV_NULL) {
         log::error() << "Command-line option " << key << " can only be set to "
                      << "/dev/null when demultiplexing!";
-        any_keys_set = true;
+        any_illegal_keys = true;
       }
     }
 
-    if (any_keys_set) {
+    if (any_illegal_keys) {
       return argparse::parse_result::error;
     }
+  }
+
+  if (run_type != ar_command::identify_adapters &&
+      !argparser.is_set("--basename") && output_files_set(argparser).empty()) {
+    log::error() << "No output files were specified. Use either --basename or "
+                    "one or more --out-* arguments. If you actually don't want "
+                    "any output, then use '--basename /dev/null'";
+
+    return argparse::parse_result::error;
   }
 
   return argparse::parse_result::ok;
@@ -950,10 +971,11 @@ userconfig::new_filename(const std::string& key,
 {
   if (argparser.is_set(key)) {
     return argparser.to_str(key);
-#if 0
   } else if (!argparser.is_set("--basename")) {
     return DEV_NULL;
-#endif
+  } else if (out_basename == DEV_NULL) {
+    // Special case to allow dry runs with no output
+    return DEV_NULL;
   }
 
   std::string out = out_basename;

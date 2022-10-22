@@ -502,6 +502,11 @@ write_json_report(const userconfig& config,
                   const statistics& stats,
                   const std::string& filename)
 {
+  if (filename == DEV_NULL) {
+    // User disabled the report
+    return true;
+  }
+
   try {
     std::ofstream output(filename, std::ofstream::out);
     if (!output.is_open()) {

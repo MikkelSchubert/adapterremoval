@@ -451,6 +451,10 @@ class TestConfig(
         if input_2:
             command += ["--file2"] + input_2
 
+        # FIXME: Temporary workaround for outdated tests
+        if len(command) > 1 and "--basename" not in command:
+            command.extend(["--basename", "your_output"])
+
         return command
 
     def get_files(self, keys):
