@@ -416,7 +416,7 @@ userconfig::userconfig(const std::string& name,
     .help("This option enables both the --interleaved-input option and the "
           "--interleaved-output option")
     .conflicts_with("--file2")
-    .conflicts_with("--output2")
+    .conflicts_with("--out-file2")
     .bind_bool(&interleaved);
   argparser.add("--interleaved-input")
     .help("The (single) input file provided contains both the mate 1 and mate "
@@ -429,7 +429,7 @@ userconfig::userconfig(const std::string& name,
     .help("If set, trimmed paired-end reads are written to a single file "
           "containing mate 1 and mate 2 reads, one pair after the other. This "
           "option is implied by the --interleaved option")
-    .conflicts_with("--output2")
+    .conflicts_with("--out-file2")
     .bind_bool(&interleaved_output);
 
   argparser.add_header("OUTPUT FILES:");
@@ -953,8 +953,8 @@ userconfig::get_output_filenames() const
   const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
   const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
 
-  files.unidentified_1 = new_filename("--output1", ".unidentified" + out1);
-  files.unidentified_2 = new_filename("--output2", ".unidentified" + out2);
+  files.unidentified_1 = new_filename("--out-file1", ".unidentified" + out1);
+  files.unidentified_2 = new_filename("--out-file2", ".unidentified" + out2);
 
   const bool demultiplexing = adapters.barcode_count();
   files.samples.resize(adapters.adapter_set_count());

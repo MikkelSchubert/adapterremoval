@@ -1,5 +1,11 @@
 {
-  "arguments": ["--report-only", "--out-json", "report_pe.json", "--qualitybase", "solexa"],
+  "arguments": [
+    "--report-only",
+    "--out-json",
+    "report_pe.json",
+    "--quality-format",
+    "solexa"
+  ],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],

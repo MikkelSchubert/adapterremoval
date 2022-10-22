@@ -131,10 +131,10 @@ throw_invalid_phred_33(const char raw)
 
      << "If the quality scores are actually Phred+64 encoded, which would "
      << "mean that the Phred quality score is " << alt_score
-     << ", then use the '--qualitybase 64' command-line option.\n\n"
+     << ", then use the '--quality-format 64' command-line option.\n\n"
 
      << "If the quality scores are Phred+33 encoded, but have higher than "
-        "expected scores, then use '--qualitybase sam' to permit the full "
+        "expected scores, then use '--quality-format sam' to permit the full "
         "range of quality scores.\n\n"
 
      << "See the documentation for more information.";
@@ -162,13 +162,13 @@ throw_invalid_phred_64(const char raw)
 
      << "If the quality scores are actually Phred+33 encoded, which would "
      << "mean that the Phred quality score is " << alt_score
-     << ", then omit the '--qualitybase' command-line option or use "
-     << "'--qualitybase 33' to explicitly set the format.\n\n";
+     << ", then omit the '--quality-format' command-line option or use "
+     << "'--quality-format 33' to explicitly set the format.\n\n";
 
   if (score >= SOLEXA_SCORE_MIN) {
     ss << "The quality score could also be the older Solexa format, which has "
        << "a minimum score of -5, but data of this type is rare. If it is "
-       << "actually Solexa encoded FASTQ data, then use the '--qualitybase "
+       << "actually Solexa encoded FASTQ data, then use the '--quality-format "
        << "solexa' command-line option.\n\n";
   }
 
@@ -196,8 +196,8 @@ throw_invalid_solexa(const char raw)
 
        << "If the quality scores are actually Phred+33 encoded, which would "
        << "mean that the Phred quality score is " << alt_score
-       << ", then omit the '--qualitybase' command-line option or use "
-       << "'--qualitybase 33' to explicitly set the format.\n\n"
+       << ", then omit the '--quality-format' command-line option or use "
+       << "'--quality-format 33' to explicitly set the format.\n\n"
 
        << "See the documentation for more information.";
   } else if (raw > SOLEXA_OFFSET_MAX) {

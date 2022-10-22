@@ -2,13 +2,13 @@
   "exhaustive": false,
   "arguments": [
     "--trimns",
-    "--discarded",
+    "--out-discarded",
     "disc",
-    "--output1",
+    "--out-file1",
     "out1",
-    "--settings",
+    "--out-json",
     "out_settings",
-    "--singleton",
+    "--out-singleton",
     "singles",
     "--out-html",
     "out_html"

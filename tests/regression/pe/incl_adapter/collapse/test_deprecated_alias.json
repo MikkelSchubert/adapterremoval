@@ -1,5 +1,5 @@
 {
-  "arguments": ["--collapse-deterministic"],
+  "arguments": ["--collapse"],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],
@@ -14,6 +14,6 @@
     "html": ["your_output.html"]
   },
   "stderr": [
-    "[WARNING] Option --collapse-deterministic is deprecated and will be removed in the future."
+    "[WARNING] Option --collapse is deprecated and will be removed in the future. Please use --merge instead."
   ]
 }

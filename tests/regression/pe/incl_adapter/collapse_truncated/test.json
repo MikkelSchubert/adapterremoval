@@ -1,5 +1,5 @@
 {
-  "arguments": ["--collapse", "--trimns"],
+  "arguments": ["--merge", "--trimns"],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],

@@ -1,11 +1,5 @@
 {
-  "arguments": [
-    "--report-only",
-    "--out-json",
-    "report_pe.json",
-    "--quality-format",
-    "sam"
-  ],
+  "arguments": ["--report-only", "--out-json", "report_pe.json", "--quality-format", "33"],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],

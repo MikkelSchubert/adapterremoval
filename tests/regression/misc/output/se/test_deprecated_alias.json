@@ -1,0 +1,27 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--trimns",
+    "--discarded",
+    "disc",
+    "--output1",
+    "out1",
+    "--settings",
+    "out_settings",
+    "--singleton",
+    "singles",
+    "--out-html",
+    "out_html"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "output": ["disc", "out1"],
+    "json": ["out_settings"],
+    "html": ["out_html"]
+  },
+  "stderr": [
+    "[WARNING] Option --discarded is deprecated and will be removed in the future. Please use --out-discarded instead.",
+    "[WARNING] Option --output1 is deprecated and will be removed in the future. Please use --out-file1 instead.",
+    "[WARNING] Option --settings is deprecated and will be removed in the future. Please use --out-json instead."
+  ]
+}

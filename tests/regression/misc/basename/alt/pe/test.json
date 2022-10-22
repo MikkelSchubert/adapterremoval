@@ -1,6 +1,6 @@
 {
   "exhaustive": true,
-  "arguments": ["--collapse", "--trimns", "--basename", "alternative"],
+  "arguments": ["--merge", "--trimns", "--basename", "alternative"],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],

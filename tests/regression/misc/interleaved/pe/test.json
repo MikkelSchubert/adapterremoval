@@ -3,7 +3,7 @@
   "arguments": [
     "--trimns",
     "--interleaved-output",
-    "--output1",
+    "--out-file1",
     "interleaved.fastq"
   ],
   "files": {

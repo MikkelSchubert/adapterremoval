@@ -1,5 +1,5 @@
 {
-  "arguments": ["--trimns", "--trimqualities", "--preserve5p", "--collapse"],
+  "arguments": ["--trimns", "--trimqualities", "--preserve5p", "--merge"],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],
