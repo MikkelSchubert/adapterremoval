@@ -1,5 +1,5 @@
 ###############################################################################
-# Makefile options: Edit / comment / uncomment to change build behavior
+# Makefile options: Edit here or specify on command-line (e.g. make STATIC=yes)
 
 # Installation destinations
 PREFIX := /usr/local
@@ -38,9 +38,6 @@ BUILD_DIR   := build
 OBJS_DIR    := $(BUILD_DIR)/objects
 COV_DIR     := $(BUILD_DIR)/coverage
 
-EXECUTABLE  := $(BUILD_DIR)/$(EXEC_MAIN)
-TEST_RUNNER := $(BUILD_DIR)/$(EXEC_TEST)
-
 REGRESSION_TESTS := tests/regression
 REGRESSION_DIR   := $(BUILD_DIR)/regression
 
@@ -65,16 +62,20 @@ COLOR_END := "\033[0m"
 endif
 endif
 
+BUILD_NAME := release
+BUILD_NAME_PREFIX :=
+BUILD_NAME_POSTFIX :=
+
 ifeq ($(strip ${STATIC}),yes)
 $(info Building static AdapterRemoval binary: yes)
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58909
 CXXFLAGS := $(CXXFLAGS) -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 OBJS_DIR := $(BUILD_DIR)/static
 EXECUTABLE := $(BUILD_DIR)/$(EXEC_MAIN).static
+BUILD_NAME_PREFIX := static-
 else
 $(info Building static AdapterRemoval binary: no)
 endif
-
 
 ifeq ($(strip ${LIBDEFLATE}),yes)
 $(info Building AdapterRemoval with libdeflate: yes)
@@ -82,12 +83,14 @@ CXXFLAGS := $(CXXFLAGS) -DUSE_LIBDEFLATE
 LIBRARIES := $(LIBRARIES) -ldeflate
 else
 $(info Building AdapterRemoval with libdeflate: no)
+BUILD_NAME_POSTFIX := -nolibdeflate
 endif
 
 ifeq ($(strip ${COVERAGE}), yes)
 $(info Building AdapterRemoval with coverage instrumentation: yes)
 CXXFLAGS := ${CXXFLAGS} --coverage
 DEBUG_BUILD := yes
+BUILD_NAME := coverage
 else
 $(info Building AdapterRemoval with coverage instrumentation: no)
 endif
@@ -99,9 +102,22 @@ CXXFLAGS := ${CXXFLAGS} -g -DDEBUG \
 	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
 	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=2 \
 	-Wswitch-default -Wundef -Weffc++ -Wdeprecated
+
+ifneq ($(strip ${COVERAGE}), yes)
+BUILD_NAME := debug
+endif
 else
 $(info Building AdapterRemoval with debug information: no)
 endif
+
+# Use a different folder for each build configuration
+BUILD_NAME  := $(BUILD_NAME_PREFIX)$(BUILD_NAME)$(BUILD_NAME_POSTFIX)
+EXECUTABLE  := $(BUILD_DIR)/$(BUILD_NAME)/$(EXEC_MAIN)
+TEST_RUNNER := $(BUILD_DIR)/$(BUILD_NAME)/$(EXEC_TEST)
+
+OBJS_DIR := $(BUILD_DIR)/$(BUILD_NAME)
+
+$(info Build configuration: $(BUILD_NAME))
 
 ################################################################################
 
