@@ -216,36 +216,18 @@ public:
   void set_mate_separator(char sep = MATE_SEPARATOR);
 
   /**
-   * If enabled, the sequence merger performs a more conservative merging
-   * inspired by fastq-join and NGmerge, with the added caveat that mismatches
-   * without a higher quality choice are assigned 'N'.
-   */
-  void set_conservative(bool enabled = false);
-
-  /** Sets the maximum base quality score for recaculated scores. */
-  void set_max_recalculated_score(char max);
-
-  /**
-   * Merges two overlapping reads into a single sequence, recalculating the
-   * quality in one of two ways. If `conservative` mode is enabled, the
-   * highest quality score of the two bases is used for matches, and the
-   * difference is used for matches. Otherwise an updated score is caculated
-   * bases on the original quality scores using the original algorithm
-   * implemented in AdapterRemoval.
+   * Merges two overlapping, trimmed reads into a single sequence. The highest
+   * quality score of the two bases is used for matches, and the difference is
+   * used for mismatches.
    *
-   * Note that the sequences are assumed to have been trimmed using the
-   * function, and this function will produce undefined results if this is not
-   * the case!
+   * The sequences are assumed to have been trimmed using the given alignment.
+   * This function will produce undefined results if that is not the case!
+   *
+   * TODO: Simplify to take a "size_t overlap" param instead of "alignment".
    */
   void merge(const alignment_info& alignment, fastq& read1, const fastq& read2);
 
 private:
-  /** The original merging algorithm implemented in AdapterRemoval. */
-  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
-
-  /** Alternative merging algorithm added in 2.4.0. */
-  void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
-
   //! Mate separator used in read names
   char m_mate_sep;
   //! Whether to recalculate scores using the conservative or the standard mode

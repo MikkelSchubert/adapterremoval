@@ -191,8 +191,6 @@ public:
 
   //! Quality format expected in input files.
   fastq_encoding io_encoding;
-  //! Maximum quality score for input/recalculated qualties
-  unsigned quality_max;
 
   //! Fixed number of bases to trim from 5' for mate 1 and mate 2 reads
   std::pair<unsigned, unsigned> trim_fixed_5p;
@@ -223,9 +221,6 @@ public:
   //! If true, PE reads overlapping at least 'min_alignment_length' are
   //! merged to generate a higher quality consensus sequence.
   bool merge;
-  //! If true, merging is done using the alternative, more conservative merging
-  //! algorithm inspired by fastq-join.
-  bool merge_conservatively;
   // Allow for slipping basepairs by allowing missing bases in adapter
   unsigned shift;
 

@@ -289,7 +289,6 @@ userconfig::userconfig(const std::string& name,
   , min_alignment_length()
   , mismatch_threshold()
   , io_encoding(FASTQ_ENCODING_33)
-  , quality_max()
   , trim_fixed_5p()
   , trim_fixed_3p()
   , trim_error_rate()
@@ -301,7 +300,6 @@ userconfig::userconfig(const std::string& name,
   , min_complexity()
   , preserve5p()
   , merge()
-  , merge_conservatively()
   , shift()
   , max_threads()
   , gzip()
@@ -650,15 +648,10 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
   argparser.add("--collapse-deterministic").deprecated();
-  argparser.add("--collapse-conservatively")
-    .conflicts_with("--merge-recalculates-scores")
-    .deprecated();
-
-  argparser.add("--merge-recalculates-scores")
-    .conflicts_with("--collapse-conservatively")
-    .depends_on("--qualitymax")
-    .deprecated();
-  argparser.add("--qualitymax", "N").deprecated().bind_uint(&quality_max);
+  argparser.add("--collapse-conservatively").deprecated();
+  argparser.add("--qualitymax", "N")
+    .deprecated()
+    .bind_uint(&m_deprecated_knobs);
 }
 
 argparse::parse_result
@@ -757,13 +750,8 @@ userconfig::parse_args(int argc, char* argv[])
     // merge related options implies --merge
     merge |= argparser.is_set("--collapse-deterministic");
     merge |= argparser.is_set("--collapse-conservatively");
-    merge |= argparser.is_set("--merge-recalculates-scores");
-
-    // Default to merging conservatively
-    merge_conservatively = !argparser.is_set("--merge-recalculates-scores");
   } else {
     merge = false;
-    merge_conservatively = false;
   }
 
   if (run_type == ar_command::identify_adapters && !paired_ended_mode) {
