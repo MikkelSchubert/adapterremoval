@@ -334,8 +334,13 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
             # Currently not compared in detail
             data = None
         else:
-            with open(os.path.join(root, name)) as handle:
-                data = handle.readlines()
+            try:
+                with open(os.path.join(root, name)) as handle:
+                    data = handle.readlines()
+            except OSError as error:
+                print_err("ERROR while reading reference data:")
+                print_err("   ", error)
+                sys.exit(1)
 
             if kind == "json":
                 json_data = json.loads("".join(data))
