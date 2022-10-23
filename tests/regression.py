@@ -411,8 +411,12 @@ class TestConfig(
     @classmethod
     def load(cls, name, filepath):
         with open(filepath, "r") as handle:
-            data = json.load(handle)
-            data = validate(_TEST_SPECIFICATION, data)
+            try:
+                data = json.load(handle)
+            except json.JSONDecodeError as error:
+                raise TestError(str(error))
+
+        data = validate(_TEST_SPECIFICATION, data)
 
         root = os.path.dirname(filepath)
         files = []
