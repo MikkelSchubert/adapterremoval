@@ -356,6 +356,14 @@ fastq::reverse_complement()
   }
 }
 
+void
+fastq::add_prefix_to_name(const std::string& prefix)
+{
+  if (!prefix.empty()) {
+    m_header.insert(0, prefix);
+  }
+}
+
 bool
 fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {

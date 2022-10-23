@@ -146,6 +146,9 @@ public:
   /** Reverse complements the record in place. */
   void reverse_complement();
 
+  /** Adds a prefix to the name. */
+  void add_prefix_to_name(const std::string& prefix);
+
   /**
    * Reads a FASTQ record from a list of lines (without newlines).
    *

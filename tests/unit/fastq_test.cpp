@@ -837,6 +837,33 @@ TEST_CASE("reverse_complement", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Adding prefixes to the header
+
+TEST_CASE("add_prefix_to_name", "[fastq::fastq]")
+{
+  const fastq expected("not_my_header", "ACGTA", "12345");
+  fastq record("my_header", "ACGTA", "12345");
+  record.add_prefix_to_name("not_");
+  REQUIRE(record == expected);
+}
+
+TEST_CASE("add_prefix_to_header__empty_prefix", "[fastq::fastq]")
+{
+  const fastq expected("my_header", "ACGTA", "12345");
+  fastq record = expected;
+  record.add_prefix_to_name("");
+  REQUIRE(record == expected);
+}
+
+TEST_CASE("add_prefix_to_header__header", "[fastq::fastq]")
+{
+  const fastq expected("new_header", "ACGTA", "12345");
+  fastq record("", "ACGTA", "12345");
+  record.add_prefix_to_name("new_header");
+  REQUIRE(record == expected);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Reading from stream
 
 TEST_CASE("simple_fastq_record_1", "[fastq::fastq]")
