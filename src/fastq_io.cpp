@@ -131,6 +131,10 @@ read_record(joined_line_readers& reader,
             size_t& n_nucleotides,
             const fastq_encoding& encoding)
 {
+  // Line numbers change as we attempt to read the record, and potentially
+  // points to the next record in the case of invalid qualities/nucleotides
+  const auto line_number = reader.linenumber();
+
   try {
     chunk.emplace_back();
     auto& record = chunk.back();
@@ -145,7 +149,7 @@ read_record(joined_line_readers& reader,
     }
   } catch (const fastq_error& error) {
     log::error() << "Error reading FASTQ record from '" << reader.filename()
-                 << "' at line " << reader.linenumber() << "; aborting:\n"
+                 << "' at line " << line_number << "; aborting:\n"
                  << indent_lines(error.what());
 
     throw thread_abort();
