@@ -18,8 +18,8 @@ LIBDEFLATE := yes
 # Show individual commands during build; otherwise shows summaries instead.
 VERBOSE := no
 
-# Use of colored output during build
-COLOR_BUILD := yes
+# Use of colored output during build (yes/no/auto)
+COLOR_BUILD := auto
 
 # Debug build; adds warnings and debugging symbols
 DEBUG_BUILD := no
@@ -53,13 +53,21 @@ ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
 endif
 
-ifeq ($(strip ${COLOR_BUILD}),yes)
+ifeq ($(strip ${COLOR_BUILD}),auto)
+ifeq (${NO_COLOR},)
 ifneq ($(strip $(MAKE_TERMOUT)),)
+COLOR_BUILD := yes
+endif
+endif
+endif
+
+ifeq ($(strip ${COLOR_BUILD}),yes)
 COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
-endif
+else
+COLOR_BUILD := no
 endif
 
 BUILD_NAME := release
@@ -228,7 +236,7 @@ regression: $(EXECUTABLE)
 
 test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
-	$(QUIET) $(TEST_RUNNER) --invisibles
+	$(QUIET) $(TEST_RUNNER) --invisibles --use-colour $(COLOR_BUILD)
 ifeq ($(strip ${COVERAGE}), yes)
 ifneq ($(shell which gcovr), )
 	@echo $(COLOR_GREEN)"Running coverage analysis"$(COLOR_END)
