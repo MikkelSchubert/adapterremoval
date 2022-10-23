@@ -3,11 +3,6 @@
  *                                                                       *
  * Copyright (C) 2022 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
- * If you use the program, please cite the paper:                        *
- * Schubert, et al. (2016). AdapterRemoval v2: rapid adapter trimming,   *
- * identification, and read merging. BMC Research Notes, 12;9(1):88      *
- * https://doi.org/10.1186/s13104-016-1900-2                             *
- *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
  * it under the terms of the GNU General Public License as published by  *
  * the Free Software Foundation, either version 3 of the License, or     *
