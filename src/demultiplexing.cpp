@@ -139,6 +139,9 @@ demultiplex_se_reads::process(chunk_ptr chunk)
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
+      // Always add prefix since unidentified reads are not processed further
+      read.add_prefix_to_name(m_config.prefix_read_1);
+
       if (m_unidentified_1) {
         m_unidentified_1->add(read);
       }
@@ -151,6 +154,11 @@ demultiplex_se_reads::process(chunk_ptr chunk)
 
       m_statistics->unidentified_stats_1->process(read);
     } else {
+      // Prefixing with user supplied prefixes is also done during trimming
+      if (m_config.run_type == ar_command::demultiplex_sequences) {
+        read.add_prefix_to_name(m_config.prefix_read_1);
+      }
+
       read_chunk_ptr& dst = m_cache.at(best_barcode);
       read.truncate(m_barcodes.at(best_barcode).first.length());
       dst->nucleotides += read.length();
@@ -185,6 +193,10 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 
     if (best_barcode < 0) {
+      // Always add prefix since unidentified reads are not processed further
+      it_1->add_prefix_to_name(m_config.prefix_read_1);
+      it_2->add_prefix_to_name(m_config.prefix_read_2);
+
       if (m_unidentified_1) {
         m_unidentified_1->add(*it_1);
       }
@@ -206,6 +218,12 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
       m_statistics->unidentified_stats_1->process(*it_1);
       m_statistics->unidentified_stats_2->process(*it_2);
     } else {
+      // Prefixing with user supplied prefixes is also done during trimming
+      if (m_config.run_type == ar_command::demultiplex_sequences) {
+        it_1->add_prefix_to_name(m_config.prefix_read_1);
+        it_2->add_prefix_to_name(m_config.prefix_read_2);
+      }
+
       read_chunk_ptr& dst = m_cache.at(best_barcode);
 
       it_1->truncate(m_barcodes.at(best_barcode).first.length());

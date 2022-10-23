@@ -160,6 +160,13 @@ public:
   //! Template filename used for writing singleton reads
   std::string out_singleton;
 
+  //! Name prefix for mate 1 reads
+  std::string prefix_read_1;
+  //! Name prefix for mate 2 reads
+  std::string prefix_read_2;
+  //! Name prefix for merged reads
+  std::string prefix_merged;
+
   //! Set to true if both --input1 and --input2 are set, or if either of
   //! --interleaved or --interleaved-input are set.
   bool paired_ended_mode;

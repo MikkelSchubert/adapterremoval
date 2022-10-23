@@ -268,6 +268,9 @@ se_reads_processor::process(chunk_ptr chunk)
                                        length - read.length());
     }
 
+    // Add (optional) user specified prefixes to read names
+    read.add_prefix_to_name(m_config.prefix_read_1);
+
     trim_read_termini(m_config, *stats, read, read_type::mate_1);
     trim_sequence_by_quality(m_config, *stats, read);
     if (is_acceptable_read(m_config, *stats, read)) {
@@ -380,6 +383,8 @@ pe_reads_processor::process(chunk_ptr chunk)
       if (m_config.merge && can_merge_alignment) {
         // Merge read_2 into read_1
         merger.merge(alignment, read_1, read_2);
+        // Add (optional) user specified prefix to read names
+        read_1.add_prefix_to_name(m_config.prefix_merged);
 
         trim_read_termini(m_config, *stats, read_1, read_type::merged);
 
@@ -404,6 +409,10 @@ pe_reads_processor::process(chunk_ptr chunk)
     // Reads were not aligned or merging is not enabled
     // Undo reverse complementation (post truncation of adapters)
     read_2.reverse_complement();
+
+    // Add (optional) user specified prefixes to read names
+    read_1.add_prefix_to_name(m_config.prefix_read_1);
+    read_2.add_prefix_to_name(m_config.prefix_read_2);
 
     // Trim fixed number of bases from 5' and/or 3' termini
     trim_read_termini(m_config, *stats, read_1, read_type::mate_1);

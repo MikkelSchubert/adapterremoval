@@ -326,6 +326,9 @@ userconfig::userconfig(const std::string& name,
   , out_discarded()
   // FIXME: Support both .1 and .2
   , out_singleton()
+  , prefix_read_1()
+  , prefix_read_2()
+  , prefix_merged()
   , paired_ended_mode()
   , interleaved_input()
   , interleaved_output()
@@ -431,6 +434,18 @@ userconfig::userconfig(const std::string& name,
           "option is implied by the --interleaved option")
     .conflicts_with("--out-file2")
     .bind_bool(&interleaved_output);
+
+  argparser.add_header("OUTPUT READ NAMES:");
+
+  argparser.add("--prefix-read1")
+    .help("Adds the specified prefix to read 1 names")
+    .bind_str(&prefix_read_1);
+  argparser.add("--prefix-read2")
+    .help("Adds the specified prefix to read 2 names")
+    .bind_str(&prefix_read_2);
+  argparser.add("--prefix-merged")
+    .help("Adds the specified prefix to merged read names")
+    .bind_str(&prefix_merged);
 
   argparser.add_header("OUTPUT FILES:");
   argparser.add("--basename", "PREFIX")
