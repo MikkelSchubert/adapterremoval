@@ -792,7 +792,7 @@ TEST_CASE("Invalid alignment", "[alignment::paired_end]")
 ///////////////////////////////////////////////////////////////////////////////
 // Merging of reads using the original method implemented in AdapterRemoval
 
-TEST_CASE("Collapse partial overlap", "[alignment::merge]")
+TEST_CASE("Merge partial overlap", "[alignment::merge]")
 {
   sequence_merger merger;
   fastq record1("Rec1", "ATATTATA", "01234567");
@@ -804,7 +804,7 @@ TEST_CASE("Collapse partial overlap", "[alignment::merge]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Collapse complete overlap", "[alignment::merge]")
+TEST_CASE("Merge complete overlap", "[alignment::merge]")
 {
   sequence_merger merger;
   fastq record1("Rec1", "ATATTATAA", "JJJJJJJJJ");
@@ -816,7 +816,7 @@ TEST_CASE("Collapse complete overlap", "[alignment::merge]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Collapse complete overlap for mate 1", "[alignment::merge]")
+TEST_CASE("Merge complete overlap for mate 1", "[alignment::merge]")
 {
   sequence_merger merger;
   fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
@@ -828,7 +828,7 @@ TEST_CASE("Collapse complete overlap for mate 1", "[alignment::merge]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Collapse complete overlap for mate 2", "[alignment::merge]")
+TEST_CASE("Merge complete overlap for mate 2", "[alignment::merge]")
 {
   sequence_merger merger;
   fastq record1("Rec1", "ATATTATA", "JJJJJJJJ");
