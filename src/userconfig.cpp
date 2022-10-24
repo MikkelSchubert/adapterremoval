@@ -451,7 +451,6 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--out-json", "FILE")
     .help("Output file containing statistics about trimming, merging, and more "
           "in JSON format")
-    .deprecated_alias("--settings")
     .bind_str(&out_json)
     .with_default("{basename}[.sample].json");
   argparser.add("--out-html", "FILE")

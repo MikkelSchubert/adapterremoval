@@ -12,17 +12,17 @@
     "--out-merged",
     "oc",
     "--out-json",
-    "out_settings",
+    "out.json",
     "--out-singleton",
     "singles",
     "--out-html",
-    "out_html"
+    "out.html"
   ],
   "files": {
     "input_1": ["input_1.fastq"],
     "input_2": ["input_2.fastq"],
     "output": ["disc", "oc", "out1", "out2", "singles"],
-    "json": ["out_settings"],
-    "html": ["out_html"]
+    "json": ["out.json"],
+    "html": ["out.html"]
   }
 }

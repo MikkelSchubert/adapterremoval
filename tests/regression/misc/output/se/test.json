@@ -7,16 +7,16 @@
     "--out-file1",
     "out1",
     "--out-json",
-    "out_settings",
+    "out.json",
     "--out-singleton",
     "singles",
     "--out-html",
-    "out_html"
+    "out.html"
   ],
   "files": {
     "input_1": ["input_1.fastq"],
     "output": ["disc", "out1"],
-    "json": ["out_settings"],
-    "html": ["out_html"]
+    "json": ["out.json"],
+    "html": ["out.html"]
   }
 }
