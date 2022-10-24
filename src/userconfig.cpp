@@ -557,11 +557,11 @@ userconfig::userconfig(const std::string& name,
           "separated by a space to trim each mate different amounts [default: "
           "no trimming]")
     .bind_vec(&trim5p)
-    .max_values(2);
+    .with_max_values(2);
   argparser.add("--trim3p", "N")
     .help("Trim the 3' of reads by a fixed amount. See --trim5p")
     .bind_vec(&trim3p)
-    .max_values(2);
+    .with_max_values(2);
 
   argparser.add("--trim-error-rate", "X")
     .help("The threshold value used when performing trimming quality based "

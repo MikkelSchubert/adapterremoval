@@ -888,7 +888,16 @@ vec_sink::vec_sink(string_vec* ptr)
 }
 
 vec_sink&
-vec_sink::max_values(size_t n)
+vec_sink::with_min_values(size_t n)
+{
+  AR_REQUIRE(n <= m_max_values);
+  m_min_values = n;
+
+  return *this;
+}
+
+vec_sink&
+vec_sink::with_max_values(size_t n)
 {
   AR_REQUIRE(n >= m_min_values);
   m_max_values = n;
@@ -899,8 +908,8 @@ vec_sink::max_values(size_t n)
 size_t
 vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_REQUIRE(end - start >= 1);
-
+  AR_REQUIRE(static_cast<size_t>(end - start) >= m_min_values);
+  AR_REQUIRE(static_cast<size_t>(end - start) <= m_max_values);
   m_sink->assign(start, end);
 
   return static_cast<size_t>(end - start);

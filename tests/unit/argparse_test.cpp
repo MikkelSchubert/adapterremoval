@@ -39,6 +39,12 @@ using Catch::Matchers::Contains;
 #define REQUIRE_POSTFIX(a, b) REQUIRE_THAT((a), Catch::Matchers::EndsWith(b))
 #define REQUIRE_CONTAINS(a, b) REQUIRE_THAT((a), Catch::Matchers::Contains(b))
 
+size_t
+consume(argparse::sink& dst, const string_vec& values)
+{
+  return dst.consume(values.begin(), values.end());
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // boolean sink
 
@@ -545,6 +551,23 @@ TEST_CASE("vec sink consumes empty string", "[argparse::vec_sink]")
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
   REQUIRE(value.size() == 1);
   REQUIRE(value.front() == "");
+}
+
+TEST_CASE("vec sink with minimum n values", "[argparse::vec_sink]")
+{
+  string_vec value;
+  argparse::vec_sink sink(&value);
+  sink.with_min_values(2);
+  REQUIRE(sink.min_values() == 2);
+}
+
+TEST_CASE("vec sink with maximum n values", "[argparse::vec_sink]")
+{
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  sink.with_max_values(2);
+  REQUIRE(sink.max_values() == 2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

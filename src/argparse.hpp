@@ -396,7 +396,10 @@ class vec_sink : public sink
 public:
   vec_sink(string_vec* sink);
 
-  vec_sink& max_values(size_t n);
+  /** The minimum number of values expected on the command-line (default 1) */
+  vec_sink& with_min_values(size_t n);
+  /** The maximum number of values expected on the command-line (default inf) */
+  vec_sink& with_max_values(size_t n);
 
   virtual std::string to_str() const override;
 
