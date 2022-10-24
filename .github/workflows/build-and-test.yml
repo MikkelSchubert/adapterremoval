@@ -16,12 +16,15 @@ jobs:
           - os: ubuntu-22.04
             cxx: g++
             coverage: "yes"
+            build: "coverage"
           - os: ubuntu-22.04
             cxx: clang++
             coverage: "no"
+            build: "release"
           - os: macos-11
             cxx: clang++
             coverage: "no"
+            build: "release"
       # Do not auto-cancel other runners if one fails
       fail-fast: false
     env:
@@ -56,4 +59,4 @@ jobs:
           coveralls --exclude tests --gcov-options '\-lpbc'
 
       - name: examples
-        run: PATH=$PATH:$PWD/build/ make -C examples
+        run: make -C examples EXE=${PWD}/build/${{ matrix.build }}/adapterremoval3
