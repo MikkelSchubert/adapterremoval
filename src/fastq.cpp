@@ -332,9 +332,14 @@ fastq::truncate(size_t pos, size_t len)
 {
   AR_REQUIRE(pos == 0 || pos <= length());
 
-  if (pos || len < length()) {
-    m_sequence = m_sequence.substr(pos, len);
-    m_qualities = m_qualities.substr(pos, len);
+  if (pos) {
+    m_sequence.erase(0, pos);
+    m_qualities.erase(0, pos);
+  }
+
+  if (len < length()) {
+    m_sequence.erase(len);
+    m_qualities.erase(len);
   }
 }
 
@@ -569,12 +574,7 @@ fastq::trim_sequence_and_qualities(const size_t left_inclusive,
                                    const size_t right_exclusive)
 {
   const ntrimmed summary(left_inclusive, length() - right_exclusive);
-
-  if (summary.first || summary.second) {
-    const size_t retained = right_exclusive - left_inclusive;
-    m_sequence = m_sequence.substr(left_inclusive, retained);
-    m_qualities = m_qualities.substr(left_inclusive, retained);
-  }
+  truncate(left_inclusive, right_exclusive - left_inclusive);
 
   return summary;
 }
