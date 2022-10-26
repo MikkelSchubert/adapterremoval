@@ -58,13 +58,9 @@ trim_read_termini(const userconfig& config,
       break;
 
     case read_type::merged:
-      if (config.paired_ended_mode) {
-        trim_5p = config.trim_fixed_5p.first;
-        trim_3p = config.trim_fixed_5p.second;
-      } else {
-        trim_5p = config.trim_fixed_5p.first;
-        trim_3p = config.trim_fixed_3p.first;
-      }
+      AR_REQUIRE(config.paired_ended_mode);
+      trim_5p = config.trim_fixed_5p.first;
+      trim_3p = config.trim_fixed_5p.second;
       break;
 
     case read_type::discarded:
