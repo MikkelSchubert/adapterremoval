@@ -86,9 +86,27 @@ def print_err(*vargs, **kwargs):
 #############################################################################
 
 
+def read_file(filename, mode="rt"):
+    try:
+        with open(filename, mode) as handle:
+            return handle.read()
+    except OSError as error:
+        raise TestError("ERROR while reading data:\n    {}".format(error))
+
+
+def read_json(filename):
+    try:
+        return json.loads(read_file(filename))
+    except json.JSONDecodeError as error:
+        raise TestError("ERROR while reading {!r}:\n    {}".format(filename, error))
+
+
 def read_lines(filename):
-    with open(filename, "rb") as handle:
-        value = handle.read()
+    return read_file(filename).splitlines(keepends=True)
+
+
+def read_and_decompress_lines(filename):
+    value = read_file(filename, "rb")
 
     header = value[:2]
     if header == b"\x1f\x8b":
@@ -329,21 +347,16 @@ def validate(spec, value, path=("{}",)):
 class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
     @classmethod
     def parse(cls, root, name, kind):
+        data = None
         json_data = None
-        if kind in ("html", "ignore"):
-            # Currently not compared in detail
-            data = None
-        else:
-            try:
-                with open(os.path.join(root, name)) as handle:
-                    data = handle.readlines()
-            except OSError as error:
-                print_err("ERROR while reading reference data:")
-                print_err("   ", error)
-                sys.exit(1)
-
+        # HTML files are not compared in detail
+        if kind not in ("html", "ignore"):
+            filename = os.path.join(root, name)
             if kind == "json":
-                json_data = json.loads("".join(data))
+                json_data = read_json(filename)
+            else:
+                # Reference data is not expected to be compresses, regardless of extension
+                data = read_lines(filename)
 
         return TestFile(name=name, kind=kind, data=data, json=json_data)
 
@@ -352,20 +365,15 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
             raise TestError("file {} not created".format(filepath))
 
         # Some files just need to exist; HTML reports, etc.
-        if self.data is None:
-            return
-        elif self.kind == "json":
+        if self.kind == "json":
             return self._compare_json(filepath)
+        elif self.data is None:
+            return
 
         return self._compare_text(filepath)
 
     def _compare_json(self, filepath: str):
-        with open(filepath) as handle:
-            try:
-                data = json.load(handle)
-            except json.JSONDecodeError as error:
-                raise TestError("Error reading JSON file: {}".format(error))
-
+        data = read_json(filepath)
         differences = diff_json(reference=self.json, observed=data)
         differences = list(islice(differences, 4))
 
@@ -377,7 +385,7 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
             )
 
     def _compare_text(self, filepath: str):
-        observed = read_lines(filepath)
+        observed = read_and_decompress_lines(filepath)
         if observed == self.data:
             return
 
@@ -410,12 +418,7 @@ class TestConfig(
 ):
     @classmethod
     def load(cls, name, filepath):
-        with open(filepath, "r") as handle:
-            try:
-                data = json.load(handle)
-            except json.JSONDecodeError as error:
-                raise TestError(str(error))
-
+        data = read_json(filepath)
         data = validate(_TEST_SPECIFICATION, data)
 
         root = os.path.dirname(filepath)
