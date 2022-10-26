@@ -64,6 +64,11 @@
             width: 100px;
         }
 
+        .poly-table tr>td:nth-of-type(2) {
+            text-align: center;
+            width: 25px;
+        }
+
         .fixed-height-table {
             max-height: 300px;
             overflow-y: scroll;
@@ -205,6 +210,32 @@
                         <td>{{AVG_BASES}}</td>
                     </tr>
                     <!-- TEMPLATE: SUMMARY_PROCESSING_TAIL -->
+
+                </tbody>
+            </table>
+
+            <!-- TEMPLATE: SUMMARY_POLY_X_HEAD -->
+            <h4>{{LABEL}}</h4>
+            <table class="pure-table io-table poly-table pure-table-striped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>X</th>
+                        <th>Reads</th>
+                        <th>Bases</th>
+                        <th>Bases/Read</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- TEMPLATE: SUMMARY_POLY_X_ROW -->
+                    <tr>
+                        <td>{{LABEL}}</td>
+                        <td>{{NUCLEOTIDE}}</td>
+                        <td>{{READS}}</td>
+                        <td>{{BASES}}</td>
+                        <td>{{AVG_BASES}}</td>
+                    </tr>
+                    <!-- TEMPLATE: SUMMARY_POLY_X_TAIL -->
 
                 </tbody>
             </table>

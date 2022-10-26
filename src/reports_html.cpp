@@ -409,6 +409,61 @@ write_html_processing_stats(std::ofstream& output,
   html_summary_processing_tail().write(output);
 }
 
+/** Statistics for pre/Post trimming of Poly-X tails */
+struct processing_poly_x
+{
+  //! Pre/Post label
+  std::string label;
+  //! Nucleotides trimmed during this stage
+  std::string nucleotides;
+  //! Number of reads trimmed
+  indexed_count<ACGT> reads;
+  //! Number of bases trimmed in the above reads
+  indexed_count<ACGT> bases;
+};
+
+void
+write_html_processing_poly_x_stats(std::ofstream& output,
+                                   const std::vector<processing_poly_x>& stats)
+{
+  html_summary_poly_x_head().set_label("Poly-X trimming").write(output);
+
+  uint64_t total_reads = 0;
+  uint64_t total_bases = 0;
+
+  for (const auto& it : stats) {
+    std::string label = it.label;
+
+    for (const char nuc : it.nucleotides) {
+      const auto reads = it.reads.get(nuc);
+      const auto bases = it.bases.get(nuc);
+
+      html_summary_poly_x_row()
+        .set_label(label)
+        .set_nucleotide(std::string(1, nuc))
+        .set_reads(format_rough_number(reads))
+        .set_bases(format_rough_number(bases))
+        .set_avg_bases(format_fraction(bases, reads))
+        .write(output);
+
+      total_reads += reads;
+      total_bases += bases;
+
+      label.clear();
+    }
+  }
+
+  html_summary_poly_x_row()
+    .set_label("")
+    .set_nucleotide("")
+    .set_reads(format_rough_number(total_reads))
+    .set_bases(format_rough_number(total_bases))
+    .set_avg_bases(format_fraction(total_bases, total_reads))
+    .write(output);
+
+  html_summary_poly_x_tail().write(output);
+}
+
 void
 write_html_processing_section(const userconfig& config,
                               const statistics& stats,
@@ -442,6 +497,27 @@ write_html_processing_section(const userconfig& config,
       { "Terminal bases trimmed",
         totals.terminal_trimmed_reads,
         totals.terminal_trimmed_bases } });
+
+  {
+    std::vector<processing_poly_x> poly_x_stats;
+    if (config.pre_trim_poly_x.size()) {
+      poly_x_stats.push_back({ "Pre adapter-trimming",
+                               config.pre_trim_poly_x,
+                               totals.poly_x_pre_trimmed_reads,
+                               totals.poly_x_pre_trimmed_bases });
+    }
+
+    if (config.post_trim_poly_x.size()) {
+      poly_x_stats.push_back({ "Post adapter-trimming",
+                               config.post_trim_poly_x,
+                               totals.poly_x_post_trimmed_reads,
+                               totals.poly_x_post_trimmed_bases });
+    }
+
+    if (poly_x_stats.size()) {
+      write_html_processing_poly_x_stats(output, poly_x_stats);
+    }
+  }
 
   write_html_processing_stats(output,
                               "Filtering",

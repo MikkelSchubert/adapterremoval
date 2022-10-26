@@ -137,6 +137,11 @@ html_head::write(std::ofstream& out)
   out << "            width: 100px;\n";
   out << "        }\n";
   out << "\n";
+  out << "        .poly-table tr>td:nth-of-type(2) {\n";
+  out << "            text-align: center;\n";
+  out << "            width: 25px;\n";
+  out << "        }\n";
+  out << "\n";
   out << "        .fixed-height-table {\n";
   out << "            max-height: 300px;\n";
   out << "            overflow-y: scroll;\n";
@@ -650,6 +655,158 @@ void
 html_summary_processing_tail::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_processing_tail already written");
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "\n";
+  out << "                </tbody>\n";
+  out << "            </table>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_summary_poly_x_head::html_summary_poly_x_head()
+  : m_written()
+  , m_label()
+  , m_label_is_set()
+{
+  //
+}
+
+html_summary_poly_x_head::~html_summary_poly_x_head()
+{
+  AR_REQUIRE(m_written, "template html_summary_poly_x_head was not written");
+}
+
+html_summary_poly_x_head&
+html_summary_poly_x_head::set_label(const std::string& value)
+{
+  m_label = value;
+  m_label_is_set = true;
+  return *this;
+}
+
+void
+html_summary_poly_x_head::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_summary_poly_x_head already written");
+  AR_REQUIRE(m_label_is_set, "html_summary_poly_x_head::label not set");
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "            <h4>" << m_label << "</h4>\n";
+  out << "            <table class=\"pure-table io-table poly-table pure-table-striped\">\n";
+  out << "                <thead>\n";
+  out << "                    <tr>\n";
+  out << "                        <th></th>\n";
+  out << "                        <th>X</th>\n";
+  out << "                        <th>Reads</th>\n";
+  out << "                        <th>Bases</th>\n";
+  out << "                        <th>Bases/Read</th>\n";
+  out << "                    </tr>\n";
+  out << "                </thead>\n";
+  out << "                <tbody>\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_summary_poly_x_row::html_summary_poly_x_row()
+  : m_written()
+  , m_avg_bases()
+  , m_avg_bases_is_set()
+  , m_bases()
+  , m_bases_is_set()
+  , m_label()
+  , m_label_is_set()
+  , m_nucleotide()
+  , m_nucleotide_is_set()
+  , m_reads()
+  , m_reads_is_set()
+{
+  //
+}
+
+html_summary_poly_x_row::~html_summary_poly_x_row()
+{
+  AR_REQUIRE(m_written, "template html_summary_poly_x_row was not written");
+}
+
+html_summary_poly_x_row&
+html_summary_poly_x_row::set_avg_bases(const std::string& value)
+{
+  m_avg_bases = value;
+  m_avg_bases_is_set = true;
+  return *this;
+}
+
+html_summary_poly_x_row&
+html_summary_poly_x_row::set_bases(const std::string& value)
+{
+  m_bases = value;
+  m_bases_is_set = true;
+  return *this;
+}
+
+html_summary_poly_x_row&
+html_summary_poly_x_row::set_label(const std::string& value)
+{
+  m_label = value;
+  m_label_is_set = true;
+  return *this;
+}
+
+html_summary_poly_x_row&
+html_summary_poly_x_row::set_nucleotide(const std::string& value)
+{
+  m_nucleotide = value;
+  m_nucleotide_is_set = true;
+  return *this;
+}
+
+html_summary_poly_x_row&
+html_summary_poly_x_row::set_reads(const std::string& value)
+{
+  m_reads = value;
+  m_reads_is_set = true;
+  return *this;
+}
+
+void
+html_summary_poly_x_row::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_summary_poly_x_row already written");
+  AR_REQUIRE(m_avg_bases_is_set, "html_summary_poly_x_row::avg_bases not set");
+  AR_REQUIRE(m_bases_is_set, "html_summary_poly_x_row::bases not set");
+  AR_REQUIRE(m_label_is_set, "html_summary_poly_x_row::label not set");
+  AR_REQUIRE(m_nucleotide_is_set, "html_summary_poly_x_row::nucleotide not set");
+  AR_REQUIRE(m_reads_is_set, "html_summary_poly_x_row::reads not set");
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "                    <tr>\n";
+  out << "                        <td>" << m_label << "</td>\n";
+  out << "                        <td>" << m_nucleotide << "</td>\n";
+  out << "                        <td>" << m_reads << "</td>\n";
+  out << "                        <td>" << m_bases << "</td>\n";
+  out << "                        <td>" << m_avg_bases << "</td>\n";
+  out << "                    </tr>\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_summary_poly_x_tail::html_summary_poly_x_tail()
+  : m_written()
+{
+  //
+}
+
+html_summary_poly_x_tail::~html_summary_poly_x_tail()
+{
+  AR_REQUIRE(m_written, "template html_summary_poly_x_tail was not written");
+}
+
+void
+html_summary_poly_x_tail::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_summary_poly_x_tail already written");
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
