@@ -521,222 +521,35 @@ html_output_note_se::write(std::ofstream& out)
   m_written = true;
 }
 
-html_summary_processing::html_summary_processing()
+html_summary_processing_head::html_summary_processing_head()
   : m_written()
-  , m_adapter_trimming_avg()
-  , m_adapter_trimming_avg_is_set()
-  , m_adapter_trimming_bases()
-  , m_adapter_trimming_bases_is_set()
-  , m_adapter_trimming_reads()
-  , m_adapter_trimming_reads_is_set()
-  , m_ambiguous_avg()
-  , m_ambiguous_avg_is_set()
-  , m_ambiguous_bases()
-  , m_ambiguous_bases_is_set()
-  , m_ambiguous_reads()
-  , m_ambiguous_reads_is_set()
-  , m_complexity_avg()
-  , m_complexity_avg_is_set()
-  , m_complexity_bases()
-  , m_complexity_bases_is_set()
-  , m_complexity_reads()
-  , m_complexity_reads_is_set()
-  , m_low_quality_avg()
-  , m_low_quality_avg_is_set()
-  , m_low_quality_bases()
-  , m_low_quality_bases_is_set()
-  , m_low_quality_reads()
-  , m_low_quality_reads_is_set()
-  , m_max_length_avg()
-  , m_max_length_avg_is_set()
-  , m_max_length_bases()
-  , m_max_length_bases_is_set()
-  , m_max_length_reads()
-  , m_max_length_reads_is_set()
-  , m_min_length_avg()
-  , m_min_length_avg_is_set()
-  , m_min_length_bases()
-  , m_min_length_bases_is_set()
-  , m_min_length_reads()
-  , m_min_length_reads_is_set()
+  , m_label()
+  , m_label_is_set()
 {
   //
 }
 
-html_summary_processing::~html_summary_processing()
+html_summary_processing_head::~html_summary_processing_head()
 {
-  AR_REQUIRE(m_written, "template html_summary_processing was not written");
+  AR_REQUIRE(m_written, "template html_summary_processing_head was not written");
 }
 
-html_summary_processing&
-html_summary_processing::set_adapter_trimming_avg(const std::string& value)
+html_summary_processing_head&
+html_summary_processing_head::set_label(const std::string& value)
 {
-  m_adapter_trimming_avg = value;
-  m_adapter_trimming_avg_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_adapter_trimming_bases(const std::string& value)
-{
-  m_adapter_trimming_bases = value;
-  m_adapter_trimming_bases_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_adapter_trimming_reads(const std::string& value)
-{
-  m_adapter_trimming_reads = value;
-  m_adapter_trimming_reads_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_ambiguous_avg(const std::string& value)
-{
-  m_ambiguous_avg = value;
-  m_ambiguous_avg_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_ambiguous_bases(const std::string& value)
-{
-  m_ambiguous_bases = value;
-  m_ambiguous_bases_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_ambiguous_reads(const std::string& value)
-{
-  m_ambiguous_reads = value;
-  m_ambiguous_reads_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_complexity_avg(const std::string& value)
-{
-  m_complexity_avg = value;
-  m_complexity_avg_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_complexity_bases(const std::string& value)
-{
-  m_complexity_bases = value;
-  m_complexity_bases_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_complexity_reads(const std::string& value)
-{
-  m_complexity_reads = value;
-  m_complexity_reads_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_low_quality_avg(const std::string& value)
-{
-  m_low_quality_avg = value;
-  m_low_quality_avg_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_low_quality_bases(const std::string& value)
-{
-  m_low_quality_bases = value;
-  m_low_quality_bases_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_low_quality_reads(const std::string& value)
-{
-  m_low_quality_reads = value;
-  m_low_quality_reads_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_max_length_avg(const std::string& value)
-{
-  m_max_length_avg = value;
-  m_max_length_avg_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_max_length_bases(const std::string& value)
-{
-  m_max_length_bases = value;
-  m_max_length_bases_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_max_length_reads(const std::string& value)
-{
-  m_max_length_reads = value;
-  m_max_length_reads_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_min_length_avg(const std::string& value)
-{
-  m_min_length_avg = value;
-  m_min_length_avg_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_min_length_bases(const std::string& value)
-{
-  m_min_length_bases = value;
-  m_min_length_bases_is_set = true;
-  return *this;
-}
-
-html_summary_processing&
-html_summary_processing::set_min_length_reads(const std::string& value)
-{
-  m_min_length_reads = value;
-  m_min_length_reads_is_set = true;
+  m_label = value;
+  m_label_is_set = true;
   return *this;
 }
 
 void
-html_summary_processing::write(std::ofstream& out)
+html_summary_processing_head::write(std::ofstream& out)
 {
-  AR_REQUIRE(!m_written, "template html_summary_processing already written");
-  AR_REQUIRE(m_adapter_trimming_avg_is_set, "html_summary_processing::adapter_trimming_avg not set");
-  AR_REQUIRE(m_adapter_trimming_bases_is_set, "html_summary_processing::adapter_trimming_bases not set");
-  AR_REQUIRE(m_adapter_trimming_reads_is_set, "html_summary_processing::adapter_trimming_reads not set");
-  AR_REQUIRE(m_ambiguous_avg_is_set, "html_summary_processing::ambiguous_avg not set");
-  AR_REQUIRE(m_ambiguous_bases_is_set, "html_summary_processing::ambiguous_bases not set");
-  AR_REQUIRE(m_ambiguous_reads_is_set, "html_summary_processing::ambiguous_reads not set");
-  AR_REQUIRE(m_complexity_avg_is_set, "html_summary_processing::complexity_avg not set");
-  AR_REQUIRE(m_complexity_bases_is_set, "html_summary_processing::complexity_bases not set");
-  AR_REQUIRE(m_complexity_reads_is_set, "html_summary_processing::complexity_reads not set");
-  AR_REQUIRE(m_low_quality_avg_is_set, "html_summary_processing::low_quality_avg not set");
-  AR_REQUIRE(m_low_quality_bases_is_set, "html_summary_processing::low_quality_bases not set");
-  AR_REQUIRE(m_low_quality_reads_is_set, "html_summary_processing::low_quality_reads not set");
-  AR_REQUIRE(m_max_length_avg_is_set, "html_summary_processing::max_length_avg not set");
-  AR_REQUIRE(m_max_length_bases_is_set, "html_summary_processing::max_length_bases not set");
-  AR_REQUIRE(m_max_length_reads_is_set, "html_summary_processing::max_length_reads not set");
-  AR_REQUIRE(m_min_length_avg_is_set, "html_summary_processing::min_length_avg not set");
-  AR_REQUIRE(m_min_length_bases_is_set, "html_summary_processing::min_length_bases not set");
-  AR_REQUIRE(m_min_length_reads_is_set, "html_summary_processing::min_length_reads not set");
+  AR_REQUIRE(!m_written, "template html_summary_processing_head already written");
+  AR_REQUIRE(m_label_is_set, "html_summary_processing_head::label not set");
   // clang-format off
   auto id = g_html_id++; (void)id;
-  out << "            <h4>Trimming and filtering</h4>\n";
+  out << "            <h4>" << m_label << "</h4>\n";
   out << "            <table class=\"pure-table io-table pure-table-striped\">\n";
   out << "                <thead>\n";
   out << "                    <tr>\n";
@@ -747,51 +560,101 @@ html_summary_processing::write(std::ofstream& out)
   out << "                    </tr>\n";
   out << "                </thead>\n";
   out << "                <tbody>\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_summary_processing_row::html_summary_processing_row()
+  : m_written()
+  , m_avg_bases()
+  , m_avg_bases_is_set()
+  , m_bases()
+  , m_bases_is_set()
+  , m_label()
+  , m_label_is_set()
+  , m_reads()
+  , m_reads_is_set()
+{
+  //
+}
+
+html_summary_processing_row::~html_summary_processing_row()
+{
+  AR_REQUIRE(m_written, "template html_summary_processing_row was not written");
+}
+
+html_summary_processing_row&
+html_summary_processing_row::set_avg_bases(const std::string& value)
+{
+  m_avg_bases = value;
+  m_avg_bases_is_set = true;
+  return *this;
+}
+
+html_summary_processing_row&
+html_summary_processing_row::set_bases(const std::string& value)
+{
+  m_bases = value;
+  m_bases_is_set = true;
+  return *this;
+}
+
+html_summary_processing_row&
+html_summary_processing_row::set_label(const std::string& value)
+{
+  m_label = value;
+  m_label_is_set = true;
+  return *this;
+}
+
+html_summary_processing_row&
+html_summary_processing_row::set_reads(const std::string& value)
+{
+  m_reads = value;
+  m_reads_is_set = true;
+  return *this;
+}
+
+void
+html_summary_processing_row::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_summary_processing_row already written");
+  AR_REQUIRE(m_avg_bases_is_set, "html_summary_processing_row::avg_bases not set");
+  AR_REQUIRE(m_bases_is_set, "html_summary_processing_row::bases not set");
+  AR_REQUIRE(m_label_is_set, "html_summary_processing_row::label not set");
+  AR_REQUIRE(m_reads_is_set, "html_summary_processing_row::reads not set");
+  // clang-format off
+  auto id = g_html_id++; (void)id;
   out << "                    <tr>\n";
-  out << "                        <td>Adapter trimming</td>\n";
-  out << "                        <td>" << m_adapter_trimming_reads << "</td>\n";
-  out << "                        <td>" << m_adapter_trimming_bases << "</td>\n";
-  out << "                        <td>" << m_adapter_trimming_avg << "</td>\n";
+  out << "                        <td>" << m_label << "</td>\n";
+  out << "                        <td>" << m_reads << "</td>\n";
+  out << "                        <td>" << m_bases << "</td>\n";
+  out << "                        <td>" << m_avg_bases << "</td>\n";
   out << "                    </tr>\n";
-  out << "                    <tr>\n";
-  out << "                        <td>Low quality bases trimmed</td>\n";
-  out << "                        <td>" << m_low_quality_reads << "</td>\n";
-  out << "                        <td>" << m_low_quality_bases << "</td>\n";
-  out << "                        <td>" << m_low_quality_avg << "</td>\n";
-  out << "                    </tr>\n";
-  out << "                    <tr>\n";
-  out << "                        <td>Short reads filtered</td>\n";
-  out << "                        <td>" << m_min_length_reads << "</td>\n";
-  out << "                        <td>" << m_min_length_bases << "</td>\n";
-  out << "                        <td>" << m_min_length_avg << "</td>\n";
-  out << "                    </tr>\n";
-  out << "                    <tr>\n";
-  out << "                        <td>Long reads filtered</td>\n";
-  out << "                        <td>" << m_max_length_reads << "</td>\n";
-  out << "                        <td>" << m_max_length_bases << "</td>\n";
-  out << "                        <td>" << m_max_length_avg << "</td>\n";
-  out << "                    </tr>\n";
-  out << "                    <tr>\n";
-  out << "                        <td>Ambiguous reads filtered</td>\n";
-  out << "                        <td>" << m_ambiguous_reads << "</td>\n";
-  out << "                        <td>" << m_ambiguous_bases << "</td>\n";
-  out << "                        <td>" << m_ambiguous_avg << "</td>\n";
-  out << "                    </tr>\n";
-  out << "                    <tr>\n";
-  out << "                        <td>Low-complexity reads filtered</td>\n";
-  out << "                        <td>" << m_complexity_reads << "</td>\n";
-  out << "                        <td>" << m_complexity_bases << "</td>\n";
-  out << "                        <td>" << m_complexity_avg << "</td>\n";
-  out << "                    </tr>\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_summary_processing_tail::html_summary_processing_tail()
+  : m_written()
+{
+  //
+}
+
+html_summary_processing_tail::~html_summary_processing_tail()
+{
+  AR_REQUIRE(m_written, "template html_summary_processing_tail was not written");
+}
+
+void
+html_summary_processing_tail::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_summary_processing_tail already written");
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "\n";
   out << "                </tbody>\n";
   out << "            </table>\n";
-  out << "\n";
-  out << "            <!--\n";
-  out << "\n";
-  out << "            \"overlapping_reads\": 93272,\n";
-  out << "            \"terminal_bases_trimmed\": 0,\n";
-  out << "\n";
-  out << "            -->\n";
   out << "\n";
   // clang-format on
   m_written = true;

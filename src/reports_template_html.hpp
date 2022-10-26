@@ -170,74 +170,66 @@ private:
   bool m_written;
 };
 
-class html_summary_processing : public html_template
+class html_summary_processing_head : public html_template
 {
 public:
-  html_summary_processing();
-  virtual ~html_summary_processing() override;
+  html_summary_processing_head();
+  virtual ~html_summary_processing_head() override;
 
-  html_summary_processing(const html_summary_processing&) = delete;
-  html_summary_processing& operator=(const html_summary_processing&) = delete;
+  html_summary_processing_head(const html_summary_processing_head&) = delete;
+  html_summary_processing_head& operator=(const html_summary_processing_head&) = delete;
 
-  html_summary_processing& set_adapter_trimming_avg(const std::string& value);
-  html_summary_processing& set_adapter_trimming_bases(const std::string& value);
-  html_summary_processing& set_adapter_trimming_reads(const std::string& value);
-  html_summary_processing& set_ambiguous_avg(const std::string& value);
-  html_summary_processing& set_ambiguous_bases(const std::string& value);
-  html_summary_processing& set_ambiguous_reads(const std::string& value);
-  html_summary_processing& set_complexity_avg(const std::string& value);
-  html_summary_processing& set_complexity_bases(const std::string& value);
-  html_summary_processing& set_complexity_reads(const std::string& value);
-  html_summary_processing& set_low_quality_avg(const std::string& value);
-  html_summary_processing& set_low_quality_bases(const std::string& value);
-  html_summary_processing& set_low_quality_reads(const std::string& value);
-  html_summary_processing& set_max_length_avg(const std::string& value);
-  html_summary_processing& set_max_length_bases(const std::string& value);
-  html_summary_processing& set_max_length_reads(const std::string& value);
-  html_summary_processing& set_min_length_avg(const std::string& value);
-  html_summary_processing& set_min_length_bases(const std::string& value);
-  html_summary_processing& set_min_length_reads(const std::string& value);
+  html_summary_processing_head& set_label(const std::string& value);
 
   virtual void write(std::ofstream& out) override;
 
 private:
   bool m_written;
-  std::string m_adapter_trimming_avg;
-  bool m_adapter_trimming_avg_is_set;
-  std::string m_adapter_trimming_bases;
-  bool m_adapter_trimming_bases_is_set;
-  std::string m_adapter_trimming_reads;
-  bool m_adapter_trimming_reads_is_set;
-  std::string m_ambiguous_avg;
-  bool m_ambiguous_avg_is_set;
-  std::string m_ambiguous_bases;
-  bool m_ambiguous_bases_is_set;
-  std::string m_ambiguous_reads;
-  bool m_ambiguous_reads_is_set;
-  std::string m_complexity_avg;
-  bool m_complexity_avg_is_set;
-  std::string m_complexity_bases;
-  bool m_complexity_bases_is_set;
-  std::string m_complexity_reads;
-  bool m_complexity_reads_is_set;
-  std::string m_low_quality_avg;
-  bool m_low_quality_avg_is_set;
-  std::string m_low_quality_bases;
-  bool m_low_quality_bases_is_set;
-  std::string m_low_quality_reads;
-  bool m_low_quality_reads_is_set;
-  std::string m_max_length_avg;
-  bool m_max_length_avg_is_set;
-  std::string m_max_length_bases;
-  bool m_max_length_bases_is_set;
-  std::string m_max_length_reads;
-  bool m_max_length_reads_is_set;
-  std::string m_min_length_avg;
-  bool m_min_length_avg_is_set;
-  std::string m_min_length_bases;
-  bool m_min_length_bases_is_set;
-  std::string m_min_length_reads;
-  bool m_min_length_reads_is_set;
+  std::string m_label;
+  bool m_label_is_set;
+};
+
+class html_summary_processing_row : public html_template
+{
+public:
+  html_summary_processing_row();
+  virtual ~html_summary_processing_row() override;
+
+  html_summary_processing_row(const html_summary_processing_row&) = delete;
+  html_summary_processing_row& operator=(const html_summary_processing_row&) = delete;
+
+  html_summary_processing_row& set_avg_bases(const std::string& value);
+  html_summary_processing_row& set_bases(const std::string& value);
+  html_summary_processing_row& set_label(const std::string& value);
+  html_summary_processing_row& set_reads(const std::string& value);
+
+  virtual void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_avg_bases;
+  bool m_avg_bases_is_set;
+  std::string m_bases;
+  bool m_bases_is_set;
+  std::string m_label;
+  bool m_label_is_set;
+  std::string m_reads;
+  bool m_reads_is_set;
+};
+
+class html_summary_processing_tail : public html_template
+{
+public:
+  html_summary_processing_tail();
+  virtual ~html_summary_processing_tail() override;
+
+  html_summary_processing_tail(const html_summary_processing_tail&) = delete;
+  html_summary_processing_tail& operator=(const html_summary_processing_tail&) = delete;
+
+  virtual void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
 };
 
 class html_h2_tag : public html_template

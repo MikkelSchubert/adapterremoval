@@ -364,6 +364,51 @@ write_html_summary_section(const userconfig& config,
   }
 }
 
+//! Trimming/Filtering statistics
+struct processing_stats
+{
+  //! Row label
+  std::string label;
+  //! Number of reads trimmed/filtered
+  uint64_t reads;
+  //! Number of bases trimmed/filtered
+  uint64_t bases;
+};
+
+void
+write_html_processing_stats(std::ofstream& output,
+                            const std::string& label,
+                            const std::vector<processing_stats>& stats)
+{
+  html_summary_processing_head().set_label(label).write(output);
+
+  uint64_t total_reads = 0;
+  uint64_t total_bases = 0;
+
+  for (const auto& it : stats) {
+    html_summary_processing_row section;
+
+    section.set_label(it.label);
+    section.set_reads(format_rough_number(it.reads));
+    section.set_bases(format_rough_number(it.bases));
+    section.set_avg_bases(format_fraction(it.bases, it.reads));
+
+    total_reads += it.reads;
+    total_bases += it.bases;
+
+    section.write(output);
+  }
+
+  html_summary_processing_row()
+    .set_label("")
+    .set_reads(format_rough_number(total_reads))
+    .set_bases(format_rough_number(total_bases))
+    .set_avg_bases(format_fraction(total_bases, total_reads))
+    .write(output);
+
+  html_summary_processing_tail().write(output);
+}
+
 void
 write_html_processing_section(const userconfig& config,
                               const statistics& stats,
@@ -387,54 +432,31 @@ write_html_processing_section(const userconfig& config,
     adapter_bases += totals.adapter_trimmed_bases.get(i);
   }
 
-  html_summary_processing section;
+  write_html_processing_stats(
+    output,
+    "Trimming",
+    { { "Adapter trimming", adapter_reads, adapter_bases },
+      { "Low quality bases trimmed",
+        totals.low_quality_trimmed_reads,
+        totals.low_quality_trimmed_bases },
+      { "Terminal bases trimmed",
+        totals.terminal_trimmed_reads,
+        totals.terminal_trimmed_bases } });
 
-  section.set_adapter_trimming_reads(format_rough_number(adapter_reads));
-  section.set_adapter_trimming_bases(format_rough_number(adapter_bases));
-  section.set_adapter_trimming_avg(
-    format_fraction(adapter_bases, adapter_reads));
-
-  // FIXME:
-  // section.set_overlapping_reads(format_rough_number(totals.overlapping_reads));
-  // section.set_terminal_bases_trimmed(
-  //   format_rough_number(totals.terminal_bases_trimmed));
-  section.set_low_quality_reads(
-    format_rough_number(totals.low_quality_trimmed_reads));
-  section.set_low_quality_bases(
-    format_rough_number(totals.low_quality_trimmed_bases));
-  section.set_low_quality_avg(format_fraction(
-    totals.low_quality_trimmed_bases, totals.low_quality_trimmed_reads));
-
-  section.set_min_length_reads(
-    format_rough_number(totals.filtered_min_length_reads));
-  section.set_min_length_bases(
-    format_rough_number(totals.filtered_min_length_bases));
-  section.set_min_length_avg(format_fraction(totals.filtered_min_length_bases,
-                                             totals.filtered_min_length_reads));
-
-  section.set_max_length_reads(
-    format_rough_number(totals.filtered_max_length_reads));
-  section.set_max_length_bases(
-    format_rough_number(totals.filtered_max_length_bases));
-  section.set_max_length_avg(format_fraction(totals.filtered_max_length_bases,
-                                             totals.filtered_max_length_reads));
-
-  section.set_ambiguous_reads(
-    format_rough_number(totals.filtered_ambiguous_reads));
-  section.set_ambiguous_bases(
-    format_rough_number(totals.filtered_ambiguous_bases));
-  section.set_ambiguous_avg(format_fraction(totals.filtered_ambiguous_bases,
-                                            totals.filtered_ambiguous_reads));
-
-  section.set_complexity_reads(
-    format_rough_number(totals.filtered_low_complexity_reads));
-  section.set_complexity_bases(
-    format_rough_number(totals.filtered_low_complexity_bases));
-  section.set_complexity_avg(
-    format_fraction(totals.filtered_low_complexity_bases,
-                    totals.filtered_low_complexity_reads));
-
-  section.write(output);
+  write_html_processing_stats(output,
+                              "Filtering",
+                              { { "Short reads filtered",
+                                  totals.filtered_min_length_reads,
+                                  totals.filtered_min_length_bases },
+                                { "Long reads filtered",
+                                  totals.filtered_max_length_reads,
+                                  totals.filtered_max_length_bases },
+                                { "Ambiguous reads filtered",
+                                  totals.filtered_ambiguous_reads,
+                                  totals.filtered_ambiguous_bases },
+                                { "Ambiguous reads filtered",
+                                  totals.filtered_low_complexity_reads,
+                                  totals.filtered_low_complexity_bases } });
 }
 
 void
@@ -552,8 +574,8 @@ write_html_input_section(const userconfig& config,
     sample->i64("offset", 0);
     sample->f64_vec("y", insert_sizes.normalize());
 
-    // FIXME: Specify "identified reads" when in demultiplexing mode and correct
-    //        format_percentage to merged / n_identified.
+    // FIXME: Specify "identified reads" when in demultiplexing mode and
+    // correct format_percentage to merged / n_identified.
     std::ostringstream ss;
     ss << "Insert sizes inferred for "
        << format_percentage(insert_sizes.sum(),

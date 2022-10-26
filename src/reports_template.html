@@ -185,8 +185,8 @@
                 <b>*</b> The <b>Discarded</b> column is not included in the <b>Output</b> column.
             </p>
 
-            <!-- TEMPLATE: SUMMARY_PROCESSING -->
-            <h4>Trimming and filtering</h4>
+            <!-- TEMPLATE: SUMMARY_PROCESSING_HEAD -->
+            <h4>{{LABEL}}</h4>
             <table class="pure-table io-table pure-table-striped">
                 <thead>
                     <tr>
@@ -197,51 +197,17 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- TEMPLATE: SUMMARY_PROCESSING_ROW -->
                     <tr>
-                        <td>Adapter trimming</td>
-                        <td>{{ADAPTER_TRIMMING_READS}}</td>
-                        <td>{{ADAPTER_TRIMMING_BASES}}</td>
-                        <td>{{ADAPTER_TRIMMING_AVG}}</td>
+                        <td>{{LABEL}}</td>
+                        <td>{{READS}}</td>
+                        <td>{{BASES}}</td>
+                        <td>{{AVG_BASES}}</td>
                     </tr>
-                    <tr>
-                        <td>Low quality bases trimmed</td>
-                        <td>{{LOW_QUALITY_READS}}</td>
-                        <td>{{LOW_QUALITY_BASES}}</td>
-                        <td>{{LOW_QUALITY_AVG}}</td>
-                    </tr>
-                    <tr>
-                        <td>Short reads filtered</td>
-                        <td>{{MIN_LENGTH_READS}}</td>
-                        <td>{{MIN_LENGTH_BASES}}</td>
-                        <td>{{MIN_LENGTH_AVG}}</td>
-                    </tr>
-                    <tr>
-                        <td>Long reads filtered</td>
-                        <td>{{MAX_LENGTH_READS}}</td>
-                        <td>{{MAX_LENGTH_BASES}}</td>
-                        <td>{{MAX_LENGTH_AVG}}</td>
-                    </tr>
-                    <tr>
-                        <td>Ambiguous reads filtered</td>
-                        <td>{{AMBIGUOUS_READS}}</td>
-                        <td>{{AMBIGUOUS_BASES}}</td>
-                        <td>{{AMBIGUOUS_AVG}}</td>
-                    </tr>
-                    <tr>
-                        <td>Low-complexity reads filtered</td>
-                        <td>{{COMPLEXITY_READS}}</td>
-                        <td>{{COMPLEXITY_BASES}}</td>
-                        <td>{{COMPLEXITY_AVG}}</td>
-                    </tr>
+                    <!-- TEMPLATE: SUMMARY_PROCESSING_TAIL -->
+
                 </tbody>
             </table>
-
-            <!--
-
-            "overlapping_reads": 93272,
-            "terminal_bases_trimmed": 0,
-
-            -->
 
             <!-- TEMPLATE: H2_TAG -->
         </div>
