@@ -21,6 +21,7 @@
 #include "debug.hpp"
 #include "fastq.hpp"
 #include "linereader.hpp"
+#include "strutils.hpp"
 #include "testing.hpp"
 #include <iostream>
 #include <limits>
@@ -36,6 +37,17 @@ struct StringMaker<adapterremoval::fastq::ntrimmed>
     std::stringstream ss;
     ss << "ntrimmed{" << value.first << ", " << value.second << "}";
     return ss.str();
+  }
+};
+
+template<>
+struct StringMaker<adapterremoval::fastq>
+{
+  static std::string convert(adapterremoval::fastq const& value)
+  {
+    std::string s;
+    value.into_string(s);
+    return adapterremoval::shell_escape(s);
   }
 };
 } // namespace Catch
