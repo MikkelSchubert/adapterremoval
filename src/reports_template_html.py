@@ -80,6 +80,11 @@ html_template::~html_template()
 }"""
 
 
+def abort(fmt, *args):
+    print("ERROR:", fmt.format(*args), file=sys.stderr)
+    sys.exit(1)
+
+
 class FieldType(Enum):
     REQUIRED = "required"
     REPEATED = "repeated"
@@ -100,7 +105,9 @@ def read_template(filepath):
             match = _RE_SECTION.search(line)
             if match is not None:
                 (name,) = match.groups()
-                assert name not in sections, name
+                name = name.upper()
+                if name in sections:
+                    abort("Duplicate section name found: {!r}", name)
                 current = sections[name.upper()] = []
             elif current is not None:
                 current.append(line)
@@ -131,7 +138,9 @@ def read_template(filepath):
 
             name = name.strip().lower()
             if name not in _BUILTIN_VARS:
-                assert variables.get(name, kind) == kind, name
+                if variables.get(name, kind) != kind:
+                    abort("{!r} is both {!r} and {!r}", name, kind, variables[name])
+
                 variables[name] = Field(
                     name=name,
                     kind=kind,
@@ -177,7 +186,8 @@ def inject_variables(value):
             name = field[2:-2].lower()
             result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
         elif field.startswith("[[") and field.endswith("]]"):
-            assert repeater is None, repr(value)
+            if repeater is not None:
+                abort("multiple repeater values: {!r} and {!r}", repeater, field[2:-2])
             repeater = field[2:-2].lower()
             result.append("value")
         else:
