@@ -759,6 +759,131 @@ TEST_CASE("Mott trimming shorter segments if last")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// poly_x_trimming
+
+std::string
+poly_x_trimming(const std::string& nucleotides,
+                const size_t min_length,
+                const std::string sequence)
+{
+  fastq record("Test", sequence);
+  const auto result = record.poly_x_trimming(nucleotides, min_length);
+  REQUIRE(record.length() + result.second == sequence.length());
+
+  return record.sequence();
+}
+
+TEST_CASE("trim_poly_x on empty sequence and with empty X")
+{
+  REQUIRE(poly_x_trimming("", 10, "") == "");
+}
+
+TEST_CASE("trim_poly_x on empty sequence and with X")
+{
+  REQUIRE(poly_x_trimming("ACGT", 10, "") == "");
+}
+
+TEST_CASE("trim_poly_x on sequence with empty X")
+{
+  const std::string seq = "TTTTTTTTTTTTTTTTTTTT";
+  REQUIRE(poly_x_trimming("", 10, seq) == seq);
+}
+
+TEST_CASE("trim_poly_x no trimming of too short sequences")
+{
+  REQUIRE(poly_x_trimming("T", 5, "") == "");
+  REQUIRE(poly_x_trimming("T", 5, "T") == "T");
+  REQUIRE(poly_x_trimming("T", 5, "TT") == "TT");
+  REQUIRE(poly_x_trimming("T", 5, "TTT") == "TTT");
+  REQUIRE(poly_x_trimming("T", 5, "TTTT") == "TTTT");
+  REQUIRE(poly_x_trimming("T", 5, "TTTTT") == "");
+}
+
+TEST_CASE("trim_poly_x trimming until, but not including last mismtches")
+{
+  REQUIRE(poly_x_trimming("T", 10, "TATTTTATTTTTTTT") == "TA");
+  REQUIRE(poly_x_trimming("T", 10, "TAATTTTTTTTTTTT") == "TAA");
+}
+
+TEST_CASE("trim_poly_x trims only exact matches")
+{
+  const std::string seq = "TATTTTATTTTTTTT";
+  REQUIRE(poly_x_trimming("A", 10, seq) == seq);
+  REQUIRE(poly_x_trimming("C", 10, seq) == seq);
+  REQUIRE(poly_x_trimming("G", 10, seq) == seq);
+  REQUIRE(poly_x_trimming("N", 10, seq) == seq);
+  REQUIRE(poly_x_trimming("t", 10, seq) == seq);
+  REQUIRE(poly_x_trimming("T", 10, seq) == "TA");
+}
+
+TEST_CASE("trim_poly_x accept one mismatch per 8 bases")
+{
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAA") == "");
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAATAAA") == "");
+  REQUIRE(poly_x_trimming("A", 10, "TTAAAAAAAAA") == "TT");
+  REQUIRE(poly_x_trimming("A", 10, "AATAAATAAA") == "AATAAATAAA");
+  REQUIRE(poly_x_trimming("A", 10, "AAATAAAAAAAAATAAA") == "AAAT");
+  REQUIRE(poly_x_trimming("A", 10, "AATAAAAAAAAAATAAA") == "AAT");
+  REQUIRE(poly_x_trimming("A", 10, "ATAAAAAAAAAAATAAA") == "");
+}
+
+TEST_CASE("trim_poly_x accept early mismatches if in window")
+{
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAAAAATAAA") == "");
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAAAAATAAA") == "");
+}
+
+TEST_CASE("trim_poly_x stops trims best candidate")
+{
+  REQUIRE(poly_x_trimming("ACGT", 10, "AAAAAAAATT") == "AAAAAAAATT");
+  REQUIRE(poly_x_trimming("ACGT", 10, "AAAAAAAAAT") == "");
+
+  REQUIRE(poly_x_trimming("ACGT", 10, "GCCCCCTCCC") == "GCCCCCTCCC");
+  REQUIRE(poly_x_trimming("ACGT", 10, "CCCCCCTCCC") == "");
+
+  REQUIRE(poly_x_trimming("ACGT", 10, "GGGGGGGGAA") == "GGGGGGGGAA");
+  REQUIRE(poly_x_trimming("ACGT", 10, "AGGGGGGGGG") == "A");
+
+  REQUIRE(poly_x_trimming("ACGT", 10, "AATTTTTTTT") == "AATTTTTTTT");
+  REQUIRE(poly_x_trimming("ACGT", 10, "TATTTTTTTT") == "");
+}
+
+TEST_CASE("trim_poly_x doesn't count Ns in alignnment")
+{
+  REQUIRE(poly_x_trimming("C", 5, "CCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "CTCCCC") == "CTCCCC");
+  REQUIRE(poly_x_trimming("C", 5, "CNCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "CNCCNC") == "CNCCNC");
+
+  REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCCC") == "CCCCNCCCCC");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "TCCCCNCCCCC") == "T");
+
+  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCNCCCCCTCCC") == "CCCCT");
+}
+
+TEST_CASE("trim_poly_x only trims trailing Ns after matches")
+{
+  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "NNTCCCCCCC") == "NNT");
+}
+
+TEST_CASE("trim_poly_x returns nucleotide trimmed or N")
+{
+  fastq record("Test", "CCCCC");
+
+  using pair = std::pair<char, size_t>;
+
+  REQUIRE(fastq(record).poly_x_trimming("A", 4) == pair{ 'N', 0 });
+  REQUIRE(fastq(record).poly_x_trimming("C", 4) == pair{ 'C', 5 });
+  REQUIRE(fastq(record).poly_x_trimming("CAGT", 4) == pair{ 'C', 5 });
+  REQUIRE(fastq(record).poly_x_trimming("AGTC", 4) == pair{ 'C', 5 });
+  REQUIRE(fastq(record).poly_x_trimming("ATG", 4) == pair{ 'N', 0 });
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Truncate
 
 TEST_CASE("truncate_empty", "[fastq::fastq]")

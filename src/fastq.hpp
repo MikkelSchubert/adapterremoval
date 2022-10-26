@@ -131,6 +131,16 @@ public:
                          const bool preserve5p = false);
 
   /**
+   * Trims the longest poly-X tail, where X is one of the specified nucleotides.
+   *
+   * @param nucleotides Nucleotides to consider ('A', 'G', 'C', and/or 'T').
+   * @param min_length The minimum length of of a poly-G tail.
+   * @return The number of 3' bases trimmmed for the best matching nucleotide.
+   */
+  std::pair<char, size_t> poly_x_trimming(const std::string& nucleotides,
+                                          size_t min_length);
+
+  /**
    * Truncates the record in place.
    *
    * This function behaves like std::string::substr, except that the

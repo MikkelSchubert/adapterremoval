@@ -36,6 +36,8 @@ const ACGTN::value_type ACGTN::values[ACGTN::size] = {
   'A', 'C', 'G', 'T', 'N',
 };
 
+namespace {
+
 std::vector<double>
 init_phred_to_p_values()
 {
@@ -115,6 +117,61 @@ get_mate_info(const fastq& read, char mate_separator)
   info.name = header.substr(0, pos);
   return info;
 }
+
+size_t
+count_poly_x_tail(const std::string& m_sequence,
+                  const char nucleotide,
+                  const size_t min_length)
+{
+  // Maximum number of sequential mismatches
+  const size_t max_seq_mismatches = 2;
+  // Number of called bases required per mismatch (via fastp)
+  const size_t min_bases_per_mismatch = 8;
+
+  //! Number of bases in the alignment to trim, excluding leading mismatches
+  size_t n_trim = 0;
+  //! Number of bases in the alignment
+  size_t n_bases = 0;
+  //! Number of uncalled bases (Ns) in the alignment
+  size_t n_uncalled = 0;
+  //! Number of mismatches in the alignment
+  size_t n_mismatches = 0;
+  //! Current number of sequential mismatches in the alignment
+  size_t n_seq_mismatches = 0;
+
+  for (auto it = m_sequence.rbegin(); it != m_sequence.rend(); ++it) {
+    n_bases++;
+
+    if (*it == nucleotide) {
+      n_trim = n_bases;
+      n_seq_mismatches = 0;
+    } else if (*it == 'N') {
+      n_uncalled++;
+      // Trailing Ns are allowed only after a match
+      if (!n_seq_mismatches) {
+        n_trim = n_bases;
+      }
+    } else {
+      n_mismatches++;
+      n_seq_mismatches++;
+      if (n_seq_mismatches > max_seq_mismatches ||
+          n_mismatches > std::max(min_length, n_bases - n_uncalled) /
+                           min_bases_per_mismatch) {
+        // The final mismatch is not counted as part of the alignment
+        n_bases--;
+        break;
+      }
+    }
+  }
+
+  if (n_bases - n_uncalled >= min_length) {
+    return n_trim;
+  }
+
+  return 0;
+}
+
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // fastq
@@ -327,6 +384,27 @@ fastq::mott_trimming(const double error_limit, const bool preserve5p)
                                      right_exclusive);
 }
 
+std::pair<char, size_t>
+fastq::poly_x_trimming(const std::string& nucleotides, size_t min_length)
+{
+  size_t best_count = 0;
+  char best_nucleotide = 'N';
+  if (m_sequence.length() >= min_length && nucleotides.size()) {
+    // Looping over all nucleotides ended up faster than a single pass algorithm
+    for (const auto nucleotide : nucleotides) {
+      const auto count = count_poly_x_tail(m_sequence, nucleotide, min_length);
+      if (count > best_count) {
+        best_nucleotide = nucleotide;
+        best_count = count;
+      }
+    }
+
+    truncate(0, length() - best_count);
+  }
+
+  return { best_nucleotide, best_count };
+}
+
 void
 fastq::truncate(size_t pos, size_t len)
 {
@@ -472,8 +550,8 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
 
     bool any_failures = false;
     while (it_1 != reads_1.end()) {
-      const mate_info info1 = get_mate_info(*it_1++, candidate);
-      const mate_info info2 = get_mate_info(*it_2++, candidate);
+      const auto info1 = get_mate_info(*it_1++, candidate);
+      const auto info2 = get_mate_info(*it_2++, candidate);
 
       if (info1.name != info2.name) {
         any_failures = true;
@@ -514,8 +592,8 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
     throw fastq_error("Pair contains empty reads");
   }
 
-  const mate_info info1 = get_mate_info(mate1, mate_separator);
-  const mate_info info2 = get_mate_info(mate2, mate_separator);
+  const auto info1 = get_mate_info(mate1, mate_separator);
+  const auto info2 = get_mate_info(mate2, mate_separator);
 
   if (info1.name != info2.name) {
     std::ostringstream error;
