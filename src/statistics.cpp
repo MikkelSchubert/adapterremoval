@@ -315,7 +315,8 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
   , overlapping_reads()
-  , terminal_bases_trimmed()
+  , terminal_trimmed_reads()
+  , terminal_trimmed_bases()
   , low_quality_trimmed_reads()
   , low_quality_trimmed_bases()
   , filtered_min_length_reads()
@@ -342,7 +343,8 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   adapter_trimmed_reads += other.adapter_trimmed_reads;
   adapter_trimmed_bases += other.adapter_trimmed_bases;
   overlapping_reads += other.overlapping_reads;
-  terminal_bases_trimmed += other.terminal_bases_trimmed;
+  terminal_trimmed_reads += other.terminal_trimmed_reads;
+  terminal_trimmed_bases += other.terminal_trimmed_bases;
   low_quality_trimmed_reads += other.low_quality_trimmed_reads;
   low_quality_trimmed_bases += other.low_quality_trimmed_bases;
   filtered_min_length_reads += other.filtered_min_length_reads;

@@ -87,7 +87,8 @@ trim_read_termini(const userconfig& config,
       read.truncate(0, 0);
     }
 
-    stats.terminal_bases_trimmed += length - read.length();
+    stats.terminal_trimmed_reads++;
+    stats.terminal_trimmed_bases += length - read.length();
   }
 }
 

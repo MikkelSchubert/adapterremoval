@@ -222,8 +222,10 @@ public:
   //! Number of reads that overlap/can be merged
   size_t overlapping_reads;
 
+  //! Number of reads trimmed with --trim5p/3p
+  size_t terminal_trimmed_reads;
   //! Number of bases 5p/3p bases trimmed with --trim5p/3p
-  size_t terminal_bases_trimmed;
+  size_t terminal_trimmed_bases;
 
   //! Number of reads/bases trimmed for low quality bases
   size_t low_quality_trimmed_reads;
