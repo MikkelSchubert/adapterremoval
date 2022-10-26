@@ -65,12 +65,53 @@ parse_trim_argument(const string_vec& values)
 }
 
 bool
+parse_poly_x_option(const std::string& key,
+                    const string_vec& values,
+                    std::string& out)
+{
+  out.clear();
+  if (values.empty()) {
+    out = "ACGT";
+    return true;
+  }
+
+  std::array<bool, ACGT::size> enabled = {};
+  for (const auto& value : values) {
+    for (const auto nuc : toupper(value)) {
+      switch (nuc) {
+        case 'A':
+        case 'C':
+        case 'G':
+        case 'T':
+          enabled.at(ACGT::to_index(nuc)) = true;
+          break;
+
+        default:
+          log::error() << "Option " << key << " called with invalid value "
+                       << shell_escape(value) << ". Only A, C, G, and T are "
+                       << "permitted!";
+
+          return false;
+      }
+    }
+  }
+
+  for (const auto nuc : ACGT::values) {
+    if (enabled.at(ACGT::to_index(nuc))) {
+      out.push_back(nuc);
+    }
+  }
+
+  return true;
+}
+
+bool
 check_no_clobber(const std::string& label,
                  const string_vec& in_files,
                  const std::string& out_file)
 {
   for (const auto& in_file : in_files) {
-    if (in_file == out_file) {
+    if (in_file == out_file && in_file != DEV_NULL) {
       log::error() << "Input file would be overwritten: " << label << " "
                    << in_file;
       return false;
@@ -338,6 +379,9 @@ userconfig::userconfig(const std::string& name,
   , trim_fixed_5p()
   , trim_fixed_3p()
   , trim_error_rate()
+  , pre_trim_poly_x()
+  , post_trim_poly_x()
+  , trim_poly_x_threshold()
   , trim_by_quality()
   , trim_window_length()
   , low_quality_score()
@@ -367,6 +411,8 @@ userconfig::userconfig(const std::string& name,
   , interleaved()
   , trim5p()
   , trim3p()
+  , pre_trim_poly_x_sink()
+  , post_trim_poly_x_sink()
   , log_color()
   , log_level()
   , log_progress_sink()
@@ -574,6 +620,29 @@ userconfig::userconfig(const std::string& name,
     .bind_double(&trim_error_rate)
     .with_default(0);
 
+  argparser.add("--pre-trim-polyx", "X")
+    .help("Enable trimming of poly-X tails prior to read alignment and adapter "
+          "trimming. Zero or more nucleotides (A, C, G, T) may be specified. "
+          "Zero or more nucleotides may be specified after the option "
+          "seperated by spaces, with zero nucleotides corresponding to all of "
+          "A, C, G, and T")
+    .bind_vec(&pre_trim_poly_x_sink)
+    .with_min_values(0);
+  argparser.add("--post-trim-polyx", "X")
+    .help("Enable trimming of poly-X tails after read alignment and adapter "
+          "trimming/merging, but before trimming of low-quality bases. Merged "
+          "reads are not trimmed by this option (both ends are 5'). Zero or "
+          "more nucleotides (A, C, G, T) may be specified. Zero or more "
+          "nucleotides may be specified after the option seperated by spaces, "
+          "with zero nucleotides corresponding to all of A, C, G, and T")
+    .bind_vec(&post_trim_poly_x_sink)
+    .with_min_values(0);
+  argparser.add("--trim-polyx-threshold", "N")
+    .help("Enable trimming of poly-G tails")
+    .bind_uint(&trim_poly_x_threshold)
+    .with_default(10);
+
+  argparser.add_header("FILTERING SETTINGS:");
   argparser.add("--maxns", "N")
     .help("Reads containing more ambiguous bases (N) than this number after "
           "trimming are discarded")
@@ -688,7 +757,7 @@ userconfig::userconfig(const std::string& name,
     .with_default("auto");
   argparser.add("--log-progress", "X")
     .help("Specify the type of progress reports used. If set to auto, then a "
-          "spinner will be  used if STDERR is a terminal and the NO_COLORS "
+          "spinner will be used if STDERR is a terminal and the NO_COLORS "
           "environmetal variable is not set, otherwise logging will be used")
     .bind_str(&log_progress_sink)
     .with_choices({ "auto", "log", "spin", "never" })
@@ -905,6 +974,24 @@ userconfig::parse_args(int argc, char* argv[])
                     "any output, then use '--basename /dev/null'";
 
     return argparse::parse_result::error;
+  }
+
+  {
+    const std::string key = "--pre-trim-polyx";
+    if (argparser.is_set(key)) {
+      if (!parse_poly_x_option(key, pre_trim_poly_x_sink, pre_trim_poly_x)) {
+        return argparse::parse_result::error;
+      }
+    }
+  }
+
+  {
+    const std::string key = "--post-trim-polyx";
+    if (argparser.is_set(key)) {
+      if (!parse_poly_x_option(key, post_trim_poly_x_sink, post_trim_poly_x)) {
+        return argparse::parse_result::error;
+      }
+    }
   }
 
   return argparse::parse_result::ok;

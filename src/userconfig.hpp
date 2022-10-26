@@ -199,19 +199,25 @@ public:
 
   //! Error rate used for quality trimming using the modified Mott's algorithm.
   double trim_error_rate;
+  //! Nucleotides to trim from poly-X tails prior to alignment/adapter trimming.
+  std::string pre_trim_poly_x;
+  //! Nucleotides to trim from poly-X tails after alignment/adapter trimming.
+  std::string post_trim_poly_x;
+  //! Minimum number of bases in poly-X tails.
+  unsigned trim_poly_x_threshold;
+
   //! DEPRECATED: If true, read termini are trimmed for low-quality bases.
   bool trim_by_quality;
   //! DEPRECATED: Window based trimming; a fraction / N bp size / off (negative)
   double trim_window_length;
   //! DEPRECATED: The highest quality score which is considered low-quality
   unsigned low_quality_score;
-
-  //! If true, ambiguous bases (N) at read termini are trimmed.
+  //! DEPRECATED: If true, ambiguous bases (N) at read termini are trimmed.
   bool trim_ambiguous_bases;
+
   //! The maximum number of ambiguous bases (N) in an read; reads exceeding
   //! this number following trimming (optionally) are discarded.
   unsigned max_ambiguous_bases;
-
   //! The minimum complexity score for FASTQ reads (see FASTQ::complexity()).
   double min_complexity;
 
@@ -286,6 +292,10 @@ private:
   string_vec trim5p;
   //! Sink for --trim3p
   string_vec trim3p;
+  //! Sink for --pre-trim-polyx
+  string_vec pre_trim_poly_x_sink;
+  //! Sink for --post-trim-polyx
+  string_vec post_trim_poly_x_sink;
 
   //! Sink for log color (on/off/auto)
   std::string log_color;

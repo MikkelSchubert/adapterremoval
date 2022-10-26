@@ -38,6 +38,39 @@ namespace adapterremoval {
 
 /** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
 void
+pre_trim_poly_x_tail(const userconfig& config,
+                     trimming_statistics& stats,
+                     fastq& read)
+{
+  if (config.pre_trim_poly_x.size()) {
+    const auto result = read.poly_x_trimming(config.pre_trim_poly_x,
+                                             config.trim_poly_x_threshold);
+
+    if (result.second) {
+      stats.poly_x_pre_trimmed_reads.inc(result.first);
+      stats.poly_x_pre_trimmed_bases.inc(result.first, result.second);
+    }
+  }
+}
+
+void
+post_trim_poly_x_tail(const userconfig& config,
+                      trimming_statistics& stats,
+                      fastq& read)
+{
+  if (config.post_trim_poly_x.size()) {
+    const auto result = read.poly_x_trimming(config.post_trim_poly_x,
+                                             config.trim_poly_x_threshold);
+
+    if (result.second) {
+      stats.poly_x_post_trimmed_reads.inc(result.first);
+      stats.poly_x_post_trimmed_bases.inc(result.first, result.second);
+    }
+  }
+}
+
+/** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
+void
 trim_read_termini(const userconfig& config,
                   trimming_statistics& stats,
                   fastq& read,
@@ -248,6 +281,8 @@ se_reads_processor::process(chunk_ptr chunk)
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
   for (auto& read : read_chunk.reads_1) {
+    pre_trim_poly_x_tail(m_config, *stats, read);
+
     const alignment_info alignment =
       aligner.align_single_end(read, m_config.shift);
 
@@ -264,6 +299,7 @@ se_reads_processor::process(chunk_ptr chunk)
     read.add_prefix_to_name(m_config.prefix_read_1);
 
     trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    post_trim_poly_x_tail(m_config, *stats, read);
     trim_sequence_by_quality(m_config, *stats, read);
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
@@ -348,6 +384,10 @@ pe_reads_processor::process(chunk_ptr chunk)
     fastq& read_1 = *it_1++;
     fastq& read_2 = *it_2++;
 
+    // Trim poly-X tails for zero or more X
+    pre_trim_poly_x_tail(m_config, *stats, read_1);
+    pre_trim_poly_x_tail(m_config, *stats, read_2);
+
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
 
@@ -409,6 +449,10 @@ pe_reads_processor::process(chunk_ptr chunk)
     // Trim fixed number of bases from 5' and/or 3' termini
     trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
     trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
+
+    // Trim poly-X tails for zero or more X
+    post_trim_poly_x_tail(m_config, *stats, read_1);
+    post_trim_poly_x_tail(m_config, *stats, read_2);
 
     // Sliding window trimming or single-base trimming
     trim_sequence_by_quality(m_config, *stats, read_1);

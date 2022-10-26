@@ -227,6 +227,16 @@ public:
   //! Number of bases 5p/3p bases trimmed with --trim5p/3p
   size_t terminal_trimmed_bases;
 
+  //! Number of reads trimmed with --pre-trim-polyx
+  indexed_count<ACGT> poly_x_pre_trimmed_reads;
+  //! Number of 3' bases trimmed with --pre-trim-polyx
+  indexed_count<ACGT> poly_x_pre_trimmed_bases;
+
+  //! Number of reads trimmed with --post-trim-polyx
+  indexed_count<ACGT> poly_x_post_trimmed_reads;
+  //! Number of 3' bases trimmed with --post-trim-polyx
+  indexed_count<ACGT> poly_x_post_trimmed_bases;
+
   //! Number of reads/bases trimmed for low quality bases
   size_t low_quality_trimmed_reads;
   size_t low_quality_trimmed_bases;
