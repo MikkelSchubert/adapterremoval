@@ -44,6 +44,28 @@ typedef std::shared_ptr<fastq_statistics> fastq_stats_ptr;
 typedef std::shared_ptr<statistics> stats_ptr;
 typedef std::shared_ptr<trimming_statistics> trim_stats_ptr;
 
+/** Simple counter class for read/bases statistics */
+class reads_and_bases
+{
+public:
+  inline reads_and_bases(uint64_t reads = 0, uint64_t bases = 0);
+  inline reads_and_bases& operator+=(const reads_and_bases& other);
+
+  /** Increments the number of reads by one the number of bases by an amount */
+  inline void inc(uint64_t bases = 1);
+
+  /** Returns the total number of reads (number of increments) */
+  inline uint64_t reads() const;
+  /** Returns the total number of bases */
+  inline uint64_t bases() const;
+
+private:
+  //! Number of reads/times inc was called
+  uint64_t m_reads;
+  //! Sum of the number bases inc'd
+  uint64_t m_bases;
+};
+
 /**
  * Estimation of the fraction of duplicated sequences.
  *
@@ -222,10 +244,8 @@ public:
   //! Number of reads that overlap/can be merged
   size_t overlapping_reads;
 
-  //! Number of reads trimmed with --trim5p/3p
-  size_t terminal_trimmed_reads;
-  //! Number of bases 5p/3p bases trimmed with --trim5p/3p
-  size_t terminal_trimmed_bases;
+  //! Number of reads/bases trimmed with --trim5p/3p
+  reads_and_bases terminal_trimmed;
 
   //! Number of reads trimmed with --pre-trim-polyx
   indexed_count<ACGT> poly_x_pre_trimmed_reads;
@@ -238,20 +258,14 @@ public:
   indexed_count<ACGT> poly_x_post_trimmed_bases;
 
   //! Number of reads/bases trimmed for low quality bases
-  size_t low_quality_trimmed_reads;
-  size_t low_quality_trimmed_bases;
-
+  reads_and_bases low_quality_trimmed;
   //! Number of reads/bases filtered due to length (min)
-  size_t filtered_min_length_reads;
-  size_t filtered_min_length_bases;
-  size_t filtered_max_length_reads;
-  size_t filtered_max_length_bases;
-
-  size_t filtered_ambiguous_reads;
-  size_t filtered_ambiguous_bases;
-
-  size_t filtered_low_complexity_reads;
-  size_t filtered_low_complexity_bases;
+  reads_and_bases filtered_min_length;
+  reads_and_bases filtered_max_length;
+  //! Number of reads filtered due to too many Ns
+  reads_and_bases filtered_ambiguous;
+  //! Number of reads filtered due to low complexity
+  reads_and_bases filtered_low_complexity;
 
   /** Combine statistics objects, e.g. those used by different threads. */
   trimming_statistics& operator+=(const trimming_statistics& other);
@@ -327,5 +341,40 @@ private:
   //! The max number of unique sequences counted when estimating duplication.
   size_t m_max_unique;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+reads_and_bases::reads_and_bases(uint64_t reads, uint64_t bases)
+  : m_reads(reads)
+  , m_bases(bases)
+{
+}
+
+reads_and_bases&
+reads_and_bases::operator+=(const reads_and_bases& other)
+{
+  m_reads += other.m_reads;
+  m_bases += other.m_bases;
+
+  return *this;
+}
+
+void
+reads_and_bases::inc(uint64_t bases)
+{
+  m_reads += 1;
+  m_bases += bases;
+}
+
+uint64_t
+reads_and_bases::reads() const
+{
+  return m_reads;
+}
+
+uint64_t
+reads_and_bases::bases() const
+{
+  return m_bases;
+}
 
 } // namespace adapterremoval

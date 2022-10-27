@@ -113,19 +113,25 @@ write_report_trimming(const userconfig& config,
   }
 
   trimming->i64("overlapping_reads", totals.overlapping_reads);
-  trimming->i64("terminal_bases_trimmed", totals.terminal_trimmed_bases);
-  trimming->i64("low_quality_trimmed_reads", totals.low_quality_trimmed_reads);
-  trimming->i64("low_quality_trimmed_bases", totals.low_quality_trimmed_bases);
-  trimming->i64("filtered_min_length_reads", totals.filtered_min_length_reads);
-  trimming->i64("filtered_min_length_bases", totals.filtered_min_length_bases);
-  trimming->i64("filtered_max_length_reads", totals.filtered_max_length_reads);
-  trimming->i64("filtered_max_length_bases", totals.filtered_max_length_bases);
-  trimming->i64("filtered_ambiguous_reads", totals.filtered_ambiguous_reads);
-  trimming->i64("filtered_ambiguous_bases", totals.filtered_ambiguous_bases);
+  trimming->i64("terminal_bases_trimmed", totals.terminal_trimmed.bases());
+  trimming->i64("low_quality_trimmed_reads",
+                totals.low_quality_trimmed.reads());
+  trimming->i64("low_quality_trimmed_bases",
+                totals.low_quality_trimmed.bases());
+  trimming->i64("filtered_min_length_reads",
+                totals.filtered_min_length.reads());
+  trimming->i64("filtered_min_length_bases",
+                totals.filtered_min_length.bases());
+  trimming->i64("filtered_max_length_reads",
+                totals.filtered_max_length.reads());
+  trimming->i64("filtered_max_length_bases",
+                totals.filtered_max_length.bases());
+  trimming->i64("filtered_ambiguous_reads", totals.filtered_ambiguous.reads());
+  trimming->i64("filtered_ambiguous_bases", totals.filtered_ambiguous.bases());
   trimming->i64("filtered_low_complexity_reads",
-                totals.filtered_low_complexity_reads);
+                totals.filtered_low_complexity.reads());
   trimming->i64("filtered_low_complexity_bases",
-                totals.filtered_low_complexity_bases);
+                totals.filtered_low_complexity.bases());
 
   if (config.paired_ended_mode) {
     trimming->i64_vec("insert_sizes", totals.insert_sizes);

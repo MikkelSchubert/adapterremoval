@@ -116,8 +116,7 @@ trim_read_termini(const userconfig& config,
       read.truncate(0, 0);
     }
 
-    stats.terminal_trimmed_reads++;
-    stats.terminal_trimmed_bases += length - read.length();
+    stats.terminal_trimmed.inc(length - read.length());
   }
 }
 
@@ -144,8 +143,7 @@ trim_sequence_by_quality(const userconfig& config,
   }
 
   if (trimmed.first || trimmed.second) {
-    stats.low_quality_trimmed_reads++;
-    stats.low_quality_trimmed_bases += trimmed.first + trimmed.second;
+    stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
 
     return true;
   }
@@ -161,27 +159,23 @@ is_acceptable_read(const userconfig& config,
   const auto length = seq.length();
 
   if (length < config.min_genomic_length) {
-    stats.filtered_min_length_reads++;
-    stats.filtered_min_length_bases += length;
+    stats.filtered_min_length.inc(length);
 
     return false;
   } else if (length > config.max_genomic_length) {
-    stats.filtered_max_length_reads++;
-    stats.filtered_max_length_bases += length;
+    stats.filtered_max_length.inc(length);
 
     return false;
   }
 
   const auto max_n = config.max_ambiguous_bases;
   if (max_n < length && seq.count_ns() > max_n) {
-    stats.filtered_ambiguous_reads++;
-    stats.filtered_ambiguous_bases += length;
+    stats.filtered_ambiguous.inc(length);
     return false;
   }
 
   if (config.min_complexity > 0.0 && seq.complexity() < config.min_complexity) {
-    stats.filtered_low_complexity_reads++;
-    stats.filtered_low_complexity_bases += length;
+    stats.filtered_low_complexity.inc(length);
     return false;
   }
 

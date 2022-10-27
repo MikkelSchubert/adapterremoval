@@ -51,6 +51,8 @@ const char* FACET_WIDTH_1 = FIGURE_WIDTH;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
 /** Escapes a string that needs to be embedded in a JS */
 std::string
 json_encode(const std::string& s)
@@ -122,6 +124,14 @@ require_values(counts_tmpl<T> r, T fallback = T())
 
   return counts_tmpl<T>({ fallback });
 }
+
+std::string
+format_average_bases(const reads_and_bases& counts)
+{
+  return format_fraction(counts.bases(), counts.reads());
+}
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -369,10 +379,8 @@ struct processing_stats
 {
   //! Row label
   std::string label;
-  //! Number of reads trimmed/filtered
-  uint64_t reads;
-  //! Number of bases trimmed/filtered
-  uint64_t bases;
+  //! Number of reads/bases trimmed/filtered
+  reads_and_bases count;
 };
 
 void
@@ -382,28 +390,26 @@ write_html_processing_stats(std::ofstream& output,
 {
   html_summary_processing_head().set_label(label).write(output);
 
-  uint64_t total_reads = 0;
-  uint64_t total_bases = 0;
+  reads_and_bases total;
 
   for (const auto& it : stats) {
     html_summary_processing_row section;
 
     section.set_label(it.label);
-    section.set_reads(format_rough_number(it.reads));
-    section.set_bases(format_rough_number(it.bases));
-    section.set_avg_bases(format_fraction(it.bases, it.reads));
+    section.set_reads(format_rough_number(it.count.reads()));
+    section.set_bases(format_rough_number(it.count.bases()));
+    section.set_avg_bases(format_average_bases(it.count));
 
-    total_reads += it.reads;
-    total_bases += it.bases;
+    total += it.count;
 
     section.write(output);
   }
 
   html_summary_processing_row()
     .set_label("")
-    .set_reads(format_rough_number(total_reads))
-    .set_bases(format_rough_number(total_bases))
-    .set_avg_bases(format_fraction(total_bases, total_reads))
+    .set_reads(format_rough_number(total.reads()))
+    .set_bases(format_rough_number(total.bases()))
+    .set_avg_bases(format_average_bases(total))
     .write(output);
 
   html_summary_processing_tail().write(output);
@@ -490,13 +496,9 @@ write_html_processing_section(const userconfig& config,
   write_html_processing_stats(
     output,
     "Trimming",
-    { { "Adapter trimming", adapter_reads, adapter_bases },
-      { "Low quality bases trimmed",
-        totals.low_quality_trimmed_reads,
-        totals.low_quality_trimmed_bases },
-      { "Terminal bases trimmed",
-        totals.terminal_trimmed_reads,
-        totals.terminal_trimmed_bases } });
+    { { "Adapter trimming", reads_and_bases(adapter_reads, adapter_bases) },
+      { "Low quality bases trimmed", totals.low_quality_trimmed },
+      { "Terminal bases trimmed", totals.terminal_trimmed } });
 
   {
     std::vector<processing_poly_x> poly_x_stats;
@@ -519,20 +521,13 @@ write_html_processing_section(const userconfig& config,
     }
   }
 
-  write_html_processing_stats(output,
-                              "Filtering",
-                              { { "Short reads filtered",
-                                  totals.filtered_min_length_reads,
-                                  totals.filtered_min_length_bases },
-                                { "Long reads filtered",
-                                  totals.filtered_max_length_reads,
-                                  totals.filtered_max_length_bases },
-                                { "Ambiguous reads filtered",
-                                  totals.filtered_ambiguous_reads,
-                                  totals.filtered_ambiguous_bases },
-                                { "Ambiguous reads filtered",
-                                  totals.filtered_low_complexity_reads,
-                                  totals.filtered_low_complexity_bases } });
+  write_html_processing_stats(
+    output,
+    "Filtering",
+    { { "Short reads filtered", totals.filtered_min_length },
+      { "Long reads filtered", totals.filtered_max_length },
+      { "Ambiguous reads filtered", totals.filtered_ambiguous },
+      { "Ambiguous reads filtered", totals.filtered_low_complexity } });
 }
 
 void
