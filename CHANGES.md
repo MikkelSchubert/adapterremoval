@@ -64,6 +64,7 @@ the label "[**BREAKING**]".
 - [**BREAKING**] The executable is now named `adapterremoval3` by default. This
   was done to allow v3 to coexist with AdapterRemoval v2 and to prevent
   accidential use of the wrong version.
+- [**BREAKING**] Changed the default --maxns value from 1000 to "infinite"
 - `--gzip` now defaults to compressing independent blocks of 64kb data using
   `libdeflate`. This significantly improves throughput in both single- and
   (especially) multi-threaded mode, but may be incompatible with a few programs.

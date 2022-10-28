@@ -665,9 +665,9 @@ userconfig::userconfig(const std::string& name,
   argparser.add_header("FILTERING SETTINGS:");
   argparser.add("--maxns", "N")
     .help("Reads containing more ambiguous bases (N) than this number after "
-          "trimming are discarded")
+          "trimming are discarded [default: no maximum]")
     .bind_uint(&max_ambiguous_bases)
-    .with_default(1000);
+    .with_default(std::numeric_limits<unsigned>::max());
   argparser.add("--preserve5p")
     .help("If set, bases at the 5p will not be trimmed by when performing "
           "quality based trimming of reads. Merged reads will not be quality "
