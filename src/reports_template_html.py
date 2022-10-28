@@ -138,8 +138,9 @@ def read_template(filepath):
 
             name = name.strip().lower()
             if name not in _BUILTIN_VARS:
-                if variables.get(name, kind) != kind:
-                    abort("{!r} is both {!r} and {!r}", name, kind, variables[name])
+                variable = variables.get(name)
+                if variable is not None and variable.kind != kind:
+                    abort("{!r} is both {!r} and {!r}", name, kind, variable.kind)
 
                 variables[name] = Field(
                     name=name,
