@@ -256,6 +256,16 @@ public:
   //! The kind of progress indicator to use
   progress_type log_progress;
 
+  /* Helper functions for logging / reporting */
+  bool is_adapter_trimming_enabled() const;
+  bool is_low_quality_trimming_enabled() const;
+  bool is_terminal_base_pre_trimming_enabled() const;
+  bool is_terminal_base_post_trimming_enabled() const;
+  bool is_short_read_filtering_enabled() const;
+  bool is_long_read_filtering_enabled() const;
+  bool is_ambiguous_base_filtering_enabled() const;
+  bool is_low_complexity_filtering_enabled() const;
+
   //! Copy construction not supported
   userconfig(const userconfig&) = delete;
   //! Assignment not supported

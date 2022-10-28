@@ -1162,6 +1162,57 @@ check_and_set_barcode_mm(const argparse::parser& argparser,
 }
 
 bool
+userconfig::is_adapter_trimming_enabled() const
+{
+  return run_type == ar_command::trim_adapters;
+}
+
+bool
+userconfig::is_low_quality_trimming_enabled() const
+{
+  return trim_error_rate > 0 || trim_window_length >= 0 ||
+         trim_ambiguous_bases || trim_by_quality || trim_error_rate > 0;
+}
+
+bool
+userconfig::is_terminal_base_pre_trimming_enabled() const
+{
+  return pre_trim_fixed_5p.first || pre_trim_fixed_5p.second ||
+         pre_trim_fixed_3p.first || pre_trim_fixed_3p.second;
+}
+
+bool
+userconfig::is_terminal_base_post_trimming_enabled() const
+{
+  return post_trim_fixed_5p.first || post_trim_fixed_5p.second ||
+         post_trim_fixed_3p.first || post_trim_fixed_3p.second;
+}
+
+bool
+userconfig::is_short_read_filtering_enabled() const
+{
+  return min_genomic_length > 0;
+}
+
+bool
+userconfig::is_long_read_filtering_enabled() const
+{
+  return max_genomic_length != std::numeric_limits<unsigned>::max();
+}
+
+bool
+userconfig::is_ambiguous_base_filtering_enabled() const
+{
+  return max_ambiguous_bases != std::numeric_limits<unsigned>::max();
+}
+
+bool
+userconfig::is_low_complexity_filtering_enabled() const
+{
+  return min_complexity > 0;
+}
+
+bool
 userconfig::setup_adapter_sequences()
 {
   const bool adapters_is_set =
