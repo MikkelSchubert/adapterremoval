@@ -24,6 +24,7 @@
 #include <limits>    // for numeric_limits
 #include <stdexcept> // for invalid_argument
 #include <string>    // for string, operator<<, char_traits, operator==
+#include <tuple>     // for tuple
 #include <unistd.h>  // for access, isatty, R_OK, STDERR_FILENO
 
 #include "alignment.hpp"  // for alignment_info
@@ -376,8 +377,10 @@ userconfig::userconfig(const std::string& name,
   , min_alignment_length()
   , mismatch_threshold()
   , io_encoding(FASTQ_ENCODING_33)
-  , trim_fixed_5p()
-  , trim_fixed_3p()
+  , pre_trim_fixed_5p()
+  , pre_trim_fixed_3p()
+  , post_trim_fixed_5p()
+  , post_trim_fixed_3p()
   , trim_error_rate()
   , pre_trim_poly_x()
   , post_trim_poly_x()
@@ -409,8 +412,10 @@ userconfig::userconfig(const std::string& name,
   , quality_input_base()
   , mate_separator_str()
   , interleaved()
-  , trim5p()
-  , trim3p()
+  , pre_trim5p()
+  , pre_trim3p()
+  , post_trim5p()
+  , post_trim3p()
   , pre_trim_poly_x_sink()
   , post_trim_poly_x_sink()
   , log_color()
@@ -596,17 +601,32 @@ userconfig::userconfig(const std::string& name,
     .with_default(2);
 
   argparser.add_separator();
-  argparser.add("--trim5p", "N")
-    .help("Trim the 5' of reads by a fixed amount after removing adapters, "
-          "but before carrying out quality based trimming. Specify one value "
-          "to trim mate 1 and mate 2 reads the same amount, or two values "
-          "separated by a space to trim each mate different amounts [default: "
-          "no trimming]")
-    .bind_vec(&trim5p)
+  argparser.add("--pre-trim5p", "N")
+    .help("Trim the 5' of reads by a fixed amount after demultiplexing (if "
+          "enabled) but before trimming adapters and low quality bases. "
+          "Specify one value to trim mate 1 and mate 2 reads the same amount, "
+          "or two values separated by a space to trim each mate different "
+          "amounts [default: no trimming]")
+    .bind_vec(&pre_trim5p)
     .with_max_values(2);
-  argparser.add("--trim3p", "N")
-    .help("Trim the 3' of reads by a fixed amount. See --trim5p")
-    .bind_vec(&trim3p)
+  argparser.add("--pre-trim3p", "N")
+    .help("Trim the 3' of reads by a fixed amount. See --pre-trim5p [default: "
+          "no trimming]")
+    .bind_vec(&pre_trim3p)
+    .with_max_values(2);
+
+  argparser.add("--post-trim5p", "N")
+    .help("Trim the 5' of reads by a fixed amount after removing adapters, "
+          "but before carrying out quality based trimming. See --pre-trim5p "
+          "for more information [default: no trimming]")
+    .deprecated_alias("--trim5p")
+    .bind_vec(&post_trim5p)
+    .with_max_values(2);
+  argparser.add("--post-trim3p", "N")
+    .deprecated_alias("--trim3p")
+    .help("Trim the 3' of reads by a fixed amount. See --post-trim5p [default: "
+          "no trimming]")
+    .bind_vec(&post_trim3p)
     .with_max_values(2);
 
   argparser.add("--trim-error-rate", "X")
@@ -916,24 +936,27 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   }
 
-  try {
-    if (argparser.is_set("--trim5p")) {
-      trim_fixed_5p = parse_trim_argument(trim5p);
+  using fixed_trimming =
+    std::tuple<const char*, const string_vec&, std::pair<unsigned, unsigned>&>;
+
+  const std::vector<fixed_trimming> fixed_trimming_options = {
+    { "--pre-trim5p", pre_trim5p, pre_trim_fixed_5p },
+    { "--pre-trim3p", pre_trim3p, pre_trim_fixed_3p },
+    { "--post-trim5p", post_trim5p, post_trim_fixed_5p },
+    { "--post-trim3p", post_trim3p, post_trim_fixed_3p },
+  };
+
+  for (const auto& it : fixed_trimming_options) {
+    try {
+      if (argparser.is_set(std::get<0>(it))) {
+        std::get<2>(it) = parse_trim_argument(std::get<1>(it));
+      }
+    } catch (const std::invalid_argument& error) {
+      log::error() << "Could not parse " << std::get<0>(it)
+                   << " argument(s): " << error.what();
+
+      return argparse::parse_result::error;
     }
-  } catch (const std::invalid_argument& error) {
-    log::error() << "Could not parse --trim5p argument(s): " << error.what();
-
-    return argparse::parse_result::error;
-  }
-
-  try {
-    if (argparser.is_set("--trim3p")) {
-      trim_fixed_3p = parse_trim_argument(trim3p);
-    }
-  } catch (const std::invalid_argument& error) {
-    log::error() << "Could not parse --trim3p argument(s): " << error.what();
-
-    return argparse::parse_result::error;
   }
 
   if (trim_error_rate > 1) {

@@ -244,8 +244,10 @@ public:
   //! Number of reads that overlap/can be merged
   size_t overlapping_reads;
 
-  //! Number of reads/bases trimmed with --trim5p/3p
-  reads_and_bases terminal_trimmed;
+  //! Number of reads/bases trimmed with --pre-trim5p/3p
+  reads_and_bases terminal_pre_trimmed;
+  //! Number of reads/bases trimmed with --post-trim5p/3p
+  reads_and_bases terminal_post_trimmed;
 
   //! Number of reads trimmed with --pre-trim-polyx
   indexed_count<ACGT> poly_x_pre_trimmed_reads;

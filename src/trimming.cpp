@@ -36,7 +36,9 @@ namespace adapterremoval {
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
-/** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
+namespace {
+
+/** Trims poly-X tails from sequence prior to adapter trimming **/
 void
 pre_trim_poly_x_tail(const userconfig& config,
                      trimming_statistics& stats,
@@ -53,6 +55,7 @@ pre_trim_poly_x_tail(const userconfig& config,
   }
 }
 
+/** Trims poly-X tails from sequence after adapter trimming **/
 void
 post_trim_poly_x_tail(const userconfig& config,
                       trimming_statistics& stats,
@@ -69,62 +72,88 @@ post_trim_poly_x_tail(const userconfig& config,
   }
 }
 
-/** Trims fixed numbers of bases from the 5' and/or 3' termini of reads. **/
+/** Trims fixed bases from read termini and returns the number trimmed. **/
 void
-trim_read_termini(const userconfig& config,
-                  trimming_statistics& stats,
+trim_read_termini(reads_and_bases& stats,
                   fastq& read,
-                  read_type type)
+                  unsigned trim_5p,
+                  unsigned trim_3p)
+{
+
+  const auto length = read.length();
+  if ((trim_5p || trim_3p) && length) {
+    if (trim_5p + trim_3p < length) {
+      read.truncate(trim_5p, length - trim_5p - trim_3p);
+    } else {
+      read.truncate(0, 0);
+    }
+
+    stats.inc(length - read.length());
+  }
+}
+
+/** Trims fixed number of 5'/3' bases prior to adapter trimming */
+void
+pre_trim_read_termini(const userconfig& config,
+                      trimming_statistics& stats,
+                      fastq& read,
+                      read_type type)
+{
+  size_t trim_5p = 0;
+  size_t trim_3p = 0;
+
+  if (type == read_type::mate_1) {
+    trim_5p = config.pre_trim_fixed_5p.first;
+    trim_3p = config.pre_trim_fixed_3p.first;
+  } else if (type == read_type::mate_2) {
+    trim_5p = config.pre_trim_fixed_5p.second;
+    trim_3p = config.pre_trim_fixed_3p.second;
+  } else {
+    AR_FAIL("invalid read type in pre_trim_read_termini");
+  }
+
+  trim_read_termini(stats.terminal_pre_trimmed, read, trim_5p, trim_3p);
+}
+
+/** Trims fixed number of 5'/3' bases after adapter trimming */
+void
+post_trim_read_termini(const userconfig& config,
+                       trimming_statistics& stats,
+                       fastq& read,
+                       read_type type)
 {
   size_t trim_5p = 0;
   size_t trim_3p = 0;
 
   switch (type) {
     case read_type::mate_1:
-      trim_5p = config.trim_fixed_5p.first;
-      trim_3p = config.trim_fixed_3p.first;
+      trim_5p = config.post_trim_fixed_5p.first;
+      trim_3p = config.post_trim_fixed_3p.first;
       break;
 
     case read_type::mate_2:
-      trim_5p = config.trim_fixed_5p.second;
-      trim_3p = config.trim_fixed_3p.second;
+      trim_5p = config.post_trim_fixed_5p.second;
+      trim_3p = config.post_trim_fixed_3p.second;
       break;
 
     case read_type::merged:
       AR_REQUIRE(config.paired_ended_mode);
-      trim_5p = config.trim_fixed_5p.first;
-      trim_3p = config.trim_fixed_5p.second;
+      trim_5p = config.post_trim_fixed_5p.first;
+      trim_3p = config.post_trim_fixed_5p.second;
       break;
 
-    case read_type::discarded:
-    case read_type::singleton:
-    case read_type::unidentified_1:
-    case read_type::unidentified_2:
-    case read_type::max:
-      AR_FAIL("unsupported read type in trim_read_termini");
-
     default:
-      AR_FAIL("invalid read type in trim_read_termini");
+      AR_FAIL("invalid read type in post_trim_read_termini");
   }
 
-  const auto length = read.length();
-  if (trim_5p || trim_3p) {
-    if (trim_5p + trim_3p < read.length()) {
-      read.truncate(trim_5p,
-                    read.length() - std::min(read.length(), trim_5p + trim_3p));
-    } else {
-      read.truncate(0, 0);
-    }
-
-    stats.terminal_trimmed.inc(length - read.length());
-  }
+  trim_read_termini(stats.terminal_post_trimmed, read, trim_5p, trim_3p);
 }
 
-/** Trims a read if enabled, returning the total number of bases removed. */
-bool
-trim_sequence_by_quality(const userconfig& config,
-                         trimming_statistics& stats,
-                         fastq& read)
+/** Quality trims a read after adapter trimming */
+void
+post_trim_read_by_quality(const userconfig& config,
+                          trimming_statistics& stats,
+                          fastq& read)
 {
   fastq::ntrimmed trimmed;
   if (config.trim_window_length >= 0) {
@@ -144,11 +173,7 @@ trim_sequence_by_quality(const userconfig& config,
 
   if (trimmed.first || trimmed.second) {
     stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
-
-    return true;
   }
-
-  return false;
 }
 
 bool
@@ -181,6 +206,8 @@ is_acceptable_read(const userconfig& config,
 
   return true;
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `trimmed_reads`
@@ -275,6 +302,9 @@ se_reads_processor::process(chunk_ptr chunk)
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
   for (auto& read : read_chunk.reads_1) {
+    // Trim fixed number of bases from 5' and/or 3' termini
+    pre_trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    // Trim poly-X tails for zero or more X
     pre_trim_poly_x_tail(m_config, *stats, read);
 
     const alignment_info alignment =
@@ -292,9 +322,13 @@ se_reads_processor::process(chunk_ptr chunk)
     // Add (optional) user specified prefixes to read names
     read.add_prefix_to_name(m_config.prefix_read_1);
 
-    trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    // Trim fixed number of bases from 5' and/or 3' termini
+    post_trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    // Trim poly-X tails for zero or more X
     post_trim_poly_x_tail(m_config, *stats, read);
-    trim_sequence_by_quality(m_config, *stats, read);
+    // Sliding window trimming or single-base trimming of low quality bases
+    post_trim_read_by_quality(m_config, *stats, read);
+
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
       chunks.add(read, read_type::mate_1);
@@ -378,6 +412,10 @@ pe_reads_processor::process(chunk_ptr chunk)
     fastq& read_1 = *it_1++;
     fastq& read_2 = *it_2++;
 
+    // Trim fixed number of bases from 5' and/or 3' termini
+    pre_trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
+    pre_trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
+
     // Trim poly-X tails for zero or more X
     pre_trim_poly_x_tail(m_config, *stats, read_1);
     pre_trim_poly_x_tail(m_config, *stats, read_2);
@@ -412,12 +450,13 @@ pe_reads_processor::process(chunk_ptr chunk)
         // Add (optional) user specified prefix to read names
         read_1.add_prefix_to_name(m_config.prefix_merged);
 
-        trim_read_termini(m_config, *stats, read_1, read_type::merged);
+        // Trim fixed number of bases from 5' and/or 3' termini
+        post_trim_read_termini(m_config, *stats, read_1, read_type::merged);
 
         if (!m_config.preserve5p) {
           // A merged read essentially consists of two 5p termini, both
           // informative for PCR duplicate removal.
-          trim_sequence_by_quality(m_config, *stats, read_1);
+          post_trim_read_by_quality(m_config, *stats, read_1);
         }
 
         if (is_acceptable_read(m_config, *stats, read_1)) {
@@ -441,16 +480,16 @@ pe_reads_processor::process(chunk_ptr chunk)
     read_2.add_prefix_to_name(m_config.prefix_read_2);
 
     // Trim fixed number of bases from 5' and/or 3' termini
-    trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
-    trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
+    post_trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
+    post_trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
 
     // Trim poly-X tails for zero or more X
     post_trim_poly_x_tail(m_config, *stats, read_1);
     post_trim_poly_x_tail(m_config, *stats, read_2);
 
-    // Sliding window trimming or single-base trimming
-    trim_sequence_by_quality(m_config, *stats, read_1);
-    trim_sequence_by_quality(m_config, *stats, read_2);
+    // Sliding window trimming or single-base trimming of low quality bases
+    post_trim_read_by_quality(m_config, *stats, read_1);
+    post_trim_read_by_quality(m_config, *stats, read_2);
 
     // Are the reads good enough? Not too many Ns?
     const bool is_ok_1 = is_acceptable_read(m_config, *stats, read_1);

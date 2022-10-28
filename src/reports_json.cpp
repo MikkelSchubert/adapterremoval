@@ -113,7 +113,7 @@ write_report_trimming(const userconfig& config,
   }
 
   trimming->i64("overlapping_reads", totals.overlapping_reads);
-  trimming->i64("terminal_bases_trimmed", totals.terminal_trimmed.bases());
+  trimming->i64("terminal_bases_trimmed", totals.terminal_post_trimmed.bases());
   trimming->i64("low_quality_trimmed_reads",
                 totals.low_quality_trimmed.reads());
   trimming->i64("low_quality_trimmed_bases",

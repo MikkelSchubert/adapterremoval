@@ -315,7 +315,8 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
   , overlapping_reads()
-  , terminal_trimmed()
+  , terminal_pre_trimmed()
+  , terminal_post_trimmed()
   , poly_x_pre_trimmed_reads()
   , poly_x_pre_trimmed_bases()
   , poly_x_post_trimmed_reads()
@@ -341,7 +342,8 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   adapter_trimmed_reads += other.adapter_trimmed_reads;
   adapter_trimmed_bases += other.adapter_trimmed_bases;
   overlapping_reads += other.overlapping_reads;
-  terminal_trimmed += other.terminal_trimmed;
+  terminal_pre_trimmed += other.terminal_pre_trimmed;
+  terminal_post_trimmed += other.terminal_post_trimmed;
   poly_x_pre_trimmed_reads += other.poly_x_pre_trimmed_reads;
   poly_x_pre_trimmed_bases += other.poly_x_pre_trimmed_bases;
   poly_x_post_trimmed_reads += other.poly_x_post_trimmed_reads;

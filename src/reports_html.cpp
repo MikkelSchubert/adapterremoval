@@ -498,7 +498,8 @@ write_html_processing_section(const userconfig& config,
     "Trimming",
     { { "Adapter trimming", reads_and_bases(adapter_reads, adapter_bases) },
       { "Low quality bases trimmed", totals.low_quality_trimmed },
-      { "Terminal bases trimmed", totals.terminal_trimmed } });
+      { "Terminal bases pre-trimmed", totals.terminal_pre_trimmed },
+      { "Terminal bases post-trimmed", totals.terminal_post_trimmed } });
 
   {
     std::vector<processing_poly_x> poly_x_stats;

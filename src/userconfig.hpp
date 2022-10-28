@@ -193,9 +193,10 @@ public:
   fastq_encoding io_encoding;
 
   //! Fixed number of bases to trim from 5' for mate 1 and mate 2 reads
-  std::pair<unsigned, unsigned> trim_fixed_5p;
-  //! Fixed number of bases to trim from 3' for mate 1 and mate 2 reads
-  std::pair<unsigned, unsigned> trim_fixed_3p;
+  std::pair<unsigned, unsigned> pre_trim_fixed_5p;
+  std::pair<unsigned, unsigned> pre_trim_fixed_3p;
+  std::pair<unsigned, unsigned> post_trim_fixed_5p;
+  std::pair<unsigned, unsigned> post_trim_fixed_3p;
 
   //! Error rate used for quality trimming using the modified Mott's algorithm.
   double trim_error_rate;
@@ -288,10 +289,12 @@ private:
   //! Sink for --interleaved
   bool interleaved;
 
-  //! Sink for --trim5p
-  string_vec trim5p;
-  //! Sink for --trim3p
-  string_vec trim3p;
+  //! Sinks for --pre-trim5p/--pre-trimp3p
+  string_vec pre_trim5p;
+  string_vec pre_trim3p;
+  //! Sinks for --post-trim5p/--post-trimp3p
+  string_vec post_trim5p;
+  string_vec post_trim3p;
   //! Sink for --pre-trim-polyx
   string_vec pre_trim_poly_x_sink;
   //! Sink for --post-trim-polyx
