@@ -127,6 +127,8 @@ public:
 
   /** Add and return a sub-dict with the specified key */
   json_dict_ptr dict(const std::string& key);
+  /** Add and return an inline sub-dict with the specified key */
+  json_dict_ptr inline_dict(const std::string& key);
   /** Add and return a sub-list with the specified key */
   json_list_ptr list(const std::string& key);
 
@@ -158,6 +160,8 @@ private:
   std::vector<std::string> m_keys;
   //! Map of unencoded keys to JSON objects
   std::map<std::string, json_ptr> m_values;
+  //! Multi-line or single (inline) dictionary
+  bool m_multi_line;
 };
 
 } // namespace adapterremoval

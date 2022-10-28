@@ -246,6 +246,7 @@ json_list::dict()
 json_dict::json_dict()
   : m_keys()
   , m_values()
+  , m_multi_line(true)
 {
 }
 
@@ -253,24 +254,25 @@ void
 json_dict::write(std::ostream& out, size_t indent_) const
 {
   AR_REQUIRE(m_keys.size() == m_values.size());
-  const auto indent = std::string(indent_, ' ');
+  const auto indent = std::string(m_multi_line ? indent_ : 0, ' ');
+  const char spacer = m_multi_line ? '\n' : ' ';
 
   if (m_keys.empty()) {
     out << "{}";
   } else {
-    out << "{\n";
+    out << "{" << spacer;
 
     for (size_t i = 0; i < m_keys.size(); ++i) {
       const auto it = m_values.find(m_keys.at(i));
       AR_REQUIRE(it != m_values.end());
 
-      out << indent << "  " << _escape(it->first) << ": ";
+      out << indent << (m_multi_line ? "  " : "") << _escape(it->first) << ": ";
       it->second->write(out, indent_ + 2);
       if (i < m_keys.size() - 1) {
         out << ",";
       }
 
-      out << "\n";
+      out << spacer;
     }
 
     out << indent << "}";
@@ -280,8 +282,18 @@ json_dict::write(std::ostream& out, size_t indent_) const
 json_dict_ptr
 json_dict::dict(const std::string& key)
 {
-  auto ptr = std::make_shared<json_dict>();
+  const auto ptr = std::make_shared<json_dict>();
+  ptr->m_multi_line = m_multi_line;
   _set(key, ptr);
+
+  return ptr;
+}
+
+json_dict_ptr
+json_dict::inline_dict(const std::string& key)
+{
+  const auto ptr = dict(key);
+  ptr->m_multi_line = false;
 
   return ptr;
 }

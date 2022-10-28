@@ -474,4 +474,64 @@ TEST_CASE("complex json_list ")
 ])");
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// inline dictionaries
+
+TEST_CASE("empty inline json dict")
+{
+  json_dict j;
+  j.inline_dict("foo");
+  REQUIRE(j.to_string() == R"({
+  "foo": {}
+})");
+}
+
+TEST_CASE("inline json dict with single key")
+{
+  json_dict j;
+  auto d = j.inline_dict("foo");
+  d->i64("x", 17);
+
+  REQUIRE(j.to_string() == R"({
+  "foo": { "x": 17 }
+})");
+}
+
+TEST_CASE("inline json dict with multiple keys")
+{
+  json_dict j;
+  auto d = j.inline_dict("foo");
+  d->i64("x", 17);
+  d->str("y", "132");
+  d->i64("z", 9);
+
+  REQUIRE(j.to_string() == R"({
+  "foo": { "x": 17, "y": "132", "z": 9 }
+})");
+}
+
+TEST_CASE("inline json dict with child dict")
+{
+  json_dict j;
+  auto d = j.inline_dict("foo");
+  auto d2 = d->dict("x");
+  d2->str("y", "132");
+
+  REQUIRE(j.to_string() == R"({
+  "foo": { "x": { "y": "132" } }
+})");
+}
+
+TEST_CASE("inline json dict with child inline dict")
+{
+  json_dict j;
+  auto d = j.inline_dict("foo");
+  auto d2 = d->inline_dict("x");
+  d2->str("y", "132");
+
+  REQUIRE(j.to_string() == R"({
+  "foo": { "x": { "y": "132" } }
+})");
+}
+
 } // namespace adapterremoval
