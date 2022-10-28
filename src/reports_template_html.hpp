@@ -170,38 +170,105 @@ private:
   bool m_written;
 };
 
-class html_summary_processing_head : public html_template
+class html_summary_trimming_head : public html_template
 {
 public:
-  html_summary_processing_head();
-  virtual ~html_summary_processing_head() override;
+  html_summary_trimming_head();
+  virtual ~html_summary_trimming_head() override;
 
-  html_summary_processing_head(const html_summary_processing_head&) = delete;
-  html_summary_processing_head& operator=(const html_summary_processing_head&) = delete;
-
-  html_summary_processing_head& set_label(const std::string& value);
+  html_summary_trimming_head(const html_summary_trimming_head&) = delete;
+  html_summary_trimming_head& operator=(const html_summary_trimming_head&) = delete;
 
   virtual void write(std::ofstream& out) override;
 
 private:
   bool m_written;
-  std::string m_label;
-  bool m_label_is_set;
 };
 
-class html_summary_processing_row : public html_template
+class html_summary_trimming_row : public html_template
 {
 public:
-  html_summary_processing_row();
-  virtual ~html_summary_processing_row() override;
+  html_summary_trimming_row();
+  virtual ~html_summary_trimming_row() override;
 
-  html_summary_processing_row(const html_summary_processing_row&) = delete;
-  html_summary_processing_row& operator=(const html_summary_processing_row&) = delete;
+  html_summary_trimming_row(const html_summary_trimming_row&) = delete;
+  html_summary_trimming_row& operator=(const html_summary_trimming_row&) = delete;
 
-  html_summary_processing_row& set_avg_bases(const std::string& value);
-  html_summary_processing_row& set_bases(const std::string& value);
-  html_summary_processing_row& set_label(const std::string& value);
-  html_summary_processing_row& set_reads(const std::string& value);
+  html_summary_trimming_row& set_avg_bases(const std::string& value);
+  html_summary_trimming_row& set_bases(const std::string& value);
+  html_summary_trimming_row& set_label_1(const std::string& value);
+  html_summary_trimming_row& set_label_2(const std::string& value);
+  html_summary_trimming_row& set_reads(const std::string& value);
+  html_summary_trimming_row& set_stage(const std::string& value);
+
+  virtual void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_avg_bases;
+  bool m_avg_bases_is_set;
+  std::string m_bases;
+  bool m_bases_is_set;
+  std::string m_label_1;
+  bool m_label_1_is_set;
+  std::string m_label_2;
+  bool m_label_2_is_set;
+  std::string m_reads;
+  bool m_reads_is_set;
+  std::string m_stage;
+  bool m_stage_is_set;
+};
+
+class html_summary_trimming_tail : public html_template
+{
+public:
+  html_summary_trimming_tail();
+  virtual ~html_summary_trimming_tail() override;
+
+  html_summary_trimming_tail(const html_summary_trimming_tail&) = delete;
+  html_summary_trimming_tail& operator=(const html_summary_trimming_tail&) = delete;
+
+  html_summary_trimming_tail& set_n_enabled(const std::string& value);
+  html_summary_trimming_tail& set_n_total(const std::string& value);
+
+  virtual void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_n_enabled;
+  bool m_n_enabled_is_set;
+  std::string m_n_total;
+  bool m_n_total_is_set;
+};
+
+class html_summary_filtering_head : public html_template
+{
+public:
+  html_summary_filtering_head();
+  virtual ~html_summary_filtering_head() override;
+
+  html_summary_filtering_head(const html_summary_filtering_head&) = delete;
+  html_summary_filtering_head& operator=(const html_summary_filtering_head&) = delete;
+
+  virtual void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+};
+
+class html_summary_filtering_row : public html_template
+{
+public:
+  html_summary_filtering_row();
+  virtual ~html_summary_filtering_row() override;
+
+  html_summary_filtering_row(const html_summary_filtering_row&) = delete;
+  html_summary_filtering_row& operator=(const html_summary_filtering_row&) = delete;
+
+  html_summary_filtering_row& set_avg_bases(const std::string& value);
+  html_summary_filtering_row& set_bases(const std::string& value);
+  html_summary_filtering_row& set_label(const std::string& value);
+  html_summary_filtering_row& set_reads(const std::string& value);
 
   virtual void write(std::ofstream& out) override;
 
@@ -217,84 +284,26 @@ private:
   bool m_reads_is_set;
 };
 
-class html_summary_processing_tail : public html_template
+class html_summary_filtering_tail : public html_template
 {
 public:
-  html_summary_processing_tail();
-  virtual ~html_summary_processing_tail() override;
+  html_summary_filtering_tail();
+  virtual ~html_summary_filtering_tail() override;
 
-  html_summary_processing_tail(const html_summary_processing_tail&) = delete;
-  html_summary_processing_tail& operator=(const html_summary_processing_tail&) = delete;
+  html_summary_filtering_tail(const html_summary_filtering_tail&) = delete;
+  html_summary_filtering_tail& operator=(const html_summary_filtering_tail&) = delete;
+
+  html_summary_filtering_tail& set_n_enabled(const std::string& value);
+  html_summary_filtering_tail& set_n_total(const std::string& value);
 
   virtual void write(std::ofstream& out) override;
 
 private:
   bool m_written;
-};
-
-class html_summary_poly_x_head : public html_template
-{
-public:
-  html_summary_poly_x_head();
-  virtual ~html_summary_poly_x_head() override;
-
-  html_summary_poly_x_head(const html_summary_poly_x_head&) = delete;
-  html_summary_poly_x_head& operator=(const html_summary_poly_x_head&) = delete;
-
-  html_summary_poly_x_head& set_label(const std::string& value);
-
-  virtual void write(std::ofstream& out) override;
-
-private:
-  bool m_written;
-  std::string m_label;
-  bool m_label_is_set;
-};
-
-class html_summary_poly_x_row : public html_template
-{
-public:
-  html_summary_poly_x_row();
-  virtual ~html_summary_poly_x_row() override;
-
-  html_summary_poly_x_row(const html_summary_poly_x_row&) = delete;
-  html_summary_poly_x_row& operator=(const html_summary_poly_x_row&) = delete;
-
-  html_summary_poly_x_row& set_avg_bases(const std::string& value);
-  html_summary_poly_x_row& set_bases(const std::string& value);
-  html_summary_poly_x_row& set_label(const std::string& value);
-  html_summary_poly_x_row& set_nucleotide(const std::string& value);
-  html_summary_poly_x_row& set_reads(const std::string& value);
-
-  virtual void write(std::ofstream& out) override;
-
-private:
-  bool m_written;
-  std::string m_avg_bases;
-  bool m_avg_bases_is_set;
-  std::string m_bases;
-  bool m_bases_is_set;
-  std::string m_label;
-  bool m_label_is_set;
-  std::string m_nucleotide;
-  bool m_nucleotide_is_set;
-  std::string m_reads;
-  bool m_reads_is_set;
-};
-
-class html_summary_poly_x_tail : public html_template
-{
-public:
-  html_summary_poly_x_tail();
-  virtual ~html_summary_poly_x_tail() override;
-
-  html_summary_poly_x_tail(const html_summary_poly_x_tail&) = delete;
-  html_summary_poly_x_tail& operator=(const html_summary_poly_x_tail&) = delete;
-
-  virtual void write(std::ofstream& out) override;
-
-private:
-  bool m_written;
+  std::string m_n_enabled;
+  bool m_n_enabled_is_set;
+  std::string m_n_total;
+  bool m_n_total_is_set;
 };
 
 class html_h2_tag : public html_template

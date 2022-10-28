@@ -46,6 +46,10 @@
             margin-left: 6px;
         }
 
+        .pure-table {
+            margin-left: 1em;
+        }
+
         .pure-table thead>tr>th {
             font-weight: bold;
             background-color: #C4CCDB;
@@ -64,7 +68,16 @@
             width: 100px;
         }
 
-        .poly-table tr>td:nth-of-type(2) {
+        .trimming-table tr>td:nth-child(-n+3) {
+            font-weight: bold;
+        }
+
+        .trimming-table tr>td:nth-child(n+3) {
+            text-align: right;
+            width: 100px;
+        }
+
+        .trimming-table tr>td:nth-of-type(3) {
             text-align: center;
             width: 25px;
         }
@@ -98,6 +111,7 @@
             font-size: small;
             padding-top: 10px;
         }
+
     </style>
 </head>
 
@@ -190,8 +204,40 @@
                 <b>*</b> The <b>Discarded</b> column is not included in the <b>Output</b> column.
             </p>
 
-            <!-- TEMPLATE: SUMMARY_PROCESSING_HEAD -->
-            <h4>{{LABEL}}</h4>
+            <!-- TEMPLATE: SUMMARY_TRIMMING_HEAD -->
+            <h4>Trimming</h4>
+            <table class="pure-table trimming-table pure-table-striped">
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Trimmed</th>
+                        <th>X</th>
+                        <th>Reads</th>
+                        <th>Bases</th>
+                        <th>Bases/Read</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- TEMPLATE: SUMMARY_TRIMMING_ROW -->
+                    <tr>
+                        <td>{{STAGE}}</td>
+                        <td>{{LABEL_1}}</td>
+                        <td>{{LABEL_2}}</td>
+                        <td>{{READS}}</td>
+                        <td>{{BASES}}</td>
+                        <td>{{AVG_BASES}}</td>
+                    </tr>
+                    <!-- TEMPLATE: SUMMARY_TRIMMING_TAIL -->
+
+                </tbody>
+            </table>
+
+            <p class="note">
+                {{N_ENABLED}} of {{N_TOTAL}} trimming steps enabled.
+            </p>
+
+            <!-- TEMPLATE: SUMMARY_FILTERING_HEAD -->
+            <h4>Filtering</h4>
             <table class="pure-table io-table pure-table-striped">
                 <thead>
                     <tr>
@@ -202,43 +248,21 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- TEMPLATE: SUMMARY_PROCESSING_ROW -->
+                    <!-- TEMPLATE: SUMMARY_FILTERING_ROW -->
                     <tr>
                         <td>{{LABEL}}</td>
                         <td>{{READS}}</td>
                         <td>{{BASES}}</td>
                         <td>{{AVG_BASES}}</td>
                     </tr>
-                    <!-- TEMPLATE: SUMMARY_PROCESSING_TAIL -->
+                    <!-- TEMPLATE: SUMMARY_FILTERING_TAIL -->
 
                 </tbody>
             </table>
 
-            <!-- TEMPLATE: SUMMARY_POLY_X_HEAD -->
-            <h4>{{LABEL}}</h4>
-            <table class="pure-table io-table poly-table pure-table-striped">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>X</th>
-                        <th>Reads</th>
-                        <th>Bases</th>
-                        <th>Bases/Read</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- TEMPLATE: SUMMARY_POLY_X_ROW -->
-                    <tr>
-                        <td>{{LABEL}}</td>
-                        <td>{{NUCLEOTIDE}}</td>
-                        <td>{{READS}}</td>
-                        <td>{{BASES}}</td>
-                        <td>{{AVG_BASES}}</td>
-                    </tr>
-                    <!-- TEMPLATE: SUMMARY_POLY_X_TAIL -->
-
-                </tbody>
-            </table>
+            <p class="note">
+                {{N_ENABLED}} of {{N_TOTAL}} filtering steps enabled.
+            </p>
 
             <!-- TEMPLATE: H2_TAG -->
         </div>
