@@ -37,6 +37,17 @@
 
 namespace adapterremoval {
 
+//! Trimming statistics
+struct feature_stats
+{
+  //! Processing stage name
+  std::string key;
+  //! Whether or not this step is enabled by command-line options
+  bool enabled;
+  //! Number of reads/bases trimmed/filtered
+  reads_and_bases count;
+};
+
 void
 write_report_meta(const userconfig& config, json_dict& report)
 {
@@ -89,55 +100,109 @@ write_report_summary_stats(const json_dict_ptr& json,
 }
 
 void
+write_report_counts(const json_dict_ptr& json,
+                    const std::vector<feature_stats>& stats)
+{
+  for (const auto& it : stats) {
+    if (it.enabled) {
+      const auto dict = json->inline_dict(it.key);
+
+      dict->i64("reads", it.count.reads());
+      dict->i64("bases", it.count.bases());
+    }
+  }
+}
+
+void
+write_report_poly_x(const json_dict_ptr& json,
+                    const std::string& key,
+                    const std::string& nucleotides,
+                    const indexed_count<ACGT>& reads,
+                    const indexed_count<ACGT>& bases)
+{
+  if (!nucleotides.empty()) {
+    const auto dict = json->dict(key);
+    for (const auto nuc : nucleotides) {
+      const auto nuc_stats = dict->inline_dict(std::string(1, nuc));
+      nuc_stats->i64("reads", reads.get(nuc));
+      nuc_stats->i64("bases", bases.get(nuc));
+    }
+  }
+}
+
+void
 write_report_trimming(const userconfig& config,
                       const json_dict_ptr& json,
                       const trimming_statistics& totals,
                       const fastq_pair_vec& adapters)
 {
-  if (config.run_type == ar_command::demultiplex_sequences ||
-      config.run_type == ar_command::report_only) {
-    json->null("trimming_and_filtering");
+  if (config.run_type != ar_command::trim_adapters) {
+    json->null("adapter_trimming");
+    json->null("quality_trimming");
+    json->null("filtering");
     return;
   }
 
-  const auto trimming = json->dict("trimming_and_filtering");
-  const auto adapter_list = trimming->list("adapter_sequences");
+  {
+    const auto trimming = json->dict("adapter_trimming");
+    const auto adapter_list = trimming->list("adapters");
 
-  for (size_t i = 0; i < adapters.size(); ++i) {
-    const auto adapter = adapter_list->dict();
+    for (size_t i = 0; i < adapters.size(); ++i) {
+      const auto adapter = adapter_list->dict();
 
-    adapter->str("adapter_sequence_1", adapters.at(i).first.sequence());
-    adapter->str("adapter_sequence_2", adapters.at(i).second.sequence());
-    adapter->i64("adapter_trimmed_reads", totals.adapter_trimmed_reads.get(i));
-    adapter->i64("adapter_trimmed_bases", totals.adapter_trimmed_bases.get(i));
+      adapter->str("sequence_1", adapters.at(i).first.sequence());
+      adapter->str("sequence_2", adapters.at(i).second.sequence());
+      adapter->i64("reads", totals.adapter_trimmed_reads.get(i));
+      adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
+    }
+
+    trimming->i64("overlapping_reads", totals.overlapping_reads);
+    if (config.paired_ended_mode) {
+      trimming->i64_vec("insert_sizes", totals.insert_sizes);
+    } else {
+      trimming->null("insert_sizes");
+    }
   }
 
-  trimming->i64("overlapping_reads", totals.overlapping_reads);
-  trimming->i64("terminal_bases_trimmed", totals.terminal_post_trimmed.bases());
-  trimming->i64("low_quality_trimmed_reads",
-                totals.low_quality_trimmed.reads());
-  trimming->i64("low_quality_trimmed_bases",
-                totals.low_quality_trimmed.bases());
-  trimming->i64("filtered_min_length_reads",
-                totals.filtered_min_length.reads());
-  trimming->i64("filtered_min_length_bases",
-                totals.filtered_min_length.bases());
-  trimming->i64("filtered_max_length_reads",
-                totals.filtered_max_length.reads());
-  trimming->i64("filtered_max_length_bases",
-                totals.filtered_max_length.bases());
-  trimming->i64("filtered_ambiguous_reads", totals.filtered_ambiguous.reads());
-  trimming->i64("filtered_ambiguous_bases", totals.filtered_ambiguous.bases());
-  trimming->i64("filtered_low_complexity_reads",
-                totals.filtered_low_complexity.reads());
-  trimming->i64("filtered_low_complexity_bases",
-                totals.filtered_low_complexity.bases());
+  {
+    const auto dict = json->dict("quality_trimming");
 
-  if (config.paired_ended_mode) {
-    trimming->i64_vec("insert_sizes", totals.insert_sizes);
-  } else {
-    trimming->null("insert_sizes");
+    write_report_counts(dict,
+                        { { "terminal_pre",
+                            config.is_terminal_base_pre_trimming_enabled(),
+                            totals.terminal_pre_trimmed },
+                          { "terminal_post",
+                            config.is_terminal_base_post_trimming_enabled(),
+                            totals.terminal_post_trimmed },
+                          { "low_quality",
+                            config.is_low_quality_trimming_enabled(),
+                            totals.low_quality_trimmed } });
+
+    write_report_poly_x(dict,
+                        "poly_x_pre",
+                        config.pre_trim_poly_x,
+                        totals.poly_x_pre_trimmed_reads,
+                        totals.poly_x_pre_trimmed_bases);
+    write_report_poly_x(dict,
+                        "poly_x_post",
+                        config.post_trim_poly_x,
+                        totals.poly_x_post_trimmed_reads,
+                        totals.poly_x_post_trimmed_bases);
   }
+
+  write_report_counts(json->dict("filtering"),
+                      { { "min_length",
+                          config.is_short_read_filtering_enabled(),
+                          totals.filtered_min_length },
+                        { "max_length",
+                          config.is_long_read_filtering_enabled(),
+                          totals.filtered_max_length },
+                        { "ambiguous_bases",
+                          config.is_ambiguous_base_filtering_enabled(),
+                          totals.filtered_ambiguous },
+                        { "low_complexity",
+                          config.is_low_complexity_filtering_enabled(),
+                          totals.filtered_low_complexity } });
 }
 
 void
