@@ -129,7 +129,7 @@
                 <h2>Summary</h2>
             </div>
 
-            <h4>Runtime</h4>
+            <h4>Program</h4>
             <table class="pure-table pure-table-striped summary-table">
                 <tbody>
                     <tr>
@@ -192,16 +192,22 @@
                 </tbody>
             </table>
 
+            <!-- TEMPLATE: SAMPLING_NOTE -->
+
+            <p class="note">
+                Base composition statistics/plots are based on {{PCT}}% of {{LABEL}} reads sampled during execution.
+            </p>
+
             <!-- TEMPLATE: OUTPUT_NOTE_PE -->
 
             <p class="note">
-                <b>*</b> The <b>Passed</b> column sums all output columns except for the <b>Discarded</b> column.
+                <b>*</b> The <b>Passed</b> column includes all read types except for <b>Discarded</b> reads.
             </p>
 
             <!-- TEMPLATE: OUTPUT_NOTE_SE -->
 
             <p class="note">
-                <b>*</b> The <b>Discarded</b> column is not included in the <b>Output</b> column.
+                <b>*</b> <b>Discarded</b> reads are not included in the <b>Output</b> column.
             </p>
 
             <!-- TEMPLATE: SUMMARY_TRIMMING_HEAD -->

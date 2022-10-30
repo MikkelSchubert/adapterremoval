@@ -131,8 +131,6 @@ format_average_bases(const reads_and_bases& counts)
   return format_fraction(counts.bases(), counts.reads());
 }
 
-} // namespace
-
 ////////////////////////////////////////////////////////////////////////////////
 
 class io_summary_writer
@@ -273,6 +271,21 @@ build_base_content(const fastq_stats_vec& reads, const string_vec& names)
 // Main sections
 
 void
+write_html_sampling_note(const userconfig& config,
+                         const std::string& label,
+                         const fastq_statistics& stats,
+                         std::ofstream& output)
+{
+  if (config.report_sample_rate < 1.0) {
+    html_sampling_note()
+      .set_label(label)
+      .set_pct(format_percentage(stats.number_of_sampled_reads(),
+                                 stats.number_of_input_reads()))
+      .write(output);
+  }
+}
+
+void
 write_html_summary_section(const userconfig& config,
                            const statistics& stats,
                            std::ofstream& output)
@@ -327,6 +340,8 @@ write_html_summary_section(const userconfig& config,
       }
 
       summary.write(output);
+
+      write_html_sampling_note(config, "input", totals, output);
     }
 
     // Summary statistics for output files
@@ -355,6 +370,8 @@ write_html_summary_section(const userconfig& config,
 
       summary.add_column("Discarded*", discarded);
       summary.write(output);
+
+      write_html_sampling_note(config, "output", totals, output);
 
       // Note regarding passed / discarded reads
       html_output_note_pe().write(output);
@@ -581,7 +598,7 @@ write_html_processing_section(const userconfig& config,
                                { "Long reads",
                                  config.is_long_read_filtering_enabled(),
                                  totals.filtered_max_length },
-                               { "Ambiguous reads",
+                               { "Ambiguous bases",
                                  config.is_ambiguous_base_filtering_enabled(),
                                  totals.filtered_ambiguous },
                                { "Low complexity reads",
@@ -865,6 +882,8 @@ write_html_output_section(const userconfig& config,
   write_html_section_title("Output", output);
   write_html_io_section(config, stats_vec, names, output, merged);
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 

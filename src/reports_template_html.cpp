@@ -286,7 +286,7 @@ html_summary::write(std::ofstream& out)
   out << "                <h2>Summary</h2>\n";
   out << "            </div>\n";
   out << "\n";
-  out << "            <h4>Runtime</h4>\n";
+  out << "            <h4>Program</h4>\n";
   out << "            <table class=\"pure-table pure-table-striped summary-table\">\n";
   out << "                <tbody>\n";
   out << "                    <tr>\n";
@@ -488,6 +488,54 @@ html_summary_io::write(std::ofstream& out)
   m_written = true;
 }
 
+html_sampling_note::html_sampling_note()
+  : m_written()
+  , m_label()
+  , m_label_is_set()
+  , m_pct()
+  , m_pct_is_set()
+{
+  //
+}
+
+html_sampling_note::~html_sampling_note()
+{
+  AR_REQUIRE(m_written, "template html_sampling_note was not written");
+}
+
+html_sampling_note&
+html_sampling_note::set_label(const std::string& value)
+{
+  m_label = value;
+  m_label_is_set = true;
+  return *this;
+}
+
+html_sampling_note&
+html_sampling_note::set_pct(const std::string& value)
+{
+  m_pct = value;
+  m_pct_is_set = true;
+  return *this;
+}
+
+void
+html_sampling_note::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_sampling_note already written");
+  AR_REQUIRE(m_label_is_set, "html_sampling_note::label not set");
+  AR_REQUIRE(m_pct_is_set, "html_sampling_note::pct not set");
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "\n";
+  out << "            <p class=\"note\">\n";
+  out << "                Base composition statistics/plots are based on " << m_pct << "% of " << m_label << " reads sampled during execution.\n";
+  out << "            </p>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
 html_output_note_pe::html_output_note_pe()
   : m_written()
 {
@@ -507,7 +555,7 @@ html_output_note_pe::write(std::ofstream& out)
   auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
-  out << "                <b>*</b> The <b>Passed</b> column sums all output columns except for the <b>Discarded</b> column.\n";
+  out << "                <b>*</b> The <b>Passed</b> column includes all read types except for <b>Discarded</b> reads.\n";
   out << "            </p>\n";
   out << "\n";
   // clang-format on
@@ -533,7 +581,7 @@ html_output_note_se::write(std::ofstream& out)
   auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
-  out << "                <b>*</b> The <b>Discarded</b> column is not included in the <b>Output</b> column.\n";
+  out << "                <b>*</b> <b>Discarded</b> reads are not included in the <b>Output</b> column.\n";
   out << "            </p>\n";
   out << "\n";
   // clang-format on

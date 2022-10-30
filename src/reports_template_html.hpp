@@ -140,6 +140,28 @@ private:
   bool m_title_is_set;
 };
 
+class html_sampling_note : public html_template
+{
+public:
+  html_sampling_note();
+  virtual ~html_sampling_note() override;
+
+  html_sampling_note(const html_sampling_note&) = delete;
+  html_sampling_note& operator=(const html_sampling_note&) = delete;
+
+  html_sampling_note& set_label(const std::string& value);
+  html_sampling_note& set_pct(const std::string& value);
+
+  virtual void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_label;
+  bool m_label_is_set;
+  std::string m_pct;
+  bool m_pct_is_set;
+};
+
 class html_output_note_pe : public html_template
 {
 public:
