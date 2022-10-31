@@ -23,6 +23,7 @@ import argparse
 from collections import namedtuple
 import copy
 import difflib
+import errno
 import gzip
 import io
 import itertools
@@ -716,8 +717,6 @@ class TestRunner:
             stdout, stderr = proc.communicate(timeout=3)
         except subprocess.TimeoutExpired:
             raise TestError("Test took too long to run")
-        except:
-            raise
         finally:
             proc.terminate()
 
@@ -779,6 +778,87 @@ class TestRunner:
             raise TestError("unexpected files created {!r}".format(unexpected_files))
 
 
+class TestUpdater:
+    def __init__(
+        self,
+        test: TestConfig,
+        executable: str,
+    ):
+        self.executable = executable
+        self.name = " / ".join(test.name)
+        self.path = os.path.dirname(test.path)
+        self.spec_path = test.path
+        self.skip = test.skip or test.return_code or not test.files
+        self._test = test
+
+    @property
+    def command(self):
+        return self._test.build_command(self.executable)
+
+    def run(self):
+        if not self.skip:
+            self._run()
+            self._update_files()
+
+    def _run(self):
+        proc = subprocess.Popen(
+            self.command,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+            preexec_fn=os.setsid,
+            cwd=self.path,
+        )
+
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            raise TestError("Test took too long to run")
+        finally:
+            proc.terminate()
+
+    def _update_files(self):
+        for it in self._test.files:
+            filename = os.path.join(self.path, it.name)
+
+            if it.kind in ("ignore", "html"):
+                try:
+                    os.remove(filename)
+                except OSError as error:
+                    if error.errno != errno.ENOENT:
+                        raise
+            elif it.kind == "json":
+                metadata = [
+                    (b'    "version":', b' "...str",\n'),
+                    (b'    "command":', b' "...[str]",\n'),
+                    (b'    "runtime":', b' "...float"\n'),
+                ]
+
+                lines = []
+                with open(filename, "rb") as handle:
+                    for line in handle:
+                        for key, value in tuple(metadata):
+                            if line.startswith(key):
+                                metadata.remove((key, value))
+                                line = key + value
+                                break
+
+                        lines.append(line)
+
+                with open(filename, "wb") as handle:
+                    handle.writelines(lines)
+
+            else:
+                with open(filename, "rb") as handle:
+                    data = handle.read()
+
+                # Some files may intentionally be written compressed
+                if data.startswith(b"\x1f\x8b"):
+                    with open(filename, "wb") as handle:
+                        handle.write(gzip.decompress(data))
+
+
 ################################################################################
 
 
@@ -814,6 +894,34 @@ def collect_tests(root):
                 tests.append(test)
 
     return tests
+
+
+def build_test_runners(args, tests):
+    result = []
+    for template in tests:
+        for test in TestMutator.create_exhaustive_tests(template, args.exhaustive):
+            test = TestRunner(
+                test=test,
+                root=args.work_dir,
+                executable=args.executable,
+                keep_all=args.keep_all,
+            )
+
+            result.append(test)
+
+    return result
+
+
+def build_test_updaters(args, tests):
+    result = []
+    active_folders = set()
+    for test in tests:
+        folder = os.path.dirname(test.path)
+        if folder not in active_folders and not test.skip:
+            result.append(TestUpdater(test, args.executable))
+            active_folders.add(folder)
+
+    return result
 
 
 def collect_unused_files(root, tests):
@@ -873,6 +981,13 @@ def parse_args(argv):
         help="Perform exhaustive testing by varying input/output formats",
     )
     parser.add_argument(
+        "--create-updated-reference",
+        action="store_true",
+        help="Creates updated reference files by running test commands in the "
+        "specified work folder, mirroring the structure of the input folder. "
+        "Commands that are expected to fail/not generate output are not run.",
+    )
+    parser.add_argument(
         "--threads",
         type=int,
         default=min(4, multiprocessing.cpu_count()),
@@ -893,6 +1008,18 @@ def main(argv):
     if args.max_failures <= 0:
         args.max_failures = float("inf")
 
+    if args.create_updated_reference:
+        os.makedirs(os.path.dirname(args.work_dir), exist_ok=True)
+        shutil.copytree(
+            src=args.source_dir,
+            dst=args.work_dir,
+            symlinks=True,
+            dirs_exist_ok=True,
+        )
+
+        args.source_dir = args.work_dir
+        args.keep_all = True
+
     print("Reading test-cases from %r" % (args.source_dir,))
     tests = collect_tests(args.source_dir)
     tests.sort(key=lambda it: it.path)
@@ -906,20 +1033,13 @@ def main(argv):
 
         return 1
 
-    os.makedirs(args.work_dir, exist_ok=True)
-    args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
+    if args.create_updated_reference:
+        exhaustive_tests = build_test_updaters(args, tests)
+    else:
+        os.makedirs(args.work_dir, exist_ok=True)
+        args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
+        exhaustive_tests = build_test_runners(args, tests)
 
-    exhaustive_tests = []
-    for template in tests:
-        for test in TestMutator.create_exhaustive_tests(template, args.exhaustive):
-            exhaustive_tests.append(
-                TestRunner(
-                    test=test,
-                    root=args.work_dir,
-                    executable=args.executable,
-                    keep_all=args.keep_all,
-                )
-            )
     print("  {:,} test variants generated".format(len(exhaustive_tests)))
     print("Writing test-cases results to %r" % (args.work_dir,))
 
@@ -973,7 +1093,7 @@ def main(argv):
                     pool.terminate()
                     break
 
-    if not n_failures:
+    if not (n_failures or args.create_updated_reference):
         os.rmdir(args.work_dir)
 
     if n_failures >= args.max_failures:
