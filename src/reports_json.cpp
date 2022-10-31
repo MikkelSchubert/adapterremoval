@@ -113,19 +113,31 @@ write_report_counts(const json_dict_ptr& json,
   }
 }
 
+//! Poly-X trimming statistics
+struct poly_x_stats
+{
+  //! Processing stage name
+  std::string key;
+  //! X trimmed
+  std::string nucleotides;
+  //! Number of reads trimmed
+  indexed_count<ACGT> reads;
+  //! Number of bases trimmed
+  indexed_count<ACGT> bases;
+};
+
 void
 write_report_poly_x(const json_dict_ptr& json,
-                    const std::string& key,
-                    const std::string& nucleotides,
-                    const indexed_count<ACGT>& reads,
-                    const indexed_count<ACGT>& bases)
+                    const std::vector<poly_x_stats>& stats)
 {
-  if (!nucleotides.empty()) {
-    const auto dict = json->dict(key);
-    for (const auto nuc : nucleotides) {
-      const auto nuc_stats = dict->inline_dict(std::string(1, nuc));
-      nuc_stats->i64("reads", reads.get(nuc));
-      nuc_stats->i64("bases", bases.get(nuc));
+  for (const auto& it : stats) {
+    if (!it.nucleotides.empty()) {
+      const auto dict = json->dict(it.key);
+      for (const auto nuc : it.nucleotides) {
+        const auto nuc_stats = dict->inline_dict(std::string(1, nuc));
+        nuc_stats->i64("reads", it.reads.get(nuc));
+        nuc_stats->i64("bases", it.bases.get(nuc));
+      }
     }
   }
 }
@@ -139,6 +151,7 @@ write_report_trimming(const userconfig& config,
   if (!config.is_adapter_trimming_enabled()) {
     json->null("adapter_trimming");
     json->null("quality_trimming");
+    json->null("poly_x_trimming");
     json->null("filtering");
     return;
   }
@@ -164,31 +177,26 @@ write_report_trimming(const userconfig& config,
     }
   }
 
-  {
-    const auto dict = json->dict("quality_trimming");
+  write_report_counts(json->dict("quality_trimming"),
+                      { { "terminal_pre",
+                          config.is_terminal_base_pre_trimming_enabled(),
+                          totals.terminal_pre_trimmed },
+                        { "terminal_post",
+                          config.is_terminal_base_post_trimming_enabled(),
+                          totals.terminal_post_trimmed },
+                        { "low_quality",
+                          config.is_low_quality_trimming_enabled(),
+                          totals.low_quality_trimmed } });
 
-    write_report_counts(dict,
-                        { { "terminal_pre",
-                            config.is_terminal_base_pre_trimming_enabled(),
-                            totals.terminal_pre_trimmed },
-                          { "terminal_post",
-                            config.is_terminal_base_post_trimming_enabled(),
-                            totals.terminal_post_trimmed },
-                          { "low_quality",
-                            config.is_low_quality_trimming_enabled(),
-                            totals.low_quality_trimmed } });
-
-    write_report_poly_x(dict,
-                        "poly_x_pre",
-                        config.pre_trim_poly_x,
-                        totals.poly_x_pre_trimmed_reads,
-                        totals.poly_x_pre_trimmed_bases);
-    write_report_poly_x(dict,
-                        "poly_x_post",
-                        config.post_trim_poly_x,
-                        totals.poly_x_post_trimmed_reads,
-                        totals.poly_x_post_trimmed_bases);
-  }
+  write_report_poly_x(json->dict("poly_x_trimming"),
+                      { { "pre",
+                          config.pre_trim_poly_x,
+                          totals.poly_x_pre_trimmed_reads,
+                          totals.poly_x_pre_trimmed_bases },
+                        { "post",
+                          config.post_trim_poly_x,
+                          totals.poly_x_post_trimmed_reads,
+                          totals.poly_x_post_trimmed_bases } });
 
   write_report_counts(json->dict("filtering"),
                       { { "min_length",
