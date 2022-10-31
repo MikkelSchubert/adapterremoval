@@ -136,7 +136,7 @@ write_report_trimming(const userconfig& config,
                       const trimming_statistics& totals,
                       const fastq_pair_vec& adapters)
 {
-  if (config.run_type != ar_command::trim_adapters) {
+  if (!config.is_adapter_trimming_enabled()) {
     json->null("adapter_trimming");
     json->null("quality_trimming");
     json->null("filtering");

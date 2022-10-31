@@ -258,9 +258,15 @@ public:
 
   /* Helper functions for logging / reporting */
   bool is_adapter_trimming_enabled() const;
+
+  bool is_any_quality_trimming_enabled() const;
   bool is_low_quality_trimming_enabled() const;
   bool is_terminal_base_pre_trimming_enabled() const;
   bool is_terminal_base_post_trimming_enabled() const;
+  bool is_poly_x_tail_pre_trimming_enabled() const;
+  bool is_poly_x_tail_post_trimming_enabled() const;
+
+  bool is_any_filtering_enabled() const;
   bool is_short_read_filtering_enabled() const;
   bool is_long_read_filtering_enabled() const;
   bool is_ambiguous_base_filtering_enabled() const;

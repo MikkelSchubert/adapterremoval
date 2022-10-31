@@ -1223,6 +1223,17 @@ userconfig::is_adapter_trimming_enabled() const
 }
 
 bool
+userconfig::is_any_quality_trimming_enabled() const
+{
+  return is_adapter_trimming_enabled() &&
+         (is_low_quality_trimming_enabled() ||
+          is_terminal_base_pre_trimming_enabled() ||
+          is_terminal_base_post_trimming_enabled() ||
+          is_poly_x_tail_pre_trimming_enabled() ||
+          is_poly_x_tail_post_trimming_enabled());
+}
+
+bool
 userconfig::is_low_quality_trimming_enabled() const
 {
   return trim_error_rate > 0 || trim_window_length >= 0 ||
@@ -1241,6 +1252,28 @@ userconfig::is_terminal_base_post_trimming_enabled() const
 {
   return post_trim_fixed_5p.first || post_trim_fixed_5p.second ||
          post_trim_fixed_3p.first || post_trim_fixed_3p.second;
+}
+
+bool
+userconfig::is_poly_x_tail_pre_trimming_enabled() const
+{
+  return !pre_trim_poly_x.empty();
+}
+
+bool
+userconfig::is_poly_x_tail_post_trimming_enabled() const
+{
+  return !post_trim_poly_x.empty();
+}
+
+bool
+userconfig::is_any_filtering_enabled() const
+{
+  return is_adapter_trimming_enabled() &&
+         (is_short_read_filtering_enabled() ||
+          is_long_read_filtering_enabled() ||
+          is_ambiguous_base_filtering_enabled() ||
+          is_low_complexity_filtering_enabled());
 }
 
 bool
