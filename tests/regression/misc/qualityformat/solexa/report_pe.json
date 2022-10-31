@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "...",
+    "version": "...str",
     "command": "...[str]",
     "runtime": "...float"
   },

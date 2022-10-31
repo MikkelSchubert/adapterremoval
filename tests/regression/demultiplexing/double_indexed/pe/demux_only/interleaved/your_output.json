@@ -25,7 +25,10 @@
         "sample_2": 8
       }
     },
-    "trimming_and_filtering": null,
+    "adapter_trimming": null,
+    "quality_trimming": null,
+    "poly_x_trimming": null,
+    "filtering": null,
     "output": {
       "passed": {
         "reads": 16,
@@ -109,7 +112,10 @@
     "samples": {
       "sample_1": {
         "reads": 8,
-        "trimming_and_filtering": null,
+        "adapter_trimming": null,
+        "quality_trimming": null,
+        "poly_x_trimming": null,
+        "filtering": null,
         "output": {
           "read1": {
             "filenames": ["your_output.sample_1.fastq"],
@@ -166,7 +172,10 @@
       },
       "sample_2": {
         "reads": 8,
-        "trimming_and_filtering": null,
+        "adapter_trimming": null,
+        "quality_trimming": null,
+        "poly_x_trimming": null,
+        "filtering": null,
         "output": {
           "read1": {
             "filenames": ["your_output.sample_2.fastq"],

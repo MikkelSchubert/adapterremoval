@@ -16,7 +16,10 @@
       "gc_content": 0.343
     },
     "demultiplexing": null,
-    "trimming_and_filtering": null,
+    "adapter_trimming": null,
+    "quality_trimming": null,
+    "poly_x_trimming": null,
+    "filtering": null,
     "output": null
   },
   "input": {

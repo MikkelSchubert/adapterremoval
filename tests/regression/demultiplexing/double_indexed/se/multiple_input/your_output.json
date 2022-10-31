@@ -25,28 +25,22 @@
         "sample_2": 4
       }
     },
-    "trimming_and_filtering": {
-      "adapter_sequences": [
+    "adapter_trimming": {
+      "adapters": [
         {
-          "adapter_sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-          "adapter_sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-          "adapter_trimmed_reads": 5,
-          "adapter_trimmed_bases": 219
+          "sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+          "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+          "reads": 5,
+          "bases": 219
         }
       ],
       "overlapping_reads": 0,
-      "terminal_bases_trimmed": 0,
-      "low_quality_trimmed_reads": 0,
-      "low_quality_trimmed_bases": 0,
-      "filtered_min_length_reads": 2,
-      "filtered_min_length_bases": 0,
-      "filtered_max_length_reads": 0,
-      "filtered_max_length_bases": 0,
-      "filtered_ambiguous_reads": 0,
-      "filtered_ambiguous_bases": 0,
-      "filtered_low_complexity_reads": 0,
-      "filtered_low_complexity_bases": 0,
       "insert_sizes": null
+    },
+    "quality_trimming": {},
+    "poly_x_trimming": {},
+    "filtering": {
+      "min_length": { "reads": 2, "bases": 0 }
     },
     "output": {
       "passed": {
@@ -116,28 +110,22 @@
     "samples": {
       "sample_1": {
         "reads": 4,
-        "trimming_and_filtering": {
-          "adapter_sequences": [
+        "adapter_trimming": {
+          "adapters": [
             {
-              "adapter_sequence_1": "AATAACGTAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-              "adapter_sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTCTTGCCCT",
-              "adapter_trimmed_reads": 2,
-              "adapter_trimmed_bases": 109
+              "sequence_1": "AATAACGTAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+              "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTCTTGCCCT",
+              "reads": 2,
+              "bases": 109
             }
           ],
           "overlapping_reads": 0,
-          "terminal_bases_trimmed": 0,
-          "low_quality_trimmed_reads": 0,
-          "low_quality_trimmed_bases": 0,
-          "filtered_min_length_reads": 1,
-          "filtered_min_length_bases": 0,
-          "filtered_max_length_reads": 0,
-          "filtered_max_length_bases": 0,
-          "filtered_ambiguous_reads": 0,
-          "filtered_ambiguous_bases": 0,
-          "filtered_low_complexity_reads": 0,
-          "filtered_low_complexity_bases": 0,
           "insert_sizes": null
+        },
+        "quality_trimming": {},
+        "poly_x_trimming": {},
+        "filtering": {
+          "min_length": { "reads": 1, "bases": 0 }
         },
         "output": {
           "read1": {
@@ -182,28 +170,22 @@
       },
       "sample_2": {
         "reads": 4,
-        "trimming_and_filtering": {
-          "adapter_sequences": [
+        "adapter_trimming": {
+          "adapters": [
             {
-              "adapter_sequence_1": "CCCGTGCAAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-              "adapter_sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTCGCCGATG",
-              "adapter_trimmed_reads": 3,
-              "adapter_trimmed_bases": 110
+              "sequence_1": "CCCGTGCAAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+              "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTCGCCGATG",
+              "reads": 3,
+              "bases": 110
             }
           ],
           "overlapping_reads": 0,
-          "terminal_bases_trimmed": 0,
-          "low_quality_trimmed_reads": 0,
-          "low_quality_trimmed_bases": 0,
-          "filtered_min_length_reads": 1,
-          "filtered_min_length_bases": 0,
-          "filtered_max_length_reads": 0,
-          "filtered_max_length_bases": 0,
-          "filtered_ambiguous_reads": 0,
-          "filtered_ambiguous_bases": 0,
-          "filtered_low_complexity_reads": 0,
-          "filtered_low_complexity_bases": 0,
           "insert_sizes": null
+        },
+        "quality_trimming": {},
+        "poly_x_trimming": {},
+        "filtering": {
+          "min_length": { "reads": 1, "bases": 0 }
         },
         "output": {
           "read1": {

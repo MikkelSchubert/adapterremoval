@@ -25,28 +25,22 @@
         "sample_2": 8
       }
     },
-    "trimming_and_filtering": {
-      "adapter_sequences": [
+    "adapter_trimming": {
+      "adapters": [
         {
-          "adapter_sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-          "adapter_sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-          "adapter_trimmed_reads": 8,
-          "adapter_trimmed_bases": 436
+          "sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+          "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+          "reads": 8,
+          "bases": 436
         }
       ],
       "overlapping_reads": 12,
-      "terminal_bases_trimmed": 0,
-      "low_quality_trimmed_reads": 0,
-      "low_quality_trimmed_bases": 0,
-      "filtered_min_length_reads": 4,
-      "filtered_min_length_bases": 0,
-      "filtered_max_length_reads": 0,
-      "filtered_max_length_bases": 0,
-      "filtered_ambiguous_reads": 0,
-      "filtered_ambiguous_bases": 0,
-      "filtered_low_complexity_reads": 0,
-      "filtered_low_complexity_bases": 0,
       "insert_sizes": [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+    },
+    "quality_trimming": {},
+    "poly_x_trimming": {},
+    "filtering": {
+      "min_length": { "reads": 4, "bases": 0 }
     },
     "output": {
       "passed": {
@@ -140,28 +134,22 @@
     "samples": {
       "sample_1": {
         "reads": 8,
-        "trimming_and_filtering": {
-          "adapter_sequences": [
+        "adapter_trimming": {
+          "adapters": [
             {
-              "adapter_sequence_1": "GCCATCTAAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-              "adapter_sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTCAAC",
-              "adapter_trimmed_reads": 4,
-              "adapter_trimmed_bases": 218
+              "sequence_1": "GCCATCTAAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+              "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTCAAC",
+              "reads": 4,
+              "bases": 218
             }
           ],
           "overlapping_reads": 6,
-          "terminal_bases_trimmed": 0,
-          "low_quality_trimmed_reads": 0,
-          "low_quality_trimmed_bases": 0,
-          "filtered_min_length_reads": 2,
-          "filtered_min_length_bases": 0,
-          "filtered_max_length_reads": 0,
-          "filtered_max_length_bases": 0,
-          "filtered_ambiguous_reads": 0,
-          "filtered_ambiguous_bases": 0,
-          "filtered_low_complexity_reads": 0,
-          "filtered_low_complexity_bases": 0,
           "insert_sizes": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        },
+        "quality_trimming": {},
+        "poly_x_trimming": {},
+        "filtering": {
+          "min_length": { "reads": 2, "bases": 0 }
         },
         "output": {
           "read1": {
@@ -239,28 +227,22 @@
       },
       "sample_2": {
         "reads": 8,
-        "trimming_and_filtering": {
-          "adapter_sequences": [
+        "adapter_trimming": {
+          "adapters": [
             {
-              "adapter_sequence_1": "AGCAGCCCAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-              "adapter_sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTCTTTACAG",
-              "adapter_trimmed_reads": 4,
-              "adapter_trimmed_bases": 218
+              "sequence_1": "AGCAGCCCAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+              "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTCTTTACAG",
+              "reads": 4,
+              "bases": 218
             }
           ],
           "overlapping_reads": 6,
-          "terminal_bases_trimmed": 0,
-          "low_quality_trimmed_reads": 0,
-          "low_quality_trimmed_bases": 0,
-          "filtered_min_length_reads": 2,
-          "filtered_min_length_bases": 0,
-          "filtered_max_length_reads": 0,
-          "filtered_max_length_bases": 0,
-          "filtered_ambiguous_reads": 0,
-          "filtered_ambiguous_bases": 0,
-          "filtered_low_complexity_reads": 0,
-          "filtered_low_complexity_bases": 0,
           "insert_sizes": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        },
+        "quality_trimming": {},
+        "poly_x_trimming": {},
+        "filtering": {
+          "min_length": { "reads": 2, "bases": 0 }
         },
         "output": {
           "read1": {
