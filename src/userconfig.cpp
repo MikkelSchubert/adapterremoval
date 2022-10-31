@@ -107,6 +107,56 @@ parse_poly_x_option(const std::string& key,
 }
 
 bool
+parse_head(const std::string& sink, uint64_t& out)
+{
+  if (sink.empty()) {
+    // Default to all reads
+    out = std::numeric_limits<uint64_t>::max();
+    return true;
+  }
+
+  uint64_t unit = 1;
+  std::string sink_without_unit = sink;
+  if (sink.back() < '0' || sink.back() > '9') {
+    switch (sink.back()) {
+      case 'k':
+      case 'K':
+        unit = 1000;
+        break;
+
+      case 'm':
+      case 'M':
+        unit = 1000 * 1000;
+        break;
+
+      case 'g':
+      case 'G':
+        unit = 1000 * 1000 * 1000;
+        break;
+
+      default:
+        log::error() << "Invalid unit in command-line option --sink "
+                     << shell_escape(sink);
+        return false;
+    }
+
+    sink_without_unit.pop_back();
+  }
+
+  try {
+    // This should not be able to overflow as log2(2^32 * 1e9) ~= 62,
+    // but will need to be changed if we want to allow large raw numbers
+    out = static_cast<uint64_t>(str_to_unsigned(sink_without_unit)) * unit;
+  } catch (const std::invalid_argument&) {
+    log::error() << "Invalid value in command-line option --sink "
+                 << shell_escape(sink);
+    return false;
+  }
+
+  return true;
+}
+
+bool
 check_no_clobber(const std::string& label,
                  const string_vec& in_files,
                  const std::string& out_file)
@@ -421,6 +471,7 @@ userconfig::userconfig(const std::string& name,
   , log_color()
   , log_level()
   , log_progress_sink()
+  , head_sink()
   , m_runtime()
   , m_deprecated_knobs()
 {
@@ -434,9 +485,9 @@ userconfig::userconfig(const std::string& name,
     .bind_vec(&input_files_2);
   argparser.add("--head", "N")
     .help("Process only the first N reads in single-end mode or the first N "
-          "read-pairs in paired-end mode [default: all reads]")
-    .bind_uint(&head)
-    .with_default(std::numeric_limits<unsigned>::max());
+          "read-pairs in paired-end mode. Accepts suffixes K (thousands), M "
+          "(millions) and G (billions) [default: all reads]")
+    .bind_str(&head_sink);
 
   argparser.add("--identify-adapters")
     .help("Attempt to identify the adapter pair of PE reads, by searching for "
@@ -1015,6 +1066,10 @@ userconfig::parse_args(int argc, char* argv[])
         return argparse::parse_result::error;
       }
     }
+  }
+
+  if (!parse_head(head_sink, head)) {
+    return argparse::parse_result::error;
   }
 
   return argparse::parse_result::ok;

@@ -163,9 +163,7 @@ private:
   progress_timer m_timer;
 
   //! Number of reads to process
-  unsigned m_head;
-  //! Indicates whether a head value has been specified
-  bool m_head_set;
+  uint64_t m_head;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock;

@@ -164,7 +164,6 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_eof(false)
   , m_timer(config.log_progress)
   , m_head(config.head)
-  , m_head_set(m_head != std::numeric_limits<decltype(m_head)>::max())
   , m_lock()
 {
   if (config.interleaved_input) {
@@ -195,10 +194,6 @@ read_fastq::process(chunk_ptr chunk)
     m_eof = !read_paired_end(file_chunk->reads_1, file_chunk->reads_2);
   }
 
-  if (!m_head_set) {
-    m_head = std::numeric_limits<decltype(m_head)>::max();
-  }
-
   file_chunk->eof = m_eof;
 
   m_timer.increment(file_chunk->reads_1.size() + file_chunk->reads_2.size());
@@ -219,7 +214,7 @@ read_fastq::read_single_end(fastq_vec& reads_1)
     m_head--;
   }
 
-  return !eof && (m_head || !m_head_set);
+  return !eof && m_head;
 }
 
 bool
@@ -259,7 +254,7 @@ read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
     fastq::normalize_paired_reads(*it_1++, *it_2++, m_mate_separator);
   }
 
-  return !eof_1 && !eof_2 && (m_head || !m_head_set);
+  return !eof_1 && !eof_2 && m_head;
 }
 
 char

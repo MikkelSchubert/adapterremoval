@@ -171,7 +171,7 @@ public:
   bool interleaved_output;
 
   //! Maximum of reads/read pairs to process
-  unsigned head;
+  uint64_t head;
 
   //! Character separating the mate number from the read name in FASTQ reads.
   char mate_separator;
@@ -316,6 +316,9 @@ private:
   std::string log_level;
   //! Sink for progress indicators
   std::string log_progress_sink;
+
+  //! Sink for head
+  std::string head_sink;
 
   //! Measures runtime since the program was started
   monotonic_timer m_runtime;
