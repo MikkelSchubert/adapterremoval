@@ -182,8 +182,6 @@ public:
   unsigned max_genomic_length;
   //! The minimum required overlap before trimming single-end reads.
   unsigned min_adapter_overlap;
-  //! The minimum required genomic overlap before merging reads into one.
-  unsigned min_alignment_length;
   //! Rate of mismatches determining the threshold for a an acceptable
   //! alignment, depending on the length of the alignment. But see also the
   //! limits set in the function 'is_good_alignment'.
@@ -225,9 +223,12 @@ public:
   //! If true, only the 3p is trimmed for low quality bases (if enabled)
   bool preserve5p;
 
-  //! If true, PE reads overlapping at least 'min_alignment_length' are
+  //! If true, PE reads overlapping at least 'merge_threshold' are
   //! merged to generate a higher quality consensus sequence.
   bool merge;
+  //! The minimum required genomic overlap before merging reads into one.
+  unsigned merge_threshold;
+
   // Allow for slipping basepairs by allowing missing bases in adapter
   unsigned shift;
 

@@ -424,7 +424,6 @@ userconfig::userconfig(const std::string& name,
   , min_genomic_length()
   , max_genomic_length()
   , min_adapter_overlap()
-  , min_alignment_length()
   , mismatch_threshold()
   , io_encoding(FASTQ_ENCODING_33)
   , pre_trim_fixed_5p()
@@ -443,6 +442,7 @@ userconfig::userconfig(const std::string& name,
   , min_complexity()
   , preserve5p()
   , merge()
+  , merge_threshold()
   , shift()
   , max_threads()
   , gzip()
@@ -475,9 +475,22 @@ userconfig::userconfig(const std::string& name,
   , m_runtime()
   , m_deprecated_knobs()
 {
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add("--identify-adapters")
+    .help("Attempt to identify the adapter pair of PE reads, by searching for "
+          "overlapping mate reads")
+    .conflicts_with("--demultiplex-only")
+    .conflicts_with("--report-only");
+  argparser.add("--threads", "N")
+    .help("Maximum number of threads")
+    .bind_uint(&max_threads)
+    .with_default(1);
+
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("INPUT FILES:");
+
   argparser.add("--file1", "FILE")
-    .help("Input files containing mate 1 reads or single-ended reads; one or "
-          "more files may be listed [REQUIRED]")
+    .help("One or more input files containing mate 1 reads [REQUIRED]")
     .bind_vec(&input_files_1);
   argparser.add("--file2", "FILE")
     .help("Input files containing mate 2 reads; if used, then the same number "
@@ -486,21 +499,57 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--head", "N")
     .help("Process only the first N reads in single-end mode or the first N "
           "read-pairs in paired-end mode. Accepts suffixes K (thousands), M "
-          "(millions) and G (billions) [default: all reads]")
+          "(millions), and G (billions) [default: all reads]")
     .bind_str(&head_sink);
 
-  argparser.add("--identify-adapters")
-    .help("Attempt to identify the adapter pair of PE reads, by searching for "
-          "overlapping mate reads")
-    .conflicts_with("--demultiplex-only")
-    .conflicts_with("--report-only");
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("OUTPUT FILES:");
 
-  argparser.add("--threads", "N")
-    .help("Maximum number of threads")
-    .bind_uint(&max_threads)
-    .with_default(1);
+  argparser.add("--basename", "PREFIX")
+    .help("Prefix for output files for which no filename was explicitly set")
+    .bind_str(&out_basename)
+    .with_default("your_output");
+  argparser.add("--out-file1", "FILE")
+    .help("Output file containing trimmed mate 1 reads")
+    .deprecated_alias("--output1")
+    .bind_str(&out_pair_1)
+    .with_default("{basename}[.sample].r1.fastq");
+  argparser.add("--out-file2", "FILE")
+    .help("Output file containing trimmed mate 2 reads")
+    .deprecated_alias("--output2")
+    .bind_str(&out_pair_2)
+    .with_default("{basename}[.sample].r2.fastq");
+  argparser.add("--out-merged", "FILE")
+    .help("Output file that, if --merge is set, contains overlapping "
+          "read-pairs that have been merged into a single read (PE mode only)")
+    .deprecated_alias("--outputcollapsed")
+    .bind_str(&out_merged)
+    .with_default("{basename}[.sample].merged.fastq");
+  argparser.add("--out-singleton", "FILE")
+    .help("Output file containing paired reads for which the mate "
+          "has been discarded")
+    .deprecated_alias("--singleton")
+    .bind_str(&out_singleton)
+    .with_default("{basename}[.sample].singleton.fastq");
+  argparser.add("--out-discarded", "FILE")
+    .help("Output file containing discarded reads are written")
+    .deprecated_alias("--discarded")
+    .bind_str(&out_discarded)
+    .with_default("{basename}[.sample].discarded.fastq");
+  argparser.add("--out-json", "FILE")
+    .help("Output file containing statistics about input files, trimming, "
+          "merging, and more in JSON format")
+    .bind_str(&out_json)
+    .with_default("{basename}[.sample].json");
+  argparser.add("--out-html", "FILE")
+    .help("Output file containing statistics about input files, trimming, "
+          "merging, and more in HTML format")
+    .bind_str(&out_html)
+    .with_default("{basename}[.sample].html");
 
+  //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("FASTQ OPTIONS:");
+
   argparser.add("--quality-format", "N")
     .help("Format used to encode Phred scores in input")
     .deprecated_alias("--qualitybase")
@@ -512,12 +561,6 @@ userconfig::userconfig(const std::string& name,
           "FASTQ records. Will be determined automatically if not specified")
     .bind_str(&mate_separator_str);
 
-  argparser.add("--interleaved")
-    .help("This option enables both the --interleaved-input option and the "
-          "--interleaved-output option")
-    .conflicts_with("--file2")
-    .conflicts_with("--out-file2")
-    .bind_bool(&interleaved);
   argparser.add("--interleaved-input")
     .help("The (single) input file provided contains both the mate 1 and mate "
           "2 reads, one pair after the other, with one mate 1 reads followed "
@@ -531,79 +574,23 @@ userconfig::userconfig(const std::string& name,
           "option is implied by the --interleaved option")
     .conflicts_with("--out-file2")
     .bind_bool(&interleaved_output);
+  argparser.add("--interleaved")
+    .help("This option enables both the --interleaved-input option and the "
+          "--interleaved-output option")
+    .conflicts_with("--file2")
+    .conflicts_with("--out-file2")
+    .bind_bool(&interleaved);
 
-  argparser.add_header("OUTPUT READ NAMES:");
-
-  argparser.add("--prefix-read1")
-    .help("Adds the specified prefix to read 1 names")
-    .bind_str(&prefix_read_1);
-  argparser.add("--prefix-read2")
-    .help("Adds the specified prefix to read 2 names")
-    .bind_str(&prefix_read_2);
-  argparser.add("--prefix-merged")
-    .help("Adds the specified prefix to merged read names")
-    .bind_str(&prefix_merged);
-
-  argparser.add_header("OUTPUT FILES:");
-  argparser.add("--basename", "PREFIX")
-    .help("Default prefix for all output files for which no filename was "
-          "explicitly set")
-    .bind_str(&out_basename)
-    .with_default("your_output");
-  argparser.add("--out-json", "FILE")
-    .help("Output file containing statistics about trimming, merging, and more "
-          "in JSON format")
-    .bind_str(&out_json)
-    .with_default("{basename}[.sample].json");
-  argparser.add("--out-html", "FILE")
-    .help("Output report containing statistics about trimming, merging, and "
-          "more in HTML format")
-    .bind_str(&out_html)
-    .with_default("{basename}[.sample].html");
-
-  argparser.add("--out-file1", "FILE")
-    .help("Output file containing trimmed mate 1 reads. When performing "
-          "demultiplexing, this path is treated as a prefix for output files ")
-    .deprecated_alias("--output1")
-    .bind_str(&out_pair_1)
-    .with_default("{basename}[.sample].r1.fastq");
-  argparser.add("--out-file2", "FILE")
-    .help("Output file containing trimmed mate 2 reads")
-    .deprecated_alias("--output2")
-    .bind_str(&out_pair_2)
-    .with_default("{basename}[.sample].r2.fastq");
-  argparser.add("--out-singleton", "FILE")
-    .help("Output file to which containing paired reads for which the mate "
-          "has been discarded")
-    .deprecated_alias("--singleton")
-    .bind_str(&out_singleton)
-    .with_default("{basename}[.sample].singleton.fastq");
-  argparser.add("--out-merged", "FILE")
-    .help("If --merge is set, contains overlapping mate-pairs which "
-          "have been merged into a single read (PE mode) or reads for which "
-          "the adapter was identified by a minimum overlap, indicating that "
-          "the entire template molecule is present. This does not include "
-          "which have subsequently been trimmed due to low-quality or "
-          "ambiguous nucleotides")
-    .deprecated_alias("--outputcollapsed")
-    .bind_str(&out_merged)
-    .with_default("{basename}[.sample].merged.fastq");
-  argparser.add("--out-discarded", "FILE")
-    .help("Contains reads discarded due to the --minlength, --maxlength or "
-          "--maxns options")
-    .deprecated_alias("--discarded")
-    .bind_str(&out_discarded)
-    .with_default("{basename}[.sample].discarded.fastq");
-
+  //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("OUTPUT COMPRESSION:");
+
   argparser.add("--gzip").help("Enable gzip-compression.").bind_bool(&gzip);
   argparser
     .add("--gzip-level", "N")
 #ifdef USE_LIBDEFLATE
     .help("GZip compression level, 0 - 9. For compression levels 4 - 9, output "
           "consist of concatenated GZip blocks, which may cause compatibility "
-          "problems in some rare cases. See the documentaiton for more "
-          "information")
+          "problems in some rare cases")
     .bind_uint(&gzip_level)
     .with_default(6);
 #else
@@ -612,7 +599,9 @@ userconfig::userconfig(const std::string& name,
     .with_default(3);
 #endif
 
-  argparser.add_header("TRIMMING SETTINGS:");
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("PROCESSING:");
+
   argparser.add("--adapter1", "SEQ")
     .help("Adapter sequence expected to be found in mate 1 reads")
     .bind_str(&adapter_1)
@@ -625,7 +614,7 @@ userconfig::userconfig(const std::string& name,
     .help("Read table of white-space separated adapters pairs, used as if the "
           "first column was supplied to --adapter1, and the second column was "
           "supplied to --adapter2; only the first adapter in each pair is "
-          "required SE trimming mode")
+          "required single-end trimming")
     .bind_str(&adapter_list);
 
   argparser.add_separator();
@@ -652,31 +641,56 @@ userconfig::userconfig(const std::string& name,
     .with_default(2);
 
   argparser.add_separator();
+  argparser.add("--merge")
+    .help("When set, paired ended read alignments of --minalignmentlength or "
+          "more bases are merged into a single consensus sequence. Merged "
+          "reads are written to basename.merged by default. Has no effect "
+          "in single-end mode")
+    .deprecated_alias("--collapse")
+    .bind_bool(&merge);
+  argparser.add("--merge-threshold", "N")
+    .help("Paired reads must overlap at least this many bases to be considered "
+          "overlapping for the purpose of read merging")
+    .deprecated_alias("--minalignmentlength")
+    .bind_uint(&merge_threshold)
+    .with_default(11);
+
+  argparser.add_separator();
+  argparser.add("--prefix-read1", "X")
+    .help("Adds the specified prefix to read 1 names [default: no prefix]")
+    .bind_str(&prefix_read_1);
+  argparser.add("--prefix-read2", "X")
+    .help("Adds the specified prefix to read 2 names [default: no prefix]")
+    .bind_str(&prefix_read_2);
+  argparser.add("--prefix-merged", "X")
+    .help("Adds the specified prefix to merged read names [default: no prefix]")
+    .bind_str(&prefix_merged);
+
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("QUALITY TRIMMING:");
+
   argparser.add("--pre-trim5p", "N")
     .help("Trim the 5' of reads by a fixed amount after demultiplexing (if "
           "enabled) but before trimming adapters and low quality bases. "
           "Specify one value to trim mate 1 and mate 2 reads the same amount, "
-          "or two values separated by a space to trim each mate different "
-          "amounts [default: no trimming]")
+          "or two values separated by a space to trim each mate a different "
+          "amount [default: no trimming]")
     .bind_vec(&pre_trim5p)
     .with_max_values(2);
   argparser.add("--pre-trim3p", "N")
-    .help("Trim the 3' of reads by a fixed amount. See --pre-trim5p [default: "
-          "no trimming]")
+    .help("Trim the 3' by a fixed amount [default: no trimming]")
     .bind_vec(&pre_trim3p)
     .with_max_values(2);
 
   argparser.add("--post-trim5p", "N")
-    .help("Trim the 5' of reads by a fixed amount after removing adapters, "
-          "but before carrying out quality based trimming. See --pre-trim5p "
-          "for more information [default: no trimming]")
+    .help("Trim the 5' by a fixed amount after removing adapters, but before "
+          "carrying out quality based trimming. [default: no trimming]")
     .deprecated_alias("--trim5p")
     .bind_vec(&post_trim5p)
     .with_max_values(2);
   argparser.add("--post-trim3p", "N")
     .deprecated_alias("--trim3p")
-    .help("Trim the 3' of reads by a fixed amount. See --post-trim5p [default: "
-          "no trimming]")
+    .help("Trim the 3' by a fixed amount [default: no trimming]")
     .bind_vec(&post_trim3p)
     .with_max_values(2);
 
@@ -709,11 +723,13 @@ userconfig::userconfig(const std::string& name,
     .bind_vec(&post_trim_poly_x_sink)
     .with_min_values(0);
   argparser.add("--trim-polyx-threshold", "N")
-    .help("Enable trimming of poly-G tails")
+    .help("The minimum number of bases in a poly-X tail")
     .bind_uint(&trim_poly_x_threshold)
     .with_default(10);
 
-  argparser.add_header("FILTERING SETTINGS:");
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("FILTERING:");
+
   argparser.add("--maxns", "N")
     .help("Reads containing more ambiguous bases (N) than this number after "
           "trimming are discarded [default: no maximum]")
@@ -742,23 +758,9 @@ userconfig::userconfig(const std::string& name,
     .bind_double(&min_complexity)
     .with_default(0);
 
-  argparser.add_header("READ MERGING:");
-  argparser.add("--merge")
-    .help("When set, paired ended read alignments of --minalignmentlength or "
-          "more bases are merged into a single consensus sequence. Merged "
-          "reads are written to basename.merged by default. Has no effect "
-          "in single-end mode")
-    .deprecated_alias("--collapse")
-    .bind_bool(&merge);
-  argparser.add("--minalignmentlength", "N")
-    .help("If --merge is set, paired reads must overlap at least this "
-          "number of bases to be merged, and single-ended reads must "
-          "overlap at least this number of bases with the adapter to be "
-          "considered complete template molecules")
-    .bind_uint(&min_alignment_length)
-    .with_default(11);
-
+  //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("DEMULTIPLEXING:");
+
   argparser.add("--barcode-list", "FILE")
     .help("List of barcodes or barcode pairs for single or double-indexed "
           "demultiplexing. Note that both indexes should be specified for "
@@ -791,7 +793,9 @@ userconfig::userconfig(const std::string& name,
     .conflicts_with("--identify-adapters")
     .conflicts_with("--report-only");
 
+  //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("REPORTS:");
+
   argparser.add("--report-only")
     .help("Write a report of the input data without performing any processing "
           "of the FASTQ reads. Report-only post-trimming/demultiplexing runs "
@@ -812,7 +816,9 @@ userconfig::userconfig(const std::string& name,
     .bind_uint(&report_duplication)
     .with_default(0);
 
+  //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("LOGGING:");
+
   argparser.add("--log-level", "X")
     .help("The minimum severity of messagest to be written to stderr")
     .bind_str(&log_level)
@@ -1112,7 +1118,7 @@ userconfig::can_merge_alignment(const alignment_info& alignment) const
     throw std::invalid_argument("#ambiguous bases > read length");
   }
 
-  return alignment.length - alignment.n_ambiguous >= min_alignment_length;
+  return alignment.length - alignment.n_ambiguous >= merge_threshold;
 }
 
 output_files
