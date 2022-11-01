@@ -3,43 +3,19 @@
 Installation
 ============
 
+Precompiled binary
+------------------
 
-Installation with Conda
------------------------
-
-If you have `Conda`_ installed on your system::
-
-    conda install -c bioconda adapterremoval
-
-
-Installing on Debian based systems
-----------------------------------
-
-Debian users on Stretch, Buster, or Sid, or using Jessie-backports, as well as Ubuntu users on Zesty or Artful, may install AdapterRemoval using apt::
-
-	apt-get install adapterremoval
-
-For other distributions, or to get the latest version of AdapteRemoval, please see the `Installing from sources`_ section below.
-
-
-Installing on OSX
------------------
-
-MacOSX users may install AdapterRemoval using Homebrew::
-
-	brew install homebrew/science/adapterremoval
-
-Please see the Homebrew website for instructions on how to install and use Homebrew:
-
-    https://brew.sh/
+A pre-compiled binary is provided for 64-bit Linux systems under
+https://github.com/MikkelSchubert/adapterremoval/releases/
 
 
 Installing from sources
 -----------------------
 
-Installing AdapterRemoval from sources requires the presence of libz and bz2 headers. On Debian based systems, these may be installed as follows::
+Installing AdapterRemoval from sources requires `libdeflate`_ and `isa-l`_. On Debian based systems, these may be installed as follows::
 
-    sudo apt-get install zlib1g-dev libbz2-dev
+    sudo apt-get install libdeflate-dev libisal-dev
 
 In addtion, a C++11 compatible compiler and basic build-tools are required. On Debian based systems, these may be installed as follows::
 
@@ -47,14 +23,14 @@ In addtion, a C++11 compatible compiler and basic build-tools are required. On D
 
 To compile AdapterRemoval, first download and unpack the newest release from GitHub, and then run the 'make' command::
 
-    wget -O adapterremoval-2.3.1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.1.tar.gz
-    tar xvzf adapterremoval-2.3.1.tar.gz
-    cd adapterremoval-2.3.1
+    wget -O adapterremoval-3.0.0-alpha1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.0-alpha1.tar.gz
+    tar xvzf adapterremoval-3.0.0-alpha1.tar.gz
+    cd adapterremoval-3.0.0-alpha1
     make
 
-The resulting 'AdapterRemoval' executable is located in the 'build' subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command::
+The resulting 'adapterremoval3' executable is located in the 'build/release' subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command::
 
     sudo make install
 
-
-.. _Conda: https://conda.io/docs/
+.. _libdeflate: https://github.com/ebiggers/libdeflate/
+.. _isa-l: https://github.com/intel/isa-l/

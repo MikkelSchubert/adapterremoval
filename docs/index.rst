@@ -1,9 +1,9 @@
 AdapterRemoval
 ==============
 
-AdapterRemoval searches for and removes remnant adapter sequences from High-Throughput Sequencing (HTS) data and (optionally) trims low quality bases from the 3' end of reads following adapter removal. AdapterRemoval can analyze both single end and paired end data, and can be used to merge overlapping paired-ended reads into (longer) consensus sequences. Additionally, Additionally, AdapterRemoval can construct a consensus adapter sequence for paired-ended reads, if which this information is not available.
+AdapterRemoval searches for and removes remnant adapter sequences from High-Throughput Sequencing (HTS) data, trims low quality bases, merges merges overlapping paired-ended reads into (longer) consensus sequences, and generates quality QC reports (human and machine readable). Additionally, AdapterRemoval can construct a consensus adapter sequence from paired-ended reads.
 
-If you use AdapterRemoval v2, then please cite the paper:
+If you use AdapterRemoval v3, then please cite the paper:
 
     Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid adapter trimming, identification, and read merging. BMC Research Notes, 12;9(1):88
     http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2
@@ -20,6 +20,7 @@ AdapterRemoval was originally published in Lindgreen 2012:
 
     installation
     getting_started
+    detailed_overview
     examples
     manpage
     misc

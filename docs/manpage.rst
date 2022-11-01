@@ -10,7 +10,7 @@ Synopsis
 Description
 -----------
 
-:program:`AdapterRemoval` removes residual adapter sequences from single-end (SE) or paired-end (PE) FASTQ reads, optionally trimming Ns and low qualities bases and/or collapsing overlapping paired-end mates into one read. Low quality reads are filtered based on the resulting length and the number of ambigious nucleotides ('N') present following trimming. These operations may be combined with simultaneous demultiplexing using 5' barcode sequences. Alternatively, ``AdapterRemoval`` may attempt to reconstruct a consensus adapter sequences from paired-end data, in order to allow the identification of the adapter sequences originally used.
+:program:`adapterremoval3` removes residual adapter sequences from single-end (SE) or paired-end (PE) FASTQ reads, optionally trimming Ns and low qualities bases and/or merging overlapping paired-end mates into one read. Low quality reads are filtered based on the resulting length and the number of ambiguous nucleotides ('N') present following trimming. These operations may be combined with simultaneous demultiplexing using 5' barcode sequences. Alternatively, ``adapterremoval3`` may attempt to reconstruct a consensus adapter sequences from paired-end data, in order to allow the identification of the adapter sequences originally used.
 
 If you use this program, please cite the paper:
 
@@ -27,7 +27,7 @@ For detailed documentation, please see
 Options
 -------
 
-.. program:: AdapterRemoval
+.. program:: adapterremoval3
 
 .. option:: --help
 
@@ -37,79 +37,80 @@ Options
 
 	Print the version string.
 
-.. option:: --file1 filename [filenames...]
-
-	Read FASTQ reads from one or more files, either uncompressed, bzip2 compressed, or gzip compressed. This contains either the single-end (SE) reads or, if paired-end, the mate 1 reads. If running in paired-end mode, both ``--file1`` and ``--file2`` must be set. See the primary documentation for a list of supported formats.
-
-.. option:: --file2 filename [filenames...]
-
-	Read one or more FASTQ files containing mate 2 reads for a paired-end run. If specified, ``--file1`` must also be set.
-
 .. option:: --identify-adapters
 
-	Attempt to build a consensus adapter sequence from fully overlapping pairs of paired-end reads. The minimum overlap is controlled by ``--minalignmentlength``. The result will be compared with the values set using ``--adapter1`` and ``--adapter2``. No trimming is performed in this mode. Default is off.
+	Attempt to build a consensus adapter sequence from fully overlapping pairs of paired-end reads. The minimum overlap is controlled by ``--merge-threshold``. The result will be compared with the values set using ``--adapter1`` and ``--adapter2``. No trimming is performed in this mode. Default is off.
 
 .. option:: --threads n
 
 	Maximum number of threads. Defaults to 1.
 
 
-FASTQ options
-~~~~~~~~~~~~~
-.. option:: --qualitybase base
+Input files
+~~~~~~~~~~~
 
-	The Phred quality scores encoding used in input reads - either '64' for Phred+64 (Illumina 1.3+ and 1.5+) or '33' for Phred+33 (Illumina 1.8+). In addition, the value 'solexa' may be used to specify reads with Solexa encoded scores. Output is always written as Phred+33. Default is 33.
+.. option:: --file1 filename [filenames...]
 
-.. option:: --qualitymax base
+	Read FASTQ reads from one or more files, either uncompressed or gzip compressed. The ``--interleaved`` and ``--interleaved-input``  options may be used to enable reading of interleaved reads from these files.
 
-	Specifies the maximum Phred score expected in input files, and used when writing output files. Possible values are 0 to 93 for Phred+33 encoded files, and 0 to 62 for Phred+64 encoded files. Defaults to 41.
+.. option:: --file2 filename [filenames...]
 
-.. option:: --mate-separator separator
-
-	Character separating the mate number (1 or 2) from the read name in FASTQ records. Defaults to '/'.
-
-.. option:: --interleaved
-
-	Enables ``--interleaved-input`` and ``--interleaved-output``.
-
-.. option:: --interleaved-input
-
-	If set, input is expected to be a interleaved FASTQ files specified using ``--file1``, in which pairs of reads are written one after the other (e.g. read1/1, read1/2, read2/1, read2/2, etc.).
-
-.. option:: --interleaved-ouput
-
-	Write paired-end reads to a single file, interleaving mate 1 and mate 2 reads. By default, this file is named ``basename.paired.truncated``, but this may be changed using the ``--output1`` option.
+	Read one or more FASTQ files containing mate 2 reads for a paired-end run. If specified, ``--file1`` must also be set.
 
 
 Output file options
 ~~~~~~~~~~~~~~~~~~~
+
+Output files for adapterremoval may be specified either via the ``--basename`` option, which assigns default filenames, and/or via the individual ``--out-*`` to set or override the output filename for a given output read type. The same destination file may be used for multiple types of FASTQ reads, in which case the reads are written in input order.
+
 .. option:: --basename filename
 
-	Prefix used for the naming output files, unless these names have been overridden using the corresponding command-line option (see below).
+	Prefix for the output files for which no filename was set using the corresponding options below.
 
-.. option:: --settings file
+.. option:: --out-file1 filename
+.. option:: --out-file2 filename
 
-	Output file containing information on the parameters used in the run as well as overall statistics on the reads after trimming. Default filename is 'basename.settings'.
+	Output files containing trimmed mate 1 reads and mate 2 reads. If interleaved output is enabled, then this file also contains mate 2 reads.
 
-.. option:: --output1 file
+.. option:: --out-merged filename
 
-	Output file containing trimmed mate1 reads. Default filename is 'basename.pair1.truncated' for paired-end reads, 'basename.truncated' for single-end reads, and 'basename.paired.truncated' for interleaved paired-end reads.
+	When used with --merged, this file contains overlapping mate-pairs which have been merged into a single read.
 
-.. option:: --output2 file
+.. option:: --out-singleton filename
 
-	Output file containing trimmed mate 2 reads when ``--interleaved-output`` is not enabled. Default filename is 'basename.pair2.truncated' in paired-end mode.
+	Output file to which containing paired reads for which the mate has been discarded.
 
-.. option:: --singleton file
+.. option:: --out-discarded filename
 
-	Output file to which containing paired reads for which the mate has been discarded. Default filename is 'basename.singleton.truncated'.
+	Contains reads discarded due to the --minlength, --maxlength or --maxns options.
 
-.. option:: --outputmerged file
+.. option:: --out-json filename
+.. option:: --out-html filename
 
-	If --merged is set, contains overlapping mate-pairs which have been merged into a single read. This does not include which have subsequently been trimmed due to low-quality or ambiguous nucleotides. Default filename is 'basename.merged'
+	Reports in JSON/HTML format containing information on the parameters used in the run as well as overall statistics on the reads before and after trimming.
 
-.. option:: --discarded file
 
-	Contains reads discarded due to the --minlength, --maxlength or --maxns options. Default filename is 'basename.discarded'.
+FASTQ options
+~~~~~~~~~~~~~
+.. option:: --quality-format name
+
+	The Phred quality scores encoding used in input reads - either '64' for Phred+64 (Illumina 1.3+ and 1.5+) or '33' for Phred+33 (Illumina 1.8+). In addition, the value 'solexa' may be used to specify reads with Solexa encoded scores. The 'sam' format may be used for Phred+33 data with very high quality scores. Default is 33.
+
+.. option:: --mate-separator separator
+
+	Character separating the mate number (1 or 2) from the read name in FASTQ records. This is typically either '/' or '.'. By default AdapterRemoval will attempt to infer this separator automatically.
+
+.. option:: --interleaved-input
+
+	Enable reading of interleaved FASTQ reads from the files specified with ``--file1``. Defaults to off.
+
+.. option:: --interleaved-ouput
+
+	Write paired-end reads to the file specified by ``--out-file1``, interleaving mate 1 and mate 2 reads. Defaults to off.
+
+.. option:: --interleaved
+
+	Enables ``--interleaved-input`` and ``--interleaved-output``. Defaults to off.
 
 
 Output compression options
@@ -117,23 +118,15 @@ Output compression options
 
 .. option:: --gzip
 
-	If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using ``--gzip-level``. The extension ".gz" is added to files for which no filename was given on the command-line. Defaults to off.
+	If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using ``--gzip-level``. If ``--basename`` is used then the ".gz" extension added to files for which no filename was specified. Gzip compression may also be enabled by manually specifying a ".gz" extension for a output files. Defaults to off.
 
 .. option:: --gzip-level level
 
-	Determines the compression level used when gzip'ing FASTQ files. Must be a value in the range 0 to 9, with 0 disabling compression and 9 being the best compression. Defaults to 6.
-
-.. option:: --bzip2
-
-	If set, all FASTQ files written by AdapterRemoval will be bzip2 compressed using the compression level specified using ``--bzip2-level``. The extension ".bz2" is added to files for which no filename was given on the command-line. Defaults to off.
-
-.. option:: --bzip2-level level
-
-	Determines the compression level used when bzip2'ing FASTQ files. Must be a value in the range 1 to 9, with 9 being the best compression. Defaults to 9.
+	Determines the compression level used when gzip'ing FASTQ files. Must be a value in the range 0 to 9, with 0 disabling compression and 9 being the best compression. For compression levels 4-9, block based compression is performed using libdeflate. This may cause compatibility issues in rare cases, which can be migitated by using a lower compression level. Defaults to 6.
 
 
-FASTQ trimming options
-~~~~~~~~~~~~~~~~~~~~~~
+FASTQ processing options
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. option:: --adapter1 adapter
 
@@ -149,7 +142,7 @@ FASTQ trimming options
 
 .. option:: --minadapteroverlap length
 
-	In single-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N); this is independent of the ``--minalignmentlength`` when using ``--merge``, allowing a conservative selection of putative complete inserts in single-end mode, while ensuring that all possible adapter contamination is trimmed. The default is 0.
+	In single-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N). Defaults to 0.
 
 .. option:: --mm mismatchrate
 
@@ -159,37 +152,70 @@ FASTQ trimming options
 
 	To allow for missing bases in the 5' end of the read, the program can let the alignment slip ``--shift`` bases in the 5' end. This corresponds to starting the alignment maximum ``--shift`` nucleotides into read2 (for paired-end) or the adapter (for single-end). The default is 2.
 
-.. option:: --trim5p n [n]
+.. option:: --merge
 
-	Trim the 5' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. Specify one value to trim mate 1 and mate 2 reads the same amount, or two values separated by a space to trim each mate different amounts. Off by default.
+	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. The overlap needs to be at least ``--merge-threshold`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
 
-.. option:: --trim3p n [n]
+.. option:: --merge-threshold length
 
-	Trim the 3' of reads by a fixed amount. See ``--trim5p``.
+	The minimum overlap between mate 1 and mate 2 before the reads are merged into one, when collapsing paired-end reads. Default is 11.
 
-.. option:: --trimns
+.. option:: --prefix-read1 X
 
-	Trim consecutive Ns from the 5' and 3' termini. If quality trimming is also enabled (``--trimqualities``), then stretches of mixed low-quality bases and/or Ns are trimmed.
+	Adds the specified prefix to read 1 names. Default to no prefix.
 
-.. option:: --maxns n
+.. option:: --prefix-read2 X
 
-	Discard reads containing more than ``--max`` ambiguous bases ('N') after trimming. Default is 1000.
+	Adds the specified prefix to read 2 names. Default to no prefix.
 
-.. option:: --trimqualities
+.. option:: --prefix-merged X
 
-	Trim consecutive stretches of low quality bases (threshold set by ``--minquality``) from the 5' and 3' termini. If trimming of Ns is also enabled (``--trimns``), then stretches of mixed low-quality bases and Ns are trimmed.
+	Adds the specified prefix to merged read names. Default to no prefix.
 
-.. option:: --trimwindows window_size
 
-	Trim low quality bases using a sliding window based approach inspired by :program:`sickle` with the given window size. See the "Window based quality trimming" section of the manual page for a description of this algorithm.
+Quality trimming options
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. option:: --minquality minimum
+.. option:: --pre-trim5p n [n]
 
-	Set the threshold for trimming low quality bases using ``--trimqualities`` and ``--trimwindows``. Default is 2.
+	Trim the 5' of reads by a fixed amount after demultiplexing but before removing adapters. Specify one value to trim mate 1 and mate 2 reads the same amount, or two values separated by a space to trim each mate different amounts. Off by default.
+
+.. option:: --pre-trim3p n [n]
+
+	Trim the 3' of reads by a fixed amount after demultiplexing but before removing adapters. See ``--pre-trim5p``.
+
+.. option:: --post-trim5p n [n]
+
+	Trim the 5' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim5p``.
+
+.. option:: --post-trim3p n [n]
+
+	Trim the 3' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim5p``.
+
+.. option:: --trim-error-rate rate
+
+	The threshold value used when performing trimming quality based trimming using the modified Mott's algorithm. A value of zero or less disables trimming; a value greater than one is assumed to be a Phred encoded error rate (e.g. 13 ~= 0.05). Default to 0.05.
+
+.. option:: --pre-trim-polyx nucleotides
+
+	Enable trimming of poly-X tails prior to read alignment and adapter trimming. Zero or more nucleotides (A, C, G, T) may be specified. Zero or more nucleotides may be specified after the option seperated by spaces, with zero nucleotides corresponding to all of A, C, G, and T. Defaults to no trimming.
+
+.. option:: --post-trim-polyx nucleotides
+
+	Enable trimming of poly-X tails after read alignment and adapter trimming/merging, but before trimming of low-quality bases. Merged reads are not trimmed by this option (both ends are 5'). See `--pre-trim-polyx`. Off by default.
 
 .. option:: --preserve5p
 
-	If set, bases at the 5p will not be trimmed by ``--trimns``, ``--trimqualities``, and ``--trimwindows``. Collapsed reads will not be quality/N trimmed when this option is enabled.
+	If set, bases at the 5p will not be trimmed by ``--trimns``, ``--trimqualities``, and ``--trimwindows``. Merged reads will not be quality trimmed when this option is enabled due to the 3' ends being located inside the reads or overlapping the 5' of the source sequences.
+
+
+Filtering options
+~~~~~~~~~~~~~~~~~
+
+.. option:: --maxns n
+
+	Discard reads containing more than ``--max`` ambiguous bases ('N') after trimming. Default is no maximum.
+
 
 .. option:: --minlength length
 
@@ -197,36 +223,11 @@ FASTQ trimming options
 
 .. option:: --maxlength length
 
-	Reads longer than this length are discarded following trimming. Defaults to 4294967295.
+	Reads longer than this length are discarded following trimming. Defaults to no maximum.
 
 
-
-FASTQ merging options
-~~~~~~~~~~~~~~~~~~~~~
-
-.. option:: --merge
-
-	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. The overlap needs to be at least ``--minalignmentlength`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
-
-.. option:: --minalignmentlength length
-
-	The minimum overlap between mate 1 and mate 2 before the reads are merged into one, when collapsing paired-end reads, or when attempting to identify complete template sequences in single-end mode. Default is 11.
-
-.. option:: --seed seed
-
-	When collaping reads at positions where the two reads differ, and the quality of the bases are identical, AdapterRemoval will select a random base. This option specifies the seed used for the random number generator used by AdapterRemoval. This value is also written to the settings file. Note that setting the seed is not reliable in multithreaded mode, since the order of operations is non-deterministic.
-
-.. option:: --merge-deterministic
-
-	Enable deterministic mode; currently only affects --merge, different overlapping bases with equal quality are set to N quality 0, instead of being randomly sampled. Setting this option also sets --merge.
-
-.. option:: --merge-conservatively
-
-	Alternative merging algorithm inspired by FASTQ-join: For matching overlapping bases, the highest quality score is used. For mismatching overlapping bases, the highest quality base is used and the quality is set to the absolute difference in Phred-score between the two bases. For mismatching bases with identical quality scores, the base is set to 'N' and the quality score to 0 (Phred-encoded). Setting this option also sets --merge.
-
-
-FASTQ demultiplexing options
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Demultiplexing options
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. option:: --barcode-list filename
 
@@ -246,20 +247,6 @@ FASTQ demultiplexing options
 .. option:: --demultiplex-only
 
 	Only carry out demultiplexing using the list of barcodes supplied with --barcode-list. No other processing is done.
-
-
-Window based quality trimming
------------------------------
-
-As of v2.2.2, AdapterRemoval implements sliding window based approach to quality based base-trimming inspired by ``sickle``. If ``window_size`` is greater than or equal to 1, that number is used as the window size for all reads. If ``window_size`` is a number greater than or equal to 0 and less than 1, then that number is multiplied by the length of individual reads to determine the window size. If the window length is zero or is greater than the current read length, then the read length is used instead.
-
-Reads are trimmed as follows for a given window size:
-
-	1. The new 5' is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than ``--minquality``.
-
-	2. The new 3' is located by sliding the first window right, until the average quality becomes less than or equal to ``--minquality``. The new 3' is placed at the last base in that window where the quality is greater than or equal to ``--minquality``.
-
-	3. If no 5' position could be determined, the read is discarded.
 
 
 Exit status
