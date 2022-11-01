@@ -309,32 +309,7 @@ post_process_fastq::process(chunk_ptr chunk)
   auto& reads_1 = file_chunk.reads_1;
   auto& reads_2 = file_chunk.reads_2;
 
-  if (reads_1.size() == reads_2.size()) {
-    process_paired_end(reads_1, reads_2);
-  } else {
-    AR_REQUIRE(reads_2.empty());
-    process_single_end(reads_1);
-  }
-
-  chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(chunk));
-
-  return chunks;
-}
-
-void
-post_process_fastq::process_single_end(fastq_vec& reads_1)
-{
-  for (auto& read : reads_1) {
-    m_statistics_1->process(read);
-  }
-}
-
-void
-post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
-{
-  AR_REQUIRE(reads_1.size() == reads_2.size());
-
+  AR_REQUIRE((reads_1.size() == reads_2.size()) || reads_2.empty());
   for (const auto& read_1 : reads_1) {
     m_statistics_1->process(read_1);
   }
@@ -342,6 +317,11 @@ post_process_fastq::process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
   for (const auto& read_2 : reads_2) {
     m_statistics_2->process(read_2);
   }
+
+  chunk_vec chunks;
+  chunks.emplace_back(m_next_step, std::move(chunk));
+
+  return chunks;
 }
 
 void

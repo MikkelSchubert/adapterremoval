@@ -192,9 +192,6 @@ public:
   post_process_fastq& operator=(const post_process_fastq&) = delete;
 
 private:
-  void process_single_end(fastq_vec& reads_1);
-  void process_paired_end(fastq_vec& reads_1, fastq_vec& reads_2);
-
   //! Statistics collected from raw mate 1 reads
   fastq_stats_ptr m_statistics_1;
   //! Statistics collected from raw mate 2 reads
