@@ -507,8 +507,7 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add("--basename", "PREFIX")
     .help("Prefix for output files for which no filename was explicitly set")
-    .bind_str(&out_basename)
-    .with_default("your_output");
+    .bind_str(&out_basename);
   argparser.add("--out-file1", "FILE")
     .help("Output file containing trimmed mate 1 reads")
     .deprecated_alias("--output1")
@@ -621,10 +620,7 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--minadapteroverlap", "N")
     .help("In single-end mode, reads are only trimmed if the overlap between "
           "read and the adapter is at least X bases long, not counting "
-          "ambiguous nucleotides (N); this is independent of the "
-          "--minalignmentlength when using --merge, allowing a conservative "
-          "selection of putative complete inserts while ensuring that all "
-          "possible adapter contamination is trimmed")
+          "ambiguous nucleotides (Ns)")
     .bind_uint(&min_adapter_overlap)
     .with_default(0);
   argparser.add("--mm", "X")
@@ -642,7 +638,7 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add_separator();
   argparser.add("--merge")
-    .help("When set, paired ended read alignments of --minalignmentlength or "
+    .help("When set, paired ended read alignments of --merge-threshold or "
           "more bases are merged into a single consensus sequence. Merged "
           "reads are written to basename.merged by default. Has no effect "
           "in single-end mode")
@@ -694,6 +690,7 @@ userconfig::userconfig(const std::string& name,
     .bind_vec(&post_trim3p)
     .with_max_values(2);
 
+  argparser.add_separator();
   argparser.add("--trim-error-rate", "X")
     .help("The threshold value used when performing trimming quality based "
           "trimming using the modified Mott's algorithm. A value of zero or "
@@ -705,6 +702,7 @@ userconfig::userconfig(const std::string& name,
     .bind_double(&trim_error_rate)
     .with_default(0);
 
+  argparser.add_separator();
   argparser.add("--pre-trim-polyx", "X")
     .help("Enable trimming of poly-X tails prior to read alignment and adapter "
           "trimming. Zero or more nucleotides (A, C, G, T) may be specified. "
@@ -727,6 +725,13 @@ userconfig::userconfig(const std::string& name,
     .bind_uint(&trim_poly_x_threshold)
     .with_default(10);
 
+  argparser.add_separator();
+  argparser.add("--preserve5p")
+    .help("If set, bases at the 5p will not be trimmed by when performing "
+          "quality based trimming of reads. Merged reads will not be quality "
+          "trimmed when this option is enabled [default: 5p bases are trimmed]")
+    .bind_bool(&preserve5p);
+
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("FILTERING:");
 
@@ -735,19 +740,14 @@ userconfig::userconfig(const std::string& name,
           "trimming are discarded [default: no maximum]")
     .bind_uint(&max_ambiguous_bases)
     .with_default(std::numeric_limits<unsigned>::max());
-  argparser.add("--preserve5p")
-    .help("If set, bases at the 5p will not be trimmed by when performing "
-          "quality based trimming of reads. Merged reads will not be quality "
-          "trimmed when this option is enabled [default: 5p bases are trimmed]")
-    .bind_bool(&preserve5p);
 
-  argparser.add_separator();
   argparser.add("--minlength", "N")
     .help("Reads shorter than this length are discarded following trimming")
     .bind_uint(&min_genomic_length)
     .with_default(15);
   argparser.add("--maxlength", "N")
-    .help("Reads longer than this length are discarded following trimming")
+    .help("Reads longer than this length are discarded following trimming "
+          "[default: no maximum]")
     .bind_uint(&max_genomic_length)
     .with_default(std::numeric_limits<unsigned>::max());
 
