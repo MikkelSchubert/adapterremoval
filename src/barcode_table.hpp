@@ -79,7 +79,7 @@ public:
   int identify(const fastq& read_r1, const fastq& read_r2) const;
 
   static const int no_match = -1;
-  static const int ambigious = -2;
+  static const int ambiguous = -2;
 
 protected:
   struct candidate

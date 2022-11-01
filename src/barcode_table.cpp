@@ -127,7 +127,7 @@ add_sequence_to_tree(demux_node_vec& tree,
     // reads
     node.value = (node.value == barcode_table::no_match)
                    ? barcode_id
-                   : barcode_table::ambigious;
+                   : barcode_table::ambiguous;
 
     const auto nuc_idx = ACGT::to_index(nuc);
     auto child = node.children[nuc_idx];
@@ -180,7 +180,7 @@ build_demux_tree(const fastq_pair_vec& barcodes)
 ///////////////////////////////////////////////////////////////////////////////
 
 const int barcode_table::no_match;
-const int barcode_table::ambigious;
+const int barcode_table::ambiguous;
 
 barcode_table::barcode_table(const fastq_pair_vec& barcodes,
                              size_t mismatches,
@@ -325,7 +325,7 @@ barcode_table::lookup_with_mm(const char* seq,
           best_candidate = current_candidate;
         } else if (current_candidate.mismatches == best_candidate.mismatches) {
           if (current_candidate.barcode != no_match) {
-            best_candidate.barcode = ambigious;
+            best_candidate.barcode = ambiguous;
           }
         }
       }

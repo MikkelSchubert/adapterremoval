@@ -584,7 +584,7 @@ TEST_CASE("Multiple mismatches in R1/R2 with PE table",
   REQUIRE(table.identify(fastq("A", "NCCCN"), fastq("B", "GTTTA")) == -1);
 }
 
-TEST_CASE("Ambigious matches in R1 for SE table", "[barcodes::inexact::se]")
+TEST_CASE("Ambiguous matches in R1 for SE table", "[barcodes::inexact::se]")
 {
   fastq_pair_vec barcodes;
   barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
@@ -598,7 +598,7 @@ TEST_CASE("Ambigious matches in R1 for SE table", "[barcodes::inexact::se]")
   REQUIRE(table.identify(fastq("A", "ACCCN")) == -2);
 }
 
-TEST_CASE("Ambigious matches in SE R1 for PE table", "[barcodes::inexact::se]")
+TEST_CASE("Ambiguous matches in SE R1 for PE table", "[barcodes::inexact::se]")
 {
   fastq_pair_vec barcodes;
   barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "TGCGT")));
