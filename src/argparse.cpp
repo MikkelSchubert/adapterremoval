@@ -158,7 +158,7 @@ bool
 parser::is_set(const std::string& key) const
 {
   const auto it = m_keys.find(key);
-  AR_REQUIRE(it != m_keys.end());
+  AR_REQUIRE(it != m_keys.end(), shell_escape(key));
 
   return it->second->is_set();
 }
@@ -167,7 +167,7 @@ std::string
 parser::to_str(const std::string& key) const
 {
   const auto it = m_keys.find(key);
-  AR_REQUIRE(it != m_keys.end());
+  AR_REQUIRE(it != m_keys.end(), shell_escape(key));
 
   return it->second->to_str();
 }
@@ -285,7 +285,7 @@ parser::update_argument_map()
     if (it.argument) {
       for (const auto& key : it.argument->keys()) {
         const auto result = m_keys.emplace(key, it.argument);
-        AR_REQUIRE(result.second);
+        AR_REQUIRE(result.second, shell_escape(key));
       }
     }
   }
@@ -370,7 +370,7 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_conflicts_with()
   , m_sink(std::make_unique<bool_sink>(&m_default_sink))
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
 }
 
 argument&
@@ -535,7 +535,7 @@ argument::abbreviation(char key)
 argument&
 argument::deprecated_alias(const std::string& key)
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
   m_deprecated_keys.emplace_back(key);
 
   return *this;
@@ -552,7 +552,7 @@ argument::deprecated()
 argument&
 argument::depends_on(const std::string& key)
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
   m_depends_on.push_back(key);
 
   return *this;
@@ -561,7 +561,7 @@ argument::depends_on(const std::string& key)
 argument&
 argument::conflicts_with(const std::string& key)
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-');
+  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
   m_conflicts_with.push_back(key);
 
   return *this;
