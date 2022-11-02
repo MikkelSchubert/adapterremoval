@@ -1,0 +1,25 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--discarded",
+    "disc",
+    "--output1",
+    "out1",
+    "--out-json",
+    "out.json",
+    "--singleton",
+    "singles",
+    "--out-html",
+    "out.html"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "output": ["disc", "out1"],
+    "json": ["out.json"],
+    "html": ["out.html"]
+  },
+  "stderr": [
+    "[WARNING] Option --discarded is deprecated and will be removed in the future. Please use --out-discarded instead.",
+    "[WARNING] Option --output1 is deprecated and will be removed in the future. Please use --out-file1 instead."
+  ]
+}

@@ -1,7 +1,0 @@
-{
-  "exhaustive": false,
-  "arguments": ["--trimwindows", "-1"],
-  "return_code": 1,
-  "stderr": ["[ERROR] Invalid value for --trimwindows"],
-  "files": {"input_1": ["input_1a.fastq"]}
-}

@@ -1,6 +1,6 @@
 {
   "exhaustive": true,
-  "arguments": ["--trimns", "--basename", "alternative"],
+  "arguments": ["--basename", "alternative"],
   "files": {
     "input_1": ["input_1.fastq"],
     "output": ["alternative.discarded.fastq", "alternative.r1.fastq"],

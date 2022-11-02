@@ -1,7 +1,6 @@
 {
   "exhaustive": false,
   "arguments": [
-    "--trimns",
     "--interleaved-output",
     "--out-file1",
     "interleaved.fastq"

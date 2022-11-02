@@ -1,2 +1,0 @@
-sample_1	GCGCCGGA	
-sample_2	CAGGACAT	

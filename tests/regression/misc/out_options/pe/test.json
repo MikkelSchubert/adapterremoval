@@ -1,0 +1,27 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--collapse",
+    "--out-discarded",
+    "disc",
+    "--out-file1",
+    "out1",
+    "--out-file2",
+    "out2",
+    "--out-merged",
+    "oc",
+    "--out-json",
+    "out.json",
+    "--out-singleton",
+    "singles",
+    "--out-html",
+    "out.html"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": ["disc", "oc", "out1", "out2", "singles"],
+    "json": ["out.json"],
+    "html": ["out.html"]
+  }
+}

@@ -28,10 +28,13 @@
       "overlapping_reads": 2,
       "insert_sizes": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     },
-    "quality_trimming": {},
+    "quality_trimming": {
+      "low_quality": { "reads": 0, "bases": 0 }
+    },
     "poly_x_trimming": {},
     "filtering": {
-      "min_length": { "reads": 0, "bases": 0 }
+      "min_length": { "reads": 0, "bases": 0 },
+      "low_complexity": { "reads": 0, "bases": 0 }
     },
     "output": {
       "passed": {

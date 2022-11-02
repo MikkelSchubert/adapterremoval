@@ -1,0 +1,21 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--out-discarded",
+    "disc",
+    "--out-file1",
+    "out1",
+    "--out-json",
+    "out.json",
+    "--out-singleton",
+    "singles",
+    "--out-html",
+    "out.html"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "output": ["disc", "out1"],
+    "json": ["out.json"],
+    "html": ["out.html"]
+  }
+}
