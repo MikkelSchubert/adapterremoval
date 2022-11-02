@@ -702,7 +702,7 @@ userconfig::userconfig(const std::string& name,
           "less disables trimming; a value greater than one is assumed to be "
           "a Phred encoded error rate (e.g. 13 ~= 0.05)")
     .bind_double(&trim_error_rate)
-    .with_default(0);
+    .with_default(0.05);
 
   argparser.add_separator();
   argparser.add("--pre-trim-polyx", "X")
@@ -758,7 +758,7 @@ userconfig::userconfig(const std::string& name,
           "trimming of low-quality bases. Complexity is a value in the range 0 "
           "to 1, with 0 being the least complex reads")
     .bind_double(&min_complexity)
-    .with_default(0);
+    .with_default(0.3);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("DEMULTIPLEXING:");
