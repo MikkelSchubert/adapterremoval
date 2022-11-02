@@ -205,15 +205,6 @@ public:
   //! Minimum number of bases in poly-X tails.
   unsigned trim_poly_x_threshold;
 
-  //! DEPRECATED: If true, read termini are trimmed for low-quality bases.
-  bool trim_by_quality;
-  //! DEPRECATED: Window based trimming; a fraction / N bp size / off (negative)
-  double trim_window_length;
-  //! DEPRECATED: The highest quality score which is considered low-quality
-  unsigned low_quality_score;
-  //! DEPRECATED: If true, ambiguous bases (N) at read termini are trimmed.
-  bool trim_ambiguous_bases;
-
   //! The maximum number of ambiguous bases (N) in an read; reads exceeding
   //! this number following trimming (optionally) are discarded.
   unsigned max_ambiguous_bases;

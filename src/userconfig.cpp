@@ -434,10 +434,6 @@ userconfig::userconfig(const std::string& name,
   , pre_trim_poly_x()
   , post_trim_poly_x()
   , trim_poly_x_threshold()
-  , trim_by_quality()
-  , trim_window_length()
-  , low_quality_score()
-  , trim_ambiguous_bases()
   , max_ambiguous_bases()
   , min_complexity()
   , preserve5p()
@@ -705,9 +701,6 @@ userconfig::userconfig(const std::string& name,
           "trimming using the modified Mott's algorithm. A value of zero or "
           "less disables trimming; a value greater than one is assumed to be "
           "a Phred encoded error rate (e.g. 13 ~= 0.05)")
-    .conflicts_with("--trimwindows")
-    .conflicts_with("--trimqualities")
-    .conflicts_with("--trimns")
     .bind_double(&trim_error_rate)
     .with_default(0);
 
@@ -848,23 +841,17 @@ userconfig::userconfig(const std::string& name,
     .with_choices({ "auto", "log", "spin", "never" })
     .with_default("auto");
 
-  argparser.add("--trimwindows", "X")
-    .deprecated()
-    .bind_double(&trim_window_length)
-    .with_default(-1.0);
-  argparser.add("--trimns").deprecated().bind_bool(&trim_ambiguous_bases);
-  argparser.add("--trimqualities").deprecated().bind_bool(&trim_by_quality);
-  argparser.add("--minquality", "N")
-    .deprecated()
-    .bind_uint(&low_quality_score)
-    .with_default(2);
-
-  argparser.add("--seed").deprecated().bind_uint(&m_deprecated_knobs);
-  argparser.add("--collapse-deterministic").deprecated();
-  argparser.add("--collapse-conservatively").deprecated();
-  argparser.add("--qualitymax", "N")
-    .deprecated()
-    .bind_uint(&m_deprecated_knobs);
+#if 0
+  // TODO: Display special error message when removed options are used
+  argparser.add("--trimwindows", "X");
+  argparser.add("--trimns");
+  argparser.add("--trimqualities");
+  argparser.add("--minquality", "N");
+  argparser.add("--seed");
+  argparser.add("--collapse-deterministic");
+  argparser.add("--collapse-conservatively");
+  argparser.add("--qualitymax", "N");
+#endif
 }
 
 argparse::parse_result
@@ -913,19 +900,6 @@ userconfig::parse_args(int argc, char* argv[])
     run_type = ar_command::report_only;
   }
 
-  if (low_quality_score > static_cast<unsigned>(PHRED_SCORE_MAX)) {
-    log::error() << "Invalid value for --minquality: " << low_quality_score
-                 << "\n"
-                 << "   must be in the range 0 .. " << PHRED_SCORE_MAX;
-    return argparse::parse_result::error;
-  } else if (trim_window_length >= 0) {
-    trim_by_quality = true;
-  } else if (argparser.is_set("--trimwindows")) {
-    log::error() << "Invalid value for --trimwindows (" << trim_window_length
-                 << "); value must be >= 0.";
-    return argparse::parse_result::error;
-  }
-
   // Check for invalid combinations of settings
   if (input_files_1.empty() && input_files_2.empty()) {
     log::error()
@@ -954,10 +928,6 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
-
-    // merge related options implies --merge
-    merge |= argparser.is_set("--collapse-deterministic");
-    merge |= argparser.is_set("--collapse-conservatively");
   } else {
     merge = false;
   }
@@ -1241,8 +1211,7 @@ userconfig::is_any_quality_trimming_enabled() const
 bool
 userconfig::is_low_quality_trimming_enabled() const
 {
-  return trim_error_rate > 0 || trim_window_length >= 0 ||
-         trim_ambiguous_bases || trim_by_quality || trim_error_rate > 0;
+  return trim_error_rate > 0;
 }
 
 bool

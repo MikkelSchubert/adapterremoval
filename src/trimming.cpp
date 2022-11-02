@@ -155,24 +155,13 @@ post_trim_read_by_quality(const userconfig& config,
                           trimming_statistics& stats,
                           fastq& read)
 {
-  fastq::ntrimmed trimmed;
-  if (config.trim_window_length >= 0) {
-    trimmed = read.trim_windowed_bases(config.trim_ambiguous_bases,
-                                       config.low_quality_score,
-                                       config.trim_window_length,
-                                       config.preserve5p);
-  } else if (config.trim_ambiguous_bases || config.trim_by_quality) {
-    const char quality_score =
-      config.trim_by_quality ? config.low_quality_score : -1;
+  if (config.trim_error_rate > 0.0) {
+    const auto trimmed =
+      read.mott_trimming(config.trim_error_rate, config.preserve5p);
 
-    trimmed = read.trim_trailing_bases(
-      config.trim_ambiguous_bases, quality_score, config.preserve5p);
-  } else if (config.trim_error_rate > 0.0) {
-    trimmed = read.mott_trimming(config.trim_error_rate, config.preserve5p);
-  }
-
-  if (trimmed.first || trimmed.second) {
-    stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
+    if (trimmed.first || trimmed.second) {
+      stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
+    }
   }
 }
 
