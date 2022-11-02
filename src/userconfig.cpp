@@ -507,7 +507,16 @@ userconfig::userconfig(const std::string& name,
 
   argparser.add("--basename", "PREFIX")
     .help("Prefix for output files for which no filename was explicitly set")
-    .bind_str(&out_basename);
+    .conflicts_with("--no-basename")
+    .bind_str(&out_basename)
+    .with_default("your_output");
+  argparser.add("--no-basename")
+    .help("No default filenames for output files; instead only files specified "
+          "with --out options are written. Cannot be used when demultiplexing")
+    .conflicts_with("--barcode-list")
+    .conflicts_with("--basename");
+
+  argparser.add_separator();
   argparser.add("--out-file1", "FILE")
     .help("Output file containing trimmed mate 1 reads")
     .deprecated_alias("--output1")
@@ -767,7 +776,6 @@ userconfig::userconfig(const std::string& name,
           "both single-end and paired-end trimming, if double-indexed "
           "multiplexing was used, in order to ensure that the demultiplexed "
           "reads can be trimmed correctly")
-    .depends_on("--basename")
     .bind_str(&barcode_list);
   argparser.add("--barcode-mm", "N")
     .help("Maximum number of mismatches allowed when counting mismatches in "
@@ -1021,7 +1029,9 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   // Required since a missing filename part results in the creation of dot-files
-  if (out_basename.empty()) {
+  if (argparser.is_set("--no-basename")) {
+    out_basename = DEV_NULL;
+  } else if (out_basename.empty()) {
     log::error() << "--basename must be a non-empty value.";
 
     return argparse::parse_result::error;
@@ -1045,15 +1055,6 @@ userconfig::parse_args(int argc, char* argv[])
     if (any_illegal_keys) {
       return argparse::parse_result::error;
     }
-  }
-
-  if (run_type != ar_command::identify_adapters &&
-      !argparser.is_set("--basename") && output_files_set(argparser).empty()) {
-    log::error() << "No output files were specified. Use either --basename or "
-                    "one or more --out-* arguments. If you actually don't want "
-                    "any output, then use '--basename /dev/null'";
-
-    return argparse::parse_result::error;
   }
 
   {
@@ -1184,8 +1185,6 @@ userconfig::new_filename(const std::string& key,
 {
   if (argparser.is_set(key)) {
     return argparser.to_str(key);
-  } else if (!argparser.is_set("--basename")) {
-    return DEV_NULL;
   } else if (out_basename == DEV_NULL) {
     // Special case to allow dry runs with no output
     return DEV_NULL;
