@@ -408,11 +408,19 @@ struct trimming_stats
 
 void
 write_html_trimming_stats(std::ofstream& output,
-                          const std::vector<trimming_stats>& stats)
+                          const std::vector<trimming_stats>& stats,
+                          const reads_and_bases& totals)
 {
+  size_t n_unique = 1;
   size_t n_enabled = 0;
-  for (const auto& it : stats) {
-    n_enabled += it.enabled;
+  size_t n_enabled_unique = 1;
+  for (size_t i = 0; i < stats.size(); ++i) {
+    n_enabled += stats.at(i).enabled;
+
+    if (i && stats.at(i - 1).label_1 != stats.at(i).label_1) {
+      n_unique++;
+      n_enabled_unique += stats.at(i).enabled;
+    }
   }
 
   html_summary_trimming_head().write(output);
@@ -424,7 +432,6 @@ write_html_trimming_stats(std::ofstream& output,
   std::string previous_stage;
   std::string previous_label_1;
 
-  reads_and_bases total;
   for (const auto& it : stats) {
     if (it.enabled) {
       const auto label_1 = it.label_1 == previous_label_1 ? "" : it.label_1;
@@ -441,26 +448,23 @@ write_html_trimming_stats(std::ofstream& output,
         .set_bases(format_rough_number(it.count.bases()))
         .set_avg_bases(format_average_bases(it.count))
         .write(output);
-
-      total += it.count;
     }
   }
 
   if (n_enabled > 1) {
-    // FIXME: Total is wrong for trimming, since reads get counted N times
     html_summary_trimming_row()
       .set_stage("")
       .set_label_1("")
       .set_label_2("")
-      .set_reads("FIXME")
-      .set_bases(format_rough_number(total.bases()))
-      .set_avg_bases("FIXME")
+      .set_reads(format_rough_number(totals.reads()))
+      .set_bases(format_rough_number(totals.bases()))
+      .set_avg_bases(format_average_bases(totals))
       .write(output);
   }
 
   html_summary_trimming_tail()
-    .set_n_enabled(std::to_string(n_enabled))
-    .set_n_total(std::to_string(stats.size()))
+    .set_n_enabled(std::to_string(n_enabled_unique))
+    .set_n_total(std::to_string(n_unique))
     .write(output);
 }
 
@@ -546,17 +550,17 @@ write_html_processing_section(const userconfig& config,
   std::vector<trimming_stats> trimming = {
     { "Pre",
       "Terminal bases",
-      std::string(),
+      "-",
       config.is_terminal_base_pre_trimming_enabled(),
       totals.terminal_pre_trimmed },
   };
 
-  for (const auto nucleotide : config.pre_trim_poly_x) {
+  for (const auto nucleotide : ACGT::values) {
     trimming.push_back(
       { "Pre",
         "Poly-X tails",
         std::string(1, nucleotide),
-        true,
+        config.pre_trim_poly_x.find(nucleotide) != std::string::npos,
         reads_and_bases(totals.poly_x_pre_trimmed_reads.get(nucleotide),
                         totals.poly_x_pre_trimmed_bases.get(nucleotide)) });
   }
@@ -567,18 +571,24 @@ write_html_processing_section(const userconfig& config,
                        config.is_adapter_trimming_enabled(),
                        reads_and_bases(adapter_reads, adapter_bases) });
 
+  trimming.push_back({ "Main",
+                       "Merging",
+                       "-",
+                       config.is_read_merging_enabled(),
+                       totals.reads_merged });
+
   trimming.push_back({ "Post",
                        "Terminal bases",
                        "-",
                        config.is_terminal_base_post_trimming_enabled(),
                        totals.terminal_post_trimmed });
 
-  for (const auto nucleotide : config.post_trim_poly_x) {
+  for (const auto nucleotide : ACGT::values) {
     trimming.push_back(
       { "Post",
         "Poly-X tails",
         std::string(1, nucleotide),
-        true,
+        config.post_trim_poly_x.find(nucleotide) != std::string::npos,
         reads_and_bases(totals.poly_x_post_trimmed_reads.get(nucleotide),
                         totals.poly_x_post_trimmed_bases.get(nucleotide)) });
   }
@@ -589,7 +599,7 @@ write_html_processing_section(const userconfig& config,
                        config.is_low_quality_trimming_enabled(),
                        totals.low_quality_trimmed });
 
-  write_html_trimming_stats(output, trimming);
+  write_html_trimming_stats(output, trimming, totals.total_trimmed);
 
   write_html_filtering_stats(output,
                              { { "Short reads",

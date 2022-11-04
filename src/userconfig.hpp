@@ -250,6 +250,7 @@ public:
 
   /* Helper functions for logging / reporting */
   bool is_adapter_trimming_enabled() const;
+  bool is_read_merging_enabled() const;
 
   bool is_any_quality_trimming_enabled() const;
   bool is_low_quality_trimming_enabled() const;

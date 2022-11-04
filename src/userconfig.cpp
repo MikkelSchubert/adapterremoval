@@ -1198,6 +1198,12 @@ userconfig::is_adapter_trimming_enabled() const
 }
 
 bool
+userconfig::is_read_merging_enabled() const
+{
+  return is_adapter_trimming_enabled() && merge;
+}
+
+bool
 userconfig::is_any_quality_trimming_enabled() const
 {
   return is_adapter_trimming_enabled() &&

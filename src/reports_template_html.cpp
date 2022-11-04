@@ -605,7 +605,7 @@ html_summary_trimming_head::write(std::ofstream& out)
   AR_REQUIRE(!m_written, "template html_summary_trimming_head already written");
   // clang-format off
   auto id = g_html_id++; (void)id;
-  out << "            <h4>Trimming</h4>\n";
+  out << "            <h4>Processing</h4>\n";
   out << "            <table class=\"pure-table trimming-table pure-table-striped\">\n";
   out << "                <thead>\n";
   out << "                    <tr>\n";
@@ -761,7 +761,8 @@ html_summary_trimming_tail::write(std::ofstream& out)
   out << "            </table>\n";
   out << "\n";
   out << "            <p class=\"note\">\n";
-  out << "                " << m_n_enabled << " of " << m_n_total << " trimming steps enabled.\n";
+  out << "                " << m_n_enabled << " of " << m_n_total << " trimming steps enabled. Numbers are\n";
+  out << "                given in terms of input reads, also for merged reads.\n";
   out << "            </p>\n";
   out << "\n";
   // clang-format on
