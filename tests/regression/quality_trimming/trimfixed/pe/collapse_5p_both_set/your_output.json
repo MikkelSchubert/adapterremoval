@@ -29,7 +29,7 @@
       "insert_sizes": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     },
     "quality_trimming": {
-      "terminal_post": { "reads": 1, "bases": 14 },
+      "terminal_post": { "reads": 2, "bases": 14 },
       "low_quality": { "reads": 0, "bases": 0 }
     },
     "poly_x_trimming": {},

@@ -38,6 +38,43 @@ namespace adapterremoval {
 
 namespace {
 
+/** Tracks overlapping reads, to account for trimming affecting the overlap */
+class merged_reads
+{
+public:
+  merged_reads(const fastq& read1, const fastq& read2, size_t insert_size)
+    : m_len_1(read1.length())
+    , m_len_2(read2.length())
+    , m_overlap(m_len_1 + m_len_2 - insert_size)
+    , m_trimmed_5p()
+    , m_trimmed_3p()
+  {
+  }
+
+  /** Increments bases trimmed and returns true if overlap was trimmed */
+  bool increment(const size_t trim5p, const size_t trim3p)
+  {
+    if (m_trimmed_5p + m_trimmed_3p < m_len_1 + m_len_2 - m_overlap) {
+      m_trimmed_5p += trim5p;
+      m_trimmed_3p += trim3p;
+
+      return (trim5p && trim3p) ||
+             ((trim5p || trim3p) && ((m_trimmed_5p > m_len_1 - m_overlap) ||
+                                     (m_trimmed_3p > m_len_2 - m_overlap)));
+    } else {
+      return false;
+    }
+  }
+
+private:
+  const size_t m_len_1;
+  const size_t m_len_2;
+  const size_t m_overlap;
+
+  size_t m_trimmed_5p;
+  size_t m_trimmed_3p;
+};
+
 /** Trims poly-X tails from sequence prior to adapter trimming **/
 void
 pre_trim_poly_x_tail(const userconfig& config,
@@ -79,7 +116,6 @@ trim_read_termini(reads_and_bases& stats,
                   unsigned trim_5p,
                   unsigned trim_3p)
 {
-
   const auto length = read.length();
   if ((trim_5p || trim_3p) && length) {
     if (trim_5p + trim_3p < length) {
@@ -120,7 +156,8 @@ void
 post_trim_read_termini(const userconfig& config,
                        trimming_statistics& stats,
                        fastq& read,
-                       read_type type)
+                       read_type type,
+                       merged_reads* mstats = nullptr)
 {
   size_t trim_5p = 0;
   size_t trim_3p = 0;
@@ -147,13 +184,17 @@ post_trim_read_termini(const userconfig& config,
   }
 
   trim_read_termini(stats.terminal_post_trimmed, read, trim_5p, trim_3p);
+  if (mstats && mstats->increment(trim_5p, trim_3p)) {
+    stats.terminal_post_trimmed.inc_reads();
+  }
 }
 
 /** Quality trims a read after adapter trimming */
 void
 post_trim_read_by_quality(const userconfig& config,
                           trimming_statistics& stats,
-                          fastq& read)
+                          fastq& read,
+                          merged_reads* mstats = nullptr)
 {
   if (config.trim_error_rate > 0.0) {
     const auto trimmed =
@@ -161,6 +202,10 @@ post_trim_read_by_quality(const userconfig& config,
 
     if (trimmed.first || trimmed.second) {
       stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
+
+      if (mstats && mstats->increment(trimmed.first, trimmed.second)) {
+        stats.low_quality_trimmed.inc_reads();
+      }
     }
   }
 }
@@ -291,6 +336,8 @@ se_reads_processor::process(chunk_ptr chunk)
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
 
   for (auto& read : read_chunk.reads_1) {
+    const size_t in_length = read.length();
+
     // Trim fixed number of bases from 5' and/or 3' termini
     pre_trim_read_termini(m_config, *stats, read, read_type::mate_1);
     // Trim poly-X tails for zero or more X
@@ -317,6 +364,9 @@ se_reads_processor::process(chunk_ptr chunk)
     post_trim_poly_x_tail(m_config, *stats, read);
     // Sliding window trimming or single-base trimming of low quality bases
     post_trim_read_by_quality(m_config, *stats, read);
+
+    stats->total_trimmed.inc_reads(in_length != read.length());
+    stats->total_trimmed.inc_bases(in_length - read.length());
 
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
@@ -401,6 +451,9 @@ pe_reads_processor::process(chunk_ptr chunk)
     fastq& read_1 = *it_1++;
     fastq& read_2 = *it_2++;
 
+    const size_t in_length_1 = read_1.length();
+    const size_t in_length_2 = read_2.length();
+
     // Trim fixed number of bases from 5' and/or 3' termini
     pre_trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
     pre_trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
@@ -416,10 +469,10 @@ pe_reads_processor::process(chunk_ptr chunk)
       aligner.align_paired_end(read_1, read_2, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
+      const size_t insert_size = alignment.insert_size(read_1, read_2);
       const bool can_merge_alignment = m_config.can_merge_alignment(alignment);
       if (can_merge_alignment) {
         // Insert size calculated from untrimmed reads
-        const size_t insert_size = alignment.insert_size(read_1, read_2);
         stats->insert_sizes.resize_up_to(insert_size + 1);
         stats->insert_sizes.inc(insert_size);
         stats->overlapping_reads += 2;
@@ -434,19 +487,33 @@ pe_reads_processor::process(chunk_ptr chunk)
                                        pre_trimmed_bp - post_trimmed_bp);
 
       if (m_config.merge && can_merge_alignment) {
+        // Track if one or both source reads are trimmed post merging
+        merged_reads mstats(read_1, read_2, insert_size);
+
         // Merge read_2 into read_1
         merger.merge(alignment, read_1, read_2);
+
+        // Track amount of overlapping bases "lost" due to read merging
+        stats->reads_merged.inc_reads(2);
+        stats->reads_merged.inc_bases(post_trimmed_bp - read_1.length());
+
         // Add (optional) user specified prefix to read names
         read_1.add_prefix_to_name(m_config.prefix_merged);
 
         // Trim fixed number of bases from 5' and/or 3' termini
-        post_trim_read_termini(m_config, *stats, read_1, read_type::merged);
+        post_trim_read_termini(
+          m_config, *stats, read_1, read_type::merged, &mstats);
 
         if (!m_config.preserve5p) {
-          // A merged read essentially consists of two 5p termini, both
-          // informative for PCR duplicate removal.
-          post_trim_read_by_quality(m_config, *stats, read_1);
+          // A merged read essentially consists of two 5p termini, so neither
+          // end should be trimmed if --preserve5p is used.
+          post_trim_read_by_quality(m_config, *stats, read_1, &mstats);
         }
+
+        // Track total amount of bases trimmed/lost
+        stats->total_trimmed.inc_reads(2);
+        stats->total_trimmed.inc_bases(in_length_1 + in_length_2 -
+                                       read_1.length());
 
         if (is_acceptable_read(m_config, *stats, read_1)) {
           stats->merged->process(read_1, 2);
@@ -502,6 +569,12 @@ pe_reads_processor::process(chunk_ptr chunk)
 
     add_pe_statistics(*stats, read_1, type_1);
     add_pe_statistics(*stats, read_2, type_2);
+
+    // Total number of reads/bases trimmed
+    stats->total_trimmed.inc_reads((in_length_1 != read_1.length()) +
+                                   (in_length_2 != read_2.length()));
+    stats->total_trimmed.inc_bases((in_length_1 - read_1.length()) +
+                                   (in_length_2 - read_2.length()));
 
     // Queue reads last, since this result in modifications to lengths
     chunks.add(read_1, type_1);

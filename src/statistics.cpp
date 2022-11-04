@@ -315,6 +315,7 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , adapter_trimmed_reads()
   , adapter_trimmed_bases()
   , overlapping_reads()
+  , reads_merged()
   , terminal_pre_trimmed()
   , terminal_post_trimmed()
   , poly_x_pre_trimmed_reads()
@@ -322,6 +323,7 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , poly_x_post_trimmed_reads()
   , poly_x_post_trimmed_bases()
   , low_quality_trimmed()
+  , total_trimmed()
   , filtered_min_length()
   , filtered_max_length()
   , filtered_ambiguous()
@@ -342,6 +344,7 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   adapter_trimmed_reads += other.adapter_trimmed_reads;
   adapter_trimmed_bases += other.adapter_trimmed_bases;
   overlapping_reads += other.overlapping_reads;
+  reads_merged += other.reads_merged;
   terminal_pre_trimmed += other.terminal_pre_trimmed;
   terminal_post_trimmed += other.terminal_post_trimmed;
   poly_x_pre_trimmed_reads += other.poly_x_pre_trimmed_reads;
@@ -349,6 +352,7 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   poly_x_post_trimmed_reads += other.poly_x_post_trimmed_reads;
   poly_x_post_trimmed_bases += other.poly_x_post_trimmed_bases;
   low_quality_trimmed += other.low_quality_trimmed;
+  total_trimmed += other.total_trimmed;
   filtered_min_length += other.filtered_min_length;
   filtered_max_length += other.filtered_max_length;
   filtered_ambiguous += other.filtered_ambiguous;

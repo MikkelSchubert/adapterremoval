@@ -54,6 +54,12 @@ public:
   /** Increments the number of reads by one the number of bases by an amount */
   inline void inc(uint64_t bases = 1);
 
+  /** Increments the number of reads */
+  inline void inc_reads(uint64_t reads = 1);
+
+  /** Increments the number of bases */
+  inline void inc_bases(uint64_t bases = 1);
+
   /** Returns the total number of reads (number of increments) */
   inline uint64_t reads() const;
   /** Returns the total number of bases */
@@ -244,6 +250,9 @@ public:
   //! Number of reads that overlap/can be merged
   size_t overlapping_reads;
 
+  //! Total number of reads/bases merged
+  reads_and_bases reads_merged;
+
   //! Number of reads/bases trimmed with --pre-trim5p/3p
   reads_and_bases terminal_pre_trimmed;
   //! Number of reads/bases trimmed with --post-trim5p/3p
@@ -261,6 +270,9 @@ public:
 
   //! Number of reads/bases trimmed for low quality bases
   reads_and_bases low_quality_trimmed;
+  //! Total number of reads/bases trimmed
+  reads_and_bases total_trimmed;
+
   //! Number of reads/bases filtered due to length (min)
   reads_and_bases filtered_min_length;
   reads_and_bases filtered_max_length;
@@ -364,6 +376,18 @@ void
 reads_and_bases::inc(uint64_t bases)
 {
   m_reads += 1;
+  m_bases += bases;
+}
+
+void
+reads_and_bases::inc_reads(uint64_t reads)
+{
+  m_reads += reads;
+}
+
+void
+reads_and_bases::inc_bases(uint64_t bases)
+{
   m_bases += bases;
 }
 
