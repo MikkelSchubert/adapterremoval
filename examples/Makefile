@@ -13,10 +13,10 @@ clean:
 	rm -f output_*
 
 single_end:
-	$(EXE) --file1 reads_1.fastq --basename output_single --trimns --trimqualities --gzip
+	$(EXE) --file1 reads_1.fastq --basename output_single --gzip
 
 paired_end:
-	$(EXE) --file1 reads_1.fastq --file2 reads_2.fastq --basename output_paired --trimns --trimqualities --merge
+	$(EXE) --file1 reads_1.fastq --file2 reads_2.fastq --basename output_paired
 
 interleaved_input:
 	$(EXE) --interleaved-input --file1 interleaved.fastq --basename output_interleaved_input
@@ -30,11 +30,11 @@ interleaved_input_and_output:
 phred_64_encoded:
 	$(EXE) --qualitybase 64 --file1 reads_q64.fastq --basename output_phred_64
 
-merged_q50:
-	$(EXE) --qualitymax 50 --file1 reads_1.fastq --file2 reads_2.fastq --merge --basename output_merged_q50
+merged:
+	$(EXE) --qualitymax 50 --file1 reads_1.fastq --file2 reads_2.fastq --merge --basename output_merged
 
 multiple_adapters:
-	$(EXE) --file1 reads_1.fastq --file2 reads_2.fastq --basename output_multi --trimns --trimqualities --merge --adapter-list adapters.txt
+	$(EXE) --file1 reads_1.fastq --file2 reads_2.fastq --basename output_multi --adapter-list adapters.txt
 
 identify_adapters:
 	$(EXE) --identify-adapters --file1 reads_1.fastq --file2 reads_2.fastq
