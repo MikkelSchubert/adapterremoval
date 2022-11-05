@@ -40,8 +40,6 @@ the label "[**BREAKING**]".
 
 ### Changed
 
-- [**BREAKING**] `--basename` is no longer set by default. This makes it easier
-  to output a subset of files by settin the corresponding `--out-*` options.
 - [**BREAKING**] Default adapters have been changed to the [recommended Illumina
   sequences], equivalent to the first 33 bp of the adapter sequences used by
   AdapterRemoval v2. This makes the default settings more generally applicable.
@@ -80,16 +78,13 @@ the label "[**BREAKING**]".
 - Logging is now done more consistently and exposes options to increase or
   decrease the amount of messages printed (debug, info, warning, errors).
 
-### Deprecated
-
-- The trimming options `--trimwindows`, `--trimns`, `--trimqualities`, and
-  `--minquality` have been deprecated in favor of the new `--trim-error-rate`
-  option, which uses the modified Mott's algorithm.
-
 ### Removed
 
 The following changes are all [**BREAKING**] as described above:
 
+- The trimming options `--trimwindows`, `--trimns`, `--trimqualities`, and
+  `--minquality` have been removed in favor of the new `--trim-error-rate`
+  option, which uses the modified Mott's algorithm.
 - The `--outputcollapsedtruncated` has been removed and all merged reads
   (whether quality trimmed or not) are simply written to `--outputmerged`.
 - The `--qualitybase-output` has been removed. Output is now always Phred+33.
