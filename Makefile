@@ -37,6 +37,9 @@ EXEC_TEST   := unit_tests
 BUILD_DIR   := build
 OBJS_DIR    := $(BUILD_DIR)/objects
 COV_DIR     := $(BUILD_DIR)/coverage
+DOCS_DIR    := $(BUILD_DIR)/docs
+
+MAN_PAGE    := $(DOCS_DIR)/man/$(EXEC_MAIN).1
 
 REGRESSION_TESTS := tests/regression
 REGRESSION_DIR   := $(BUILD_DIR)/regression
@@ -202,7 +205,7 @@ examples: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
 	$(QUIET) make -C examples EXE=$(PWD)/$(EXECUTABLE)
 
-install: $(EXECUTABLE)
+install: $(EXECUTABLE) $(MAN_PAGE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
 	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/bin/
@@ -210,15 +213,15 @@ install: $(EXECUTABLE)
 
 	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/share/man/man1/
-	$(QUIET) $(INSTALLDOC) $(EXEC_MAIN).1 ${PREFIX}/share/man/man1/
+	$(QUIET) $(INSTALLDOC) "$(MAN_PAGE)" ${PREFIX}/share/man/man1/
 
-	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/
-	$(QUIET) $(INSTALLDOC) README.md ${PREFIX}/share/adapterremoval/
+	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval3/"$(COLOR_END)
+	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval3/
+	$(QUIET) $(INSTALLDOC) README.md ${PREFIX}/share/adapterremoval3/
 
-	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/examples/
-	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval/examples/
+	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval3/examples/"$(COLOR_END)
+	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval3/examples/
+	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval3/examples/
 
 # HTML report templates
 .INTERMEDIATE: src/reports_template.intermediate
@@ -264,7 +267,7 @@ $(TEST_RUNNER): $(CORE_OBJS) $(TEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
 	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
 
-# Main object files 
+# Main object files
 $(OBJS_DIR)/%.o: src/%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $<"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(OBJS_DIR)
@@ -289,10 +292,10 @@ $(OBJS_DIR)/%.o: tests/unit/%.cpp
 SPHINXOPTS  = -n -q
 SPHINXBUILD = sphinx-build
 
-docs:
-	$(QUIET) @$(SPHINXBUILD) -M html docs build/docs $(SPHINXOPTS)
-	$(QUIET) @$(SPHINXBUILD) -M man docs build/docs $(SPHINXOPTS)
-	$(QUIET) cp -v "build/docs/man/AdapterRemoval.1" .
+docs $(MAN_PAGE):
+	@echo $(COLOR_CYAN)"Building documentation"$(COLOR_END)
+	$(QUIET) @$(SPHINXBUILD) -M html docs $(BUILD_DIR)/docs $(SPHINXOPTS)
+	$(QUIET) @$(SPHINXBUILD) -M man docs $(BUILD_DIR)/docs $(SPHINXOPTS)
 
 ###############################################################################
 
