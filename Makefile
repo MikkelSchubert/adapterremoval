@@ -190,7 +190,7 @@ TEST_OBJS := \
 
 ################################################################################
 
-.PHONY: all clean docs everything examples install regression test
+.PHONY: all clean docs man everything examples install regression test
 
 all: $(EXECUTABLE)
 
@@ -292,9 +292,12 @@ $(OBJS_DIR)/%.o: tests/unit/%.cpp
 SPHINXOPTS  = -n -q
 SPHINXBUILD = sphinx-build
 
-docs $(MAN_PAGE):
-	@echo $(COLOR_CYAN)"Building documentation"$(COLOR_END)
+docs: man
+	@echo $(COLOR_CYAN)"Building manual"$(COLOR_END)
 	$(QUIET) @$(SPHINXBUILD) -M html docs $(BUILD_DIR)/docs $(SPHINXOPTS)
+
+man $(MAN_PAGE):
+	@echo $(COLOR_CYAN)"Building man-page"$(COLOR_END)
 	$(QUIET) @$(SPHINXBUILD) -M man docs $(BUILD_DIR)/docs $(SPHINXOPTS)
 
 ###############################################################################

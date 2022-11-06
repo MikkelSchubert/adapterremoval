@@ -206,7 +206,7 @@ Quality trimming options
 
 .. option:: --preserve5p
 
-	If set, bases at the 5p will not be trimmed by ``--trimns``, ``--trimqualities``, and ``--trimwindows``. Merged reads will not be quality trimmed when this option is enabled due to the 3' ends being located inside the reads or overlapping the 5' of the source sequences.
+	If set, bases at the 5p will not be trimmed by ``--trim-error-rate``. Merged reads will not be quality trimmed when this option is enabled due to the 3' ends being located inside the reads or overlapping the 5' of the source sequences.
 
 
 Filtering options

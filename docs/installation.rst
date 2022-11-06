@@ -9,7 +9,6 @@ Precompiled binary
 A pre-compiled binary is provided for 64-bit Linux systems under
 https://github.com/MikkelSchubert/adapterremoval/releases/
 
-
 Installing from sources
 -----------------------
 

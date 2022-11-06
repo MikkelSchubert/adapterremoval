@@ -15,12 +15,12 @@ When specifying paired reads, the FASTQ record names are expected to be identica
 Table of adapters
 -----------------
 
+TODO
 
 Table of barcodes
 -----------------
 
-
-
+TODO
 
 Output files
 ------------
@@ -58,6 +58,7 @@ TODO
 JSON report
 ^^^^^^^^^^^
 
+TODO
 
 
 .. _quality scores: https://en.wikipedia.org/wiki/FASTQ_format#Quality
