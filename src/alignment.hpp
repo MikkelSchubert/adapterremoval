@@ -18,6 +18,7 @@
 \*************************************************************************/
 #pragma once
 
+#include <random>   // for mt19937
 #include <stddef.h> // for size_t
 
 #include "commontypes.hpp" // for merge_strategy
@@ -215,6 +216,8 @@ public:
   void set_merge_strategy(merge_strategy strategy);
   /** Sets the maximum base quality score for recaculated scores. */
   void set_max_recalculated_score(char max);
+  /* Set the RNG used for when performing "original" merging. */
+  void set_rng(std::mt19937* rng = nullptr);
 
   /**
    * Merges two overlapping, trimmed reads into a single sequence. Bases and
@@ -239,6 +242,9 @@ private:
   merge_strategy m_merge_strategy;
   //! Maximum score when recalculating qualities in non-conservative mode
   char m_max_score;
+  //! Optional RNG for picking bases at random for mismatches with the same
+  //! quality
+  std::mt19937* m_rng;
 };
 
 /**

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>   // for unique_ptr
+#include <random>   // for mt19937
 #include <stddef.h> // for size_t
 #include <vector>   // for vector
 
@@ -98,6 +99,9 @@ public:
                      trim_stats_ptr sink);
 
   chunk_vec process(chunk_ptr chunk) override;
+
+private:
+  threadstate<std::mt19937> m_rngs;
 };
 
 } // namespace adapterremoval

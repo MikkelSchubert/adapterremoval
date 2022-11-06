@@ -10,7 +10,7 @@ AdapterRemoval v3 makes a number of changes in default behavior, including the r
  * Default adapters have been changed to the `recommended Illumina sequences`_. This makes the default settings more generally applicable, but may result in slightly different results. If nessesary, the old default adapter sequences can be specified using `--adapter1` and `--adapter2`.
 
 **Read merging**
- * Read-merging is now assigns `N` to any mismatching position where both candidate bases have the same quality score, to make results deterministic, instead of picking one of the two at random, and picks the higest quality score for each merged position rather than calculate (roughly) the sum of quality scores, to prevent overestimation of base qualities.
+ * Read-merging is now assigns `N` to any mismatching position where both candidate bases have the same quality score, to make results deterministic, instead of picking one of the two at random, and picks the higest quality score for each merged position rather than calculate (roughly) the sum of quality scores, to prevent overestimation of base qualities. If the old behavior is desired, then the `--merge-strategy` option may be set to `original`.
  * Merged reads are no longer given a `M_` name prefix by default, but this may be re-enabled by using the new `--prefix-merged` option if this is needed.
  * It is no longer possible to "merge" unpaired reads.
 

@@ -156,6 +156,10 @@ REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
   REQUIRE(tmp_record2 == record2);
 }
 
+std::random_device g_seed;
+std::mt19937 g_rng_instance(g_seed());
+std::mt19937* g_rng(&g_rng_instance);
+
 ///////////////////////////////////////////////////////////////////////////////
 // Cases for SE alignments (a = read 1, b = adapter, o = overlap):
 //  1. No overlap = aaaaaa bbbbbb
@@ -940,6 +944,40 @@ TEST_CASE("Higher quality nucleotide is selected [deterministic]")
   const fastq expected = fastq("Rec1", "GCATGATAATTACAAC", "012345(%5%EFGHIJ");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
+}
+
+TEST_CASE("Randomly select between different nucleotides with same quality #1",
+          "[alignment::collapse]")
+{
+  fastq record1("Rec1", "G", "1");
+  const fastq record2("Rec2", "T", "1");
+  const alignment_info alignment;
+  std::seed_seq seed{ 1 };
+  std::mt19937 rng(seed);
+  sequence_merger merger;
+  merger.set_merge_strategy(merge_strategy::original);
+  merger.set_rng(&rng);
+
+  const fastq collapsed_expected = fastq("Rec1", "G", "#");
+  merger.merge(alignment, record1, record2);
+  REQUIRE(record1 == collapsed_expected);
+}
+
+TEST_CASE("Randomly select between different nucleotides with same quality #2",
+          "[alignment::collapse]")
+{
+  fastq record1("Rec1", "G", "1");
+  const fastq record2("Rec2", "T", "1");
+  const alignment_info alignment;
+  std::seed_seq seed{ 2 };
+  std::mt19937 rng(seed);
+  sequence_merger merger;
+  merger.set_merge_strategy(merge_strategy::original);
+  merger.set_rng(&rng);
+
+  const fastq collapsed_expected = fastq("Rec1", "T", "#");
+  merger.merge(alignment, record1, record2);
+  REQUIRE(record1 == collapsed_expected);
 }
 
 TEST_CASE("Set conflicts to N/! [deterministic]")

@@ -344,6 +344,7 @@ sequence_merger::sequence_merger()
   : m_mate_sep(MATE_SEPARATOR)
   , m_merge_strategy(merge_strategy::conservative)
   , m_max_score(PHRED_OFFSET_MAX)
+  , m_rng()
 {
 }
 
@@ -366,11 +367,18 @@ sequence_merger::set_max_recalculated_score(char max)
 }
 
 void
+sequence_merger::set_rng(std::mt19937* rng)
+{
+  m_rng = rng;
+}
+
+void
 sequence_merger::merge(const alignment_info& alignment,
                        fastq& read1,
                        const fastq& read2)
 {
   AR_REQUIRE(m_merge_strategy != merge_strategy::none);
+  AR_REQUIRE((m_merge_strategy == merge_strategy::original) == !!m_rng);
 
   // Gap between the two reads is not allowed
   AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
@@ -425,8 +433,15 @@ sequence_merger::original_merge(char& nt_1,
       qual_1 = qual_2;
     }
   } else if (nt_1 != nt_2 && qual_1 == qual_2) {
-    nt_1 = 'N';
-    qual_1 = PHRED_OFFSET_MIN;
+    if (m_rng) {
+      nt_1 = ((*m_rng)() & 1) ? nt_1 : nt_2;
+
+      const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+      qual_1 = new_scores.different_nts;
+    } else {
+      nt_1 = 'N';
+      qual_1 = PHRED_OFFSET_MIN;
+    }
   } else {
     // Ensure that nt_1 / qual_1 always contains the preferred nt / score
     // This is an assumption of the g_updated_phred_scores cache.

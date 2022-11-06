@@ -43,14 +43,11 @@ the label "[**BREAKING**]".
 - [**BREAKING**] Default adapters have been changed to the [recommended Illumina
   sequences], equivalent to the first 33 bp of the adapter sequences used by
   AdapterRemoval v2. This makes the default settings more generally applicable.
-- [**BREAKING**] Merging is now always deterministic, meaning that overlapping,
-  mismatching bases with the same quality score are written as an `N` rather
-  than AdapterRemoval randomly picking one base. This ensure that results are
-  always reproducible. This corresponded to `--collapse-deterministic`.
-- [**BREAKING**] Merging of quality scores is now done using the conservative
-  algorithm (`--collapse-conservatively`), meaning that matching quality scores
-  are assigned `Q_match = max(Q_a, Q_b)` instead of `Q_match ~= Q_a + Q_b`.
-  Motivated in part by `doi:10.1186/s12859-018-2579-2`.
+- [**BREAKING**] Merging now defaults to using the conservative algorithm,
+  meaning that matching quality scores are assigned `Q_match = max(Q_a, Q_b)`
+  instead of `Q_match ~= Q_a + Q_b`, and that same-quality mismatches are
+  assigned 'N' instead of one being picked at random. Motivated in part by
+  `doi:10.1186/s12859-018-2579-2`. This can be changed using `--merge-strategy`.
 - The `--merge` option no longer has any effect when processing SE data;
   previously this option would treat reads with at `--minalignmentlength`
   adapter as pseudo-merged reads.

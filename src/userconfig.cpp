@@ -440,6 +440,7 @@ userconfig::userconfig(const std::string& name,
   , merge(merge_strategy::none)
   , merge_quality_max()
   , merge_threshold()
+  , merge_seed()
   , shift()
   , max_threads()
   , gzip()
@@ -675,10 +676,11 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--merge-seed", "N")
     .help("Sets the RNG seed for picking a random base when merging reads "
           "using the 'original' merging strategy. Cannot be used in multi-"
-          "threaded mode [default: the current time]")
+          "threaded mode [default: random value]")
     .deprecated_alias("--seed")
     .conflicts_with("--threads")
-    .bind_uint(&m_deprecated_knobs);
+    .bind_uint(&merge_seed)
+    .with_default(std::random_device()());
   argparser.add("--collapse-deterministic")
     .conflicts_with("--collapse-conservatively")
     .conflicts_with("--merge-strategy")
