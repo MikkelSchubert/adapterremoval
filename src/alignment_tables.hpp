@@ -1,8 +1,12 @@
 /*************************************************************************\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
  * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
  * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
+ *                                                                       *
+ * If you use the program, please cite the paper:                        *
+ * Schubert et al. (2016). AdapterRemoval v2: rapid adapter trimming,    *
+ * identification, and read merging. BMC Research Notes, 12;9(1):88      *
+ * https://doi.org/10.1186/s13104-016-1900-2                             *
  *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
  * it under the terms of the GNU General Public License as published by  *
@@ -19,47 +23,26 @@
 \*************************************************************************/
 #pragma once
 
-#include <ostream>
-#include <sstream>
-
-#include "catch.hpp"
-#include "fastq.hpp"
-#include "strutils.hpp"
-
-namespace Catch {
-
-template<>
-struct StringMaker<adapterremoval::fastq::ntrimmed>
-{
-  static std::string convert(adapterremoval::fastq::ntrimmed const& value)
-  {
-    std::stringstream ss;
-    ss << "ntrimmed{" << value.first << ", " << value.second << "}";
-    return ss.str();
-  }
-};
-
-template<>
-struct StringMaker<adapterremoval::fastq>
-{
-  static std::string convert(adapterremoval::fastq const& value)
-  {
-    std::string s;
-    value.into_string(s);
-    return adapterremoval::shell_escape(s);
-  }
-};
-
-} // namespace Catch
+#include <stddef.h> // for size_t
 
 namespace adapterremoval {
 
-inline std::ostream&
-operator<<(std::ostream& stream, const adapterremoval::fastq& record)
-{
-  return stream << "'@" << record.header() << "\\n"
-                << record.sequence() << "\\n+\\n"
-                << record.qualities() << "\\n'";
-}
+const size_t PHRED_TABLE_SIZE = 8836;
+
+/**
+ * Table of Phred scores to assigned for identical positions during merging.
+ *
+ * Position is calculated as phred_1 * (MAX_PHRED_SCORE + 1) + phred_2,
+ * assuming that phred_1 >= phred_2.
+ */
+extern const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE];
+
+/**
+ * Table of Phred scores to assigned for mismatching positions during merging.
+ *
+ * Position is calculated as phred_1 * (MAX_PHRED_SCORE + 1) + phred_2,
+ * assuming that phred_1 >= phred_2.
+ */
+extern const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE];
 
 } // namespace adapterremoval

@@ -28,30 +28,6 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace Catch {
-template<>
-struct StringMaker<adapterremoval::fastq::ntrimmed>
-{
-  static std::string convert(adapterremoval::fastq::ntrimmed const& value)
-  {
-    std::stringstream ss;
-    ss << "ntrimmed{" << value.first << ", " << value.second << "}";
-    return ss.str();
-  }
-};
-
-template<>
-struct StringMaker<adapterremoval::fastq>
-{
-  static std::string convert(adapterremoval::fastq const& value)
-  {
-    std::string s;
-    value.into_string(s);
-    return adapterremoval::shell_escape(s);
-  }
-};
-} // namespace Catch
-
 namespace adapterremoval {
 
 class vec_reader : public line_reader_base

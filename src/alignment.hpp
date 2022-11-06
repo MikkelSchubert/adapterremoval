@@ -20,8 +20,9 @@
 
 #include <stddef.h> // for size_t
 
-#include "fastq.hpp"     // for fastq_pair_vec, fastq
-#include "fastq_enc.hpp" // for MATE_SEPARATOR
+#include "commontypes.hpp" // for merge_strategy
+#include "fastq.hpp"       // for fastq_pair_vec, fastq
+#include "fastq_enc.hpp"   // for MATE_SEPARATOR
 
 namespace adapterremoval {
 
@@ -210,11 +211,14 @@ public:
    */
   void set_mate_separator(char sep = MATE_SEPARATOR);
 
+  /** Set the strategy used when merging bases. */
+  void set_merge_strategy(merge_strategy strategy);
+  /** Sets the maximum base quality score for recaculated scores. */
+  void set_max_recalculated_score(char max);
+
   /**
-   * Merges two overlapping, trimmed reads into a single sequence. The highest
-   * quality score of the two bases is used for matches, and the difference is
-   * used for mismatches.
-   *
+   * Merges two overlapping, trimmed reads into a single sequence. Bases and
+   * quality scores are assigned based on the merge_strategy chosen.
    * The sequences are assumed to have been trimmed using the given alignment.
    * This function will produce undefined results if that is not the case!
    *
@@ -223,10 +227,16 @@ public:
   void merge(const alignment_info& alignment, fastq& read1, const fastq& read2);
 
 private:
+  /** The original merging algorithm implemented in AdapterRemoval. */
+  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+
+  /** Alternative merging algorithm added in 2.4.0. */
+  void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+
   //! Mate separator used in read names
   char m_mate_sep;
-  //! Whether to recalculate scores using the conservative or the standard mode
-  bool m_conservative;
+  //! Strategy used when merging reads
+  merge_strategy m_merge_strategy;
   //! Maximum score when recalculating qualities in non-conservative mode
   char m_max_score;
 };

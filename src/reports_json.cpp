@@ -488,7 +488,7 @@ write_report_demultiplexing(const userconfig& config,
         .write_to_if(output, config.paired_ended_mode && !demux_only);
 
       io_section(read_type::merged, stats.merged, files)
-        .write_to_if(output, config.merge && !demux_only);
+        .write_to_if(output, config.is_read_merging_enabled());
 
       io_section(read_type::discarded, stats.discarded, files)
         .write_to_if(output, !demux_only);
@@ -552,7 +552,7 @@ write_report_output(const userconfig& config,
   io_section(read_type::mate_2, output_2, mate_2_files)
     .write_to_if(output, config.paired_ended_mode);
   io_section(read_type::merged, merged, merged_files)
-    .write_to_if(output, config.merge && !demux_only);
+    .write_to_if(output, config.is_read_merging_enabled());
 
   io_section(read_type::unidentified_1,
              stats.demultiplexing->unidentified_stats_1,

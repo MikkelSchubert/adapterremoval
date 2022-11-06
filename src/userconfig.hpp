@@ -216,9 +216,13 @@ public:
 
   //! If true, PE reads overlapping at least 'merge_threshold' are
   //! merged to generate a higher quality consensus sequence.
-  bool merge;
+  merge_strategy merge;
   //! The minimum required genomic overlap before merging reads into one.
   unsigned merge_threshold;
+  //! The maximum quality allowed when recalculating quality scores
+  unsigned merge_quality_max;
+  //! RNG seed used when merging using the original strategy
+  unsigned merge_seed;
 
   // Allow for slipping basepairs by allowing missing bases in adapter
   unsigned shift;
@@ -297,6 +301,9 @@ private:
   std::string mate_separator_str;
   //! Sink for --interleaved
   bool interleaved;
+
+  //! Sink used for --merge-strategy
+  std::string m_merge_strategy_sink;
 
   //! Sinks for --pre-trim5p/--pre-trimp3p
   string_vec pre_trim5p;

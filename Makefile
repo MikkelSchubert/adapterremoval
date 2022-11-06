@@ -136,6 +136,7 @@ $(info Build configuration: $(BUILD_NAME))
 CORE_OBJS := \
 	$(OBJS_DIR)/alignment_avx2.o \
 	$(OBJS_DIR)/alignment_sse2.o \
+	$(OBJS_DIR)/alignment_tables.o \
 	$(OBJS_DIR)/alignment.o \
 	$(OBJS_DIR)/argparse.o \
 	$(OBJS_DIR)/barcode_table.o \

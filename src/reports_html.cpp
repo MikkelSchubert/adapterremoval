@@ -361,7 +361,7 @@ write_html_summary_section(const userconfig& config,
         summary.add_column("File 1", output_1);
         summary.add_column("File 2", output_2);
 
-        if (config.merge) {
+        if (config.is_read_merging_enabled()) {
           summary.add_column("Merged", merged);
         }
 
@@ -636,13 +636,14 @@ write_html_io_section(const userconfig& config,
 
   html_facet_line_plot()
     .set_title("Position quality distribution"_json)
-    .set_x_axis(config.merge && merged ? "null" : "Position"_json)
+    .set_x_axis(config.is_read_merging_enabled() && merged ? "null"
+                                                           : "Position"_json)
     .set_y_axis("Phred score"_json)
     .set_width(dynamic_width)
     .set_values(build_base_qualities(statistics, names))
     .write(output);
 
-  if (config.merge && merged) {
+  if (config.is_read_merging_enabled() && merged) {
     html_line_plot()
       .set_title(" "_json)
       .set_sub_title("Merged"_json)
@@ -655,13 +656,14 @@ write_html_io_section(const userconfig& config,
 
   html_facet_line_plot()
     .set_title("Nucleotide content"_json)
-    .set_x_axis(config.merge && merged ? "null" : "Position"_json)
+    .set_x_axis(config.is_read_merging_enabled() && merged ? "null"
+                                                           : "Position"_json)
     .set_y_axis("Frequency"_json)
     .set_width(dynamic_width)
     .set_values(build_base_content(statistics, names))
     .write(output);
 
-  if (config.merge && merged) {
+  if (config.is_read_merging_enabled() && merged) {
     html_line_plot()
       .set_title(" "_json)
       .set_sub_title("Merged"_json)

@@ -57,4 +57,17 @@ enum class read_type : size_t
   unidentified_2,
 };
 
+/** Strategy used when merging reads */
+enum class merge_strategy
+{
+  /** Merging disabled */
+  none,
+  /** Use highest quality for matches and Ns for same-quality mismatches */
+  conservative,
+  /** Recalculate quality and assign Ns for same-quality mismatches */
+  deterministic,
+  /** Recalculate quality and pick random base for same-quality mismatches */
+  original,
+};
+
 } // namespace adapterremoval

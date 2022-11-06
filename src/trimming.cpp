@@ -432,6 +432,8 @@ chunk_vec
 pe_reads_processor::process(chunk_ptr chunk)
 {
   sequence_merger merger;
+  merger.set_merge_strategy(m_config.merge);
+  merger.set_max_recalculated_score(m_config.merge_quality_max);
 
   auto aligner = sequence_aligner(m_adapters);
   aligner.set_mismatch_threshold(m_config.mismatch_threshold);
@@ -486,7 +488,7 @@ pe_reads_processor::process(chunk_ptr chunk)
       stats->adapter_trimmed_bases.inc(alignment.adapter_id,
                                        pre_trimmed_bp - post_trimmed_bp);
 
-      if (m_config.merge && can_merge_alignment) {
+      if (m_config.merge != merge_strategy::none && can_merge_alignment) {
         // Track if one or both source reads are trimmed post merging
         merged_reads mstats(read_1, read_2, insert_size);
 

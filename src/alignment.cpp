@@ -24,9 +24,10 @@
 #include <string>    // for string, operator+
 #include <utility>   // for swap, pair
 
-#include "alignment.hpp" // declarations
-#include "debug.hpp"     // for AR_REQUIRE
-#include "fastq.hpp"     // for fastq, fastq_pair_vec
+#include "alignment.hpp"
+#include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
+#include "debug.hpp"            // for AR_REQUIRE
+#include "fastq.hpp"            // for fastq, fastq_pair_vec
 
 namespace adapterremoval {
 
@@ -152,6 +153,34 @@ sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
   }
 
   return best;
+}
+
+struct phred_scores
+{
+  explicit phred_scores(size_t index)
+    : identical_nts(IDENTICAL_NTS[index])
+    , different_nts(DIFFERENT_NTS[index])
+  {
+  }
+
+  //! Phred score to assign if the two nucleotides are identical
+  char identical_nts;
+  //! Phred score to assign if the two nucleotides differ
+  char different_nts;
+};
+
+phred_scores
+get_updated_phred_scores(char qual_1, char qual_2)
+{
+  AR_REQUIRE(qual_1 >= qual_2);
+
+  const size_t phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
+  const size_t phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
+  const size_t index = (phred_1 * (PHRED_SCORE_MAX + 1)) + phred_2;
+
+  AR_REQUIRE(index < PHRED_TABLE_SIZE);
+
+  return phred_scores(index);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -313,7 +342,7 @@ strip_mate_info(std::string& header, const char mate_sep)
 
 sequence_merger::sequence_merger()
   : m_mate_sep(MATE_SEPARATOR)
-  , m_conservative(false)
+  , m_merge_strategy(merge_strategy::conservative)
   , m_max_score(PHRED_OFFSET_MAX)
 {
 }
@@ -325,10 +354,24 @@ sequence_merger::set_mate_separator(char sep)
 }
 
 void
+sequence_merger::set_merge_strategy(merge_strategy strategy)
+{
+  m_merge_strategy = strategy;
+}
+
+void
+sequence_merger::set_max_recalculated_score(char max)
+{
+  m_max_score = max + '!';
+}
+
+void
 sequence_merger::merge(const alignment_info& alignment,
                        fastq& read1,
                        const fastq& read2)
 {
+  AR_REQUIRE(m_merge_strategy != merge_strategy::none);
+
   // Gap between the two reads is not allowed
   AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
 
@@ -353,34 +396,80 @@ sequence_merger::merge(const alignment_info& alignment,
     const char nt_2 = read2.sequence().at(i);
     const char qual_2 = read2.qualities().at(i);
 
-    if (nt_2 == 'N' || nt_1 == 'N') {
-      if (nt_1 == 'N') {
-        if (nt_2 != 'N') {
-          nt_1 = nt_2;
-          qual_1 = qual_2;
-        } else {
-          qual_1 = PHRED_OFFSET_MIN;
-        }
-      }
-    } else if (nt_1 == nt_2) {
-      qual_1 = std::max(qual_1, qual_2);
+    if (m_merge_strategy == merge_strategy::conservative) {
+      conservative_merge(nt_1, qual_1, nt_2, qual_2);
     } else {
-      if (qual_1 < qual_2) {
-        nt_1 = nt_2;
-        qual_1 = qual_2 - qual_1 + PHRED_OFFSET_MIN;
-      } else if (qual_1 > qual_2) {
-        qual_1 = qual_1 - qual_2 + PHRED_OFFSET_MIN;
-      } else {
-        // No way to reasonably pick a base
-        nt_1 = 'N';
-        qual_1 = PHRED_OFFSET_MIN;
-      }
+      original_merge(nt_1, qual_1, nt_2, qual_2);
     }
   }
 
   // Remove mate number from read, if present
   if (m_mate_sep) {
     strip_mate_info(read1.m_header, m_mate_sep);
+  }
+}
+
+void
+sequence_merger::original_merge(char& nt_1,
+                                char& qual_1,
+                                char nt_2,
+                                char qual_2)
+{
+  if (nt_1 == 'N' || nt_2 == 'N') {
+    // If one of the bases are N, then we suppose that we just have (at
+    // most) a single read at that site and choose that.
+    if (nt_1 == 'N' && nt_2 == 'N') {
+      qual_1 = PHRED_OFFSET_MIN;
+    } else if (nt_1 == 'N') {
+      nt_1 = nt_2;
+      qual_1 = qual_2;
+    }
+  } else if (nt_1 != nt_2 && qual_1 == qual_2) {
+    nt_1 = 'N';
+    qual_1 = PHRED_OFFSET_MIN;
+  } else {
+    // Ensure that nt_1 / qual_1 always contains the preferred nt / score
+    // This is an assumption of the g_updated_phred_scores cache.
+    if (qual_1 < qual_2) {
+      std::swap(nt_1, nt_2);
+      std::swap(qual_1, qual_2);
+    }
+
+    const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+
+    qual_1 = std::min<char>(m_max_score,
+                            (nt_1 == nt_2) ? new_scores.identical_nts
+                                           : new_scores.different_nts);
+  }
+}
+
+void
+sequence_merger::conservative_merge(char& nt_1,
+                                    char& qual_1,
+                                    char nt_2,
+                                    char qual_2)
+{
+
+  if (nt_2 == 'N' || nt_1 == 'N') {
+    if (nt_1 == 'N' && nt_2 == 'N') {
+      qual_1 = PHRED_OFFSET_MIN;
+    } else if (nt_1 == 'N') {
+      nt_1 = nt_2;
+      qual_1 = qual_2;
+    }
+  } else if (nt_1 == nt_2) {
+    qual_1 = std::max(qual_1, qual_2);
+  } else {
+    if (qual_1 < qual_2) {
+      nt_1 = nt_2;
+      qual_1 = qual_2 - qual_1 + PHRED_OFFSET_MIN;
+    } else if (qual_1 > qual_2) {
+      qual_1 = qual_1 - qual_2 + PHRED_OFFSET_MIN;
+    } else {
+      // No way to reasonably pick a base
+      nt_1 = 'N';
+      qual_1 = PHRED_OFFSET_MIN;
+    }
   }
 }
 

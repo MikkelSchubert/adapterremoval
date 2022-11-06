@@ -437,7 +437,8 @@ userconfig::userconfig(const std::string& name,
   , max_ambiguous_bases()
   , min_complexity()
   , preserve5p()
-  , merge()
+  , merge(merge_strategy::none)
+  , merge_quality_max()
   , merge_threshold()
   , shift()
   , max_threads()
@@ -647,14 +648,45 @@ userconfig::userconfig(const std::string& name,
           "more bases are merged into a single consensus sequence. Merged "
           "reads are written to basename.merged by default. Has no effect "
           "in single-end mode")
-    .deprecated_alias("--collapse")
-    .bind_bool(&merge);
+    .deprecated_alias("--collapse");
   argparser.add("--merge-threshold", "N")
     .help("Paired reads must overlap at least this many bases to be considered "
           "overlapping for the purpose of read merging")
     .deprecated_alias("--minalignmentlength")
     .bind_uint(&merge_threshold)
     .with_default(11);
+  argparser.add("--merge-strategy", "X")
+    .help("The 'conservative' strategy uses Q=max(Q1,Q2) for matches and set "
+          "same-quality mismatches to N; 'deterministic' use Q=Q1+Q2 for "
+          "matches and assigns set same-quality mismatches to N; 'original' "
+          "uses  Q=Q1+Q2 for matches and picks a base at random for same-"
+          "quality mismatches. All strategies use Q=abs(Q1-Q2) for mismatches. "
+          "Setting this option implies --merge")
+    .bind_str(&m_merge_strategy_sink)
+    .with_choices({ "conservative", "deterministic", "original" })
+    .with_default("conservative");
+  argparser.add("--merge-quality-max", "N")
+    .help("Sets the maximum Phred score for re-calculated quality scores when "
+          "read merging is enabled with the 'deterministic' and 'original' "
+          "merging strategies")
+    .deprecated_alias("--qualitymax")
+    .bind_uint(&merge_quality_max)
+    .with_default(41);
+  argparser.add("--merge-seed", "N")
+    .help("Sets the RNG seed for picking a random base when merging reads "
+          "using the 'original' merging strategy. Cannot be used in multi-"
+          "threaded mode [default: the current time]")
+    .deprecated_alias("--seed")
+    .conflicts_with("--threads")
+    .bind_uint(&m_deprecated_knobs);
+  argparser.add("--collapse-deterministic")
+    .conflicts_with("--collapse-conservatively")
+    .conflicts_with("--merge-strategy")
+    .deprecated();
+  argparser.add("--collapse-conservatively")
+    .conflicts_with("--collapse-deterministic")
+    .conflicts_with("--merge-strategy")
+    .deprecated();
 
   argparser.add_separator();
   argparser.add("--prefix-read1", "X")
@@ -847,10 +879,6 @@ userconfig::userconfig(const std::string& name,
   argparser.add("--trimns");
   argparser.add("--trimqualities");
   argparser.add("--minquality", "N");
-  argparser.add("--seed");
-  argparser.add("--collapse-deterministic");
-  argparser.add("--collapse-conservatively");
-  argparser.add("--qualitymax", "N");
 #endif
 }
 
@@ -928,8 +956,25 @@ userconfig::parse_args(int argc, char* argv[])
 
   if (paired_ended_mode) {
     min_adapter_overlap = 0;
-  } else {
-    merge = false;
+
+    // merge related options implies --merge
+    if (argparser.is_set("--collapse-deterministic")) {
+      merge = merge_strategy::deterministic;
+    } else if (argparser.is_set("--collapse-conservatively")) {
+      merge = merge_strategy::conservative;
+    } else if (argparser.is_set("--merge") ||
+               argparser.is_set("--merge-strategy")) {
+      const auto strategy = tolower(m_merge_strategy_sink);
+      if (strategy == "conservative") {
+        merge = merge_strategy::conservative;
+      } else if (strategy == "deterministic") {
+        merge = merge_strategy::deterministic;
+      } else if (strategy == "original") {
+        merge = merge_strategy::original;
+      } else {
+        AR_FAIL(m_merge_strategy_sink);
+      }
+    }
   }
 
   if (run_type == ar_command::identify_adapters && !paired_ended_mode) {
@@ -1136,7 +1181,7 @@ userconfig::get_output_filenames() const
           read_type::singleton,
           new_filename("--out-singleton", sample, ".singleton" + ext));
 
-        if (merge) {
+        if (is_read_merging_enabled()) {
           map.set_filename(
             read_type::merged,
             new_filename("--out-merged", sample, ".merged" + ext));
@@ -1200,7 +1245,7 @@ userconfig::is_adapter_trimming_enabled() const
 bool
 userconfig::is_read_merging_enabled() const
 {
-  return is_adapter_trimming_enabled() && merge;
+  return is_adapter_trimming_enabled() && merge != merge_strategy::none;
 }
 
 bool
