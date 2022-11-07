@@ -434,6 +434,7 @@ userconfig::userconfig(const std::string& name,
   , trim_mott_rate()
   , trim_window_length()
   , trim_quality_score()
+  , trim_low_quality_bases()
   , trim_ambiguous_bases()
   , pre_trim_poly_x()
   , post_trim_poly_x()
@@ -442,8 +443,8 @@ userconfig::userconfig(const std::string& name,
   , min_complexity()
   , preserve5p()
   , merge(merge_strategy::none)
-  , merge_quality_max()
   , merge_threshold()
+  , merge_quality_max()
   , merge_seed()
   , shift()
   , max_threads()
@@ -477,7 +478,6 @@ userconfig::userconfig(const std::string& name,
   , log_progress_sink()
   , head_sink()
   , m_runtime()
-  , m_deprecated_knobs()
 {
   //////////////////////////////////////////////////////////////////////////////
   argparser.add("--identify-adapters")

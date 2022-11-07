@@ -341,9 +341,6 @@ private:
 
   //! Measures runtime since the program was started
   monotonic_timer m_runtime;
-
-  //! Sink for deprecated knobs
-  unsigned m_deprecated_knobs;
 };
 
 } // namespace adapterremoval

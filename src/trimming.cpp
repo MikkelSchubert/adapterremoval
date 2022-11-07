@@ -447,6 +447,7 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const size_t nth,
                                        trim_stats_ptr sink)
   : reads_processor(config, output, nth, sink)
+  , m_rngs()
 {
   if (m_config.merge == merge_strategy::original) {
     std::mt19937 seed(config.merge_seed);
