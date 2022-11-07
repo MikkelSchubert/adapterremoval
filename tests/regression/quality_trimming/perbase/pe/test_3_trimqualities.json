@@ -1,0 +1,14 @@
+{
+  "arguments": ["--trim-strategy", "per-base", "--trimqualities", "--basename", "output_3"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": [
+      "output_3.discarded.fastq",
+      "output_3.r1.fastq",
+      "output_3.r2.fastq",
+      "output_3.singleton.fastq"
+    ],
+    "ignore": ["output_3.json", "output_3.html"]
+  }
+}

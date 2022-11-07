@@ -1,0 +1,7 @@
+{
+  "exhaustive": false,
+  "arguments": ["--trim-strategy", "per-base"],
+  "return_code": 1,
+  "stderr": ["[ERROR] The per-base quality trimming strategy is enabled, but neither trimming of low-quality bases (via --trim-qualities) nor trimming of Ns (via --trim-ns) is enabled."],
+  "files": {"input_1": ["input_1a.fastq"]}
+}

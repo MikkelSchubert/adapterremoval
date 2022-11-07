@@ -1,0 +1,15 @@
+{
+  "arguments": ["--trim-strategy", "per-base", "--trimns", "--trimqualities", "--merge", "--basename", "output_7"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": [
+      "output_7.discarded.fastq",
+      "output_7.merged.fastq",
+      "output_7.r1.fastq",
+      "output_7.r2.fastq",
+      "output_7.singleton.fastq"
+    ],
+    "ignore": ["output_7.json", "output_7.html"]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "arguments": ["--trim-strategy", "per-base", "--trimns", "--trimqualities", "--preserve5p", "--basename", "output_6"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "output": ["output_6.discarded.fastq", "output_6.r1.fastq"],
+    "ignore": ["output_6.json", "output_6.html"]
+  }
+}
