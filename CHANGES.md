@@ -1,17 +1,22 @@
 # Changelog
 
-## [3.0.0-alpha1] - Unreleased
+## [3.0.0-alpha1] - 2022-11-07
 
 This is the first alpha release of AdapterRemoval v3. This is a major revision
 of AdapterRemoval, with the goals of simplify usage by picking a sensible set of
-default settings, adding new features to handle a wider range of data, and
-improving overall throughput.
+default settings, adding new features to handle a wider range of data, providing
+human/machine readable reports, and improving overall throughput.
 
 This release features a number of breaking changes compared to AdapterRemoval v2
 and it is therefore recommended that you carefully read the list of changes
 below. Changes that affect how AdapterRemoval is used (e.g. by removing options)
 or that result in different output compared to AdapterRemoval v2 are marked with
 the label "[**BREAKING**]".
+
+This is an alpha release; not all planned features are complete (more QC reports
+are planned among other things), additional optimizations will be attempted, and
+documentation is still needs to be expanded further before the final release.
+Feedback is very welcome in the mean time.
 
 ### Added
 
@@ -21,17 +26,17 @@ the label "[**BREAKING**]".
 - Added support for detecting supported CPU extensions (SSE/AVX) at runtime.
 - Support for combining output by simply by specifying the same filename for for
   multiple outputs types, e.g. `--output1 file.fq --output2 file.fq` will for
-  example produce interleaved output equivalent to `--output1 file.fq --interleaved-output`.
+  example produce interleaved output.
 - Added handling for `/dev/null` as a "magic" output filename. Read-types
-  writting to this exact path will be discarded early in the pipeline, saving
+  writing to this exact path will be discarded early in the pipeline, saving
   time previously spent processing, compressing, and writing FASTQ reads.
 - Added read complexity filter inspired by [fastp].
 - Added the ability to only processes the first `N` reads/read pairs via the
   newly added `--head N` command-line option.
-- Added detection of duplication based on the [FastQC] algorithm.
+- Added estimation of duplication rates based on the [FastQC] algorithm.
 - Automatic detection of mate separators based on the first chunk of reads
   processed. The `--mate-separator` is therefore only required in cases where
-  the results are ambigous.
+  the results are ambiguous.
 - Automatic gzip compression of output files with a `.gz` extension. This makes
   it possible to compress only a subset of files and removes the need for the
   `--gzip` option when manually specifying output files.
@@ -60,22 +65,19 @@ the label "[**BREAKING**]".
   prefix. Instead, see the new option `--prefix-merged`.
 - [**BREAKING**] Default filenames have all been revised and now include proper
   extensions to indicate the format.
-- [**BREAKING**] The executable is now named `adapterremoval3` by default. This
-  was done to allow v3 to coexist with AdapterRemoval v2 and to prevent
-  accidential use of the wrong version.
+- [**BREAKING**] The executable is now named `adapterremoval3`. This was done to
+  allow v3 to coexist with AdapterRemoval v2 and to prevent accidental use of
+  the wrong version.
 - [**BREAKING**] Changed the default --maxns value from 1000 to "infinite"
 - `--gzip` now defaults to compressing independent blocks of 64kb data using
   `libdeflate`. This significantly improves throughput in both single- and
   (especially) multi-threaded mode, but may be incompatible with a few programs.
   Compression levels of 3 and below use isa-l for compression and provides a
   more universally compatible output.
-- Compilation now requires a C++14 compatible compiler.
 - The term "merging" is now used consistently instead of "collapsing", including
   for default output filenames. Options have been renamed, but old option names
-  continue to work, except for `--outputcollapsedtruncated`.
-- Per configuration build dirs to prevent linking objects compiled with
-  different settings/features.
-- Improvemnts to alignment algorithm in order to terminate early if possible.
+  continue to work (except for `--outputcollapsedtruncated`).
+- Improvements to alignment algorithm in order to terminate early if possible.
 - Logging is now done more consistently and exposes options to increase or
   decrease the amount of messages printed (debug, info, warning, errors).
 
@@ -86,20 +88,14 @@ The following changes are all [**BREAKING**] as described above:
 - The `--outputcollapsedtruncated` has been removed and all merged reads
   (whether quality trimmed or not) are simply written to `--outputmerged`.
 - The `--qualitybase-output` has been removed. Output is now always Phred+33.
-- The `--seed`, `--collapse-deterministic`, and `--collapse-conservatively`
-  options have been removed, as merging is now always performed by picking the
-  the highest quality base or setting 'N' if no highest quality base exist.
-- The `--qualitymax` option have been removed. It is no longer used when merging
-  reads and the `--quality-format` options now perform more lenient checks in
-  order to better handle the increasing range of quality scores in the wild.
 - The `--combined-output` option has been removed in favor of allowing arbitrary
   merging of output files (see above).
-- The `--settings` text file has been replaced by a JSON file
-  containing detailed statistics and quality metrics about the input and output.
+- The `--settings` option has been replaced by `--out-json` and `--out-html` for
+  machine and human readable reports, respectively.
 - Removed support for guessing the intended command-line argument based on
   prefixes. I.e. `--th` will no longer be accepted for `--threads`. Due to the
   number of options added, removed, and renamed, this is no longer reliable.
-- The deprecateed `--pcr1` and `--pcr2` options have been removed.
+- The deprecated `--pcr1` and `--pcr2` options have been removed.
 - Dropped undocumented support for '.' as equivalent to 'N' in FASTQ reads.
 - Support for reading and writing of bzip2 files has been removed.
 
@@ -332,7 +328,7 @@ The following changes are all [**BREAKING**] as described above:
 
 - Wrapped code in 'ar' namespace, and made it possible to compile
   AdapterRemoval as a static library (via the command 'make static'), allowing
-  it to be used as part of other projects, courtesey of Hannes Pétur
+  it to be used as part of other projects, courtesy of Hannes Pétur
   Eggertsson.
 - Updated instructions for installing GTest library using new repository
   courtesy of Hannes Pétur Eggertsson.
@@ -349,7 +345,7 @@ The following changes are all [**BREAKING**] as described above:
 
 - Added option --minadapteroverlap, which sets a minimum alignment length when
   carrying out trimming of single-end reads. The default (0) may result in an
-  excess of false postiives around (1 - 2 bp long), which may be mitigated by
+  excess of false positives around (1 - 2 bp long), which may be mitigated by
   running AdapterRemoval with '--minadapteroverlap 3'.
 
 ### Changed
@@ -397,7 +393,7 @@ The following changes are all [**BREAKING**] as described above:
   clobbering the disk, but compression (if enabled) is performed in parallel.
 - Added support for combined demultiplexing and adapter-removal using the
   --barcode-list command-line option; when demultiplexing, the barcodes
-  identified for a given read is added to the adapter sequence, in ordre to
+  identified for a given read is added to the adapter sequence, in order to
   ensure correct trimming of the reads.
 - Features depending on external libraries (gzip, bzip2, and threading support)
   can now be disabled in the Makefile on systems lacking these libraries.
@@ -456,7 +452,7 @@ versions of AdapterRemoval, and adding a few new features.
   filenames are explicitly specified by the user.
 - It is now possible to explicitly specify the RNG seed, to allow individual
   runs to be reproduced; the seed is also written to the .settings file.
-- An (optional) progress report is printed during usage, incidating the run-time
+- An (optional) progress report is printed during usage, indicating the run-time
   and number of reads processed.
 
 ### Changed
