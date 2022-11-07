@@ -42,11 +42,11 @@ If the best alignment covers at least `--merge-threshold` bases, then the sequen
 
 If the `--post-trim5p` or `--post-trim3p` options are specified, the reads are trimmed by the specified amounts of bases and poly-X tails are trimmed if the `--post-trim-polyx` option is specified. Only trimming with the `--post-trim5p` is performed on merged reads, since the 3p ends are typically located inside the reads or correspond to the 5p of the other mate.
 
-Quality trimming is performed using a modified Mott's algorithm if the `--trim-error-rate` option is set. By default both ends of a read will be quality trimmed, but trimming can be limited to the 3p end via the `--preserve5p` option.
+Quality trimming is performed using the trimming algorithm specified using the `--trim-strategy` option and the related options. By default both ends of a read will be quality trimmed, but trimming can be limited to the 3p end via the `--preserve5p` option.
 
 If the `--prefix-read1`, `--prefix-read2`, and `--prefix-merged` options are set, the mate 1, mate 2, and merged read names are prefixed using the corresponding values.
 
-4. Read filtering
+1. Read filtering
 -----------------
 
 Reads with more than `--maxns` ambiguous bases (Ns), that are shorter than `--minlength`, that are longer than `--maxlength`, or that have a complexity score less than `--min-complexity` are discarded. If one read in a pair is filtered, then the remaining read is classified as a "singleton" read.

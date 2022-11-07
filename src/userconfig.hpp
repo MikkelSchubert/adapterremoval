@@ -196,8 +196,19 @@ public:
   std::pair<unsigned, unsigned> post_trim_fixed_5p;
   std::pair<unsigned, unsigned> post_trim_fixed_3p;
 
-  //! Error rate used for quality trimming using the modified Mott's algorithm.
-  double trim_error_rate;
+  //! Strategy used for performing quality trimming
+  trimming_strategy trim;
+  //! [mott] Error rate used for trimming using the modified Mott's algorithm.
+  double trim_mott_rate;
+  //! [window] Window based trimming; a fraction / N bp size / off (negative)
+  double trim_window_length;
+  //! [window/per-base] The highest quality score considered low-quality
+  unsigned trim_quality_score;
+  //! [per-base] If true, low quality bases read termini are trimmed.
+  bool trim_low_quality_bases;
+  //! [per-base] If true, ambiguous bases (N) at read termini are trimmed.
+  bool trim_ambiguous_bases;
+
   //! Nucleotides to trim from poly-X tails prior to alignment/adapter trimming.
   std::string pre_trim_poly_x;
   //! Nucleotides to trim from poly-X tails after alignment/adapter trimming.
@@ -304,6 +315,8 @@ private:
 
   //! Sink used for --merge-strategy
   std::string m_merge_strategy_sink;
+  //! Sink used for --trim-strategy
+  std::string m_trim_strategy_sink;
 
   //! Sinks for --pre-trim5p/--pre-trimp3p
   string_vec pre_trim5p;

@@ -358,6 +358,322 @@ TEST_CASE("complexity", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// trim_trailing_bases
+
+TEST_CASE("trim_trailing_bases__empty_record", "[fastq::fastq]")
+{
+  fastq record("Empty", "", "");
+  const fastq::ntrimmed expected(0, 0);
+  REQUIRE(record.trim_trailing_bases(true, 10) == expected);
+  REQUIRE(record == fastq("Empty", "", ""));
+}
+
+TEST_CASE("trim_trailing_bases__trim_nothing", "[fastq::fastq]")
+{
+  const fastq reference("Rec", "NNNNN", "!!!!!");
+  const fastq::ntrimmed expected(0, 0);
+  fastq record = reference;
+
+  // Trim neither Ns nor low Phred score bases
+  REQUIRE(record.trim_trailing_bases(false, -1) == expected);
+  REQUIRE(record == reference);
+}
+
+TEST_CASE("trim_trailing_bases__trim_ns", "[fastq::fastq]")
+{
+  fastq record("Rec", "NNANT", "23456");
+  const fastq expected_record("Rec", "ANT", "456");
+  const fastq::ntrimmed expected_ntrim(2, 0);
+
+  REQUIRE(record.trim_trailing_bases(true, -1) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_trailing_bases__trim_trailing_bases", "[fastq::fastq]")
+{
+  const fastq expected_record("Rec", "TN", "%$");
+  const fastq::ntrimmed expected_ntrim(0, 3);
+  fastq record("Rec", "TNANT", "%$#!\"");
+
+  REQUIRE(record.trim_trailing_bases(false, 2) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_trailing_bases__trim_mixed", "[fastq::fastq]")
+{
+  const fastq expected_record("Rec", "TAG", "$12");
+  const fastq::ntrimmed expected_ntrim(3, 2);
+  fastq record("Rec", "NTNTAGNT", "1!#$12#\"");
+
+  REQUIRE(record.trim_trailing_bases(true, 2) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_trailing_bases__trim_mixed__no_low_quality_bases",
+          "[fastq::fastq]")
+{
+  const fastq expected_record("Rec", "ACTTAG", "12I$12");
+  const fastq::ntrimmed expected_ntrim(0, 0);
+  fastq record = expected_record;
+
+  REQUIRE(record.trim_trailing_bases(true, 2) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_trailing_bases__trim_everything", "[fastq::fastq]")
+{
+  fastq record("Rec", "TAG", "!!!");
+  const fastq expected_record = fastq("Rec", "", "");
+  const fastq::ntrimmed expected_ntrim(0, 3);
+  REQUIRE(record.trim_trailing_bases(true, 2) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_trailing_bases__trim_3p__trim_ns", "[fastq::fastq]")
+{
+  fastq record("Rec", "NNATN", "23456");
+  const fastq expected_record("Rec", "NNAT", "2345");
+  const fastq::ntrimmed expected_ntrim(0, 1);
+
+  REQUIRE(record.trim_trailing_bases(true, -1, true) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_trailing_bases__trim_3p__trim_trailing_bases", "[fastq::fastq]")
+{
+  const fastq expected_record("Rec", "TN", "!$");
+  const fastq::ntrimmed expected_ntrim(0, 3);
+  fastq record("Rec", "TNANT", "!$#!\"");
+
+  REQUIRE(record.trim_trailing_bases(false, 2, true) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// trim_windowed_bases
+
+TEST_CASE("Window trimming with invalid parameters", "[fastq::windows]")
+{
+  const std::vector<double> values = {
+    -1.0, std::numeric_limits<double>::quiet_NaN()
+  };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAGTGACAT", "111111111");
+    REQUIRE_THROWS_AS(record.trim_windowed_bases(false, -1, value),
+                      assert_failed);
+  }
+}
+
+TEST_CASE("Window trimming empty reads", "[fastq::windows]")
+{
+  const std::vector<double> values = { 1, 0.1, 3 };
+  for (const auto& value : values) {
+    fastq record("Empty", "", "");
+    const fastq::ntrimmed expected(0, 0);
+    REQUIRE(record.trim_windowed_bases(true, 10, value) == expected);
+    REQUIRE(record == fastq("Empty", "", ""));
+  }
+}
+
+TEST_CASE("Window trimming entire read", "[fastq::windows]")
+{
+  const std::vector<double> values = { 1, 0.2, 4, 10 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAGTGACAT", "111111111");
+    const fastq expected_record = fastq("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(9, 0);
+    REQUIRE(record.trim_windowed_bases(false, '2' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming nothing", "[fastq::windows]")
+{
+  const std::vector<double> values = { 0, 1, 0.2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAGTGACAT", "111111111");
+    const fastq expected_record = record;
+    const fastq::ntrimmed expected_ntrim(0, 0);
+    REQUIRE(record.trim_windowed_bases(false, -1, value) == expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming of Ns", "[fastq::windows]")
+{
+  const std::vector<double> values = { 1, 0.2 };
+  for (const auto& value : values) {
+    fastq record("Rec", "NNATNT", "234567");
+    const fastq expected_record("Rec", "ATNT", "4567");
+    const fastq::ntrimmed expected_ntrim(2, 0);
+
+    REQUIRE(record.trim_windowed_bases(true, -1, value) == expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming of Ns, final window contains Ns", "[fastq::windows]")
+{
+  const std::vector<double> values = { 2, 3, 4 };
+  for (const auto& value : values) {
+    fastq record("Rec", "NNATNT", "234567");
+    const fastq expected_record("Rec", "AT", "45");
+    const fastq::ntrimmed expected_ntrim(2, 2);
+
+    REQUIRE(record.trim_windowed_bases(true, -1, value) == expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming of Ns, no valid window found", "[fastq::fastq]")
+{
+  fastq record("Rec", "NNATNT", "234567");
+  const fastq expected_record("Rec", "", "");
+  const fastq::ntrimmed expected_ntrim(6, 0);
+
+  REQUIRE(record.trim_windowed_bases(true, -1, 5) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("Window trimming 5p only, 1bp", "[fastq::windows]")
+{
+  const std::vector<double> values = { 1, 0.1 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATCCG", "0123456789");
+    const fastq expected_record("Rec", "CGATCCG", "3456789");
+    const fastq::ntrimmed expected_ntrim(3, 0);
+
+    REQUIRE(record.trim_windowed_bases(false, '2' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming 5p only, 2bp", "[fastq::windows]")
+{
+  const std::vector<double> values = { 2, 0.2 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATCCG", "0123456789");
+    const fastq expected_record("Rec", "CGATCCG", "3456789");
+    const fastq::ntrimmed expected_ntrim(3, 0);
+
+    REQUIRE(record.trim_windowed_bases(false, '2' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming 5p only, inclusive lower bound", "[fastq::windows]")
+{
+  const std::vector<double> values = { 2, 3 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATCCG", "0123126789");
+    const fastq expected_record("Rec", "TCCG", "6789");
+    const fastq::ntrimmed expected_ntrim(6, 0);
+
+    REQUIRE(record.trim_windowed_bases(false, '2' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming 3p only, inclusive lower bound", "[fastq::windows]")
+{
+  const std::vector<double> values = { 3 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATCCG", "9876312333");
+    const fastq expected_record("Rec", "TAACG", "98763");
+    const fastq::ntrimmed expected_ntrim(0, 5);
+
+    REQUIRE(record.trim_windowed_bases(false, '2' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming big and small windows #1", "[fastq::windows]")
+{
+  const std::vector<double> values = { 0, 0.01, 20 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATC", "23456789");
+    const fastq expected_record("Rec", "", "");
+    const fastq::ntrimmed expected_ntrim(8, 0);
+
+    CHECK(record.trim_windowed_bases(false, '2' - '!', value) ==
+          expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming big and small windows #2", "[fastq::windows]")
+{
+  const std::vector<double> values = { 0, 0.01, 20 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATC", "23456780");
+    const fastq expected_record("Rec", "TAACGAT", "2345678");
+    const fastq::ntrimmed expected_ntrim(0, 1);
+
+    REQUIRE(record.trim_windowed_bases(false, '1' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("Window trimming last trailing window", "[fastq::windows]")
+{
+  const std::vector<double> values = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+  for (const auto& value : values) {
+    fastq record("Rec", "TAACGATCC", "234567811");
+    const fastq expected_record("Rec", "TAACGAT", "2345678");
+    const fastq::ntrimmed expected_ntrim(0, 2);
+
+    REQUIRE(record.trim_windowed_bases(false, '1' - '!', value) ==
+            expected_ntrim);
+    REQUIRE(record == expected_record);
+  }
+}
+
+TEST_CASE("trim_windowed_bases__trim_window", "[fastq::fastq]")
+{
+  // Should trim starting at the window of low quality bases in the middle
+  // even with high qual bases at the end.
+  fastq record("Rec", "NNAAAAAAAAATNNNNNNNA", "##EEEEEEEEEE#######E");
+  const fastq expected_record = fastq("Rec", "AAAAAAAAAT", "EEEEEEEEEE");
+  const fastq::ntrimmed expected_ntrim(2, 8);
+  REQUIRE(record.trim_windowed_bases(true, 10, 5) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_windowed_bases__trim_3p", "[fastq::fastq]")
+{
+  fastq record("Rec", "NNAAAAAAAAATNNNNNNN", "##EEEEEEEEEE#######");
+  const fastq expected_record = fastq("Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE");
+  const fastq::ntrimmed expected_ntrim(0, 7);
+  REQUIRE(record.trim_windowed_bases(false, 10, 5, true) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_windowed_bases__trim_3p__trim_ns", "[fastq::fastq]")
+{
+  fastq record("Rec", "NNAAAAAAAAATNNNNNNN", "##EEEEEEEEEE#######");
+  const fastq expected_record = fastq("Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE");
+  const fastq::ntrimmed expected_ntrim(0, 7);
+  REQUIRE(record.trim_windowed_bases(true, 10, 5, true) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+TEST_CASE("trim_windowed_bases__trim_3p__reversed", "[fastq::fastq]")
+{
+  fastq record("Rec", "NNNNNNNTAAAAAAAAANN", "#######EEEEEEEEEE##");
+  const fastq expected_record =
+    fastq("Rec", "NNNNNNNTAAAAAAAAA", "#######EEEEEEEEEE");
+  const fastq::ntrimmed expected_ntrim(0, 2);
+  REQUIRE(record.trim_windowed_bases(true, 10, 5, true) == expected_ntrim);
+  REQUIRE(record == expected_record);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // mott_trimming
 
 TEST_CASE("Mott trimming empty sequence yields empty sequence")

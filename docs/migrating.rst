@@ -15,7 +15,7 @@ AdapterRemoval v3 makes a number of changes in default behavior, including the r
  * It is no longer possible to "merge" unpaired reads.
 
 **Qualty trimming and filtering**
- * The various quality trimming options `--trimwindows`, `--trimns`, `--trimqualities`, and `--minquality` have been removed in favor of the new `--trim-error-rate` option, which uses the modified Mott's algorithm. This is enabled by default with a threshold of `0.05`.
+ * The various quality trimming options `--trimwindows`, `--trimns`, `--trimqualities`, and `--minquality` have been deprecated in favor of the new `--trim-mott-rate` option, which uses the modified Mott's algorithm. This is enabled by default with a threshold of `0.05`, but the algorithm used may be changed back (or disabled) using the new `--trim-strategy` option.
  * Filtering by sequence complexity using an method inspired by fastp has been added and enabled by default, requiring that 30% of positions differ from the previous position (`--min-complexity 0.3`).
 
 **Reports**

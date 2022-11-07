@@ -192,9 +192,29 @@ Quality trimming options
 
 	Trim the 3' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim5p``.
 
-.. option:: --trim-error-rate rate
+.. option:: --trim-strategy name
 
-	The threshold value used when performing trimming quality based trimming using the modified Mott's algorithm. A value of zero or less disables trimming; a value greater than one is assumed to be a Phred encoded error rate (e.g. 13 ~= 0.05). Default to 0.05.
+	The strategy used for performing quality trimming; 'mott' to enable trimming using the modified Mott's algorithm, 'window' to perform window based quality trimming, and 'per-base' to perform base-by-base trimming of low-quality bases and Ns (if enabled). Defaults to Mott's algorithm.
+
+.. option:: --trim-mott-rate rate
+
+	The threshold value used when performing trimming quality based trimming using the modified Mott's algorithm. A value of zero or less disables trimming; a value greater than one is assumed to be a Phred encoded error rate (e.g. 13 ~= 0.05). Applies when Mott based trimming is enabled. Default to 0.05.
+
+.. option:: --trim-windows size
+
+	Trim low quality bases using a sliding window based approach inspired by :program:`sickle` with the given window size. See the "Window based quality trimming" section of the manual page for a description of this algorithm. Applies when window based trimming is enabled. Defaults to 0.1.
+
+.. option:: --trim-min-quality minimum
+
+	Inclusive minimum quality used when trimming low-quality bases with --trimming-strategy 'window' and 'per-base'. Applies when window based or per-base trimming is enabled. Default is 2.
+
+.. option:: --trimqualities
+
+	Trim consecutive stretches of low quality bases (threshold set by ``--trim-min-quality``) from the 5' and 3' termini. If trimming of Ns is also enabled (``--trim-ns``), then stretches of mixed low-quality bases and Ns are trimmed. Applies when per-base trimming is enabled.
+
+.. option:: --trim-ns
+
+	Trim consecutive Ns from the 5' and 3' termini. If quality trimming is also enabled (``--trim-qualities``), then stretches of mixed low-quality bases and/or Ns are trimmed. Applies when window based or per-base trimming is enabled.
 
 .. option:: --pre-trim-polyx nucleotides
 
@@ -206,7 +226,7 @@ Quality trimming options
 
 .. option:: --preserve5p
 
-	If set, bases at the 5p will not be trimmed by ``--trim-error-rate``. Merged reads will not be quality trimmed when this option is enabled due to the 3' ends being located inside the reads or overlapping the 5' of the source sequences.
+	If set, bases at the 5p will not be trimmed by ``--trim-mott-rate``. Merged reads will not be quality trimmed when this option is enabled due to the 3' ends being located inside the reads or overlapping the 5' of the source sequences.
 
 
 Filtering options
@@ -247,6 +267,20 @@ Demultiplexing options
 .. option:: --demultiplex-only
 
 	Only carry out demultiplexing using the list of barcodes supplied with --barcode-list. No other processing is done.
+
+
+Window based quality trimming
+-----------------------------
+
+AdapterRemoval implements sliding window based approach to quality based base-trimming inspired by ``sickle``. If ``window_size`` is greater than or equal to 1, that number is used as the window size for all reads. If ``window_size`` is a number greater than or equal to 0 and less than 1, then that number is multiplied by the length of individual reads to determine the window size. If the window length is zero or is greater than the current read length, then the read length is used instead.
+
+Reads are trimmed as follows for a given window size:
+
+       1. The new 5' is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than ``--minquality``.
+
+       2. The new 3' is located by sliding the first window right, until the average quality becomes less than or equal to ``--minquality``. The new 3' is placed at the last base in that window where the quality is greater than or equal to ``--minquality``.
+
+       3. If no 5' position could be determined, the read is discarded.
 
 
 Exit status

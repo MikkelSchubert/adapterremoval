@@ -95,6 +95,32 @@ public:
   typedef std::pair<size_t, size_t> ntrimmed;
 
   /**
+   * Trims consecutive low-quality bases from the 5'/3' ends of the sequence.
+   *
+   * @param trim_ns If true, ambiguous bases ('N') are trimmed.
+   * @param low_quality Trim bases with a quality score at or below this value.
+   * @param preserve5p Only trim from the 3p end if true.
+   * @return A pair containing the number of 5' and 3' bases trimmed.
+   */
+  ntrimmed trim_trailing_bases(const bool trim_ns = true,
+                               char low_quality = -1,
+                               const bool preserve5p = false);
+
+  /**
+   * Trims low-quality bases using a sliding window approach.
+   *
+   * @param trim_ns If true, ambiguous bases ('N') are trimmed.
+   * @param low_quality Trim bases with a quality score at or below this value.
+   * @param window_size The length of the sliding window.
+   * @param preserve5p Only trim from the 3p end if true.
+   * @return A pair containing the number of 5' and 3' bases trimmed.
+   */
+  ntrimmed trim_windowed_bases(const bool trim_ns = true,
+                               char low_quality = -1,
+                               const double window_size = 0.1,
+                               const bool preserve5p = false);
+
+  /**
    * Performs quality based trimming using the modified Mott's algorithm.
    *
    * @param error_limit Error rate limit used for good v. bad quality scores.

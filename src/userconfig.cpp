@@ -430,7 +430,11 @@ userconfig::userconfig(const std::string& name,
   , pre_trim_fixed_3p()
   , post_trim_fixed_5p()
   , post_trim_fixed_3p()
-  , trim_error_rate()
+  , trim(trimming_strategy::none)
+  , trim_mott_rate()
+  , trim_window_length()
+  , trim_quality_score()
+  , trim_ambiguous_bases()
   , pre_trim_poly_x()
   , post_trim_poly_x()
   , trim_poly_x_threshold()
@@ -460,6 +464,8 @@ userconfig::userconfig(const std::string& name,
   , quality_input_base()
   , mate_separator_str()
   , interleaved()
+  , m_merge_strategy_sink()
+  , m_trim_strategy_sink()
   , pre_trim5p()
   , pre_trim3p()
   , post_trim5p()
@@ -730,13 +736,57 @@ userconfig::userconfig(const std::string& name,
     .with_max_values(2);
 
   argparser.add_separator();
-  argparser.add("--trim-error-rate", "X")
+  argparser.add("--trim-strategy", "X")
+    .help("Strategy for trimming low quality bases: 'mott' for the modified "
+          "Mott's algorithm; 'window' for window based trimming; 'per-base' "
+          "for a per-base trimming of low quality base; and 'none' for no "
+          "trimming of low quality bases")
+    .bind_str(&m_trim_strategy_sink)
+    .with_choices({ "mott", "window", "per-base", "none" })
+    .with_default("mott");
+
+  argparser.add("--trim-mott-rate", "X")
     .help("The threshold value used when performing trimming quality based "
           "trimming using the modified Mott's algorithm. A value of zero or "
           "less disables trimming; a value greater than one is assumed to be "
           "a Phred encoded error rate (e.g. 13 ~= 0.05)")
-    .bind_double(&trim_error_rate)
+    .conflicts_with("--trim-windows")
+    .conflicts_with("--trim-ns")
+    .conflicts_with("--trim-qualities")
+    .conflicts_with("--trim-min-quality")
+    .bind_double(&trim_mott_rate)
     .with_default(0.05);
+  argparser.add("--trim-windows", "X")
+    .help("Specifies the size of the window used for --trimming-strategy "
+          "'window': If >= 1, this value will be used as the window size; if "
+          "the value is < 1, window size is the read lenght times this value. "
+          "If the resulting window size is 0 or larger than the read length, "
+          "the read length is used as the window size")
+    .deprecated_alias("--trimwindows")
+    .conflicts_with("--trim-mott-rate")
+    .conflicts_with("--trim-qualities")
+    .bind_double(&trim_window_length)
+    .with_default(0.1);
+  argparser.add("--trim-min-quality", "N")
+    .help("Inclusive minimum quality used when trimming low-quality bases with "
+          "--trimming-strategy 'window' and 'per-base'")
+    .deprecated_alias("--minquality")
+    .conflicts_with("--trim-mott-rate")
+    .bind_uint(&trim_quality_score)
+    .with_default(2);
+  argparser.add("--trim-ns")
+    .help("If set, trim ambiguous bases (N) at 5'/3' termini when using the "
+          "'window' or the 'per-base' trimming strategy")
+    .conflicts_with("--trim-mott-rate")
+    .deprecated_alias("--trimns")
+    .bind_bool(&trim_ambiguous_bases);
+  argparser.add("--trim-qualities")
+    .help("If set, trim low-quality bases (< --trim-min-quality) when using "
+          "the 'per-base' trimming strategy")
+    .deprecated_alias("--trimqualities")
+    .conflicts_with("--trim-mott-rate")
+    .conflicts_with("--trim-windows")
+    .bind_bool(&trim_low_quality_bases);
 
   argparser.add_separator();
   argparser.add("--pre-trim-polyx", "X")
@@ -874,14 +924,6 @@ userconfig::userconfig(const std::string& name,
     .bind_str(&log_progress_sink)
     .with_choices({ "auto", "log", "spin", "never" })
     .with_default("auto");
-
-#if 0
-  // TODO: Display special error message when removed options are used
-  argparser.add("--trimwindows", "X");
-  argparser.add("--trimns");
-  argparser.add("--trimqualities");
-  argparser.add("--minquality", "N");
-#endif
 }
 
 argparse::parse_result
@@ -928,6 +970,45 @@ userconfig::parse_args(int argc, char* argv[])
     run_type = ar_command::demultiplex_sequences;
   } else if (argparser.is_set("--report-only")) {
     run_type = ar_command::report_only;
+  }
+
+  if (trim_quality_score > static_cast<unsigned>(PHRED_SCORE_MAX)) {
+    log::error() << "--trim-min-quality must be in the range 0 to "
+                 << PHRED_SCORE_MAX << ", not " << trim_quality_score;
+    return argparse::parse_result::error;
+  } else if (trim_window_length < 0) {
+    log::error() << "--trim-windows must be greater than or equal to zero, not "
+                 << trim_window_length;
+    return argparse::parse_result::error;
+  } else if (trim_mott_rate < 0) {
+    log::error() << "--trim-mott-rate must be greater than or equal to zero, "
+                 << "not " << trim_window_length;
+    return argparse::parse_result::error;
+  } else {
+    const auto strategy = tolower(m_trim_strategy_sink);
+    if (strategy == "mott") {
+      trim = trimming_strategy::mott;
+
+      if (trim_mott_rate > 1) {
+        trim_mott_rate = std::pow(10.0, trim_mott_rate / -10.0);
+      }
+    } else if (strategy == "window") {
+      trim = trimming_strategy::window;
+    } else if (strategy == "per-base") {
+      trim = trimming_strategy::per_base;
+
+      if (!trim_low_quality_bases && !trim_ambiguous_bases) {
+        log::error() << "The per-base quality trimming strategy is enabled, "
+                     << "but neither trimming of low-quality bases (via "
+                     << "--trim-qualities) nor trimming of Ns (via --trim-ns) "
+                     << "is enabled.";
+        return argparse::parse_result::error;
+      }
+    } else if (strategy == "none") {
+      trim = trimming_strategy::none;
+    } else {
+      AR_FAIL(shell_escape(strategy));
+    }
   }
 
   // Check for invalid combinations of settings
@@ -1039,10 +1120,6 @@ userconfig::parse_args(int argc, char* argv[])
 
       return argparse::parse_result::error;
     }
-  }
-
-  if (trim_error_rate > 1) {
-    trim_error_rate = std::pow(10.0, trim_error_rate / -10.0);
   }
 
   // Required since a missing filename part results in the creation of dot-files
@@ -1264,7 +1341,7 @@ userconfig::is_any_quality_trimming_enabled() const
 bool
 userconfig::is_low_quality_trimming_enabled() const
 {
-  return trim_error_rate > 0;
+  return trim != trimming_strategy::none;
 }
 
 bool

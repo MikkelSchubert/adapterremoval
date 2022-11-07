@@ -196,16 +196,38 @@ post_trim_read_by_quality(const userconfig& config,
                           fastq& read,
                           merged_reads* mstats = nullptr)
 {
-  if (config.trim_error_rate > 0.0) {
-    const auto trimmed =
-      read.mott_trimming(config.trim_error_rate, config.preserve5p);
+  fastq::ntrimmed trimmed;
+  switch (config.trim) {
+    case trimming_strategy::none:
+      break;
 
-    if (trimmed.first || trimmed.second) {
-      stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
+    case trimming_strategy::mott:
+      trimmed = read.mott_trimming(config.trim_mott_rate, config.preserve5p);
+      break;
 
-      if (mstats && mstats->increment(trimmed.first, trimmed.second)) {
-        stats.low_quality_trimmed.inc_reads();
-      }
+    case trimming_strategy::window:
+      trimmed = read.trim_windowed_bases(config.trim_ambiguous_bases,
+                                         config.trim_quality_score,
+                                         config.trim_window_length,
+                                         config.preserve5p);
+      break;
+
+    case trimming_strategy::per_base:
+      trimmed = read.trim_trailing_bases(
+        config.trim_ambiguous_bases,
+        config.trim_low_quality_bases ? config.trim_quality_score : -1,
+        config.preserve5p);
+      break;
+
+    default:
+      AR_FAIL("not implemented");
+  }
+
+  if (trimmed.first || trimmed.second) {
+    stats.low_quality_trimmed.inc(trimmed.first + trimmed.second);
+
+    if (mstats && mstats->increment(trimmed.first, trimmed.second)) {
+      stats.low_quality_trimmed.inc_reads();
     }
   }
 }

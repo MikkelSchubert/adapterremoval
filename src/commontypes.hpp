@@ -70,4 +70,16 @@ enum class merge_strategy
   original,
 };
 
+enum class trimming_strategy
+{
+  /** Quality trimming disabled */
+  none,
+  //! Quality trimming using the modified Mott algorithem
+  mott,
+  //! Sliding window based quality trimming
+  window,
+  //! The original quality trimming algorithms
+  per_base,
+};
+
 } // namespace adapterremoval

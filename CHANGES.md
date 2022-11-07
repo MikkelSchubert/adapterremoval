@@ -43,6 +43,10 @@ the label "[**BREAKING**]".
 - [**BREAKING**] Default adapters have been changed to the [recommended Illumina
   sequences], equivalent to the first 33 bp of the adapter sequences used by
   AdapterRemoval v2. This makes the default settings more generally applicable.
+- [**BREAKING**] The trimming options `--trimwindows`, `--trimns`,
+  `--trimqualities`, and `--minquality` have been deprecated in favor of a new
+  the modified Mott's algorithm, which is enabled by default. The trimming
+  algorithm used may be changed using new `--trim-strategy` option.
 - [**BREAKING**] Merging now defaults to using the conservative algorithm,
   meaning that matching quality scores are assigned `Q_match = max(Q_a, Q_b)`
   instead of `Q_match ~= Q_a + Q_b`, and that same-quality mismatches are
@@ -79,9 +83,6 @@ the label "[**BREAKING**]".
 
 The following changes are all [**BREAKING**] as described above:
 
-- The trimming options `--trimwindows`, `--trimns`, `--trimqualities`, and
-  `--minquality` have been removed in favor of the new `--trim-error-rate`
-  option, which uses the modified Mott's algorithm.
 - The `--outputcollapsedtruncated` has been removed and all merged reads
   (whether quality trimmed or not) are simply written to `--outputmerged`.
 - The `--qualitybase-output` has been removed. Output is now always Phred+33.

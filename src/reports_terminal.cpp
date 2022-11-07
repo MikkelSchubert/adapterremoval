@@ -27,11 +27,34 @@ namespace adapterremoval {
 void
 print_trimming_parameters(const userconfig& config)
 {
-  if (config.trim_error_rate > 0) {
-    log::info() << "  - Quality based trimming is performed using a max "
-                << "error-rate of " << config.trim_error_rate;
-  } else {
-    log::info() << "  - Quality based trimming disabled";
+  switch (config.trim) {
+    case trimming_strategy::mott:
+      log::info() << "  - Mott based quality based trimming with max "
+                  << "error-rate " << config.trim_mott_rate;
+      break;
+    case trimming_strategy::window:
+      log::info() << "  - Window based quality based trimming with window size "
+                  << config.trim_window_length << "and minimum quality score "
+                  << config.trim_quality_score
+                  << (config.trim_ambiguous_bases ? " (including Ns)" : "");
+      break;
+    case trimming_strategy::per_base:
+      if (config.trim_low_quality_bases) {
+        log::info() << "  - Per-base based quality based trimming with minimum "
+                    << "quality score " << config.trim_quality_score
+                    << (config.trim_ambiguous_bases ? " (including Ns)" : "");
+      } else if (config.trim_ambiguous_bases) {
+        log::info() << "  - Per-base based trimming of Ns";
+      } else {
+        AR_FAIL("this should not be possible");
+      }
+      break;
+    case trimming_strategy::none:
+      log::info() << "  - Quality based trimming disabled";
+      break;
+
+    default:
+      AR_FAIL("not implemented");
   }
 }
 

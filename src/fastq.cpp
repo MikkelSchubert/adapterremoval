@@ -236,6 +236,115 @@ fastq::complexity() const
 }
 
 fastq::ntrimmed
+fastq::trim_trailing_bases(const bool trim_ns,
+                           char low_quality,
+                           const bool preserve5p)
+{
+  low_quality += PHRED_OFFSET_MIN;
+  auto is_quality_base = [&](size_t i) {
+    return m_qualities.at(i) > low_quality &&
+           (!trim_ns || m_sequence.at(i) != 'N');
+  };
+
+  size_t right_exclusive = 0;
+  for (size_t i = m_sequence.length(); i; --i) {
+    if (is_quality_base(i - 1)) {
+      right_exclusive = i;
+      break;
+    }
+  }
+
+  size_t left_inclusive = 0;
+  for (size_t i = 0; !preserve5p && i < right_exclusive; ++i) {
+    if (is_quality_base(i)) {
+      left_inclusive = i;
+      break;
+    }
+  }
+
+  return trim_sequence_and_qualities(left_inclusive, right_exclusive);
+}
+
+//! Calculates the size of the sliding window for quality trimming given a
+//! read length and a user-defined window-size (fraction or whole number).
+size_t
+calculate_winlen(const size_t read_length, const double window_size)
+{
+  size_t winlen;
+  if (window_size >= 1.0) {
+    winlen = static_cast<size_t>(window_size);
+  } else {
+    winlen = static_cast<size_t>(window_size * read_length);
+  }
+
+  if (winlen == 0 || winlen > read_length) {
+    winlen = read_length;
+  }
+
+  return winlen;
+}
+
+fastq::ntrimmed
+fastq::trim_windowed_bases(const bool trim_ns,
+                           char low_quality,
+                           const double window_size,
+                           const bool preserve5p)
+{
+  AR_REQUIRE(window_size >= 0.0);
+  if (m_sequence.empty()) {
+    return ntrimmed();
+  }
+
+  low_quality += PHRED_OFFSET_MIN;
+  auto is_quality_base = [&](size_t i) {
+    return m_qualities.at(i) > low_quality &&
+           (!trim_ns || m_sequence.at(i) != 'N');
+  };
+
+  const size_t winlen = calculate_winlen(length(), window_size);
+  long running_sum =
+    std::accumulate(m_qualities.begin(), m_qualities.begin() + winlen, 0);
+
+  size_t left_inclusive = std::string::npos;
+  size_t right_exclusive = std::string::npos;
+  for (size_t offset = 0; offset + winlen <= length(); ++offset) {
+    const long running_avg = running_sum / static_cast<long>(winlen);
+
+    // We trim away low quality bases and Ns from the start of reads,
+    // **before** we consider windows.
+    if (left_inclusive == std::string::npos && is_quality_base(offset) &&
+        running_avg > low_quality) {
+      left_inclusive = offset;
+    }
+
+    if (left_inclusive != std::string::npos &&
+        (running_avg <= low_quality || offset + winlen == length())) {
+      right_exclusive = offset;
+      while (right_exclusive < length() && is_quality_base(right_exclusive)) {
+        right_exclusive++;
+      }
+
+      break;
+    }
+
+    running_sum -= m_qualities.at(offset);
+    if (offset + winlen < length()) {
+      running_sum += m_qualities.at(offset + winlen);
+    }
+  }
+
+  if (left_inclusive == std::string::npos) {
+    // No starting window found. Trim all bases starting from start.
+    return trim_sequence_and_qualities(length(), length());
+  } else if (preserve5p) {
+    left_inclusive = 0;
+  }
+
+  AR_REQUIRE(right_exclusive != std::string::npos);
+  return trim_sequence_and_qualities(left_inclusive, right_exclusive);
+}
+
+fastq::ntrimmed
 fastq::mott_trimming(const double error_limit, const bool preserve5p)
 {
   AR_REQUIRE(error_limit >= 0 && error_limit <= 1);
