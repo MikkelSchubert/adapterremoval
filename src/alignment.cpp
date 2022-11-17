@@ -31,6 +31,13 @@
 
 namespace adapterremoval {
 
+using compare_subsequences_func = bool (*)(const alignment_info& /* best */,
+                                           alignment_info& /* current */,
+                                           const char* /* seq_1_ptr */,
+                                           const char* /* seq_2_ptr */,
+                                           double /* mismatch_threshold */,
+                                           int /* remaining_bases */);
+
 bool
 supports_avx2()
 {
@@ -43,67 +50,28 @@ supports_sse2()
   return __builtin_cpu_supports("sse2");
 }
 
-bool
-compare_subsequences_sse2(const alignment_info& /* best */,
-                          alignment_info& /* current */,
-                          const char*& /* seq_1_ptr */,
-                          const char*& /* seq_2_ptr */,
-                          double /* mismatch_threshold */,
-                          int& /* remaining_bases */);
-
-bool
-compare_subsequences_avx2(const alignment_info& /* best */,
-                          alignment_info& /* current */,
-                          const char*& /* seq_1_ptr */,
-                          const char*& /* seq_2_ptr */,
-                          double /* mismatch_threshold */,
-                          int& /* remaining_bases */);
-
-/**
- * Compares two subsequences in an alignment to a previous (best) alignment.
- *
- * @param best The currently best alignment, used for evaluating this alignment
- * @param current The current alignment to be evaluated (assumed to be zero'd).
- * @param seq_1_ptr Pointer to the first sequence in the alignment.
- * @param seq_2_ptr Pointer to the second sequence in the alignment.
- * @return True if the current alignment is at least as good as the best
- * alignment, false otherwise.
- *
- * If the function returns false, the current alignment cannot be assumed to
- * have been completely evaluated (due to early termination), and hence counts
- * and scores are not reliable. The function assumes uppercase nucleotides.
- */
-bool
-compare_subsequences(const alignment_info& best,
-                     alignment_info& current,
-                     const char* seq_1_ptr,
-                     const char* seq_2_ptr,
-                     const double mismatch_threshold = 1.0)
+compare_subsequences_func
+select_compare_function()
 {
-  int remaining_bases = current.score = current.length;
-
-  // Compare 32 bp at a time (if supported)
-  static const bool avx2_accelerated = supports_avx2();
-  if (avx2_accelerated && !compare_subsequences_avx2(best,
-                                                     current,
-                                                     seq_1_ptr,
-                                                     seq_2_ptr,
-                                                     mismatch_threshold,
-                                                     remaining_bases)) {
-    return false;
+  if (supports_avx2()) {
+    return compare_subsequences_avx2;
+  } else if (supports_sse2()) {
+    return compare_subsequences_sse2;
+  } else {
+    return compare_subsequences_std;
   }
+}
 
-  // Compare 16 bp at a time (if supported)
-  static const bool sse2_accelerated = supports_sse2();
-  if (sse2_accelerated && !compare_subsequences_sse2(best,
-                                                     current,
-                                                     seq_1_ptr,
-                                                     seq_2_ptr,
-                                                     mismatch_threshold,
-                                                     remaining_bases)) {
-    return false;
-  }
+const auto compare_subsequence_impl = select_compare_function();
 
+bool
+compare_subsequences_std(const alignment_info& best,
+                         alignment_info& current,
+                         const char* seq_1_ptr,
+                         const char* seq_2_ptr,
+                         const double /* mismatch_threshold */,
+                         int remaining_bases)
+{
   for (; remaining_bases && current.score >= best.score; --remaining_bases) {
     const char nt_1 = *seq_1_ptr++;
     const char nt_2 = *seq_2_ptr++;
@@ -118,6 +86,20 @@ compare_subsequences(const alignment_info& best,
   }
 
   return current.is_better_than(best);
+}
+
+// FIXME: To be removed
+bool
+compare_subsequences(const alignment_info& best,
+                     alignment_info& current,
+                     const char* seq_1_ptr,
+                     const char* seq_2_ptr,
+                     const double mismatch_threshold)
+{
+
+  int remaining_bases = current.score = current.length;
+  return compare_subsequence_impl(
+    best, current, seq_1_ptr, seq_2_ptr, mismatch_threshold, remaining_bases);
 }
 
 alignment_info

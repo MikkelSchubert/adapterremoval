@@ -16,9 +16,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "alignment.hpp" // header
-#include <bitset>        // for bitset
-#include <immintrin.h>   // for _mm256_set1_epi8, __m256i, _mm256_lo...
+#include "alignment_common.hpp" // header
+#include <bitset>               // for bitset
+#include <immintrin.h>          // for _mm256_set1_epi8, __m256i, _mm256_lo...
 
 namespace adapterremoval {
 
@@ -33,10 +33,10 @@ count_masked_avx2(const __m256i& value)
 bool
 compare_subsequences_avx2(const alignment_info& best,
                           alignment_info& current,
-                          const char*& seq_1_ptr,
-                          const char*& seq_2_ptr,
-                          double mismatch_threshold,
-                          int& remaining_bases)
+                          const char* seq_1_ptr,
+                          const char* seq_2_ptr,
+                          const double mismatch_threshold,
+                          int remaining_bases)
 {
   //! Mask of all Ns
   const __m256i n_mask = _mm256_set1_epi8('N');
@@ -70,7 +70,8 @@ compare_subsequences_avx2(const alignment_info& best,
     remaining_bases -= 32;
   }
 
-  return true;
+  return compare_subsequences_sse2(
+    best, current, seq_1_ptr, seq_2_ptr, mismatch_threshold, remaining_bases);
 }
 
 } // namespace adapterremoval

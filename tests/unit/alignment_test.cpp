@@ -1431,14 +1431,6 @@ TEST_CASE("Extracting both sequences extending past each other",
 // Simply check all combinations involving 3 bases varying, for a range of
 // sequence lengths to help catch corner cases with the optimizations
 
-// The function is not exposed, so a declaration is required
-bool
-compare_subsequences(const alignment_info& best,
-                     alignment_info& current,
-                     const char* seq_1_ptr,
-                     const char* seq_2_ptr,
-                     double mismatch_threshold = 1.0);
-
 /** Naive reimplementation of alignment calculation. **/
 void
 update_alignment(alignment_info& aln,
