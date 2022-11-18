@@ -1179,7 +1179,7 @@ userconfig::parse_args(int argc, char* argv[])
 bool
 userconfig::is_good_alignment(const alignment_info& alignment) const
 {
-  if (!alignment.length || alignment.score <= 0) {
+  if (!alignment.length || alignment.score() <= 0) {
     return false;
   }
 

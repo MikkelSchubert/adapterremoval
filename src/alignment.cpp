@@ -85,10 +85,6 @@ compare_subsequences_std(alignment_info& current,
     }
   }
 
-  // Matches count for 1, Ns for 0, and mismatches for -1
-  current.score =
-    current.length - current.n_ambiguous - (current.n_mismatches * 2);
-
   return true;
 }
 
@@ -128,7 +124,7 @@ sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
     const size_t length = std::min(seq1.length() - initial_seq1_offset,
                                    seq2.length() - initial_seq2_offset);
 
-    if (static_cast<int>(length) >= best.score) {
+    if (static_cast<int>(length) >= best.score()) {
       alignment_info current;
       current.offset = offset;
       current.length = length;
@@ -178,8 +174,7 @@ get_updated_phred_scores(char qual_1, char qual_2)
 // Public functions
 
 alignment_info::alignment_info()
-  : score(0)
-  , offset(0)
+  : offset(0)
   , length(0)
   , n_mismatches(0)
   , n_ambiguous(0)
@@ -190,9 +185,9 @@ alignment_info::alignment_info()
 bool
 alignment_info::is_better_than(const alignment_info& other) const
 {
-  if (score > other.score) {
+  if (score() > other.score()) {
     return true;
-  } else if (score == other.score) {
+  } else if (score() == other.score()) {
     if (length > other.length) {
       return true;
     } else if (length == other.length) {

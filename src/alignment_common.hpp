@@ -104,8 +104,13 @@ struct alignment_info
   /** Calculates the insert size given a pair of un-truncated reads. */
   size_t insert_size(const fastq& read1, const fastq& read2) const;
 
-  //! Alignment score; equal to length - n_ambiguous - 2 * n_mismatches;
-  int score;
+  /** Returns the score used to compare alignments */
+  inline int score() const
+  {
+    return static_cast<int>(length) -
+           static_cast<int>(n_ambiguous + 2 * n_mismatches);
+  }
+
   //! Zero based id of the adapter which offered the best alignment. Is less
   //! than zero if no alignment was found.
   int offset;
