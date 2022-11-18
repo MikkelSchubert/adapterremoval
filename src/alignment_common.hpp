@@ -133,7 +133,6 @@ supports_avx2();
 /**
  * Compares two subsequences in an alignment to a previous (best) alignment.
  *
- * @param best The currently best alignment, used for evaluating this alignment
  * @param current The current alignment to be evaluated (assumed to be zero'd).
  * @param seq_1_ptr Pointer to the first sequence in the alignment.
  * @param seq_2_ptr Pointer to the second sequence in the alignment.
@@ -145,34 +144,30 @@ supports_avx2();
  * and scores are not reliable. The function assumes uppercase nucleotides.
  */
 bool
-compare_subsequences(const alignment_info& best,
-                     alignment_info& current,
+compare_subsequences(alignment_info& current,
                      const char* seq_1_ptr,
                      const char* seq_2_ptr,
                      const double mismatch_threshold = 1.0);
 
 bool
-compare_subsequences_std(const alignment_info& /* best */,
-                         alignment_info& /* current */,
-                         const char* /* seq_1_ptr */,
-                         const char* /* seq_2_ptr */,
-                         double /* mismatch_threshold */,
-                         int /* remaining_bases */);
+compare_subsequences_std(alignment_info& current,
+                         const char* seq_1_ptr,
+                         const char* seq_2_ptr,
+                         size_t max_mismatches,
+                         int remaining_bases);
 
 bool
-compare_subsequences_sse2(const alignment_info& /* best */,
-                          alignment_info& /* current */,
-                          const char* /* seq_1_ptr */,
-                          const char* /* seq_2_ptr */,
-                          double /* mismatch_threshold */,
-                          int /* remaining_bases */);
+compare_subsequences_sse2(alignment_info& current,
+                          const char* seq_1_ptr,
+                          const char* seq_2_ptr,
+                          size_t max_mismatches,
+                          int remaining_bases);
 
 bool
-compare_subsequences_avx2(const alignment_info& /* best */,
-                          alignment_info& /* current */,
-                          const char* /* seq_1_ptr */,
-                          const char* /* seq_2_ptr */,
-                          double /* mismatch_threshold */,
-                          int /* remaining_bases */);
+compare_subsequences_avx2(alignment_info& current,
+                          const char* seq_1_ptr,
+                          const char* seq_2_ptr,
+                          size_t max_mismatches,
+                          int remaining_bases);
 
 } // namespace adapterremoval

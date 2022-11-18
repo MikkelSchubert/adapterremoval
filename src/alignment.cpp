@@ -31,11 +31,10 @@
 
 namespace adapterremoval {
 
-using compare_subsequences_func = bool (*)(const alignment_info& /* best */,
-                                           alignment_info& /* current */,
+using compare_subsequences_func = bool (*)(alignment_info& /* current */,
                                            const char* /* seq_1_ptr */,
                                            const char* /* seq_2_ptr */,
-                                           double /* mismatch_threshold */,
+                                           size_t /* max_mismatches */,
                                            int /* remaining_bases */);
 
 bool
@@ -65,41 +64,48 @@ select_compare_function()
 const auto compare_subsequence_impl = select_compare_function();
 
 bool
-compare_subsequences_std(const alignment_info& best,
-                         alignment_info& current,
+compare_subsequences_std(alignment_info& current,
                          const char* seq_1_ptr,
                          const char* seq_2_ptr,
-                         const double /* mismatch_threshold */,
+                         const size_t max_mismatches,
                          int remaining_bases)
 {
-  for (; remaining_bases && current.score >= best.score; --remaining_bases) {
+  for (; remaining_bases; --remaining_bases) {
     const char nt_1 = *seq_1_ptr++;
     const char nt_2 = *seq_2_ptr++;
 
     if (nt_1 == 'N' || nt_2 == 'N') {
       current.n_ambiguous++;
-      current.score--;
     } else if (nt_1 != nt_2) {
       current.n_mismatches++;
-      current.score -= 2;
+    }
+
+    if (current.n_mismatches > max_mismatches) {
+      return false;
     }
   }
 
-  return current.is_better_than(best);
+  // Matches count for 1, Ns for 0, and mismatches for -1
+  current.score =
+    current.length - current.n_ambiguous - (current.n_mismatches * 2);
+
+  return true;
 }
 
 // FIXME: To be removed
 bool
-compare_subsequences(const alignment_info& best,
-                     alignment_info& current,
+compare_subsequences(alignment_info& current,
                      const char* seq_1_ptr,
                      const char* seq_2_ptr,
                      const double mismatch_threshold)
 {
-
-  int remaining_bases = current.score = current.length;
-  return compare_subsequence_impl(
-    best, current, seq_1_ptr, seq_2_ptr, mismatch_threshold, remaining_bases);
+  return compare_subsequence_impl(current,
+                                  seq_1_ptr,
+                                  seq_2_ptr,
+                                  current.length * mismatch_threshold,
+                                  current.length) &&
+         current.n_mismatches <=
+           (current.length - current.n_ambiguous) * mismatch_threshold;
 }
 
 alignment_info
@@ -108,6 +114,9 @@ sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
                                            const std::string& seq2,
                                            int min_offset) const
 {
+  const char* seq_1_ptr = seq1.data();
+  const char* seq_2_ptr = seq2.data();
+
   const int start_offset =
     std::max<int>(min_offset, -static_cast<int>(seq2.length()) + 1);
   const int end_offset = static_cast<int>(seq1.length()) - 1;
@@ -124,11 +133,11 @@ sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
       current.offset = offset;
       current.length = length;
 
-      const char* seq_1_ptr = seq1.data() + initial_seq1_offset;
-      const char* seq_2_ptr = seq2.data() + initial_seq2_offset;
-
-      if (compare_subsequences(
-            best, current, seq_1_ptr, seq_2_ptr, m_mismatch_threshold)) {
+      if (compare_subsequences(current,
+                               seq_1_ptr + initial_seq1_offset,
+                               seq_2_ptr + initial_seq2_offset,
+                               m_mismatch_threshold) &&
+          current.is_better_than(best)) {
         best = current;
       }
     }

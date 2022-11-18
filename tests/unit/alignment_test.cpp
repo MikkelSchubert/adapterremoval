@@ -503,6 +503,34 @@ TEST_CASE("Empty adapter alignment", "[alignment::single_end]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Max error rates
+
+TEST_CASE("Longest valid alignment is returned", "[alignment::single_end]")
+{
+  const fastq record("Rec", "AAATAAAAA");
+  const auto adapters = create_adapter_vec(fastq("Rec", "AAAAAAAAA"));
+
+  SECTION("Mismatches allowed")
+  {
+    sequence_aligner aligner(adapters);
+    const auto result = aligner.align_single_end(record, 0);
+    const alignment_info expected = ALN().length(9).score(7).n_mismatches(1);
+
+    REQUIRE(result == expected);
+  }
+
+  SECTION("No mismatches allowed")
+  {
+    sequence_aligner aligner(adapters);
+    aligner.set_mismatch_threshold(0);
+    const auto result = aligner.align_single_end(record, 0);
+    const alignment_info expected = ALN().offset(4).length(5).score(5);
+
+    REQUIRE(result == expected);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Misc
 
 TEST_CASE("Lower than possible shift is allowed", "[alignment::single_end]")
@@ -1481,7 +1509,6 @@ get_combinations()
 
 TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
-  const alignment_info best;
   const std::vector<std::string> combinations = get_combinations();
   for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
     for (size_t pos = 0; pos < seqlen; ++pos) {
@@ -1502,7 +1529,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 
           alignment_info current;
           current.length = seqlen;
-          compare_subsequences(best, current, mate1.c_str(), mate2.c_str());
+          compare_subsequences(current, mate1.c_str(), mate2.c_str());
 
           // Don't count all these checks in test statistics
           if (!(current == expected)) {

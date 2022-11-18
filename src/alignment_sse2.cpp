@@ -31,17 +31,16 @@ count_masked_sse2(const __m128i& value)
 }
 
 bool
-compare_subsequences_sse2(const alignment_info& best,
-                          alignment_info& current,
+compare_subsequences_sse2(alignment_info& current,
                           const char* seq_1_ptr,
                           const char* seq_2_ptr,
-                          const double mismatch_threshold,
+                          const size_t max_mismatches,
                           int remaining_bases)
 {
   //! Mask of all Ns
   const __m128i n_mask = _mm_set1_epi8('N');
 
-  while (remaining_bases >= 16 && current.score >= best.score) {
+  while (remaining_bases >= 16) {
     const __m128i s1 =
       _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
     const __m128i s2 =
@@ -56,14 +55,9 @@ compare_subsequences_sse2(const alignment_info& best,
 
     current.n_ambiguous += count_masked_sse2(ns_mask);
     current.n_mismatches += 16 - count_masked_sse2(eq_mask);
-    if (current.n_mismatches >
-        (current.length - current.n_ambiguous) * mismatch_threshold) {
+    if (current.n_mismatches > max_mismatches) {
       return false;
     }
-
-    // Matches count for 1, Ns for 0, and mismatches for -1
-    current.score =
-      current.length - current.n_ambiguous - (current.n_mismatches * 2);
 
     seq_1_ptr += 16;
     seq_2_ptr += 16;
@@ -71,7 +65,7 @@ compare_subsequences_sse2(const alignment_info& best,
   }
 
   return compare_subsequences_std(
-    best, current, seq_1_ptr, seq_2_ptr, mismatch_threshold, remaining_bases);
+    current, seq_1_ptr, seq_2_ptr, max_mismatches, remaining_bases);
 }
 
 } // namespace adapterremoval
