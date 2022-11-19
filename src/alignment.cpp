@@ -104,42 +104,54 @@ compare_subsequences(alignment_info& current,
            (current.length - current.n_ambiguous) * mismatch_threshold;
 }
 
-alignment_info
-sequence_aligner::pairwise_align_sequences(const alignment_info& best_alignment,
+bool
+sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
                                            const std::string& seq1,
                                            const std::string& seq2,
-                                           int min_offset) const
+                                           const int min_offset) const
 {
   const char* seq_1_ptr = seq1.data();
   const char* seq_2_ptr = seq2.data();
 
   const int start_offset =
     std::max<int>(min_offset, -static_cast<int>(seq2.length()) + 1);
-  const int end_offset = static_cast<int>(seq1.length()) - 1;
+  int end_offset =
+    static_cast<int>(seq1.length()) - std::max(1, alignment.score());
 
-  alignment_info best = best_alignment;
+  bool alignment_found = false;
   for (int offset = start_offset; offset <= end_offset; ++offset) {
-    const size_t initial_seq1_offset = std::max<int>(0, offset);
-    const size_t initial_seq2_offset = std::max<int>(0, -offset);
-    const size_t length = std::min(seq1.length() - initial_seq1_offset,
-                                   seq2.length() - initial_seq2_offset);
+    size_t initial_seq1_offset;
+    size_t initial_seq2_offset;
 
-    if (static_cast<int>(length) >= best.score()) {
-      alignment_info current;
-      current.offset = offset;
-      current.length = length;
+    if (offset < 0) {
+      initial_seq1_offset = 0;
+      initial_seq2_offset = -offset;
+    } else {
+      initial_seq1_offset = offset;
+      initial_seq2_offset = 0;
+    }
 
-      if (compare_subsequences(current,
-                               seq_1_ptr + initial_seq1_offset,
-                               seq_2_ptr + initial_seq2_offset,
-                               m_mismatch_threshold) &&
-          current.is_better_than(best)) {
-        best = current;
-      }
+    const auto length = std::min(seq1.length() - initial_seq1_offset,
+                                 seq2.length() - initial_seq2_offset);
+
+    alignment_info current;
+    current.offset = offset;
+    current.length = length;
+
+    if (compare_subsequences(current,
+                             seq_1_ptr + initial_seq1_offset,
+                             seq_2_ptr + initial_seq2_offset,
+                             m_mismatch_threshold) &&
+        current.is_better_than(alignment)) {
+      alignment = current;
+      alignment_found = true;
+
+      // Alignments involving fewer than `score` bases are not interesting
+      end_offset = seq1.length() - alignment.score();
     }
   }
 
-  return best;
+  return alignment_found;
 }
 
 struct phred_scores
@@ -258,21 +270,18 @@ alignment_info
 sequence_aligner::align_single_end(const fastq& read, int max_shift) const
 {
   size_t adapter_id = 0;
-  alignment_info best_alignment;
+  alignment_info alignment;
   for (const auto& adapter_pair : m_adapters) {
-    const fastq& adapter = adapter_pair.first;
-    const alignment_info alignment = pairwise_align_sequences(
-      best_alignment, read.sequence(), adapter.sequence(), -max_shift);
-
-    if (alignment.is_better_than(best_alignment)) {
-      best_alignment = alignment;
-      best_alignment.adapter_id = adapter_id;
+    const auto& adapter = adapter_pair.first.sequence();
+    const auto& sequence = read.sequence();
+    if (pairwise_align_sequences(alignment, sequence, adapter, -max_shift)) {
+      alignment.adapter_id = adapter_id;
     }
 
     ++adapter_id;
   }
 
-  return best_alignment;
+  return alignment;
 }
 
 alignment_info
@@ -281,7 +290,7 @@ sequence_aligner::align_paired_end(const fastq& read1,
                                    int max_shift) const
 {
   size_t adapter_id = 0;
-  alignment_info best_alignment;
+  alignment_info alignment;
   for (const auto& adapter_pair : m_adapters) {
     const fastq& adapter1 = adapter_pair.first;
     const fastq& adapter2 = adapter_pair.second;
@@ -293,20 +302,17 @@ sequence_aligner::align_paired_end(const fastq& read1,
     // is aligned against the other, included shifted alignments to account
     // for missing bases at the 5' ends of the reads.
     const int min_offset = adapter2.length() - read2.length() - max_shift;
-    const alignment_info alignment = pairwise_align_sequences(
-      best_alignment, sequence1, sequence2, min_offset);
 
-    if (alignment.is_better_than(best_alignment)) {
-      best_alignment = alignment;
-      best_alignment.adapter_id = adapter_id;
+    if (pairwise_align_sequences(alignment, sequence1, sequence2, min_offset)) {
+      alignment.adapter_id = adapter_id;
       // Convert the alignment into an alignment between read 1 & 2 only
-      best_alignment.offset -= adapter2.length();
+      alignment.offset -= adapter2.length();
     }
 
     ++adapter_id;
   }
 
-  return best_alignment;
+  return alignment;
 }
 
 void

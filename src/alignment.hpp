@@ -74,15 +74,16 @@ private:
   /**
    * Perform pairwise alignment between two sequences.
    *
-   * @param best_alignment Do not return alignments worse than this alignment.
+   * @param alignment Current best alignment.
    * @param seq1 First sequence to align (mate 1).
    * @param seq2 Second sequence to align (mate 2 or adapter).
    * @param min_offset Search for alignments from this offset.
+   * @return true if a better alignment was found
    */
-  alignment_info pairwise_align_sequences(const alignment_info& best_alignment,
-                                          const std::string& seq1,
-                                          const std::string& seq2,
-                                          int min_offset) const;
+  bool pairwise_align_sequences(alignment_info& alignment,
+                                const std::string& seq1,
+                                const std::string& seq2,
+                                const int min_offset) const;
 
   //! Adapter sequences against which to align the sequences
   const fastq_pair_vec& m_adapters;
