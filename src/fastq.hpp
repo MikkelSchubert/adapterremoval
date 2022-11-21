@@ -210,14 +210,6 @@ private:
   void post_process(const fastq_encoding& encoding);
 
   /**
-   * Converting lower-case nucleotides to uppercase.
-   *
-   * If the sequence contains letters other than "acgtnACGTN.", a fastq_error
-   * is thrown.
-   **/
-  static void clean_sequence(std::string& sequence);
-
-  /**
    * Trims the read to the specified bases, and returns a pair specifying the
    * number of 5' and 3' bases removed.
    */

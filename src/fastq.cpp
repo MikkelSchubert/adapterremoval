@@ -498,33 +498,6 @@ fastq::into_string(std::string& dst) const
 ///////////////////////////////////////////////////////////////////////////////
 // Public helper functions
 
-void
-fastq::clean_sequence(std::string& sequence)
-{
-  for (char& nuc : sequence) {
-    switch (nuc) {
-      case 'A':
-      case 'C':
-      case 'G':
-      case 'T':
-      case 'N':
-        break;
-
-      case 'a':
-      case 'c':
-      case 'g':
-      case 't':
-      case 'n':
-        nuc += 'A' - 'a';
-        break;
-
-      default:
-        throw fastq_error("invalid character in FASTQ sequence; "
-                          "only A, C, G, T and N are expected!");
-    }
-  }
-}
-
 char
 fastq::p_to_phred_33(double p)
 {
@@ -643,7 +616,22 @@ fastq::post_process(const fastq_encoding& encoding)
       "invalid FASTQ record; sequence/quality length does not match");
   }
 
-  clean_sequence(m_sequence);
+  for (char& nuc : m_sequence) {
+    // Fast ASCII letter uppercase
+    switch (nuc &= 0xDF) {
+      case 'A':
+      case 'C':
+      case 'G':
+      case 'T':
+      case 'N':
+        break;
+
+      default:
+        throw fastq_error("invalid character in FASTQ sequence; "
+                          "only A, C, G, T and N are expected!");
+    }
+  }
+
   encoding.decode(m_qualities);
 }
 
