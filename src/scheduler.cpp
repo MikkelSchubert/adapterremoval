@@ -349,8 +349,8 @@ scheduler::do_run()
     }
   }
 
-  // Signal any waiting threads
-  m_condition.notify_all();
+  // Signal any waiting thread
+  m_condition.notify_one();
 }
 
 } // namespace adapterremoval
