@@ -166,6 +166,9 @@ public:
   bool read(line_reader_base& reader,
             const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
+  /** Like `read`, but post-processing must be manually called afterwards */
+  bool read_unsafe(line_reader_base& reader);
+
   /**
    * Converts a FASTQ record to a string ending with a newline.
    *
@@ -202,13 +205,13 @@ public:
                                      fastq& mate2,
                                      char mate_separator = MATE_SEPARATOR);
 
-private:
   /**
    * Finalizes read, validates sequence and transforms qualities. This function
    * *must* be called for all reads produced by calling `read_unsafe`.
    */
   void post_process(const fastq_encoding& encoding);
 
+private:
   /**
    * Trims the read to the specified bases, and returns a pair specifying the
    * number of 5' and 3' bases removed.

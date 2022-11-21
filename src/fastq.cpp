@@ -191,6 +191,11 @@ fastq::fastq(const std::string& header,
   , m_sequence(sequence)
   , m_qualities(qualities)
 {
+  if (m_qualities.length() != m_sequence.length()) {
+    throw fastq_error(
+      "invalid FASTQ record; sequence/quality length does not match");
+  }
+
   post_process(encoding);
 }
 
@@ -445,6 +450,17 @@ fastq::add_prefix_to_name(const std::string& prefix)
 bool
 fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 {
+  if (read_unsafe(reader)) {
+    post_process(encoding);
+    return true;
+  }
+
+  return false;
+}
+
+bool
+fastq::read_unsafe(line_reader_base& reader)
+{
   std::string line;
   do {
     if (!reader.getline(line)) {
@@ -477,8 +493,6 @@ fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
   } else if (m_qualities.length() != m_sequence.length()) {
     throw fastq_error("sequence/quality lengths do not match");
   }
-
-  post_process(encoding);
 
   return true;
 }
@@ -611,11 +625,6 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 void
 fastq::post_process(const fastq_encoding& encoding)
 {
-  if (m_qualities.length() != m_sequence.length()) {
-    throw fastq_error(
-      "invalid FASTQ record; sequence/quality length does not match");
-  }
-
   for (char& nuc : m_sequence) {
     // Fast ASCII letter uppercase
     switch (nuc &= 0xDF) {

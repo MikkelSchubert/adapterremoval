@@ -365,6 +365,9 @@ private:
                      fastq& read1,
                      fastq& read2)
   {
+    read1.post_process(m_config.io_encoding);
+    read2.post_process(m_config.io_encoding);
+
     // Reverse complement to match the orientation of read1
     read2.reverse_complement();
 

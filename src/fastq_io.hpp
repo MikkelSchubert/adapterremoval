@@ -139,8 +139,6 @@ private:
   char identify_mate_separators(const fastq_vec& reads_1,
                                 const fastq_vec& reads_2) const;
 
-  //! Encoding used to parse FASTQ reads.
-  const fastq_encoding m_encoding;
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_io_input_1_base;
   //! The underlying file reader for mate 2 read (if not interleaved)
@@ -178,7 +176,9 @@ class post_process_fastq : public analytical_step
 {
 public:
   /** Constructor. */
-  post_process_fastq(size_t next_step, statistics& stats);
+  post_process_fastq(size_t next_step,
+                     statistics& stats,
+                     const fastq_encoding& encoding);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -198,6 +198,8 @@ private:
   fastq_stats_ptr m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
+  //! Encoding used to parse FASTQ reads.
+  const fastq_encoding m_encoding;
 
   //! Used to track whether an EOF block has been received.
   bool m_eof;

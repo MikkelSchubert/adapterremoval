@@ -54,7 +54,8 @@ fastq_report_only(const userconfig& config)
   size_t sink_step = sch.add<reads_sink>();
 
   // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
-  const size_t postproc_step = sch.add<post_process_fastq>(sink_step, stats);
+  const size_t postproc_step =
+    sch.add<post_process_fastq>(sink_step, stats, config.io_encoding);
 
   // Step 1: Read input file(s)
   sch.add<read_fastq>(config, postproc_step);

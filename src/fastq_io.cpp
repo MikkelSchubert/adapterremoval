@@ -123,8 +123,7 @@ fastq_output_chunk::~fastq_output_chunk() {}
 bool
 read_record(joined_line_readers& reader,
             fastq_vec& chunk,
-            size_t& n_nucleotides,
-            const fastq_encoding& encoding)
+            size_t& n_nucleotides)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
@@ -134,7 +133,7 @@ read_record(joined_line_readers& reader,
     chunk.emplace_back();
     auto& record = chunk.back();
 
-    if (record.read(reader, encoding)) {
+    if (record.read_unsafe(reader)) {
       n_nucleotides += record.length();
 
       return true;
@@ -153,7 +152,6 @@ read_record(joined_line_readers& reader,
 
 read_fastq::read_fastq(const userconfig& config, size_t next_step)
   : analytical_step(processing_order::ordered_io, "read_fastq")
-  , m_encoding(config.io_encoding)
   , m_io_input_1_base(config.input_files_1)
   , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
@@ -210,7 +208,7 @@ read_fastq::read_single_end(fastq_vec& reads_1)
   bool eof = false;
   size_t n_nucleotides = 0;
   while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !eof) {
-    eof = !read_record(*m_io_input_1, reads_1, n_nucleotides, m_encoding);
+    eof = !read_record(*m_io_input_1, reads_1, n_nucleotides);
     m_head--;
   }
 
@@ -225,8 +223,8 @@ read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
 
   size_t n_nucleotides = 0;
   while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !eof_1 && !eof_2) {
-    eof_1 = !read_record(*m_io_input_1, reads_1, n_nucleotides, m_encoding);
-    eof_2 = !read_record(*m_io_input_2, reads_2, n_nucleotides, m_encoding);
+    eof_1 = !read_record(*m_io_input_1, reads_1, n_nucleotides);
+    eof_2 = !read_record(*m_io_input_2, reads_2, n_nucleotides);
     m_head--;
   }
 
@@ -287,11 +285,14 @@ read_fastq::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
-post_process_fastq::post_process_fastq(size_t next_step, statistics& stats)
+post_process_fastq::post_process_fastq(size_t next_step,
+                                       statistics& stats,
+                                       const fastq_encoding& encoding)
   : analytical_step(processing_order::ordered, "post_process_fastq")
   , m_statistics_1(stats.input_1)
   , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
+  , m_encoding(encoding)
   , m_eof(false)
   , m_lock()
 {
@@ -310,11 +311,13 @@ post_process_fastq::process(chunk_ptr chunk)
   auto& reads_2 = file_chunk.reads_2;
 
   AR_REQUIRE((reads_1.size() == reads_2.size()) || reads_2.empty());
-  for (const auto& read_1 : reads_1) {
+  for (auto& read_1 : reads_1) {
+    read_1.post_process(m_encoding);
     m_statistics_1->process(read_1);
   }
 
-  for (const auto& read_2 : reads_2) {
+  for (auto& read_2 : reads_2) {
+    read_2.post_process(m_encoding);
     m_statistics_2->process(read_2);
   }
 
