@@ -232,10 +232,9 @@ managed_writer::close_tail_writer()
 {
   AR_REQUIRE(!s_head == !s_tail);
   if (!s_warning_printed) {
-    log::warn()
-      << "\nNumber of available file-handles (ulimit -n) is too low.\n"
-      << "AdapterRemoval will dynamically close/re-open files as\n"
-      << "required, but performance may suffer as a result.";
+    log::warn() << "Number of available file-handles (ulimit -n) is too low. "
+                << "AdapterRemoval will dynamically close/re-open files as "
+                << "required, but performance may suffer as a result.";
 
     s_warning_printed = true;
   }
