@@ -19,7 +19,6 @@
 #pragma once
 
 #include "debug.hpp" // for AR_REQUIRE
-#include <memory>    // for unique_ptr
 #include <vector>    // for vector
 
 namespace adapterremoval {
@@ -28,7 +27,7 @@ class buffer
 {
 public:
   /** Creates a buffer of the specified size, if non-zero */
-  buffer(size_t size = 0);
+  explicit buffer(size_t size = 0);
 
   /** Returns pointer to the buffer, if any */
   unsigned char* get();
@@ -50,8 +49,8 @@ public:
   /** Copies uint32 into buffer */
   void write_u32(size_t offset, uint32_t value);
 
-  buffer(buffer&& other) noexcept;
-  buffer& operator=(buffer&& other) noexcept;
+  buffer(buffer&& other) noexcept = default;
+  buffer& operator=(buffer&& other) noexcept = default;
 
   buffer(const buffer& other) = delete;
   buffer& operator=(const buffer& other) = delete;
@@ -59,12 +58,19 @@ public:
   ~buffer() = default;
 
 private:
-  //! Size of the buffer
-  size_t m_size;
-  //! Capacity of the buffer
-  size_t m_capacity;
+  /** Construction intentionally omitted, to prevent default initialization */
+  struct noinit
+  {
+    unsigned char value;
+  };
+
+  static_assert(sizeof(noinit) == sizeof(decltype(noinit::value)),
+                "unexpected size of buffer::noinit");
+  static_assert(alignof(noinit) == alignof(decltype(noinit::value)),
+                "unexpected alignment of buffer::noinit");
+
   //! Backing buffer
-  std::unique_ptr<unsigned char[]> m_buffer;
+  std::vector<noinit> m_buffer;
 };
 
 using buffer_vec = std::vector<buffer>;
@@ -72,88 +78,64 @@ using buffer_vec = std::vector<buffer>;
 ////////////////////////////////////////////////////////////////////////////////
 
 inline buffer::buffer(size_t size)
-  : m_size(size)
-  , m_capacity(size)
-  , m_buffer()
+  : m_buffer()
 {
-  if (m_size != 0) {
-    m_buffer = std::make_unique<unsigned char[]>(m_size);
-  }
-}
-
-inline buffer::buffer(buffer&& other) noexcept
-  : buffer(0)
-{
-  *this = std::move(other);
-}
-
-inline buffer&
-buffer::operator=(buffer&& other) noexcept
-{
-  if (this != &other) {
-    m_size = other.m_size;
-    m_capacity = other.m_capacity;
-    m_buffer = std::move(other.m_buffer);
-
-    other.m_size = 0;
-    other.m_capacity = 0;
-  }
-
-  return *this;
+  m_buffer.resize(size);
 }
 
 inline unsigned char*
 buffer::get()
 {
-  return m_buffer.get();
+  return reinterpret_cast<unsigned char*>(m_buffer.data());
 }
 
 inline const unsigned char*
 buffer::get() const
 {
-  return m_buffer.get();
+  return reinterpret_cast<const unsigned char*>(m_buffer.data());
 }
 
 inline char*
 buffer::get_signed()
 {
-  return reinterpret_cast<char*>(m_buffer.get());
+  return reinterpret_cast<char*>(get());
 }
 
 inline const char*
 buffer::get_signed() const
 {
-  return reinterpret_cast<const char*>(m_buffer.get());
+  return reinterpret_cast<const char*>(get());
 }
 
 inline size_t
 buffer::size() const
 {
-  return m_size;
+  return m_buffer.size();
 }
 
 inline size_t
 buffer::capacity() const
 {
-  return m_capacity;
+  return m_buffer.capacity();
 }
 
 inline void
 buffer::resize(size_t size)
 {
-  AR_REQUIRE(size <= m_capacity);
-  m_size = size;
+  AR_REQUIRE(size <= capacity());
+  m_buffer.resize(size);
 }
 
 inline void
 buffer::write_u32(size_t offset, uint32_t value)
 {
-  AR_REQUIRE(offset + 4 <= m_size);
+  AR_REQUIRE(offset + 4 <= size());
 
-  m_buffer[offset + 0] = value & 0xFF;
-  m_buffer[offset + 1] = (value >> 8) & 0xFF;
-  m_buffer[offset + 2] = (value >> 16) & 0xFF;
-  m_buffer[offset + 3] = (value >> 24) & 0xFF;
+  unsigned char* dst = get() + offset;
+  dst[0] = value & 0xFFu;
+  dst[1] = (value >> 8) & 0xFFu;
+  dst[2] = (value >> 16) & 0xFFu;
+  dst[3] = (value >> 24) & 0xFFu;
 }
 
 } // namespace adapterremoval

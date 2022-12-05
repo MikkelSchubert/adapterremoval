@@ -112,19 +112,6 @@ TEST_CASE("buffer move assignment clears source")
   REQUIRE(dst.get_signed() == src_signed_ptr);
 }
 
-TEST_CASE("buffer move assignment to self is no-op")
-{
-  buffer buf(7);
-  auto buf_ptr = buf.get();
-  auto buf_signed_ptr = buf.get_signed();
-
-  buf = std::move(buf);
-  REQUIRE(buf.size() == 7);
-  REQUIRE(buf.capacity() == 7);
-  REQUIRE(buf.get() == buf_ptr);
-  REQUIRE(buf.get_signed() == buf_signed_ptr);
-}
-
 TEST_CASE("buffer write_u32 is le")
 {
   buffer buf(4);
