@@ -79,8 +79,8 @@ size_t_to_kmer(size_t kmer)
   return kmer_s;
 }
 
-typedef std::vector<unsigned> kmer_map;
-typedef std::pair<size_t, unsigned> nt_count;
+using kmer_map = std::vector<unsigned>;
+using nt_count = std::pair<size_t, unsigned>;
 
 /** Functor for sorting kmers by frequency. */
 struct cmp_nt_count
@@ -91,9 +91,9 @@ struct cmp_nt_count
   }
 };
 
-typedef std::priority_queue<nt_count, std::vector<nt_count>, cmp_nt_count>
-  kmer_queue;
-typedef std::vector<nt_count> kmer_vector;
+using kmer_queue =
+  std::priority_queue<nt_count, std::vector<nt_count>, cmp_nt_count>;
+using kmer_vector = std::vector<nt_count>;
 
 /** Prints the N top kmers in a kmer_map, including sequence and frequency. */
 void
@@ -293,7 +293,7 @@ public:
 class adapter_identification : public analytical_step
 {
 public:
-  adapter_identification(const userconfig& config)
+  explicit adapter_identification(const userconfig& config)
     : analytical_step(processing_order::unordered, "adapter_identification")
     , m_config(config)
     , m_stats()
@@ -303,7 +303,7 @@ public:
     }
   }
 
-  virtual ~adapter_identification() override;
+  ~adapter_identification() override = default;
 
   chunk_vec process(chunk_ptr chunk) override
   {
@@ -312,7 +312,7 @@ public:
 
     const fastq empty_adapter("dummy", "", "");
     fastq_pair_vec adapters;
-    adapters.push_back(fastq_pair(empty_adapter, empty_adapter));
+    adapters.emplace_back(empty_adapter, empty_adapter);
 
     auto aligner = sequence_aligner(adapters);
     aligner.set_mismatch_threshold(m_config.mismatch_threshold);
@@ -363,7 +363,7 @@ private:
   void process_reads(const sequence_aligner& aligner,
                      adapter_stats& stats,
                      fastq& read1,
-                     fastq& read2)
+                     fastq& read2) const
   {
     read1.post_process(m_config.io_encoding);
     read2.post_process(m_config.io_encoding);
@@ -376,17 +376,14 @@ private:
 
     if (m_config.is_good_alignment(alignment)) {
       stats.aligned_pairs++;
-      if (m_config.can_merge_alignment(alignment)) {
-        if (extract_adapter_sequences(alignment, read1, read2)) {
-          stats.pairs_with_adapters++;
+      if (m_config.can_merge_alignment(alignment) &&
+          extract_adapter_sequences(alignment, read1, read2)) {
+        stats.pairs_with_adapters++;
 
-          process_adapter(
-            read1.sequence(), stats.pcr1_counts, stats.pcr1_kmers);
+        process_adapter(read1.sequence(), stats.pcr1_counts, stats.pcr1_kmers);
 
-          read2.reverse_complement();
-          process_adapter(
-            read2.sequence(), stats.pcr2_counts, stats.pcr2_kmers);
-        }
+        read2.reverse_complement();
+        process_adapter(read2.sequence(), stats.pcr2_counts, stats.pcr2_kmers);
       }
     } else {
       stats.unaligned_pairs++;
@@ -395,7 +392,7 @@ private:
 
   void process_adapter(const std::string& sequence,
                        indexed_counts<ACGTN>& nt_counts,
-                       kmer_map& kmers)
+                       kmer_map& kmers) const
   {
     nt_counts.resize_up_to(sequence.length());
     for (size_t i = 0; i < sequence.length(); ++i) {
@@ -428,8 +425,5 @@ identify_adapter_sequences(const userconfig& config)
 
   return !sch.run(config.max_threads);
 }
-
-// Out-of-line definition to make -Wweak-vtables happy
-adapter_identification::~adapter_identification() {}
 
 } // namespace adapterremoval

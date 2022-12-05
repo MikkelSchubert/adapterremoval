@@ -23,15 +23,6 @@ namespace adapterremoval {
 
 size_t g_html_id = 1;
 
-html_template::html_template()
-{
-  //
-}
-
-html_template::~html_template()
-{
-  //
-}
 
 html_head::html_head()
   : m_written()
@@ -71,7 +62,7 @@ html_head::write(std::ofstream& out)
   AR_REQUIRE(m_name_is_set, "html_head::name not set");
   AR_REQUIRE(m_version_is_set, "html_head::version not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "<!DOCTYPE html>\n";
   out << "<html lang='en'>\n";
   out << "\n";
@@ -208,7 +199,7 @@ html_body_start::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_body_start already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "<body>\n";
   out << "    <div id='layout'>\n";
@@ -280,7 +271,7 @@ html_summary::write(std::ofstream& out)
   AR_REQUIRE(m_runtime_is_set, "html_summary::runtime not set");
   AR_REQUIRE(m_version_is_set, "html_summary::version not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "        <div class=\"section\">\n";
   out << "            <div class=\"title\">\n";
   out << "                <h2>Summary</h2>\n";
@@ -427,7 +418,7 @@ html_summary_io::write(std::ofstream& out)
   AR_REQUIRE(m_q30_is_set, "html_summary_io::q30 not set");
   AR_REQUIRE(m_title_is_set, "html_summary_io::title not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "            <h4>" << m_title << "</h4>\n";
   out << "            <table class=\"pure-table io-table pure-table-striped\">\n";
   out << "                <thead>\n";
@@ -526,7 +517,7 @@ html_sampling_note::write(std::ofstream& out)
   AR_REQUIRE(m_label_is_set, "html_sampling_note::label not set");
   AR_REQUIRE(m_pct_is_set, "html_sampling_note::pct not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
   out << "                Base composition statistics/plots are based on " << m_pct << "% of " << m_label << " reads sampled during execution.\n";
@@ -552,7 +543,7 @@ html_output_note_pe::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_output_note_pe already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
   out << "                <b>*</b> The <b>Passed</b> column includes all read types except for <b>Discarded</b> reads.\n";
@@ -578,7 +569,7 @@ html_output_note_se::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_output_note_se already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
   out << "                <b>*</b> <b>Discarded</b> reads are not included in the <b>Output</b> column.\n";
@@ -604,7 +595,7 @@ html_summary_trimming_head::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_trimming_head already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "            <h4>Processing</h4>\n";
   out << "            <table class=\"pure-table trimming-table pure-table-striped\">\n";
   out << "                <thead>\n";
@@ -704,7 +695,7 @@ html_summary_trimming_row::write(std::ofstream& out)
   AR_REQUIRE(m_reads_is_set, "html_summary_trimming_row::reads not set");
   AR_REQUIRE(m_stage_is_set, "html_summary_trimming_row::stage not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "                    <tr>\n";
   out << "                        <td>" << m_stage << "</td>\n";
   out << "                        <td>" << m_label_1 << "</td>\n";
@@ -755,7 +746,7 @@ html_summary_trimming_tail::write(std::ofstream& out)
   AR_REQUIRE(m_n_enabled_is_set, "html_summary_trimming_tail::n_enabled not set");
   AR_REQUIRE(m_n_total_is_set, "html_summary_trimming_tail::n_total not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "                </tbody>\n";
   out << "            </table>\n";
@@ -785,7 +776,7 @@ html_summary_filtering_head::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_filtering_head already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "            <h4>Filtering</h4>\n";
   out << "            <table class=\"pure-table io-table pure-table-striped\">\n";
   out << "                <thead>\n";
@@ -861,7 +852,7 @@ html_summary_filtering_row::write(std::ofstream& out)
   AR_REQUIRE(m_label_is_set, "html_summary_filtering_row::label not set");
   AR_REQUIRE(m_reads_is_set, "html_summary_filtering_row::reads not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "                    <tr>\n";
   out << "                        <td>" << m_label << "</td>\n";
   out << "                        <td>" << m_reads << "</td>\n";
@@ -910,7 +901,7 @@ html_summary_filtering_tail::write(std::ofstream& out)
   AR_REQUIRE(m_n_enabled_is_set, "html_summary_filtering_tail::n_enabled not set");
   AR_REQUIRE(m_n_total_is_set, "html_summary_filtering_tail::n_total not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "                </tbody>\n";
   out << "            </table>\n";
@@ -950,7 +941,7 @@ html_h2_tag::write(std::ofstream& out)
   AR_REQUIRE(!m_written, "template html_h2_tag already written");
   AR_REQUIRE(m_title_is_set, "html_h2_tag::title not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "        </div>\n";
   out << "\n";
   out << "        <div class=\"section\">\n";
@@ -1051,7 +1042,7 @@ html_line_plot::write(std::ofstream& out)
   AR_REQUIRE(m_values_is_set, "html_line_plot::values not set");
   AR_REQUIRE(m_width_is_set, "html_line_plot::width not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
@@ -1211,7 +1202,7 @@ html_facet_line_plot::write(std::ofstream& out)
   AR_REQUIRE(m_values_is_set, "html_facet_line_plot::values not set");
   AR_REQUIRE(m_width_is_set, "html_facet_line_plot::width not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
@@ -1363,7 +1354,7 @@ html_bar_plot::write(std::ofstream& out)
   AR_REQUIRE(m_values_is_set, "html_bar_plot::values not set");
   AR_REQUIRE(m_width_is_set, "html_bar_plot::width not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
@@ -1420,7 +1411,7 @@ html_demultiplexing_head::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_demultiplexing_head already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <h5>Per sample statistics</h5>\n";
   out << "\n";
@@ -1559,7 +1550,7 @@ html_demultiplexing_row::write(std::ofstream& out)
   AR_REQUIRE(m_pct_is_set, "html_demultiplexing_row::pct not set");
   AR_REQUIRE(m_reads_is_set, "html_demultiplexing_row::reads not set");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "                        <tr>\n";
   out << "                            <td>" << m_n << "</td>\n";
@@ -1593,7 +1584,7 @@ html_demultiplexing_tail::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_demultiplexing_tail already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "                    </tbody>\n";
   out << "                </table>\n";
   out << "            </div>\n";
@@ -1618,7 +1609,7 @@ html_body_end::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_body_end already written");
   // clang-format off
-  auto id = g_html_id++; (void)id;
+  auto id = g_html_id; ++g_html_id; (void)id;
   out << "        </div>\n";
   out << "\n";
   out << "        <div class=\"section epilogue\">\n";

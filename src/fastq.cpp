@@ -29,12 +29,17 @@
 namespace adapterremoval {
 
 const size_t ACGT::size;
-const ACGT::value_type ACGT::values[ACGT::size] = { 'A', 'C', 'G', 'T' };
+const std::array<ACGT::value_type, ACGT::size> ACGT::values = { 'A',
+                                                                'C',
+                                                                'G',
+                                                                'T' };
 
 const size_t ACGTN::size;
-const ACGTN::value_type ACGTN::values[ACGTN::size] = {
-  'A', 'C', 'G', 'T', 'N',
-};
+const std::array<ACGTN::value_type, ACGTN::size> ACGTN::values = { 'A',
+                                                                   'C',
+                                                                   'G',
+                                                                   'T',
+                                                                   'N' };
 
 namespace {
 
@@ -43,7 +48,7 @@ init_phred_to_p_values()
 {
   std::vector<double> result;
   for (size_t i = PHRED_SCORE_MIN; i <= PHRED_SCORE_MAX; ++i) {
-    result.push_back(std::pow(10.0, i / -10.0));
+    result.push_back(std::pow(10.0, static_cast<double>(i) / -10.0));
   }
 
   return result;
@@ -237,7 +242,9 @@ fastq::complexity() const
     }
   }
 
-  return std::max(0.0, (score - 1.0) / (m_sequence.length() - 1.0));
+  return std::max(0.0,
+                  (static_cast<double>(score) - 1.0) /
+                    static_cast<double>(m_sequence.length() - 1));
 }
 
 fastq::ntrimmed
@@ -273,17 +280,15 @@ fastq::trim_trailing_bases(const bool trim_ns,
 //! Calculates the size of the sliding window for quality trimming given a
 //! read length and a user-defined window-size (fraction or whole number).
 size_t
-calculate_winlen(const size_t read_length, const double window_size)
+calculate_winlen(const size_t read_length, double window_size)
 {
-  size_t winlen;
-  if (window_size >= 1.0) {
-    winlen = static_cast<size_t>(window_size);
-  } else {
-    winlen = static_cast<size_t>(window_size * read_length);
+  if (window_size < 1.0) {
+    window_size = window_size * static_cast<double>(read_length);
   }
 
+  const auto winlen = static_cast<size_t>(window_size);
   if (winlen == 0 || winlen > read_length) {
-    winlen = read_length;
+    return read_length;
   }
 
   return winlen;

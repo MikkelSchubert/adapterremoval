@@ -172,6 +172,7 @@ managed_writer::open_writer(managed_writer* ptr)
 void
 managed_writer::remove_writer(managed_writer* ptr)
 {
+  AR_REQUIRE(ptr);
   AR_REQUIRE(!s_head == !s_tail);
   AR_REQUIRE(!s_head || !s_head->m_prev);
   AR_REQUIRE(!s_tail || !s_tail->m_next);

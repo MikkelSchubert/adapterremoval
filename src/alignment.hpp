@@ -123,14 +123,19 @@ public:
    *
    * TODO: Simplify to take a "size_t overlap" param instead of "alignment".
    */
-  void merge(const alignment_info& alignment, fastq& read1, const fastq& read2);
+  void merge(const alignment_info& alignment,
+             fastq& read1,
+             const fastq& read2) const;
 
 private:
   /** The original merging algorithm implemented in AdapterRemoval. */
-  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2) const;
 
   /** Alternative merging algorithm added in 2.4.0. */
-  void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
+  void conservative_merge(char& nt_1,
+                          char& qual_1,
+                          char nt_2,
+                          char qual_2) const;
 
   //! Mate separator used in read names
   char m_mate_sep;

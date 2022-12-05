@@ -66,14 +66,6 @@ fastq_error::fastq_error(const std::string& message)
 {
 }
 
-fastq_error::fastq_error(const fastq_error& error)
-  : std::exception()
-  , m_message(error.m_message)
-{
-}
-
-fastq_error::~fastq_error() {}
-
 const char*
 fastq_error::what() const noexcept
 {

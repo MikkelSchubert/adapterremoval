@@ -19,6 +19,7 @@
 \*************************************************************************/
 #pragma once
 
+#include <array>    // for array
 #include <stddef.h> // for size_t
 #include <string>   // for string
 #include <utility>  // for pair
@@ -92,7 +93,7 @@ public:
   double complexity() const;
 
   /** The number of bases trimmmed from the 5p and 3p end respectively. **/
-  typedef std::pair<size_t, size_t> ntrimmed;
+  using ntrimmed = std::pair<size_t, size_t>;
 
   /**
    * Trims consecutive low-quality bases from the 5'/3' ends of the sequence.
@@ -239,14 +240,14 @@ struct ACGT
   //! The number of nucleotides
   static const size_t size = 4;
   //! Nucleotides supported by hashing function
-  static const value_type values[size];
+  static const std::array<value_type, size> values;
 
   /**
    * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
    * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
    * only) will result in hash collisions.
    */
-  static inline size_t to_index(value_type nt) { return (nt >> 1) & 0x3; }
+  static inline auto to_index(value_type nt) { return (nt >> 1) & 0x3; }
 
   /**
    * Inverse of to_index. Only values in the range 0 to 3 are allowed.
@@ -261,14 +262,14 @@ struct ACGTN
   //! The number of nucleotides
   static const size_t size = 5;
   //! Nucleotides supported by hashing function
-  static const value_type values[size];
+  static const std::array<value_type, size> values;
 
   /**
    * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
    * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
    * only) will result in hash collisions.
    */
-  static inline size_t to_index(value_type nt) { return ((nt >> 1) + 1) & 0x7; }
+  static inline auto to_index(value_type nt) { return ((nt >> 1) + 1) & 0x7; }
 
   /**
    * Inverse of to_index. Only values in the range 0 to 4 are allowed.
@@ -278,8 +279,8 @@ struct ACGTN
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef std::pair<fastq, fastq> fastq_pair;
-typedef std::vector<fastq_pair> fastq_pair_vec;
+using fastq_pair = std::pair<fastq, fastq>;
+using fastq_pair_vec = std::vector<fastq_pair>;
 
 ///////////////////////////////////////////////////////////////////////////////
 inline const std::string&

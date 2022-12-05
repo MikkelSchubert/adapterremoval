@@ -43,7 +43,7 @@ class uint_sink;
 class str_sink;
 class vec_sink;
 
-typedef std::shared_ptr<argument> argument_ptr;
+using argument_ptr = std::shared_ptr<argument>;
 
 //! Parse results for command-line arguments
 enum class parse_result
@@ -144,7 +144,7 @@ private:
   };
 
   std::vector<argument_entry> m_args;
-  std::map<std::string, argument_ptr> m_keys;
+  std::map<std::string, argument_ptr, std::less<>> m_keys;
 
   //! Name of the program
   std::string m_name;
@@ -236,7 +236,7 @@ public:
   //! Assignment not supported
   argument& operator=(const argument&) = delete;
 
-protected:
+private:
   //! Number of times the argument has been specified
   unsigned m_times_set;
   //! Default sink value
@@ -268,11 +268,11 @@ class sink
 {
 public:
   /** Creates a sink that takes exactly `n_values` values */
-  sink(size_t n_values);
+  explicit sink(size_t n_values);
   /** Creates a sink that takes between min and max values (incl.) */
   sink(size_t min_values, size_t max_values);
 
-  virtual ~sink();
+  virtual ~sink() = default;
 
   /** Returns the value associated with the consumer as a string. **/
   virtual std::string to_str() const = 0;
@@ -310,11 +310,10 @@ private:
 class bool_sink : public sink
 {
 public:
-  bool_sink(bool* sink);
+  explicit bool_sink(bool* sink);
 
-  virtual std::string to_str() const override;
-  virtual size_t consume(string_vec_citer,
-                         const string_vec_citer& end) override;
+  std::string to_str() const override;
+  size_t consume(string_vec_citer, const string_vec_citer& end) override;
 
 private:
   //! Copy construction not supported
@@ -328,14 +327,12 @@ private:
 class uint_sink : public sink
 {
 public:
-  uint_sink(unsigned* sink);
+  explicit uint_sink(unsigned* sink);
 
   uint_sink& with_default(unsigned value);
 
-  virtual std::string to_str() const override;
-
-  virtual size_t consume(string_vec_citer start,
-                         const string_vec_citer& end) override;
+  std::string to_str() const override;
+  size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:
   //! Copy construction not supported
@@ -349,14 +346,12 @@ private:
 class double_sink : public sink
 {
 public:
-  double_sink(double* sink);
+  explicit double_sink(double* sink);
 
   double_sink& with_default(double value);
 
-  virtual std::string to_str() const override;
-
-  virtual size_t consume(string_vec_citer start,
-                         const string_vec_citer& end) override;
+  std::string to_str() const override;
+  size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:
   //! Copy construction not supported
@@ -370,16 +365,14 @@ private:
 class str_sink : public sink
 {
 public:
-  str_sink(std::string* sink);
+  explicit str_sink(std::string* sink);
 
   str_sink& with_default(const char* value);
   str_sink& with_choices(const string_vec& choices);
 
-  virtual std::string to_str() const override;
-  virtual string_vec choices() const override;
-
-  virtual size_t consume(string_vec_citer start,
-                         const string_vec_citer& end) override;
+  std::string to_str() const override;
+  string_vec choices() const override;
+  size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:
   //! Copy construction not supported
@@ -394,17 +387,15 @@ private:
 class vec_sink : public sink
 {
 public:
-  vec_sink(string_vec* sink);
+  explicit vec_sink(string_vec* sink);
 
   /** The minimum number of values expected on the command-line (default 1) */
   vec_sink& with_min_values(size_t n);
   /** The maximum number of values expected on the command-line (default inf) */
   vec_sink& with_max_values(size_t n);
 
-  virtual std::string to_str() const override;
-
-  virtual size_t consume(string_vec_citer start,
-                         const string_vec_citer& end) override;
+  std::string to_str() const override;
+  size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:
   //! Copy construction not supported

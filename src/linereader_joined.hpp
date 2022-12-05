@@ -38,17 +38,17 @@ class joined_line_readers : public line_reader_base
 {
 public:
   /** Creates line-reader over multiple files in the specified order. */
-  joined_line_readers(const string_vec& filenames);
+  explicit joined_line_readers(const string_vec& filenames);
 
   /** Closes any still open files. */
-  ~joined_line_readers();
+  ~joined_line_readers() override = default;
 
   /**
    * Reads a line from the currently open file; if EOF is encountered, the
    * currently open file is closed and the next file is opened. Returns true
    * if a line was successfully read, or false if no files remain.
    */
-  bool getline(std::string& dst);
+  bool getline(std::string& dst) override;
 
   /** Currently open file; empty if no file is open. */
   const std::string& filename() const;

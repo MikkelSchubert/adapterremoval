@@ -52,8 +52,6 @@ io_error::io_error(const std::string& message, int error_number)
 {
 }
 
-io_error::~io_error() {}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_error'
 
@@ -70,8 +68,6 @@ gzip_error::gzip_error(const std::string& message)
   : io_error(message)
 {
 }
-
-gzip_error::~gzip_error() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions for isa-l
@@ -167,7 +163,7 @@ line_reader::getline(std::string& dst)
 
   while (!m_eof) {
     const size_t length = m_buffer_end - m_buffer_ptr;
-    char* ptr = reinterpret_cast<char*>(memchr(m_buffer_ptr, '\n', length));
+    auto* ptr = static_cast<char*>(memchr(m_buffer_ptr, '\n', length));
     if (ptr) {
       // Excluding terminal \n
       dst.append(m_buffer_ptr, ptr - m_buffer_ptr);

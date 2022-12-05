@@ -34,26 +34,24 @@ static_assert((ISAL_MAJOR_VERSION > 2 ||
 namespace adapterremoval {
 
 //! Buffer used for compressed and uncompressed line data
-typedef std::array<char, 10 * BUFSIZ> line_buffer;
+using line_buffer = std::array<char, 10 * BUFSIZ>;
 
 /** Represents errors during basic IO. */
 class io_error : public std::ios_base::failure
 {
 public:
   io_error(const std::string& message, int error_number = 0);
-  io_error(const io_error& other) = default;
 
-  virtual ~io_error() override;
+  ~io_error() override = default;
 };
 
 /** Represents errors during GZip (de)compression. */
 class gzip_error : public io_error
 {
 public:
-  gzip_error(const std::string& message);
-  gzip_error(const gzip_error& other) = default;
+  explicit gzip_error(const std::string& message);
 
-  virtual ~gzip_error() override;
+  ~gzip_error() override = default;
 };
 
 /** Base-class for line reading; used by receivers. */
@@ -61,10 +59,10 @@ class line_reader_base
 {
 public:
   /** Does nothing. */
-  line_reader_base() {}
+  line_reader_base() = default;
 
   /** Closes the file, if still open. */
-  virtual ~line_reader_base() {}
+  virtual ~line_reader_base() = default;
 
   /** Reads a lien into dst, returning false on EOF. */
   virtual bool getline(std::string& dst) = 0;
@@ -88,16 +86,16 @@ class line_reader : public line_reader_base
 {
 public:
   /** Creates a line handler from an existing handle */
-  line_reader(FILE* handle);
+  explicit line_reader(FILE* handle);
 
   /** Constructor; opens file and throws on errors. */
-  line_reader(const std::string& fpath);
+  explicit line_reader(const std::string& fpath);
 
   /** Closes the file, if still open. */
-  ~line_reader();
+  ~line_reader() override;
 
   /** Reads a line into dst, returning false on EOF. */
-  bool getline(std::string& dst);
+  bool getline(std::string& dst) override;
 
   //! Copy construction not supported
   line_reader(const line_reader&) = delete;

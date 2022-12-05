@@ -28,16 +28,14 @@ namespace adapterremoval {
 class assert_failed : public std::exception
 {
 public:
-  /** Copy constructor. */
-  assert_failed(const assert_failed& errror);
   /** Creates exception with the specified error message. */
-  assert_failed(const std::string& what);
+  explicit assert_failed(const std::string& what);
 
   /** Does nothing. */
-  virtual ~assert_failed() override;
+  ~assert_failed() override = default;
 
   /** Returns user supplied error message; owned by object. */
-  virtual const char* what() const noexcept override;
+  const char* what() const noexcept override;
 
 private:
   //! User supplied error message

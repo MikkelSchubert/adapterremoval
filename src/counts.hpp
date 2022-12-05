@@ -171,10 +171,7 @@ public:
   using value_type = typename I::value_type;
 
   /* Creates a counter of the specified size for each value class. */
-  indexed_count()
-    : m_counts()
-  {
-  }
+  indexed_count() = default;
 
   /** Returns the number of values. */
   inline size_t size() const { return I::size; }
@@ -222,7 +219,7 @@ public:
   }
 
 private:
-  std::array<T, I::size> m_counts;
+  std::array<T, I::size> m_counts = {};
 };
 
 /**

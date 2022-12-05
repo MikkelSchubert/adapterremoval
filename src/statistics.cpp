@@ -374,8 +374,8 @@ size_t
 demux_statistics::total() const
 {
   size_t total = unidentified + ambiguous;
-  for (size_t i = 0; i < barcodes.size(); ++i) {
-    total += barcodes.at(i);
+  for (const auto count : barcodes) {
+    total += count;
   }
 
   return total;

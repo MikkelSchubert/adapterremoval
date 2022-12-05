@@ -39,8 +39,8 @@ class fastq_output_chunk;
 class fastq_read_chunk;
 class userconfig;
 
-typedef std::unique_ptr<fastq_output_chunk> output_chunk_ptr;
-typedef std::unique_ptr<fastq_read_chunk> read_chunk_ptr;
+using output_chunk_ptr = std::unique_ptr<fastq_output_chunk>;
+using read_chunk_ptr = std::unique_ptr<fastq_read_chunk>;
 
 //! Rough number of nucleotides to read every cycle
 const size_t INPUT_BLOCK_SIZE = 4 * 64 * 1024;
@@ -56,9 +56,9 @@ class fastq_read_chunk : public analytical_chunk
 {
 public:
   /** Create chunk representing lines starting at line offset (1-based). */
-  fastq_read_chunk(bool eof_ = false);
+  explicit fastq_read_chunk(bool eof_ = false);
 
-  virtual ~fastq_read_chunk() override;
+  ~fastq_read_chunk() override = default;
 
   //! Indicates that EOF has been reached.
   bool eof;
@@ -79,9 +79,9 @@ class fastq_output_chunk : public analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  fastq_output_chunk(bool eof_ = false, uint32_t crc32 = 0);
+  explicit fastq_output_chunk(bool eof_ = false, uint32_t crc32 = 0);
 
-  virtual ~fastq_output_chunk() override;
+  ~fastq_output_chunk() override = default;
 
   /** Add FASTQ read to output buffer. */
   void add(const fastq& read);

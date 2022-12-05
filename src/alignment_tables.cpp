@@ -79,7 +79,7 @@ std::vector<phred_scores> calculate_phred_score()
 }
 #endif
 
-const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE] = {
+const std::array<signed char, PHRED_TABLE_SIZE> IDENTICAL_NTS = {
   0x22, -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
@@ -762,7 +762,7 @@ const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE] = {
   0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e,
 };
 
-const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE] = {
+const std::array<signed char, PHRED_TABLE_SIZE> DIFFERENT_NTS = {
   0x22, -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,

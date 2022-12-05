@@ -53,7 +53,7 @@ class log_stream
 {
 public:
   /* Crates a log stream with the specified log level */
-  log_stream(level lvl);
+  explicit log_stream(level lvl);
   /** Writes the message if the corresponding log-level is enabled */
   ~log_stream();
 
@@ -76,7 +76,7 @@ public:
   }
 
   /** Not implemented */
-  log_stream(log_stream&&) = default;
+  log_stream(log_stream&&) noexcept = default;
   /** Not implemented */
   log_stream(const log_stream&) = delete;
   /** Not implemented */

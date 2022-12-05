@@ -63,21 +63,10 @@ _BASE_CLASS_HEADER = """
 class html_template
 {
 public:
-  html_template();
-  virtual ~html_template();
+  html_template() = default;
+  virtual ~html_template() = default;
   virtual void write(std::ofstream& out) = 0;
 };"""
-
-_BASE_CLASS_BODY = """
-html_template::html_template()
-{
-  //
-}
-
-html_template::~html_template()
-{
-  //
-}"""
 
 
 def abort(fmt, *args):
@@ -229,7 +218,7 @@ def write_header(sections):
         tprint("{{")
         tprint("public:")
         tprint("  {}();", classname)
-        tprint("  virtual ~{}() override;", classname)
+        tprint("  ~{}() override;", classname)
 
         tprint("")
         tprint("  {}(const {}&) = delete;", classname, classname)
@@ -244,7 +233,7 @@ def write_header(sections):
             else:
                 tprint("  {}& set_{}(const std::string& value);", classname, field.name)
 
-        tprint("\n  virtual void write(std::ofstream& out) override;")
+        tprint("\n  void write(std::ofstream& out) override;")
 
         tprint("\nprivate:")
         tprint("  bool m_written;")
@@ -279,8 +268,7 @@ def write_implementations(sections, header_name):
     tprint("namespace adapterremoval {{")
     tprint("")
     tprint("size_t g_html_id = 1;")
-
-    tprint("{}", _BASE_CLASS_BODY)
+    tprint("")
 
     for key, props in sections.items():
         classname = to_classname(key)
@@ -334,7 +322,7 @@ def write_implementations(sections, header_name):
         # prevent clang-format from adding linebreaks
         tprint("  // clang-format off")
         # cast to void to silence unused-variable warnings when ID isn't used
-        tprint("  auto id = g_html_id++; (void)id;")
+        tprint("  auto id = g_html_id; ++g_html_id; (void)id;")
 
         for line in props["lines"]:
             tprint("{}", inject_variables(line))

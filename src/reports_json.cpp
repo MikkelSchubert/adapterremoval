@@ -337,7 +337,7 @@ struct io_section
     }
   }
 
-  void write_to_if(const json_dict_ptr& json, bool enabled = true)
+  void write_to_if(const json_dict_ptr& json, bool enabled = true) const
   {
     if (!enabled) {
       json->null(name());
@@ -523,11 +523,11 @@ write_report_output(const userconfig& config,
     return;
   }
 
-  fastq_stats_ptr output_1 = std::make_shared<fastq_statistics>();
-  fastq_stats_ptr output_2 = std::make_shared<fastq_statistics>();
-  fastq_stats_ptr merged = std::make_shared<fastq_statistics>();
-  fastq_stats_ptr singleton = std::make_shared<fastq_statistics>();
-  fastq_stats_ptr discarded = std::make_shared<fastq_statistics>();
+  auto output_1 = std::make_shared<fastq_statistics>();
+  auto output_2 = std::make_shared<fastq_statistics>();
+  auto merged = std::make_shared<fastq_statistics>();
+  auto singleton = std::make_shared<fastq_statistics>();
+  auto discarded = std::make_shared<fastq_statistics>();
 
   for (const auto& it : stats.trimming) {
     *output_1 += *it->read_1;

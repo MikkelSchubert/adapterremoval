@@ -25,8 +25,8 @@
 
 namespace adapterremoval {
 
-typedef std::pair<std::string, size_t> barcode_pair;
-typedef std::vector<barcode_pair> barcode_vec;
+using barcode_pair = std::pair<std::string, size_t>;
+using barcode_vec = std::vector<barcode_pair>;
 
 struct next_subsequence
 {
@@ -49,14 +49,6 @@ barcode_error::barcode_error(const std::string& message)
   , m_message(message)
 {
 }
-
-barcode_error::barcode_error(const barcode_error& error)
-  : std::exception()
-  , m_message(error.m_message)
-{
-}
-
-barcode_error::~barcode_error() {}
 
 const char*
 barcode_error::what() const noexcept
@@ -105,7 +97,7 @@ sort_barcodes(const fastq_pair_vec& barcodes)
     barcode.append(it->first.sequence());
     barcode.append(it->second.sequence());
 
-    sorted_barcodes.push_back(barcode_pair(barcode, it - barcodes.begin()));
+    sorted_barcodes.emplace_back(barcode, it - barcodes.begin());
   }
 
   std::sort(sorted_barcodes.begin(), sorted_barcodes.end());
@@ -323,10 +315,9 @@ barcode_table::lookup_with_mm(const char* seq,
 
         if (current_candidate.mismatches < best_candidate.mismatches) {
           best_candidate = current_candidate;
-        } else if (current_candidate.mismatches == best_candidate.mismatches) {
-          if (current_candidate.barcode != no_match) {
-            best_candidate.barcode = ambiguous;
-          }
+        } else if (current_candidate.mismatches == best_candidate.mismatches &&
+                   current_candidate.barcode != no_match) {
+          best_candidate.barcode = ambiguous;
         }
       }
     }

@@ -42,7 +42,7 @@ using json_ptr = std::shared_ptr<json_value>;
 class json_value
 {
 public:
-  virtual ~json_value();
+  virtual ~json_value() = default;
 
   /** Returns the value as a valid JSON string */
   virtual std::string to_string() const;
@@ -58,7 +58,7 @@ class json_token : public json_value
 {
 public:
   /** Constructor takes a single assumed-to-be-valid JSON token/string */
-  json_token(const std::string& value);
+  explicit json_token(const std::string& value);
 
   /** Create a JSON token from a string; special characters are escaped */
   static json_ptr from_str(const std::string& value);
@@ -81,9 +81,9 @@ public:
   static json_ptr from_null();
 
   /** See json_value::to_string */
-  virtual std::string to_string() const override;
+  std::string to_string() const override;
   /** See json_value::write */
-  virtual void write(std::ostream& out, size_t indent = 0) const override;
+  void write(std::ostream& out, size_t indent = 0) const override;
 
 private:
   /** Create a single-line JSON list from a set of JSON encoded values */
@@ -101,7 +101,7 @@ public:
   json_list();
 
   /** See json_value::write */
-  virtual void write(std::ostream& out, size_t indent = 0) const override;
+  void write(std::ostream& out, size_t indent = 0) const override;
 
   /** Appends an empty JSON dictionary to the list and returns it */
   json_dict_ptr dict();
@@ -123,7 +123,7 @@ public:
   json_dict();
 
   /** See json_value::write */
-  virtual void write(std::ostream& out, size_t indent = 0) const override;
+  void write(std::ostream& out, size_t indent = 0) const override;
 
   /** Add and return a sub-dict with the specified key */
   json_dict_ptr dict(const std::string& key);
@@ -159,7 +159,7 @@ private:
   //! List of keys in insertion order
   std::vector<std::string> m_keys;
   //! Map of unencoded keys to JSON objects
-  std::map<std::string, json_ptr> m_values;
+  std::map<std::string, json_ptr, std::less<>> m_values;
   //! Multi-line or single (inline) dictionary
   bool m_multi_line;
 };

@@ -53,7 +53,7 @@ class progress_timer
 {
 public:
   /** Initializes a progress timer and starts the animation if enabled */
-  progress_timer(progress_type type);
+  explicit progress_timer(progress_type type);
 
   /** Destructor. Silently ends the animation if not finalized. */
   ~progress_timer();

@@ -263,13 +263,12 @@ cli_formatter::set_indent_first_line(bool value)
 std::string
 cli_formatter::format(const std::string& lines) const
 {
-  std::string line;
   std::ostringstream lines_out;
 
   for (const auto& line : split_lines(lines)) {
-    auto lines = wrap_text(line, m_columns, m_ljust);
+    const auto block = wrap_text(line, m_columns, m_ljust);
 
-    join(lines_out, indent(lines, m_indentation, m_indent_first));
+    join(lines_out, indent(block, m_indentation, m_indent_first));
   }
 
   return lines_out.str();
@@ -361,8 +360,8 @@ format_rough_number(size_t value, size_t out_digits)
     return "0";
   }
 
-  double rounded = value;
-  size_t in_digits = static_cast<size_t>(std::log10(rounded));
+  auto rounded = static_cast<double>(value);
+  auto in_digits = static_cast<size_t>(std::log10(rounded));
 
   if (out_digits > in_digits || !value) {
     return std::to_string(value);

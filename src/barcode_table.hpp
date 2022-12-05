@@ -36,13 +36,10 @@ struct next_subsequence;
 class barcode_error : public std::exception
 {
 public:
-  barcode_error(const std::string& message);
-  barcode_error(const barcode_error& error);
-
-  virtual ~barcode_error() override;
+  explicit barcode_error(const std::string& message);
 
   /** Returns error message; string is owned by exception. */
-  virtual const char* what() const noexcept override;
+  const char* what() const noexcept override;
 
 private:
   //! Error message associated with exception.
@@ -62,7 +59,7 @@ struct demultiplexer_node
   int value;
 };
 
-typedef std::vector<demultiplexer_node> demux_node_vec;
+using demux_node_vec = std::vector<demultiplexer_node>;
 
 /**
  *
@@ -81,7 +78,7 @@ public:
   static const int no_match = -1;
   static const int ambiguous = -2;
 
-protected:
+private:
   struct candidate
   {
     explicit candidate(int barcode = barcode_table::no_match,

@@ -43,11 +43,11 @@ using fastq_stats_vec = std::vector<fastq_stats_ptr>;
 using template_ptr = std::unique_ptr<html_template>;
 
 //! Size chosen to allow fitting two pages side-by-side on a 1920 width display
-const char* FIGURE_WIDTH = "736";
+const char* const FIGURE_WIDTH = "736";
 //! Per figure width for two-column facet figures; approximate
-const char* FACET_WIDTH_2 = "351";
+const char* const FACET_WIDTH_2 = "351";
 //! Per figure width for one-column facet figures; approximate
-const char* FACET_WIDTH_1 = FIGURE_WIDTH;
+const char* const FACET_WIDTH_1 = FIGURE_WIDTH;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -77,9 +77,9 @@ runtime_to_str(double seconds)
   }
 
   if (seconds >= 60.0) {
-    size_t minutes = static_cast<size_t>(std::fmod(seconds, 3600.0) / 60.0);
+    auto minutes = static_cast<size_t>(std::fmod(seconds, 3600.0) / 60.0);
     ss << minutes << " "
-       << ((!minutes || minutes >= 120.0) ? "minutes" : "minute") << ", and "
+       << ((!minutes || minutes >= 120) ? "minutes" : "minute") << ", and "
        << std::setw(4);
   }
 
@@ -715,7 +715,7 @@ write_html_input_section(const userconfig& config,
 
   if (config.paired_ended_mode) {
     stats_vec.push_back(stats.input_2);
-    names.push_back("File 2");
+    names.emplace_back("File 2");
   }
 
   write_html_section_title("Input", output);
@@ -860,13 +860,13 @@ write_html_output_section(const userconfig& config,
   fastq_stats_vec stats_vec;
   string_vec names;
 
-  fastq_stats_ptr merged = std::make_shared<fastq_statistics>();
+  auto merged = std::make_shared<fastq_statistics>();
 
   {
-    fastq_stats_ptr output_1 = std::make_shared<fastq_statistics>();
-    fastq_stats_ptr output_2 = std::make_shared<fastq_statistics>();
-    fastq_stats_ptr singleton = std::make_shared<fastq_statistics>();
-    fastq_stats_ptr discarded = std::make_shared<fastq_statistics>();
+    auto output_1 = std::make_shared<fastq_statistics>();
+    auto output_2 = std::make_shared<fastq_statistics>();
+    auto singleton = std::make_shared<fastq_statistics>();
+    auto discarded = std::make_shared<fastq_statistics>();
 
     for (const auto& it : stats.trimming) {
       *output_1 += *it->read_1;
@@ -877,18 +877,18 @@ write_html_output_section(const userconfig& config,
     }
 
     stats_vec.push_back(output_1);
-    names.push_back("Output 1");
+    names.emplace_back("Output 1");
 
     if (config.paired_ended_mode) {
       stats_vec.push_back(output_2);
       stats_vec.push_back(singleton);
 
-      names.push_back("Output 2");
-      names.push_back("Singleton");
+      names.emplace_back("Output 2");
+      names.emplace_back("Singleton");
     }
 
     stats_vec.push_back(discarded);
-    names.push_back("Discarded");
+    names.emplace_back("Discarded");
   }
 
   write_html_section_title("Output", output);

@@ -56,7 +56,7 @@ public:
   {
   }
 
-  virtual ~se_demuxed_processor() override;
+  ~se_demuxed_processor() override = default;
 
   chunk_vec process(chunk_ptr chunk) override
   {
@@ -87,7 +87,7 @@ public:
   {
   }
 
-  virtual ~pe_demuxed_processor() override;
+  ~pe_demuxed_processor() override = default;
 
   chunk_vec process(chunk_ptr chunk) override
   {
@@ -192,11 +192,5 @@ demultiplex_sequences(const userconfig& config)
 
   return !write_html_report(config, stats, out_files.settings_html);
 }
-
-// Out-of-line definition to make -Wweak-vtables happy
-se_demuxed_processor::~se_demuxed_processor() {}
-
-// Out-of-line definition to make -Wweak-vtables happy
-pe_demuxed_processor::~pe_demuxed_processor() {}
 
 } // namespace adapterremoval

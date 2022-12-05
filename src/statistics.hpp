@@ -38,32 +38,32 @@ class fastq_statistics;
 class statistics;
 class trimming_statistics;
 
-typedef std::shared_ptr<demux_statistics> demux_stats_ptr;
-typedef std::shared_ptr<duplication_statistics> duplication_stats_ptr;
-typedef std::shared_ptr<fastq_statistics> fastq_stats_ptr;
-typedef std::shared_ptr<statistics> stats_ptr;
-typedef std::shared_ptr<trimming_statistics> trim_stats_ptr;
+using demux_stats_ptr = std::shared_ptr<demux_statistics>;
+using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
+using fastq_stats_ptr = std::shared_ptr<fastq_statistics>;
+using stats_ptr = std::shared_ptr<statistics>;
+using trim_stats_ptr = std::shared_ptr<trimming_statistics>;
 
 /** Simple counter class for read/bases statistics */
 class reads_and_bases
 {
 public:
-  inline reads_and_bases(uint64_t reads = 0, uint64_t bases = 0);
-  inline reads_and_bases& operator+=(const reads_and_bases& other);
+  reads_and_bases(uint64_t reads = 0, uint64_t bases = 0);
+  reads_and_bases& operator+=(const reads_and_bases& other);
 
   /** Increments the number of reads by one the number of bases by an amount */
-  inline void inc(uint64_t bases = 1);
+  void inc(uint64_t bases = 1);
 
   /** Increments the number of reads */
-  inline void inc_reads(uint64_t reads = 1);
+  void inc_reads(uint64_t reads = 1);
 
   /** Increments the number of bases */
-  inline void inc_bases(uint64_t bases = 1);
+  void inc_bases(uint64_t bases = 1);
 
   /** Returns the total number of reads (number of increments) */
-  inline uint64_t reads() const;
+  uint64_t reads() const;
   /** Returns the total number of bases */
-  inline uint64_t bases() const;
+  uint64_t bases() const;
 
 private:
   //! Number of reads/times inc was called
@@ -95,7 +95,7 @@ public:
     double unique_frac;
   };
 
-  duplication_statistics(size_t max_unique_sequences);
+  explicit duplication_statistics(size_t max_unique_sequences);
 
   /** **/
   void process(const fastq& read);
@@ -110,7 +110,7 @@ private:
   /** Attempts to correct the number of observations for a given bin */
   double correct_count(size_t bin, size_t count) const;
 
-  typedef robin_hood::unordered_flat_map<std::string, size_t> string_counts;
+  using string_counts = robin_hood::unordered_flat_map<std::string, size_t>;
 
   /** Maximum size of m_sequence_counts. */
   size_t m_max_unique_sequences;
@@ -163,7 +163,7 @@ public:
   counts nucleotides_pos() const;
 
   /** Sum of nucleotide counts by position for GC only */
-  inline const counts nucleotides_gc_pos() const
+  inline counts nucleotides_gc_pos() const
   {
     return nucleotides_pos('G') + nucleotides_pos('C');
   }
@@ -226,7 +226,7 @@ private:
 class trimming_statistics
 {
 public:
-  trimming_statistics(double sample_rate = 1.0);
+  explicit trimming_statistics(double sample_rate = 1.0);
 
   //! Statistics for first reads
   fastq_stats_ptr read_1;
@@ -294,7 +294,7 @@ public:
 class demux_statistics
 {
 public:
-  demux_statistics(double sample_rate = 1.0);
+  explicit demux_statistics(double sample_rate = 1.0);
 
   size_t total() const;
 
@@ -328,7 +328,7 @@ public:
   std::vector<trim_stats_ptr> trimming;
 
 private:
-  statistics(double sample_rate);
+  explicit statistics(double sample_rate);
 
   friend class statistics_builder;
 };
@@ -357,13 +357,13 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-reads_and_bases::reads_and_bases(uint64_t reads, uint64_t bases)
+inline reads_and_bases::reads_and_bases(uint64_t reads, uint64_t bases)
   : m_reads(reads)
   , m_bases(bases)
 {
 }
 
-reads_and_bases&
+inline reads_and_bases&
 reads_and_bases::operator+=(const reads_and_bases& other)
 {
   m_reads += other.m_reads;
@@ -372,32 +372,32 @@ reads_and_bases::operator+=(const reads_and_bases& other)
   return *this;
 }
 
-void
+inline void
 reads_and_bases::inc(uint64_t bases)
 {
   m_reads += 1;
   m_bases += bases;
 }
 
-void
+inline void
 reads_and_bases::inc_reads(uint64_t reads)
 {
   m_reads += reads;
 }
 
-void
+inline void
 reads_and_bases::inc_bases(uint64_t bases)
 {
   m_bases += bases;
 }
 
-uint64_t
+inline uint64_t
 reads_and_bases::reads() const
 {
   return m_reads;
 }
 
-uint64_t
+inline uint64_t
 reads_and_bases::bases() const
 {
   return m_bases;

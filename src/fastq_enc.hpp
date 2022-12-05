@@ -49,13 +49,12 @@ enum class quality_encoding
 class fastq_error : public std::exception
 {
 public:
-  fastq_error(const std::string& message);
-  fastq_error(const fastq_error& error);
+  explicit fastq_error(const std::string& message);
 
-  virtual ~fastq_error() override;
+  ~fastq_error() override = default;
 
   /** Returns error message; string is owned by exception. */
-  virtual const char* what() const noexcept override;
+  const char* what() const noexcept override;
 
 private:
   //! Error message associated with exception.
@@ -70,12 +69,12 @@ public:
    * quality-scores up to a given value (0 - N). Input with higher scores
    * is rejected, and output is truncated to this score.
    */
-  fastq_encoding(quality_encoding encoding);
+  explicit fastq_encoding(quality_encoding encoding);
 
   /** Decodes a string of ASCII values in-place. */
   void decode(std::string& qualities) const;
 
-protected:
+private:
   //! Quality score encoding expected when decoding data
   quality_encoding m_encoding;
   //! Offset of the lowest ASCII value used by the given encoding

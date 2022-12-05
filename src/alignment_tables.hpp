@@ -23,6 +23,7 @@
 \*************************************************************************/
 #pragma once
 
+#include <array>    // for array
 #include <stddef.h> // for size_t
 
 namespace adapterremoval {
@@ -35,7 +36,7 @@ const size_t PHRED_TABLE_SIZE = 8836;
  * Position is calculated as phred_1 * (MAX_PHRED_SCORE + 1) + phred_2,
  * assuming that phred_1 >= phred_2.
  */
-extern const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE];
+extern const std::array<signed char, PHRED_TABLE_SIZE> IDENTICAL_NTS;
 
 /**
  * Table of Phred scores to assigned for mismatching positions during merging.
@@ -43,6 +44,6 @@ extern const signed char IDENTICAL_NTS[PHRED_TABLE_SIZE];
  * Position is calculated as phred_1 * (MAX_PHRED_SCORE + 1) + phred_2,
  * assuming that phred_1 >= phred_2.
  */
-extern const signed char DIFFERENT_NTS[PHRED_TABLE_SIZE];
+extern const std::array<signed char, PHRED_TABLE_SIZE> DIFFERENT_NTS;
 
 } // namespace adapterremoval

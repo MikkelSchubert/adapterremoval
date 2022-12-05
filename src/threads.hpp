@@ -32,14 +32,10 @@ class thread_error : public std::exception
 {
 public:
   /** Constructor; takes an error-message. */
-  thread_error(const std::string& message);
-  /** Copy-constructor; takes an exiting error. */
-  thread_error(const thread_error& error);
-  /** Destructor; does nothing. */
-  virtual ~thread_error() override;
+  explicit thread_error(const std::string& message);
 
   /** Returns error message; lifetime is the same as the object. */
-  virtual const char* what() const noexcept override;
+  const char* what() const noexcept override;
 
 private:
   //! User provided error message
@@ -55,9 +51,8 @@ class thread_abort : public thread_error
 {
 public:
   thread_abort();
-  thread_abort(const thread_abort& other) = default;
 
-  virtual ~thread_abort() override;
+  ~thread_abort() override = default;
 };
 
 } // namespace adapterremoval

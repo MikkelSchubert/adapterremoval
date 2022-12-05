@@ -103,8 +103,7 @@ parser::parse_args(int argc, char const* const* argv)
   update_argument_map();
   const string_vec argvec(argv + 1, argv + argc);
 
-  string_vec_citer it = argvec.begin();
-  while (it != argvec.end()) {
+  for (auto it = argvec.begin(); it != argvec.end();) {
     const auto argument = find_argument(*it);
     if (argument) {
       const size_t consumed = argument->parse(it, argvec.end());
@@ -235,9 +234,9 @@ parser::print_help() const
       }
 
       indentation = std::max<size_t>(indentation, ss.str().size() + 3);
-      signatures.push_back(ss.str());
+      signatures.emplace_back(ss.str());
     } else {
-      signatures.push_back(std::string());
+      signatures.emplace_back();
     }
   }
 
@@ -251,7 +250,7 @@ parser::print_help() const
     if (entry.argument) {
       if (!entry.argument->is_deprecated()) {
         const auto& arg = *entry.argument;
-        const auto signature = signatures.at(i);
+        const auto& signature = signatures.at(i);
 
         cerr << signature;
 
@@ -291,7 +290,7 @@ parser::update_argument_map()
   }
 
   bool any_errors = false;
-  for (auto& it : m_args) {
+  for (const auto& it : m_args) {
     if (it.argument) {
       for (const auto& key : it.argument->conflicts_with()) {
         if (!m_keys.count(key)) {
@@ -675,8 +674,6 @@ sink::sink(size_t min_values, size_t max_values)
   , m_max_values(max_values)
 {
 }
-
-sink::~sink() {}
 
 bool
 sink::has_default() const

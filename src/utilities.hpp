@@ -28,8 +28,8 @@ uint32_t
 prng_seed();
 
 template<typename A>
-typename std::enable_if<std::is_integral<A>::value ||
-                        std::is_floating_point<A>::value>::type
+typename std::enable_if_t<std::is_integral<A>::value ||
+                          std::is_floating_point<A>::value>
 merge(A& dst, const A& src)
 {
   dst += src;

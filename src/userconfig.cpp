@@ -1153,19 +1153,17 @@ userconfig::parse_args(int argc, char* argv[])
 
   {
     const std::string key = "--pre-trim-polyx";
-    if (argparser.is_set(key)) {
-      if (!parse_poly_x_option(key, pre_trim_poly_x_sink, pre_trim_poly_x)) {
-        return argparse::parse_result::error;
-      }
+    if (argparser.is_set(key) &&
+        !parse_poly_x_option(key, pre_trim_poly_x_sink, pre_trim_poly_x)) {
+      return argparse::parse_result::error;
     }
   }
 
   {
     const std::string key = "--post-trim-polyx";
-    if (argparser.is_set(key)) {
-      if (!parse_poly_x_option(key, post_trim_poly_x_sink, post_trim_poly_x)) {
-        return argparse::parse_result::error;
-      }
+    if (argparser.is_set(key) &&
+        !parse_poly_x_option(key, post_trim_poly_x_sink, post_trim_poly_x)) {
+      return argparse::parse_result::error;
     }
   }
 
@@ -1184,14 +1182,12 @@ userconfig::is_good_alignment(const alignment_info& alignment) const
   }
 
   // Only pairs of called bases are considered part of the alignment
-  const size_t n_aligned =
-    static_cast<size_t>(alignment.length - alignment.n_ambiguous);
-  size_t mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
-
+  const size_t n_aligned = alignment.length - alignment.n_ambiguous;
   if (n_aligned < min_adapter_overlap && !paired_ended_mode) {
     return false;
   }
 
+  auto mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
   if (n_aligned < 6) {
     mm_threshold = 0;
   } else if (n_aligned < 10) {

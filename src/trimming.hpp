@@ -47,7 +47,7 @@ public:
    * @param read A read to be distributed in the pipeline; may be modified.
    * @param type The read type to store the read as.
    */
-  void add(fastq& read, const read_type type);
+  void add(const fastq& read, const read_type type);
 
   /** Returns a chunk for each generated type of proccessed reads. */
   chunk_vec finalize();
@@ -67,7 +67,7 @@ public:
                   const size_t nth,
                   trim_stats_ptr sink);
 
-  virtual void finalize() override;
+  void finalize() override;
 
 protected:
   const userconfig& m_config;

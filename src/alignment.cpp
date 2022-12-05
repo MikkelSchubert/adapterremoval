@@ -53,11 +53,11 @@ compare_subsequences_func
 select_compare_function()
 {
   if (supports_avx2()) {
-    return compare_subsequences_avx2;
+    return &compare_subsequences_avx2;
   } else if (supports_sse2()) {
-    return compare_subsequences_sse2;
+    return &compare_subsequences_sse2;
   } else {
-    return compare_subsequences_std;
+    return &compare_subsequences_std;
   }
 }
 
@@ -157,8 +157,8 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
 struct phred_scores
 {
   explicit phred_scores(size_t index)
-    : identical_nts(IDENTICAL_NTS[index])
-    , different_nts(DIFFERENT_NTS[index])
+    : identical_nts(IDENTICAL_NTS.at(index))
+    , different_nts(DIFFERENT_NTS.at(index))
   {
   }
 
@@ -173,11 +173,9 @@ get_updated_phred_scores(char qual_1, char qual_2)
 {
   AR_REQUIRE(qual_1 >= qual_2);
 
-  const size_t phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
-  const size_t phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
+  const auto phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
+  const auto phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
   const size_t index = (phred_1 * (PHRED_SCORE_MAX + 1)) + phred_2;
-
-  AR_REQUIRE(index < PHRED_TABLE_SIZE);
 
   return phred_scores(index);
 }
@@ -269,7 +267,7 @@ sequence_aligner::set_mismatch_threshold(double mm)
 alignment_info
 sequence_aligner::align_single_end(const fastq& read, int max_shift) const
 {
-  size_t adapter_id = 0;
+  int adapter_id = 0;
   alignment_info alignment;
   for (const auto& adapter_pair : m_adapters) {
     const auto& adapter = adapter_pair.first.sequence();
@@ -367,7 +365,7 @@ sequence_merger::set_rng(std::mt19937* rng)
 void
 sequence_merger::merge(const alignment_info& alignment,
                        fastq& read1,
-                       const fastq& read2)
+                       const fastq& read2) const
 {
   AR_REQUIRE(m_merge_strategy != merge_strategy::none);
   AR_REQUIRE((m_merge_strategy == merge_strategy::original) == !!m_rng);
@@ -376,8 +374,7 @@ sequence_merger::merge(const alignment_info& alignment,
   AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
 
   // Offset to the first base overlapping read 2
-  const size_t read_1_offset =
-    static_cast<size_t>(std::max(0, alignment.offset));
+  const auto read_1_offset = static_cast<size_t>(std::max(0, alignment.offset));
   // Offset to the last base overlapping read 1
   const size_t read_2_offset =
     static_cast<int>(read1.length()) - std::max(0, alignment.offset);
@@ -413,7 +410,7 @@ void
 sequence_merger::original_merge(char& nt_1,
                                 char& qual_1,
                                 char nt_2,
-                                char qual_2)
+                                char qual_2) const
 {
   if (nt_1 == 'N' || nt_2 == 'N') {
     // If one of the bases are N, then we suppose that we just have (at
@@ -454,7 +451,7 @@ void
 sequence_merger::conservative_merge(char& nt_1,
                                     char& qual_1,
                                     char nt_2,
-                                    char qual_2)
+                                    char qual_2) const
 {
 
   if (nt_2 == 'N' || nt_1 == 'N') {

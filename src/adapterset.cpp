@@ -31,9 +31,9 @@
 
 namespace adapterremoval {
 
-typedef std::pair<std::string, fastq_vec> named_fastq_row;
-typedef std::vector<named_fastq_row> fastq_table;
-typedef fastq_table::const_iterator fastq_table_citer;
+using named_fastq_row = std::pair<std::string, fastq_vec>;
+using fastq_table = std::vector<named_fastq_row>;
+using fastq_table_citer = fastq_table::const_iterator;
 
 bool
 print_parse_error(const std::ostringstream& message)
@@ -66,6 +66,7 @@ read_table(const std::string& filename,
 
   size_t last_row_size = 0;
   size_t line_num = 1;
+  size_t col_num = 1;
   try {
     line_reader adapter_file(filename);
 
@@ -75,19 +76,11 @@ read_table(const std::string& filename,
       std::string field;
       std::istringstream instream(trim_comments(line));
 
-      for (size_t index = 1; instream >> field; ++index) {
-        try {
-          if (index == 1 && row_names) {
-            name = field;
-          } else {
-            row.push_back(fastq("sequence", field));
-          }
-        } catch (const fastq_error& error) {
-          std::ostringstream message;
-          message << "Failed to parse sequence in '" << filename << "' at line "
-                  << line_num << ", column " << index << ": " << error.what();
-
-          return print_parse_error(message);
+      for (col_num = 1; instream >> field; ++col_num) {
+        if (col_num == 1 && row_names) {
+          name = field;
+        } else {
+          row.emplace_back("sequence", field);
         }
       }
 
@@ -121,12 +114,18 @@ read_table(const std::string& filename,
         last_row_size = row.size();
       }
 
-      dst.push_back(named_fastq_row(name, row));
+      dst.emplace_back(name, row);
     }
   } catch (const std::ios_base::failure& error) {
     std::ostringstream message;
     message << "IO error reading '" << filename << "' at line " << line_num
             << ": " << error.what();
+
+    return print_parse_error(message);
+  } catch (const fastq_error& error) {
+    std::ostringstream message;
+    message << "Failed to parse sequence in '" << filename << "' at line "
+            << line_num << ", column " << col_num << ": " << error.what();
 
     return print_parse_error(message);
   }
@@ -147,9 +146,7 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
   const size_t mate_2_len = barcodes.front().second.length();
 
   string_pair_vec sequences;
-  for (fastq_pair_vec::const_iterator it = barcodes.begin();
-       it != barcodes.end();
-       ++it) {
+  for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
     const std::string& mate_1 = it->first.sequence();
     const std::string& mate_2 = it->second.sequence();
 
@@ -191,8 +188,7 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
       return print_parse_error(error);
     }
 
-    sequences.push_back(
-      string_pair(it->first.sequence(), it->second.sequence()));
+    sequences.emplace_back(it->first.sequence(), it->second.sequence());
   }
 
   std::sort(sequences.begin(), sequences.end());
@@ -301,7 +297,7 @@ adapter_set::adapter_set()
   , m_adapters()
 {
   // Default name if no barcodes are used
-  m_samples.push_back("main");
+  m_samples.emplace_back("main");
 }
 
 void
@@ -312,7 +308,7 @@ adapter_set::add_adapters(const std::string& adapter1,
   fastq adapter2_fq("adapter2", adapter2);
   adapter2_fq.reverse_complement();
 
-  m_adapters.push_back(fastq_pair(adapter1_fq, adapter2_fq));
+  m_adapters.emplace_back(adapter1_fq, adapter2_fq);
 }
 
 bool
@@ -332,7 +328,7 @@ adapter_set::load_adapters(const std::string& filename, bool paired_end)
       adapter_3p.reverse_complement();
     }
 
-    m_adapters.push_back(fastq_pair(adapter_5p, adapter_3p));
+    m_adapters.emplace_back(adapter_5p, adapter_3p);
   }
 
   return true;
@@ -358,7 +354,7 @@ adapter_set::load_barcodes(const std::string& filename, bool paired_end)
     }
 
     m_samples.push_back(row.first);
-    m_barcodes.push_back(fastq_pair(barcode_5p, barcode_3p));
+    m_barcodes.emplace_back(barcode_5p, barcode_3p);
   }
 
   return check_barcodes_sequences(m_barcodes, filename, paired_end) &&
@@ -407,7 +403,7 @@ adapter_set::get_adapter_set(size_t nth) const
     fastq adapter_2("adapter_2",
                     adapter_pair.second.sequence() + barcodes.first.sequence());
 
-    adapters.push_back(fastq_pair(adapter_1, adapter_2));
+    adapters.emplace_back(adapter_1, adapter_2);
   }
 
   return adapters;

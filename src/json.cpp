@@ -90,8 +90,6 @@ format_f64(double value)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-json_value::~json_value() {}
-
 std::string
 json_value::to_string() const
 {

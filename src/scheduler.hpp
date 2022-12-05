@@ -45,7 +45,7 @@ public:
   {
   }
 
-  typedef std::unique_ptr<T> pointer;
+  using pointer = std::unique_ptr<T>;
 
   /** Create new state value. **/
   template<class... Args>
@@ -99,10 +99,10 @@ class analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  analytical_chunk();
+  analytical_chunk() = default;
 
   /** Destructor; does nothing. */
-  virtual ~analytical_chunk();
+  virtual ~analytical_chunk() = default;
 
   //! Copy construction not supported
   analytical_chunk(const analytical_chunk&) = delete;
@@ -110,9 +110,9 @@ public:
   analytical_chunk& operator=(const analytical_chunk&) = delete;
 };
 
-typedef std::unique_ptr<analytical_chunk> chunk_ptr;
-typedef std::pair<size_t, chunk_ptr> chunk_pair;
-typedef std::vector<chunk_pair> chunk_vec;
+using chunk_ptr = std::unique_ptr<analytical_chunk>;
+using chunk_pair = std::pair<size_t, chunk_ptr>;
+using chunk_vec = std::vector<chunk_pair>;
 
 /** Ordering of input for analytical steps. */
 enum class processing_order
@@ -145,7 +145,7 @@ public:
   analytical_step(processing_order step_order, const std::string& name);
 
   /** Destructor; does nothing in base class. **/
-  virtual ~analytical_step();
+  virtual ~analytical_step() = default;
 
   /**
    * Function called by pipeline to generate / process / consume data chunks.
@@ -205,9 +205,6 @@ public:
   /** Constructor. */
   scheduler();
 
-  /** Frees any object passed via 'add_step'. **/
-  ~scheduler();
-
   /**
    * Adds a step to the pipeline.
    *
@@ -229,9 +226,9 @@ public:
   scheduler& operator=(const scheduler&) = delete;
 
 private:
-  typedef std::shared_ptr<scheduler_step> step_ptr;
-  typedef std::queue<step_ptr> runables;
-  typedef std::vector<step_ptr> pipeline;
+  using step_ptr = std::shared_ptr<scheduler_step>;
+  using runables = std::queue<step_ptr>;
+  using pipeline = std::vector<step_ptr>;
 
   size_t add_step(std::unique_ptr<analytical_step> step);
 
@@ -241,7 +238,7 @@ private:
   void do_run();
 
   /** Returns true if an error has occurred, and the run should terminate. */
-  bool errors_occured();
+  bool errors_occured() const;
   /** Mark that an error has occurred, and that the run should terminate. */
   void set_errors_occured();
 
@@ -308,7 +305,7 @@ analytical_step::name() const
 // Implementations for 'scheduler'
 
 inline bool
-scheduler::errors_occured()
+scheduler::errors_occured() const
 {
   return m_errors.load(std::memory_order::memory_order_relaxed);
 }

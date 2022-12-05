@@ -59,7 +59,6 @@ isal_buffer_size(size_t level)
 {
   switch (level) {
     default:
-    case 3:
       return ISAL_DEF_LVL3_DEFAULT;
     case 2:
       return ISAL_DEF_LVL2_DEFAULT;
@@ -75,9 +74,9 @@ isal_enabled(const userconfig& config, const std::string& filename)
 {
   return (config.gzip || ends_with(tolower(filename), ".gz"))
 #ifdef USE_LIBDEFLATE
-         && config.gzip_level <= MAX_ISAL_LEVEL;
+         && config.gzip_level <= MAX_ISAL_LEVEL
 #endif
-  ;
+    ;
 }
 
 } // namespace
@@ -92,8 +91,6 @@ fastq_read_chunk::fastq_read_chunk(bool eof_)
   , reads_2()
 {
 }
-
-fastq_read_chunk::~fastq_read_chunk() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'fastq_output_chunk'
@@ -114,8 +111,6 @@ fastq_output_chunk::add(const fastq& read)
   nucleotides += read.length();
   read.into_string(reads);
 }
-
-fastq_output_chunk::~fastq_output_chunk() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'read_fastq'

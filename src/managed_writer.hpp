@@ -41,7 +41,7 @@ namespace adapterremoval {
 class managed_writer
 {
 public:
-  managed_writer(const std::string& filename);
+  explicit managed_writer(const std::string& filename);
   ~managed_writer();
 
   /**

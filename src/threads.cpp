@@ -29,14 +29,6 @@ thread_error::thread_error(const std::string& message)
 {
 }
 
-thread_error::thread_error(const thread_error& error)
-  : std::exception()
-  , m_message(error.m_message)
-{
-}
-
-thread_error::~thread_error() {}
-
 const char*
 thread_error::what() const noexcept
 {
@@ -47,7 +39,5 @@ thread_abort::thread_abort()
   : thread_error("abort thread")
 {
 }
-
-thread_abort::~thread_abort() {}
 
 } // namespace adapterremoval

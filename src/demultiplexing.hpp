@@ -67,7 +67,7 @@ public:
                     demux_stats_ptr stats);
 
   /** Frees any unflushed caches. */
-  virtual ~demultiplex_reads();
+  ~demultiplex_reads() override = default;
 
   //! Copy construction not supported
   demultiplex_reads(const demultiplex_reads&) = delete;
@@ -87,7 +87,7 @@ protected:
   //! chunks are set to true.
   chunk_vec flush_cache(bool eof = false);
 
-  typedef std::vector<read_chunk_ptr> demultiplexed_cache;
+  using demultiplexed_cache = std::vector<read_chunk_ptr>;
 
   //! Cache of demultiplex reads; used to reduce the number of output chunks
   //! generated from each processed chunk, which would otherwise increase

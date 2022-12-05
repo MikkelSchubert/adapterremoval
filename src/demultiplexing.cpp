@@ -93,8 +93,6 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   }
 }
 
-demultiplex_reads::~demultiplex_reads() {}
-
 chunk_vec
 demultiplex_reads::flush_cache(bool eof)
 {
@@ -154,7 +152,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
         read.add_prefix_to_name(m_config.prefix_read_1);
       }
 
-      read_chunk_ptr& dst = m_cache.at(best_barcode);
+      const read_chunk_ptr& dst = m_cache.at(best_barcode);
       read.truncate(m_barcodes.at(best_barcode).first.length());
       dst->nucleotides += read.length();
       dst->reads_1.push_back(read);
@@ -219,7 +217,7 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
         it_2->add_prefix_to_name(m_config.prefix_read_2);
       }
 
-      read_chunk_ptr& dst = m_cache.at(best_barcode);
+      const read_chunk_ptr& dst = m_cache.at(best_barcode);
 
       it_1->truncate(m_barcodes.at(best_barcode).first.length());
       dst->nucleotides += it_1->length();

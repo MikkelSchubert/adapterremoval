@@ -31,8 +31,6 @@ joined_line_readers::joined_line_readers(const string_vec& filenames)
 {
 }
 
-joined_line_readers::~joined_line_readers() {}
-
 bool
 joined_line_readers::getline(std::string& dst)
 {

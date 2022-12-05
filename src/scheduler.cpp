@@ -31,13 +31,6 @@
 namespace adapterremoval {
 
 ///////////////////////////////////////////////////////////////////////////////
-// analytical_chunk
-
-analytical_chunk::analytical_chunk() {}
-
-analytical_chunk::~analytical_chunk() {}
-
-///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
 analytical_step::analytical_step(processing_order step_order,
@@ -47,19 +40,17 @@ analytical_step::analytical_step(processing_order step_order,
 {
 }
 
-analytical_step::~analytical_step() {}
-
 ///////////////////////////////////////////////////////////////////////////////
 // scheduler_step
 
-typedef std::pair<size_t, chunk_ptr> data_chunk;
+using data_chunk = std::pair<size_t, chunk_ptr>;
 
 /** Class wrapping a analytical_step. */
 class scheduler_step
 {
 public:
   /** Constructor; name is used in error messages related to bugs */
-  scheduler_step(std::unique_ptr<analytical_step> value)
+  explicit scheduler_step(std::unique_ptr<analytical_step> value)
     : m_ptr(std::move(value))
     , m_next_chunk(0)
     , m_last_chunk(0)
@@ -104,7 +95,7 @@ public:
   }
 
   /** Name of the analytical task; for error messages when bugs are detected */
-  const std::string name() const { return m_ptr->name(); }
+  const std::string& name() const { return m_ptr->name(); }
 
   /** Name of the analytical task; for error messages when bugs are detected */
   processing_order ordering() const { return m_ptr->ordering(); }
@@ -116,7 +107,7 @@ public:
   size_t new_chunk_id() { return m_last_chunk++; }
 
   /** Processes a data chunk and returns the output chunks; assumes `can_run` */
-  chunk_vec process(chunk_ptr chunk)
+  chunk_vec process(chunk_ptr chunk) const
   {
     return m_ptr->process(std::move(chunk));
   }
@@ -125,7 +116,7 @@ public:
   void increment_next_chunk() { m_next_chunk++; }
 
   /** Perform any final cleanup assosited with the task; requires locking */
-  void finalize() { return m_ptr->finalize(); }
+  void finalize() const { return m_ptr->finalize(); }
 
 private:
   //! Copy construction not supported
@@ -160,8 +151,6 @@ scheduler::scheduler()
 {
 }
 
-scheduler::~scheduler() {}
-
 size_t
 scheduler::add_step(std::unique_ptr<analytical_step> step)
 {
@@ -179,6 +168,8 @@ scheduler::run(int nthreads)
   AR_REQUIRE(!m_steps.empty());
   AR_REQUIRE(nthreads >= 1);
   AR_REQUIRE(!m_chunk_counter);
+  // The last step added is assumed to be the initial/producing step
+  AR_REQUIRE(m_steps.back()->ordering() == processing_order::ordered_io);
 
   m_tasks_max = static_cast<size_t>(nthreads) * 3;
 
@@ -210,7 +201,7 @@ scheduler::run(int nthreads)
     return false;
   }
 
-  for (auto& step : m_steps) {
+  for (const auto& step : m_steps) {
     if (step->chunks_queued()) {
       log::error() << "Not all parts run for step " << step->name() << "; "
                    << step->chunks_queued() << " parts left";
@@ -251,7 +242,6 @@ scheduler::run_wrapper(scheduler* sch)
   }
 
   sch->set_errors_occured();
-  sch->m_condition.notify_all();
 }
 
 void
@@ -275,7 +265,8 @@ scheduler::do_run()
       m_tasks++;
       m_io_active = true;
       step = m_steps.back();
-      step->push_chunk(m_chunk_counter++, chunk_ptr());
+      step->push_chunk(m_chunk_counter, chunk_ptr());
+      m_chunk_counter++;
     } else if (m_tasks) {
       // There are either tasks running (which may produce new tasks) or tasks
       // that cannot yet be run due to IO already being active.

@@ -113,8 +113,8 @@ post_trim_poly_x_tail(const userconfig& config,
 void
 trim_read_termini(reads_and_bases& stats,
                   fastq& read,
-                  unsigned trim_5p,
-                  unsigned trim_3p)
+                  size_t trim_5p,
+                  size_t trim_3p)
 {
   const auto length = read.length();
   if ((trim_5p || trim_3p) && length) {
@@ -282,7 +282,7 @@ trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
 }
 
 void
-trimmed_reads::add(fastq& read, const read_type type)
+trimmed_reads::add(const fastq& read, const read_type type)
 {
   const size_t offset = m_map.offset(type);
   if (offset != output_sample_files::disabled) {
