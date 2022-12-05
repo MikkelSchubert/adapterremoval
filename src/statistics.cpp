@@ -44,9 +44,9 @@ duplication_level(size_t count)
 {
   if (count > 10000) {
     return 15;
-  } else if (count > 50000) {
+  } else if (count > 5000) {
     return 14;
-  } else if (count > 10000) {
+  } else if (count > 1000) {
     return 13;
   } else if (count > 500) {
     return 12;
