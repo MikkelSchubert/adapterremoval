@@ -1,7 +1,7 @@
 /*************************************************************************\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
  *                                                                       *
- * Copyright (C) 2022 by Stinus Lindgreen - stinus@binf.ku.dk            *
+ * Copyright (C) 2022 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
  * it under the terms of the GNU General Public License as published by  *
