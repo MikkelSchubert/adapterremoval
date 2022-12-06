@@ -29,7 +29,9 @@
 
 #include "alignment.hpp"  // for alignment_info
 #include "debug.hpp"      // for AR_FAIL
+#include "licenses.hpp"   // for LICENSES
 #include "logging.hpp"    // for log
+#include "main.hpp"       // for NAME, VERSION, PREAMBLE
 #include "progress.hpp"   // for progress_type
 #include "strutils.hpp"   // for str_to_unsigned, toupper
 #include "userconfig.hpp" // declarations
@@ -397,9 +399,7 @@ configure_encoding(const std::string& value)
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `userconfig`
 
-userconfig::userconfig(const std::string& name,
-                       const std::string& version,
-                       const std::string& help)
+userconfig::userconfig()
   : args()
   , run_type(ar_command::trim_adapters)
   , input_files_1()
@@ -457,7 +457,7 @@ userconfig::userconfig(const std::string& name,
   , report_sample_rate()
   , report_duplication()
   , log_progress()
-  , argparser(name, version, help)
+  , argparser()
   , adapter_1()
   , adapter_2()
   , adapter_list()
@@ -479,6 +479,11 @@ userconfig::userconfig(const std::string& name,
   , head_sink()
   , m_runtime()
 {
+  argparser.set_name(NAME);
+  argparser.set_version(VERSION);
+  argparser.set_preamble(HELPTEXT);
+  argparser.set_licenses(LICENSES);
+
   //////////////////////////////////////////////////////////////////////////////
   argparser.add("--identify-adapters")
     .help("Attempt to identify the adapter pair of PE reads, by searching for "

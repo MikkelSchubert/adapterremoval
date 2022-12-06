@@ -872,11 +872,15 @@ const std::string HELP_HEADER =
   "basic help\n"
   "OPTIONS:\n"
   "   -h, --help      Display this message.\n"
-  "   -v, --version   Print the version string.\n\n";
+  "   -v, --version   Print the version string.\n"
+  "   --licenses      Print licences for this software.\n\n";
 
 TEST_CASE("--version", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+
   const auto arg = GENERATE("-v", "--version");
   const char* args[] = { "exe", arg };
 
@@ -888,7 +892,10 @@ TEST_CASE("--version", "[argparse::parser]")
 
 TEST_CASE("--help", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.set_preamble("basic help");
   const auto arg = GENERATE("-h", "--help");
   const char* args[] = { "exe", arg };
 
@@ -900,7 +907,7 @@ TEST_CASE("--help", "[argparse::parser]")
 
 TEST_CASE("--help with deprecated argument", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").deprecated();
   const char* args[] = { "exe", "--help" };
 
@@ -912,7 +919,7 @@ TEST_CASE("--help with deprecated argument", "[argparse::parser]")
 
 TEST_CASE("unexpected positional argument", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   const char* args[] = { "exe", "foo" };
 
   log::log_capture ss;
@@ -923,7 +930,7 @@ TEST_CASE("unexpected positional argument", "[argparse::parser]")
 
 TEST_CASE("unexpected argument", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   const char* args[] = { "exe", "--foo" };
 
   log::log_capture ss;
@@ -934,7 +941,7 @@ TEST_CASE("unexpected argument", "[argparse::parser]")
 
 TEST_CASE("typo in argument", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   const char* args[] = { "exe", "--halp" };
 
   log::log_capture ss;
@@ -954,7 +961,7 @@ TEST_CASE("typo in argument", "[argparse::parser]")
 
 TEST_CASE("partial argument", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--partofalongargument");
   const char* args[] = { "exe", "--part" };
 
@@ -976,7 +983,7 @@ TEST_CASE("partial argument", "[argparse::parser]")
 TEST_CASE("parse multiple arguments", "[argparse::parser]")
 {
   unsigned sink = 0;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--arg1").bind_uint(&sink);
   p.add("--arg2");
   p.add("--arg3");
@@ -993,7 +1000,7 @@ TEST_CASE("to_str returns value as str", "[argparse::parser]")
 {
   unsigned usink = 0;
   std::string ssink;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--arg1").bind_uint(&usink);
   p.add("--arg2").bind_str(&ssink);
   const char* args[] = { "exe", "--arg1", "1234", "--arg2", "foo bar*" };
@@ -1006,7 +1013,10 @@ TEST_CASE("to_str returns value as str", "[argparse::parser]")
 TEST_CASE("user supplied argument", "[argparse::parser]")
 {
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.set_preamble("basic help");
   p.add("--test");
 
   p.print_help();
@@ -1018,7 +1028,10 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 {
   unsigned sink = 0;
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.set_preamble("basic help");
   p.add("--test", "META").bind_uint(&sink);
 
   p.print_help();
@@ -1027,7 +1040,8 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
                       "basic help\n"
                       "OPTIONS:\n"
                       "   -h, --help      Display this message.\n"
-                      "   -v, --version   Print the version string.\n\n"
+                      "   -v, --version   Print the version string.\n"
+                      "   --licenses      Print licences for this software.\n\n"
                       "   --test <META>\n");
 }
 
@@ -1035,7 +1049,10 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 {
   unsigned sink = 0;
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.set_preamble("basic help");
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
@@ -1049,7 +1066,8 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
           "basic help\n"
           "OPTIONS:\n"
           "   -h, --help      Display this message.\n"
-          "   -v, --version   Print the version string.\n\n"
+          "   -v, --version   Print the version string.\n"
+          "   --licenses      Print licences for this software.\n\n"
           "   --test <META>   A long help message that exceeds the\n"
           "                   limit of 60 characters by some amount in\n"
           "                   order to test the line break\n"
@@ -1060,7 +1078,10 @@ TEST_CASE("help with default value", "[argparse::parser]")
 {
   unsigned sink = 0;
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.set_preamble("basic help");
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
@@ -1075,7 +1096,8 @@ TEST_CASE("help with default value", "[argparse::parser]")
           "basic help\n"
           "OPTIONS:\n"
           "   -h, --help      Display this message.\n"
-          "   -v, --version   Print the version string.\n\n"
+          "   -v, --version   Print the version string.\n"
+          "   --licenses      Print licences for this software.\n\n"
           "   --test <META>   A long help message that exceeds the\n"
           "                   limit of 60 characters by some amount in\n"
           "                   order to test the line break\n"
@@ -1085,7 +1107,7 @@ TEST_CASE("help with default value", "[argparse::parser]")
 TEST_CASE("required option missing", "[argparse::parser]")
 {
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").depends_on("--bar");
   p.add("--bar");
 
@@ -1097,7 +1119,7 @@ TEST_CASE("required option missing", "[argparse::parser]")
 
 TEST_CASE("required option supplied", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").depends_on("--bar");
   p.add("--bar");
 
@@ -1107,7 +1129,7 @@ TEST_CASE("required option supplied", "[argparse::parser]")
 
 TEST_CASE("conflicting option missing", "[argparse::parser]")
 {
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
 
@@ -1118,7 +1140,7 @@ TEST_CASE("conflicting option missing", "[argparse::parser]")
 TEST_CASE("conflicting option supplied", "[argparse::parser]")
 {
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
 
@@ -1133,7 +1155,7 @@ TEST_CASE("missing value", "[argparse::parser]")
 {
   unsigned sink = 0;
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").bind_uint(&sink);
 
   const char* args[] = { "exe", "--foo" };
@@ -1147,7 +1169,7 @@ TEST_CASE("invalid value", "[argparse::parser]")
 {
   unsigned sink = 0;
   log::log_capture ss;
-  argparse::parser p("My App", "v1234", "basic help");
+  argparse::parser p;
   p.add("--foo").bind_uint(&sink);
 
   const char* args[] = { "exe", "--foo", "one" };

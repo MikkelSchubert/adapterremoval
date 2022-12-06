@@ -90,17 +90,16 @@ enum class parse_result
 class parser
 {
 public:
-  /**
-   * Arguments:
-   *   name: Name of the program; used in --version and --help.
-   *   version: Version string (excluding the name); is used by the
-   *              arguments --help and --version.
-   *   help: General help string used by --help; should not include the
-   *           parameters themselves, as this is done automatically.
-   */
-  parser(const std::string& name,
-         const std::string& version,
-         const std::string& help);
+  parser();
+
+  /** Sets the name used in --help and --version messages */
+  void set_name(const std::string& name);
+  /** Sets the version string used in --help and --version messages */
+  void set_version(const std::string& version);
+  /** Sets the preamble text used in --help */
+  void set_preamble(const std::string& text);
+  /** Sets the license text used in --licenses */
+  void set_licenses(const std::string& text);
 
   /** Parses a set of command-line options as passed to main(argc, argv). */
   parse_result parse_args(int argc, char const* const* argv);
@@ -123,6 +122,8 @@ public:
   void print_version() const;
   /** Helper functions; prints the full set of help-text. */
   void print_help() const;
+  /** Helper functions; formats and prints the licenses. */
+  void print_licenses() const;
 
   /** Set the maximum terminal width. */
   void set_terminal_width(unsigned w);
@@ -150,8 +151,10 @@ private:
   std::string m_name;
   //! Version string for the program (excluding the name)
   std::string m_version;
-  //! Help text for the program.
-  std::string m_help;
+  //! Preamble text for the program.
+  std::string m_preamble;
+  //! Licenses for the program.
+  std::string m_licenses;
   //! Maximum terminal width used for printing help messages
   unsigned m_terminal_width;
 };

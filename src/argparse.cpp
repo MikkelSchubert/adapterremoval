@@ -79,14 +79,13 @@ to_double(const std::string& value, double& out)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-parser::parser(const std::string& name,
-               const std::string& version,
-               const std::string& help)
+parser::parser()
   : m_args()
   , m_keys()
-  , m_name(name)
-  , m_version(version)
-  , m_help(help)
+  , m_name()
+  , m_version()
+  , m_preamble()
+  , m_licenses()
   , m_terminal_width(100)
 {
   add_header("OPTIONS:");
@@ -94,7 +93,32 @@ parser::parser(const std::string& name,
   // Built-in arguments
   add("--help").abbreviation('h').help("Display this message.");
   add("--version").abbreviation('v').help("Print the version string.");
+  add("--licenses").help("Print licences for this software.");
   add_separator();
+}
+
+void
+parser::set_name(const std::string& name)
+{
+  m_name = name;
+}
+
+void
+parser::set_version(const std::string& version)
+{
+  m_version = version;
+}
+
+void
+parser::set_preamble(const std::string& text)
+{
+  m_preamble = text;
+}
+
+void
+parser::set_licenses(const std::string& text)
+{
+  m_licenses = text;
 }
 
 parse_result
@@ -147,6 +171,9 @@ parser::parse_args(int argc, char const* const* argv)
     return parse_result::exit;
   } else if (is_set("--version")) {
     print_version();
+    return parse_result::exit;
+  } else if (is_set("--licenses")) {
+    print_licenses();
     return parse_result::exit;
   }
 
@@ -205,7 +232,7 @@ parser::print_help() const
   print_version();
 
   auto cerr = log::cerr();
-  cerr << "\n" << m_help;
+  cerr << "\n" << m_preamble;
 
   string_vec signatures;
 
@@ -265,6 +292,36 @@ parser::print_help() const
       }
     } else {
       cerr << entry.header << "\n";
+    }
+  }
+}
+
+void
+parser::print_licenses() const
+{
+  auto cerr = log::cerr();
+
+  for (const auto& block : split_lines(m_licenses)) {
+    if (block.empty()) {
+      cerr << "\n";
+    } else {
+      size_t indentation = block.find_first_not_of(' ');
+      if (indentation == std::string::npos) {
+        indentation = 0;
+      }
+
+      size_t ljust = 0;
+      if (block.size() && block.at(indentation) == '*') {
+        ljust = 2;
+      } else if (block.size() > indentation + 1 &&
+                 block.at(indentation + 1) == '.') {
+        ljust = 3;
+      }
+
+      const auto width = 80 - indentation;
+      for (const auto& line : wrap_text(block, width, ljust)) {
+        cerr << std::string(indentation, ' ') << line << "\n";
+      }
     }
   }
 }

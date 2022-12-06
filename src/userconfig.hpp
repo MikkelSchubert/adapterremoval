@@ -105,14 +105,7 @@ public:
 class userconfig
 {
 public:
-  /**
-   * @param name Name of program.
-   * @param version Version string excluding program name.
-   * @param help Help text describing program.
-   */
-  userconfig(const std::string& name,
-             const std::string& version,
-             const std::string& help);
+  userconfig();
 
   /** Parses a set of commandline arguments. */
   argparse::parse_result parse_args(int argc, char* argv[]);

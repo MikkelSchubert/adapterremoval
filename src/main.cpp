@@ -63,7 +63,7 @@ main(int argc, char* argv[])
 
   std::ios_base::sync_with_stdio(false);
 
-  userconfig config(NAME, VERSION, HELPTEXT);
+  userconfig config;
 
   switch (config.parse_args(argc, argv)) {
     case argparse::parse_result::error:
