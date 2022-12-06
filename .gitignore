@@ -3,3 +3,4 @@
 /.vscode
 /build
 /examples/output*
+compile_commands.json
