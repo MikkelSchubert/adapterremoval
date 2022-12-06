@@ -4,9 +4,6 @@
 # Installation destinations
 PREFIX := /usr/local
 
-# Default compilation flags
-CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
-
 ## Optional features; comment out or set to value other than 'yes' to disable
 
 # Generate statically linked binary
@@ -49,8 +46,10 @@ INSTALLDAT = install -m 0644
 INSTALLDOC = install -m 0644
 MKDIR      = install -d  # act as mkdir -p
 
-# Libraries required by AdapterRemoval
-LIBRARIES := -pthread -lisal
+# Default compilation flags
+CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
+LDLIBS := -pthread -lisal ${LDLIBS}
+LDFLAGS := ${LDFLAGS}
 
 ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
@@ -80,7 +79,7 @@ BUILD_NAME_POSTFIX :=
 ifeq ($(strip ${STATIC}),yes)
 $(info Building static AdapterRemoval binary: yes)
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58909
-CXXFLAGS := $(CXXFLAGS) -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+LDFLAGS := $(LDFLAGS) -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -static
 OBJS_DIR := $(BUILD_DIR)/static
 EXECUTABLE := $(BUILD_DIR)/$(EXEC_MAIN).static
 BUILD_NAME_PREFIX := static-
@@ -91,7 +90,7 @@ endif
 ifeq ($(strip ${LIBDEFLATE}),yes)
 $(info Building AdapterRemoval with libdeflate: yes)
 CXXFLAGS := $(CXXFLAGS) -DUSE_LIBDEFLATE
-LIBRARIES := $(LIBRARIES) -ldeflate
+LDLIBS := $(LDLIBS) -ldeflate
 else
 $(info Building AdapterRemoval with libdeflate: no)
 BUILD_NAME_POSTFIX := -nolibdeflate
@@ -262,11 +261,11 @@ endif
 
 $(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LDLIBS} -o $@
 
 $(TEST_RUNNER): $(CORE_OBJS) $(TEST_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)
-	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LIBRARIES} -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) ${LDFLAGS} $^ ${LDLIBS} -o $@
 
 # Main object files
 $(OBJS_DIR)/%.o: src/%.cpp
