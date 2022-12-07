@@ -35,7 +35,8 @@ count_masked_sse2(__m128i value)
 } // namespace
 
 bool
-compare_subsequences_sse2(alignment_info& current,
+compare_subsequences_sse2(size_t& n_mismatches,
+                          size_t& n_ambiguous,
                           const char* seq_1,
                           const char* seq_2,
                           const size_t max_mismatches,
@@ -55,12 +56,12 @@ compare_subsequences_sse2(alignment_info& current,
     // Sets 0xFF for every byte where bytes are equal or N
     const auto eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
-    current.n_mismatches += 16 - count_masked_sse2(eq_mask);
-    if (current.n_mismatches > max_mismatches) {
+    n_mismatches += 16 - count_masked_sse2(eq_mask);
+    if (n_mismatches > max_mismatches) {
       return false;
     }
 
-    current.n_ambiguous += count_masked_sse2(ns_mask);
+    n_ambiguous += count_masked_sse2(ns_mask);
 
     seq_1 += 16;
     seq_2 += 16;
@@ -68,7 +69,7 @@ compare_subsequences_sse2(alignment_info& current,
   }
 
   return compare_subsequences_std(
-    current, seq_1, seq_2, max_mismatches, length);
+    n_mismatches, n_ambiguous, seq_1, seq_2, max_mismatches, length);
 }
 
 } // namespace adapterremoval

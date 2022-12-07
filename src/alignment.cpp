@@ -31,11 +31,12 @@
 
 namespace adapterremoval {
 
-using compare_subsequences_func = bool (*)(alignment_info& /* current */,
-                                           const char* /* seq_1_ptr */,
-                                           const char* /* seq_2_ptr */,
+using compare_subsequences_func = bool (*)(size_t& /* n_mismatches */,
+                                           size_t& /* n_ambiguous */,
+                                           const char* /* seq_1 */,
+                                           const char* /* seq_2 */,
                                            size_t /* max_mismatches */,
-                                           int /* remaining_bases */);
+                                           int /* length */);
 
 bool
 supports_avx2()
@@ -64,23 +65,24 @@ select_compare_function()
 const auto compare_subsequence_impl = select_compare_function();
 
 bool
-compare_subsequences_std(alignment_info& current,
+compare_subsequences_std(size_t& n_mismatches,
+                         size_t& n_ambiguous,
                          const char* seq_1_ptr,
                          const char* seq_2_ptr,
                          const size_t max_mismatches,
-                         int remaining_bases)
+                         int length)
 {
-  for (; remaining_bases; --remaining_bases) {
+  for (; length; --length) {
     const char nt_1 = *seq_1_ptr++;
     const char nt_2 = *seq_2_ptr++;
 
     if (nt_1 == 'N' || nt_2 == 'N') {
-      current.n_ambiguous++;
+      n_ambiguous++;
     } else if (nt_1 != nt_2) {
-      current.n_mismatches++;
+      n_mismatches++;
     }
 
-    if (current.n_mismatches > max_mismatches) {
+    if (n_mismatches > max_mismatches) {
       return false;
     }
   }
@@ -90,18 +92,20 @@ compare_subsequences_std(alignment_info& current,
 
 // FIXME: To be removed
 bool
-compare_subsequences(alignment_info& current,
+compare_subsequences(size_t& n_mismatches,
+                     size_t& n_ambiguous,
                      const char* seq_1_ptr,
                      const char* seq_2_ptr,
-                     const double mismatch_threshold)
+                     const double mismatch_threshold,
+                     int length)
 {
-  return compare_subsequence_impl(current,
+  return compare_subsequence_impl(n_mismatches,
+                                  n_ambiguous,
                                   seq_1_ptr,
                                   seq_2_ptr,
-                                  current.length * mismatch_threshold,
-                                  current.length) &&
-         current.n_mismatches <=
-           (current.length - current.n_ambiguous) * mismatch_threshold;
+                                  length * mismatch_threshold,
+                                  length) &&
+         n_mismatches <= (length - n_ambiguous) * mismatch_threshold;
 }
 
 bool
@@ -134,20 +138,28 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     const auto length = std::min(seq1.length() - initial_seq1_offset,
                                  seq2.length() - initial_seq2_offset);
 
-    alignment_info current;
-    current.offset = offset;
-    current.length = length;
+    size_t n_mismatches = 0;
+    size_t n_ambiguous = 0;
 
-    if (compare_subsequences(current,
+    if (compare_subsequences(n_mismatches,
+                             n_ambiguous,
                              seq_1_ptr + initial_seq1_offset,
                              seq_2_ptr + initial_seq2_offset,
-                             m_mismatch_threshold) &&
-        current.is_better_than(alignment)) {
-      alignment = current;
-      alignment_found = true;
+                             m_mismatch_threshold,
+                             length)) {
+      alignment_info current;
+      current.n_mismatches = n_mismatches;
+      current.n_ambiguous = n_ambiguous;
+      current.offset = offset;
+      current.length = length;
 
-      // Alignments involving fewer than `score` bases are not interesting
-      end_offset = seq1.length() - alignment.score();
+      if (current.is_better_than(alignment)) {
+        alignment = current;
+        alignment_found = true;
+
+        // Alignments involving fewer than `score` bases are not interesting
+        end_offset = seq1.length() - alignment.score();
+      }
     }
   }
 

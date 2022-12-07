@@ -1533,7 +1533,12 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 
           alignment_info current;
           current.length = seqlen;
-          compare_subsequences(current, mate1.c_str(), mate2.c_str());
+          compare_subsequences(current.n_mismatches,
+                               current.n_ambiguous,
+                               mate1.c_str(),
+                               mate2.c_str(),
+                               1.0,
+                               current.length);
 
           // Don't count all these checks in test statistics
           if (!(current == expected)) {
