@@ -22,29 +22,31 @@
 
 namespace adapterremoval {
 
+namespace {
+
 /** Counts the number of masked bytes **/
-inline size_t
-count_masked_avx2(const __m256i& value)
+inline auto
+count_masked_avx2(__m256i value)
 {
-  // Generate 16 bit mask from most significant bits of each byte and count bits
+  // Generate 32 bit mask from most significant bits of each byte and count bits
   return std::bitset<32>(_mm256_movemask_epi8(value)).count();
 }
 
+} // namespace
+
 bool
 compare_subsequences_avx2(alignment_info& current,
-                          const char* seq_1_ptr,
-                          const char* seq_2_ptr,
+                          const char* seq_1,
+                          const char* seq_2,
                           const size_t max_mismatches,
-                          int remaining_bases)
+                          int length)
 {
   //! Mask of all Ns
   const __m256i n_mask = _mm256_set1_epi8('N');
 
-  while (remaining_bases >= 32) {
-    const __m256i s1 =
-      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_1_ptr));
-    const __m256i s2 =
-      _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_2_ptr));
+  while (length >= 32) {
+    const auto s1 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_1));
+    const auto s2 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_2));
 
     // Sets 0xFF for every byte where one or both nts is N
     const __m256i ns_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, n_mask),
@@ -59,13 +61,13 @@ compare_subsequences_avx2(alignment_info& current,
       return false;
     }
 
-    seq_1_ptr += 32;
-    seq_2_ptr += 32;
-    remaining_bases -= 32;
+    seq_1 += 32;
+    seq_2 += 32;
+    length -= 32;
   }
 
   return compare_subsequences_sse2(
-    current, seq_1_ptr, seq_2_ptr, max_mismatches, remaining_bases);
+    current, seq_1, seq_2, max_mismatches, length);
 }
 
 } // namespace adapterremoval

@@ -22,36 +22,38 @@
 
 namespace adapterremoval {
 
+namespace {
+
 /** Counts the number of masked bytes **/
-inline size_t
-count_masked_sse2(const __m128i& value)
+inline auto
+count_masked_sse2(__m128i value)
 {
   // Generate 16 bit mask from most significant bits of each byte and count bits
   return std::bitset<16>(_mm_movemask_epi8(value)).count();
 }
 
+} // namespace
+
 bool
 compare_subsequences_sse2(alignment_info& current,
-                          const char* seq_1_ptr,
-                          const char* seq_2_ptr,
+                          const char* seq_1,
+                          const char* seq_2,
                           const size_t max_mismatches,
-                          int remaining_bases)
+                          int length)
 {
   //! Mask of all Ns
   const __m128i n_mask = _mm_set1_epi8('N');
 
-  while (remaining_bases >= 16) {
-    const __m128i s1 =
-      _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1_ptr));
-    const __m128i s2 =
-      _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2_ptr));
+  while (length >= 16) {
+    const auto s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1));
+    const auto s2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2));
 
     // Sets 0xFF for every byte where one or both nts is N
-    const __m128i ns_mask =
+    const auto ns_mask =
       _mm_or_si128(_mm_cmpeq_epi8(s1, n_mask), _mm_cmpeq_epi8(s2, n_mask));
 
     // Sets 0xFF for every byte where bytes are equal or N
-    const __m128i eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
+    const auto eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
     current.n_ambiguous += count_masked_sse2(ns_mask);
     current.n_mismatches += 16 - count_masked_sse2(eq_mask);
@@ -59,13 +61,13 @@ compare_subsequences_sse2(alignment_info& current,
       return false;
     }
 
-    seq_1_ptr += 16;
-    seq_2_ptr += 16;
-    remaining_bases -= 16;
+    seq_1 += 16;
+    seq_2 += 16;
+    length -= 16;
   }
 
   return compare_subsequences_std(
-    current, seq_1_ptr, seq_2_ptr, max_mismatches, remaining_bases);
+    current, seq_1, seq_2, max_mismatches, length);
 }
 
 } // namespace adapterremoval
