@@ -55,11 +55,12 @@ compare_subsequences_avx2(alignment_info& current,
     // Sets 0xFF for every byte where bytes are equal or N
     const __m256i eq_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
 
-    current.n_ambiguous += count_masked_avx2(ns_mask);
     current.n_mismatches += 32 - count_masked_avx2(eq_mask);
     if (current.n_mismatches > max_mismatches) {
       return false;
     }
+
+    current.n_ambiguous += count_masked_avx2(ns_mask);
 
     seq_1 += 32;
     seq_2 += 32;

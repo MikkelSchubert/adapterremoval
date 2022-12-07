@@ -55,11 +55,12 @@ compare_subsequences_sse2(alignment_info& current,
     // Sets 0xFF for every byte where bytes are equal or N
     const auto eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
-    current.n_ambiguous += count_masked_sse2(ns_mask);
     current.n_mismatches += 16 - count_masked_sse2(eq_mask);
     if (current.n_mismatches > max_mismatches) {
       return false;
     }
+
+    current.n_ambiguous += count_masked_sse2(ns_mask);
 
     seq_1 += 16;
     seq_2 += 16;
