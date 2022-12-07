@@ -32,28 +32,6 @@ supports_sse2();
 bool
 supports_avx2();
 
-/**
- * Compares two subsequences in an alignment to a previous (best) alignment.
- *
- * @param n_mismatches The current number of mismathces.
- * @param n_ambiguous The current number of ambiguous bases.
- * @param seq_1_ptr Pointer to the first sequence in the alignment.
- * @param seq_2_ptr Pointer to the second sequence in the alignment.
- * @return True if the current alignment is at least as good as the best
- * alignment, false otherwise.
- *
- * If the function returns false, the current alignment cannot be assumed to
- * have been completely evaluated (due to early termination), and hence counts
- * and scores are not reliable. The function assumes uppercase nucleotides.
- */
-bool
-compare_subsequences(size_t& n_mismatches,
-                     size_t& n_ambiguous,
-                     const char* seq_1_ptr,
-                     const char* seq_2_ptr,
-                     double mismatch_threshold,
-                     int remaining_bases);
-
 bool
 compare_subsequences_std(size_t& n_mismatches,
                          size_t& n_ambiguous,
@@ -77,5 +55,10 @@ compare_subsequences_avx2(size_t& n_mismatches,
                           const char* seq_2_ptr,
                           size_t max_mismatches,
                           int remaining_bases);
+
+using compare_subsequences_func = decltype(&compare_subsequences_std);
+
+compare_subsequences_func
+select_compare_subsequences_func();
 
 } // namespace adapterremoval

@@ -21,10 +21,9 @@
 #include <random>   // for mt19937
 #include <stddef.h> // for size_t
 
-#include "alignment_common.hpp" // for alignment_info
-#include "commontypes.hpp"      // for merge_strategy
-#include "fastq.hpp"            // for fastq_pair_vec, fastq
-#include "fastq_enc.hpp"        // for MATE_SEPARATOR
+#include "commontypes.hpp" // for merge_strategy
+#include "fastq.hpp"       // for fastq_pair_vec, fastq
+#include "fastq_enc.hpp"   // for MATE_SEPARATOR
 
 namespace adapterremoval {
 
@@ -77,9 +76,6 @@ namespace adapterremoval {
  */
 struct alignment_info
 {
-  /** Defaults to unaligned (len = 0), for adapter_id -1. **/
-  alignment_info();
-
   /**
    * Returns true if this is a better alignment than other.
    *
@@ -117,18 +113,18 @@ struct alignment_info
 
   //! Zero based id of the adapter which offered the best alignment. Is less
   //! than zero if no alignment was found.
-  int offset;
+  int offset = 0;
   //! The number of base-pairs included in the alignment. This number
   //! includes both bases aligned between the two mates (in PE mode) and the
   //! number of bases aligned between mates and adapter sequences.
-  size_t length;
+  size_t length = 0;
   //! Number of positions in the alignment in which the two sequences were
   //! both called (not N) but differed
-  size_t n_mismatches;
+  size_t n_mismatches = 0;
   //! Number of positions in the alignment where one or both bases were N.
-  size_t n_ambiguous;
+  size_t n_ambiguous = 0;
   //! 0-based ID of best matching adapter or a negative value if not set.
-  int adapter_id;
+  int adapter_id = -1;
 };
 
 class sequence_aligner

@@ -24,6 +24,7 @@
 #include "alignment.hpp"
 #include "debug.hpp"
 #include "fastq.hpp"
+#include "simd.hpp"
 #include "testing.hpp"
 
 namespace adapterremoval {
@@ -1514,6 +1515,8 @@ get_combinations()
 
 TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
+  const auto compare_subsequences = select_compare_subsequences_func();
+
   const std::vector<std::string> combinations = get_combinations();
   for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
     for (size_t pos = 0; pos < seqlen; ++pos) {
@@ -1537,7 +1540,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
                                current.n_ambiguous,
                                mate1.c_str(),
                                mate2.c_str(),
-                               1.0,
+                               current.length,
                                current.length);
 
           // Don't count all these checks in test statistics

@@ -16,9 +16,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "alignment_common.hpp" // header
-#include <bitset>               // for bitset
-#include <immintrin.h>          // for _mm256_set1_epi8, __m256i, _mm256_lo...
+#include "simd.hpp"    // declarations
+#include <bitset>      // for bitset
+#include <immintrin.h> // for _mm256_set1_epi8, __m256i, _mm256_lo...
 
 namespace adapterremoval {
 

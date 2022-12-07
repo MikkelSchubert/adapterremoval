@@ -17,96 +17,19 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-
 #include <algorithm> // for max, min
-#include <bitset>    // for bitset
-#include <limits>    // for numeric_limits
 #include <string>    // for string, operator+
 #include <utility>   // for swap, pair
 
-#include "alignment.hpp"
+#include "alignment.hpp"        // declarations
 #include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for fastq, fastq_pair_vec
+#include "simd.hpp"             // for select_compare_function, ...
 
 namespace adapterremoval {
 
-using compare_subsequences_func = bool (*)(size_t& /* n_mismatches */,
-                                           size_t& /* n_ambiguous */,
-                                           const char* /* seq_1 */,
-                                           const char* /* seq_2 */,
-                                           size_t /* max_mismatches */,
-                                           int /* length */);
-
-bool
-supports_avx2()
-{
-  return __builtin_cpu_supports("avx2");
-}
-
-bool
-supports_sse2()
-{
-  return __builtin_cpu_supports("sse2");
-}
-
-compare_subsequences_func
-select_compare_function()
-{
-  if (supports_avx2()) {
-    return &compare_subsequences_avx2;
-  } else if (supports_sse2()) {
-    return &compare_subsequences_sse2;
-  } else {
-    return &compare_subsequences_std;
-  }
-}
-
-const auto compare_subsequence_impl = select_compare_function();
-
-bool
-compare_subsequences_std(size_t& n_mismatches,
-                         size_t& n_ambiguous,
-                         const char* seq_1_ptr,
-                         const char* seq_2_ptr,
-                         const size_t max_mismatches,
-                         int length)
-{
-  for (; length; --length) {
-    const char nt_1 = *seq_1_ptr++;
-    const char nt_2 = *seq_2_ptr++;
-
-    if (nt_1 == 'N' || nt_2 == 'N') {
-      n_ambiguous++;
-    } else if (nt_1 != nt_2) {
-      n_mismatches++;
-    }
-
-    if (n_mismatches > max_mismatches) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-// FIXME: To be removed
-bool
-compare_subsequences(size_t& n_mismatches,
-                     size_t& n_ambiguous,
-                     const char* seq_1_ptr,
-                     const char* seq_2_ptr,
-                     const double mismatch_threshold,
-                     int length)
-{
-  return compare_subsequence_impl(n_mismatches,
-                                  n_ambiguous,
-                                  seq_1_ptr,
-                                  seq_2_ptr,
-                                  length * mismatch_threshold,
-                                  length) &&
-         n_mismatches <= (length - n_ambiguous) * mismatch_threshold;
-}
+const auto compare_subsequences = select_compare_subsequences_func();
 
 bool
 sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
@@ -145,8 +68,9 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
                              n_ambiguous,
                              seq_1_ptr + initial_seq1_offset,
                              seq_2_ptr + initial_seq2_offset,
-                             m_mismatch_threshold,
-                             length)) {
+                             length * m_mismatch_threshold,
+                             length) &&
+        n_mismatches <= (length - n_ambiguous) * m_mismatch_threshold) {
       alignment_info current;
       current.n_mismatches = n_mismatches;
       current.n_ambiguous = n_ambiguous;
@@ -194,15 +118,6 @@ get_updated_phred_scores(char qual_1, char qual_2)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
-
-alignment_info::alignment_info()
-  : offset(0)
-  , length(0)
-  , n_mismatches(0)
-  , n_ambiguous(0)
-  , adapter_id(-1)
-{
-}
 
 bool
 alignment_info::is_better_than(const alignment_info& other) const
