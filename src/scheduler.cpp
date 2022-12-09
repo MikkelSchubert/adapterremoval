@@ -231,17 +231,20 @@ void
 scheduler::run_wrapper(scheduler* sch)
 {
   try {
-    return sch->do_run();
+    sch->do_run();
   } catch (const thread_abort&) {
+    sch->set_errors_occured();
     log::debug() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
+    sch->set_errors_occured();
     log::error() << "Unhandled exception in thread:\n"
                  << indent_lines(error.what());
   } catch (...) {
-    log::error() << "Unhandled, non-standard exception in thread";
+    AR_FAIL("Unhandled, non-standard exception in thread");
   }
 
-  sch->set_errors_occured();
+  // Signal any waiting threads
+  sch->m_condition.notify_all();
 }
 
 void
@@ -339,9 +342,6 @@ scheduler::do_run()
       m_io_active = false;
     }
   }
-
-  // Signal any waiting thread
-  m_condition.notify_one();
 }
 
 } // namespace adapterremoval
