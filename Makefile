@@ -24,6 +24,9 @@ DEBUG_BUILD := no
 # Include coverage instrumentation in build
 COVERAGE := no
 
+# Enable address and undefined behavior sanitation
+SANITIZE := no
+
 
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
@@ -118,6 +121,15 @@ BUILD_NAME := debug
 endif
 else
 $(info Building AdapterRemoval with debug information: no)
+endif
+
+ifeq ($(strip ${SANITIZE}), yes)
+$(info Building AdapterRemoval with sanitizers: yes)
+CXXFLAGS := ${CXXFLAGS} -fno-sanitize-recover=all -fsanitize=undefined,address
+LDLIBS := $(LDLIBS) -lasan
+BUILD_NAME_POSTFIX := ${BUILD_NAME_POSTFIX}-sanitize
+else
+$(info Building AdapterRemoval with sanitizers: no)
 endif
 
 # Use a different folder for each build configuration
