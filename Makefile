@@ -16,10 +16,10 @@ LIBDEFLATE := yes
 VERBOSE := no
 
 # Use of colored output during build (yes/no/auto)
-COLOR_BUILD := auto
+COLOR := auto
 
 # Debug build; adds warnings and debugging symbols
-DEBUG_BUILD := no
+DEBUG := no
 
 # Include coverage instrumentation in build
 COVERAGE := no
@@ -58,21 +58,21 @@ ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
 endif
 
-ifeq ($(strip ${COLOR_BUILD}),auto)
+ifeq ($(strip ${COLOR}),auto)
 ifeq (${NO_COLOR},)
 ifneq ($(strip $(MAKE_TERMOUT)),)
-COLOR_BUILD := yes
+COLOR := yes
 endif
 endif
 endif
 
-ifeq ($(strip ${COLOR_BUILD}),yes)
+ifeq ($(strip ${COLOR}),yes)
 COLOR_YELLOW := "\033[0;33m"
 COLOR_GREEN := "\033[0;32m"
 COLOR_CYAN := "\033[0;36m"
 COLOR_END := "\033[0m"
 else
-COLOR_BUILD := no
+COLOR := no
 endif
 
 BUILD_NAME := release
@@ -102,13 +102,13 @@ endif
 ifeq ($(strip ${COVERAGE}), yes)
 $(info Building AdapterRemoval with coverage instrumentation: yes)
 CXXFLAGS := ${CXXFLAGS} --coverage
-DEBUG_BUILD := yes
+DEBUG := yes
 BUILD_NAME := coverage
 else
 $(info Building AdapterRemoval with coverage instrumentation: no)
 endif
 
-ifeq ($(strip ${DEBUG_BUILD}), yes)
+ifeq ($(strip ${DEBUG}), yes)
 $(info Building AdapterRemoval with debug information: yes)
 CXXFLAGS := ${CXXFLAGS} -g -DDEBUG \
 	-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
@@ -253,7 +253,7 @@ regression: $(EXECUTABLE)
 
 test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
-	$(QUIET) $(TEST_RUNNER) --invisibles --use-colour $(COLOR_BUILD)
+	$(QUIET) $(TEST_RUNNER) --invisibles --use-colour $(COLOR)
 ifeq ($(strip ${COVERAGE}), yes)
 ifneq ($(shell which gcovr), )
 	@echo $(COLOR_GREEN)"Running coverage analysis"$(COLOR_END)
