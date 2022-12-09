@@ -493,7 +493,7 @@ userconfig::userconfig()
   argparser.add("--threads", "N")
     .help("Maximum number of threads")
     .bind_uint(&max_threads)
-    .with_default(1);
+    .with_default(2);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("INPUT FILES:");
