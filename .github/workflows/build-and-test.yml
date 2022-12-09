@@ -16,15 +16,12 @@ jobs:
           - os: ubuntu-22.04
             cxx: g++
             coverage: "yes"
-            build: "coverage"
           - os: ubuntu-22.04
             cxx: clang++
             coverage: "no"
-            build: "release"
           - os: macos-11
             cxx: clang++
             coverage: "no"
-            build: "release"
       # Do not auto-cancel other runners if one fails
       fail-fast: false
     env:
@@ -42,9 +39,11 @@ jobs:
         run: brew install isa-l libdeflate
 
       - name: make test
-        run: make test VERBOSE=yes COVERAGE=${{ matrix.coverage }}
+        run: make test VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
       - name: make regression
-        run: make regression VERBOSE=yes COVERAGE=${{ matrix.coverage }}
+        run: make regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
+      - name: make install
+        run: make install VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }} PREFIX=${PWD}/install
 
       # Coverage statistics
       - if: ${{ matrix.coverage == 'yes' }}
@@ -59,4 +58,4 @@ jobs:
           coveralls --exclude tests --gcov-options '\-lpbc'
 
       - name: examples
-        run: make -C examples EXE=${PWD}/build/${{ matrix.build }}/adapterremoval3
+        run: make -C examples EXE=${PWD}/install/bin/adapterremoval3
