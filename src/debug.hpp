@@ -31,9 +31,6 @@ public:
   /** Creates exception with the specified error message. */
   explicit assert_failed(const std::string& what);
 
-  /** Does nothing. */
-  ~assert_failed() override = default;
-
   /** Returns user supplied error message; owned by object. */
   const char* what() const noexcept override;
 

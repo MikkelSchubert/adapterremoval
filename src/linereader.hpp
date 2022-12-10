@@ -41,8 +41,6 @@ class io_error : public std::ios_base::failure
 {
 public:
   io_error(const std::string& message, int error_number = 0);
-
-  ~io_error() override = default;
 };
 
 /** Represents errors during GZip (de)compression. */
@@ -50,8 +48,6 @@ class gzip_error : public io_error
 {
 public:
   explicit gzip_error(const std::string& message);
-
-  ~gzip_error() override = default;
 };
 
 /** Base-class for line reading; used by receivers. */

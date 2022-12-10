@@ -51,8 +51,6 @@ class fastq_error : public std::exception
 public:
   explicit fastq_error(const std::string& message);
 
-  ~fastq_error() override = default;
-
   /** Returns error message; string is owned by exception. */
   const char* what() const noexcept override;
 

@@ -51,8 +51,6 @@ class thread_abort : public thread_error
 {
 public:
   thread_abort();
-
-  ~thread_abort() override = default;
 };
 
 } // namespace adapterremoval
