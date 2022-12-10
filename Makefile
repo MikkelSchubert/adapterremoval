@@ -126,7 +126,9 @@ endif
 ifeq ($(strip ${SANITIZE}), yes)
 $(info Building AdapterRemoval with sanitizers: yes)
 CXXFLAGS := ${CXXFLAGS} -fno-sanitize-recover=all -fsanitize=undefined,address
+ifeq ($(findstring clang,${CXX}),)
 LDLIBS := $(LDLIBS) -lasan
+endif
 BUILD_NAME_POSTFIX := ${BUILD_NAME_POSTFIX}-sanitize
 else
 $(info Building AdapterRemoval with sanitizers: no)
