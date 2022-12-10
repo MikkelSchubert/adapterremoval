@@ -367,7 +367,7 @@ struct io_section
           const auto nucleotides = m_stats->nucleotides_pos(nuc);
           const auto quality = m_stats->qualities_pos(nuc);
 
-          quality_curves->f64_vec(std::string(1, ::tolower(nuc)),
+          quality_curves->f64_vec(std::string(1, to_lower(nuc)),
                                   quality / nucleotides);
         }
 
@@ -380,7 +380,7 @@ struct io_section
         for (const auto nuc : ACGTN::values) {
           const auto bases = m_stats->nucleotides_pos(nuc);
 
-          content_curves->f64_vec(std::string(1, ::tolower(nuc)),
+          content_curves->f64_vec(std::string(1, to_lower(nuc)),
                                   bases / total_bases);
         }
 

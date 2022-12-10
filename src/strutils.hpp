@@ -44,12 +44,20 @@ unsigned
 str_to_unsigned(const std::string& s);
 
 /** Lowercases letters in the range a-z */
+char
+to_lower(char c);
+
+/** Lowercases letters in the range a-z */
 std::string
-tolower(const std::string& str);
+to_lower(const std::string& str);
+
+/** Lowercases letters in the range a-z */
+char
+to_upper(char c);
 
 /** Uppercases letters in the range a-z */
 std::string
-toupper(const std::string& str);
+to_upper(const std::string& str);
 
 /** Returns true if str1 ends with str2 (case sensitive) */
 bool

@@ -80,7 +80,7 @@ parse_poly_x_option(const std::string& key,
 
   std::array<bool, ACGT::size> enabled = {};
   for (const auto& value : values) {
-    for (const auto nuc : toupper(value)) {
+    for (const auto nuc : to_upper(value)) {
       switch (nuc) {
         case 'A':
         case 'C':
@@ -331,7 +331,7 @@ fancy_output_allowed()
 void
 configure_log_levels(const std::string& value, bool fallible = false)
 {
-  const auto log_level = tolower(value);
+  const auto log_level = to_lower(value);
 
   if (log_level == "debug") {
     log::set_level(log::level::debug);
@@ -990,7 +990,7 @@ userconfig::parse_args(int argc, char* argv[])
                  << "not " << trim_window_length;
     return argparse::parse_result::error;
   } else {
-    const auto strategy = tolower(m_trim_strategy_sink);
+    const auto strategy = to_lower(m_trim_strategy_sink);
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
 
@@ -1052,7 +1052,7 @@ userconfig::parse_args(int argc, char* argv[])
       merge = merge_strategy::conservative;
     } else if (argparser.is_set("--merge") ||
                argparser.is_set("--merge-strategy")) {
-      const auto strategy = tolower(m_merge_strategy_sink);
+      const auto strategy = to_lower(m_merge_strategy_sink);
       if (strategy == "conservative") {
         merge = merge_strategy::conservative;
       } else if (strategy == "deterministic") {

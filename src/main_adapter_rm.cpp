@@ -45,7 +45,7 @@ add_write_step(scheduler& sch,
   AR_REQUIRE(filename != DEV_NULL);
   size_t step_id = sch.add<write_fastq>(config, filename);
 
-  if (config.gzip || ends_with(tolower(filename), ".gz")) {
+  if (config.gzip || ends_with(to_lower(filename), ".gz")) {
     step_id = sch.add<gzip_split_fastq>(config, filename, step_id);
     step_id = sch.add<split_fastq>(config, filename, step_id);
   }

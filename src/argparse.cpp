@@ -920,9 +920,9 @@ str_sink::consume(string_vec_citer start, const string_vec_citer& end)
     *m_sink = *start;
     return 1;
   } else {
-    const auto value = tolower(*start);
+    const auto value = to_lower(*start);
     for (const auto& it : m_choices) {
-      if (value == tolower(it)) {
+      if (value == to_lower(it)) {
         *m_sink = it;
         return 1;
       }

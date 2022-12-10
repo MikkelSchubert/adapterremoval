@@ -72,7 +72,7 @@ isal_buffer_size(size_t level)
 bool
 isal_enabled(const userconfig& config, const std::string& filename)
 {
-  return (config.gzip || ends_with(tolower(filename), ".gz"))
+  return (config.gzip || ends_with(to_lower(filename), ".gz"))
 #ifdef USE_LIBDEFLATE
          && config.gzip_level <= MAX_ISAL_LEVEL
 #endif

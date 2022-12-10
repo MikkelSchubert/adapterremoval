@@ -111,27 +111,35 @@ str_to_unsigned(const std::string& s)
   return static_cast<unsigned>(temp);
 }
 
+char
+to_lower(char c)
+{
+  return static_cast<char>(::tolower(c));
+}
+
 std::string
-tolower(const std::string& str)
+to_lower(const std::string& str)
 {
   std::string uppercased = str;
   for (auto& current : uppercased) {
-    if (current >= 'A' && current <= 'Z') {
-      current += 32;
-    }
+    current = to_lower(current);
   }
 
   return uppercased;
 }
 
+char
+to_upper(char c)
+{
+  return static_cast<char>(::toupper(c));
+}
+
 std::string
-toupper(const std::string& str)
+to_upper(const std::string& str)
 {
   std::string uppercased = str;
   for (auto& current : uppercased) {
-    if (current >= 'a' && current <= 'z') {
-      current -= 32;
-    }
+    current = to_upper(current);
   }
 
   return uppercased;

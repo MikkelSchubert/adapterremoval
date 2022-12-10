@@ -45,21 +45,21 @@ TEST_CASE("Levenshtein distance", "[strutils::levenshtein]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'tolower'
+// Tests for 'to_lower'
 
-TEST_CASE("ASCII letters are lowercased", "[strutils::tolower]")
+TEST_CASE("ASCII letters are lowercased", "[strutils::to_lower]")
 {
-  REQUIRE(tolower("") == "");
-  REQUIRE(tolower("a1{2BZ`zAdeK") == "a1{2bz`zadek");
+  REQUIRE(to_lower("") == "");
+  REQUIRE(to_lower("a1{2BZ`zAdeK") == "a1{2bz`zadek");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'toupper'
+// Tests for 'to_upper'
 
-TEST_CASE("ASCII letters are uppercased", "[strutils::toupper]")
+TEST_CASE("ASCII letters are uppercased", "[strutils::to_upper]")
 {
-  REQUIRE(toupper("") == "");
-  REQUIRE(toupper("a1{2BZ`zAdeK") == "A1{2BZ`ZADEK");
+  REQUIRE(to_upper("") == "");
+  REQUIRE(to_upper("a1{2BZ`zAdeK") == "A1{2BZ`ZADEK");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
