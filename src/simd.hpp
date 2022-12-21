@@ -35,26 +35,26 @@ supports_avx2();
 bool
 compare_subsequences_std(size_t& n_mismatches,
                          size_t& n_ambiguous,
-                         const char* seq_1_ptr,
-                         const char* seq_2_ptr,
-                         size_t max_mismatches,
-                         int remaining_bases);
+                         const char* seq_1,
+                         const char* seq_2,
+                         size_t length,
+                         size_t max_penalty);
 
 bool
 compare_subsequences_sse2(size_t& n_mismatches,
                           size_t& n_ambiguous,
-                          const char* seq_1_ptr,
-                          const char* seq_2_ptr,
-                          size_t max_mismatches,
-                          int remaining_bases);
+                          const char* seq_1,
+                          const char* seq_2,
+                          size_t length,
+                          size_t max_penalty);
 
 bool
 compare_subsequences_avx2(size_t& n_mismatches,
                           size_t& n_ambiguous,
-                          const char* seq_1_ptr,
-                          const char* seq_2_ptr,
-                          size_t max_mismatches,
-                          int remaining_bases);
+                          const char* seq_1,
+                          const char* seq_2,
+                          size_t length,
+                          size_t max_penalty);
 
 using compare_subsequences_func = decltype(&compare_subsequences_std);
 

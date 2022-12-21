@@ -25,20 +25,23 @@ compare_subsequences_std(size_t& n_mismatches,
                          size_t& n_ambiguous,
                          const char* seq_1,
                          const char* seq_2,
-                         const size_t max_mismatches,
-                         int length)
+                         size_t length,
+                         size_t max_penalty)
 {
+  size_t penalty = 2 * n_mismatches + n_ambiguous;
   for (; length; --length) {
     const char nt_1 = *seq_1++;
     const char nt_2 = *seq_2++;
 
     if (nt_1 == 'N' || nt_2 == 'N') {
       n_ambiguous++;
+      penalty++;
     } else if (nt_1 != nt_2) {
       n_mismatches++;
+      penalty += 2;
     }
 
-    if (n_mismatches > max_mismatches) {
+    if (penalty > max_penalty) {
       return false;
     }
   }

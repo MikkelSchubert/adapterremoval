@@ -314,9 +314,7 @@ public:
     fastq_pair_vec adapters;
     adapters.emplace_back(empty_adapter, empty_adapter);
 
-    auto aligner = sequence_aligner(adapters);
-    aligner.set_mismatch_threshold(m_config.mismatch_threshold);
-
+    const auto aligner = sequence_aligner(adapters);
     auto stats = m_stats.acquire();
 
     AR_REQUIRE(file_chunk.reads_1.size() == file_chunk.reads_2.size());

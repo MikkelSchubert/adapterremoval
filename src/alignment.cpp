@@ -37,16 +37,12 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
                                            const std::string& seq2,
                                            const int min_offset) const
 {
-  const char* seq_1_ptr = seq1.data();
-  const char* seq_2_ptr = seq2.data();
-
-  const int start_offset =
-    std::max<int>(min_offset, -static_cast<int>(seq2.length()) + 1);
+  int offset = std::max(min_offset, -static_cast<int>(seq2.length()) + 1);
   int end_offset =
     static_cast<int>(seq1.length()) - std::max(1, alignment.score());
 
   bool alignment_found = false;
-  for (int offset = start_offset; offset <= end_offset; ++offset) {
+  for (; offset <= end_offset; ++offset) {
     size_t initial_seq1_offset;
     size_t initial_seq2_offset;
 
@@ -61,29 +57,22 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     const auto length = std::min(seq1.length() - initial_seq1_offset,
                                  seq2.length() - initial_seq2_offset);
 
-    size_t n_mismatches = 0;
-    size_t n_ambiguous = 0;
+    alignment_info current;
+    current.offset = offset;
+    current.length = length;
 
-    if (compare_subsequences(n_mismatches,
-                             n_ambiguous,
-                             seq_1_ptr + initial_seq1_offset,
-                             seq_2_ptr + initial_seq2_offset,
-                             length * m_mismatch_threshold,
-                             length) &&
-        n_mismatches <= (length - n_ambiguous) * m_mismatch_threshold) {
-      alignment_info current;
-      current.n_mismatches = n_mismatches;
-      current.n_ambiguous = n_ambiguous;
-      current.offset = offset;
-      current.length = length;
+    if (compare_subsequences(current.n_mismatches,
+                             current.n_ambiguous,
+                             seq1.data() + initial_seq1_offset,
+                             seq2.data() + initial_seq2_offset,
+                             length,
+                             length - alignment.score()) &&
+        current.is_better_than(alignment)) {
+      alignment = current;
+      alignment_found = true;
 
-      if (current.is_better_than(alignment)) {
-        alignment = current;
-        alignment_found = true;
-
-        // Alignments involving fewer than `score` bases are not interesting
-        end_offset = seq1.length() - alignment.score();
-      }
+      // Alignments involving fewer than `score` bases are not interesting
+      end_offset = static_cast<int>(seq1.length()) - alignment.score();
     }
   }
 
@@ -181,14 +170,7 @@ alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 
 sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters)
   : m_adapters(adapters)
-  , m_mismatch_threshold(1.0)
 {
-}
-
-void
-sequence_aligner::set_mismatch_threshold(double mm)
-{
-  m_mismatch_threshold = mm;
 }
 
 alignment_info

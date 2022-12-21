@@ -522,24 +522,11 @@ TEST_CASE("Longest valid alignment is returned", "[alignment::single_end]")
   const fastq record("Rec", "AAATAAAAA");
   const auto adapters = create_adapter_vec(fastq("Rec", "AAAAAAAAA"));
 
-  SECTION("Mismatches allowed")
-  {
-    sequence_aligner aligner(adapters);
-    const auto result = aligner.align_single_end(record, 0);
-    const alignment_info expected = ALN().length(9).n_mismatches(1);
+  sequence_aligner aligner(adapters);
+  const auto result = aligner.align_single_end(record, 0);
+  const alignment_info expected = ALN().length(9).n_mismatches(1);
 
-    REQUIRE(result == expected);
-  }
-
-  SECTION("No mismatches allowed")
-  {
-    sequence_aligner aligner(adapters);
-    aligner.set_mismatch_threshold(0);
-    const auto result = aligner.align_single_end(record, 0);
-    const alignment_info expected = ALN().offset(4).length(5);
-
-    REQUIRE(result == expected);
-  }
+  REQUIRE(result == expected);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1541,7 +1528,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
                                mate1.c_str(),
                                mate2.c_str(),
                                current.length,
-                               current.length);
+                               current.length * 2);
 
           // Don't count all these checks in test statistics
           if (!(current == expected)) {

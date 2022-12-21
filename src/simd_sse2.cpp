@@ -39,8 +39,8 @@ compare_subsequences_sse2(size_t& n_mismatches,
                           size_t& n_ambiguous,
                           const char* seq_1,
                           const char* seq_2,
-                          const size_t max_mismatches,
-                          int length)
+                          size_t length,
+                          size_t max_penalty)
 {
   //! Mask of all Ns
   const __m128i n_mask = _mm_set1_epi8('N');
@@ -57,10 +57,12 @@ compare_subsequences_sse2(size_t& n_mismatches,
     const auto eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
     n_mismatches += 16 - count_masked_sse2(eq_mask);
-    if (n_mismatches > max_mismatches) {
+    if (2 * n_mismatches + n_ambiguous > max_penalty) {
       return false;
     }
 
+    // Early termination is almost always due to mismatches, so updating the
+    // number of Ns after the above check saves time in the common case.
     n_ambiguous += count_masked_sse2(ns_mask);
 
     seq_1 += 16;
@@ -69,7 +71,7 @@ compare_subsequences_sse2(size_t& n_mismatches,
   }
 
   return compare_subsequences_std(
-    n_mismatches, n_ambiguous, seq_1, seq_2, max_mismatches, length);
+    n_mismatches, n_ambiguous, seq_1, seq_2, length, max_penalty);
 }
 
 } // namespace adapterremoval

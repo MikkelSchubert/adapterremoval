@@ -354,8 +354,7 @@ se_reads_processor::process(chunk_ptr chunk)
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
   stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
-  auto aligner = sequence_aligner(m_adapters);
-  aligner.set_mismatch_threshold(m_config.mismatch_threshold);
+  const auto aligner = sequence_aligner(m_adapters);
 
   for (auto& read : read_chunk.reads_1) {
     const size_t in_length = read.length();
@@ -464,8 +463,7 @@ pe_reads_processor::process(chunk_ptr chunk)
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
 
-  auto aligner = sequence_aligner(m_adapters);
-  aligner.set_mismatch_threshold(m_config.mismatch_threshold);
+  const auto aligner = sequence_aligner(m_adapters);
 
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
   trimmed_reads chunks(m_output, read_chunk.eof);
