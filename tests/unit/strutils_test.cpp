@@ -223,37 +223,52 @@ TEST_CASE("Base 10 is assumed", "[strutils::str_to_unsigned]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'shell_escape'
+// Tests for 'shell_escape' / 'log_escape'
 
-TEST_CASE("shell_escape preserves empty values")
+TEST_CASE("shell_escape tests")
 {
+  // empty values must be quoted
   REQUIRE(shell_escape("") == "''");
-}
-
-TEST_CASE("shell_escape passes simple values unchanged")
-{
+  // passes simple values unchanged
   REQUIRE(shell_escape("my_file.txt") == "my_file.txt");
-}
-
-TEST_CASE("shell_escape escapes whitespace")
-{
+  // whitespace in a value must be quoted
   REQUIRE(shell_escape("my file.txt") == "'my file.txt'");
-}
-
-TEST_CASE("shell_escape escapes single quotes")
-{
+  // various characters must be escaped (using standard escapes)
   REQUIRE(shell_escape("bob's_file.txt") == "'bob\\'s_file.txt'");
-}
-
-TEST_CASE("shell_escape escapes multiple values")
-{
+  REQUIRE(shell_escape("my\\file.txt") == "'my\\\\file.txt'");
+  REQUIRE(shell_escape("my\nfile.txt") == "'my\\nfile.txt'");
+  REQUIRE(shell_escape("my\rfile.txt") == "'my\\rfile.txt'");
+  REQUIRE(shell_escape("my\tfile.txt") == "'my\\tfile.txt'");
+  REQUIRE(shell_escape("my\bfile.txt") == "'my\\bfile.txt'");
+  REQUIRE(shell_escape("my\ffile.txt") == "'my\\ffile.txt'");
+  // mixed strings must be quoted and escaped
   REQUIRE(shell_escape("bob's file.txt") == "'bob\\'s file.txt'");
-}
-
-TEST_CASE("shell_escape escapes unprintable values")
-{
+  // unprintable characters must be hex encoded
   REQUIRE(shell_escape("\1") == "'\\x1'");
   REQUIRE(shell_escape("\x7f") == "'\\x7f'");
+}
+
+TEST_CASE("log_escape tests")
+{
+  // empty values must be quoted
+  REQUIRE(log_escape("") == "''");
+  // passes simple values unchanged
+  REQUIRE(log_escape("my_file.txt") == "'my_file.txt'");
+  // whitespace in a value must be quoted
+  REQUIRE(log_escape("my file.txt") == "'my file.txt'");
+  // various characters must be escaped (using standard escapes)
+  REQUIRE(log_escape("bob's_file.txt") == "'bob\\'s_file.txt'");
+  REQUIRE(log_escape("my\\file.txt") == "'my\\\\file.txt'");
+  REQUIRE(log_escape("my\bfile.txt") == "'my\\bfile.txt'");
+  REQUIRE(log_escape("my\ffile.txt") == "'my\\ffile.txt'");
+  REQUIRE(log_escape("my\nfile.txt") == "'my\\nfile.txt'");
+  REQUIRE(log_escape("my\rfile.txt") == "'my\\rfile.txt'");
+  REQUIRE(log_escape("my\tfile.txt") == "'my\\tfile.txt'");
+  // mixed strings must be quoted and escaped
+  REQUIRE(log_escape("bob's file.txt") == "'bob\\'s file.txt'");
+  // unprintable characters must be hex encoded
+  REQUIRE(log_escape("\1") == "'\\x1'");
+  REQUIRE(log_escape("\x7f") == "'\\x7f'");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -289,33 +289,55 @@ shell_escape(const std::string& s)
     return "''";
   }
 
-  bool must_escape = false;
   for (const auto c : s) {
     // Conservative list of safe values; better safe than sorry
     if (!isalnum(c) && c != '_' && c != '.' && c != '/' && c != '-') {
-      must_escape = true;
-      break;
+      return log_escape(s);
     }
   }
 
-  if (!must_escape) {
-    return s;
-  }
+  return s;
+}
 
+std::string
+log_escape(const std::string& s)
+{
   std::string out;
   out.push_back('\'');
 
   for (const auto c : s) {
-    if (c == '\'') {
-      out.push_back('\\');
-      out.push_back(c);
-    } else if (!std::isprint(c)) {
-      std::ostringstream ss;
-      ss << "\\x" << std::hex << static_cast<int>(c);
+    switch (c) {
+      case '\'':
+        out.append("\\'");
+        break;
+      case '\\':
+        out.append("\\\\");
+        break;
+      case '\b':
+        out.append("\\b");
+        break;
+      case '\f':
+        out.append("\\f");
+        break;
+      case '\n':
+        out.append("\\n");
+        break;
+      case '\r':
+        out.append("\\r");
+        break;
+      case '\t':
+        out.append("\\t");
+        break;
+      default:
+        if (!std::isprint(c)) {
+          std::ostringstream ss;
+          ss << "\\x" << std::hex << static_cast<int>(c);
 
-      out.append(ss.str());
-    } else {
-      out.push_back(c);
+          out.append(ss.str());
+
+        } else {
+          out.push_back(c);
+        }
     }
   }
 

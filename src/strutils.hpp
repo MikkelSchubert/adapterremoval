@@ -124,9 +124,16 @@ private:
   size_t m_indentation;
 };
 
-/** Escapes a string to make safe to use in copy/pasted commands */
+/** Escapes a string to make it safe to use in copy/pasted commands */
 std::string
 shell_escape(const std::string& s);
+
+/**
+ * Escapes a string for use in logging; this is equivalent to shell_escape
+ * except that strings are always quoted for readability.
+ */
+std::string
+log_escape(const std::string& s);
 
 /** Escapes a full shell command using shell_escape */
 std::string
