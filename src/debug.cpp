@@ -28,14 +28,8 @@ namespace adapterremoval {
 terminate(const std::string& message);
 
 assert_failed::assert_failed(const std::string& what)
-  : m_what(what)
+  : std::logic_error(what)
 {
-}
-
-const char*
-assert_failed::what() const noexcept
-{
-  return m_what.c_str();
 }
 
 void

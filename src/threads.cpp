@@ -24,15 +24,8 @@ namespace adapterremoval {
 // exceptions
 
 thread_error::thread_error(const std::string& message)
-  : std::exception()
-  , m_message(message)
+  : std::runtime_error(message)
 {
-}
-
-const char*
-thread_error::what() const noexcept
-{
-  return m_message.c_str();
 }
 
 thread_abort::thread_abort()

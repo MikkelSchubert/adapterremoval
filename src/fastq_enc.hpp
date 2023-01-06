@@ -19,8 +19,8 @@
 \*************************************************************************/
 #pragma once
 
-#include <exception> // for exception
 #include <stddef.h>  // for size_t
+#include <stdexcept> // for runtime_error
 #include <string>    // for string
 
 namespace adapterremoval {
@@ -46,17 +46,10 @@ enum class quality_encoding
 };
 
 /** Exception raised for FASTQ parsing and validation errors. */
-class fastq_error : public std::exception
+class fastq_error : public std::runtime_error
 {
 public:
   explicit fastq_error(const std::string& message);
-
-  /** Returns error message; string is owned by exception. */
-  const char* what() const noexcept override;
-
-private:
-  //! Error message associated with exception.
-  std::string m_message;
 };
 
 class fastq_encoding

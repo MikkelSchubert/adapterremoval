@@ -45,15 +45,8 @@ struct next_subsequence
 // barcode_error
 
 barcode_error::barcode_error(const std::string& message)
-  : std::exception()
-  , m_message(message)
+  : std::runtime_error(message)
 {
-}
-
-const char*
-barcode_error::what() const noexcept
-{
-  return m_message.c_str();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

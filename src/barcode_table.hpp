@@ -21,8 +21,8 @@
 
 #include <algorithm> // for max
 #include <array>     // for array
-#include <exception> // for exception
 #include <stddef.h>  // for size_t
+#include <stdexcept> // for runtime_error
 #include <string>    // for string
 #include <vector>    // for vector
 
@@ -33,17 +33,10 @@ namespace adapterremoval {
 struct next_subsequence;
 
 /** Exception raised for FASTQ parsing and validation errors. */
-class barcode_error : public std::exception
+class barcode_error : public std::runtime_error
 {
 public:
   explicit barcode_error(const std::string& message);
-
-  /** Returns error message; string is owned by exception. */
-  const char* what() const noexcept override;
-
-private:
-  //! Error message associated with exception.
-  std::string m_message;
 };
 
 /**

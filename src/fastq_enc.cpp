@@ -61,15 +61,8 @@ const int SOLEXA_SCORE_MAX = SOLEXA_OFFSET_MAX - SOLEXA_OFFSET_MIN;
 // fastq_error
 
 fastq_error::fastq_error(const std::string& message)
-  : std::exception()
-  , m_message(message)
+  : std::runtime_error(message)
 {
-}
-
-const char*
-fastq_error::what() const noexcept
-{
-  return m_message.c_str();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

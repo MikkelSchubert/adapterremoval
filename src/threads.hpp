@@ -18,8 +18,8 @@
 \*************************************************************************/
 #pragma once
 
-#include <exception> // for exception
 #include <mutex>     // for lock_guard, mutex
+#include <stdexcept> // for runtime_error
 #include <string>    // for string
 
 namespace adapterremoval {
@@ -28,18 +28,11 @@ namespace adapterremoval {
  * Exception thrown for threading related errors, including errors with
  * threads, mutexes, and conditionals.
  */
-class thread_error : public std::exception
+class thread_error : public std::runtime_error
 {
 public:
   /** Constructor; takes an error-message. */
   explicit thread_error(const std::string& message);
-
-  /** Returns error message; lifetime is the same as the object. */
-  const char* what() const noexcept override;
-
-private:
-  //! User provided error message
-  std::string m_message;
 };
 
 /**

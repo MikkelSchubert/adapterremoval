@@ -18,25 +18,18 @@
 \*************************************************************************/
 #pragma once
 
-#include <stddef.h> // for size_t
-
-#include <string> // for string
+#include <stddef.h>  // for size_t
+#include <stdexcept> // for logic_error
+#include <string>    // for string
 
 namespace adapterremoval {
 
 /** Exception explaining 'abort' calls when running unit-tests. */
-class assert_failed : public std::exception
+class assert_failed : public std::logic_error
 {
 public:
   /** Creates exception with the specified error message. */
   explicit assert_failed(const std::string& what);
-
-  /** Returns user supplied error message; owned by object. */
-  const char* what() const noexcept override;
-
-private:
-  //! User supplied error message
-  const std::string m_what;
 };
 
 /**
