@@ -154,8 +154,8 @@ managed_writer::open_writer(managed_writer* ptr)
     try {
       ptr->m_stream.open(ptr->m_filename, std::ofstream::binary | mode);
       break;
-    } catch (const std::ofstream::failure&) {
-      if (errno != int(std::errc::too_many_files_open)) {
+    } catch (const std::ofstream::failure& error) {
+      if (error.code() != std::errc::too_many_files_open) {
         throw;
       }
     }
