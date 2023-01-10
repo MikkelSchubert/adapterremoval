@@ -60,11 +60,17 @@ managed_writer::fopen(const std::string& filename, const char* mode)
     FILE* handle = ::fopen(filename.c_str(), mode);
 
     if (handle) {
-#if _POSIX_C_SOURCE >= 200112L
       // Hint that we'll (only) be doing sequential reads
+#if _POSIX_C_SOURCE >= 200112L
+#ifdef POSIX_FADV_SEQUENTIAL
       posix_fadvise(fileno(handle), 0, 0, POSIX_FADV_SEQUENTIAL);
+#endif
+#ifdef POSIX_FADV_WILLNEED
       posix_fadvise(fileno(handle), 0, 0, POSIX_FADV_WILLNEED);
+#endif
+#ifdef POSIX_FADV_NOREUSE
       posix_fadvise(fileno(handle), 0, 0, POSIX_FADV_NOREUSE);
+#endif
 #endif
 
       return handle;
