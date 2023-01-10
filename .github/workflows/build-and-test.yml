@@ -30,6 +30,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
       - name: dependencies
         if: ${{ matrix.os == 'ubuntu-22.04' }}
@@ -39,13 +42,13 @@ jobs:
         run: brew install isa-l libdeflate
 
       - name: make test
-        run: make -j $(nproc) test VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
+        run: |
+          export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
+          make -j ${NPROCS} test VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
       - name: make regression
-        run: make -j $(nproc) regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.x"
+        run: |
+          export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
+          make -j ${NPROCS} regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
 
       - name: sphinx
         run: python3 -m pip install sphinx
