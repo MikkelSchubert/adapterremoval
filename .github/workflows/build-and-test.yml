@@ -42,6 +42,9 @@ jobs:
         run: make test VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
       - name: make regression
         run: make regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
+
+      - name: dependencies
+        run: python3 -m pip install sphinx
       - name: make install
         run: make install VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }} PREFIX=${PWD}/install
 
