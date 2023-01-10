@@ -50,7 +50,7 @@ INSTALLDOC = install -m 0644
 MKDIR      = install -d  # act as mkdir -p
 
 # Default compilation flags
-CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3 -D_POSIX_C_SOURCE=200112L
+CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
 LDLIBS := -pthread -lisal ${LDLIBS}
 LDFLAGS := ${LDFLAGS}
 
