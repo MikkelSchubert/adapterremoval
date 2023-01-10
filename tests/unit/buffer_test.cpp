@@ -128,7 +128,7 @@ TEST_CASE("buffer write_u32 with offset")
 {
   buffer buf(6);
   auto ptr = buf.get();
-  ::bzero(ptr, buf.size());
+  std::memset(ptr, 0, buf.size());
 
   buf.write_u32(1, 0xDEADBEEF);
 
