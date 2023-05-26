@@ -466,17 +466,18 @@ fastq::read(line_reader_base& reader, const fastq_encoding& encoding)
 bool
 fastq::read_unsafe(line_reader_base& reader)
 {
-  std::string line;
   do {
-    if (!reader.getline(line)) {
+    if (!reader.getline(m_header)) {
       // End of file; terminate gracefully
       return false;
     }
-  } while (line.empty());
+  } while (m_header.empty());
 
-  m_header = line.substr(1);
-  if (m_header.empty() || line.at(0) != '@') {
+  if (m_header.size() < 2 || m_header.at(0) != '@') {
     throw fastq_error("Malformed or empty FASTQ header");
+  } else {
+    // FIXME: Erasing the '@' and then re-adding it later is pointless work
+    m_header.erase(0, 1);
   }
 
   if (!reader.getline(m_sequence)) {
@@ -485,6 +486,8 @@ fastq::read_unsafe(line_reader_base& reader)
     throw fastq_error("sequence is empty");
   }
 
+  // Most of the time this will only be '+' and not require an allocation
+  std::string line;
   if (!reader.getline(line)) {
     throw fastq_error("partial FASTQ record; cut off after sequence");
   } else if (line.empty() || line.at(0) != '+') {
