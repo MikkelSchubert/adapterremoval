@@ -53,7 +53,7 @@ def _do_print_color(*vargs_, **kwargs):
     # No colors if output is redirected (e.g. less, file, etc.)
     if _COLORS_ENABLED and destination.isatty():
         vargs = list(vargs_)
-        for (index, varg) in enumerate(vargs):
+        for index, varg in enumerate(vargs):
             varg_lines = []
             # Newlines terminate the color-code for e.g. 'less', so ensure that
             # each line is color-coded, while preserving the list of arguments
@@ -96,8 +96,10 @@ def read_file(filename, mode="rt"):
 
 
 def read_json(filename):
+    data = read_file(filename)
+
     try:
-        return json.loads(read_file(filename))
+        return data, json.loads(data)
     except json.JSONDecodeError as error:
         raise TestError("ERROR while reading {!r}:\n    {}".format(filename, error))
 
@@ -209,8 +211,11 @@ JSON_WILDCARDS = {
     "...[str]": lambda it: isinstance(it, list) and all(isinstance(v, str) for v in it),
 }
 
+# JSON path elements that do not require quoting
+JSON_PATH = re.compile("[a-z0-9_]", re.I)
 
-def diff_json(reference, observed, path=()):
+
+def diff_json(reference, observed, path=("",)):
     def _err(what, ref, obs):
         return "{} at {}: {} is not {}".format(what, path_to_s(path), obs, ref)
 
@@ -235,7 +240,10 @@ def diff_json(reference, observed, path=()):
             elif key not in observed:
                 yield _err("unexpected key", "in observation", key)
             else:
-                yield from diff_json(reference[key], observed[key], path + (repr(key),))
+                if not JSON_PATH.match(key):
+                    key = repr(key)
+
+                yield from diff_json(reference[key], observed[key], path + (key,))
     elif isinstance(reference, float):
         # There should be no NANs in this data, so this test also catches those
         if not (abs(reference - observed) < 1e-6):
@@ -280,7 +288,7 @@ _TEST_FILES = _INPUT_FILES | _OUTPUT_FILES
 Default = namedtuple("Default", ("spec", "value"))
 
 
-# Layout of regressin tests in JSON format
+# Layout of regression tests in JSON format
 _TEST_SPECIFICATION = {
     "arguments": [str],
     "skip": Default(bool, False),
@@ -322,8 +330,8 @@ def validate(spec, value, path=("{}",)):
         _check_type(dict, value)
 
         out = {}
-        for key, sspec in spec.items():
-            out[key] = validate(sspec, value.pop(key, None), path + (key,))
+        for key, subspec in spec.items():
+            out[key] = validate(subspec, value.pop(key, None), path + (key,))
 
         if value:
             raise TestError(
@@ -354,48 +362,69 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
         if kind not in ("html", "ignore"):
             filename = os.path.join(root, name)
             if kind == "json":
-                json_data = read_json(filename)
+                data, json_data = read_json(filename)
             else:
                 # Reference data is not expected to be compresses, regardless of extension
                 data = read_lines(filename)
 
         return TestFile(name=name, kind=kind, data=data, json=json_data)
 
-    def compare_with_file(self, filepath: str):
-        if not os.path.isfile(filepath):
-            raise TestError("file {} not created".format(filepath))
+    def compare_with_file(self, expected, observed: str):
+        if not os.path.isfile(observed):
+            raise TestError("file {} not created".format(observed))
 
         # Some files just need to exist; HTML reports, etc.
         if self.kind == "json":
-            return self._compare_json(filepath)
+            return self._compare_json(expected, observed)
         elif self.data is None:
             return
 
-        return self._compare_text(filepath)
+        return self._compare_text(expected, observed)
 
-    def _compare_json(self, filepath: str):
-        data = read_json(filepath)
+    def _compare_json(self, expected: str, observed: str):
+        _, data = read_json(observed)
         differences = diff_json(reference=self.json, observed=data)
         differences = list(islice(differences, 4))
 
         if differences:
-            raise TestError(
-                "Mismatches in {}:\n    > {}".format(
-                    filepath, "\n    > ".join(differences)
-                )
+            differences = "\n".join(
+                "    {}. {}".format(idx, line)
+                for idx, line in enumerate(differences, start=1)
             )
 
-    def _compare_text(self, filepath: str):
-        observed = read_and_decompress_lines(filepath)
-        if observed == self.data:
+            self._raise_test_error(
+                label="JSON",
+                expected=expected,
+                observed=observed,
+                differences=differences,
+            )
+
+    def _compare_text(self, expected: str, observed: str):
+        data = read_and_decompress_lines(observed)
+        if data == self.data:
             return
 
-        lines = difflib.unified_diff(self.data, observed, "expected", "observed")
+        lines = difflib.unified_diff(self.data, data, "expected", "observed")
 
+        self._raise_test_error(
+            label="output",
+            expected=expected,
+            observed=observed,
+            differences=pretty_output(lines, 10),
+        )
+
+    def _raise_test_error(self, label, expected, observed, differences):
         raise TestError(
-            "Output file {} differ:\n{}".format(
-                os.path.basename(filepath),
-                pretty_output(lines, 10),
+            (
+                "Mismatches in {} file:\n"
+                "  Expected   = {}\n"
+                "  Observed   = {}\n"
+                "  Mismatches =\n{}"
+            ).format(
+                label,
+                shlex.quote(expected),
+                shlex.quote(observed),
+                differences,
             )
         )
 
@@ -419,8 +448,9 @@ class TestConfig(
 ):
     @classmethod
     def load(cls, name, filepath):
-        data = read_json(filepath)
+        _, data = read_json(filepath)
         data = validate(_TEST_SPECIFICATION, data)
+        assert isinstance(data, dict)
 
         root = os.path.dirname(filepath)
         files = []
@@ -487,7 +517,7 @@ class TestMutator:
             yield it
             return
 
-        # For simplicity's sake, filesnames are not checked in exhaustive tests
+        # For simplicity's sake, filenames are not checked in exhaustive tests
         for file in it.files:
             if file.kind == "json":
                 masked_stats = file._replace(json=cls._mask_filenames(file.json))
@@ -690,7 +720,7 @@ class TestRunner:
         if not self.keep_all:
             shutil.rmtree(self.path)
 
-    def _setup(self, root, keys):
+    def _setup(self, root, keys, verbose=False):
         os.makedirs(root)
 
         for it in self._test.get_files(keys):
@@ -766,7 +796,10 @@ class TestRunner:
         for it in self._test.get_files(_OUTPUT_FILES | _INPUT_FILES):
             expected_files.add(it.name)
 
-            it.compare_with_file(os.path.join(self._test_path, it.name))
+            it.compare_with_file(
+                expected=os.path.join(self._exp_path, it.name),
+                observed=os.path.join(self._test_path, it.name),
+            )
 
         observed_files = set(os.listdir(self._test_path))
         unexpected_files = observed_files - expected_files
@@ -834,7 +867,7 @@ class TestUpdater:
                 lines = []
                 with open(filename, "rb") as handle:
                     for line in handle:
-                        for key, value in tuple(metadata):
+                        for key, value in list(metadata):
                             if line.startswith(key):
                                 metadata.remove((key, value))
                                 line = key + value
@@ -1083,7 +1116,7 @@ def main(argv):
                 print_err("  Command       = {}".format(cmd_to_s(last_test.command)))
 
                 error = "\n                  ".join(str(last_error).split("\n"))
-                print_err("  Error         = {}".format(last_error))
+                print_err("  Error         = {}".format(error))
 
                 if n_failures >= args.max_failures:
                     pool.terminate()
