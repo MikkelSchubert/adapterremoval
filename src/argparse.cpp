@@ -394,15 +394,21 @@ parser::find_argument(const std::string& key)
     }
 
     auto error = log::error();
-    error << "Unknown argument '" << key << "'\n";
+    error << "Unknown argument '" << key << "'";
 
-    std::sort(candidates.begin(), candidates.end());
-    if (!candidates.empty()) {
-      error << "\n    Did you mean\n";
+    if (candidates.size()) {
+      std::sort(candidates.begin(), candidates.end());
 
-      for (const auto& candidate : candidates) {
-        error << "      " << candidate << "\n";
+      error << ". Did you mean " << candidates.front();
+      for (size_t i = 1; i < candidates.size() - 1; ++i) {
+        error << ", " << candidates.at(i);
       }
+
+      if (candidates.size() > 1) {
+        error << " or " << candidates.back();
+      }
+
+      error << "?";
     }
   } else {
     log::error() << "Unexpected positional argument '" << key << "'";

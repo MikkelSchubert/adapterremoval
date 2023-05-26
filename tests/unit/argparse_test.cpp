@@ -947,16 +947,8 @@ TEST_CASE("typo in argument", "[argparse::parser]")
   log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
-
-  const auto str = ss.str();
-  size_t i = str.find("[ERROR] Unknown argument '--halp'\n");
-  REQUIRE(i != std::string::npos);
-  i = str.find("[ERROR] \n", i + 1);
-  REQUIRE(i != std::string::npos);
-  i = str.find("[ERROR]     Did you mean\n", i + 1);
-  REQUIRE(i != std::string::npos);
-  i = str.find("[ERROR]       --help\n", i + 1);
-  REQUIRE(i != std::string::npos);
+  REQUIRE(ss.str() == "[ERROR] Unknown argument '--halp'. "
+                      "Did you mean --help?\n");
 }
 
 TEST_CASE("partial argument", "[argparse::parser]")
@@ -968,16 +960,37 @@ TEST_CASE("partial argument", "[argparse::parser]")
   log::log_capture ss;
 
   REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "[ERROR] Unknown argument '--part'. "
+                      "Did you mean --partofalongargument?\n");
+}
 
-  const auto str = ss.str();
-  size_t i = str.find("[ERROR] Unknown argument '--part'\n");
-  REQUIRE(i != std::string::npos);
-  i = str.find("[ERROR] \n", i + 1);
-  REQUIRE(i != std::string::npos);
-  i = str.find("[ERROR]     Did you mean\n", i + 1);
-  REQUIRE(i != std::string::npos);
-  i = str.find("[ERROR]       --partofalongargument\n", i + 1);
-  REQUIRE(i != std::string::npos);
+TEST_CASE("two possible arguments", "[argparse::parser]")
+{
+  argparse::parser p;
+  p.add("--arg1");
+  p.add("--arg2");
+  const char* args[] = { "exe", "--arg" };
+
+  log::log_capture ss;
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
+                      "Did you mean --arg1 or --arg2?\n");
+}
+
+TEST_CASE("three possible arguments", "[argparse::parser]")
+{
+  argparse::parser p;
+  p.add("--arg1");
+  p.add("--arg2");
+  p.add("--arg3");
+  const char* args[] = { "exe", "--arg" };
+
+  log::log_capture ss;
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
+                      "Did you mean --arg1, --arg2 or --arg3?\n");
 }
 
 TEST_CASE("parse multiple arguments", "[argparse::parser]")
