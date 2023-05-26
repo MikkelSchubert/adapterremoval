@@ -61,6 +61,7 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     current.offset = offset;
     current.length = length;
 
+    AR_REQUIRE(static_cast<int>(length) >= alignment.score());
     if (compare_subsequences(current.n_mismatches,
                              current.n_ambiguous,
                              seq1.data() + initial_seq1_offset,
