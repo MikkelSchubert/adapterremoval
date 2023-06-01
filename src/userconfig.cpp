@@ -321,8 +321,10 @@ fancy_output_allowed()
   if (::isatty(STDERR_FILENO)) {
     // NO_COLOR is checked as suggested by https://no-color.org/
     const char* no_color = ::getenv("NO_COLOR");
+    const char* term = ::getenv("TERM");
 
-    return !(no_color && no_color[0] != '\0');
+    return !(no_color && no_color[0] != '\0') &&
+           !(term && strcmp(term, "dumb") == 0);
   }
 
   return false;
