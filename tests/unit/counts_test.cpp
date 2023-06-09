@@ -149,6 +149,12 @@ TEST_CASE("counts sum")
     const counts c = { 1, 20, 300 };
     REQUIRE(c.sum(1, 1) == 0);
   }
+
+  SECTION("sum of floats")
+  {
+    const rates c = { 0.5, 1, 7.1 };
+    REQUIRE(c.sum() == Approx(8.6));
+  }
 }
 
 TEST_CASE("counts product")

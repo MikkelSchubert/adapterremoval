@@ -57,11 +57,10 @@ public:
   inline void inc(size_t n, T count = 1) { m_counts.at(n) += count; }
 
   /** The sum of values in the specified range. */
-  uint64_t sum(size_t from = 0,
-               size_t to = std::numeric_limits<size_t>::max()) const
+  T sum(size_t from = 0, size_t to = std::numeric_limits<size_t>::max()) const
   {
     AR_REQUIRE(from <= to);
-    T total = 0;
+    T total = T();
     to = std::min(size(), to);
     for (size_t i = from; i < to; ++i) {
       total += m_counts.at(i);
