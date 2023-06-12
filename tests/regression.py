@@ -28,6 +28,7 @@ import gzip
 import io
 import itertools
 import json
+import math
 import multiprocessing
 import os
 import re
@@ -148,18 +149,18 @@ def escape_whitespace(line):
     return "".join(out)
 
 
-def pretty_output(
-    lines,
-    max_lines=float("inf"),
-    padding=0,
-):
-    lines = list(lines)
-    prefix = " " * padding
+def truncate_lines(lines, max_lines=float("inf")):
+    lines = list(islice(lines, max_lines + 1))
     if len(lines) > max_lines:
-        lines = lines[:max_lines]
-        lines.append("...")
+        lines[-1] = "..."
 
+    return lines
+
+
+def pretty_output(lines, max_lines, padding=0):
     result = []
+    prefix = " " * padding
+    lines = truncate_lines(lines, max_lines)
     for line in lines:
         result.append("%s>  %s" % (prefix, escape_whitespace(line)))
 
@@ -384,7 +385,7 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
     def _compare_json(self, expected: str, observed: str):
         _, data = read_json(observed)
         differences = diff_json(reference=self.json, observed=data)
-        differences = list(islice(differences, 4))
+        differences = truncate_lines(differences, 4)
 
         if differences:
             differences = "\n".join(
