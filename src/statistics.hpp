@@ -150,8 +150,8 @@ public:
   /** Distribution of Phred quality scores (offset 0) */
   inline const counts& quality_dist() const { return m_quality_dist; }
 
-  /** Distribution of GC content in percent */
-  inline const counts& gc_content() const { return m_gc_content_dist; }
+  /** Smoothed distribution of GC content */
+  inline const rates& gc_content() const { return m_gc_content_dist; }
 
   /** Counts of ACGTN nucleotides by position */
   inline counts nucleotides_pos(char nuc) const
@@ -203,7 +203,7 @@ private:
   /** Quality distribution. */
   counts m_quality_dist;
   /** GC content distribution. */
-  counts m_gc_content_dist;
+  rates m_gc_content_dist;
 
   /** Per position nucleotide counts indexed using ACGTN_TO_IDX. */
   indexed_counts<ACGTN> m_nucleotide_pos;

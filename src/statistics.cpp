@@ -200,6 +200,39 @@ duplication_statistics::insert(const std::string& key)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+inline void
+smoothed_gc_count(rates& distribution, size_t count, size_t length)
+{
+  // counts are smoothed across adjacent (percentage) bins
+  const auto lower = std::max<double>(0, 100 * (count - 0.5) / length);
+  const auto upper = std::min<double>(100, 100 * (count + 0.5) / length);
+
+  const size_t lower_i = lower;
+  const size_t upper_i = upper;
+
+  const auto lower_f = lower - lower_i;
+  const auto upper_f = upper - upper_i;
+
+  if (lower_i == upper_i) {
+    // Count falls in a single bin
+    distribution.inc(lower_i, (upper - lower));
+  } else {
+    // Increment first bin/partially overlapped adjacent bins
+    distribution.inc(lower_i, (1 - lower_f));
+    distribution.inc(upper_i, upper_f);
+
+    // Ranges are half open, except for the final bin
+    const auto final_i = count == length ? 101 : upper_i;
+    for (size_t i = lower + 1; i < final_i; ++i) {
+      distribution.inc(i);
+    }
+  }
+}
+
+} // namespace
+
 fastq_statistics::fastq_statistics(double sample_rate)
   : m_sample_rate(sample_rate)
   , m_rng(prng_seed())
@@ -254,8 +287,8 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
     auto n_at = nucls.get('A') + nucls.get('T');
     auto n_gc = nucls.get('G') + nucls.get('C');
     if (n_at || n_gc) {
-      // FIXME: Causes dip at 50% if effective length == 99
-      m_gc_content_dist.inc((100.0 * n_gc) / (n_at + n_gc) + 0.5);
+      // uncalled bases are not considered for the length of the reads
+      smoothed_gc_count(m_gc_content_dist, n_gc, n_gc + n_at);
     }
   }
 

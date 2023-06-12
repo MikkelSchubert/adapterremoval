@@ -390,7 +390,7 @@ struct io_section
 
       const auto quality_dist = m_stats->quality_dist().trim();
       section->i64_vec("quality_scores", quality_dist);
-      section->i64_vec("gc_content", m_stats->gc_content());
+      section->f64_vec("gc_content", m_stats->gc_content());
 
       // Currently only for input 1/2
       const auto dup_stats = m_stats->duplication();
