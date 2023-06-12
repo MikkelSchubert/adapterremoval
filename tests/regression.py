@@ -942,15 +942,7 @@ def build_test_runners(args, tests):
 
 
 def build_test_updaters(args, tests):
-    result = []
-    active_folders = set()
-    for test in tests:
-        folder = os.path.dirname(test.path)
-        if folder not in active_folders and not test.skip:
-            result.append(TestUpdater(test, args.executable))
-            active_folders.add(folder)
-
-    return result
+    return [TestUpdater(test, args.executable) for test in tests if not test.skip]
 
 
 def collect_unused_files(root, tests):
@@ -1036,6 +1028,10 @@ def main(argv):
 
     if args.max_failures <= 0:
         args.max_failures = float("inf")
+
+    if args.create_updated_reference:
+        # test-sets may generate (partially) overlapping files
+        args.threads = 1
 
     if args.create_updated_reference:
         os.makedirs(os.path.dirname(args.work_dir), exist_ok=True)
