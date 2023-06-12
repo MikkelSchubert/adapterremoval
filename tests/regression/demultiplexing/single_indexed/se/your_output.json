@@ -42,7 +42,8 @@
     },
     "poly_x_trimming": {},
     "filtering": {
-      "min_length": { "reads": 2, "bases": 0 } },
+      "min_length": { "reads": 2, "bases": 0 }
+    },
     "output": {
       "passed": {
         "reads": 6,
@@ -128,7 +129,8 @@
         },
         "poly_x_trimming": {},
         "filtering": {
-          "min_length": { "reads": 1, "bases": 0 } },
+          "min_length": { "reads": 1, "bases": 0 }
+        },
         "output": {
           "read1": {
             "filenames": ["your_output.sample_1.r1.fastq"],
@@ -189,7 +191,8 @@
         },
         "poly_x_trimming": {},
         "filtering": {
-          "min_length": { "reads": 1, "bases": 0 } },
+          "min_length": { "reads": 1, "bases": 0 }
+        },
         "output": {
           "read1": {
             "filenames": ["your_output.sample_2.r1.fastq"],

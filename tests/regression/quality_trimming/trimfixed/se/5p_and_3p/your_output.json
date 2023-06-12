@@ -34,7 +34,8 @@
     },
     "poly_x_trimming": {},
     "filtering": {
-      "min_length": { "reads": 0, "bases": 0 } },
+      "min_length": { "reads": 0, "bases": 0 }
+    },
     "output": {
       "passed": {
         "reads": 1,
