@@ -488,8 +488,12 @@ class TestConfig(
                 input_2.append(it.name)
             elif it.kind == "barcodes":
                 command += ["--barcode-list", it.name]
+            elif it.kind == "adapters":
+                command += ["--adapter-list", it.name]
             elif it.kind == "json":
                 command += ["--report-sample-rate", "1"]
+            elif it.kind not in ("output", "json", "html", "ignore"):
+                raise NotImplementedError(it.kind)
 
         if input_1:
             command += ["--file1"] + input_1
