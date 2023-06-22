@@ -24,7 +24,7 @@
 namespace adapterremoval {
 
 const std::string NAME = "AdapterRemoval";
-const std::string VERSION = "v3.0.0-alpha1";
+const std::string VERSION = "v3.0.0-alpha2";
 const std::string HELPTEXT =
   "This program searches for and removes remnant adapter sequences, poly-X\n"
   "tails and low-quality base from FASTQ reads. For detailed explanation of\n"
