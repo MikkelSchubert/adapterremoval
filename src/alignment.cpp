@@ -37,7 +37,12 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
                                            const std::string& seq2,
                                            const int min_offset) const
 {
-  int offset = std::max(min_offset, -static_cast<int>(seq2.length()) + 1);
+  int offset =
+    // The alignment must involve at least one base from seq2,
+    std::max(std::max(min_offset, -static_cast<int>(seq2.length()) + 1),
+             // but there's no point aligning pairs too short to matter. This
+             // currently only applies to --adapter-list mode.
+             alignment.score() - static_cast<int>(seq2.length()));
   int end_offset =
     static_cast<int>(seq1.length()) - std::max(1, alignment.score());
 
