@@ -235,28 +235,31 @@ post_trim_read_by_quality(const userconfig& config,
 bool
 is_acceptable_read(const userconfig& config,
                    trimming_statistics& stats,
-                   const fastq& seq)
+                   const fastq& seq,
+                   const size_t n_reads = 1)
 {
   const auto length = seq.length();
 
   if (length < config.min_genomic_length) {
-    stats.filtered_min_length.inc(length);
-
+    stats.filtered_min_length.inc_reads(n_reads);
+    stats.filtered_min_length.inc_bases(length);
     return false;
   } else if (length > config.max_genomic_length) {
-    stats.filtered_max_length.inc(length);
-
+    stats.filtered_max_length.inc_reads(n_reads);
+    stats.filtered_max_length.inc_bases(length);
     return false;
   }
 
   const auto max_n = config.max_ambiguous_bases;
   if (max_n < length && seq.count_ns() > max_n) {
-    stats.filtered_ambiguous.inc(length);
+    stats.filtered_ambiguous.inc_reads(n_reads);
+    stats.filtered_ambiguous.inc_bases(length);
     return false;
   }
 
   if (config.min_complexity > 0.0 && seq.complexity() < config.min_complexity) {
-    stats.filtered_low_complexity.inc(length);
+    stats.filtered_low_complexity.inc_reads(n_reads);
+    stats.filtered_low_complexity.inc_bases(length);
     return false;
   }
 
@@ -549,7 +552,7 @@ pe_reads_processor::process(chunk_ptr chunk)
         stats->total_trimmed.inc_bases(in_length_1 + in_length_2 -
                                        read_1.length());
 
-        if (is_acceptable_read(m_config, *stats, read_1)) {
+        if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
           chunks.add(read_1, read_type::merged);
         } else {

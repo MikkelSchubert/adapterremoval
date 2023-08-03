@@ -42,7 +42,7 @@
     },
     "poly_x_trimming": {},
     "filtering": {
-      "min_length": { "reads": 2, "bases": 0 }
+      "min_length": { "reads": 4, "bases": 0 }
     },
     "output": {
       "passed": {
@@ -153,7 +153,7 @@
         },
         "poly_x_trimming": {},
         "filtering": {
-          "min_length": { "reads": 1, "bases": 0 }
+          "min_length": { "reads": 2, "bases": 0 }
         },
         "output": {
           "read1": {
@@ -271,7 +271,7 @@
         },
         "poly_x_trimming": {},
         "filtering": {
-          "min_length": { "reads": 1, "bases": 0 }
+          "min_length": { "reads": 2, "bases": 0 }
         },
         "output": {
           "read1": {
