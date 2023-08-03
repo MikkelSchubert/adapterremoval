@@ -50,6 +50,7 @@ class reads_and_bases
 public:
   reads_and_bases(uint64_t reads = 0, uint64_t bases = 0);
   reads_and_bases& operator+=(const reads_and_bases& other);
+  reads_and_bases operator+(const reads_and_bases& other);
 
   /** Increments the number of reads by one the number of bases by an amount */
   void inc(uint64_t bases = 1);
@@ -370,6 +371,12 @@ reads_and_bases::operator+=(const reads_and_bases& other)
   m_bases += other.m_bases;
 
   return *this;
+}
+
+inline reads_and_bases
+reads_and_bases::operator+(const reads_and_bases& other)
+{
+  return { m_reads + other.m_reads, m_bases + other.m_bases };
 }
 
 inline void
