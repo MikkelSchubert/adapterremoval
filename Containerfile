@@ -50,4 +50,4 @@ ENV LDLIBS="-lmimalloc"
 ENV LDFLAGS="-L/usr/local/lib/mimalloc-2.0/"
 ENTRYPOINT [ "make", "-C", "/root/adapterremoval/", "CXX=g++", "COLOR=no", "STATIC=yes", "PREFIX=build/install" ]
 
-CMD ["-j4", "regression", "test", "install"]
+CMD ["-j4", "regression", "examples", "test", "install"]
