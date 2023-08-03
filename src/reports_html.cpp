@@ -61,7 +61,8 @@ json_encode(const std::string& s)
 }
 
 /** JSON escaped string */
-std::string operator""_json(const char* s, size_t length)
+std::string
+operator""_json(const char* s, size_t length)
 {
   return json_encode(std::string(s, length));
 }
@@ -128,7 +129,7 @@ require_values(counts_tmpl<T> r, T fallback = T())
 std::string
 format_average_bases(const reads_and_bases& counts)
 {
-  return format_fraction(counts.bases(), counts.reads());
+  return format_fraction(counts.bases(), counts.reads(), 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -394,6 +395,7 @@ write_html_summary_section(const userconfig& config,
 //! Trimming statistics
 struct trimming_stats
 {
+  size_t id;
   //! Processing stage relative to adapter trimming (pre, X, post)
   std::string stage;
   //! Row label 1 (step)
@@ -411,23 +413,36 @@ write_html_trimming_stats(std::ofstream& output,
                           const std::vector<trimming_stats>& stats,
                           const reads_and_bases& totals)
 {
-  size_t n_unique = 1;
-  size_t n_enabled = 0;
-  size_t n_enabled_unique = 1;
-  for (size_t i = 0; i < stats.size(); ++i) {
-    n_enabled += stats.at(i).enabled;
+  size_t n_processing_steps = 0;
+  size_t n_processing_steps_on = 0;
+  size_t n_filtering_steps = 0;
+  size_t n_filtering_steps_on = 0;
 
-    if (i && stats.at(i - 1).label_1 != stats.at(i).label_1) {
-      n_unique++;
-      n_enabled_unique += stats.at(i).enabled;
+  size_t last_id = -1;
+  size_t last_enabled = -1;
+  for (const auto& it : stats) {
+    if (it.id != last_id) {
+      if (it.stage == "Processing") {
+        n_processing_steps++;
+      } else if (it.stage == "Filtering") {
+        n_filtering_steps++;
+      }
+
+      last_id = it.id;
+    }
+
+    if (it.enabled && it.id != last_enabled) {
+      if (it.stage == "Processing") {
+        n_processing_steps_on++;
+      } else if (it.stage == "Filtering") {
+        n_filtering_steps_on++;
+      }
+
+      last_enabled = it.id;
     }
   }
 
   html_summary_trimming_head().write(output);
-
-  if (!n_enabled) {
-    return;
-  }
 
   std::string previous_stage;
   std::string previous_label_1;
@@ -445,26 +460,19 @@ write_html_trimming_stats(std::ofstream& output,
         .set_label_1(label_1)
         .set_label_2(it.label_2)
         .set_reads(format_rough_number(it.count.reads()))
+        .set_pct_reads(format_percentage(it.count.reads(), totals.reads()))
         .set_bases(format_rough_number(it.count.bases()))
+        .set_pct_bases(format_percentage(it.count.bases(), totals.bases()))
         .set_avg_bases(format_average_bases(it.count))
         .write(output);
     }
   }
 
-  if (n_enabled > 1) {
-    html_summary_trimming_row()
-      .set_stage("")
-      .set_label_1("")
-      .set_label_2("")
-      .set_reads(format_rough_number(totals.reads()))
-      .set_bases(format_rough_number(totals.bases()))
-      .set_avg_bases(format_average_bases(totals))
-      .write(output);
-  }
-
   html_summary_trimming_tail()
-    .set_n_enabled(std::to_string(n_enabled_unique))
-    .set_n_total(std::to_string(n_unique))
+    .set_n_enabled_filt(std::to_string(n_filtering_steps_on))
+    .set_n_total_filt(std::to_string(n_filtering_steps))
+    .set_n_enabled_proc(std::to_string(n_processing_steps_on))
+    .set_n_total_proc(std::to_string(n_processing_steps))
     .write(output);
 }
 
@@ -479,48 +487,38 @@ struct filtering_stats
   reads_and_bases count;
 };
 
-void
-write_html_filtering_stats(std::ofstream& output,
-                           const std::vector<filtering_stats>& stats)
+reads_and_bases
+summarize_input(const fastq_stats_ptr& ptr)
 {
-  size_t n_enabled = 0;
-  for (const auto& it : stats) {
-    n_enabled += it.enabled;
+  const auto n_bases = ptr->length_dist().product();
+  AR_REQUIRE(n_bases >= 0);
+
+  return { ptr->number_of_input_reads(), static_cast<uint64_t>(n_bases) };
+}
+
+void
+build_polyx_trimming_rows(std::vector<trimming_stats>& out,
+                          const std::string& polyx_nucleotides,
+                          const indexed_count<ACGT>& reads,
+                          const indexed_count<ACGT>& bases,
+                          const size_t id)
+{
+  for (const auto nucleotide : ACGT::values) {
+    out.push_back(
+      { id,
+        "Processing",
+        "Poly-X tails",
+        std::string(1, nucleotide),
+        polyx_nucleotides.find(nucleotide) != std::string::npos,
+        reads_and_bases(reads.get(nucleotide), bases.get(nucleotide)) });
   }
 
-  html_summary_filtering_head().write(output);
-
-  if (!n_enabled) {
-    return;
-  }
-
-  reads_and_bases total;
-  for (const auto& it : stats) {
-    if (it.enabled) {
-      html_summary_filtering_row()
-        .set_label(it.label)
-        .set_reads(format_rough_number(it.count.reads()))
-        .set_bases(format_rough_number(it.count.bases()))
-        .set_avg_bases(format_average_bases(it.count))
-        .write(output);
-
-      total += it.count;
-    }
-  }
-
-  if (n_enabled > 1) {
-    html_summary_filtering_row()
-      .set_label("")
-      .set_reads(format_rough_number(total.reads()))
-      .set_bases(format_rough_number(total.bases()))
-      .set_avg_bases(format_average_bases(total))
-      .write(output);
-  }
-
-  html_summary_filtering_tail()
-    .set_n_enabled(std::to_string(n_enabled))
-    .set_n_total(std::to_string(stats.size()))
-    .write(output);
+  out.push_back({ id,
+                  "Processing",
+                  "Poly-X tails",
+                  "*",
+                  polyx_nucleotides.size() > 1,
+                  reads_and_bases(reads.sum(), bases.sum()) });
 }
 
 void
@@ -546,74 +544,99 @@ write_html_processing_section(const userconfig& config,
     adapter_bases += totals.adapter_trimmed_bases.get(i);
   }
 
+  const auto total_input =
+    summarize_input(stats.input_1) + summarize_input(stats.input_2);
+
+  reads_and_bases total_output;
+  for (const auto& it : stats.trimming) {
+    total_output += summarize_input(it->read_1);
+    total_output += summarize_input(it->read_2);
+    total_output += summarize_input(it->singleton);
+    total_output += summarize_input(it->merged);
+  }
+
   // Trimming steps prior to adapter trimming
+  size_t step_id = 0;
   std::vector<trimming_stats> trimming = {
-    { "Pre",
+    { step_id++, "Input", "Raw reads", "-", true, total_input },
+    { step_id++,
+      "Processing",
       "Terminal bases",
       "-",
       config.is_terminal_base_pre_trimming_enabled(),
       totals.terminal_pre_trimmed },
   };
 
-  for (const auto nucleotide : ACGT::values) {
-    trimming.push_back(
-      { "Pre",
-        "Poly-X tails",
-        std::string(1, nucleotide),
-        config.pre_trim_poly_x.find(nucleotide) != std::string::npos,
-        reads_and_bases(totals.poly_x_pre_trimmed_reads.get(nucleotide),
-                        totals.poly_x_pre_trimmed_bases.get(nucleotide)) });
-  }
+  build_polyx_trimming_rows(trimming,
+                            config.pre_trim_poly_x,
+                            totals.poly_x_pre_trimmed_reads,
+                            totals.poly_x_pre_trimmed_bases,
+                            step_id++);
 
-  trimming.push_back({ "Main",
+  trimming.push_back({ step_id++,
+                       "Processing",
                        "Adapters",
                        "-",
                        config.is_adapter_trimming_enabled(),
                        reads_and_bases(adapter_reads, adapter_bases) });
 
-  trimming.push_back({ "Main",
+  trimming.push_back({ step_id++,
+                       "Processing",
                        "Merging",
                        "-",
                        config.is_read_merging_enabled(),
                        totals.reads_merged });
 
-  trimming.push_back({ "Post",
+  trimming.push_back({ step_id++,
+                       "Processing",
                        "Terminal bases",
                        "-",
                        config.is_terminal_base_post_trimming_enabled(),
                        totals.terminal_post_trimmed });
 
-  for (const auto nucleotide : ACGT::values) {
-    trimming.push_back(
-      { "Post",
-        "Poly-X tails",
-        std::string(1, nucleotide),
-        config.post_trim_poly_x.find(nucleotide) != std::string::npos,
-        reads_and_bases(totals.poly_x_post_trimmed_reads.get(nucleotide),
-                        totals.poly_x_post_trimmed_bases.get(nucleotide)) });
-  }
+  build_polyx_trimming_rows(trimming,
+                            config.post_trim_poly_x,
+                            totals.poly_x_post_trimmed_reads,
+                            totals.poly_x_post_trimmed_bases,
+                            step_id++);
 
-  trimming.push_back({ "Post",
+  trimming.push_back({ step_id++,
+                       "Processing",
                        "Low quality bases",
                        "-",
                        config.is_low_quality_trimming_enabled(),
                        totals.low_quality_trimmed });
 
-  write_html_trimming_stats(output, trimming, totals.total_trimmed);
+  trimming.push_back({ step_id++,
+                       "Filtering",
+                       "Short reads",
+                       "-",
+                       config.is_short_read_filtering_enabled(),
+                       totals.filtered_min_length });
 
-  write_html_filtering_stats(output,
-                             { { "Short reads",
-                                 config.is_short_read_filtering_enabled(),
-                                 totals.filtered_min_length },
-                               { "Long reads",
-                                 config.is_long_read_filtering_enabled(),
-                                 totals.filtered_max_length },
-                               { "Ambiguous bases",
-                                 config.is_ambiguous_base_filtering_enabled(),
-                                 totals.filtered_ambiguous },
-                               { "Low complexity reads",
-                                 config.is_low_complexity_filtering_enabled(),
-                                 totals.filtered_low_complexity } });
+  trimming.push_back({ step_id++,
+                       "Filtering",
+                       "Long reads",
+                       "-",
+                       config.is_long_read_filtering_enabled(),
+                       totals.filtered_max_length });
+  trimming.push_back({ step_id++,
+                       "Filtering",
+                       "Ambiguous bases",
+                       "-",
+                       config.is_ambiguous_base_filtering_enabled(),
+                       totals.filtered_ambiguous });
+  trimming.push_back({ step_id++,
+                       "Filtering",
+                       "Low complexity reads",
+                       "-",
+                       config.is_low_complexity_filtering_enabled(),
+                       totals.filtered_low_complexity });
+
+  trimming.push_back(
+    { step_id++, "Output", "Filtered reads", "-", true, total_output });
+
+  write_html_trimming_stats(output, trimming, total_input);
 }
 
 void

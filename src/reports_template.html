@@ -74,7 +74,17 @@
 
         .trimming-table tr>td:nth-child(n+3) {
             text-align: right;
-            width: 100px;
+        }
+
+        .trimming-table tr>td:nth-child(4),
+        .trimming-table tr>td:nth-child(6),
+        .trimming-table tr>td:nth-child(8) {
+            width: 80px;
+        }
+
+        .trimming-table tr>td:nth-child(5),
+        .trimming-table tr>td:nth-child(7) {
+            width: 40px;
         }
 
         .trimming-table tr>td:nth-of-type(3) {
@@ -111,7 +121,6 @@
             font-size: small;
             padding-top: 10px;
         }
-
     </style>
 </head>
 
@@ -211,16 +220,18 @@
             </p>
 
             <!-- TEMPLATE: SUMMARY_TRIMMING_HEAD -->
-            <h4>Processing</h4>
+            <h4>Process summary</h4>
             <table class="pure-table trimming-table pure-table-striped">
                 <thead>
                     <tr>
                         <th>Stage</th>
-                        <th>Trimmed</th>
-                        <th>X</th>
-                        <th>Reads</th>
+                        <th>Step</th>
+                        <th></th>
                         <th>Bases</th>
-                        <th>Bases/Read</th>
+                        <th>(%)</th>
+                        <th>Reads</th>
+                        <th>(%)</th>
+                        <th>Mean</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -229,8 +240,10 @@
                         <td>{{STAGE}}</td>
                         <td>{{LABEL_1}}</td>
                         <td>{{LABEL_2}}</td>
-                        <td>{{READS}}</td>
                         <td>{{BASES}}</td>
+                        <td>{{PCT_BASES}}</td>
+                        <td>{{READS}}</td>
+                        <td>{{PCT_READS}}</td>
                         <td>{{AVG_BASES}}</td>
                     </tr>
                     <!-- TEMPLATE: SUMMARY_TRIMMING_TAIL -->
@@ -239,36 +252,10 @@
             </table>
 
             <p class="note">
-                {{N_ENABLED}} of {{N_TOTAL}} trimming steps enabled. Numbers are
-                given in terms of input reads, also for merged reads.
-            </p>
-
-            <!-- TEMPLATE: SUMMARY_FILTERING_HEAD -->
-            <h4>Filtering</h4>
-            <table class="pure-table io-table pure-table-striped">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Reads</th>
-                        <th>Bases</th>
-                        <th>Bases/Read</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- TEMPLATE: SUMMARY_FILTERING_ROW -->
-                    <tr>
-                        <td>{{LABEL}}</td>
-                        <td>{{READS}}</td>
-                        <td>{{BASES}}</td>
-                        <td>{{AVG_BASES}}</td>
-                    </tr>
-                    <!-- TEMPLATE: SUMMARY_FILTERING_TAIL -->
-
-                </tbody>
-            </table>
-
-            <p class="note">
-                {{N_ENABLED}} of {{N_TOTAL}} filtering steps enabled.
+                {{N_ENABLED_PROC}} of {{N_TOTAL_PROC}} processing steps enabled, {{N_ENABLED_FILT}} of {{N_TOTAL_FILT}}
+                filtering steps enabled. Numbers of reads are given in terms of input reads, meaning that a merged read
+                counts for two. For Processing and Filtering, the numbers of bases specify how many were lost during
+                that step.
             </p>
 
             <!-- TEMPLATE: H2_TAG -->

@@ -138,7 +138,17 @@ html_head::write(std::ofstream& out)
   out << "\n";
   out << "        .trimming-table tr>td:nth-child(n+3) {\n";
   out << "            text-align: right;\n";
-  out << "            width: 100px;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .trimming-table tr>td:nth-child(4),\n";
+  out << "        .trimming-table tr>td:nth-child(6),\n";
+  out << "        .trimming-table tr>td:nth-child(8) {\n";
+  out << "            width: 80px;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .trimming-table tr>td:nth-child(5),\n";
+  out << "        .trimming-table tr>td:nth-child(7) {\n";
+  out << "            width: 40px;\n";
   out << "        }\n";
   out << "\n";
   out << "        .trimming-table tr>td:nth-of-type(3) {\n";
@@ -175,7 +185,6 @@ html_head::write(std::ofstream& out)
   out << "            font-size: small;\n";
   out << "            padding-top: 10px;\n";
   out << "        }\n";
-  out << "\n";
   out << "    </style>\n";
   out << "</head>\n";
   out << "\n";
@@ -596,16 +605,18 @@ html_summary_trimming_head::write(std::ofstream& out)
   AR_REQUIRE(!m_written, "template html_summary_trimming_head already written");
   // clang-format off
   auto id = g_html_id; ++g_html_id; (void)id;
-  out << "            <h4>Processing</h4>\n";
+  out << "            <h4>Process summary</h4>\n";
   out << "            <table class=\"pure-table trimming-table pure-table-striped\">\n";
   out << "                <thead>\n";
   out << "                    <tr>\n";
   out << "                        <th>Stage</th>\n";
-  out << "                        <th>Trimmed</th>\n";
-  out << "                        <th>X</th>\n";
-  out << "                        <th>Reads</th>\n";
+  out << "                        <th>Step</th>\n";
+  out << "                        <th></th>\n";
   out << "                        <th>Bases</th>\n";
-  out << "                        <th>Bases/Read</th>\n";
+  out << "                        <th>(%)</th>\n";
+  out << "                        <th>Reads</th>\n";
+  out << "                        <th>(%)</th>\n";
+  out << "                        <th>Mean</th>\n";
   out << "                    </tr>\n";
   out << "                </thead>\n";
   out << "                <tbody>\n";
@@ -623,6 +634,10 @@ html_summary_trimming_row::html_summary_trimming_row()
   , m_label_1_is_set()
   , m_label_2()
   , m_label_2_is_set()
+  , m_pct_bases()
+  , m_pct_bases_is_set()
+  , m_pct_reads()
+  , m_pct_reads_is_set()
   , m_reads()
   , m_reads_is_set()
   , m_stage()
@@ -669,6 +684,22 @@ html_summary_trimming_row::set_label_2(const std::string& value)
 }
 
 html_summary_trimming_row&
+html_summary_trimming_row::set_pct_bases(const std::string& value)
+{
+  m_pct_bases = value;
+  m_pct_bases_is_set = true;
+  return *this;
+}
+
+html_summary_trimming_row&
+html_summary_trimming_row::set_pct_reads(const std::string& value)
+{
+  m_pct_reads = value;
+  m_pct_reads_is_set = true;
+  return *this;
+}
+
+html_summary_trimming_row&
 html_summary_trimming_row::set_reads(const std::string& value)
 {
   m_reads = value;
@@ -692,6 +723,8 @@ html_summary_trimming_row::write(std::ofstream& out)
   AR_REQUIRE(m_bases_is_set, "html_summary_trimming_row::bases not set");
   AR_REQUIRE(m_label_1_is_set, "html_summary_trimming_row::label_1 not set");
   AR_REQUIRE(m_label_2_is_set, "html_summary_trimming_row::label_2 not set");
+  AR_REQUIRE(m_pct_bases_is_set, "html_summary_trimming_row::pct_bases not set");
+  AR_REQUIRE(m_pct_reads_is_set, "html_summary_trimming_row::pct_reads not set");
   AR_REQUIRE(m_reads_is_set, "html_summary_trimming_row::reads not set");
   AR_REQUIRE(m_stage_is_set, "html_summary_trimming_row::stage not set");
   // clang-format off
@@ -700,8 +733,10 @@ html_summary_trimming_row::write(std::ofstream& out)
   out << "                        <td>" << m_stage << "</td>\n";
   out << "                        <td>" << m_label_1 << "</td>\n";
   out << "                        <td>" << m_label_2 << "</td>\n";
-  out << "                        <td>" << m_reads << "</td>\n";
   out << "                        <td>" << m_bases << "</td>\n";
+  out << "                        <td>" << m_pct_bases << "</td>\n";
+  out << "                        <td>" << m_reads << "</td>\n";
+  out << "                        <td>" << m_pct_reads << "</td>\n";
   out << "                        <td>" << m_avg_bases << "</td>\n";
   out << "                    </tr>\n";
   // clang-format on
@@ -710,10 +745,14 @@ html_summary_trimming_row::write(std::ofstream& out)
 
 html_summary_trimming_tail::html_summary_trimming_tail()
   : m_written()
-  , m_n_enabled()
-  , m_n_enabled_is_set()
-  , m_n_total()
-  , m_n_total_is_set()
+  , m_n_enabled_filt()
+  , m_n_enabled_filt_is_set()
+  , m_n_enabled_proc()
+  , m_n_enabled_proc_is_set()
+  , m_n_total_filt()
+  , m_n_total_filt_is_set()
+  , m_n_total_proc()
+  , m_n_total_proc_is_set()
 {
   //
 }
@@ -724,18 +763,34 @@ html_summary_trimming_tail::~html_summary_trimming_tail()
 }
 
 html_summary_trimming_tail&
-html_summary_trimming_tail::set_n_enabled(const std::string& value)
+html_summary_trimming_tail::set_n_enabled_filt(const std::string& value)
 {
-  m_n_enabled = value;
-  m_n_enabled_is_set = true;
+  m_n_enabled_filt = value;
+  m_n_enabled_filt_is_set = true;
   return *this;
 }
 
 html_summary_trimming_tail&
-html_summary_trimming_tail::set_n_total(const std::string& value)
+html_summary_trimming_tail::set_n_enabled_proc(const std::string& value)
 {
-  m_n_total = value;
-  m_n_total_is_set = true;
+  m_n_enabled_proc = value;
+  m_n_enabled_proc_is_set = true;
+  return *this;
+}
+
+html_summary_trimming_tail&
+html_summary_trimming_tail::set_n_total_filt(const std::string& value)
+{
+  m_n_total_filt = value;
+  m_n_total_filt_is_set = true;
+  return *this;
+}
+
+html_summary_trimming_tail&
+html_summary_trimming_tail::set_n_total_proc(const std::string& value)
+{
+  m_n_total_proc = value;
+  m_n_total_proc_is_set = true;
   return *this;
 }
 
@@ -743,8 +798,10 @@ void
 html_summary_trimming_tail::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_trimming_tail already written");
-  AR_REQUIRE(m_n_enabled_is_set, "html_summary_trimming_tail::n_enabled not set");
-  AR_REQUIRE(m_n_total_is_set, "html_summary_trimming_tail::n_total not set");
+  AR_REQUIRE(m_n_enabled_filt_is_set, "html_summary_trimming_tail::n_enabled_filt not set");
+  AR_REQUIRE(m_n_enabled_proc_is_set, "html_summary_trimming_tail::n_enabled_proc not set");
+  AR_REQUIRE(m_n_total_filt_is_set, "html_summary_trimming_tail::n_total_filt not set");
+  AR_REQUIRE(m_n_total_proc_is_set, "html_summary_trimming_tail::n_total_proc not set");
   // clang-format off
   auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
@@ -752,162 +809,10 @@ html_summary_trimming_tail::write(std::ofstream& out)
   out << "            </table>\n";
   out << "\n";
   out << "            <p class=\"note\">\n";
-  out << "                " << m_n_enabled << " of " << m_n_total << " trimming steps enabled. Numbers are\n";
-  out << "                given in terms of input reads, also for merged reads.\n";
-  out << "            </p>\n";
-  out << "\n";
-  // clang-format on
-  m_written = true;
-}
-
-html_summary_filtering_head::html_summary_filtering_head()
-  : m_written()
-{
-  //
-}
-
-html_summary_filtering_head::~html_summary_filtering_head()
-{
-  AR_REQUIRE(m_written, "template html_summary_filtering_head was not written");
-}
-
-void
-html_summary_filtering_head::write(std::ofstream& out)
-{
-  AR_REQUIRE(!m_written, "template html_summary_filtering_head already written");
-  // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
-  out << "            <h4>Filtering</h4>\n";
-  out << "            <table class=\"pure-table io-table pure-table-striped\">\n";
-  out << "                <thead>\n";
-  out << "                    <tr>\n";
-  out << "                        <th></th>\n";
-  out << "                        <th>Reads</th>\n";
-  out << "                        <th>Bases</th>\n";
-  out << "                        <th>Bases/Read</th>\n";
-  out << "                    </tr>\n";
-  out << "                </thead>\n";
-  out << "                <tbody>\n";
-  // clang-format on
-  m_written = true;
-}
-
-html_summary_filtering_row::html_summary_filtering_row()
-  : m_written()
-  , m_avg_bases()
-  , m_avg_bases_is_set()
-  , m_bases()
-  , m_bases_is_set()
-  , m_label()
-  , m_label_is_set()
-  , m_reads()
-  , m_reads_is_set()
-{
-  //
-}
-
-html_summary_filtering_row::~html_summary_filtering_row()
-{
-  AR_REQUIRE(m_written, "template html_summary_filtering_row was not written");
-}
-
-html_summary_filtering_row&
-html_summary_filtering_row::set_avg_bases(const std::string& value)
-{
-  m_avg_bases = value;
-  m_avg_bases_is_set = true;
-  return *this;
-}
-
-html_summary_filtering_row&
-html_summary_filtering_row::set_bases(const std::string& value)
-{
-  m_bases = value;
-  m_bases_is_set = true;
-  return *this;
-}
-
-html_summary_filtering_row&
-html_summary_filtering_row::set_label(const std::string& value)
-{
-  m_label = value;
-  m_label_is_set = true;
-  return *this;
-}
-
-html_summary_filtering_row&
-html_summary_filtering_row::set_reads(const std::string& value)
-{
-  m_reads = value;
-  m_reads_is_set = true;
-  return *this;
-}
-
-void
-html_summary_filtering_row::write(std::ofstream& out)
-{
-  AR_REQUIRE(!m_written, "template html_summary_filtering_row already written");
-  AR_REQUIRE(m_avg_bases_is_set, "html_summary_filtering_row::avg_bases not set");
-  AR_REQUIRE(m_bases_is_set, "html_summary_filtering_row::bases not set");
-  AR_REQUIRE(m_label_is_set, "html_summary_filtering_row::label not set");
-  AR_REQUIRE(m_reads_is_set, "html_summary_filtering_row::reads not set");
-  // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
-  out << "                    <tr>\n";
-  out << "                        <td>" << m_label << "</td>\n";
-  out << "                        <td>" << m_reads << "</td>\n";
-  out << "                        <td>" << m_bases << "</td>\n";
-  out << "                        <td>" << m_avg_bases << "</td>\n";
-  out << "                    </tr>\n";
-  // clang-format on
-  m_written = true;
-}
-
-html_summary_filtering_tail::html_summary_filtering_tail()
-  : m_written()
-  , m_n_enabled()
-  , m_n_enabled_is_set()
-  , m_n_total()
-  , m_n_total_is_set()
-{
-  //
-}
-
-html_summary_filtering_tail::~html_summary_filtering_tail()
-{
-  AR_REQUIRE(m_written, "template html_summary_filtering_tail was not written");
-}
-
-html_summary_filtering_tail&
-html_summary_filtering_tail::set_n_enabled(const std::string& value)
-{
-  m_n_enabled = value;
-  m_n_enabled_is_set = true;
-  return *this;
-}
-
-html_summary_filtering_tail&
-html_summary_filtering_tail::set_n_total(const std::string& value)
-{
-  m_n_total = value;
-  m_n_total_is_set = true;
-  return *this;
-}
-
-void
-html_summary_filtering_tail::write(std::ofstream& out)
-{
-  AR_REQUIRE(!m_written, "template html_summary_filtering_tail already written");
-  AR_REQUIRE(m_n_enabled_is_set, "html_summary_filtering_tail::n_enabled not set");
-  AR_REQUIRE(m_n_total_is_set, "html_summary_filtering_tail::n_total not set");
-  // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
-  out << "\n";
-  out << "                </tbody>\n";
-  out << "            </table>\n";
-  out << "\n";
-  out << "            <p class=\"note\">\n";
-  out << "                " << m_n_enabled << " of " << m_n_total << " filtering steps enabled.\n";
+  out << "                " << m_n_enabled_proc << " of " << m_n_total_proc << " processing steps enabled, " << m_n_enabled_filt << " of " << m_n_total_filt << "\n";
+  out << "                filtering steps enabled. Numbers of reads are given in terms of input reads, meaning that a merged read\n";
+  out << "                counts for two. For Processing and Filtering, the numbers of bases specify how many were lost during\n";
+  out << "                that step.\n";
   out << "            </p>\n";
   out << "\n";
   // clang-format on
