@@ -219,7 +219,7 @@ everything: all test regression docs examples
 
 examples: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
-	$(QUIET) make -C examples EXE=$(PWD)/$(EXECUTABLE)
+	$(QUIET) make -C examples EXE=$(CURDIR)/$(EXECUTABLE)
 
 install: $(EXECUTABLE) $(MAN_PAGE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
