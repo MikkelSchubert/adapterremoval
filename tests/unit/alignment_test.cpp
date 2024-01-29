@@ -37,6 +37,9 @@ namespace adapterremoval {
     return *this;                                                              \
   }
 
+// Parameterize tests over supported SIMD instruction sets
+#define PARAMETERIZE_IS GENERATE(from_range(simd::supported()))
+
 bool
 operator==(const alignment_info& first, const alignment_info& second)
 {
@@ -122,7 +125,8 @@ align_single_ended_sequence(const fastq& read,
                             const fastq_pair_vec& adapters,
                             int max_shift)
 {
-  return sequence_aligner(adapters).align_single_end(read, max_shift);
+  return sequence_aligner(adapters, PARAMETERIZE_IS)
+    .align_single_end(read, max_shift);
 }
 
 alignment_info
@@ -131,7 +135,8 @@ align_paired_ended_sequences(const fastq& read1,
                              const fastq_pair_vec& adapters,
                              int max_shift)
 {
-  return sequence_aligner(adapters).align_paired_end(read1, read2, max_shift);
+  return sequence_aligner(adapters, PARAMETERIZE_IS)
+    .align_paired_end(read1, read2, max_shift);
 }
 
 void
@@ -522,7 +527,7 @@ TEST_CASE("Longest valid alignment is returned", "[alignment::single_end]")
   const fastq record("Rec", "AAATAAAAA");
   const auto adapters = create_adapter_vec(fastq("Rec", "AAAAAAAAA"));
 
-  sequence_aligner aligner(adapters);
+  sequence_aligner aligner(adapters, PARAMETERIZE_IS);
   const auto result = aligner.align_single_end(record, 0);
   const alignment_info expected = ALN().length(9).n_mismatches(1);
 
@@ -1502,7 +1507,8 @@ get_combinations()
 
 TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
-  const auto compare_subsequences = select_compare_subsequences_func();
+  const auto compare_subsequences =
+    simd::get_compare_subsequences_func(PARAMETERIZE_IS);
 
   const std::vector<std::string> combinations = get_combinations();
   for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {

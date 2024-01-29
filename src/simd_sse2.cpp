@@ -22,6 +22,8 @@
 
 namespace adapterremoval {
 
+namespace simd {
+
 namespace {
 
 /** Counts the number of masked bytes **/
@@ -73,5 +75,7 @@ compare_subsequences_sse2(size_t& n_mismatches,
   return compare_subsequences_std(
     n_mismatches, n_ambiguous, seq_1, seq_2, length, max_penalty);
 }
+
+} // namespace simd
 
 } // namespace adapterremoval

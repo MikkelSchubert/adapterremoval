@@ -20,6 +20,8 @@
 
 namespace adapterremoval {
 
+namespace simd {
+
 bool
 compare_subsequences_std(size_t& n_mismatches,
                          size_t& n_ambiguous,
@@ -48,5 +50,7 @@ compare_subsequences_std(size_t& n_mismatches,
 
   return true;
 }
+
+} // namespace simd
 
 } // namespace adapterremoval

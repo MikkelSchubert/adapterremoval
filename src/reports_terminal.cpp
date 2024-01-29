@@ -61,13 +61,12 @@ print_trimming_parameters(const userconfig& config)
 void
 print_terminal_preamble(const userconfig& config)
 {
-  if (supports_avx2()) {
-    log::info() << NAME << " " << VERSION << " (AVX2)";
-  } else if (supports_sse2()) {
-    log::info() << NAME << " " << VERSION << " (SSE2)";
-  } else {
+  if (config.simd == simd::instruction_set::none) {
     log::info() << NAME << " " << VERSION;
-    log::warn() << "Hardware acceleration (SSE2/AVX2) disabled!";
+    log::warn() << "Hardware acceleration disabled!";
+  } else {
+    log::info() << NAME << " " << VERSION << " (" << simd::name(config.simd)
+                << ")";
   }
 
   switch (config.run_type) {

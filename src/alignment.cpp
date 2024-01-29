@@ -29,8 +29,6 @@
 
 namespace adapterremoval {
 
-const auto compare_subsequences = select_compare_subsequences_func();
-
 bool
 sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
                                            const std::string& seq1,
@@ -67,12 +65,12 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     current.length = length;
 
     AR_REQUIRE(static_cast<int>(length) >= alignment.score());
-    if (compare_subsequences(current.n_mismatches,
-                             current.n_ambiguous,
-                             seq1.data() + initial_seq1_offset,
-                             seq2.data() + initial_seq2_offset,
-                             length,
-                             length - alignment.score()) &&
+    if (m_compare_func(current.n_mismatches,
+                       current.n_ambiguous,
+                       seq1.data() + initial_seq1_offset,
+                       seq2.data() + initial_seq2_offset,
+                       length,
+                       length - alignment.score()) &&
         current.is_better_than(alignment)) {
       alignment = current;
       alignment_found = true;
@@ -174,8 +172,10 @@ alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `sequence_aligner`
 
-sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters)
+sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters,
+                                   simd::instruction_set is)
   : m_adapters(adapters)
+  , m_compare_func(simd::get_compare_subsequences_func(is))
 {
 }
 

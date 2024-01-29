@@ -24,6 +24,7 @@
 #include "commontypes.hpp" // for merge_strategy
 #include "fastq.hpp"       // for fastq_pair_vec, fastq
 #include "fastq_enc.hpp"   // for MATE_SEPARATOR
+#include "simd.hpp"        // instruction_set, compare_subsequences_func, ...
 
 namespace adapterremoval {
 
@@ -130,7 +131,8 @@ struct alignment_info
 class sequence_aligner
 {
 public:
-  explicit sequence_aligner(const fastq_pair_vec& adapters);
+  explicit sequence_aligner(const fastq_pair_vec& adapters,
+                            simd::instruction_set is);
 
   /**
    * Attempts to align adapters sequences against a SE read.
@@ -183,6 +185,8 @@ private:
 
   //! Adapter sequences against which to align the sequences
   const fastq_pair_vec& m_adapters;
+  //! SIMD instruction set to use for sequence comparisons
+  const simd::compare_subsequences_func m_compare_func;
 };
 
 /**

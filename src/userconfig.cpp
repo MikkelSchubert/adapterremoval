@@ -33,6 +33,7 @@
 #include "logging.hpp"    // for log
 #include "main.hpp"       // for NAME, VERSION, PREAMBLE
 #include "progress.hpp"   // for progress_type
+#include "simd.hpp"       // for SIMD configuration
 #include "strutils.hpp"   // for str_to_unsigned, toupper
 #include "userconfig.hpp" // declarations
 
@@ -450,6 +451,7 @@ userconfig::userconfig()
   , merge_seed()
   , shift()
   , max_threads()
+  , simd(simd::instruction_set::none)
   , gzip()
   , gzip_level()
   , barcode_mm()
@@ -460,6 +462,7 @@ userconfig::userconfig()
   , report_duplication()
   , log_progress()
   , argparser()
+  , simd_sink()
   , adapter_1()
   , adapter_2()
   , adapter_list()
@@ -496,6 +499,21 @@ userconfig::userconfig()
     .help("Maximum number of threads")
     .bind_uint(&max_threads)
     .with_default(2);
+
+  {
+    std::vector<std::string> choices;
+    for (const auto is : simd::supported()) {
+      choices.push_back(simd::name(is));
+    }
+
+    AR_REQUIRE(!choices.empty());
+    argparser.add("--simd", "NAME")
+      .help("SIMD instruction set to use; defaults to the most advanced "
+            "instruction set supported by this computer")
+      .bind_str(&simd_sink)
+      .with_choices(choices)
+      .with_default(choices.back());
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("INPUT FILES:");
@@ -1117,6 +1135,19 @@ userconfig::parse_args(int argc, char* argv[])
     return argparse::parse_result::error;
   }
 
+  {
+    bool found = false;
+    for (const auto is : simd::supported()) {
+      if (simd_sink == simd::name(is)) {
+        simd = is;
+        found = true;
+        break;
+      }
+    }
+
+    AR_REQUIRE(found);
+  }
+
   using fixed_trimming =
     std::tuple<const char*, const string_vec&, std::pair<unsigned, unsigned>&>;
 
@@ -1140,7 +1171,8 @@ userconfig::parse_args(int argc, char* argv[])
     }
   }
 
-  // Required since a missing filename part results in the creation of dot-files
+  // Required since a missing filename part results in the creation of
+  // dot-files
   if (argparser.is_set("--no-basename")) {
     out_basename = DEV_NULL;
   } else if (out_basename.empty()) {

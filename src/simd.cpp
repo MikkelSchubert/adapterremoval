@@ -17,31 +17,58 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "simd.hpp"
+#include "debug.hpp"
 
 namespace adapterremoval {
 
-bool
-supports_avx2()
+namespace simd {
+
+std::vector<instruction_set>
+supported()
 {
-  return __builtin_cpu_supports("avx2");
+  std::vector<instruction_set> choices = { instruction_set::none };
+
+  if (__builtin_cpu_supports("sse2")) {
+    choices.push_back(instruction_set::sse2);
+  }
+
+  if (__builtin_cpu_supports("avx2")) {
+    choices.push_back(instruction_set::avx2);
+  }
+
+  return choices;
 }
 
-bool
-supports_sse2()
+const char*
+name(instruction_set value)
 {
-  return __builtin_cpu_supports("sse2");
+  switch (value) {
+    case instruction_set::none:
+      return "none";
+    case instruction_set::sse2:
+      return "SSE2";
+    case instruction_set::avx2:
+      return "AVX2";
+    default:
+      AR_FAIL("SIMD function not implemented!");
+  }
 }
 
 compare_subsequences_func
-select_compare_subsequences_func()
+get_compare_subsequences_func(instruction_set is)
 {
-  if (supports_avx2()) {
-    return &compare_subsequences_avx2;
-  } else if (supports_sse2()) {
-    return &compare_subsequences_sse2;
-  } else {
-    return &compare_subsequences_std;
+  switch (is) {
+    case instruction_set::none:
+      return &compare_subsequences_std;
+    case instruction_set::sse2:
+      return &compare_subsequences_sse2;
+    case instruction_set::avx2:
+      return &compare_subsequences_avx2;
+    default:
+      AR_FAIL("SIMD function not implemented!");
   }
 }
+
+} // namespace simd
 
 } // namespace adapterremoval

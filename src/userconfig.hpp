@@ -29,6 +29,7 @@
 #include "argparse.hpp"    // for parse_result, parser
 #include "commontypes.hpp" // for string_vec, read_type, read_type::max
 #include "fastq_enc.hpp"   // for fastq_encoding
+#include "simd.hpp"        // for instruction_set
 #include "timer.hpp"       // for monotonic_timer
 
 namespace adapterremoval {
@@ -233,6 +234,8 @@ public:
 
   //! The maximum number of threads used by the program
   unsigned max_threads;
+  //! SIMD instruction set used for alignments
+  simd::instruction_set simd;
 
   //! GZip compression enabled / disabled
   bool gzip;
@@ -289,6 +292,8 @@ private:
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser;
 
+  //! Sink for --simd, for user selected SIMD instruction set
+  std::string simd_sink;
   //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
   std::string adapter_1;
   //! Sink for --adapter2, adapter sequence expected at 3' of mate 2 reads
