@@ -898,6 +898,15 @@ str_sink::with_default(const char* value)
 }
 
 str_sink&
+str_sink::with_default(const std::string& value)
+{
+  m_has_default = true;
+  *m_sink = value;
+
+  return *this;
+}
+
+str_sink&
 str_sink::with_choices(const string_vec& value)
 {
   m_choices = value;

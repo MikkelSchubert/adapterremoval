@@ -371,6 +371,7 @@ public:
   explicit str_sink(std::string* sink);
 
   str_sink& with_default(const char* value);
+  str_sink& with_default(const std::string& value);
   str_sink& with_choices(const string_vec& choices);
 
   std::string to_str() const override;

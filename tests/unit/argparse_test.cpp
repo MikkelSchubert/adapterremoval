@@ -351,12 +351,28 @@ TEST_CASE("str sink to_str escapes", "[argparse::str_sink]")
   REQUIRE(sink.to_str() == "foo bar");
 }
 
-TEST_CASE("str sink with_default", "[argparse::str_sink]")
+TEST_CASE("str sink with_default (char*)", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
   sink.with_default("foobar");
+  REQUIRE(value == "foobar");
+}
 
+TEST_CASE("str sink has_default (char*)", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  REQUIRE_FALSE(sink.has_default());
+  sink.with_default("foobar");
+  REQUIRE(sink.has_default());
+}
+
+TEST_CASE("str sink with_default (std::string)", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_default(std::string("foobar"));
   REQUIRE(value == "foobar");
 }
 
@@ -365,7 +381,7 @@ TEST_CASE("str sink has_default", "[argparse::str_sink]")
   std::string value;
   argparse::str_sink sink(&value);
   REQUIRE_FALSE(sink.has_default());
-  sink.with_default("foobar");
+  sink.with_default(std::string("foobar"));
   REQUIRE(sink.has_default());
 }
 
