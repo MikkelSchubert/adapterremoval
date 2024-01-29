@@ -159,6 +159,7 @@ CORE_OBJS := \
 	$(OBJS_DIR)/logging.o \
 	$(OBJS_DIR)/managed_writer.o \
 	$(OBJS_DIR)/simd_avx2.o \
+	$(OBJS_DIR)/simd_avx512bw.o \
 	$(OBJS_DIR)/simd_sse2.o \
 	$(OBJS_DIR)/simd_std.o \
 	$(OBJS_DIR)/simd.o \
@@ -290,7 +291,7 @@ $(OBJS_DIR)/%.o: src/%.cpp
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -MMD -MQ $@ -MF $(@:.o=.d) -o $@ $<
 
 # Objects built with support for specific CPU instructions
-$(OBJS_DIR)/simd_avx2.o $(OBJS_DIR)/simd_sse2.o : $(OBJS_DIR)/simd_%.o: src/simd_%.cpp
+$(OBJS_DIR)/simd_avx2.o $(OBJS_DIR)/simd_avx512bw.o $(OBJS_DIR)/simd_sse2.o : $(OBJS_DIR)/simd_%.o: src/simd_%.cpp
 	@echo $(COLOR_CYAN)"Building $@ from $< (-m$*)"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(OBJS_DIR)
 	$(QUIET) $(CXX) $(CXXFLAGS) -pthread -c -MMD -MQ $@ -MF $(@:.o=.d) -o $@ $< -m$*

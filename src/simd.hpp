@@ -32,6 +32,7 @@ enum class instruction_set
   none,
   sse2,
   avx2,
+  avx512,
 };
 
 /** Returns vector of supports instruction sets */

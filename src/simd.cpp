@@ -36,6 +36,10 @@ supported()
     choices.push_back(instruction_set::avx2);
   }
 
+  if (__builtin_cpu_supports("avx512bw")) {
+    choices.push_back(instruction_set::avx512);
+  }
+
   return choices;
 }
 
@@ -49,6 +53,8 @@ name(instruction_set value)
       return "SSE2";
     case instruction_set::avx2:
       return "AVX2";
+    case instruction_set::avx512:
+      return "AVX512";
     default:
       AR_FAIL("SIMD function not implemented!");
   }
@@ -64,6 +70,8 @@ get_compare_subsequences_func(instruction_set is)
       return &compare_subsequences_sse2;
     case instruction_set::avx2:
       return &compare_subsequences_avx2;
+    case instruction_set::avx512:
+      return &compare_subsequences_avx512;
     default:
       AR_FAIL("SIMD function not implemented!");
   }
