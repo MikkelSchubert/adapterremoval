@@ -19,6 +19,7 @@
 #include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log
 #include "main.hpp"       // for NAME, VERSION
+#include "reports.hpp"    // for print_terminal_preamble, print_terminal_...
 #include "simd.hpp"       // for supports_sse2, supports_avx2
 #include "userconfig.hpp" // for userconfig
 

@@ -32,6 +32,7 @@
 #include "json.hpp"                  // for json_writer, json_section
 #include "logging.hpp"               // for log
 #include "main.hpp"                  // for NAME, VERSION
+#include "reports.hpp"               // for write_html_report
 #include "reports_template_html.hpp" // for template strings
 #include "statistics.hpp"            // for fastq_statistics, ...
 #include "strutils.hpp"              // for cli_formatter, ...

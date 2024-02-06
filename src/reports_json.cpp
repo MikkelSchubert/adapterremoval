@@ -31,6 +31,7 @@
 #include "json.hpp"       // for json_writer, json_section
 #include "logging.hpp"    // for log
 #include "main.hpp"       // for NAME, VERSION
+#include "reports.hpp"    // for write_json_report
 #include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
 #include "strutils.hpp"   // for cli_formatter
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...

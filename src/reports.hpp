@@ -19,6 +19,7 @@
 \*************************************************************************/
 #pragma once
 
+#include <string>
 #include <vector>
 
 namespace adapterremoval {
@@ -36,10 +37,10 @@ write_html_report(const userconfig& config,
                   const statistics& stats,
                   const std::string& filename);
 
-bool
+void
 print_terminal_preamble(const userconfig& config);
 
-bool
+void
 print_terminal_postamble(const userconfig& config, bool any_errors = false);
 
 } // namespace adapterremoval
