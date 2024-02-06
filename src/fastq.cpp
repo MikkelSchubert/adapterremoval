@@ -496,8 +496,6 @@ fastq::read_unsafe(line_reader_base& reader)
 
   if (!reader.getline(m_qualities)) {
     throw fastq_error("partial FASTQ record; cut off after separator");
-  } else if (m_qualities.empty()) {
-    throw fastq_error("no qualities");
   } else if (m_qualities.length() != m_sequence.length()) {
     throw fastq_error("sequence/quality lengths do not match");
   }
