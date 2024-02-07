@@ -17,14 +17,10 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <sstream>
-#include <vector>
-
-#include "barcode_table.hpp"
-#include "debug.hpp"
-#include "fastq.hpp"
-#include "testing.hpp"
+#include "barcode_table.hpp" // for barcode_table, barcode_error
+#include "catch.hpp"         // for operator""_catch_sr, AssertionHandler
+#include "fastq.hpp"         // for fastq, fastq_pair_vec, fastq_pair
+#include <string>            // for basic_string, operator==, string
 
 namespace adapterremoval {
 

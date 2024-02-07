@@ -18,16 +18,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdlib> // for size_t
-#include <memory>  // for make_shared
-#include <string>  // for string
-
-#include "debug.hpp"     // for AR_REQUIRE
-#include "fastq.hpp"     // for ACGTN, fastq
-#include "fastq_enc.hpp" // for PHRED_OFFSET_33
 #include "statistics.hpp"
-#include "userconfig.hpp" // for userconfig
-#include "utilities.hpp"  // for prng_seed
+#include "debug.hpp"     // for AR_REQUIRE
+#include "fastq.hpp"     // for ACGTN, fastq, ACGT
+#include "fastq_enc.hpp" // for PHRED_OFFSET_MIN, PHRED_SCORE_MAX
+#include "simd.hpp"      // for size_t
+#include "utilities.hpp" // for prng_seed
+#include <algorithm>     // for max, min
+#include <cstdlib>       // for size_t
+#include <memory>        // for make_shared, __shared_ptr_access, __shared_...
+#include <string>        // for basic_string, string
 
 namespace adapterremoval {
 

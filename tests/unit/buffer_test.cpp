@@ -17,8 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "buffer.hpp"
-#include "testing.hpp"
-#include <cstring>
+#include "catch.hpp" // for operator""_catch_sr, AssertionHandler, SourceLi...
+#include <cstring>   // for memset
+#include <utility>   // for move
 
 namespace adapterremoval {
 

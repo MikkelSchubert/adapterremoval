@@ -18,15 +18,16 @@
 \*************************************************************************/
 #pragma once
 
-#include <random>   // for mt19937
-#include <stddef.h> // for size_t
-
-#include "commontypes.hpp" // for merge_strategy
-#include "fastq.hpp"       // for fastq_pair_vec, fastq
-#include "fastq_enc.hpp"   // for MATE_SEPARATOR
-#include "simd.hpp"        // instruction_set, compare_subsequences_func, ...
+#include "fastq.hpp"     // for fastq_pair_vec
+#include "fastq_enc.hpp" // for MATE_SEPARATOR
+#include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
+#include <cstddef>       // for size_t
+#include <random>        // for mt19937
+#include <string>        // for string
 
 namespace adapterremoval {
+
+enum class merge_strategy;
 
 /**
  * Summarizes an alignment.

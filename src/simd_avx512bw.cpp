@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "simd.hpp"    // declarations
 #include <bitset>      // for bitset
+#include <cstddef>     // for size_t
 #include <immintrin.h> // for _mm512_set1_epi8, __m512i, _mm512_lo...
 
 namespace adapterremoval {

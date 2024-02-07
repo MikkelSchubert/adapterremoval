@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "simd.hpp"
 #include "debug.hpp"
+#include <string> // for basic_string
 
 namespace adapterremoval {
 

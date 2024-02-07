@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <memory>  // for unique_ptr, make_unique
-#include <utility> // for move
-
-#include "adapterset.hpp"     // for adapter_set
-#include "commontypes.hpp"    // for fastq_vec
-#include "debug.hpp"          // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "demultiplexing.hpp" // header
-#include "fastq_io.hpp"       // for fastq_read_chunk, fastq_output_chunk, ...
-#include "userconfig.hpp"     // for userconfig, fastq_encoding_ptr
+#include "demultiplexing.hpp"
+#include "adapterset.hpp" // for adapter_set
+#include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "fastq_io.hpp"   // for fastq_read_chunk, output_chunk_ptr, fastq...
+#include "simd.hpp"       // for size_t
+#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demul...
+#include <cstddef>        // for size_t
+#include <memory>         // for make_unique, unique_ptr
+#include <utility>        // for move
 
 namespace adapterremoval {
 

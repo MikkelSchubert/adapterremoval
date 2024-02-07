@@ -16,14 +16,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cerrno>       // for errno, EMFILE
+#include "managed_writer.hpp"
+#include "debug.hpp"    // for AR_REQUIRE
+#include "logging.hpp"  // for log_stream, warn
+#include <cerrno>       // for EMFILE, errno
 #include <mutex>        // for mutex, lock_guard
 #include <stdexcept>    // for runtime_error
-#include <system_error> // for errc, errc::too_many_files_open
-
-#include "debug.hpp"          // for AR_REQUIRE
-#include "logging.hpp"        // for log
-#include "managed_writer.hpp" // declarations
+#include <system_error> // for operator!=, errc, errc::too_many_files_open
+#include <vector>       // for vector
 
 namespace adapterremoval {
 

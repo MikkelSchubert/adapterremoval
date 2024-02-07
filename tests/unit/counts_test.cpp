@@ -16,9 +16,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "counts.hpp"
-#include "testing.hpp"
-#include <sstream>
+#include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, SourceL...
+#include "counts.hpp" // for counts, indexed_counts, counts_tmpl, indexed_c...
+#include "fastq.hpp"  // for ACGT, ACGTN, ACGT::size
+#include <array>      // for array
+#include <cmath>      // for isnan
+#include <sstream>    // for operator<<, ostream, ostringstream, basic_ostr...
+#include <stddef.h>   // for size_t
+#include <string>     // for basic_string, operator==
 
 namespace adapterremoval {
 

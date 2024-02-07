@@ -16,19 +16,19 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>   // for reverse
-#include <cmath>       // for floor, log10
-#include <iomanip>     // for operator<<, setw
+#include "strutils.hpp"
+#include "debug.hpp"   // for AR_REQUIRE
+#include <algorithm>   // for min, reverse, max
+#include <cctype>      // for isprint, isalnum, tolower, toupper
+#include <cmath>       // for log10, pow, round
+#include <iomanip>     // for operator<<, setprecision
 #include <limits>      // for numeric_limits
-#include <sstream>     // for istringstream, ostringstream
+#include <sstream>     // for ostringstream, operator<<, basic_ostream, bas...
 #include <stdexcept>   // for invalid_argument
-#include <stdint.h>    // for int64_t
+#include <stdint.h>    // for uint64_t, int64_t
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>    // for STDOUT_FILENO
-#include <vector>      // for vector
-
-#include "debug.hpp" // for AR_REQUIRE
-#include "strutils.hpp"
+#include <vector>      // for vector, swap
 
 namespace adapterremoval {
 

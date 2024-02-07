@@ -18,8 +18,11 @@
 \*************************************************************************/
 #pragma once
 
-#include <memory>   // for allocator
-#include <stdint.h> // for uint32_t
+#include <array>       // for array
+#include <cstddef>     // for size_t
+#include <memory>      // for allocator
+#include <stdint.h>    // for uint32_t
+#include <type_traits> // for enable_if_t, is_floating_point, is_integral
 
 namespace adapterremoval {
 

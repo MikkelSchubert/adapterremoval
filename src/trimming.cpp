@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for min
-#include <memory>    // for make_unique
-#include <stdexcept> // for invalid_argument
-#include <utility>   // for pair, move
-
-#include "adapterset.hpp" // for adapter_set
-#include "alignment.hpp"  // for alignment_info, sequence_merger, align_pai...
-#include "counts.hpp"     // for counts
-#include "debug.hpp"      // for AR_REQUIRE
-#include "fastq_io.hpp"   // for output_chunk_ptr, fastq_read_chunk, fastq_...
-#include "statistics.hpp" // for trimming_statistics, fastq_statistics
 #include "trimming.hpp"
-#include "userconfig.hpp" // for userconfig, output_sample_files, output_sa...
+#include "adapterset.hpp"  // for adapter_set
+#include "alignment.hpp"   // for alignment_info, sequence_merger, sequence_...
+#include "commontypes.hpp" // for read_type, trimming_strategy, merge_strategy
+#include "counts.hpp"      // for counts, indexed_count
+#include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
+#include "fastq_io.hpp"    // for output_chunk_ptr, fastq_read_chunk, fastq_...
+#include "simd.hpp"        // for size_t
+#include "statistics.hpp"  // for trimming_statistics, reads_and_bases, fast...
+#include "userconfig.hpp"  // for userconfig, output_sample_files, output_sa...
+#include <algorithm>       // for max
+#include <cstddef>         // for size_t
+#include <memory>          // for unique_ptr, __shared_ptr_access, make_unique
+#include <string>          // for string
+#include <utility>         // for pair, move
 
 namespace adapterremoval {
 

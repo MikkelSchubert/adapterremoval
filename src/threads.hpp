@@ -18,7 +18,6 @@
 \*************************************************************************/
 #pragma once
 
-#include <mutex>     // for lock_guard, mutex
 #include <stdexcept> // for runtime_error
 #include <string>    // for string
 

@@ -17,27 +17,26 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for copy, max
-#include <cstring>   // for size_t
-#include <limits>    // for numeric_limits
-#include <memory>    // for unique_ptr, make_unique
-#include <string>    // for string, operator+
-#include <vector>    // for vector, vector<>::iterator
-
 #include "adapterset.hpp"     // for adapter_set
 #include "commontypes.hpp"    // for fastq_vec, read_type, read_type::mate_1
 #include "debug.hpp"          // for AR_REQUIRE
-#include "demultiplexing.hpp" // for post_demux_steps, demultiplex_pe_reads
-#include "fastq_io.hpp"       // for fastq_read_chunk, read_chunk_ptr, read...
-#include "reports.hpp"        // for write_report
+#include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
+#include "fastq.hpp"          // for fastq
+#include "fastq_io.hpp"       // for fastq_read_chunk, post_process_fastq
+#include "reports.hpp"        // for write_html_report, write_json_report
 #include "scheduler.hpp"      // for scheduler, threadstate, analytical_chunk
-#include "statistics.hpp"     // for trimming_statistics, ar_statistics
+#include "simd.hpp"           // for size_t
+#include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
 #include "trimming.hpp"       // for trimmed_reads, reads_processor
-#include "userconfig.hpp"     // for userconfig, output_files, output_sampl...
+#include "userconfig.hpp"     // for userconfig, output_files, DEV_NULL
+#include <algorithm>          // for max
+#include <cstring>            // for size_t
+#include <limits>             // for numeric_limits
+#include <memory>             // for unique_ptr, __shared_ptr_access, make_...
+#include <string>             // for operator!=, basic_string, string
+#include <vector>             // for vector
 
 namespace adapterremoval {
-
-class fastq;
 
 //! Implemented in main_adapter_rm.cpp
 size_t

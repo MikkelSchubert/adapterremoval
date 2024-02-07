@@ -16,26 +16,27 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for max, copy, min, count, reverse
-#include <iomanip>   // for operator<<, setw
-#include <iostream>  // for operator<<, basic_ostream, char_traits
-#include <memory>    // for unique_ptr
-#include <queue>     // for priority_queue
-#include <sstream>   // for ostringstream
-#include <stddef.h>  // for size_t
-#include <string>    // for string, basic_string, operator<<
-#include <utility>   // for pair
-#include <vector>    // for vector, vector<>::iterator, vector<>::con...
-
-#include "adapterset.hpp"  // for adapter_set
-#include "alignment.hpp"   // for align_paired_ended_sequences, extract_ada...
-#include "commontypes.hpp" // for fastq_vec
-#include "debug.hpp"       // for AR_REQUIRE
-#include "fastq.hpp"       // for fastq, ACGT, fastq_pair_vec
-#include "fastq_io.hpp"    // for fastq_read_chunk, read_fastq, read_chunk_ptr
-#include "scheduler.hpp"   // for threadstate, scheduler, analytical_step
-#include "userconfig.hpp"  // for userconfig, fastq_encoding_ptr
-#include "utilities.hpp"   // for merge
+#include "adapterset.hpp" // for adapter_set
+#include "alignment.hpp"  // for extract_adapter_sequences, sequence_aligner
+#include "counts.hpp"     // for indexed_counts
+#include "debug.hpp"      // for AR_REQUIRE
+#include "fastq.hpp"      // for ACGTN, fastq, fastq_pair_vec, ACGT, ACGT:...
+#include "fastq_io.hpp"   // for read_fastq, fastq_read_chunk
+#include "scheduler.hpp"  // for threadstate, scheduler, analytical_step
+#include "simd.hpp"       // for size_t
+#include "userconfig.hpp" // for userconfig
+#include "utilities.hpp"  // for merge
+#include <algorithm>      // for max, copy, min, reverse
+#include <array>          // for array
+#include <cstddef>        // for size_t
+#include <iomanip>        // for operator<<, setw
+#include <iostream>       // for operator<<, basic_ostream, ostringstream
+#include <memory>         // for unique_ptr, allocator_traits<>::value_type
+#include <queue>          // for priority_queue
+#include <sstream>        // for basic_ostringstream
+#include <string>         // for string, operator<<, char_traits
+#include <utility>        // for pair
+#include <vector>         // for vector
 
 namespace adapterremoval {
 

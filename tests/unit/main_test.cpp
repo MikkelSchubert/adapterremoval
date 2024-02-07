@@ -1,7 +1,8 @@
 #define CATCH_CONFIG_MAIN
-#include "catch.hpp"
 
-#include "debug.hpp"
+#include "catch.hpp"
+#include "debug.hpp" // for assert_failed
+#include <string>    // for string
 
 namespace adapterremoval {
 

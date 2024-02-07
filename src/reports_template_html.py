@@ -28,7 +28,6 @@ from enum import Enum
 from pathlib import Path
 from typing import NamedTuple, Optional
 
-
 _RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z0-9_]+)\s+-->", re.I)
 _RE_FIELD = re.compile(
     r"""
@@ -263,12 +262,12 @@ def write_implementations(sections, header_name):
 
     tprint(__doc__.strip())
     tprint('#include "{}"', header_name)
-    tprint('#include "debug.hpp"', header_name)
+    tprint('#include "debug.hpp" // for AR_REQUIRE')
+    tprint("#include <stddef.h>  // for size_t")
     tprint("")
     tprint("namespace adapterremoval {{")
     tprint("")
     tprint("size_t g_html_id = 1;")
-    tprint("")
 
     for key, props in sections.items():
         classname = to_classname(key)

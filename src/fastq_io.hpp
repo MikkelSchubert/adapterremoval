@@ -18,23 +18,23 @@
 \*************************************************************************/
 #pragma once
 
-#include <memory>   // for unique_ptr
-#include <mutex>    // for mutex
-#include <stddef.h> // for size_t
-#include <string>   // for string
-
-#include "commontypes.hpp"       // for fastq_vec, string_vec
+#include "buffer.hpp"            // for buffer, buffer_vec
+#include "commontypes.hpp"       // for fastq_vec
+#include "fastq.hpp"             // for fastq
 #include "fastq_enc.hpp"         // for fastq_encoding
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_writer.hpp"    // for managed_writer
 #include "progress.hpp"          // for progress_timer
-#include "scheduler.hpp"         // for analytical_step, chunk_vec, analyti...
-#include "statistics.hpp"        // for fastq_stats_ptr, fastq_statistics, ...
+#include "scheduler.hpp"         // for analytical_step, chunk_ptr, chunk_vec
+#include "statistics.hpp"        // for fastq_stats_ptr
+#include <memory>                // for unique_ptr
+#include <mutex>                 // for mutex
+#include <stddef.h>              // for size_t
+#include <stdint.h>              // for uint32_t, uint64_t
+#include <string>                // for string
 
 namespace adapterremoval {
 
-class fastq;
-class fastq_encoding;
 class fastq_output_chunk;
 class fastq_read_chunk;
 class userconfig;

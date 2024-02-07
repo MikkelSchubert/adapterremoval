@@ -17,25 +17,27 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for find, min, max
-#include <cmath>     // for pow
-#include <cstring>   // for size_t, strerror
-#include <errno.h>   // for errno
-#include <limits>    // for numeric_limits
-#include <stdexcept> // for invalid_argument
-#include <string>    // for string, operator<<, char_traits, operator==
-#include <tuple>     // for tuple
-#include <unistd.h>  // for access, isatty, R_OK, STDERR_FILENO
-
-#include "alignment.hpp"  // for alignment_info
-#include "debug.hpp"      // for AR_FAIL
-#include "licenses.hpp"   // for LICENSES
-#include "logging.hpp"    // for log
-#include "main.hpp"       // for NAME, VERSION, PREAMBLE
-#include "progress.hpp"   // for progress_type
-#include "simd.hpp"       // for SIMD configuration
-#include "strutils.hpp"   // for str_to_unsigned, toupper
-#include "userconfig.hpp" // declarations
+#include "userconfig.hpp"
+#include "alignment.hpp" // for alignment_info
+#include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
+#include "fastq.hpp"     // for ACGT, ACGT::size, ACGT::values
+#include "licenses.hpp"  // for LICENSES
+#include "logging.hpp"   // for log_stream, error, set_level, set_colors, info
+#include "main.hpp"      // for HELPTEXT, NAME, VERSION
+#include "progress.hpp"  // for progress_type, progress_type::simple, progr...
+#include "simd.hpp"      // for size_t, name, supported, instruction_set
+#include "strutils.hpp"  // for string_vec, shell_escape, str_to_unsigned
+#include <algorithm>     // for find, max, min
+#include <cmath>         // for pow
+#include <cstring>       // for size_t, strerror, strcmp
+#include <errno.h>       // for errno
+#include <limits>        // for numeric_limits
+#include <random>        // for random_device
+#include <stdexcept>     // for invalid_argument
+#include <stdlib.h>      // for getenv
+#include <string>        // for string, basic_string, operator==, operator+
+#include <tuple>         // for get, tuple
+#include <unistd.h>      // for access, isatty, R_OK, STDERR_FILENO
 
 namespace adapterremoval {
 

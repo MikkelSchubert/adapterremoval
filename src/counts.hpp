@@ -18,12 +18,17 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>
-#include <limits>
-#include <vector>
-
-#include "debug.hpp"
-#include "utilities.hpp"
+#include "debug.hpp"        // for AR_REQUIRE
+#include "utilities.hpp"    // for merge
+#include <algorithm>        // for max, min
+#include <array>            // for operator==, array
+#include <cstdint>          // for int64_t
+#include <initializer_list> // for initializer_list
+#include <limits>           // for numeric_limits, numeric_limits<>::is_iec559
+#include <stddef.h>         // for size_t
+#include <type_traits>      // for is_same, is_floating_point, is_integral
+#include <utility>          // for move
+#include <vector>           // for operator==, vector
 
 namespace adapterremoval {
 

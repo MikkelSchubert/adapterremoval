@@ -16,7 +16,8 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "simd.hpp"
+#include "simd.hpp" // for size_t, compare_subsequences_std
+#include <cstddef>  // for size_t
 
 namespace adapterremoval {
 

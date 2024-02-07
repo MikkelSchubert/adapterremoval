@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "simd.hpp"    // declarations
 #include <bitset>      // for bitset
+#include <cstddef>     // for size_t
 #include <emmintrin.h> // for _mm_cmpeq_epi8, __m128i, _mm_loadu_s...
 
 namespace adapterremoval {

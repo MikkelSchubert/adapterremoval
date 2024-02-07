@@ -19,23 +19,22 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>    // for array
-#include <stddef.h> // for size_t
-#include <string>   // for string
-#include <utility>  // for pair
-#include <vector>   // for vector
-
 #include "adapterset.hpp"  // for adapter_set
 #include "argparse.hpp"    // for parse_result, parser
-#include "commontypes.hpp" // for string_vec, read_type, read_type::max
+#include "commontypes.hpp" // for string_vec, read_type, merge_strategy
 #include "fastq_enc.hpp"   // for fastq_encoding
-#include "simd.hpp"        // for instruction_set
+#include "simd.hpp"        // for size_t, instruction_set
 #include "timer.hpp"       // for monotonic_timer
+#include <array>           // for array
+#include <cstddef>         // for size_t
+#include <stdint.h>        // for uint64_t
+#include <string>          // for string
+#include <utility>         // for pair
+#include <vector>          // for vector
 
 namespace adapterremoval {
 
 struct alignment_info;
-class trimming_statistics;
 enum class progress_type;
 
 //! Path used to indicate that a file is not needed

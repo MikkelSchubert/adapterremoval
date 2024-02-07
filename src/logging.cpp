@@ -16,17 +16,18 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <chrono>      // for system_clock
-#include <iomanip>     // for put_time
-#include <iostream>    // for cerr, cout, endl
-#include <mutex>       // for mutex, unique_lock
-#include <sys/ioctl.h> // for ioctl
-#include <unistd.h>    // for STDERR_FILENO
-#include <vector>      // for vector
-
-#include "debug.hpp"    // for AR_FAIL
-#include "logging.hpp"  // declarations
-#include "strutils.hpp" // for cli_formatter
+#include "logging.hpp"
+#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
+#include "strutils.hpp" // for split_lines, cli_formatter, string_vec
+#include <algorithm>    // for max, min
+#include <chrono>       // for system_clock
+#include <ctime>        // for localtime
+#include <iomanip>      // for operator<<, put_time
+#include <iostream>     // for cerr
+#include <mutex>        // for mutex, unique_lock
+#include <sys/ioctl.h>  // for ioctl, winsize, TIOCGWINSZ
+#include <unistd.h>     // for size_t, STDERR_FILENO
+#include <vector>       // for vector
 
 namespace adapterremoval {
 

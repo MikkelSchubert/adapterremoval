@@ -17,12 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "reports_template_html.hpp"
-#include "debug.hpp"
+#include "debug.hpp" // for AR_REQUIRE
+#include <stddef.h>  // for size_t
 
 namespace adapterremoval {
 
 size_t g_html_id = 1;
-
 
 html_head::html_head()
   : m_written()

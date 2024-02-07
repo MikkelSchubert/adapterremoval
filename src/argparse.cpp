@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm>   // for min, copy, max, replace
-#include <limits>      // for numeric_limits
-#include <memory>      // for make_unique, make_shared
-#include <set>         // for set
-#include <sstream>     // for istringstream, ostringstream
-#include <stdexcept>   // for invalid_argument
-#include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
-#include <unistd.h>    // for STDERR_FILENO
-
-#include "argparse.hpp" // header
+#include "argparse.hpp"
 #include "debug.hpp"    // for AR_REQUIRE
-#include "logging.hpp"  // for log
-#include "strutils.hpp" // for cli_formatter, str_to_unsigned, toupper
+#include "logging.hpp"  // for log_stream, error, cerr, warn
+#include "strutils.hpp" // for string_vec, shell_escape, to_lower
+#include <algorithm>    // for max, copy, find, min, sort
+#include <limits>       // for numeric_limits
+#include <memory>       // for __shared_ptr_access, unique_ptr, share...
+#include <sstream>      // for operator<<, basic_ostream, ostringstream
+#include <stdexcept>    // for invalid_argument
+#include <utility>      // for pair
 
 namespace adapterremoval {
 

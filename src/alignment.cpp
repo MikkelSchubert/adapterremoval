@@ -17,15 +17,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for max, min
-#include <string>    // for string, operator+
-#include <utility>   // for swap, pair
-
-#include "alignment.hpp"        // declarations
-#include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS, PHRED_...
+#include "alignment.hpp"
+#include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS
+#include "commontypes.hpp"      // for merge_strategy
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for fastq, fastq_pair_vec
-#include "simd.hpp"             // for select_compare_function, ...
+#include "simd.hpp"             // for size_t, get_compare_subsequences_func
+#include <algorithm>            // for max, min
+#include <array>                // for array
+#include <string>               // for string, operator+
+#include <utility>              // for swap, pair
+#include <vector>               // for vector
 
 namespace adapterremoval {
 

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <stddef.h> // for size_t
-
-#include "argparse.hpp"   // for parse_result, parse_result::error
+#include "main.hpp"
+#include "argparse.hpp"   // for parse_result, parse_result::error, parse_...
 #include "debug.hpp"      // for AR_FAIL
-#include "logging.hpp"    // for log
-#include "main.hpp"       // header
-#include "reports.hpp"    // for print_terminal_preamble
-#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
+#include "logging.hpp"    // for log_stream, error
+#include "reports.hpp"    // for print_terminal_postamble, print_terminal_...
+#include "userconfig.hpp" // for ar_command, userconfig, ar_command::demul...
+#include <cstdlib>        // for abort, size_t
+#include <ios>            // for ios_base
 
 namespace adapterremoval {
 

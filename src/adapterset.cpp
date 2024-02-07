@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for sort, max
-#include <sstream>   // for istringstream, ostringstream
-#include <utility>   // for pair
-#include <vector>    // for vector, vector<>::const_iterator
-
-#include "adapterset.hpp" // declarations
+#include "adapterset.hpp"
 #include "debug.hpp"      // for AR_REQUIRE
 #include "fastq_enc.hpp"  // for fastq_error
 #include "linereader.hpp" // for line_reader
-#include "logging.hpp"    // for log
-#include "strutils.hpp"   // for cli_formatter
+#include "logging.hpp"    // for error, log_stream
+#include "strutils.hpp"   // for string_vec, indent_lines
+#include <algorithm>      // for max, sort
+#include <sstream>        // for operator<<, basic_ostream, ostringstream
+#include <utility>        // for pair
+#include <vector>         // for vector, vector<>::const_iterator
 
 namespace adapterremoval {
 

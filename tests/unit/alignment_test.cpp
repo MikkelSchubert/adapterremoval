@@ -17,17 +17,24 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <sstream>
-#include <vector>
-
-#include "alignment.hpp"
-#include "debug.hpp"
-#include "fastq.hpp"
-#include "simd.hpp"
-#include "testing.hpp"
+#include "alignment.hpp"   // for alignment_info, sequence_merger, extract_...
+#include "catch.hpp"       // for operator""_catch_sr, AssertionHandler
+#include "commontypes.hpp" // for merge_strategy, merge_strategy::determini...
+#include "debug.hpp"       // for assert_failed
+#include "fastq.hpp"       // for fastq, fastq_pair_vec, fastq_pair
+#include "fastq_enc.hpp"   // for FASTQ_ENCODING_SAM
+#include "simd.hpp"        // for size_t, instruction_set, supported, get_c...
+#include <algorithm>       // for min
+#include <cstddef>         // for size_t
+#include <cstdint>         // for int64_t
+#include <random>          // for mt19937, seed_seq, random_device
+#include <sstream>         // for operator<<, ostream, basic_ostream, char_...
+#include <string>          // for string, basic_string, operator<<
+#include <vector>          // for vector
 
 namespace adapterremoval {
+
+struct ALN;
 
 #define TEST_ALIGNMENT_SETTER(TYPE, NAME)                                      \
   ALN& NAME(TYPE value)                                                        \

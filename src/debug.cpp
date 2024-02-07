@@ -16,11 +16,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdlib> // for abort, size_t
-#include <sstream> // for ostringstream
-#include <string>  // for string
-
 #include "debug.hpp"
+#include <sstream> // for operator<<, basic_ostream, ostringstream
+#include <string>  // for char_traits, operator<<, string
 
 namespace adapterremoval {
 

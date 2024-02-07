@@ -18,15 +18,16 @@
 \*************************************************************************/
 #pragma once
 
-#include <map>      // for map
-#include <memory>   // for shared_ptr
-#include <ostream>  // for ostream
-#include <stddef.h> // for size_t
-#include <stdint.h> // for int64_t
-#include <string>   // for string, char_traits
-
 #include "commontypes.hpp" // for string_vec
 #include "counts.hpp"      // for counts, rates
+#include <functional>      // for less
+#include <map>             // for map
+#include <memory>          // for shared_ptr
+#include <ostream>         // for ostream
+#include <stddef.h>        // for size_t
+#include <stdint.h>        // for int64_t
+#include <string>          // for string, basic_string
+#include <vector>          // for vector
 
 namespace adapterremoval {
 

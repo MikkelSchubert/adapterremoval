@@ -19,12 +19,10 @@
 \*************************************************************************/
 #pragma once
 
-#include <deque>
-#include <mutex>
-#include <string>
-#include <thread>
-
-#include "timer.hpp"
+#include "timer.hpp" // for monotonic_timer
+#include <mutex>     // for mutex
+#include <stddef.h>  // for size_t
+#include <thread>    // for thread
 
 namespace adapterremoval {
 

@@ -18,15 +18,10 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstdio>   // for FILE, fopen, fclose
-#include <fstream>  // for ofstream
-#include <memory>   // for unique_ptr
-#include <stddef.h> // for size_t
-#include <string>   // for string
-#include <utility>  // for pair
-#include <vector>   // for vector
-
 #include "buffer.hpp" // for buffer_vec
+#include <cstdio>     // for FILE
+#include <fstream>    // for ofstream
+#include <string>     // for string
 
 namespace adapterremoval {
 

@@ -19,19 +19,17 @@
 \*************************************************************************/
 #pragma once
 
-#include <memory>   // for unique_ptr
-#include <random>   // for mt19937
-#include <stddef.h> // for size_t
-#include <vector>   // for vector
-
-#include "commontypes.hpp" // for read_type
-#include "fastq.hpp"       // for fastq_pair_vec
-#include "fastq_io.hpp"    // for output_chunk_ptr
-#include "scheduler.hpp"   // for chunk_vec, analytical_step, threadstate
-#include "statistics.hpp"  // for trimming_statistics
+#include "fastq.hpp"      // for fastq_pair_vec
+#include "fastq_io.hpp"   // for output_chunk_ptr
+#include "scheduler.hpp"  // for chunk_vec, chunk_ptr, threadstate, analyt...
+#include "statistics.hpp" // for trimming_statistics, trim_stats_ptr
+#include <random>         // for mt19937
+#include <stddef.h>       // for size_t
+#include <vector>         // for vector
 
 namespace adapterremoval {
 
+enum class read_type : size_t;
 class output_sample_files;
 class userconfig;
 

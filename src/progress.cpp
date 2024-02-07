@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <iomanip> // for operator<<, setfill, setw
-#include <locale>  // for numpunct, use_facet, locale
-#include <sstream> // for ostringstream
-
+#include "progress.hpp"
 #include "debug.hpp"    // for AR_FAIL
-#include "logging.hpp"  // for log
-#include "progress.hpp" // declarations
-#include "strutils.hpp" // for
-#include "threads.hpp"  // for print_locker
+#include "logging.hpp"  // for info, log_stream, cerr
+#include "strutils.hpp" // for format_rough_number, format_thousand_sep
+#include <chrono>       // for microseconds
+#include <iomanip>      // for operator<<, setfill, setw
+#include <sstream>      // for operator<<, basic_ostream, ostringstream
+#include <string>       // for string, operator<<, basic_string, char_traits
+#include <vector>       // for vector
 
 namespace adapterremoval {
 

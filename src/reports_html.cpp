@@ -16,27 +16,35 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstring> // for size_t, strerror
-#include <errno.h> // for errno
-#include <fstream> // for ofstream
-#include <iomanip> // for setprecision
-#include <memory>  // for make_shared, make_unique
-#include <sstream> // for ostringstream
-#include <string>  // for operator+, string, operator<<
-#include <vector>  // for vector
-
 #include "adapterset.hpp"            // for adapter_set
-#include "counts.hpp"                // for counts, counts_tmpl
-#include "debug.hpp"                 // for AR_FAIL
-#include "fastq.hpp"                 // for fastq_pair_vec, IDX_TO_ACGT, fastq
-#include "json.hpp"                  // for json_writer, json_section
-#include "logging.hpp"               // for log
-#include "main.hpp"                  // for NAME, VERSION
+#include "counts.hpp"                // for counts, indexed_count, counts_tmpl
+#include "debug.hpp"                 // for AR_REQUIRE
+#include "fastq.hpp"                 // for ACGT, ACGT::values, fastq, ACGTN
+#include "json.hpp"                  // for json_dict, json_list, json_ptr
+#include "logging.hpp"               // for log_stream, error
+#include "main.hpp"                  // for VERSION, NAME
 #include "reports.hpp"               // for write_html_report
-#include "reports_template_html.hpp" // for template strings
-#include "statistics.hpp"            // for fastq_statistics, ...
-#include "strutils.hpp"              // for cli_formatter, ...
-#include "userconfig.hpp"            // for userconfig, ...
+#include "reports_template_html.hpp" // for html_line_plot, html_demultiple...
+#include "simd.hpp"                  // for size_t
+#include "statistics.hpp"            // for fastq_stats_ptr, fastq_statistics
+#include "strutils.hpp"              // for format_percentage, format_rough...
+#include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
+#include <algorithm>                 // for max
+#include <array>                     // for array
+#include <chrono>                    // for system_clock
+#include <cmath>                     // for fmod
+#include <cstring>                   // for size_t, strerror
+#include <ctime>                     // for localtime
+#include <ctype.h>                   // for toupper
+#include <errno.h>                   // for errno
+#include <fstream>                   // for operator<<, ofstream, basic_ost...
+#include <iomanip>                   // for operator<<, setprecision, setw
+#include <memory>                    // for __shared_ptr_access, shared_ptr
+#include <sstream>                   // for basic_ostringstream
+#include <stdint.h>                  // for uint64_t
+#include <string>                    // for string, operator==, to_string
+#include <utility>                   // for pair
+#include <vector>                    // for vector
 
 namespace adapterremoval {
 

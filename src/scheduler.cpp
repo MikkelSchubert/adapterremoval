@@ -16,17 +16,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "scheduler.hpp"
+#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
+#include "logging.hpp"  // for error, log_stream, debug
+#include "strutils.hpp" // for indent_lines
+#include "threads.hpp"  // for thread_abort
 #include <algorithm>    // for max
 #include <exception>    // for exception
-#include <memory>       // for make_unique
+#include <functional>   // for greater
+#include <memory>       // for __shared_ptr_access, operator<, unique...
 #include <system_error> // for system_error
 #include <thread>       // for thread
-
-#include "debug.hpp"     // for AR_REQUIRE
-#include "logging.hpp"   // for log
-#include "scheduler.hpp" // declarations
-#include "strutils.hpp"  // for cli_formatter
-#include "threads.hpp"   // for thread_abort
 
 namespace adapterremoval {
 

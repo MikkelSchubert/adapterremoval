@@ -17,25 +17,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 
+#include "fastq_io.hpp"
+#include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "fastq.hpp"         // for fastq
+#include "fastq_enc.hpp"     // for fastq_error, MATE_SEPARATOR
+#include "linereader.hpp"    // for io_error
+#include "logging.hpp"       // for log_stream, error
+#include "simd.hpp"          // for size_t
+#include "statistics.hpp"    // for fastq_statistics, fastq_stats_ptr, stat...
+#include "strutils.hpp"      // for shell_escape, string_vec, ends_with
+#include "threads.hpp"       // for thread_error, thread_abort
+#include "userconfig.hpp"    // for userconfig
+#include <isa-l/crc.h>       // for crc32_gzip_refl
+#include <isa-l/igzip_lib.h> // for isal_zstream, isal_deflate_init, isal_d...
+
+#ifdef USE_LIBDEFLATE
+#include <libdeflate.h> // for libdeflate_alloc_compressor, libdeflate...
+#endif
+
 #include <algorithm> // for max, min
 #include <cerrno>    // for errno
 #include <cstring>   // for size_t, memcpy
-#include <memory>    // for make_unique
+#include <memory>    // for unique_ptr, make_unique, __shared_ptr_a...
+#include <sstream>   // for basic_ostream, basic_ostringstream, ope...
 #include <utility>   // for move, swap
-
-#ifdef USE_LIBDEFLATE
-#include <libdeflate.h>
-#endif
-
-#include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "fastq.hpp"      // for fastq
-#include "fastq_enc.hpp"  // for fastq_error
-#include "fastq_io.hpp"   // declarations
-#include "logging.hpp"    // for log
-#include "statistics.hpp" // for fastq_statistics
-#include "strutils.hpp"   // for cli_formatter
-#include "threads.hpp"    // for thread_error, print_locker, thread_abort
-#include "userconfig.hpp" // for userconfig
+#include <vector>    // for vector
 
 namespace adapterremoval {
 

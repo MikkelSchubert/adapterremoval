@@ -19,8 +19,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <chrono>
-#include <string>
+#include <chrono> // for steady_clock, time_point
 
 namespace adapterremoval {
 

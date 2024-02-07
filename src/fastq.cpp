@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for reverse, count, max, min
-#include <cmath>     // for log10, pow
-#include <numeric>   // for accumulate
-#include <sstream>   // for ostringstream
-
-#include "debug.hpp" // for AR_REQUIRE, AR_FAIL
 #include "fastq.hpp"
+#include "debug.hpp"      // for AR_REQUIRE, AR_FAIL
 #include "linereader.hpp" // for line_reader_base
+#include <algorithm>      // for reverse, count, max, min
+#include <cmath>          // for log10, pow
+#include <numeric>        // for accumulate
+#include <sstream>        // for ostringstream
 
 namespace adapterremoval {
 

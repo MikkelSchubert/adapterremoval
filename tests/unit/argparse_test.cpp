@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <memory>
-#include <sstream>
-#include <stdexcept>
-
-#include "argparse.hpp"
-#include "debug.hpp"
-#include "logging.hpp" // for log
-#include "testing.hpp"
+#include "argparse.hpp" // for argument, parser, str_sink, parse_result
+#include "catch.hpp"    // for operator""_catch_sr, AssertionHandler
+#include "debug.hpp"    // for assert_failed
+#include "logging.hpp"  // for log_capture
+#include "strutils.hpp" // for string_vec
+#include <stddef.h>     // for size_t
+#include <string>       // for basic_string, operator==, string, allocator
+#include <vector>       // for vector, operator==
 
 namespace adapterremoval {
 

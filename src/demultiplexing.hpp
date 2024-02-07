@@ -19,21 +19,19 @@
 \*************************************************************************/
 #pragma once
 
-#include <algorithm> // for max, copy
-#include <mutex>     // for mutex
-#include <stddef.h>  // for size_t
-#include <vector>    // for vector
-
 #include "barcode_table.hpp" // for barcode_table
 #include "fastq.hpp"         // for fastq_pair_vec
 #include "fastq_io.hpp"      // for read_chunk_ptr, output_chunk_ptr
-#include "scheduler.hpp"     // for chunk_vec, analytical_step
-#include "statistics.hpp"    // for demux_statistics, fastq_statistics
+#include "scheduler.hpp"     // for chunk_vec, chunk_ptr, analytical_step
+#include "statistics.hpp"    // for demux_stats_ptr
+#include <algorithm>         // for max
+#include <mutex>             // for mutex
+#include <stddef.h>          // for size_t
+#include <vector>            // for vector
 
 namespace adapterremoval {
 
 class userconfig;
-class demux_statistics;
 
 /** Map of samples to downstream FASTQ processing/writing steps. */
 class post_demux_steps

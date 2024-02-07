@@ -16,11 +16,11 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <mutex>
-#include <sstream>
-
-#include "debug.hpp"
-#include "testing.hpp"
+#include "catch.hpp" // for SourceLineInfo, StringRef, AssertionHandler
+#include "debug.hpp" // for assert_failed, AR_REQUIRE, AR_REQUIRE_SINGLE_TH...
+#include <mutex>     // for unique_lock, mutex
+#include <sstream>   // for operator<<, basic_ostream, char_traits, ostring...
+#include <string>    // for basic_string, operator==, string
 
 namespace adapterremoval {
 

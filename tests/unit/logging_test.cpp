@@ -16,12 +16,10 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <limits>
-#include <stdexcept>
-
-#include "debug.hpp"
-#include "logging.hpp"
-#include "testing.hpp"
+#include "catch.hpp"   // for operator""_catch_sr, SourceLineInfo, Assertio...
+#include "debug.hpp"   // for assert_failed
+#include "logging.hpp" // for log_capture, info, log_stream, cerr, error, warn
+#include <string>      // for basic_string, operator==, string
 
 namespace adapterremoval {
 

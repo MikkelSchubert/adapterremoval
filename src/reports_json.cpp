@@ -17,24 +17,28 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstring> // for size_t, strerror
-#include <errno.h> // for errno
-#include <fstream> // for ofstream
-#include <memory>  // for make_shared
-#include <string>  // for operator+, string, operator<<
-#include <vector>  // for vector
-
-#include "adapterset.hpp" // for adapter_set
-#include "counts.hpp"     // for counts, counts_tmpl
-#include "debug.hpp"      // for AR_FAIL
-#include "fastq.hpp"      // for fastq_pair_vec, IDX_TO_ACGT, fastq
-#include "json.hpp"       // for json_writer, json_section
-#include "logging.hpp"    // for log
-#include "main.hpp"       // for NAME, VERSION
-#include "reports.hpp"    // for write_json_report
-#include "statistics.hpp" // for fastq_statistics, trimming_statistics, ar_...
-#include "strutils.hpp"   // for cli_formatter
-#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demult...
+#include "adapterset.hpp"  // for adapter_set
+#include "commontypes.hpp" // for read_type, read_type::mate_1, read_typ...
+#include "counts.hpp"      // for counts, counts_tmpl, indexed_count
+#include "debug.hpp"       // for AR_FAIL
+#include "fastq.hpp"       // for ACGT, fastq_pair_vec, fastq, ACGT::values
+#include "json.hpp"        // for json_dict, json_dict_ptr, json_list
+#include "logging.hpp"     // for log_stream, error
+#include "main.hpp"        // for NAME, VERSION
+#include "reports.hpp"     // for write_json_report
+#include "simd.hpp"        // for size_t
+#include "statistics.hpp"  // for fastq_stats_ptr, trimming_statistics
+#include "strutils.hpp"    // for string_vec, to_lower, indent_lines
+#include "userconfig.hpp"  // for userconfig, output_files, output_sampl...
+#include <algorithm>       // for max
+#include <array>           // for array
+#include <cstring>         // for size_t, strerror
+#include <errno.h>         // for errno
+#include <fstream>         // for ofstream, ios_base::failure, operator|
+#include <memory>          // for __shared_ptr_access, shared_ptr, make_...
+#include <string>          // for basic_string, string, operator+, char_...
+#include <utility>         // for pair
+#include <vector>          // for vector
 
 namespace adapterremoval {
 

@@ -19,12 +19,11 @@
 \*************************************************************************/
 #pragma once
 
-#include <ostream>
-#include <sstream>
-
 #include "catch.hpp"
 #include "fastq.hpp"
 #include "strutils.hpp"
+#include <ostream>
+#include <sstream>
 
 namespace Catch {
 

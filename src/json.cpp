@@ -16,15 +16,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <algorithm> // for find
-#include <cmath>     // for isnan
-#include <iomanip>   // for operator<<, setw
-#include <memory>    // for make_shared
-#include <sstream>   // for operator<<, basic_ostream, ostringstream, ostream
-#include <utility>   // for swap
-
+#include "json.hpp"
 #include "debug.hpp" // for AR_REQUIRE
-#include "json.hpp"  // for declarations
+#include <algorithm> // for max, find
+#include <cmath>     // for isinf, isnan
+#include <memory>    // for make_shared, __shared_ptr_access, shar...
+#include <sstream>   // for ostringstream
+#include <utility>   // for pair
 
 namespace adapterremoval {
 

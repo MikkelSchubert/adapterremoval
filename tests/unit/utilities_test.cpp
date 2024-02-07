@@ -16,11 +16,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <array>
-#include <vector>
-
-#include "testing.hpp"
-#include "utilities.hpp"
+#include "catch.hpp"     // for SourceLineInfo, operator""_catch_sr, Assert...
+#include "utilities.hpp" // for merge
+#include <algorithm>     // for max
+#include <array>         // for array, operator==
+#include <stddef.h>      // for size_t
+#include <vector>        // for vector, allocator, operator==
 
 namespace adapterremoval {
 

@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstring> // for size_t
-
-#include "fastq_io.hpp"   // for read_fastq
-#include "reports.hpp"    // for write_report
-#include "scheduler.hpp"  // for scheduler
-#include "statistics.hpp" // for ar_statistics
+#include "fastq_io.hpp"   // for post_process_fastq, read_fastq
+#include "reports.hpp"    // for write_html_report, write_json_report
+#include "scheduler.hpp"  // for scheduler, analytical_step, chunk_vec, chu...
+#include "simd.hpp"       // for size_t
+#include "statistics.hpp" // for statistics_builder, statistics
 #include "userconfig.hpp" // for userconfig, output_files
+#include <cstring>        // for size_t
 
 namespace adapterremoval {
 

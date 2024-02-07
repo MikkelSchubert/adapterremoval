@@ -17,16 +17,18 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "commontypes.hpp"
-#include "debug.hpp"
-#include "fastq.hpp"
-#include "linereader.hpp"
-#include "strutils.hpp"
-#include "testing.hpp"
-#include <iostream>
-#include <limits>
-#include <sstream>
-#include <stdexcept>
+#include "catch.hpp"       // for operator""_catch_sr, AssertionHandler
+#include "commontypes.hpp" // for fastq_vec
+#include "debug.hpp"       // for assert_failed
+#include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
+#include "fastq_enc.hpp"   // for fastq_error (ptr only), FASTQ_ENCODING_33
+#include "linereader.hpp"  // for line_reader_base
+#include "strutils.hpp"    // for string_vec
+#include <limits>          // for numeric_limits
+#include <stddef.h>        // for size_t
+#include <string>          // for operator==, basic_string, string, operator+
+#include <utility>         // for operator==, pair, move
+#include <vector>          // for vector, vector<>::const_iterator
 
 namespace adapterremoval {
 

@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "barcode_table.hpp"
 #include "debug.hpp" // for AR_REQUIRE
 #include <algorithm> // for min, max, sort
 #include <utility>   // for pair
-
-#include "barcode_table.hpp"
 
 namespace adapterremoval {
 

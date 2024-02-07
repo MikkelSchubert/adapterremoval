@@ -16,18 +16,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cerrno>  // for errno
-#include <cstdlib> // for exit
-#include <cstring> // for strerror
-#include <memory>  // for make_unique
-#include <sstream> // for ostringstream
-
+#include "linereader.hpp"
 #include "debug.hpp"          // for AR_FAIL
-#include "linereader.hpp"     // header
-#include "logging.hpp"        // for log::warn
+#include "logging.hpp"        // for warn, log_stream
 #include "managed_writer.hpp" // for managed_writer
 #include "strutils.hpp"       // for shell_escape
-#include "threads.hpp"        // for print_locker
+#include <cerrno>             // for errno
+#include <cstring>            // for strerror, memchr
+#include <isa-l/igzip_lib.h>  // for inflate_state, isal_gzip_header, isal_...
+#include <memory>             // for unique_ptr, shared_ptr, __shared_ptr_a...
+#include <sstream>            // for operator<<, basic_ostream
+#include <stdint.h>           // for uint8_t
 
 namespace adapterremoval {
 

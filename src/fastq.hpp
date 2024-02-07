@@ -19,18 +19,16 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>    // for array
-#include <stddef.h> // for size_t
-#include <string>   // for string
-#include <utility>  // for pair
-#include <vector>   // for vector
-
 #include "fastq_enc.hpp" // for FASTQ_ENCODING_33, MATE_SEPARATOR
+#include <array>         // for array
+#include <stddef.h>      // for size_t
+#include <string>        // for string
+#include <utility>       // for pair
+#include <vector>        // for vector
 
 namespace adapterremoval {
 
 class line_reader_base;
-struct mate_info;
 
 /**
  * Represents a FASTQ record with Phred (offset=33) encoded quality scores.

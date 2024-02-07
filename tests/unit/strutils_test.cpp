@@ -17,11 +17,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <cstdint> // for INTPTR_MAX, INT64_MAX
-
-#include "debug.hpp"
-#include "strutils.hpp"
-#include "testing.hpp"
+#include "catch.hpp"    // for operator""_catch_sr, AssertionHandler, Sourc...
+#include "debug.hpp"    // for assert_failed
+#include "strutils.hpp" // for format_rough_number, wrap_text, str_to_unsigned
+#include <cstdint>      // for INT64_MAX, INTPTR_MAX
+#include <stdexcept>    // for invalid_argument
+#include <string>       // for basic_string, operator==, string
+#include <vector>       // for operator==, vector
 
 namespace adapterremoval {
 

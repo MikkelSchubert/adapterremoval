@@ -16,12 +16,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "debug.hpp"      // for AR_FAIL
-#include "logging.hpp"    // for log
-#include "main.hpp"       // for NAME, VERSION
-#include "reports.hpp"    // for print_terminal_preamble, print_terminal_...
-#include "simd.hpp"       // for supports_sse2, supports_avx2
-#include "userconfig.hpp" // for userconfig
+#include "commontypes.hpp" // for trimming_strategy, trimming_strategy::mott
+#include "debug.hpp"       // for AR_FAIL
+#include "logging.hpp"     // for info, log_stream, error, warn
+#include "main.hpp"        // for NAME, VERSION
+#include "reports.hpp"     // for print_terminal_postamble, print_terminal_...
+#include "simd.hpp"        // for name, instruction_set, instruction_set::none
+#include "userconfig.hpp"  // for userconfig, ar_command, ar_command::demul...
+#include <string>          // for string
 
 namespace adapterremoval {
 

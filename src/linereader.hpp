@@ -18,13 +18,15 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>  // for array
-#include <cstdio> // for BUFSIZ
-#include <ios>    // for ios_base, ios_base::failure
-#include <memory> // for unique_ptr, shared_ptr
-#include <string> // for string
+#include <array>   // for array
+#include <cstdio>  // for FILE, BUFSIZ
+#include <ios>     // for ios_base, ios_base::failure
+#include <isa-l.h> // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
+#include <memory>  // for shared_ptr, unique_ptr
+#include <string>  // for string
 
-#include <isa-l.h> // for inflate_state, etc.
+struct inflate_state;
+struct isal_gzip_header;
 
 // Required due to 2.30 fixing issues when reading concatenated gzip files
 static_assert((ISAL_MAJOR_VERSION > 2 ||

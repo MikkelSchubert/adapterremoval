@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <sstream>
-
-#include "counts.hpp"
-#include "debug.hpp"
-#include "json.hpp"
-#include "testing.hpp"
+#include "catch.hpp"    // for AssertionHandler, SourceLineInfo, StringRef
+#include "counts.hpp"   // for rates, counts
+#include "json.hpp"     // for json_dict, json_value, json_token, json_list
+#include "strutils.hpp" // for string_vec
+#include <cmath>        // for nan
+#include <memory>       // for __shared_ptr_access, shared_ptr, __shared_pt...
+#include <sstream>      // for ostringstream
+#include <string>       // for basic_string, operator==, string
 
 namespace adapterremoval {
 
