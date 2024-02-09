@@ -24,6 +24,7 @@
 #include <isa-l.h> // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
 #include <memory>  // for shared_ptr, unique_ptr
 #include <string>  // for string
+#include <vector>  // for vector
 
 struct inflate_state;
 struct isal_gzip_header;
@@ -62,13 +63,30 @@ public:
   /** Closes the file, if still open. */
   virtual ~line_reader_base() = default;
 
-  /** Reads a lien into dst, returning false on EOF. */
+  /** Reads a line into dst, returning false on EOF. */
   virtual bool getline(std::string& dst) = 0;
 
   //! Copy construction not supported
   line_reader_base(const line_reader_base&) = delete;
   //! Assignment not supported
   line_reader_base& operator=(const line_reader_base&) = delete;
+};
+
+/** Simple helper class for reading strings from memory */
+class vec_reader : public line_reader_base
+{
+public:
+  /** Constructs a reader from a set of lines (not copied) */
+  vec_reader(const std::vector<std::string>& lines);
+
+  /** Reads a line into dst, returning false on EOF. */
+  bool getline(std::string& dst);
+
+private:
+  //! Reference to vector containing lines of text
+  const std::vector<std::string>& m_lines;
+  //! Current position in m_lines
+  std::vector<std::string>::const_iterator m_it;
 };
 
 /**

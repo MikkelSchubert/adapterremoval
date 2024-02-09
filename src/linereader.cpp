@@ -120,6 +120,26 @@ check_isal_return_code(const char* func, int returncode)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'vec_reader'
+
+vec_reader::vec_reader(const string_vec& lines)
+  : m_lines(lines)
+  , m_it(m_lines.begin())
+{
+}
+
+bool
+vec_reader::getline(std::string& dst)
+{
+  if (m_it == m_lines.end()) {
+    return false;
+  }
+
+  dst = *m_it++;
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'line_reader'
 
 line_reader::line_reader(FILE* handle)

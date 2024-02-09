@@ -22,7 +22,7 @@
 #include "debug.hpp"       // for assert_failed
 #include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
 #include "fastq_enc.hpp"   // for fastq_error (ptr only), FASTQ_ENCODING_33
-#include "linereader.hpp"  // for line_reader_base
+#include "linereader.hpp"  // for vec_reader
 #include "strutils.hpp"    // for string_vec
 #include <limits>          // for numeric_limits
 #include <stddef.h>        // for size_t
@@ -31,30 +31,6 @@
 #include <vector>          // for vector, vector<>::const_iterator
 
 namespace adapterremoval {
-
-class vec_reader : public line_reader_base
-{
-public:
-  vec_reader(const string_vec& lines)
-    : m_lines(lines)
-    , m_it(m_lines.begin())
-  {
-  }
-
-  bool getline(std::string& dst)
-  {
-    if (m_it == m_lines.end()) {
-      return false;
-    }
-
-    dst = *m_it++;
-    return true;
-  }
-
-private:
-  string_vec m_lines;
-  string_vec::const_iterator m_it;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
