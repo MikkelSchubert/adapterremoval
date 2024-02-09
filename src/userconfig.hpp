@@ -46,6 +46,7 @@ enum class ar_command
   identify_adapters,
   demultiplex_sequences,
   report_only,
+  benchmark,
 };
 
 /** Per sample output filenames / steps  */
@@ -257,6 +258,9 @@ public:
 
   //! The kind of progress indicator to use
   progress_type log_progress;
+
+  //! Sink for benchmark
+  string_vec benchmarks;
 
   /* Helper functions for logging / reporting */
   bool is_adapter_trimming_enabled() const;

@@ -463,6 +463,7 @@ userconfig::userconfig()
   , report_sample_rate()
   , report_duplication()
   , log_progress()
+  , benchmarks()
   , argparser()
   , simd_sink()
   , adapter_1()
@@ -496,7 +497,8 @@ userconfig::userconfig()
     .help("Attempt to identify the adapter pair of PE reads, by searching for "
           "overlapping mate reads")
     .conflicts_with("--demultiplex-only")
-    .conflicts_with("--report-only");
+    .conflicts_with("--report-only")
+    .conflicts_with("--benchmark");
   argparser.add("--threads", "N")
     .help("Maximum number of threads")
     .bind_uint(&max_threads)
@@ -516,6 +518,19 @@ userconfig::userconfig()
       .with_choices(choices)
       .with_default(choices.back());
   }
+
+  argparser.add("--benchmark")
+    .help("Carry out benchmarking of AdapterRemoval sub-systems")
+    .conflicts_with("--demultiplex-only")
+    .conflicts_with("--report-only")
+    .conflicts_with("--identify-adapters")
+    .conflicts_with("--interleaved")
+    .conflicts_with("--interleaved-input")
+#if !defined(DEBUG)
+    .hidden()
+#endif
+    .bind_vec(&benchmarks)
+    .with_min_values(0);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("INPUT FILES:");
@@ -1000,6 +1015,8 @@ userconfig::parse_args(int argc, char* argv[])
     run_type = ar_command::demultiplex_sequences;
   } else if (argparser.is_set("--report-only")) {
     run_type = ar_command::report_only;
+  } else if (argparser.is_set("--benchmark")) {
+    run_type = ar_command::benchmark;
   }
 
   if (trim_quality_score > static_cast<unsigned>(PHRED_SCORE_MAX)) {

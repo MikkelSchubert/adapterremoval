@@ -40,6 +40,9 @@ demultiplex_sequences(const userconfig& config);
 // See main_fastq_ro.cpp
 int
 fastq_report_only(const userconfig& config);
+// See main_benchmark.cpp
+int
+benchmark(const userconfig& config);
 
 [[noreturn]] void
 terminate(const std::string& message)
@@ -87,6 +90,11 @@ main(int argc, char* argv[])
   switch (config.run_type) {
     case ar_command::trim_adapters: {
       returncode = remove_adapter_sequences(config);
+      break;
+    }
+
+    case ar_command::benchmark: {
+      returncode = benchmark(config);
       break;
     }
 

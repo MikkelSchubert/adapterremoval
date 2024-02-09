@@ -82,6 +82,9 @@ print_terminal_preamble(const userconfig& config)
 
       print_trimming_parameters(config);
       break;
+    case ar_command::benchmark:
+      log::info() << "Benchmarking sub-systems";
+      break;
     case ar_command::demultiplex_sequences:
       log::info() << "Demultiplexing reads";
       break;
@@ -105,6 +108,7 @@ print_terminal_postamble(const userconfig& config, bool any_errors)
       case ar_command::demultiplex_sequences:
         log::error() << "AdapterRemoval did not run to completion;\n"
                      << "    do NOT make use of the resulting reads!";
+      case ar_command::benchmark:
       case ar_command::identify_adapters:
       case ar_command::report_only:
         break;
@@ -116,6 +120,9 @@ print_terminal_postamble(const userconfig& config, bool any_errors)
   }
 
   switch (config.run_type) {
+    case ar_command::benchmark:
+      log::info() << "Benchmarking complete";
+      break;
     case ar_command::trim_adapters:
       log::info() << "Adapter trimming complete";
       break;
