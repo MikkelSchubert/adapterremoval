@@ -18,36 +18,31 @@
 \*************************************************************************/
 #pragma once
 
-#include "debug.hpp"
-#include <cstdint> // for uint64_t
-#include <numeric> // for accumulate
-#include <vector>  // for vector
+#include <cstdint>  // for uint64_t
+#include <stddef.h> // for size_t
+#include <vector>   // for vector
 
 namespace adapterremoval {
 
 /** Calculates the arithmetic mean */
 double
-arithmetic_mean(const std::vector<uint64_t>& values)
-{
-  AR_REQUIRE(values.size());
-
-  return std::accumulate(values.begin(), values.end(), uint64_t()) /
-         static_cast<double>(values.size());
-}
+arithmetic_mean(const std::vector<uint64_t>& values);
 
 /** Calculates the sample standard deviation */
 double
-standard_deviation(const std::vector<uint64_t>& values)
-{
-  AR_REQUIRE(values.size() > 1);
+standard_deviation(const std::vector<uint64_t>& values);
 
-  double error = 0;
-  const auto m = arithmetic_mean(values);
-  for (const auto it : values) {
-    error += (it - m) * (it - m);
-  }
+/** Returns critical value for student's t distribution at 99.5% */
+double
+students_t_critical_value(size_t df);
 
-  return std::sqrt(error / (values.size() - 1));
-}
+/**
+ * Prune extreme values from a vector using Grubb's test:
+ *   https://en.wikipedia.org/wiki/Grubbs%27s_test
+ *
+ * Returns true if values were pruned.
+ */
+bool
+grubbs_test_prune(std::vector<uint64_t>& values);
 
 } // namespace adapterremoval
