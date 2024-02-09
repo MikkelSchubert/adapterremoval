@@ -19,41 +19,25 @@
 #pragma once
 
 #include "debug.hpp"
-#include <cstdint> // for int64_t, uint64_t
-#include <memory>  // for allocator
+#include <cstdint> // for uint64_t
 #include <numeric> // for accumulate
 #include <vector>  // for vector
 
 namespace adapterremoval {
 
 /** Calculates the arithmetic mean */
-template<template<typename, typename> class C,
-         typename T,
-         typename A = std::allocator<T>>
 double
-arithmetic_mean(const C<T, A>& values)
+arithmetic_mean(const std::vector<uint64_t>& values)
 {
   AR_REQUIRE(values.size());
 
-  // Summation using https://en.wikipedia.org/wiki/Kahan_summation_algorithm
-  double sum = 0.0;
-  double acc = 0.0;
-  for (const double v : values) {
-    double y = v - acc;
-    double t = sum + y;
-    acc = (t - sum) - y;
-    sum = t;
-  }
-
-  return sum / static_cast<double>(values.size());
+  return std::accumulate(values.begin(), values.end(), uint64_t()) /
+         static_cast<double>(values.size());
 }
 
 /** Calculates the sample standard deviation */
-template<template<typename, typename> class C,
-         typename T,
-         typename A = std::allocator<T>>
 double
-standard_deviation(const C<T, A>& values)
+standard_deviation(const std::vector<uint64_t>& values)
 {
   AR_REQUIRE(values.size() > 1);
 

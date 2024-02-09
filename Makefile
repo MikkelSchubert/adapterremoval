@@ -202,6 +202,7 @@ TEST_OBJS := \
 	$(OBJS_DIR)/linereader_test.o \
 	$(OBJS_DIR)/logging_test.o \
 	$(OBJS_DIR)/main_test.o \
+	$(OBJS_DIR)/mathutils_test.o \
 	$(OBJS_DIR)/strutils_test.o \
 	$(OBJS_DIR)/utilities_test.o
 
