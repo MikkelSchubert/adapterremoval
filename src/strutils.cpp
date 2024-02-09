@@ -392,14 +392,13 @@ format_rough_number(size_t value, size_t out_digits)
 
   auto rounded = static_cast<double>(value);
   auto in_digits = static_cast<size_t>(std::log10(rounded));
-
-  if (out_digits > in_digits || !value) {
+  if (out_digits > in_digits) {
     return std::to_string(value);
-  } else if (in_digits >= out_digits) {
-    // Round to desired number of significant digits
-    const auto tmp = std::pow(10, in_digits - out_digits + 1);
-    rounded = std::round(rounded / tmp) * tmp;
   }
+
+  // Round to desired number of significant digits
+  const auto tmp = std::pow(10, in_digits - out_digits + 1);
+  rounded = std::round(rounded / tmp) * tmp;
 
   // Rounding up may result in the number of digits increasing
   in_digits = static_cast<size_t>(std::log10(rounded));
