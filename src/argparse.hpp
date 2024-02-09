@@ -177,8 +177,10 @@ public:
 
   /** Returns true if the consumer has consumed a value. */
   bool is_set() const;
-  /** Returns true if the argument is deprecated and hidden. */
+  /** Returns true if the argument is deprecated. */
   bool is_deprecated() const;
+  /** Returns true if the argument is hidden. */
+  bool is_hidden() const;
 
   /** Returns the canonical argument key. */
   const std::string& key() const;
@@ -214,8 +216,10 @@ public:
   argument& abbreviation(char key);
   /** Create deprecated alias for the argument. */
   argument& deprecated_alias(const std::string& alias);
-  /** The argument is deprecated / not to be printed by -h/--help. */
+  /** The argument is deprecated. Implies `hidden()` */
   argument& deprecated();
+  /** The argument will not be printed by -h/--help */
+  argument& hidden();
 
   /** Option `key` MUST be specified along with this argument. */
   argument& depends_on(const std::string& key);
@@ -241,10 +245,12 @@ private:
   unsigned m_times_set;
   //! Default sink value
   bool m_default_sink;
-  //! Indicates if the argument is deprecated / hidden.
+  //! Indicates if the argument is deprecated
   bool m_deprecated;
   //! Deprecated keys (long and short) for this argument
   string_vec m_deprecated_keys;
+  //! Indicates if the argument is hidden
+  bool m_hidden;
 
   //! The long, canonical argument key
   std::string m_key_long;

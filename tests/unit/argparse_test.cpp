@@ -656,8 +656,10 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
   argparse::argument arg("--12345");
 
   REQUIRE_FALSE(arg.is_deprecated());
+  REQUIRE_FALSE(arg.is_hidden());
   arg.deprecated();
   REQUIRE(arg.is_deprecated());
+  REQUIRE(arg.is_hidden());
 
   log::log_capture ss;
 
@@ -666,6 +668,17 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
   REQUIRE_POSTFIX(ss.str(),
                   "[WARNING] Option --12345 is deprecated and will be "
                   "removed in the future.\n");
+}
+
+TEST_CASE("hidden argument", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+
+  REQUIRE_FALSE(arg.is_deprecated());
+  REQUIRE_FALSE(arg.is_hidden());
+  arg.hidden();
+  REQUIRE_FALSE(arg.is_deprecated());
+  REQUIRE(arg.is_hidden());
 }
 
 TEST_CASE("default argument sink", "[argparse::argument]")
@@ -924,6 +937,18 @@ TEST_CASE("--help with deprecated argument", "[argparse::parser]")
 {
   argparse::parser p;
   p.add("--foo").deprecated();
+  const char* args[] = { "exe", "--help" };
+
+  log::log_capture ss;
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE_THAT(ss.str(), !Contains("--foo"));
+}
+
+TEST_CASE("--help with hidden argument", "[argparse::parser]")
+{
+  argparse::parser p;
+  p.add("--foo").hidden();
   const char* args[] = { "exe", "--help" };
 
   log::log_capture ss;

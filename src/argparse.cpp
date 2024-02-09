@@ -235,7 +235,7 @@ parser::print_help() const
 
   size_t indentation = 0;
   for (const auto& entry : m_args) {
-    if (entry.argument && !entry.argument->is_deprecated()) {
+    if (entry.argument && !entry.argument->is_hidden()) {
       const auto& arg = *entry.argument;
 
       std::ostringstream ss;
@@ -272,7 +272,7 @@ parser::print_help() const
   for (size_t i = 0; i < m_args.size(); i++) {
     const auto& entry = m_args.at(i);
     if (entry.argument) {
-      if (!entry.argument->is_deprecated()) {
+      if (!entry.argument->is_hidden()) {
         const auto& arg = *entry.argument;
         const auto& signature = signatures.at(i);
 
@@ -421,6 +421,7 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_default_sink()
   , m_deprecated()
   , m_deprecated_keys()
+  , m_hidden()
   , m_key_long(key)
   , m_key_short()
   , m_metavar(metavar)
@@ -450,6 +451,12 @@ bool
 argument::is_deprecated() const
 {
   return m_deprecated;
+}
+
+bool
+argument::is_hidden() const
+{
+  return m_hidden;
 }
 
 const std::string&
@@ -604,6 +611,14 @@ argument&
 argument::deprecated()
 {
   m_deprecated = true;
+
+  return hidden();
+}
+
+argument&
+argument::hidden()
+{
+  m_hidden = true;
 
   return *this;
 }
