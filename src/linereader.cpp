@@ -307,6 +307,11 @@ line_reader::refill_buffers_gzip()
 
   m_buffer_ptr = m_buffer->data();
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
+
+  if (m_eof && !m_gzip_stream->avail_in &&
+      m_gzip_stream->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
+    throw_isal_error(__func__, "unexpected end of file");
+  }
 }
 
 bool
