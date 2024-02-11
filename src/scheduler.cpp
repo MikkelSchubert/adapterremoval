@@ -237,8 +237,7 @@ scheduler::run_wrapper(scheduler* sch)
     log::debug() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
     sch->set_errors_occured();
-    log::error() << "Unhandled exception in thread:\n"
-                 << indent_lines(error.what());
+    log::error() << error.what();
   } catch (...) {
     AR_FAIL("Unhandled, non-standard exception in thread");
   }
