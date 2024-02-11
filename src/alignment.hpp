@@ -175,19 +175,29 @@ private:
    *
    * @param alignment Current best alignment.
    * @param seq1 First sequence to align (mate 1).
+   * @param seq1_len The (unpadded) length of seq1.
    * @param seq2 Second sequence to align (mate 2 or adapter).
+   * @param seq2_len The (unpadded) length of seq2.
    * @param min_offset Search for alignments from this offset.
    * @return true if a better alignment was found
    */
   bool pairwise_align_sequences(alignment_info& alignment,
-                                const std::string& seq1,
-                                const std::string& seq2,
+                                const char* seq1,
+                                const size_t seq1_len,
+                                const char* seq2,
+                                const size_t seq2_len,
                                 const int min_offset) const;
 
   //! Adapter sequences against which to align the sequences
   const fastq_pair_vec& m_adapters;
   //! SIMD instruction set to use for sequence comparisons
   const simd::compare_subsequences_func m_compare_func;
+  //! Padding required by chosen SIMD instructions
+  const size_t m_padding;
+  //! Length of the longest adapter 1 sequence
+  size_t m_max_adapter_len_1;
+  //! Length of the longest adapter 2 sequence
+  size_t m_max_adapter_len_2;
 };
 
 /**

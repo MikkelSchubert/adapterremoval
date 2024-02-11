@@ -43,40 +43,25 @@ supported();
 const char*
 name(instruction_set value);
 
-bool
-compare_subsequences_std(size_t& n_mismatches,
-                         size_t& n_ambiguous,
-                         const char* seq_1,
-                         const char* seq_2,
-                         size_t length,
-                         size_t max_penalty);
+/** Returns the amount of padding expected when using this instruction set */
+size_t
+padding(instruction_set value);
 
-bool
-compare_subsequences_sse2(size_t& n_mismatches,
-                          size_t& n_ambiguous,
-                          const char* seq_1,
-                          const char* seq_2,
-                          size_t length,
-                          size_t max_penalty);
+/***/
+using compare_subsequences_func = bool (*)(size_t& n_mismatches,
+                                           size_t& n_ambiguous,
+                                           const char* seq_1,
+                                           const char* seq_2,
+                                           size_t length,
+                                           size_t max_penalty);
 
-bool
-compare_subsequences_avx2(size_t& n_mismatches,
-                          size_t& n_ambiguous,
-                          const char* seq_1,
-                          const char* seq_2,
-                          size_t length,
-                          size_t max_penalty);
-
-bool
-compare_subsequences_avx512(size_t& n_mismatches,
-                            size_t& n_ambiguous,
-                            const char* seq_1,
-                            const char* seq_2,
-                            size_t length,
-                            size_t max_penalty);
-
-using compare_subsequences_func = decltype(&compare_subsequences_std);
-
+/**
+ * Returns a pair-wise alignment function for a given instruction set.
+ *
+ * Does not check if the instruction set is supported (see `supported`). The
+ * alignment functions expect that sequences are 'N' padded with the amount
+ * specified by calling the `padding` function with the same `instruction_set`.
+ */
 compare_subsequences_func
 get_compare_subsequences_func(instruction_set is);
 

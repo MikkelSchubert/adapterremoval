@@ -24,6 +24,38 @@ namespace adapterremoval {
 
 namespace simd {
 
+bool
+compare_subsequences_std(size_t& n_mismatches,
+                         size_t& n_ambiguous,
+                         const char* seq_1,
+                         const char* seq_2,
+                         size_t length,
+                         size_t max_penalty);
+
+bool
+compare_subsequences_sse2(size_t& n_mismatches,
+                          size_t& n_ambiguous,
+                          const char* seq_1,
+                          const char* seq_2,
+                          size_t length,
+                          size_t max_penalty);
+
+bool
+compare_subsequences_avx2(size_t& n_mismatches,
+                          size_t& n_ambiguous,
+                          const char* seq_1,
+                          const char* seq_2,
+                          size_t length,
+                          size_t max_penalty);
+
+bool
+compare_subsequences_avx512(size_t& n_mismatches,
+                            size_t& n_ambiguous,
+                            const char* seq_1,
+                            const char* seq_2,
+                            size_t length,
+                            size_t max_penalty);
+
 std::vector<instruction_set>
 supported()
 {
@@ -56,6 +88,23 @@ name(instruction_set value)
       return "AVX2";
     case instruction_set::avx512:
       return "AVX512";
+    default:
+      AR_FAIL("SIMD function not implemented!");
+  }
+}
+
+size_t
+padding(instruction_set value)
+{
+  switch (value) {
+    case instruction_set::none:
+      return 0;
+    case instruction_set::sse2:
+      return 15;
+    case instruction_set::avx2:
+      return 31;
+    case instruction_set::avx512:
+      return 0;
     default:
       AR_FAIL("SIMD function not implemented!");
   }

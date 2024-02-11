@@ -33,18 +33,19 @@ namespace adapterremoval {
 
 bool
 sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
-                                           const std::string& seq1,
-                                           const std::string& seq2,
+                                           const char* seq1,
+                                           const size_t seq1_len,
+                                           const char* seq2,
+                                           const size_t seq2_len,
                                            const int min_offset) const
 {
   int offset =
     // The alignment must involve at least one base from seq2,
-    std::max(std::max(min_offset, -static_cast<int>(seq2.length()) + 1),
+    std::max(std::max(min_offset, -static_cast<int>(seq2_len) + 1),
              // but there's no point aligning pairs too short to matter. This
              // currently only applies to --adapter-list mode.
-             alignment.score() - static_cast<int>(seq2.length()));
-  int end_offset =
-    static_cast<int>(seq1.length()) - std::max(1, alignment.score());
+             alignment.score() - static_cast<int>(seq2_len));
+  int end_offset = static_cast<int>(seq1_len) - std::max(1, alignment.score());
 
   bool alignment_found = false;
   for (; offset <= end_offset; ++offset) {
@@ -59,8 +60,8 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
       initial_seq2_offset = 0;
     }
 
-    const auto length = std::min(seq1.length() - initial_seq1_offset,
-                                 seq2.length() - initial_seq2_offset);
+    const auto length =
+      std::min(seq1_len - initial_seq1_offset, seq2_len - initial_seq2_offset);
 
     alignment_info current;
     current.offset = offset;
@@ -69,8 +70,8 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     AR_REQUIRE(static_cast<int>(length) >= alignment.score());
     if (m_compare_func(current.n_mismatches,
                        current.n_ambiguous,
-                       seq1.data() + initial_seq1_offset,
-                       seq2.data() + initial_seq2_offset,
+                       seq1 + initial_seq1_offset,
+                       seq2 + initial_seq2_offset,
                        length,
                        length - alignment.score()) &&
         current.is_better_than(alignment)) {
@@ -78,7 +79,7 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
       alignment_found = true;
 
       // Alignments involving fewer than `score` bases are not interesting
-      end_offset = static_cast<int>(seq1.length()) - alignment.score();
+      end_offset = static_cast<int>(seq1_len) - alignment.score();
     }
   }
 
@@ -178,7 +179,14 @@ sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters,
                                    simd::instruction_set is)
   : m_adapters(adapters)
   , m_compare_func(simd::get_compare_subsequences_func(is))
+  , m_padding(simd::padding(is))
+  , m_max_adapter_len_1()
+  , m_max_adapter_len_2()
 {
+  for (const auto& it : m_adapters) {
+    m_max_adapter_len_1 = std::max(m_max_adapter_len_1, it.first.length());
+    m_max_adapter_len_2 = std::max(m_max_adapter_len_2, it.second.length());
+  }
 }
 
 alignment_info
@@ -186,10 +194,28 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift) const
 {
   int adapter_id = 0;
   alignment_info alignment;
+
+  std::string buffer;
+  buffer.reserve(m_max_adapter_len_1 + read.length() + 2 * m_padding);
+
   for (const auto& adapter_pair : m_adapters) {
     const auto& adapter = adapter_pair.first.sequence();
-    const auto& sequence = read.sequence();
-    if (pairwise_align_sequences(alignment, sequence, adapter, -max_shift)) {
+
+    buffer.clear();
+    buffer += read.sequence();
+    buffer.resize(buffer.size() + m_padding, 'N');
+    buffer += adapter;
+    buffer.resize(buffer.size() + m_padding, 'N');
+
+    const char* read_data = buffer.data();
+    const char* adapter_data = buffer.data() + read.length() + m_padding;
+
+    if (pairwise_align_sequences(alignment,
+                                 read_data,
+                                 read.length(),
+                                 adapter_data,
+                                 adapter.length(),
+                                 -max_shift)) {
       alignment.adapter_id = adapter_id;
     }
 
@@ -206,19 +232,40 @@ sequence_aligner::align_paired_end(const fastq& read1,
 {
   size_t adapter_id = 0;
   alignment_info alignment;
+
+  std::string buffer;
+  buffer.reserve(m_max_adapter_len_2 + read1.length() + m_padding +
+                 m_max_adapter_len_1 + read2.length());
+
   for (const auto& adapter_pair : m_adapters) {
     const fastq& adapter1 = adapter_pair.first;
     const fastq& adapter2 = adapter_pair.second;
 
-    const std::string sequence1 = adapter2.sequence() + read1.sequence();
-    const std::string sequence2 = read2.sequence() + adapter1.sequence();
+    buffer.clear();
+    buffer += adapter2.sequence();
+    buffer += read1.sequence();
+    buffer.resize(buffer.size() + m_padding, 'N');
+
+    buffer += read2.sequence();
+    buffer += adapter1.sequence();
+    buffer.resize(buffer.size() + m_padding, 'N');
+
+    const char* sequence1 = buffer.data();
+    const size_t sequence1_len = adapter2.length() + read1.length();
+    const char* sequence2 = buffer.data() + sequence1_len + m_padding;
+    const size_t sequence2_len = adapter1.length() + read2.length();
 
     // Only consider alignments where at least one nucleotide from each read
     // is aligned against the other, included shifted alignments to account
     // for missing bases at the 5' ends of the reads.
     const int min_offset = adapter2.length() - read2.length() - max_shift;
 
-    if (pairwise_align_sequences(alignment, sequence1, sequence2, min_offset)) {
+    if (pairwise_align_sequences(alignment,
+                                 sequence1,
+                                 sequence1_len,
+                                 sequence2,
+                                 sequence2_len,
+                                 min_offset)) {
       alignment.adapter_id = adapter_id;
       // Convert the alignment into an alignment between read 1 & 2 only
       alignment.offset -= adapter2.length();

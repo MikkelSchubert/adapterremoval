@@ -48,7 +48,8 @@ compare_subsequences_sse2(size_t& n_mismatches,
   //! Mask of all Ns
   const __m128i n_mask = _mm_set1_epi8('N');
 
-  while (length >= 16) {
+  // The sequence is assumed to be padded with 15 'N's not included in `length`.
+  while (length) {
     const auto s1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_1));
     const auto s2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(seq_2));
 
@@ -64,17 +65,19 @@ compare_subsequences_sse2(size_t& n_mismatches,
       return false;
     }
 
+    // Fragment length without 'N' padding
+    size_t unpadded_length = std::min<size_t>(16, length);
+
     // Early termination is almost always due to mismatches, so updating the
     // number of Ns after the above check saves time in the common case.
-    n_ambiguous += count_masked_sse2(ns_mask);
+    n_ambiguous += count_masked_sse2(ns_mask) - (16 - unpadded_length);
 
     seq_1 += 16;
     seq_2 += 16;
-    length -= 16;
+    length -= unpadded_length;
   }
 
-  return compare_subsequences_std(
-    n_mismatches, n_ambiguous, seq_1, seq_2, length, max_penalty);
+  return true;
 }
 
 } // namespace simd
