@@ -241,7 +241,7 @@ install: $(EXECUTABLE) $(MAN_PAGE)
 
 	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval3/examples/"$(COLOR_END)
 	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval3/examples/
-	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval3/examples/
+	$(QUIET) $(INSTALLDAT) examples/Makefile examples/*.* ${PREFIX}/share/adapterremoval3/examples/
 
 # HTML report templates
 .INTERMEDIATE: src/reports_template.intermediate
