@@ -289,6 +289,7 @@ line_reader::initialize_buffers_gzip()
   m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
   m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
 
+  isal_gzip_header_init(m_gzip_header.get());
   auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
   check_isal_return_code(result, m_filename, "reading gzip header from");
 }
