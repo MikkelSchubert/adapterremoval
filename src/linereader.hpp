@@ -44,6 +44,13 @@ class io_error : public std::ios_base::failure
 {
 public:
   io_error(const std::string& message, int error_number = 0);
+
+  /** Returns the error message */
+  virtual const char* what() const noexcept;
+
+private:
+  //! Contains error message; workaround for base-class appending text
+  std::string m_what;
 };
 
 /** Represents errors during GZip (de)compression. */

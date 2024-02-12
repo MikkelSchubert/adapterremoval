@@ -48,17 +48,28 @@ format_io_msg(const std::string& message, int error_number)
 
 io_error::io_error(const std::string& message, int error_number)
   : std::ios_base::failure(format_io_msg(message, error_number))
+  , m_what(format_io_msg(message, error_number))
 {
+}
+
+const char*
+io_error::what() const noexcept
+{
+  return m_what.c_str();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_error'
 
 [[noreturn]] void
-throw_isal_error(const char* func, const char* msg)
+throw_gzip_error(const std::string& filename,
+                 const char* action,
+                 const char* error,
+                 const char* diagnosis = "file is likely corrupt")
 {
   std::ostringstream stream;
-  stream << func << " (isa-l): " << msg;
+  stream << "Error while " << action << " " << shell_escape(filename) << ": "
+         << error << "; " << diagnosis;
 
   throw gzip_error(stream.str());
 }
@@ -72,50 +83,52 @@ gzip_error::gzip_error(const std::string& message)
 // Helper functions for isa-l
 
 void
-check_isal_return_code(const char* func, int returncode)
+check_isal_return_code(int returncode,
+                       const std::string& file,
+                       const char* action)
 {
   switch (returncode) {
     case ISAL_DECOMP_OK:
       return;
 
     case ISAL_END_INPUT:
-      throw_isal_error(func, "end of input reached");
+      throw_gzip_error(file, action, "end of input reached");
 
     case ISAL_OUT_OVERFLOW:
-      throw_isal_error(func, "end of output reached");
+      throw_gzip_error(file, action, "end of output reached");
 
     case ISAL_NAME_OVERFLOW:
-      throw_isal_error(func, "end of gzip name buffer reached");
+      throw_gzip_error(file, action, "end of gzip name buffer reached");
 
     case ISAL_COMMENT_OVERFLOW:
-      throw_isal_error(func, "end of gzip name buffer reached");
+      throw_gzip_error(file, action, "end of gzip name buffer reached");
 
     case ISAL_EXTRA_OVERFLOW:
-      throw_isal_error(func, "end of extra buffer reached");
+      throw_gzip_error(file, action, "end of extra buffer reached");
 
     case ISAL_NEED_DICT:
-      throw_isal_error(func, "stream needs a dictionary to continue");
+      throw_gzip_error(file, action, "stream needs dictionary to continue");
 
     case ISAL_INVALID_BLOCK:
-      throw_isal_error(func, "invalid deflate block found");
+      throw_gzip_error(file, action, "invalid deflate block found");
 
     case ISAL_INVALID_SYMBOL:
-      throw_isal_error(func, "invalid deflate symbol found");
+      throw_gzip_error(file, action, "invalid deflate symbol found");
 
     case ISAL_INVALID_LOOKBACK:
-      throw_isal_error(func, "invalid lookback distance found");
+      throw_gzip_error(file, action, "invalid lookback distance found");
 
     case ISAL_INVALID_WRAPPER:
-      throw_isal_error(func, "invalid gzip/zlib wrapper found");
+      throw_gzip_error(file, action, "invalid gzip/zlib wrapper found");
 
     case ISAL_UNSUPPORTED_METHOD:
-      throw_isal_error(func, "unsupported compression method");
+      throw_gzip_error(file, action, "unsupported compression method");
 
     case ISAL_INCORRECT_CHECKSUM:
-      throw_isal_error(func, "incorrect checksum found");
+      throw_gzip_error(file, action, "incorrect checksum found");
 
     default:
-      throw_isal_error(func, "unknown error");
+      throw_gzip_error(file, action, "unknown error");
   }
 }
 
@@ -277,7 +290,7 @@ line_reader::initialize_buffers_gzip()
   m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
 
   auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-  check_isal_return_code(__func__, result);
+  check_isal_return_code(result, m_filename, "reading gzip header from");
 }
 
 void
@@ -303,14 +316,18 @@ line_reader::refill_buffers_gzip()
     }
   }
 
-  check_isal_return_code(__func__, isal_inflate(m_gzip_stream.get()));
+  check_isal_return_code(
+    isal_inflate(m_gzip_stream.get()), m_filename, "decompressing");
 
   m_buffer_ptr = m_buffer->data();
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
 
   if (m_eof && !m_gzip_stream->avail_in &&
       m_gzip_stream->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
-    throw_isal_error(__func__, "unexpected end of file");
+    throw_gzip_error(m_filename,
+                     "decompressing",
+                     "unexpected end of file",
+                     "file is likely truncated!");
   }
 }
 
