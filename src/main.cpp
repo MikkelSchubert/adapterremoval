@@ -44,6 +44,13 @@ fastq_report_only(const userconfig& config);
 int
 benchmark(const userconfig& config);
 
+// See main_benchmark.cpp
+void
+blackbox(void* p)
+{
+  AR_REQUIRE(p);
+}
+
 [[noreturn]] void
 terminate(const std::string& message)
 {

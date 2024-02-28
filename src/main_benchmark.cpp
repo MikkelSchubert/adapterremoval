@@ -17,327 +17,380 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "alignment.hpp"         // for alignment_info, sequence_aligner
-#include "debug.hpp"             // for AR_REQUIRES
+#include "benchmarking.hpp"      // for benchmarker
 #include "fastq.hpp"             // for fastq
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "logging.hpp"           // for log
-#include "mathutils.hpp"         // for arithmetic_mean, standard_deviation
+#include "statistics.hpp"        // for fastq_statistics
 #include "strutils.hpp"          // for to_lower
-#include "userconfig.hpp"        // for userconfig, output_files
-#include <algorithm>             // for swap
-#include <chrono>                // for high_resolution_clock
-#include <cstring>               // for size_t
-#include <iomanip>               // for fixed, setsetprecision
+#include "userconfig.hpp"        // for userconfig
+#include <cstdint>               // for size_t
 #include <sstream>               // for ostringstream
 #include <vector>                // for vector
 
 namespace adapterremoval {
 
+/*
+ * Pass pointer to results to a different compilation unit, to prevent the
+ * compiler from aggressivly eliding otherwise effect-free code. This will
+ * probably break if LTO is enabled.
+ */
+void
+blackbox(void* p);
+
 namespace {
 
-const size_t BENCHMARK_BURN_IN = 1;
-const size_t BENCHMARK_MIN_LOOPS = 10;
-const size_t BENCHMARK_MAX_LOOPS = 1000;
-const double BENCHMARK_MIN_TIME_NS = 10'000'000'000;
-const double BENCHMARK_CUTOFF_TIME_NS = BENCHMARK_MIN_TIME_NS / 100'000;
-
-//! Strategy for running benchmarks
-enum class strategy
-{
-  //! Carry out full benchmarking and return the final result
-  benchmark,
-  //! Run the benchmark loop once and return the result
-  passthrough,
-};
-
-/** Enum representing the available benchmarks */
-enum class benchmarks : size_t
-{
-  //! Benchmarking of decompression and line reading
-  read = 0,
-  //! Benchmarking of FASTQ parsing
-  parse,
-  //! Benchmarking of reverse complementations
-  revcompl,
-  //! Benchmarking of single-end alignments
-  align_se,
-  //! Benchmarking of paired-end alignments
-  align_pe,
-  //! Benchmark SIMD alignment functions other than just the preferred one
-  simd,
-  //! Indicator variable for the number of items
-  MAX
-};
-
-class benchmark_toggles
+class readlines_benchmarker : public benchmarker
 {
 public:
-  benchmark_toggles()
-    : m_enabled(static_cast<size_t>(benchmarks::MAX), false)
+  readlines_benchmarker(const string_vec& filenames_1,
+                        const string_vec& filenames_2,
+                        const size_t head)
+    : benchmarker("FASTQ reading", { "read" })
+    , m_filenames_1(filenames_1)
+    , m_filenames_2(filenames_2)
+    , m_head(head)
+    , m_lines_1()
+    , m_lines_2()
   {
+    set_required();
   }
 
-  bool parse_args(const string_vec& items)
-  {
-    if (items.empty()) {
-      m_enabled = std::vector<bool>(static_cast<size_t>(benchmarks::MAX), true);
-      return true;
-    }
+  const string_vec& lines_1() const { return m_lines_1; }
 
-    bool any_errors = false;
-    for (const auto& it : items) {
-      const auto key = to_lower(it);
-
-      benchmarks enum_key = benchmarks::MAX;
-      if (key == "read") {
-        enum_key = benchmarks::read;
-      } else if (key == "parse") {
-        enum_key = benchmarks::parse;
-      } else if (key == "revcompl") {
-        enum_key = benchmarks::revcompl;
-      } else if (key == "align_se") {
-        enum_key = benchmarks::align_se;
-      } else if (key == "align_pe") {
-        enum_key = benchmarks::align_pe;
-      } else if (key == "simd") {
-        enum_key = benchmarks::simd;
-      } else {
-        log::error() << "Unknown benchmark key '" << it << "'";
-        any_errors = true;
-      }
-
-      if (enum_key != benchmarks::MAX) {
-        m_enabled.at(static_cast<size_t>(enum_key)) = true;
-      }
-    }
-
-    return !any_errors;
-  }
-
-  strategy operator()(benchmarks b) const
-  {
-    return enabled(b) ? strategy::benchmark : strategy::passthrough;
-  }
-
-  strategy align(benchmarks s, simd::instruction_set is) const
-  {
-    if (enabled(s)) {
-      // Benchmarking all instruction sets
-      if (enabled(benchmarks::simd)) {
-        return strategy::benchmark;
-      }
-
-      // Otherwise just benchmarking the preferred instruction set
-      const auto supported = simd::supported();
-      if (supported.back() == is) {
-        return strategy::benchmark;
-      }
-    }
-
-    return strategy::passthrough;
-  }
-
-private:
-  bool enabled(benchmarks b) const
-  {
-    return m_enabled.at(static_cast<size_t>(b));
-  }
-
-  std::vector<bool> m_enabled;
-};
-
-template<typename T>
-class benchmarker
-{
-public:
-  benchmarker(const std::string& desc)
-    : m_description(desc)
-    , m_durations()
-  {
-  }
-
-  virtual ~benchmarker() {}
-
-  T run(const strategy s)
-  {
-    T t = T();
-    const auto timer = clock();
-    size_t burn_in = 0;
-    size_t loops = 0;
-
-    do {
-      uint64_t elapsed =
-        std::accumulate(m_durations.begin(), m_durations.end(), uint64_t());
-
-      do {
-        setup();
-        const auto start = timer.now();
-        auto current = execute();
-        const auto duration = (timer.now() - start).count();
-
-        if (burn_in < BENCHMARK_BURN_IN && s == strategy::benchmark) {
-          burn_in++;
-        } else {
-          loops++;
-          elapsed += duration;
-          m_durations.push_back(duration);
-        }
-
-        std::swap(t, current);
-
-        if (m_durations.size()) {
-          log::cerr() << "\rRunning in " << summarize(loops);
-        } else {
-          log::cerr() << std::fixed << std::setprecision(5) << "\rBurning in "
-                      << m_description << " (" << burn_in << " loops) ";
-        }
-      } while (s == strategy::benchmark &&
-               m_durations.size() < BENCHMARK_MAX_LOOPS &&
-               (m_durations.size() < BENCHMARK_MIN_LOOPS ||
-                (elapsed < BENCHMARK_MIN_TIME_NS &&
-                 elapsed / m_durations.size() >= BENCHMARK_CUTOFF_TIME_NS)));
-    } while (s == strategy::benchmark && (loops < 2 * m_durations.size()) &&
-             grubbs_test_prune(m_durations));
-
-    log::cerr() << "\r\033[K";
-    log::info() << "  " << summarize(loops);
-
-    return t;
-  }
+  const string_vec& lines_2() const { return m_lines_2; }
 
 protected:
-  virtual void setup(){};
-  virtual T execute() = 0;
+  void setup() override
+  {
+    m_lines_1 = string_vec();
+    m_lines_2 = string_vec();
+  }
+
+  void execute() override
+  {
+    read_lines(m_filenames_1, m_lines_1);
+    read_lines(m_filenames_2, m_lines_2);
+
+    blackbox(&m_lines_1);
+    blackbox(&m_lines_2);
+  }
 
 private:
-  size_t count() const { return m_description.size(); }
-
-  double mean() const { return arithmetic_mean(m_durations) / 1e9; }
-
-  double sd() const { return standard_deviation(m_durations) / 1e9; }
-
-  std::string summarize(size_t loops) const
+  void read_lines(const string_vec& filenames, string_vec& lines) const
   {
-    AR_REQUIRE(m_durations.size());
-    std::ostringstream ss;
-
-    ss << std::fixed << std::setprecision(5) << mean();
-    if (m_durations.size() > 1) {
-      ss << " +/- " << std::setprecision(6) << sd();
-    }
-
-    if (loops > 1) {
-      ss << " seconds (" << m_durations.size();
-      if (loops > m_durations.size()) {
-        ss << "+" << loops - m_durations.size();
+    joined_line_readers reader(filenames);
+    while (lines.size() / 4 < m_head) {
+      lines.emplace_back(std::string());
+      if (!reader.getline(lines.back())) {
+        lines.pop_back();
+        break;
       }
-
-      ss << " loops)";
     }
-
-    ss << " to " << m_description;
-
-    return ss.str();
   }
 
-  using clock = std::chrono::high_resolution_clock;
-  using time_point = std::chrono::time_point<clock>;
-
-  const std::string m_description;
-  std::vector<uint64_t> m_durations;
-};
-
-class readlines_benchmarker : public benchmarker<string_vec>
-{
-public:
-  readlines_benchmarker(const userconfig& config, const string_vec& filenames)
-    : benchmarker("read FASTQs")
-    , m_filenames(filenames)
-    , m_head(config.head)
-  {
-  }
-
-protected:
-  string_vec execute()
-  {
-    joined_line_readers reader(m_filenames);
-
-    std::string line;
-    string_vec lines;
-    while (lines.size() / 4 < m_head && reader.getline(line)) {
-      lines.push_back(line);
-    }
-
-    return lines;
-  }
-
-private:
-  const string_vec m_filenames;
+  const string_vec m_filenames_1;
+  const string_vec m_filenames_2;
   const size_t m_head;
+  // Vector containing files set of lines read
+  string_vec m_lines_1;
+  string_vec m_lines_2;
 };
 
 /** Benchmarking of FASTQ parsing excluding file IO */
-class fastq_parser_benchmarker : public benchmarker<fastq_vec>
+class fastq_parser_benchmarker : public benchmarker
 {
 public:
-  fastq_parser_benchmarker(const string_vec& lines)
-    : benchmarker("parse FASTQs")
-    , m_lines(lines)
+  fastq_parser_benchmarker(const string_vec& lines_1, const string_vec& lines_2)
+    : benchmarker("FASTQ parsing", { "parse" })
+    , m_lines_1(lines_1)
+    , m_lines_2(lines_2)
+    , m_records_1()
+    , m_records_2()
   {
+    set_required();
   }
 
+  const fastq_vec& records_1() const { return m_records_1; }
+
+  const fastq_vec& records_2() const { return m_records_2; }
+
 protected:
-  fastq_vec execute()
+  void setup() override
+  {
+    m_records_1 = fastq_vec();
+    m_records_2 = fastq_vec();
+  }
+
+  void execute() override
   {
     fastq record;
-    fastq_vec records;
-    vec_reader reader(m_lines);
-    while (record.read(reader)) {
-      records.push_back(record);
-    }
-
-    return records;
-  }
-
-private:
-  const string_vec& m_lines;
-};
-
-class reverse_complement_benchmarker : public benchmarker<bool>
-{
-public:
-  reverse_complement_benchmarker(const fastq_vec& records)
-    : benchmarker("reverse complement FASTQs")
-    , m_records(records)
-  {
-  }
-
-protected:
-  bool execute()
-  {
-    // Repeated to match normal procedure during PE alignments
-    for (size_t i = 0; i < 2; ++i) {
-      for (auto& it : m_records) {
-        it.reverse_complement();
+    {
+      vec_reader reader_1(m_lines_1);
+      while (record.read(reader_1)) {
+        m_records_1.push_back(record);
       }
     }
 
-    return true;
+    {
+      vec_reader reader_2(m_lines_2);
+      while (record.read(reader_2)) {
+        m_records_2.push_back(record);
+      }
+    }
+
+    blackbox(&m_records_1);
+    blackbox(&m_records_2);
   }
 
 private:
-  fastq_vec m_records;
+  const string_vec& m_lines_1;
+  const string_vec& m_lines_2;
+  fastq_vec m_records_1;
+  fastq_vec m_records_2;
+};
+
+class reverse_complement_benchmarker : public benchmarker
+{
+public:
+  reverse_complement_benchmarker(const fastq_vec& records_1,
+                                 const fastq_vec& records_2)
+    : benchmarker("reverse complement", { "revcompl" })
+    , m_records_1(records_1)
+    , m_records_2(records_2)
+  {
+  }
+
+protected:
+  void execute() override
+  {
+    for (auto& it : m_records_1) {
+      it.reverse_complement();
+    }
+
+    for (auto& it : m_records_2) {
+      it.reverse_complement();
+    }
+  }
+
+private:
+  fastq_vec m_records_1;
+  fastq_vec m_records_2;
+};
+
+class complexity_benchmarker : public benchmarker
+{
+public:
+  complexity_benchmarker(const fastq_vec& records_1, const fastq_vec& records_2)
+    : benchmarker("read complexity", { "complexity" })
+    , m_records_1(records_1)
+    , m_records_2(records_2)
+  {
+  }
+
+protected:
+  void execute() override
+  {
+    double total = 0.0;
+    total += complexity(m_records_1);
+    total += complexity(m_records_2);
+
+    blackbox(&total);
+  }
+
+private:
+  double complexity(const fastq_vec& records) const
+  {
+    double total = 0.0;
+    for (auto& it : records) {
+      total += it.complexity();
+    }
+
+    return total;
+  }
+
+  const fastq_vec& m_records_1;
+  const fastq_vec& m_records_2;
+};
+
+class trimming_benchmarker : public benchmarker
+{
+public:
+  trimming_benchmarker(const std::string& desc,
+                       const std::string& toggle,
+                       const fastq_vec& records_1,
+                       const fastq_vec& records_2)
+    : benchmarker(desc, { "trim", "trim:" + toggle })
+    , m_records_1(records_1)
+    , m_records_2(records_2)
+    , m_trimmed_records_1()
+    , m_trimmed_records_2()
+  {
+  }
+
+protected:
+  void setup() override
+  {
+    m_trimmed_records_1 = m_records_1;
+    m_trimmed_records_2 = m_records_2;
+  }
+
+  void execute() override
+  {
+    trim(m_trimmed_records_1);
+    trim(m_trimmed_records_2);
+
+    blackbox(&m_trimmed_records_1);
+    blackbox(&m_trimmed_records_2);
+  }
+
+  virtual void trim(fastq_vec& reads) const = 0;
+
+private:
+  const fastq_vec& m_records_1;
+  const fastq_vec& m_records_2;
+  fastq_vec m_trimmed_records_1;
+  fastq_vec m_trimmed_records_2;
+};
+
+class basic_trimming_benchmarker : public trimming_benchmarker
+{
+public:
+  basic_trimming_benchmarker(const fastq_vec& records_1,
+                             const fastq_vec& records_2)
+    : trimming_benchmarker("basic trimming", "basic", records_1, records_2)
+  {
+  }
+
+protected:
+  void trim(fastq_vec& reads) const override
+  {
+    for (auto& read : reads) {
+      read.trim_trailing_bases(true, 2);
+    }
+  }
+};
+
+class mott_trimming_benchmarker : public trimming_benchmarker
+{
+public:
+  mott_trimming_benchmarker(const fastq_vec& records_1,
+                            const fastq_vec& records_2)
+    : trimming_benchmarker("mott trimming", "mott", records_1, records_2)
+  {
+  }
+
+protected:
+  void trim(fastq_vec& reads) const override
+  {
+    for (auto& read : reads) {
+      read.mott_trimming(0.05);
+    }
+  }
+};
+
+class window_trimming_benchmarker : public trimming_benchmarker
+{
+public:
+  window_trimming_benchmarker(const fastq_vec& records_1,
+                              const fastq_vec& records_2)
+    : trimming_benchmarker("window trimming", "window", records_1, records_2)
+  {
+  }
+
+protected:
+  void trim(fastq_vec& reads) const override
+  {
+    for (auto& read : reads) {
+      read.trim_windowed_bases(true, 2, 0.1);
+    }
+  }
+};
+
+/** Class for benchmarking collection of `fastq_statistics` */
+class fastq_statistics_benchmarker : public benchmarker
+{
+public:
+  fastq_statistics_benchmarker(const fastq_vec& records_1,
+                               const fastq_vec& records_2)
+    : benchmarker("read statistics", { "stats" })
+    , m_records_1(records_1)
+    , m_records_2(records_2)
+  {
+  }
+
+  void execute() override
+  {
+    collect_statistics(m_records_1);
+    collect_statistics(m_records_2);
+  }
+
+private:
+  void collect_statistics(const fastq_vec& records) const
+  {
+    fastq_statistics stats;
+    for (const auto& it : records) {
+      stats.process(it);
+    }
+
+    blackbox(&stats);
+  }
+
+  const fastq_vec& m_records_1;
+  const fastq_vec& m_records_2;
+};
+
+/** Base-class for benchmarking SE/PE alignments */
+class alignment_benchmarker : public benchmarker
+{
+public:
+  alignment_benchmarker(const std::string& key, const simd::instruction_set is)
+    : benchmarker(to_upper(key) + " alignment (" + simd::name(is) + ")", {})
+    , m_key(key)
+    , m_is(is)
+  {
+  }
+
+  strategy enabled(const benchmark_toggles& toggles) const override
+  {
+    if (toggles.defaults() || toggles.is_set("align") ||
+        toggles.is_set("align:" + m_key)) {
+
+      if (toggles.is_set("simd") ||
+          toggles.is_set("simd:" + to_lower(simd::name(m_is)))) {
+        return strategy::benchmark;
+      }
+
+      // Benchmark the prefered algorithm if no algorithms were specified
+      const auto supported = simd::supported();
+      if (supported.size() && supported.back() == m_is) {
+        for (const auto is : supported) {
+          if (toggles.is_set("simd:" + to_lower(simd::name(is)))) {
+            return strategy::skip;
+          }
+        }
+
+        return strategy::benchmark;
+      }
+    }
+
+    return strategy::skip;
+  }
+
+private:
+  const std::string m_key;
+  const simd::instruction_set m_is;
 };
 
 /** Benchmarking of SE alignments */
-class benchmarker_se_alignment : public benchmarker<alignment_info>
+class benchmarker_se_alignment : public alignment_benchmarker
+
 {
 public:
   benchmarker_se_alignment(const userconfig& config,
                            const fastq_vec& reads,
                            const simd::instruction_set is)
-    : benchmarker("align single-end FASTQs using " +
-                  std::string(simd::name(is)))
+    : alignment_benchmarker("se", is)
     , m_config(config)
     , m_reads(reads)
     , m_adapters(config.adapters.get_adapter_set(0))
@@ -346,7 +399,7 @@ public:
   }
 
 protected:
-  alignment_info execute()
+  void execute() override
   {
     alignment_info best;
 
@@ -359,7 +412,7 @@ protected:
       }
     }
 
-    return best;
+    blackbox(&best);
   }
 
 private:
@@ -370,32 +423,39 @@ private:
 };
 
 /** Benchmarking of PE alignments */
-class pe_alignment_benchmarker : public benchmarker<alignment_info>
+class pe_alignment_benchmarker : public alignment_benchmarker
 {
 public:
   pe_alignment_benchmarker(const userconfig& config,
                            const fastq_vec& mate_1,
                            const fastq_vec& mate_2,
                            const simd::instruction_set is)
-    : benchmarker("align paired-end FASTQs using " +
-                  std::string(simd::name(is)))
+    : alignment_benchmarker("pe", is)
     , m_config(config)
     , m_mate_1(mate_1)
     , m_mate_2(mate_2)
-    , m_mate_2_reversed(mate_2)
+    , m_mate_2_reversed()
     , m_adapters(config.adapters.get_adapter_set(0))
     , m_aligner(m_adapters, is)
   {
-    // Normally done as part of the alignment loop but is benchmarked separately
-    for (auto& it : m_mate_2_reversed) {
-      it.reverse_complement();
-    }
   }
 
 protected:
-  alignment_info execute()
+  void setup() override
   {
-    AR_REQUIRE(m_mate_1.size() == m_mate_2.size());
+    if (m_mate_2_reversed.empty()) {
+      m_mate_2_reversed = m_mate_2;
+
+      // Done as part of the alignment loop but is benchmarked separately
+      for (auto& it : m_mate_2_reversed) {
+        it.reverse_complement();
+      }
+    }
+  }
+
+  void execute() override
+  {
+    AR_REQUIRE(m_mate_1.size() == m_mate_2_reversed.size());
 
     alignment_info best;
 
@@ -413,7 +473,7 @@ protected:
       }
     }
 
-    return best;
+    blackbox(&best);
   }
 
 private:
@@ -425,46 +485,74 @@ private:
   const sequence_aligner m_aligner;
 };
 
+string_vec
+supported_toggles()
+{
+  string_vec toggles = { "read",  "parse",      "revcompl",  "complexity",
+                         "trim",  "trim:basic", "trim:mott", "trim:window",
+                         "stats", "align",      "align:se",  "align:pe",
+                         "simd" };
+
+  for (const auto is : simd::supported()) {
+    toggles.push_back(std::string("simd:") + to_lower(simd::name(is)));
+  }
+
+  return toggles;
+}
+
 } // namespace
 
 int
 benchmark(const userconfig& config)
-
 {
-  benchmark_toggles enabled;
-  if (!enabled.parse_args(config.benchmarks)) {
+  auto head = config.head;
+  // Limit benchmarking to a reasonable data-set size by default
+  if (config.head == std::numeric_limits<uint64_t>::max()) {
+    log::warn() << "Defaulting to reading at most 1,000,000 reads/mate pairs";
+    head = 1000000;
+  }
+
+  // Parse user-specified benchmarking toggles
+  benchmark_toggles toggles(supported_toggles());
+  if (!toggles.update_toggles(config.benchmarks)) {
     return 1;
   }
 
-  const string_vec input_1 = readlines_benchmarker(config, config.input_files_1)
-                               .run(enabled(benchmarks::read));
-  string_vec input_2;
+  auto lines =
+    readlines_benchmarker(config.input_files_1, config.input_files_2, head);
+  lines.run_if_toggled(toggles);
 
-  if (config.input_files_2.size()) {
-    input_2 = readlines_benchmarker(config, config.input_files_2)
-                .run(enabled(benchmarks::read));
-  }
+  auto records = fastq_parser_benchmarker(lines.lines_1(), lines.lines_2());
+  records.run_if_toggled(toggles);
 
-  const auto records_1 =
-    fastq_parser_benchmarker(input_1).run(enabled(benchmarks::parse));
+  reverse_complement_benchmarker(records.records_1(), records.records_2())
+    .run_if_toggled(toggles);
 
-  fastq_vec records_2;
-  if (input_2.size()) {
-    records_2 =
-      fastq_parser_benchmarker(input_2).run(enabled(benchmarks::parse));
-  }
+  complexity_benchmarker(records.records_1(), records.records_2())
+    .run_if_toggled(toggles);
 
-  reverse_complement_benchmarker(records_1).run(enabled(benchmarks::revcompl));
+  basic_trimming_benchmarker(records.records_1(), records.records_2())
+    .run_if_toggled(toggles);
+
+  mott_trimming_benchmarker(records.records_1(), records.records_2())
+    .run_if_toggled(toggles);
+
+  window_trimming_benchmarker(records.records_1(), records.records_2())
+    .run_if_toggled(toggles);
+
+  fastq_statistics_benchmarker(records.records_1(), records.records_2())
+    .run_if_toggled(toggles);
 
   for (const auto is : simd::supported()) {
-    benchmarker_se_alignment(config, records_1, is)
-      .run(enabled.align(benchmarks::align_se, is));
+    benchmarker_se_alignment(config, records.records_1(), is)
+      .run_if_toggled(toggles);
   }
 
-  if (input_2.size()) {
+  if (config.paired_ended_mode) {
     for (const auto is : simd::supported()) {
-      pe_alignment_benchmarker(config, records_1, records_2, is)
-        .run(enabled.align(benchmarks::align_pe, is));
+      pe_alignment_benchmarker(
+        config, records.records_1(), records.records_2(), is)
+        .run_if_toggled(toggles);
     }
   }
 

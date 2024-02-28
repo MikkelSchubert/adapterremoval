@@ -170,6 +170,7 @@ CORE_OBJS := \
 # Build objects used only by the executable
 EXEC_OBJS := \
 	$(OBJS_DIR)/adapterset.o \
+	$(OBJS_DIR)/benchmarking.o \
 	$(OBJS_DIR)/demultiplexing.o \
 	$(OBJS_DIR)/fastq_io.o \
 	$(OBJS_DIR)/linereader_joined.o \
