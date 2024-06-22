@@ -931,7 +931,8 @@ userconfig::userconfig()
           "of the FASTQ reads. Report-only post-trimming/demultiplexing runs "
           "can be accomplished by setting --output options to /dev/null")
     .conflicts_with("--demultiplex-only")
-    .conflicts_with("--identify-adapters");
+    .conflicts_with("--identify-adapters")
+    .conflicts_with("--barcode-list");
 
   argparser.add("--report-sample-rate", "X")
     .help("Fraction of reads to use when generating base quality/composition "
