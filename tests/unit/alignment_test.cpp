@@ -1514,8 +1514,13 @@ get_combinations()
 
 TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
-  const auto compare_subsequences =
-    simd::get_compare_subsequences_func(PARAMETERIZE_IS);
+  const auto is = PARAMETERIZE_IS;
+
+  // The SECTION identifies the instruction set in failure messages
+  SECTION(simd::name(is))
+  {
+    const auto compare_subsequences = simd::get_compare_subsequences_func(is);
+    const auto padding = simd::padding(is);
 
   const std::vector<std::string> combinations = get_combinations();
   for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
@@ -1534,6 +1539,9 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
           std::string mate2 = std::string(seqlen, 'A');
           mate2.replace(pos, nbases, combinations.at(j).substr(0, nbases));
 
+            mate1.resize(mate1.length() + padding, 'N');
+            mate2.resize(mate2.length() + padding, 'N');
+
           alignment_info current;
           current.length = seqlen;
           compare_subsequences(current.n_mismatches,
@@ -1546,6 +1554,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
           // Don't count all these checks in test statistics
           if (!(current == expected)) {
             REQUIRE(current == expected);
+            }
           }
         }
       }
