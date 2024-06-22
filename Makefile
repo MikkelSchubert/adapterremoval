@@ -228,21 +228,21 @@ examples: $(EXECUTABLE)
 
 install: $(EXECUTABLE) $(MAN_PAGE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
-	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/bin/
-	$(QUIET) $(INSTALLEXE) $(EXECUTABLE) ${PREFIX}/bin/
+	@echo $(COLOR_GREEN)"  .. binary into ${DESTDIR}${PREFIX}/bin/"$(COLOR_END)
+	$(QUIET) $(MKDIR) ${DESTDIR}${PREFIX}/bin/
+	$(QUIET) $(INSTALLEXE) $(EXECUTABLE) ${DESTDIR}${PREFIX}/bin/
 
-	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/man/man1/
-	$(QUIET) $(INSTALLDOC) "$(MAN_PAGE)" ${PREFIX}/share/man/man1/
+	@echo $(COLOR_GREEN)"  .. man-page into ${DESTDIR}${PREFIX}/share/man/man1/"$(COLOR_END)
+	$(QUIET) $(MKDIR) ${DESTDIR}${PREFIX}/share/man/man1/
+	$(QUIET) $(INSTALLDOC) "$(MAN_PAGE)" ${DESTDIR}${PREFIX}/share/man/man1/
 
-	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval3/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval3/
-	$(QUIET) $(INSTALLDOC) README.md ${PREFIX}/share/adapterremoval3/
+	@echo $(COLOR_GREEN)"  .. README into ${DESTDIR}${PREFIX}/share/adapterremoval3/"$(COLOR_END)
+	$(QUIET) $(MKDIR) ${DESTDIR}${PREFIX}/share/adapterremoval3/
+	$(QUIET) $(INSTALLDOC) README.md ${DESTDIR}${PREFIX}/share/adapterremoval3/
 
-	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval3/examples/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval3/examples/
-	$(QUIET) $(INSTALLDAT) examples/Makefile examples/*.* ${PREFIX}/share/adapterremoval3/examples/
+	@echo $(COLOR_GREEN)"  .. examples into ${DESTDIR}${PREFIX}/share/adapterremoval3/examples/"$(COLOR_END)
+	$(QUIET) $(MKDIR) ${DESTDIR}${PREFIX}/share/adapterremoval3/examples/
+	$(QUIET) $(INSTALLDAT) examples/Makefile examples/*.* ${DESTDIR}${PREFIX}/share/adapterremoval3/examples/
 
 # HTML report templates
 .INTERMEDIATE: src/reports_template.intermediate
