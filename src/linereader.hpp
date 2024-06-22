@@ -134,7 +134,7 @@ private:
   //! Raw file used to read input.
   FILE* m_file;
   /** Refills 'm_raw_buffer'; sets 'm_raw_buffer_ptr' and 'm_raw_buffer_end'. */
-  void refill_raw_buffer();
+  void refill_raw_buffer(size_t avail_in = 0);
   /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */
   void refill_buffers_uncompressed();
 
@@ -142,13 +142,11 @@ private:
   std::unique_ptr<isal_gzip_header> m_gzip_header;
 
   /** Returns true if the raw buffer contains gzip'd data. */
-  bool identify_gzip() const;
+  bool is_raw_buffer_gzip() const;
   /** Initializes gzip stream and output buffers. */
   void initialize_buffers_gzip();
   /** Refills 'm_buffer' from compressed data; may refill raw buffers. */
   void refill_buffers_gzip();
-  /** Checks if the next block is valid or trailing garbage to be skipped */
-  bool check_next_gzip_block();
 
   //! Pointer to buffer of decompressed data; may be equal to m_raw_buffer.
   std::shared_ptr<line_buffer> m_buffer;

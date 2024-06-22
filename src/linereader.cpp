@@ -164,7 +164,7 @@ line_reader::line_reader(FILE* handle)
   , m_buffer_ptr(nullptr)
   , m_buffer_end(nullptr)
   , m_raw_buffer(std::make_shared<line_buffer>())
-  , m_raw_buffer_end(m_raw_buffer->end())
+  , m_raw_buffer_end(m_raw_buffer->begin())
   , m_eof(false)
 {
   if (!m_file) {
@@ -231,7 +231,7 @@ line_reader::refill_buffers()
   } else {
     refill_raw_buffer();
 
-    if (identify_gzip()) {
+    if (is_raw_buffer_gzip()) {
       initialize_buffers_gzip();
     } else {
       refill_buffers_uncompressed();
@@ -248,30 +248,32 @@ line_reader::refill_buffers_uncompressed()
 }
 
 void
-line_reader::refill_raw_buffer()
+line_reader::refill_raw_buffer(size_t avail_in)
 {
-  const int nread =
-    fread(m_raw_buffer->data(), 1, m_raw_buffer->size(), m_file);
+  if (avail_in) {
+    // Move unused (compressed) data to the front of the buffer
+    std::memmove(m_raw_buffer->data(), m_raw_buffer_end - avail_in, avail_in);
+  }
+
+  const size_t nread = fread(m_raw_buffer->data() + avail_in,
+                             1,
+                             m_raw_buffer->size() - avail_in,
+                             m_file);
 
   if (ferror(m_file)) {
     throw io_error("read error while filling buffer", errno);
   } else {
     // EOF set only once all data has been consumed
-    m_eof = (nread == 0);
-    m_raw_buffer_end = m_raw_buffer->data() + nread;
+    m_eof = (nread + avail_in == 0);
+    m_raw_buffer_end = m_raw_buffer->data() + nread + avail_in;
   }
 }
 
 bool
-line_reader::identify_gzip() const
+line_reader::is_raw_buffer_gzip() const
 {
-  if (m_raw_buffer_end - m_raw_buffer->data() < 2) {
-    return false;
-  } else if (m_raw_buffer->at(0) != '\x1f' || m_raw_buffer->at(1) != '\x8b') {
-    return false;
-  }
-
-  return true;
+  return m_raw_buffer_end - m_raw_buffer->data() > 1 &&
+         m_raw_buffer->at(0) == '\x1f' && m_raw_buffer->at(1) == '\x8b';
 }
 
 void
@@ -291,29 +293,40 @@ line_reader::initialize_buffers_gzip()
 
   isal_gzip_header_init(m_gzip_header.get());
   auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-  check_isal_return_code(result, m_filename, "reading gzip header from");
+  check_isal_return_code(result, m_filename, "reading first gzip header from");
 }
 
 void
 line_reader::refill_buffers_gzip()
 {
-  if (!m_gzip_stream->avail_in) {
-    refill_raw_buffer();
-    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
-    m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
-  }
-
   m_gzip_stream->avail_out = m_buffer->size();
   m_gzip_stream->next_out = reinterpret_cast<uint8_t*>(m_buffer->data());
 
-  if (m_gzip_stream->avail_in &&
+  // Refill the buffer if empty or if a block was finished. This ensures that we
+  // can properly identify additional gzip blocks and parse their headers.
+  if (!m_gzip_stream->avail_in ||
       m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
-    if (check_next_gzip_block()) {
-      isal_inflate_reset(m_gzip_stream.get());
-      // Handle headers in subsequent blocks
-      m_gzip_stream->crc_flag = ISAL_GZIP;
-    } else {
-      return;
+    refill_raw_buffer(m_gzip_stream->avail_in);
+    m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
+    m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
+
+    if (m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
+      if (is_raw_buffer_gzip()) {
+        isal_inflate_reset(m_gzip_stream.get());
+
+        const auto result =
+          isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
+        check_isal_return_code(
+          result, m_filename, "reading next gzip header from");
+      } else if (m_gzip_stream->avail_in) {
+        log::warn() << "Ignoring trailing garbage at the end of "
+                    << shell_escape(m_filename);
+
+        m_buffer_ptr = m_buffer->data();
+        m_buffer_end = m_buffer_ptr;
+        m_eof = true;
+        return;
+      }
     }
   }
 
@@ -330,25 +343,6 @@ line_reader::refill_buffers_gzip()
                      "unexpected end of file",
                      "file is likely truncated!");
   }
-}
-
-bool
-line_reader::check_next_gzip_block()
-{
-  // This matches the behavior of zcat / gzip / igzip
-  if ((m_gzip_stream->avail_in > 0 && m_gzip_stream->next_in[0] != 0x1f) ||
-      (m_gzip_stream->avail_in > 1 && m_gzip_stream->next_in[1] != 0x8b)) {
-    log::warn() << "Ignoring trailing garbage at the end of "
-                << shell_escape(m_filename);
-
-    m_buffer_ptr = m_buffer->data();
-    m_buffer_end = m_buffer_ptr;
-    m_eof = true;
-
-    return false;
-  }
-
-  return true;
 }
 
 } // namespace adapterremoval
