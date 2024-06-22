@@ -120,10 +120,10 @@ operator<<(std::ostream& stream, const ALN& aln)
 }
 
 fastq_pair_vec
-create_adapter_vec(const fastq& pcr1, const fastq& pcr2 = fastq())
+create_adapter_vec(const fastq& adapter1, const fastq& adapter2 = fastq())
 {
   fastq_pair_vec adapters;
-  adapters.push_back(fastq_pair(pcr1, pcr2));
+  adapters.push_back(fastq_pair(adapter1, adapter2));
   return adapters;
 }
 

@@ -242,10 +242,10 @@ struct adapter_stats
 {
 public:
   adapter_stats()
-    : pcr1_counts()
-    , pcr2_counts()
-    , pcr1_kmers(N_KMERS, 0)
-    , pcr2_kmers(N_KMERS, 0)
+    : adapter1_counts()
+    , adapter2_counts()
+    , adapter1_kmers(N_KMERS, 0)
+    , adapter2_kmers(N_KMERS, 0)
     , aligned_pairs(0)
     , unaligned_pairs(0)
     , pairs_with_adapters(0)
@@ -255,10 +255,10 @@ public:
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   adapter_stats& operator+=(const adapter_stats& other)
   {
-    pcr1_counts += other.pcr1_counts;
-    pcr2_counts += other.pcr2_counts;
-    merge(pcr1_kmers, other.pcr1_kmers);
-    merge(pcr2_kmers, other.pcr2_kmers);
+    adapter1_counts += other.adapter1_counts;
+    adapter2_counts += other.adapter2_counts;
+    merge(adapter1_kmers, other.adapter1_kmers);
+    merge(adapter2_kmers, other.adapter2_kmers);
 
     aligned_pairs += other.aligned_pairs;
     unaligned_pairs += other.unaligned_pairs;
@@ -268,13 +268,13 @@ public:
   }
 
   //! Nucleotide frequencies of putative adapter 1 fragments
-  indexed_counts<ACGTN> pcr1_counts;
+  indexed_counts<ACGTN> adapter1_counts;
   //! Nucleotide frequencies of putative adapter 2 fragments
-  indexed_counts<ACGTN> pcr2_counts;
+  indexed_counts<ACGTN> adapter2_counts;
   //! 5' KMer frequencies of putative adapter 1 fragments
-  kmer_map pcr1_kmers;
+  kmer_map adapter1_kmers;
   //! 5' KMer frequencies of putative adapter 2 fragments
-  kmer_map pcr2_kmers;
+  kmer_map adapter2_kmers;
   //! Number of properly aligned reads
   size_t aligned_pairs;
   //! Number of reads that could not be aligned
@@ -346,16 +346,18 @@ public:
               << std::endl;
 
     print_consensus_adapter(
-      stats->pcr1_counts,
-      stats->pcr1_kmers,
+      stats->adapter1_counts,
+      stats->adapter1_kmers,
       "--adapter1",
       m_config.adapters.get_raw_adapters().front().first.sequence());
     std::cout << "\n\n";
 
     fastq adapter2 = m_config.adapters.get_raw_adapters().front().second;
     adapter2.reverse_complement();
-    print_consensus_adapter(
-      stats->pcr2_counts, stats->pcr2_kmers, "--adapter2", adapter2.sequence());
+    print_consensus_adapter(stats->adapter2_counts,
+                            stats->adapter2_kmers,
+                            "--adapter2",
+                            adapter2.sequence());
   }
 
 private:
@@ -379,10 +381,12 @@ private:
           extract_adapter_sequences(alignment, read1, read2)) {
         stats.pairs_with_adapters++;
 
-        process_adapter(read1.sequence(), stats.pcr1_counts, stats.pcr1_kmers);
+        process_adapter(
+          read1.sequence(), stats.adapter1_counts, stats.adapter1_kmers);
 
         read2.reverse_complement();
-        process_adapter(read2.sequence(), stats.pcr2_counts, stats.pcr2_kmers);
+        process_adapter(
+          read2.sequence(), stats.adapter2_counts, stats.adapter2_kmers);
       }
     } else {
       stats.unaligned_pairs++;

@@ -156,11 +156,12 @@ public:
    *                  both mate reads.
    * @return The best alignment, or a length 0 alignment if not aligned.
    *
-   * The alignment is carried out following the concatenation of pcr2 and read1,
-   * and the concatenation of read2 and pcr1, resulting in this alignment:
+   * The alignment is carried out following the concatenation of adapter2 and
+   * read1, and the concatenation of read2 and adapter1, resulting in this
+   * alignment:
    *
-   *                pcr2-read1
-   *                read2-pcr1
+   *    adapter2-read1
+   *    read2-adapter1
    *
    * Note the returned offset is relative read1, not to adapter2 + read1,
    * and can be used to directly infer the alignment between read1 and read2.
@@ -267,7 +268,7 @@ private:
  */
 bool
 extract_adapter_sequences(const alignment_info& alignment,
-                          fastq& pcr1,
-                          fastq& pcr2);
+                          fastq& adapter1,
+                          fastq& adapter2);
 
 } // namespace adapterremoval
