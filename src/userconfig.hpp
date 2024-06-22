@@ -44,7 +44,7 @@ enum class ar_command
 {
   trim_adapters,
   identify_adapters,
-  demultiplex_sequences,
+  demultiplex_only,
   report_only,
   benchmark,
 };

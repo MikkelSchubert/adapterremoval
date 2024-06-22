@@ -223,7 +223,7 @@ write_report_summary(const userconfig& config,
                      json_dict& report,
                      const statistics& stats)
 {
-  const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+  const bool demux_only = config.run_type == ar_command::demultiplex_only;
 
   const auto summary = report.dict("summary");
 
@@ -455,7 +455,7 @@ write_report_demultiplexing(const userconfig& config,
                             json_dict& report,
                             const statistics& sample_stats)
 {
-  const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+  const bool demux_only = config.run_type == ar_command::demultiplex_only;
   const auto out_files = config.get_output_filenames();
 
   if (config.adapters.barcode_count()) {
@@ -549,7 +549,7 @@ write_report_output(const userconfig& config,
   const auto singleton_files = collect_files(out_files, read_type::singleton);
   const auto discarded_files = collect_files(out_files, read_type::discarded);
 
-  const bool demux_only = config.run_type == ar_command::demultiplex_sequences;
+  const bool demux_only = config.run_type == ar_command::demultiplex_only;
 
   const auto output = report.dict("output");
   io_section(read_type::mate_1, output_1, mate_1_files)

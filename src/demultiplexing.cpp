@@ -148,7 +148,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
       m_statistics->unidentified_stats_1->process(read);
     } else {
       // Prefixing with user supplied prefixes is also done during trimming
-      if (m_config.run_type == ar_command::demultiplex_sequences) {
+      if (m_config.run_type == ar_command::demultiplex_only) {
         read.add_prefix_to_name(m_config.prefix_read_1);
       }
 
@@ -212,7 +212,7 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
       m_statistics->unidentified_stats_2->process(*it_2);
     } else {
       // Prefixing with user supplied prefixes is also done during trimming
-      if (m_config.run_type == ar_command::demultiplex_sequences) {
+      if (m_config.run_type == ar_command::demultiplex_only) {
         it_1->add_prefix_to_name(m_config.prefix_read_1);
         it_2->add_prefix_to_name(m_config.prefix_read_2);
       }

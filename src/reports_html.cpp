@@ -942,7 +942,7 @@ write_html_report(const userconfig& config,
 
     write_html_summary_section(config, stats, output);
 
-    if (config.run_type != ar_command::demultiplex_sequences &&
+    if (config.run_type != ar_command::demultiplex_only &&
         config.run_type != ar_command::report_only) {
       write_html_processing_section(config, stats, output);
     }

@@ -1013,7 +1013,7 @@ userconfig::parse_args(int argc, char* argv[])
     io_encoding = FASTQ_ENCODING_SAM;
     run_type = ar_command::identify_adapters;
   } else if (argparser.is_set("--demultiplex-only")) {
-    run_type = ar_command::demultiplex_sequences;
+    run_type = ar_command::demultiplex_only;
   } else if (argparser.is_set("--report-only")) {
     run_type = ar_command::report_only;
   } else if (argparser.is_set("--benchmark")) {

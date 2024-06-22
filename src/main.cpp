@@ -105,7 +105,7 @@ main(int argc, char* argv[])
       break;
     }
 
-    case ar_command::demultiplex_sequences: {
+    case ar_command::demultiplex_only: {
       returncode = demultiplex_sequences(config);
       break;
     }
