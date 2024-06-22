@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright (c) 2022 Mikkel Schubert <MikkelSch@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,13 +18,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
 import argparse
-from collections import namedtuple
-import copy
 import difflib
 import errno
 import gzip
-import io
 import itertools
 import json
 import math
@@ -38,24 +36,47 @@ import subprocess
 import sys
 import tempfile
 import traceback
-import typing
+from dataclasses import dataclass
 from itertools import groupby, islice
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    NamedTuple,
+    NoReturn,
+    Sequence,
+    Union,
+    cast,
+    overload,
+)
 
+if TYPE_CHECKING:
+    from typing_extensions import Literal, TypeAlias
+
+    JSON: TypeAlias = Union[
+        Dict[str, "JSON"], List["JSON"], str, int, float, bool, None
+    ]
 
 #############################################################################
 _COLORS_ENABLED = not os.getenv("NO_COLOR")
 
 
-def _do_print_color(*vargs_, **kwargs):
+def _do_print_color(
+    *vargs_: object,
+    colorcode: int,
+    end: str,
+) -> None:
     """Utility function: Prints using shell colors."""
-    colorcode = kwargs.pop("colorcode")
-    destination = kwargs.pop("file", sys.stdout)
+    destination = sys.stdout
 
     # No colors if output is redirected (e.g. less, file, etc.)
     if _COLORS_ENABLED and destination.isatty():
         vargs = list(vargs_)
         for index, varg in enumerate(vargs):
-            varg_lines = []
+            varg_lines: list[str] = []
             # Newlines terminate the color-code for e.g. 'less', so ensure that
             # each line is color-coded, while preserving the list of arguments
             for line in str(varg).split("\n"):
@@ -64,68 +85,71 @@ def _do_print_color(*vargs_, **kwargs):
     else:
         vargs = vargs_
 
-    print(*vargs, file=destination, **kwargs)
-
-    if "\n" in kwargs.get("end", "\n"):
+    print(*vargs, file=destination, end=end)
+    if "\n" in end:
         destination.flush()
 
 
-def print_ok(*vargs, **kwargs):
+def print_ok(*vargs: object, end: str = "\n") -> None:
     """Equivalent to print, but prints using shell colorcodes (green)."""
-    _do_print_color(*vargs, colorcode=32, **kwargs)
+    _do_print_color(*vargs, colorcode=32, end=end)
 
 
-def print_warn(*vargs, **kwargs):
+def print_warn(*vargs: object, end: str = "\n") -> None:
     """Equivalent to print, but prints using shell colorcodes (green)."""
-    _do_print_color(*vargs, colorcode=33, **kwargs)
+    _do_print_color(*vargs, colorcode=33, end=end)
 
 
-def print_err(*vargs, **kwargs):
+def print_err(*vargs: object, end: str = "\n") -> None:
     """Equivalent to print, but prints using shell colorcodes (red)."""
-    _do_print_color(*vargs, colorcode=31, **kwargs)
+    _do_print_color(*vargs, colorcode=31, end=end)
 
 
 #############################################################################
 
 
-def read_file(filename, mode="rt"):
+@overload
+def read_file(filename: str, mode: Literal["rt"] = "rt") -> str: ...
+
+
+@overload
+def read_file(filename: str, mode: Literal["rb"] = "rb") -> bytes: ...
+
+
+def read_file(filename: str, mode: Literal["rb", "rt"] = "rt") -> str | bytes:
     try:
         with open(filename, mode) as handle:
             return handle.read()
     except OSError as error:
-        raise TestError("ERROR while reading data:\n    {}".format(error))
+        raise TestError(f"ERROR while reading data:\n    {error}") from error
 
 
-def read_json(filename):
-    data = read_file(filename)
+def read_json(filename: str) -> tuple[str, JSON]:
+    text = read_file(filename)
 
     try:
-        return data, json.loads(data)
+        return text, json.loads(text)
     except json.JSONDecodeError as error:
-        raise TestError("ERROR while reading {!r}:\n    {}".format(filename, error))
+        raise TestError(f"ERROR while reading {filename!r}:") from error
 
 
-def read_lines(filename):
-    return read_file(filename).splitlines(keepends=True)
-
-
-def read_and_decompress_lines(filename):
+def read_and_decompress_file(filename: str) -> str:
     value = read_file(filename, "rb")
 
     header = value[:2]
     if header == b"\x1f\x8b":
         if not filename.endswith(".gz"):
-            raise TestError("{} is gzipped, but lacks .gz extension".format(filename))
+            raise TestError(f"{filename} is gzipped, but lacks .gz extension")
 
         value = gzip.decompress(value)
     elif filename.endswith(".gz"):
-        raise TestError("{} has .gz extension, but is not compressed".format(filename))
+        raise TestError(f"{filename} has .gz extension, but is not compressed")
 
-    return io.StringIO(value.decode("utf-8")).readlines()
+    return value.decode("utf-8")
 
 
-def escape_whitespace(line):
-    out = []
+def escape_whitespace(line: str) -> str:
+    out: list[str] = []
     whitespace = {
         "\n": "\\n",
         "\r": "\\r",
@@ -139,17 +163,14 @@ def escape_whitespace(line):
     for char in line:
         escaped = whitespace.get(char)
         if escaped is None:
-            if char.isspace():
-                escaped = "\\{:o}".format(ord(char))
-            else:
-                escaped = char
+            escaped = f"\\{ord(char):o}" if char.isspace() else char
 
         out.append(escaped)
 
     return "".join(out)
 
 
-def truncate_lines(lines, max_lines=float("inf")):
+def truncate_lines(lines: Iterable[str], max_lines: int) -> list[str]:
     lines = list(islice(lines, max_lines + 1))
     if len(lines) > max_lines:
         lines[-1] = "..."
@@ -157,45 +178,45 @@ def truncate_lines(lines, max_lines=float("inf")):
     return lines
 
 
-def pretty_output(lines, max_lines, padding=0):
-    result = []
+def pretty_output(lines: Iterable[str], max_lines: int, padding: int = 0) -> str:
+    result: list[str] = []
     prefix = " " * padding
     lines = truncate_lines(lines, max_lines)
     for line in lines:
-        result.append("%s>  %s" % (prefix, escape_whitespace(line)))
+        result.append(f"{prefix}>  {escape_whitespace(line)}")
 
     return "\n".join(result)
 
 
 def filter_errors(
-    text,
-    _re=re.compile(r"(\[(?:ERROR|WARNING)\] .*)"),
-):
-    text = text.split("\n")
-    errors = []
-    for line in text:
+    text: str,
+    _re: re.Pattern[str] = re.compile(r"(\[(?:ERROR|WARNING)\] .*)"),
+) -> list[str]:
+    lines = text.split("\n")
+    errors: list[str] = []
+    for line in lines:
         match = _re.search(line)
         if match:
             errors.append(match.group())
 
-    return errors if errors else text
+    return errors if errors else lines
 
 
-def write_data(path, data):
+def write_data(path: str, data: str) -> None:
     open_ = gzip.open if path.endswith(".gz") else open
     with open_(path, "wt") as handle:
         handle.write(data)
 
 
-def cmd_to_s(cmd):
+def cmd_to_s(cmd: list[str]) -> str:
     return " ".join(shlex.quote(field) for field in cmd)
 
 
-def path_to_s(path):
+def path_to_s(path: Iterable[str]) -> str:
     return ".".join(str(value) for value in path)
 
 
-def classname(v):
+def classname(v: object) -> str:
     if v is None:
         return "None"
 
@@ -205,25 +226,30 @@ def classname(v):
 ################################################################################
 
 # Wildcards with (limited) type checking
-JSON_WILDCARDS = {
+JSON_WILDCARDS: dict[str, Callable[[object], bool]] = {
     "...": lambda _: True,
     "...str": lambda it: isinstance(it, str),
-    "...float": lambda it: isinstance(it, float) and it == it,
-    "...[str]": lambda it: isinstance(it, list) and all(isinstance(v, str) for v in it),
+    "...float": lambda it: isinstance(it, float) and not math.isnan(it),
+    "...[str]": lambda it: isinstance(it, list)
+    and all(isinstance(v, str) for v in cast(List[object], it)),
 }
 
 # JSON path elements that do not require quoting
 JSON_PATH = re.compile("[a-z0-9_]", re.I)
 
 
-def diff_json(reference, observed, path=("",)):
-    def _err(what, ref, obs):
-        return "{} at {}: {} is not {}".format(what, path_to_s(path), obs, ref)
+def diff_json(
+    reference: JSON,
+    observed: JSON,
+    path: tuple[str, ...] = ("",),
+) -> Iterator[str]:
+    def _err(what: str, ref: object, obs: object) -> str:
+        return f"{what} at {path_to_s(path)}: {obs} is not {ref}"
 
     if reference == observed:
         return
 
-    if isinstance(reference, typing.Hashable) and reference in JSON_WILDCARDS:
+    if not isinstance(reference, (dict, list)) and reference in JSON_WILDCARDS:
         if not JSON_WILDCARDS[reference](observed):
             yield _err("wildcard mismatch", repr(reference), repr(observed))
     elif type(reference) != type(observed):
@@ -233,8 +259,10 @@ def diff_json(reference, observed, path=("",)):
             yield _err("length mismatch", len(reference), len(observed))
 
         for idx, (ref, obs) in enumerate(zip(reference, observed)):
-            yield from diff_json(ref, obs, path + ("[{}]".format(idx),))
+            yield from diff_json(ref, obs, (*path, f"[{idx}]"))
     elif isinstance(reference, dict):
+        assert isinstance(observed, dict)
+
         for key in reference.keys() | observed.keys():
             if key not in reference:
                 yield _err("unexpected key", "in reference", key)
@@ -244,8 +272,10 @@ def diff_json(reference, observed, path=("",)):
                 if not JSON_PATH.match(key):
                     key = repr(key)
 
-                yield from diff_json(reference[key], observed[key], path + (key,))
+                yield from diff_json(reference[key], observed[key], (*path, key))
     elif isinstance(reference, float):
+        assert isinstance(observed, float)
+
         # There should be no NANs in this data, so this test also catches those
         if not (abs(reference - observed) < 1e-6):
             yield _err("mismatch", repr(observed), repr(reference))
@@ -285,112 +315,126 @@ _OUTPUT_FILES = {
 _TEST_FILES = _INPUT_FILES | _OUTPUT_FILES
 
 
-# Option value in regression test specification
-Default = namedtuple("Default", ("spec", "value"))
+def json_pop_value(data: JSON, path: tuple[str, ...], default: JSON) -> JSON:
+    if not isinstance(data, dict):
+        raise TestError("test specification did not contain a dict")
+
+    return data.pop(path[-1], default)
 
 
-# Layout of regression tests in JSON format
-_TEST_SPECIFICATION = {
-    "arguments": [str],
-    "skip": Default(bool, False),
-    "exhaustive": Default((bool, type(None)), None),
-    "return_code": Default(int, 0),
-    "stdout": Default([str], []),
-    "stderr": Default([str], []),
-    "files": Default(
-        {
-            "input_1": Default([str], []),
-            "input_2": Default([str], []),
-            "adapters": Default([str], []),
-            "barcodes": Default([str], []),
-            "output": Default([str], []),
-            "json": Default([str], []),
-            "html": Default([str], []),
-            "ignore": Default([str], []),
-        },
-        {},
-    ),
-}
-
-
-def validate(spec, value, path=("{}",)):
-    def _check_type(exp, obs, path=path):
-        if not isinstance(obs, exp):
-            raise TestError(
-                "expected {} at {}, found {!r}".format(exp, path_to_s(path), obs)
-            )
-
-        return obs
-
-    if isinstance(spec, Default):
-        if value is None:
-            value = copy.deepcopy(spec.value)
-
-        return validate(spec.spec, value, path)
-    elif isinstance(spec, dict):
-        _check_type(dict, value)
-
-        out = {}
-        for key, subspec in spec.items():
-            out[key] = validate(subspec, value.pop(key, None), path + (key,))
-
-        if value:
-            raise TestError(
-                "unexpected values at {}: {}".format(path_to_s(path), value)
-            )
-
-        return out
-    elif isinstance(spec, list):
-        _check_type(list, value)
-
-        (spec,) = spec
-        return [validate(spec, value, path + ("[]",)) for value in value]
-    elif isinstance(spec, (set, frozenset)):
-        if value not in spec:
-            raise TestError("unexpected value at {}: {}".format(path_to_s(path), value))
-
+def json_pop_dict(data: JSON, path: tuple[str, ...]) -> dict[str, JSON]:
+    value = json_pop_value(data, path, {})
+    if isinstance(value, dict):
         return value
-    else:
-        return _check_type(spec, value)
+
+    raise TestError(f"expected dict at {path_to_s(path)}, found {value!r}")
 
 
-class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
+def json_pop_tuple_of_str(
+    data: JSON,
+    path: tuple[str, ...],
+    default: JSON,
+) -> tuple[str, ...]:
+    value = json_pop_value(data, path, default)
+    if isinstance(value, list) and all(isinstance(it, str) for it in value):
+        return tuple(cast(List[str], value))
+
+    raise TestError(f"expected string list at {path_to_s(path)}, found {value!r}")
+
+
+def json_pop_int(data: JSON, path: tuple[str, ...], *, default: JSON) -> int:
+    value = json_pop_value(data, path, default)
+    if isinstance(value, int):
+        return value
+
+    raise TestError(f"expected int at {path_to_s(path)}, found {value!r}")
+
+
+def json_pop_bool(data: JSON, path: tuple[str, ...], *, default: JSON) -> bool:
+    value = json_pop_value(data, path, default)
+    if isinstance(value, bool):
+        return value
+
+    raise TestError(f"expected bool at {path_to_s(path)}, found {value!r}")
+
+
+@dataclass
+class TestFile:
+    name: str
+    kind: str
+
+    def compare_with_file(self, expected: str, observed: str) -> None:
+        raise NotImplementedError
+
     @classmethod
-    def parse(cls, root, name, kind):
-        data = None
-        json_data = None
+    def parse(cls, root: str, name: str, kind: str) -> TestFile:
         # HTML files are not compared in detail
-        if kind not in ("html", "ignore"):
-            filename = os.path.join(root, name)
-            if kind == "json":
-                data, json_data = read_json(filename)
-            else:
-                # Reference data is not expected to be compresses, regardless of extension
-                data = read_lines(filename)
+        if kind in ("html", "ignore"):
+            return TestMiscFile(name=name, kind=kind)
 
-        return TestFile(name=name, kind=kind, data=data, json=json_data)
+        filename = os.path.join(root, name)
+        if kind == "json":
+            text, data = read_json(filename)
+            return TestJsonFile(name=name, kind=kind, text=text, data=data)
 
-    def compare_with_file(self, expected, observed: str):
+        # Reference data is not compresses, regardless of extension
+        return TestTextFile(name=name, kind=kind, text=read_file(filename))
+
+    def _raise_test_error(
+        self,
+        label: str,
+        expected: str,
+        observed: str,
+        differences: str,
+    ) -> NoReturn:
+        raise TestError(
+            f"Mismatches in {label} file:\n"
+            f"  Expected   = {shlex.quote(expected)}\n"
+            f"  Observed   = {shlex.quote(observed)}\n"
+            f"  Mismatches =\n{differences}"
+        )
+
+
+@dataclass
+class TestTextFile(TestFile):
+    text: str
+
+    def compare_with_file(self, expected: str, observed: str) -> None:
         if not os.path.isfile(observed):
-            raise TestError("file {} not created".format(observed))
+            raise TestError(f"file {observed} not created")
 
-        # Some files just need to exist; HTML reports, etc.
-        if self.kind == "json":
-            return self._compare_json(expected, observed)
-        elif self.data is None:
+        text = read_and_decompress_file(observed)
+        if text == self.text:
             return
 
-        return self._compare_text(expected, observed)
+        lines = difflib.unified_diff(
+            self.text.splitlines(keepends=True),
+            text.splitlines(keepends=True),
+            "expected",
+            "observed",
+        )
 
-    def _compare_json(self, expected: str, observed: str):
+        self._raise_test_error(
+            label="output",
+            expected=expected,
+            observed=observed,
+            differences=pretty_output(lines, 10),
+        )
+
+
+@dataclass
+class TestJsonFile(TestFile):
+    text: str
+    data: JSON
+
+    def compare_with_file(self, expected: str, observed: str) -> None:
         _, data = read_json(observed)
-        differences = diff_json(reference=self.json, observed=data)
+        differences = diff_json(reference=self.data, observed=data)
         differences = truncate_lines(differences, 4)
 
         if differences:
             differences = "\n".join(
-                "    {}. {}".format(idx, line)
-                for idx, line in enumerate(differences, start=1)
+                f"    {idx}. {line}" for idx, line in enumerate(differences, start=1)
             )
 
             self._raise_test_error(
@@ -400,86 +444,82 @@ class TestFile(namedtuple("TestFile", ("name", "kind", "data", "json"))):
                 differences=differences,
             )
 
-    def _compare_text(self, expected: str, observed: str):
-        data = read_and_decompress_lines(observed)
-        if data == self.data:
-            return
+    def mask_filenames(self) -> TestJsonFile:
+        def _mask_filenames(data: JSON) -> JSON:
+            if isinstance(data, dict):
+                data = dict(data)
+                for key, value in data.items():
+                    if key == "filenames":
+                        data[key] = "...[str]"
+                    else:
+                        new_value = _mask_filenames(value)
+                        if new_value is not value:
+                            data[key] = new_value
+            elif isinstance(data, list):
+                data = [_mask_filenames(value) for value in data]
 
-        lines = difflib.unified_diff(self.data, data, "expected", "observed")
+            return data
 
-        self._raise_test_error(
-            label="output",
-            expected=expected,
-            observed=observed,
-            differences=pretty_output(lines, 10),
-        )
-
-    def _raise_test_error(self, label, expected, observed, differences):
-        raise TestError(
-            (
-                "Mismatches in {} file:\n"
-                "  Expected   = {}\n"
-                "  Observed   = {}\n"
-                "  Mismatches =\n{}"
-            ).format(
-                label,
-                shlex.quote(expected),
-                shlex.quote(observed),
-                differences,
-            )
+        return TestJsonFile(
+            name=self.name,
+            kind=self.kind,
+            text=self.text,
+            data=_mask_filenames(self.data),
         )
 
 
-class TestConfig(
-    namedtuple(
-        "TestConfig",
-        (
-            "path",
-            "name",
-            "variant",
-            "skip",
-            "exhaustive",
-            "arguments",
-            "return_code",
-            "stdout",
-            "stderr",
-            "files",
-        ),
-    )
-):
+class TestMiscFile(TestFile):
+    def compare_with_file(self, expected: str, observed: str) -> None: ...
+
+
+class TestConfig(NamedTuple):
+    path: str
+    name: tuple[str, ...]
+    variant: tuple[str, ...]
+    skip: bool
+    exhaustive: bool | None
+    arguments: tuple[str, ...]
+    return_code: int
+    stdout: tuple[str, ...]
+    stderr: tuple[str, ...]
+    files: tuple[TestFile, ...]
+
     @classmethod
-    def load(cls, name, filepath):
-        _, data = read_json(filepath)
-        data = validate(_TEST_SPECIFICATION, data)
-        assert isinstance(data, dict)
-
+    def load(cls, name: tuple[str, ...], filepath: str) -> TestConfig:
         root = os.path.dirname(filepath)
-        files = []
-        for key, values in data.pop("files").items():
-            for filename in values:
-                files.append(TestFile.parse(root, filename, key))
+        _, data = read_json(filepath)
+
+        files = json_pop_dict(data, ("files",))
+        test_files: list[TestFile] = []
+        for key in _TEST_FILES:
+            for filename in json_pop_tuple_of_str(files, ("files", key), []):
+                test_files.append(TestFile.parse(root, filename, key))
+
+        if files:
+            raise TestError(f"Unexpected files: {files}")
 
         self = TestConfig(
             path=filepath,
             name=name,
             variant=(),
-            arguments=tuple(data.pop("arguments")),
-            skip=data.pop("skip"),
-            exhaustive=data.pop("exhaustive"),
-            return_code=data.pop("return_code"),
-            stdout=tuple(data.pop("stdout")),
-            stderr=tuple(data.pop("stderr")),
-            files=tuple(files),
+            arguments=json_pop_tuple_of_str(data, ("arguments",), default=[]),
+            skip=json_pop_bool(data, ("skip",), default=False),
+            exhaustive=json_pop_bool(data, ("exhaustive",), default=False),
+            return_code=json_pop_int(data, ("return_code",), default=0),
+            stdout=json_pop_tuple_of_str(data, ("stdout",), default=[]),
+            stderr=json_pop_tuple_of_str(data, ("stderr",), default=[]),
+            files=tuple(test_files),
         )
 
-        assert not data, data
+        if data:
+            raise TestError(f"Unexpected JSON values: {data}")
 
         return self
 
-    def build_command(self, executable):
-        command = [executable] + list(self.arguments)
-        input_1 = []
-        input_2 = []
+    def build_command(self, executable: str) -> list[str]:
+        command: list[str] = [executable, *self.arguments]
+        input_1: list[str] = []
+        input_2: list[str] = []
 
         for it in self.files:
             if it.kind == "input_1":
@@ -496,14 +536,14 @@ class TestConfig(
                 raise NotImplementedError(it.kind)
 
         if input_1:
-            command += ["--file1"] + input_1
+            command += ["--file1", *input_1]
 
         if input_2:
-            command += ["--file2"] + input_2
+            command += ["--file2", *input_2]
 
         return command
 
-    def get_files(self, keys):
+    def get_files(self, keys: Iterable[str]) -> Iterator[TestFile]:
         if set(keys) - _TEST_FILES:
             raise ValueError(keys)
 
@@ -514,7 +554,12 @@ class TestConfig(
 
 class TestMutator:
     @classmethod
-    def create_exhaustive_tests(cls, it, exhaustive):
+    def create_exhaustive_tests(
+        cls,
+        it: TestConfig,
+        *,
+        exhaustive: bool,
+    ) -> Iterator[TestConfig]:
         if it.exhaustive is not None:
             exhaustive = it.exhaustive
 
@@ -524,8 +569,8 @@ class TestMutator:
 
         # For simplicity's sake, filenames are not checked in exhaustive tests
         for file in it.files:
-            if file.kind == "json":
-                masked_stats = file._replace(json=cls._mask_filenames(file.json))
+            if isinstance(file, TestJsonFile):
+                masked_stats = file.mask_filenames()
                 break
         else:
             masked_stats = None
@@ -534,9 +579,9 @@ class TestMutator:
         for it in cls._interleave_input(it, masked_stats):
             # Test with gzip compression of input and output files
             for compress_in, compress_out in itertools.product((False, True), repeat=2):
-                variant = []
-                arguments = []
-                compressed_files = set()
+                variant: list[str] = []
+                arguments: list[str] = []
+                compressed_files: set[str] = set()
 
                 if compress_in:
                     variant.append("igz")
@@ -561,15 +606,21 @@ class TestMutator:
                     yield it
 
     @classmethod
-    def _interleave_input(cls, test, masked_stats):
+    def _interleave_input(
+        cls,
+        test: TestConfig,
+        masked_stats: TestFile | None,
+    ) -> Iterator[TestConfig]:
         yield test
 
-        input_files = {}
-        other_files = []
+        input_files: dict[str, list[list[str]]] = {}
+        other_files: list[TestFile] = []
         for it in test.files:
             if it.kind in _INPUT_FILES_FQ:
+                assert isinstance(it, TestTextFile)
+
                 # Ensure exactly one trailing newline
-                lines = list(it.data)
+                lines = it.text.splitlines(keepends=True)
                 while lines and not lines[-1].rstrip():
                     lines.pop()
                 lines.append("\n")
@@ -591,87 +642,66 @@ class TestMutator:
                     records_1 = cls._lines_to_records(lines_1)
                     records_2 = cls._lines_to_records(lines_2)
 
-                    data = []
+                    data: list[str] = []
                     for record_1, record_2 in zip(records_1, records_2):
                         data.extend(record_1)
                         data.extend(record_2)
 
                     other_files.append(
-                        TestFile(
-                            name="input_{}.fastq".format(idx),
+                        TestTextFile(
+                            name=f"input_{idx}.fastq",
                             kind="input_1",
-                            data=data,
-                            json=None,
+                            text="".join(data),
                         )
                     )
 
                 yield test._replace(
-                    variant=test.variant + ("intl",),
+                    variant=(*test.variant, "intl"),
                     files=other_files,
-                    arguments=test.arguments + ("--interleaved-input",),
+                    arguments=(*test.arguments, "--interleaved-input"),
                 )
 
     @staticmethod
-    def _lines_to_records(lines):
+    def _lines_to_records(lines: list[str]) -> Iterator[list[str]]:
         assert len(lines) % 4 == 0, lines
         for idx in range(0, len(lines), 4):
             yield lines[idx : idx + 4]
 
     @classmethod
-    def _compress_files(cls, files, to_compress, masked_stats):
+    def _compress_files(
+        cls,
+        files: tuple[TestFile, ...],
+        to_compress: set[str],
+        masked_stats: TestFile | None,
+    ) -> tuple[TestFile, ...]:
         if not to_compress:
             return files
 
-        updated = []
+        updated: list[TestFile] = []
         for it in files:
             if it.kind in to_compress:
+                assert isinstance(it, TestTextFile)
+
                 # Tests may manually specify gzip output
                 if not it.name.endswith(".gz"):
-                    it = it._replace(name=it.name + ".gz")
-            elif it.kind == "json":
-                if masked_stats is not None:
-                    it = masked_stats
+                    it = TestTextFile(name=f"{it.name}.gz", kind=it.kind, text=it.text)
+            elif it.kind == "json" and masked_stats is not None:
+                it = masked_stats
 
             updated.append(it)
 
         return tuple(updated)
 
-    @classmethod
-    def _mask_filenames(cls, data):
-        if isinstance(data, dict):
-            updates = []
-            for key, value in data.items():
-                if key == "filenames":
-                    updates.append((key, "...[str]"))
-                else:
-                    new_value = cls._mask_filenames(value)
-                    if new_value is not value:
-                        updates.append((key, new_value))
-        elif isinstance(data, list):
-            updates = []
-            for idx, value in enumerate(data):
-                new_value = cls._mask_filenames(value)
-                if new_value is not value:
-                    updates.append((idx, new_value))
-        else:
-            return data
-
-        if updates:
-            data = copy.copy(data)
-            for idx, value in updates:
-                data[idx] = value
-
-        return data
-
 
 class TestRunner:
     def __init__(
         self,
+        *,
         test: TestConfig,
-        root,
-        executable,
+        root: str,
+        executable: str,
         keep_all: bool = False,
-    ):
+    ) -> None:
         self._test = test
 
         self.keep_all = keep_all
@@ -685,18 +715,18 @@ class TestRunner:
         self._exp_path = os.path.join(self.path, "expected")
 
     @property
-    def spec_path(self):
+    def spec_path(self) -> str:
         return self._test.path
 
     @property
-    def skip(self):
+    def skip(self) -> bool:
         return self._test.skip
 
     @property
-    def command(self):
+    def command(self) -> list[str]:
         return self._test.build_command(self.executable)
 
-    def run(self):
+    def run(self) -> None:
         if self.skip:
             return
 
@@ -718,7 +748,7 @@ class TestRunner:
             write_data(os.path.join(self._test_path, "_stderr.txt"), stderr)
             write_data(
                 os.path.join(self._test_path, "_run.sh"),
-                "#!/bin/bash\n\n{}\n".format(cmd_to_s(self.command)),
+                f"#!/bin/bash\n\n{cmd_to_s(self.command)}\n",
             )
 
             raise
@@ -727,15 +757,15 @@ class TestRunner:
         if not self.keep_all:
             shutil.rmtree(self.path)
 
-    def _setup(self, root, keys, verbose=False):
+    def _setup(self, root: str, keys: Iterable[str]) -> None:
         os.makedirs(root)
 
         for it in self._test.get_files(keys):
             # Ignored files are not written in order to make diffing simpler
-            if it.data is not None:
-                write_data(os.path.join(root, it.name), "".join(it.data))
+            if isinstance(it, (TestTextFile, TestJsonFile)):
+                write_data(os.path.join(root, it.name), it.text)
 
-    def _execute(self):
+    def _execute(self) -> tuple[int, str, str]:
         proc = subprocess.Popen(
             self.command,
             stdin=subprocess.DEVNULL,
@@ -748,8 +778,8 @@ class TestRunner:
 
         try:
             stdout, stderr = proc.communicate(timeout=3)
-        except subprocess.TimeoutExpired:
-            raise TestError("Test took too long to run")
+        except subprocess.TimeoutExpired as error:
+            raise TestError("Test took too long to run") from error
         finally:
             proc.terminate()
 
@@ -758,30 +788,27 @@ class TestRunner:
 
         return proc.returncode, stdout, stderr
 
-    def _evaluate_return_code(self, returncode, stderr):
+    def _evaluate_return_code(self, returncode: int, stderr: str) -> None:
         if returncode != self._test.return_code:
             raise TestError(
-                "Expected return-code {}, but AdapterRemoval returned {}:\n{}".format(
-                    self._test.return_code,
-                    returncode,
-                    pretty_output(filter_errors(stderr), 4),
-                )
+                f"Expected return-code {self._test.return_code}, but AdapterRemoval "
+                f"returned {returncode}:\n{pretty_output(filter_errors(stderr), 4)}"
             )
 
-    def _evaluate_terminal_output(self, stdout, stderr):
+    def _evaluate_terminal_output(self, stdout: str, stderr: str) -> None:
         # Output to STDOUT is not normally expected
         if stdout and not self._test.stdout:
-            raise TestError("Unexpected output to STDOUT: %r" % (stdout,))
+            raise TestError(f"Unexpected output to STDOUT: {stdout!r}")
 
         self._compare_terminal_output("stdout", self._test.stdout, stdout)
         self._compare_terminal_output("stderr", self._test.stderr, stderr)
 
     @staticmethod
     def _compare_terminal_output(
-        pipe,
-        expected_lines,
-        actual_text,
-    ):
+        pipe: str,
+        expected_lines: Sequence[str],
+        actual_text: str,
+    ) -> None:
         expected_lines = list(expected_lines[::-1])
         actual_lines = actual_text.split("\n")[::-1]
 
@@ -796,10 +823,10 @@ class TestRunner:
             actual_lines.pop()
 
         if expected_lines:
-            raise TestError("expected {} not found: {}".format(pipe, expected_lines[0]))
+            raise TestError(f"expected {pipe} not found: {expected_lines[0]}")
 
-    def _evaluate_output_files(self):
-        expected_files = set()
+    def _evaluate_output_files(self) -> None:
+        expected_files: set[str] = set()
         for it in self._test.get_files(_OUTPUT_FILES | _INPUT_FILES):
             expected_files.add(it.name)
 
@@ -811,7 +838,7 @@ class TestRunner:
         observed_files = set(os.listdir(self._test_path))
         unexpected_files = observed_files - expected_files
         if unexpected_files:
-            raise TestError("unexpected files created {!r}".format(unexpected_files))
+            raise TestError(f"unexpected files created {unexpected_files!r}")
 
 
 class TestUpdater:
@@ -819,7 +846,7 @@ class TestUpdater:
         self,
         test: TestConfig,
         executable: str,
-    ):
+    ) -> None:
         self.executable = executable
         self.name = " / ".join(test.name)
         self.path = os.path.dirname(test.path)
@@ -828,15 +855,15 @@ class TestUpdater:
         self._test = test
 
     @property
-    def command(self):
+    def command(self) -> list[str]:
         return self._test.build_command(self.executable)
 
-    def run(self):
+    def run(self) -> None:
         if not self.skip:
             self._run()
             self._update_files()
 
-    def _run(self):
+    def _run(self) -> None:
         proc = subprocess.Popen(
             self.command,
             stdin=subprocess.DEVNULL,
@@ -849,12 +876,12 @@ class TestUpdater:
 
         try:
             proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            raise TestError("Test took too long to run")
+        except subprocess.TimeoutExpired as error:
+            raise TestError("Test took too long to run") from error
         finally:
             proc.terminate()
 
-    def _update_files(self):
+    def _update_files(self) -> None:
         for it in self._test.files:
             filename = os.path.join(self.path, it.name)
 
@@ -865,13 +892,13 @@ class TestUpdater:
                     if error.errno != errno.ENOENT:
                         raise
             elif it.kind == "json":
-                metadata = [
+                metadata: list[tuple[bytes, bytes]] = [
                     (b'    "version":', b' "...str",\n'),
                     (b'    "command":', b' "...[str]",\n'),
                     (b'    "runtime":', b' "...float"\n'),
                 ]
 
-                lines = []
+                lines: list[bytes] = []
                 with open(filename, "rb") as handle:
                     for line in handle:
                         for key, value in list(metadata):
@@ -886,10 +913,8 @@ class TestUpdater:
                     handle.writelines(lines)
 
             else:
-                with open(filename, "rb") as handle:
-                    data = handle.read()
-
                 # Some files may intentionally be written compressed
+                data = read_file(filename, "rb")
                 if data.startswith(b"\x1f\x8b"):
                     with open(filename, "wb") as handle:
                         handle.write(gzip.decompress(data))
@@ -898,7 +923,7 @@ class TestUpdater:
 ################################################################################
 
 
-def test_name(root, current, filename):
+def test_name(root: str, current: str, filename: str) -> tuple[str, ...]:
     postfix = current[len(root) :]
     name = [v.strip() for v in postfix.split("/") if v.strip()]
     if filename != "test.json":
@@ -909,8 +934,8 @@ def test_name(root, current, filename):
     return tuple(name)
 
 
-def collect_tests(root):
-    tests = []
+def collect_tests(root: str) -> list[TestConfig]:
+    tests: list[TestConfig] = []
     for dirname, _, filenames in os.walk(root):
         for filename in filenames:
             normalized = filename.lower()
@@ -922,9 +947,7 @@ def collect_tests(root):
                 try:
                     test = TestConfig.load(name=name, filepath=filepath)
                 except TestError as error:
-                    print_err(
-                        "Error while loading test {!r}: {}".format(filepath, error)
-                    )
+                    print_err(f"Error while loading test {filepath!r}: {error}")
                     sys.exit(1)
 
                 tests.append(test)
@@ -932,10 +955,12 @@ def collect_tests(root):
     return tests
 
 
-def build_test_runners(args, tests):
-    result = []
+def build_test_runners(args: Args, tests: list[TestConfig]) -> list[TestRunner]:
+    result: list[TestRunner] = []
     for template in tests:
-        for test in TestMutator.create_exhaustive_tests(template, args.exhaustive):
+        for test in TestMutator.create_exhaustive_tests(
+            template, exhaustive=args.exhaustive
+        ):
             test = TestRunner(
                 test=test,
                 root=args.work_dir,
@@ -948,17 +973,17 @@ def build_test_runners(args, tests):
     return result
 
 
-def build_test_updaters(args, tests):
+def build_test_updaters(args: Args, tests: list[TestConfig]) -> list[TestUpdater]:
     return [TestUpdater(test, args.executable) for test in tests if not test.skip]
 
 
-def collect_unused_files(root, tests):
-    observed_files = set()
+def collect_unused_files(root: str, tests: list[TestConfig]) -> set[str]:
+    observed_files: set[str] = set()
     for dirname, _, filenames in os.walk(root):
         for filename in filenames:
             observed_files.add(os.path.join(dirname, filename))
 
-    recorded_files = set()
+    recorded_files: set[str] = set()
     for test in tests:
         recorded_files.add(test.path)
         dirname = os.path.dirname(test.path)
@@ -968,20 +993,34 @@ def collect_unused_files(root, tests):
     return observed_files - recorded_files
 
 
-def run_test(runner: TestRunner):
+def run_test(
+    runner: TestRunner | TestUpdater,
+) -> tuple[TestRunner | TestUpdater, Exception | None]:
     try:
         runner.run()
-        return runner, None
     except TestError as error:
         return runner, error
-    except Exception:
+    except Exception:  # noqa: BLE001
         return runner, TestError(traceback.format_exc())
+    else:
+        return runner, None
 
 
 ################################################################################
 
 
-def parse_args(argv):
+class Args(argparse.Namespace):
+    work_dir: str
+    source_dir: str
+    executable: str
+    max_failures: float
+    keep_all: bool
+    exhaustive: bool
+    create_updated_reference: bool
+    threads: int
+
+
+def parse_args(argv: list[str]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("work_dir", help="Directory in which to run test-cases.")
     parser.add_argument("source_dir", help="Directory containing test-cases.")
@@ -999,17 +1038,20 @@ def parse_args(argv):
     )
     parser.add_argument(
         "--keep-all",
+        default=False,
         action="store_true",
         help="Keep both completed and failed test folders, "
         "not just the folders of failed tests.",
     )
     parser.add_argument(
         "--exhaustive",
+        default=False,
         action="store_true",
         help="Perform exhaustive testing by varying input/output formats",
     )
     parser.add_argument(
         "--create-updated-reference",
+        default=False,
         action="store_true",
         help="Creates updated reference files by running test commands in the "
         "specified work folder, mirroring the structure of the input folder. "
@@ -1022,13 +1064,13 @@ def parse_args(argv):
         help="Size of thread-pool for concurrent execution of tests",
     )
 
-    return parser.parse_args(argv)
+    return parser.parse_args(argv, namespace=Args())
 
 
-def main(argv):
+def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
-    print("Testing executable %r" % (args.executable,))
+    print(f"Testing executable {args.executable!r}")
     if not os.path.exists(args.executable):
         print_err("ERROR: Executable does not exist")
         return 1
@@ -1052,16 +1094,16 @@ def main(argv):
         args.source_dir = args.work_dir
         args.keep_all = True
 
-    print("Reading test-cases from %r" % (args.source_dir,))
+    print(f"Reading test-cases from {args.source_dir!r}")
     tests = collect_tests(args.source_dir)
     tests.sort(key=lambda it: it.path)
-    print("  {:,} tests found".format(len(tests)))
+    print(f"  {len(tests):,} tests found")
 
     unused_files = collect_unused_files(args.source_dir, tests)
     if unused_files:
-        print_err("Found {} unused files:".format(len(unused_files)))
+        print_err(f"Found {len(unused_files)} unused files:")
         for idx, filepath in enumerate(unused_files, start=1):
-            print("  {}. {}".format(idx, shlex.quote(filepath)))
+            print(f"  {idx}. {shlex.quote(filepath)}")
 
         return 1
 
@@ -1072,8 +1114,8 @@ def main(argv):
         args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
         exhaustive_tests = build_test_runners(args, tests)
 
-    print("  {:,} test variants generated".format(len(exhaustive_tests)))
-    print("Writing test-cases results to %r" % (args.work_dir,))
+    print(f"  {len(exhaustive_tests):,} test variants generated")
+    print(f"Writing test-cases results to {args.work_dir!r}")
 
     n_failures = 0
     n_successes = 0
@@ -1113,13 +1155,13 @@ def main(argv):
             else:
                 n_failures += 1
                 assert last_test is not None
-                print_err("\nTest {} failed:".format(last_test.name))
-                print_err("  Specification = {}".format(last_test.spec_path))
-                print_err("  Directory     = {}".format(last_test.path))
-                print_err("  Command       = {}".format(cmd_to_s(last_test.command)))
+                print_err(f"\nTest {last_test.name} failed:")
+                print_err(f"  Specification = {last_test.spec_path}")
+                print_err(f"  Directory     = {last_test.path}")
+                print_err(f"  Command       = {cmd_to_s(last_test.command)}")
 
                 error = "\n                  ".join(str(last_error).split("\n"))
-                print_err("  Error         = {}".format(error))
+                print_err(f"  Error         = {error}")
 
                 if n_failures >= args.max_failures:
                     pool.terminate()
@@ -1139,7 +1181,7 @@ def main(argv):
         print_ok("\nAll %i tests succeeded." % (len(exhaustive_tests),))
 
     if n_skipped:
-        print_warn("Skipped {} tests!".format(n_skipped))
+        print_warn(f"Skipped {n_skipped} tests!")
 
     return 1 if n_failures else 0
 
