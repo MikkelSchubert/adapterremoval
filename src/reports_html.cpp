@@ -535,11 +535,6 @@ write_html_processing_section(const userconfig& config,
                               const statistics& stats,
                               std::ofstream& output)
 {
-  if (config.run_type == ar_command::demultiplex_sequences ||
-      config.run_type == ar_command::report_only) {
-    return;
-  }
-
   trimming_statistics totals;
   for (const auto& it : stats.trimming) {
     totals += *it;
@@ -794,10 +789,6 @@ write_html_demultiplexing_section(const userconfig& config,
                                   std::ofstream& output)
 
 {
-  if (!config.adapters.barcode_count()) {
-    return;
-  }
-
   write_html_section_title("Demultiplexing", output);
 
   json_list data;
@@ -950,10 +941,21 @@ write_html_report(const userconfig& config,
     output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
     write_html_summary_section(config, stats, output);
-    write_html_processing_section(config, stats, output);
+
+    if (config.run_type != ar_command::demultiplex_sequences &&
+        config.run_type != ar_command::report_only) {
+      write_html_processing_section(config, stats, output);
+    }
+
     write_html_input_section(config, stats, output);
-    write_html_demultiplexing_section(config, stats, output);
-    write_html_output_section(config, stats, output);
+
+    if (config.adapters.barcode_count()) {
+      write_html_demultiplexing_section(config, stats, output);
+    }
+
+    if (config.run_type != ar_command::report_only) {
+      write_html_output_section(config, stats, output);
+    }
 
     html_body_end().write(output);
   } catch (const std::ios_base::failure& error) {
