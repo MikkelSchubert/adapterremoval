@@ -625,7 +625,9 @@ class TestMutator:
         updated = []
         for it in files:
             if it.kind in to_compress:
-                it = it._replace(name=it.name + ".gz")
+                # Tests may manually specify gzip output
+                if not it.name.endswith(".gz"):
+                    it = it._replace(name=it.name + ".gz")
             elif it.kind == "json":
                 if masked_stats is not None:
                     it = masked_stats
