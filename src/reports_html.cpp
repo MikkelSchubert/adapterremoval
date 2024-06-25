@@ -289,6 +289,7 @@ write_html_sampling_note(const userconfig& config,
   if (config.report_sample_rate < 1.0) {
     html_sampling_note()
       .set_label(label)
+      .set_reads(format_rough_number((stats.number_of_sampled_reads())))
       .set_pct(format_percentage(stats.number_of_sampled_reads(),
                                  stats.number_of_input_reads()))
       .write(output);

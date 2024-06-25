@@ -494,6 +494,8 @@ html_sampling_note::html_sampling_note()
   , m_label_is_set()
   , m_pct()
   , m_pct_is_set()
+  , m_reads()
+  , m_reads_is_set()
 {
   //
 }
@@ -519,17 +521,27 @@ html_sampling_note::set_pct(const std::string& value)
   return *this;
 }
 
+html_sampling_note&
+html_sampling_note::set_reads(const std::string& value)
+{
+  m_reads = value;
+  m_reads_is_set = true;
+  return *this;
+}
+
 void
 html_sampling_note::write(std::ofstream& out)
 {
   AR_REQUIRE(!m_written, "template html_sampling_note already written");
   AR_REQUIRE(m_label_is_set, "html_sampling_note::label not set");
   AR_REQUIRE(m_pct_is_set, "html_sampling_note::pct not set");
+  AR_REQUIRE(m_reads_is_set, "html_sampling_note::reads not set");
   // clang-format off
   auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
-  out << "                Base composition statistics/plots are based on " << m_pct << "% of " << m_label << " reads sampled during execution.\n";
+  out << "                Base composition statistics/plots are based on " << m_reads << " (" << m_pct << "%) of " << m_label << " reads sampled during\n";
+  out << "                execution.\n";
   out << "            </p>\n";
   out << "\n";
   // clang-format on
@@ -1541,7 +1553,7 @@ html_body_end::write(std::ofstream& out)
   out << "\n";
   out << "</body>\n";
   out << "\n";
-  out << "</html>\n";
+  out << "</html>";
   // clang-format on
   m_written = true;
 }

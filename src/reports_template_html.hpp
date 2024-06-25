@@ -151,6 +151,7 @@ public:
 
   html_sampling_note& set_label(const std::string& value);
   html_sampling_note& set_pct(const std::string& value);
+  html_sampling_note& set_reads(const std::string& value);
 
   void write(std::ofstream& out) override;
 
@@ -160,6 +161,8 @@ private:
   bool m_label_is_set;
   std::string m_pct;
   bool m_pct_is_set;
+  std::string m_reads;
+  bool m_reads_is_set;
 };
 
 class html_output_note_pe : public html_template
