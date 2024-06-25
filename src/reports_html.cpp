@@ -385,7 +385,11 @@ write_html_summary_section(const userconfig& config,
       write_html_sampling_note(config, "output", totals, output);
 
       // Note regarding passed / discarded reads
-      html_output_note_pe().write(output);
+      html_output_footnote()
+        .set_symbol("*")
+        .set_text("The <b>Passed</b> column includes all read types except for "
+                  "<b>Discarded</b> reads.")
+        .write(output);
     }
   } else if (config.run_type == ar_command::report_only) {
     io_summary_writer summary("Input summary", io_summary_writer::io::input);
@@ -409,7 +413,11 @@ write_html_summary_section(const userconfig& config,
     write_html_sampling_note(config, "input/output", totals, output);
 
     // Note regarding discarded reads in output
-    html_output_note_se().write(output);
+    html_output_footnote()
+      .set_symbol("*")
+      .set_text(
+        "<b>Discarded</b> reads are not included in the <b>Output</b> column.")
+      .write(output);
   }
 }
 
@@ -792,7 +800,10 @@ write_html_input_section(const userconfig& config,
       .write(output);
 
     if (config.run_type == ar_command::report_only) {
-      html_output_insert_size().write(output);
+      html_output_note()
+        .set_text(
+          "Insert size distribution inferred using adapter-free alignments.")
+        .write(output);
     }
   }
 

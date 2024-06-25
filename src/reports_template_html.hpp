@@ -165,49 +165,45 @@ private:
   bool m_reads_is_set;
 };
 
-class html_output_note_pe : public html_template
+class html_output_note : public html_template
 {
 public:
-  html_output_note_pe();
-  ~html_output_note_pe() override;
+  html_output_note();
+  ~html_output_note() override;
 
-  html_output_note_pe(const html_output_note_pe&) = delete;
-  html_output_note_pe& operator=(const html_output_note_pe&) = delete;
+  html_output_note(const html_output_note&) = delete;
+  html_output_note& operator=(const html_output_note&) = delete;
+
+  html_output_note& set_text(const std::string& value);
 
   void write(std::ofstream& out) override;
 
 private:
   bool m_written;
+  std::string m_text;
+  bool m_text_is_set;
 };
 
-class html_output_note_se : public html_template
+class html_output_footnote : public html_template
 {
 public:
-  html_output_note_se();
-  ~html_output_note_se() override;
+  html_output_footnote();
+  ~html_output_footnote() override;
 
-  html_output_note_se(const html_output_note_se&) = delete;
-  html_output_note_se& operator=(const html_output_note_se&) = delete;
+  html_output_footnote(const html_output_footnote&) = delete;
+  html_output_footnote& operator=(const html_output_footnote&) = delete;
+
+  html_output_footnote& set_symbol(const std::string& value);
+  html_output_footnote& set_text(const std::string& value);
 
   void write(std::ofstream& out) override;
 
 private:
   bool m_written;
-};
-
-class html_output_insert_size : public html_template
-{
-public:
-  html_output_insert_size();
-  ~html_output_insert_size() override;
-
-  html_output_insert_size(const html_output_insert_size&) = delete;
-  html_output_insert_size& operator=(const html_output_insert_size&) = delete;
-
-  void write(std::ofstream& out) override;
-
-private:
-  bool m_written;
+  std::string m_symbol;
+  bool m_symbol_is_set;
+  std::string m_text;
+  bool m_text_is_set;
 };
 
 class html_summary_trimming_head : public html_template

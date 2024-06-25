@@ -548,79 +548,82 @@ html_sampling_note::write(std::ofstream& out)
   m_written = true;
 }
 
-html_output_note_pe::html_output_note_pe()
+html_output_note::html_output_note()
   : m_written()
+  , m_text()
+  , m_text_is_set()
 {
   //
 }
 
-html_output_note_pe::~html_output_note_pe()
+html_output_note::~html_output_note()
 {
-  AR_REQUIRE(m_written, "template html_output_note_pe was not written");
+  AR_REQUIRE(m_written, "template html_output_note was not written");
+}
+
+html_output_note&
+html_output_note::set_text(const std::string& value)
+{
+  m_text = value;
+  m_text_is_set = true;
+  return *this;
 }
 
 void
-html_output_note_pe::write(std::ofstream& out)
+html_output_note::write(std::ofstream& out)
 {
-  AR_REQUIRE(!m_written, "template html_output_note_pe already written");
+  AR_REQUIRE(!m_written, "template html_output_note already written");
+  AR_REQUIRE(m_text_is_set, "html_output_note::text not set");
   // clang-format off
   auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
-  out << "            <p class=\"note\">\n";
-  out << "                <b>*</b> The <b>Passed</b> column includes all read types except for <b>Discarded</b> reads.\n";
-  out << "            </p>\n";
+  out << "            <p class=\"note\">" << m_text << "</p>\n";
   out << "\n";
   // clang-format on
   m_written = true;
 }
 
-html_output_note_se::html_output_note_se()
+html_output_footnote::html_output_footnote()
   : m_written()
+  , m_symbol()
+  , m_symbol_is_set()
+  , m_text()
+  , m_text_is_set()
 {
   //
 }
 
-html_output_note_se::~html_output_note_se()
+html_output_footnote::~html_output_footnote()
 {
-  AR_REQUIRE(m_written, "template html_output_note_se was not written");
+  AR_REQUIRE(m_written, "template html_output_footnote was not written");
+}
+
+html_output_footnote&
+html_output_footnote::set_symbol(const std::string& value)
+{
+  m_symbol = value;
+  m_symbol_is_set = true;
+  return *this;
+}
+
+html_output_footnote&
+html_output_footnote::set_text(const std::string& value)
+{
+  m_text = value;
+  m_text_is_set = true;
+  return *this;
 }
 
 void
-html_output_note_se::write(std::ofstream& out)
+html_output_footnote::write(std::ofstream& out)
 {
-  AR_REQUIRE(!m_written, "template html_output_note_se already written");
+  AR_REQUIRE(!m_written, "template html_output_footnote already written");
+  AR_REQUIRE(m_symbol_is_set, "html_output_footnote::symbol not set");
+  AR_REQUIRE(m_text_is_set, "html_output_footnote::text not set");
   // clang-format off
   auto id = g_html_id; ++g_html_id; (void)id;
   out << "\n";
-  out << "            <p class=\"note\">\n";
-  out << "                <b>*</b> <b>Discarded</b> reads are not included in the <b>Output</b> column.\n";
-  out << "            </p>\n";
-  out << "\n";
-  // clang-format on
-  m_written = true;
-}
-
-html_output_insert_size::html_output_insert_size()
-  : m_written()
-{
-  //
-}
-
-html_output_insert_size::~html_output_insert_size()
-{
-  AR_REQUIRE(m_written, "template html_output_insert_size was not written");
-}
-
-void
-html_output_insert_size::write(std::ofstream& out)
-{
-  AR_REQUIRE(!m_written, "template html_output_insert_size already written");
-  // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
-  out << "\n";
-  out << "            <p class=\"note\">\n";
-  out << "                Insert size distribution inferred using adapter-free alignments.\n";
-  out << "            </p>\n";
+  out << "            <p class=\"note\"><b>" << m_symbol << "</b> " << m_text << "</p>\n";
   out << "\n";
   // clang-format on
   m_written = true;
