@@ -386,6 +386,12 @@ write_html_summary_section(const userconfig& config,
       // Note regarding passed / discarded reads
       html_output_note_pe().write(output);
     }
+  } else if (config.run_type == ar_command::report_only) {
+    io_summary_writer summary("Input summary", io_summary_writer::io::input);
+    summary.add_column("Input", *stats.input_1);
+    summary.write(output);
+
+    write_html_sampling_note(config, "input", *stats.input_1, output);
   } else {
     io_summary_writer summary("Input/Output summary",
                               io_summary_writer::io::input);
