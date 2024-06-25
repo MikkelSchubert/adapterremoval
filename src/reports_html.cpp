@@ -399,8 +399,13 @@ write_html_summary_section(const userconfig& config,
     summary.add_column("Input", *stats.input_1);
     summary.add_column("Output", output_1);
     summary.add_column("Discarded*", discarded);
-
     summary.write(output);
+
+    fastq_statistics totals;
+    totals += *stats.input_1;
+    totals += output_1;
+
+    write_html_sampling_note(config, "input/output", totals, output);
 
     // Note regarding discarded reads in output
     html_output_note_se().write(output);
