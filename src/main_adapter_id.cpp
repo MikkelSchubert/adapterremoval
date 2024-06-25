@@ -16,186 +16,63 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapterset.hpp" // for adapter_set
+#include "adapter_id.hpp" // for adapter_id_stats
 #include "alignment.hpp"  // for extract_adapter_sequences, sequence_aligner
 #include "counts.hpp"     // for indexed_counts
 #include "debug.hpp"      // for AR_REQUIRE
 #include "fastq.hpp"      // for ACGTN, fastq, fastq_pair_vec, ACGT, ACGT:...
 #include "fastq_io.hpp"   // for read_fastq, fastq_read_chunk
 #include "scheduler.hpp"  // for threadstate, scheduler, analytical_step
-#include "simd.hpp"       // for size_t
 #include "userconfig.hpp" // for userconfig
-#include "utilities.hpp"  // for merge
-#include <algorithm>      // for max, copy, min, reverse
-#include <array>          // for array
 #include <cstddef>        // for size_t
 #include <iomanip>        // for operator<<, setw
 #include <iostream>       // for operator<<, basic_ostream, ostringstream
-#include <memory>         // for unique_ptr, allocator_traits<>::value_type
-#include <queue>          // for priority_queue
-#include <sstream>        // for basic_ostringstream
 #include <string>         // for string, operator<<, char_traits
-#include <utility>        // for pair
-#include <vector>         // for vector
 
 namespace adapterremoval {
 
-///////////////////////////////////////////////////////////////////////////////
-// KMer related functions and constants
-
-//! Length of kmers to collect to find common kmers
-const size_t KMER_LENGTH = 9;
-//! Size of vector needed for kmer counts
-const size_t N_KMERS = 2 << (2 * KMER_LENGTH);
 //! The N most common kmers to print
 const size_t TOP_N_KMERS = 5;
 
-/**
- * Hashing function for string consisting of the chars "ACGT" (uppercase only).
- * Will return a unique number in the range 0 to 4^N - 1 for a given nucleotide
- * sequence. Passing characters other than "ACGT" (uppercase only) will result
- * in hash collisions.
- */
-inline size_t
-kmer_to_size_t(const std::string& kmer)
-{
-  size_t index = 0;
-  for (size_t i = 0; i < kmer.length(); ++i) {
-    index = (index << 2) | ACGT::to_index(kmer.at(i));
-  }
-
-  return index;
-}
-
-/** Translates a hash generated using kmer_to_size_t into a NT sequence. */
-inline std::string
-size_t_to_kmer(size_t kmer)
-{
-  std::string kmer_s(KMER_LENGTH, 'N');
-  for (size_t i = 1; i <= KMER_LENGTH; ++i) {
-    kmer_s.at(KMER_LENGTH - i) = "ACTG"[kmer & 0x3];
-    kmer = kmer >> 2;
-  }
-
-  return kmer_s;
-}
-
-using kmer_map = std::vector<unsigned>;
-using nt_count = std::pair<size_t, unsigned>;
-
-/** Functor for sorting kmers by frequency. */
-struct cmp_nt_count
-{
-  bool operator()(const nt_count& a, const nt_count& b) const
-  {
-    return (a.second > b.second);
-  }
-};
-
-using kmer_queue =
-  std::priority_queue<nt_count, std::vector<nt_count>, cmp_nt_count>;
-using kmer_vector = std::vector<nt_count>;
-
 /** Prints the N top kmers in a kmer_map, including sequence and frequency. */
 void
-print_most_common_kmers(const kmer_map& kmers, size_t print_n = TOP_N_KMERS)
+print_most_common_kmers(const consensus_adapter& adapter)
 {
-  size_t total = 0;
-  kmer_queue queue;
-  for (size_t i = 0; i < kmers.size(); ++i) {
-    nt_count value(i, kmers.at(i));
-    total += value.second;
-
-    if (queue.size() >= print_n) {
-      // The top value will be the currently lowest value in the queue
-      if (queue.top().second < value.second) {
-        queue.pop();
-        queue.push(value);
-      }
-    } else if (value.second) {
-      queue.push(value);
-    }
-  }
-
-  kmer_vector top_n_kmers;
-  while (!queue.empty()) {
-    top_n_kmers.push_back(queue.top());
-    queue.pop();
-  }
-
   std::cout.precision(2);
   std::cout << std::fixed;
-  std::cout << "    Top 5 most common " << KMER_LENGTH << "-bp 5'-kmers:\n";
+  std::cout << "    Top 5 most common " << adapter.top_kmers.size()
+            << "-bp 5'-kmers:\n";
 
-  std::reverse(top_n_kmers.begin(), top_n_kmers.end());
-  for (size_t i = 0; i < top_n_kmers.size(); ++i) {
-    const nt_count& count = top_n_kmers.at(i);
-    std::string kmer_s = size_t_to_kmer(count.first);
+  for (size_t i = 0; i < adapter.top_kmers.size(); ++i) {
+    const auto& count = adapter.top_kmers.at(i);
 
     std::cout << std::string(12, ' ');
-    std::cout << i + 1 << ": " << kmer_s << " = " << std::right << std::setw(5)
-              << (100.0 * count.second) / total << "% (" << count.second << ")"
-              << "\n";
+    std::cout << i + 1 << ": " << count.first << " = " << std::right
+              << std::setw(5) << (100.0 * count.second) / adapter.total_kmers
+              << "% (" << count.second << ")\n";
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Consensus adapter related functions and constants
-
 /**
- * Build representation of identity between an adapter and a consensus sequence.
+ * Build representation of identity between two sequences.
  *
  * The resulting string represents N with wildcards ('*'), matching bases with
  * pipes ('|') and mismatches with spaces (' '). Only overlapping bases are
  * compared.
  */
 std::string
-compare_consensus_with_ref(const std::string& ref, const std::string& consensus)
+compare_consensus_with_ref(const std::string& a, const std::string& b)
 {
   std::ostringstream identity;
-  for (size_t i = 0, size = std::min(consensus.size(), ref.size()); i < size;
-       ++i) {
-    if (ref.at(i) == 'N' || consensus.at(i) == 'N') {
+  for (size_t i = 0, size = std::min(b.size(), a.size()); i < size; ++i) {
+    if (a.at(i) == 'N' || b.at(i) == 'N') {
       identity << '*';
     } else {
-      identity << (ref.at(i) == consensus.at(i) ? '|' : ' ');
+      identity << (a.at(i) == b.at(i) ? '|' : ' ');
     }
   }
 
   return identity.str();
-}
-
-/**
- * Takes a nt_counts object, and returns a pair containing the majority nt and
- * the Phred encoded quality score of the consensus, defined as the proportion
- * of the bases which match the majority nucleotide (p = m / (N + 1)). If no
- * majority nucleotide can be found, 'N' is returned instead.
- */
-std::pair<char, char>
-get_consensus_nt(const indexed_counts<ACGTN>& nts, size_t i)
-{
-  // Always assume one non-consensus observation; this is more reasonable
-  // than allowing an error-rate of 0, especially for few observations.
-  size_t total_count = 1;
-
-  char best_nuc = 'N';
-  size_t best_count = 0;
-  for (const char nuc : ACGT::values) {
-    const size_t cur_count = nts.get(nuc, i);
-    total_count += cur_count;
-
-    if (cur_count > best_count) {
-      best_nuc = nuc;
-      best_count = cur_count;
-    } else if (cur_count == best_count) {
-      best_nuc = 'N';
-    }
-  }
-
-  const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
-  const char phred = fastq::p_to_phred_33(pvalue);
-
-  return std::pair<char, char>(best_nuc, phred);
 }
 
 /**
@@ -207,86 +84,23 @@ get_consensus_nt(const indexed_counts<ACGTN>& nts, size_t i)
  * @param ref Default sequence for the inferred adapter
  */
 void
-print_consensus_adapter(const indexed_counts<ACGTN>& nt_counts,
-                        const kmer_map& kmers,
+print_consensus_adapter(const consensus_adapter_stats& stats,
                         const std::string& name,
                         const std::string& ref)
 {
-  std::ostringstream sequence;
-  std::ostringstream qualities;
+  const auto consensus = stats.summarize(TOP_N_KMERS);
+  const auto& adapter = consensus.adapter;
 
-  for (size_t i = 0; i < nt_counts.size(); ++i) {
-    const std::pair<char, char> consensus = get_consensus_nt(nt_counts, i);
-
-    sequence << consensus.first;
-    qualities << consensus.second;
-  }
-
-  const std::string consensus = sequence.str();
-  const std::string identity = compare_consensus_with_ref(ref, consensus);
+  const std::string identity =
+    compare_consensus_with_ref(ref, adapter.sequence());
 
   std::cout << "  " << name << ":  " << ref << "\n"
             << "               " << identity << "\n"
-            << "   Consensus:  " << consensus << "\n"
-            << "     Quality:  " << qualities.str() << "\n\n";
+            << "   Consensus:  " << adapter.sequence() << "\n"
+            << "     Quality:  " << adapter.qualities() << "\n\n";
 
-  print_most_common_kmers(kmers);
+  print_most_common_kmers(consensus);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-//
-
-/** Struct for collecting adapter fragments, kmer frequencies, and read stats.
- */
-struct adapter_stats
-{
-public:
-  adapter_stats()
-    : adapter1_counts()
-    , adapter2_counts()
-    , adapter1_kmers(N_KMERS, 0)
-    , adapter2_kmers(N_KMERS, 0)
-    , aligned_pairs(0)
-    , unaligned_pairs(0)
-    , pairs_with_adapters(0)
-  {
-  }
-
-  /** Merge overall trimming_statistics, consensus, and k-mer counts. */
-  adapter_stats& operator+=(const adapter_stats& other)
-  {
-    adapter1_counts += other.adapter1_counts;
-    adapter2_counts += other.adapter2_counts;
-    merge(adapter1_kmers, other.adapter1_kmers);
-    merge(adapter2_kmers, other.adapter2_kmers);
-
-    aligned_pairs += other.aligned_pairs;
-    unaligned_pairs += other.unaligned_pairs;
-    pairs_with_adapters += other.pairs_with_adapters;
-
-    return *this;
-  }
-
-  //! Nucleotide frequencies of putative adapter 1 fragments
-  indexed_counts<ACGTN> adapter1_counts;
-  //! Nucleotide frequencies of putative adapter 2 fragments
-  indexed_counts<ACGTN> adapter2_counts;
-  //! 5' KMer frequencies of putative adapter 1 fragments
-  kmer_map adapter1_kmers;
-  //! 5' KMer frequencies of putative adapter 2 fragments
-  kmer_map adapter2_kmers;
-  //! Number of properly aligned reads
-  size_t aligned_pairs;
-  //! Number of reads that could not be aligned
-  size_t unaligned_pairs;
-  //! Number of reads with adapter fragments
-  size_t pairs_with_adapters;
-
-  //! Copy construction not supported
-  adapter_stats(const adapter_stats&) = delete;
-  //! Assignment not supported
-  adapter_stats& operator=(const adapter_stats&) = delete;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Threaded adapter identification step
@@ -345,24 +159,20 @@ public:
               << "Printing adapter sequences, including poly-A tails:"
               << std::endl;
 
-    print_consensus_adapter(
-      stats->adapter1_counts,
-      stats->adapter1_kmers,
-      "--adapter1",
-      m_config.adapters.get_raw_adapters().front().first.sequence());
-    std::cout << "\n\n";
+    auto reference = m_config.adapters.get_raw_adapters().front();
+    // Revert to user-supplied orientation
+    reference.second.reverse_complement();
 
-    fastq adapter2 = m_config.adapters.get_raw_adapters().front().second;
-    adapter2.reverse_complement();
-    print_consensus_adapter(stats->adapter2_counts,
-                            stats->adapter2_kmers,
-                            "--adapter2",
-                            adapter2.sequence());
+    print_consensus_adapter(
+      stats->adapter1, "--adapter1", reference.first.sequence());
+    std::cout << "\n\n";
+    print_consensus_adapter(
+      stats->adapter2, "--adapter2", reference.second.sequence());
   }
 
 private:
   void process_reads(const sequence_aligner& aligner,
-                     adapter_stats& stats,
+                     adapter_id_stats& stats,
                      fastq& read1,
                      fastq& read2) const
   {
@@ -381,38 +191,18 @@ private:
           extract_adapter_sequences(alignment, read1, read2)) {
         stats.pairs_with_adapters++;
 
-        process_adapter(
-          read1.sequence(), stats.adapter1_counts, stats.adapter1_kmers);
-
+        stats.adapter1.process(read1.sequence());
         read2.reverse_complement();
-        process_adapter(
-          read2.sequence(), stats.adapter2_counts, stats.adapter2_kmers);
+        stats.adapter2.process(read2.sequence());
       }
     } else {
       stats.unaligned_pairs++;
     }
   }
 
-  void process_adapter(const std::string& sequence,
-                       indexed_counts<ACGTN>& nt_counts,
-                       kmer_map& kmers) const
-  {
-    nt_counts.resize_up_to(sequence.length());
-    for (size_t i = 0; i < sequence.length(); ++i) {
-      nt_counts.inc(sequence.at(i), i);
-    }
-
-    if (sequence.length() >= KMER_LENGTH) {
-      const std::string kmer = sequence.substr(0, KMER_LENGTH);
-      if (kmer.find('N') == std::string::npos) {
-        kmers.at(kmer_to_size_t(kmer)) += 1;
-      }
-    }
-  }
-
   const userconfig& m_config;
 
-  threadstate<adapter_stats> m_stats;
+  threadstate<adapter_id_stats> m_stats;
 };
 
 int

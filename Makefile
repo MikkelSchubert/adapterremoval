@@ -169,6 +169,7 @@ CORE_OBJS := \
 
 # Build objects used only by the executable
 EXEC_OBJS := \
+	$(OBJS_DIR)/adapter_id.o \
 	$(OBJS_DIR)/adapterset.o \
 	$(OBJS_DIR)/benchmarking.o \
 	$(OBJS_DIR)/demultiplexing.o \
