@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf8 -*-
 """
 /*************************************************************************\\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
@@ -20,13 +19,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \\*************************************************************************/
 """
+
+from __future__ import annotations
+
 import argparse
+import functools
 import io
 import re
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import NamedTuple, Optional
+from typing import NamedTuple, NoReturn
 
 _RE_SECTION = re.compile(r"<!--\s+template:\s+([a-z0-9_]+)\s+-->", re.I)
 _RE_FIELD = re.compile(
@@ -35,8 +38,8 @@ _RE_FIELD = re.compile(
         {{\w+}}                           # Single template value
         | \[\[\w+\]\]                     # One or more template values (repeated line)
         | JS_TEMPLATE_[a-z0-9_]+          # Single value embedded in JS
-        | JS_DEFAULT_\w+\s*=\s*\w+        # Single value with default token embedded in JS
-        | JS_DEFAULT_\w+\s*=\s*".*[^\\]"  # Single value with default quoted value embedded in JS
+        | JS_DEFAULT_\w+\s*=\s*\w+        # Value with default token embedded in JS
+        | JS_DEFAULT_\w+\s*=\s*".*[^\\]"  # Value with quoted default embedded in JS
     )
     """,
     re.IGNORECASE | re.VERBOSE | re.ASCII,
@@ -68,7 +71,7 @@ public:
 };"""
 
 
-def abort(fmt, *args):
+def abort(fmt: str, *args: object) -> NoReturn:
     print("ERROR:", fmt.format(*args), file=sys.stderr)
     sys.exit(1)
 
@@ -82,12 +85,17 @@ class FieldType(Enum):
 class Field(NamedTuple):
     name: str
     kind: FieldType
-    default: Optional[str]
+    default: str | None
 
 
-def read_template(filepath):
-    current = None
-    sections = {}
+class Section(NamedTuple):
+    lines: list[str]
+    variables: list[Field]
+
+
+def read_template(filepath: Path) -> dict[str, Section]:
+    current: list[str] | None = None
+    sections: dict[str, list[str]] = {}
     with filepath.open() as handle:
         for line in handle:
             match = _RE_SECTION.search(line)
@@ -100,10 +108,10 @@ def read_template(filepath):
             elif current is not None:
                 current.append(line)
 
-    result = {}
+    result: dict[str, Section] = {}
     for key, lines in sections.items():
         text = "".join(lines)
-        variables = {}
+        variables: dict[str, Field] = {}
         for value in _RE_FIELD.findall(text):
             default = None
 
@@ -136,15 +144,15 @@ def read_template(filepath):
                     default=default,
                 )
 
-        result[key] = {
-            "lines": lines,
-            "variables": sorted(variables.values(), key=lambda it: it.name),
-        }
+        result[key] = Section(
+            lines=lines,
+            variables=sorted(variables.values(), key=lambda it: it.name),
+        )
 
     return result
 
 
-def quote(value):
+def quote(value: str) -> str:
     result = ['"']
     for char in value:
         encoded = _CPP_ENCODED.get(char)
@@ -157,7 +165,7 @@ def quote(value):
     return "".join(result)
 
 
-def inject_variables(value):
+def inject_variables(value: str) -> str:
     result = [" ", "out"]
 
     repeater = None
@@ -167,13 +175,13 @@ def inject_variables(value):
         result.append("<<")
         if lc_field.startswith("js_template_"):
             name = field[12:].lower()
-            result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
+            result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
         elif lc_field.startswith("js_default_"):
             name, _ = field[11:].lower().split("=", 1)
-            result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
+            result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
         elif field.startswith("{{") and field.endswith("}}"):
             name = field[2:-2].lower()
-            result.append(_BUILTIN_VARS.get(name, "m_{}".format(name)))
+            result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
         elif field.startswith("[[") and field.endswith("]]"):
             if repeater is not None:
                 abort("multiple repeater values: {!r} and {!r}", repeater, field[2:-2])
@@ -187,17 +195,17 @@ def inject_variables(value):
     if repeater is None:
         return result
 
-    return "  for (const auto& value : m_{}) {{\n  {}\n  }}".format(repeater, result)
+    return f"  for (const auto& value : m_{repeater}) {{\n  {result}\n  }}"
 
 
-def to_classname(name):
-    return "html_{}".format(name.lower())
+def to_classname(name: str) -> str:
+    return f"html_{name.lower()}"
 
 
-def write_header(sections):
+def write_header(sections: dict[str, Section]) -> str:
     handle = io.StringIO()
 
-    def tprint(line, *args):
+    def tprint(line: str, *args: object) -> None:
         print(line.format(*args), file=handle)
 
     tprint(__doc__.strip())
@@ -223,10 +231,10 @@ def write_header(sections):
         tprint("  {}(const {}&) = delete;", classname, classname)
         tprint("  {}& operator=(const {}&) = delete;", classname, classname)
 
-        if props["variables"]:
+        if props.variables:
             tprint("")
 
-        for field in props["variables"]:
+        for field in props.variables:
             if field.kind == FieldType.REPEATED:
                 tprint("  {}& add_{}(const std::string& value);", classname, field.name)
             else:
@@ -237,7 +245,7 @@ def write_header(sections):
         tprint("\nprivate:")
         tprint("  bool m_written;")
 
-        for field in props["variables"]:
+        for field in props.variables:
             if field.kind == FieldType.REPEATED:
                 tprint("  std::vector<std::string> m_{};", field.name)
             else:
@@ -254,10 +262,10 @@ def write_header(sections):
     return handle.getvalue()
 
 
-def write_implementations(sections, header_name):
+def write_implementations(sections: dict[str, Section], header_name: str) -> str:
     handle = io.StringIO()
 
-    def tprint(line, *args):
+    def tprint(line: str, *args: object) -> None:
         print(line.format(*args), file=handle)
 
     tprint(__doc__.strip())
@@ -274,7 +282,7 @@ def write_implementations(sections, header_name):
 
         tprint("\n{}::{}()", classname, classname)
         tprint("  : m_written()")
-        for field in props["variables"]:
+        for field in props.variables:
             if field.kind == FieldType.DEFAULT:
                 tprint('  , m_{}("{}")', field.name, field.default)
             else:
@@ -288,7 +296,7 @@ def write_implementations(sections, header_name):
         tprint('  AR_REQUIRE(m_written, "template {} was not written");', classname)
         tprint("}}\n")
 
-        for field in props["variables"]:
+        for field in props.variables:
             tprint("{}&", classname)
             if field.kind == FieldType.REPEATED:
                 tprint("{}::add_{}(const std::string& value)", classname, field.name)
@@ -310,7 +318,7 @@ def write_implementations(sections, header_name):
         tprint("{{")
         tprint('  AR_REQUIRE(!m_written, "template {} already written");', classname)
 
-        for field in props["variables"]:
+        for field in props.variables:
             if field.kind != FieldType.DEFAULT:
                 tprint(
                     '  AR_REQUIRE(m_{0}_is_set, "{1}::{0} not set");',
@@ -323,7 +331,7 @@ def write_implementations(sections, header_name):
         # cast to void to silence unused-variable warnings when ID isn't used
         tprint("  auto id = g_html_id; ++g_html_id; (void)id;")
 
-        for line in props["lines"]:
+        for line in props.lines:
             tprint("{}", inject_variables(line))
 
         tprint("  // clang-format on")
@@ -336,33 +344,38 @@ def write_implementations(sections, header_name):
     return handle.getvalue()
 
 
-class HelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("width", 79)
-
-        super().__init__(*args, **kwargs)
+class Args(argparse.Namespace):
+    template: Path
+    output_prefix: Path
 
 
-def parse_args(argv):
-    parser = argparse.ArgumentParser(formatter_class=HelpFormatter)
+def parse_args(argv: list[str]) -> Args:
+    parser = argparse.ArgumentParser(
+        formatter_class=functools.partial(
+            argparse.ArgumentDefaultsHelpFormatter,
+            width=79,
+        ),
+        allow_abbrev=False,
+    )
+
     parser.add_argument("template", type=Path, help="Path to HTML template")
     parser.add_argument("output_prefix", type=Path, help="Path prefix for output files")
 
-    return parser.parse_args(argv)
+    return parser.parse_args(argv, namespace=Args())
 
 
-def main(argv):
+def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    args.header = args.output_prefix.with_suffix(".hpp")
-    args.impl = args.output_prefix.with_suffix(".cpp")
+    header_path = args.output_prefix.with_suffix(".hpp")
+    impl_path = args.output_prefix.with_suffix(".cpp")
 
     sections = read_template(args.template)
 
     header = write_header(sections)
-    implementations = write_implementations(sections, args.header.name)
+    implementations = write_implementations(sections, header_path.name)
 
-    args.header.write_text(header)
-    args.impl.write_text(implementations)
+    header_path.write_text(header)
+    impl_path.write_text(implementations)
 
     return 0
 
