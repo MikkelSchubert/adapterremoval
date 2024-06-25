@@ -32,6 +32,7 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -186,6 +187,16 @@ def pretty_output(lines: Iterable[str], max_lines: int, padding: int = 0) -> str
         result.append(f"{prefix}>  {escape_whitespace(line)}")
 
     return "\n".join(result)
+
+
+def pretty_returncode(returncode: int) -> str:
+    if returncode >= 0:
+        return str(returncode)
+
+    try:
+        return f"{returncode} ({signal.Signals(-returncode).name})"
+    except ValueError:
+        return str(returncode)
 
 
 def filter_errors(
@@ -792,7 +803,8 @@ class TestRunner:
         if returncode != self._test.return_code:
             raise TestError(
                 f"Expected return-code {self._test.return_code}, but AdapterRemoval "
-                f"returned {returncode}:\n{pretty_output(filter_errors(stderr), 4)}"
+                f"returned {pretty_returncode(returncode)}:\n"
+                f"{pretty_output(filter_errors(stderr), 4)}"
             )
 
     def _evaluate_terminal_output(self, stdout: str, stderr: str) -> None:
