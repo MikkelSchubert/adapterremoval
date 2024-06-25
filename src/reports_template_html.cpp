@@ -600,6 +600,32 @@ html_output_note_se::write(std::ofstream& out)
   m_written = true;
 }
 
+html_output_insert_size::html_output_insert_size()
+  : m_written()
+{
+  //
+}
+
+html_output_insert_size::~html_output_insert_size()
+{
+  AR_REQUIRE(m_written, "template html_output_insert_size was not written");
+}
+
+void
+html_output_insert_size::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_output_insert_size already written");
+  // clang-format off
+  auto id = g_html_id; ++g_html_id; (void)id;
+  out << "\n";
+  out << "            <p class=\"note\">\n";
+  out << "                Insert size distribution inferred using adapter-free alignments.\n";
+  out << "            </p>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
 html_summary_trimming_head::html_summary_trimming_head()
   : m_written()
 {

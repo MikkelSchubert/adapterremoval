@@ -195,6 +195,21 @@ private:
   bool m_written;
 };
 
+class html_output_insert_size : public html_template
+{
+public:
+  html_output_insert_size();
+  ~html_output_insert_size() override;
+
+  html_output_insert_size(const html_output_insert_size&) = delete;
+  html_output_insert_size& operator=(const html_output_insert_size&) = delete;
+
+  void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+};
+
 class html_summary_trimming_head : public html_template
 {
 public:

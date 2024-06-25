@@ -356,7 +356,7 @@ write_html_summary_section(const userconfig& config,
     }
 
     // Summary statistics for output files
-    {
+    if (config.run_type != ar_command::report_only) {
       fastq_statistics totals;
       totals += output_1;
       totals += output_2;
@@ -790,6 +790,10 @@ write_html_input_section(const userconfig& config,
       .set_sub_title(json_encode(ss.str()))
       .set_values(samples.to_string())
       .write(output);
+
+    if (config.run_type == ar_command::report_only) {
+      html_output_insert_size().write(output);
+    }
   }
 
   write_html_io_section(config, stats_vec, names, output);
