@@ -249,14 +249,14 @@ install: $(EXECUTABLE) $(MAN_PAGE)
 .INTERMEDIATE: src/reports_template.intermediate
 
 src/reports_template_html.hpp src/reports_template_html.cpp: src/reports_template.intermediate ;
-src/reports_template.intermediate: src/reports_template.html src/reports_template_html.py
+src/reports_template.intermediate: src/reports_template.html scripts/html_template_to_cpp.py
 	@echo $(COLOR_CYAN)"Building HTML templates from $<"$(COLOR_END)
-	$(QUIET) python3 src/reports_template_html.py $< src/reports_template_html
+	$(QUIET) python3 scripts/html_template_to_cpp.py $< src/reports_template_html
 
 regression: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(REGRESSION_DIR)
-	$(QUIET) python3 $(REGRESSION_TESTS).py $(REGRESSION_DIR) $(REGRESSION_TESTS) \
+	$(QUIET) python3 scripts/regression_test_runner.py $(REGRESSION_DIR) $(REGRESSION_TESTS) \
 		--executable $(EXECUTABLE)
 
 test: $(TEST_RUNNER)
