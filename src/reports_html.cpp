@@ -871,7 +871,7 @@ write_html_analyses_section(const userconfig& config,
         html_consensus_adapter_kmer_row row;
         row.set_index(std::to_string(i + 1));
 
-        if (top_kmers_1.size() >= i) {
+        if (top_kmers_1.size() > i) {
           const auto& kmer = top_kmers_1.at(i);
 
           row.set_kmer_1(kmer.first)
@@ -881,7 +881,7 @@ write_html_analyses_section(const userconfig& config,
           row.set_kmer_1("").set_count_1("").set_pct_1("");
         }
 
-        if (top_kmers_2.size() >= i) {
+        if (top_kmers_2.size() > i) {
           const auto& kmer = top_kmers_2.at(i);
 
           row.set_kmer_2(kmer.first)
