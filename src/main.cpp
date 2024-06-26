@@ -110,13 +110,8 @@ main(int argc, char* argv[])
       break;
     }
 
-    case ar_command::identify_adapters: {
-      returncode = identify_adapter_sequences(config);
-      break;
-    }
-
     case ar_command::report_only: {
-      returncode = fastq_report_only(config);
+      returncode = identify_adapter_sequences(config);
       break;
     }
 

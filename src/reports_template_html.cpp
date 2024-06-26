@@ -140,6 +140,22 @@ html_head::write(std::ofstream& out)
   out << "            text-align: right;\n";
   out << "        }\n";
   out << "\n";
+  out << "        .adapter-table tr>td:first-child {\n";
+  out << "            font-weight: bold;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .kmer-table thead {\n";
+  out << "            font-weight: bold;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .kmer-table tr>td:first-child {\n";
+  out << "            font-weight: bold;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .kmer-table {\n";
+  out << "            text-align: right;\n";
+  out << "        }\n";
+  out << "\n";
   out << "        .trimming-table tr>td:nth-child(4),\n";
   out << "        .trimming-table tr>td:nth-child(6),\n";
   out << "        .trimming-table tr>td:nth-child(8) {\n";
@@ -855,6 +871,411 @@ html_summary_trimming_tail::write(std::ofstream& out)
   out << "                counts for two. For Processing and Filtering, the numbers of bases specify how many were lost during\n";
   out << "                that step.\n";
   out << "            </p>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_consensus_adapter_head::html_consensus_adapter_head()
+  : m_written()
+  , m_overlapping_pairs()
+  , m_overlapping_pairs_is_set()
+  , m_pairs_with_adapters()
+  , m_pairs_with_adapters_is_set()
+{
+  //
+}
+
+html_consensus_adapter_head::~html_consensus_adapter_head()
+{
+  AR_REQUIRE(m_written, "template html_consensus_adapter_head was not written");
+}
+
+html_consensus_adapter_head&
+html_consensus_adapter_head::set_overlapping_pairs(const std::string& value)
+{
+  m_overlapping_pairs = value;
+  m_overlapping_pairs_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_head&
+html_consensus_adapter_head::set_pairs_with_adapters(const std::string& value)
+{
+  m_pairs_with_adapters = value;
+  m_pairs_with_adapters_is_set = true;
+  return *this;
+}
+
+void
+html_consensus_adapter_head::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_consensus_adapter_head already written");
+  AR_REQUIRE(m_overlapping_pairs_is_set, "html_consensus_adapter_head::overlapping_pairs not set");
+  AR_REQUIRE(m_pairs_with_adapters_is_set, "html_consensus_adapter_head::pairs_with_adapters not set");
+  // clang-format off
+  auto id = g_html_id; ++g_html_id; (void)id;
+  out << "            <h4>Consensus adapter sequences</h4>\n";
+  out << "\n";
+  out << "            <p class=\"note\">\n";
+  out << "                Found " << m_overlapping_pairs << " overlapping pairs of which " << m_pairs_with_adapters << " contained adapter\n";
+  out << "                sequence(s).\n";
+  out << "            </p>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_consensus_adapter_table::html_consensus_adapter_table()
+  : m_written()
+  , m_alignment_1()
+  , m_alignment_1_is_set()
+  , m_alignment_2()
+  , m_alignment_2_is_set()
+  , m_consensus_1()
+  , m_consensus_1_is_set()
+  , m_consensus_2()
+  , m_consensus_2_is_set()
+  , m_name_1()
+  , m_name_1_is_set()
+  , m_name_2()
+  , m_name_2_is_set()
+  , m_qualities_1()
+  , m_qualities_1_is_set()
+  , m_qualities_2()
+  , m_qualities_2_is_set()
+  , m_reference_1()
+  , m_reference_1_is_set()
+  , m_reference_2()
+  , m_reference_2_is_set()
+{
+  //
+}
+
+html_consensus_adapter_table::~html_consensus_adapter_table()
+{
+  AR_REQUIRE(m_written, "template html_consensus_adapter_table was not written");
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_alignment_1(const std::string& value)
+{
+  m_alignment_1 = value;
+  m_alignment_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_alignment_2(const std::string& value)
+{
+  m_alignment_2 = value;
+  m_alignment_2_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_consensus_1(const std::string& value)
+{
+  m_consensus_1 = value;
+  m_consensus_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_consensus_2(const std::string& value)
+{
+  m_consensus_2 = value;
+  m_consensus_2_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_name_1(const std::string& value)
+{
+  m_name_1 = value;
+  m_name_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_name_2(const std::string& value)
+{
+  m_name_2 = value;
+  m_name_2_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_qualities_1(const std::string& value)
+{
+  m_qualities_1 = value;
+  m_qualities_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_qualities_2(const std::string& value)
+{
+  m_qualities_2 = value;
+  m_qualities_2_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_reference_1(const std::string& value)
+{
+  m_reference_1 = value;
+  m_reference_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_table&
+html_consensus_adapter_table::set_reference_2(const std::string& value)
+{
+  m_reference_2 = value;
+  m_reference_2_is_set = true;
+  return *this;
+}
+
+void
+html_consensus_adapter_table::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_consensus_adapter_table already written");
+  AR_REQUIRE(m_alignment_1_is_set, "html_consensus_adapter_table::alignment_1 not set");
+  AR_REQUIRE(m_alignment_2_is_set, "html_consensus_adapter_table::alignment_2 not set");
+  AR_REQUIRE(m_consensus_1_is_set, "html_consensus_adapter_table::consensus_1 not set");
+  AR_REQUIRE(m_consensus_2_is_set, "html_consensus_adapter_table::consensus_2 not set");
+  AR_REQUIRE(m_name_1_is_set, "html_consensus_adapter_table::name_1 not set");
+  AR_REQUIRE(m_name_2_is_set, "html_consensus_adapter_table::name_2 not set");
+  AR_REQUIRE(m_qualities_1_is_set, "html_consensus_adapter_table::qualities_1 not set");
+  AR_REQUIRE(m_qualities_2_is_set, "html_consensus_adapter_table::qualities_2 not set");
+  AR_REQUIRE(m_reference_1_is_set, "html_consensus_adapter_table::reference_1 not set");
+  AR_REQUIRE(m_reference_2_is_set, "html_consensus_adapter_table::reference_2 not set");
+  // clang-format off
+  auto id = g_html_id; ++g_html_id; (void)id;
+  out << "            <table class=\"pure-table adapter-table pure-table-striped\" style=\"font-family: monospace;\">\n";
+  out << "                <tbody>\n";
+  out << "                    <tr>\n";
+  out << "                        <td>" << m_name_1 << "</td>\n";
+  out << "                        <td>" << m_reference_1 << "</td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>" << m_name_2 << "</td>\n";
+  out << "                        <td>" << m_reference_2 << "</td>\n";
+  out << "                    </tr>\n";
+  out << "                    <tr>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>" << m_alignment_1 << "</td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>" << m_alignment_2 << "</td>\n";
+  out << "                    </tr>\n";
+  out << "                    <tr>\n";
+  out << "                        <td>Consensus</td>\n";
+  out << "                        <td>" << m_consensus_1 << "</td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>Consensus</td>\n";
+  out << "                        <td>" << m_consensus_2 << "</td>\n";
+  out << "                    </tr>\n";
+  out << "                    <tr>\n";
+  out << "                        <td>Qualities</td>\n";
+  out << "                        <td>" << m_qualities_1 << "</td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>Qualities</td>\n";
+  out << "                        <td>" << m_qualities_2 << "</td>\n";
+  out << "                    </tr>\n";
+  out << "                </tbody>\n";
+  out << "            </table>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_consensus_adapter_kmer_head::html_consensus_adapter_kmer_head()
+  : m_written()
+  , m_kmer_length()
+  , m_kmer_length_is_set()
+  , m_n_kmers()
+  , m_n_kmers_is_set()
+{
+  //
+}
+
+html_consensus_adapter_kmer_head::~html_consensus_adapter_kmer_head()
+{
+  AR_REQUIRE(m_written, "template html_consensus_adapter_kmer_head was not written");
+}
+
+html_consensus_adapter_kmer_head&
+html_consensus_adapter_kmer_head::set_kmer_length(const std::string& value)
+{
+  m_kmer_length = value;
+  m_kmer_length_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_head&
+html_consensus_adapter_kmer_head::set_n_kmers(const std::string& value)
+{
+  m_n_kmers = value;
+  m_n_kmers_is_set = true;
+  return *this;
+}
+
+void
+html_consensus_adapter_kmer_head::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_head already written");
+  AR_REQUIRE(m_kmer_length_is_set, "html_consensus_adapter_kmer_head::kmer_length not set");
+  AR_REQUIRE(m_n_kmers_is_set, "html_consensus_adapter_kmer_head::n_kmers not set");
+  // clang-format off
+  auto id = g_html_id; ++g_html_id; (void)id;
+  out << "            <h4>Top " << m_n_kmers << " most common " << m_kmer_length << "-bp 5' adapter k-mers</h4>\n";
+  out << "\n";
+  out << "            <table class=\"pure-table kmer-table pure-table-striped\" style=\"font-family: monospace;\">\n";
+  out << "                <thead>\n";
+  out << "                    <tr>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>Adapter 1 k-mer</td>\n";
+  out << "                        <td>Count</td>\n";
+  out << "                        <td>%</td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>Adapter 2 k-mer</td>\n";
+  out << "                        <td>Count</td>\n";
+  out << "                        <td>%</td>\n";
+  out << "                    </tr>\n";
+  out << "                </thead>\n";
+  out << "                <tbody>\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_consensus_adapter_kmer_row::html_consensus_adapter_kmer_row()
+  : m_written()
+  , m_count_1()
+  , m_count_1_is_set()
+  , m_count_2()
+  , m_count_2_is_set()
+  , m_index()
+  , m_index_is_set()
+  , m_kmer_1()
+  , m_kmer_1_is_set()
+  , m_kmer_2()
+  , m_kmer_2_is_set()
+  , m_pct_1()
+  , m_pct_1_is_set()
+  , m_pct_2()
+  , m_pct_2_is_set()
+{
+  //
+}
+
+html_consensus_adapter_kmer_row::~html_consensus_adapter_kmer_row()
+{
+  AR_REQUIRE(m_written, "template html_consensus_adapter_kmer_row was not written");
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_count_1(const std::string& value)
+{
+  m_count_1 = value;
+  m_count_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_count_2(const std::string& value)
+{
+  m_count_2 = value;
+  m_count_2_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_index(const std::string& value)
+{
+  m_index = value;
+  m_index_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_kmer_1(const std::string& value)
+{
+  m_kmer_1 = value;
+  m_kmer_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_kmer_2(const std::string& value)
+{
+  m_kmer_2 = value;
+  m_kmer_2_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_pct_1(const std::string& value)
+{
+  m_pct_1 = value;
+  m_pct_1_is_set = true;
+  return *this;
+}
+
+html_consensus_adapter_kmer_row&
+html_consensus_adapter_kmer_row::set_pct_2(const std::string& value)
+{
+  m_pct_2 = value;
+  m_pct_2_is_set = true;
+  return *this;
+}
+
+void
+html_consensus_adapter_kmer_row::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_row already written");
+  AR_REQUIRE(m_count_1_is_set, "html_consensus_adapter_kmer_row::count_1 not set");
+  AR_REQUIRE(m_count_2_is_set, "html_consensus_adapter_kmer_row::count_2 not set");
+  AR_REQUIRE(m_index_is_set, "html_consensus_adapter_kmer_row::index not set");
+  AR_REQUIRE(m_kmer_1_is_set, "html_consensus_adapter_kmer_row::kmer_1 not set");
+  AR_REQUIRE(m_kmer_2_is_set, "html_consensus_adapter_kmer_row::kmer_2 not set");
+  AR_REQUIRE(m_pct_1_is_set, "html_consensus_adapter_kmer_row::pct_1 not set");
+  AR_REQUIRE(m_pct_2_is_set, "html_consensus_adapter_kmer_row::pct_2 not set");
+  // clang-format off
+  auto id = g_html_id; ++g_html_id; (void)id;
+  out << "                    <tr>\n";
+  out << "                        <td>" << m_index << "</td>\n";
+  out << "                        <td>" << m_kmer_1 << "</td>\n";
+  out << "                        <td>" << m_count_1 << "</td>\n";
+  out << "                        <td>" << m_pct_1 << "</td>\n";
+  out << "                        <td></td>\n";
+  out << "                        <td>" << m_kmer_2 << "</td>\n";
+  out << "                        <td>" << m_count_2 << "</td>\n";
+  out << "                        <td>" << m_pct_2 << "</td>\n";
+  out << "                    </tr>\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_consensus_adapter_kmer_tail::html_consensus_adapter_kmer_tail()
+  : m_written()
+{
+  //
+}
+
+html_consensus_adapter_kmer_tail::~html_consensus_adapter_kmer_tail()
+{
+  AR_REQUIRE(m_written, "template html_consensus_adapter_kmer_tail was not written");
+}
+
+void
+html_consensus_adapter_kmer_tail::write(std::ofstream& out)
+{
+  AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_tail already written");
+  // clang-format off
+  auto id = g_html_id; ++g_html_id; (void)id;
+  out << "                </tbody>\n";
+  out << "            </table>\n";
   out << "\n";
   // clang-format on
   m_written = true;

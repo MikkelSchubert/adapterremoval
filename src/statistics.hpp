@@ -38,12 +38,14 @@ class duplication_statistics;
 class fastq_statistics;
 class statistics;
 class trimming_statistics;
+class adapter_id_statistics;
 
 using demux_stats_ptr = std::shared_ptr<demux_statistics>;
 using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
 using fastq_stats_ptr = std::shared_ptr<fastq_statistics>;
 using stats_ptr = std::shared_ptr<statistics>;
 using trim_stats_ptr = std::shared_ptr<trimming_statistics>;
+using adapter_id_stats_ptr = std::shared_ptr<adapter_id_statistics>;
 
 /** Simple counter class for read/bases statistics */
 class reads_and_bases
@@ -329,6 +331,9 @@ public:
   demux_stats_ptr demultiplexing;
   std::vector<trim_stats_ptr> trimming;
 
+  //! Optional adapter identification statistics
+  adapter_id_stats_ptr adapter_id;
+
 private:
   explicit statistics(double sample_rate);
 
@@ -346,6 +351,8 @@ public:
   statistics_builder& sample_rate(double rate);
   /** Estimate duplication rate using the algorithm implemented in FastQC. */
   statistics_builder& estimate_duplication(size_t max_unique);
+  /** Enable adapter identification if set to > 0 */
+  statistics_builder& adapter_identification(size_t max_length);
 
   statistics initialize() const;
 
@@ -356,6 +363,8 @@ private:
   double m_sample_rate;
   //! The max number of unique sequences counted when estimating duplication.
   size_t m_max_unique;
+  //! The number of bases to infer for adapter sequences
+  size_t m_adapter_id;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

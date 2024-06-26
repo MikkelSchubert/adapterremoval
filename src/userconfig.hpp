@@ -43,7 +43,6 @@ const std::string DEV_NULL = "/dev/null";
 enum class ar_command
 {
   trim_adapters,
-  identify_adapters,
   demultiplex_only,
   report_only,
   benchmark,

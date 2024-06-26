@@ -16,105 +16,49 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapter_id.hpp" // for adapter_id_stats
+#include "adapter_id.hpp" // for adapter_id_statistics
 #include "alignment.hpp"  // for extract_adapter_sequences, sequence_aligner
-#include "counts.hpp"     // for indexed_counts
 #include "debug.hpp"      // for AR_REQUIRE
 #include "fastq.hpp"      // for ACGTN, fastq, fastq_pair_vec, ACGT, ACGT:...
 #include "fastq_io.hpp"   // for read_fastq, fastq_read_chunk
+#include "reports.hpp"    // for write_html_report, write_json_report
 #include "scheduler.hpp"  // for threadstate, scheduler, analytical_step
 #include "userconfig.hpp" // for userconfig
 #include <cstddef>        // for size_t
-#include <iomanip>        // for operator<<, setw
-#include <iostream>       // for operator<<, basic_ostream, ostringstream
 #include <string>         // for string, operator<<, char_traits
 
 namespace adapterremoval {
 
-//! The N most common kmers to print
-const size_t TOP_N_KMERS = 5;
-
-/** Prints the N top kmers in a kmer_map, including sequence and frequency. */
-void
-print_most_common_kmers(const consensus_adapter& adapter)
+class reads_sink : public analytical_step
 {
-  std::cout.precision(2);
-  std::cout << std::fixed;
-  std::cout << "    Top 5 most common " << adapter.top_kmers.size()
-            << "-bp 5'-kmers:\n";
-
-  for (size_t i = 0; i < adapter.top_kmers.size(); ++i) {
-    const auto& count = adapter.top_kmers.at(i);
-
-    std::cout << std::string(12, ' ');
-    std::cout << i + 1 << ": " << count.first << " = " << std::right
-              << std::setw(5) << (100.0 * count.second) / adapter.total_kmers
-              << "% (" << count.second << ")\n";
-  }
-}
-
-/**
- * Build representation of identity between two sequences.
- *
- * The resulting string represents N with wildcards ('*'), matching bases with
- * pipes ('|') and mismatches with spaces (' '). Only overlapping bases are
- * compared.
- */
-std::string
-compare_consensus_with_ref(const std::string& a, const std::string& b)
-{
-  std::ostringstream identity;
-  for (size_t i = 0, size = std::min(b.size(), a.size()); i < size; ++i) {
-    if (a.at(i) == 'N' || b.at(i) == 'N') {
-      identity << '*';
-    } else {
-      identity << (a.at(i) == b.at(i) ? '|' : ' ');
-    }
+public:
+  reads_sink()
+    : analytical_step(processing_order::unordered, "reads_sink")
+  {
   }
 
-  return identity.str();
-}
-
-/**
- * Prints description of consensus adapter sequence.
- *
- * @param nt_counts Observed nucleotide frequencies.
- * @param kmers Observed kmer frequencies.
- * @param name Argument name for adapter (--adapter1 / adapter2)
- * @param ref Default sequence for the inferred adapter
- */
-void
-print_consensus_adapter(const consensus_adapter_stats& stats,
-                        const std::string& name,
-                        const std::string& ref)
-{
-  const auto consensus = stats.summarize(TOP_N_KMERS);
-  const auto& adapter = consensus.adapter;
-
-  const std::string identity =
-    compare_consensus_with_ref(ref, adapter.sequence());
-
-  std::cout << "  " << name << ":  " << ref << "\n"
-            << "               " << identity << "\n"
-            << "   Consensus:  " << adapter.sequence() << "\n"
-            << "     Quality:  " << adapter.qualities() << "\n\n";
-
-  print_most_common_kmers(consensus);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Threaded adapter identification step
+  chunk_vec process(chunk_ptr) override { return chunk_vec(); }
+};
 
 class adapter_identification : public analytical_step
 {
 public:
-  explicit adapter_identification(const userconfig& config)
+  explicit adapter_identification(const userconfig& config, statistics& stats)
     : analytical_step(processing_order::unordered, "adapter_identification")
     , m_config(config)
-    , m_stats()
+    , m_stats_id()
+    , m_stats_ins()
+    , m_sink_trim()
+    , m_sink_id(stats.adapter_id)
   {
+    AR_REQUIRE(!stats.trimming.empty());
+    AR_REQUIRE(stats.adapter_id);
+    m_sink_trim = stats.trimming.back();
+
     for (size_t i = 0; i < m_config.max_threads; ++i) {
-      m_stats.emplace_back();
+      // FIXME: Shouldn't be adapter specific
+      m_stats_id.emplace_back(m_sink_id->adapter1.max_length());
+      m_stats_ins.emplace_back();
     }
   }
 
@@ -130,79 +74,70 @@ public:
     adapters.emplace_back(empty_adapter, empty_adapter);
 
     const auto aligner = sequence_aligner(adapters, m_config.simd);
-    auto stats = m_stats.acquire();
+
+    auto stats_id = m_stats_id.acquire();
+    auto stats_ins = m_stats_ins.acquire();
 
     AR_REQUIRE(file_chunk.reads_1.size() == file_chunk.reads_2.size());
-    auto read_1 = file_chunk.reads_1.begin();
-    auto read_2 = file_chunk.reads_2.begin();
+    auto it_1 = file_chunk.reads_1.begin();
+    auto it_2 = file_chunk.reads_2.begin();
 
-    while (read_1 != file_chunk.reads_1.end()) {
-      process_reads(aligner, *stats, *read_1++, *read_2++);
+    for (; it_1 != file_chunk.reads_1.end(); ++it_1, ++it_2) {
+      auto& read_1 = *it_1;
+      auto& read_2 = *it_2;
+
+      // Reverse complement to match the orientation of read1
+      read_2.reverse_complement();
+
+      const auto alignment =
+        aligner.align_paired_end(read_1, read_2, m_config.shift);
+
+      if (m_config.is_good_alignment(alignment)) {
+        stats_id->aligned_pairs++;
+        if (m_config.can_merge_alignment(alignment)) {
+          const size_t insert_size = alignment.insert_size(read_1, read_2);
+          stats_ins->insert_sizes.resize_up_to(insert_size + 1);
+          stats_ins->insert_sizes.inc(insert_size);
+          stats_ins->overlapping_reads += 2;
+
+          const auto orig_1 = read_1;
+          const auto orig_2 = read_2;
+          if (extract_adapter_sequences(alignment, read_1, read_2)) {
+            stats_id->pairs_with_adapters++;
+
+            stats_id->adapter1.process(read_1.sequence());
+            read_2.reverse_complement();
+            stats_id->adapter2.process(read_2.sequence());
+          }
+        }
+      }
     }
 
-    m_stats.release(stats);
+    m_stats_id.release(stats_id);
+    m_stats_ins.release(stats_ins);
 
     return chunk_vec();
   }
 
-  /** Prints summary of inferred consensus sequences. */
   void finalize() override
   {
-    auto stats = m_stats.acquire();
-    while (auto next = m_stats.try_acquire()) {
-      *stats += *next;
+    while (auto next = m_stats_id.try_acquire()) {
+      *m_sink_id += *next;
     }
 
-    std::cout << "   Found " << stats->aligned_pairs << " overlapping pairs\n"
-              << "   Of which " << stats->pairs_with_adapters
-              << " contained adapter sequence(s)\n\n"
-              << "Printing adapter sequences, including poly-A tails:"
-              << std::endl;
-
-    auto reference = m_config.adapters.get_raw_adapters().front();
-    // Revert to user-supplied orientation
-    reference.second.reverse_complement();
-
-    print_consensus_adapter(
-      stats->adapter1, "--adapter1", reference.first.sequence());
-    std::cout << "\n\n";
-    print_consensus_adapter(
-      stats->adapter2, "--adapter2", reference.second.sequence());
+    while (auto next = m_stats_ins.try_acquire()) {
+      *m_sink_trim += *next;
+    }
   }
 
 private:
-  void process_reads(const sequence_aligner& aligner,
-                     adapter_id_stats& stats,
-                     fastq& read1,
-                     fastq& read2) const
-  {
-    read1.post_process(m_config.io_encoding);
-    read2.post_process(m_config.io_encoding);
-
-    // Reverse complement to match the orientation of read1
-    read2.reverse_complement();
-
-    const auto alignment =
-      aligner.align_paired_end(read1, read2, m_config.shift);
-
-    if (m_config.is_good_alignment(alignment)) {
-      stats.aligned_pairs++;
-      if (m_config.can_merge_alignment(alignment) &&
-          extract_adapter_sequences(alignment, read1, read2)) {
-        stats.pairs_with_adapters++;
-
-        stats.adapter1.process(read1.sequence());
-        read2.reverse_complement();
-        stats.adapter2.process(read2.sequence());
-      }
-    } else {
-      stats.unaligned_pairs++;
-    }
-  }
-
   const userconfig& m_config;
 
-  threadstate<adapter_id_stats> m_stats;
+  threadstate<adapter_id_statistics> m_stats_id;
+  threadstate<trimming_statistics> m_stats_ins;
+
+  trim_stats_ptr m_sink_trim;
+  adapter_id_stats_ptr m_sink_id;
 };
 
 int
@@ -210,13 +145,42 @@ identify_adapter_sequences(const userconfig& config)
 {
   scheduler sch;
 
-  // Step 2: Attempt to identify adapters through pair-wise alignments
-  const size_t id_step = sch.add<adapter_identification>(config);
+  statistics stats = statistics_builder()
+                       .sample_rate(config.report_sample_rate)
+                       .estimate_duplication(config.report_duplication)
+                       // FIXME: Length picked based on known sequences
+                       .adapter_identification(42)
+                       .initialize();
+  // FIXME: Required for insert size statistics
+  stats.trimming.push_back(std::make_shared<trimming_statistics>());
+
+  // Step 3:
+  size_t final_step;
+  if (config.paired_ended_mode) {
+    // Attempt to identify adapters through pair-wise alignments
+    final_step = sch.add<adapter_identification>(config, stats);
+  } else {
+    // Discard all written reads
+    final_step = sch.add<reads_sink>();
+  }
+
+  // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
+  const size_t postproc_step =
+    sch.add<post_process_fastq>(final_step, stats, config.io_encoding);
 
   // Step 1: Read input file(s)
-  sch.add<read_fastq>(config, id_step);
+  sch.add<read_fastq>(config, postproc_step);
 
-  return !sch.run(config.max_threads);
+  if (!sch.run(config.max_threads)) {
+    return 1;
+  }
+
+  const auto out_files = config.get_output_filenames();
+  if (!write_json_report(config, stats, out_files.settings_json)) {
+    return 1;
+  }
+
+  return !write_html_report(config, stats, out_files.settings_html);
 }
 
 } // namespace adapterremoval

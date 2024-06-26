@@ -76,6 +76,22 @@
             text-align: right;
         }
 
+        .adapter-table tr>td:first-child {
+            font-weight: bold;
+        }
+
+        .kmer-table thead {
+            font-weight: bold;
+        }
+
+        .kmer-table tr>td:first-child {
+            font-weight: bold;
+        }
+
+        .kmer-table {
+            text-align: right;
+        }
+
         .trimming-table tr>td:nth-child(4),
         .trimming-table tr>td:nth-child(6),
         .trimming-table tr>td:nth-child(8) {
@@ -254,6 +270,80 @@
                 counts for two. For Processing and Filtering, the numbers of bases specify how many were lost during
                 that step.
             </p>
+
+            <!-- TEMPLATE: CONSENSUS_ADAPTER_HEAD -->
+            <h4>Consensus adapter sequences</h4>
+
+            <p class="note">
+                Found {{OVERLAPPING_PAIRS}} overlapping pairs of which {{PAIRS_WITH_ADAPTERS}} contained adapter
+                sequence(s).
+            </p>
+
+            <!-- TEMPLATE: CONSENSUS_ADAPTER_TABLE -->
+            <table class="pure-table adapter-table pure-table-striped" style="font-family: monospace;">
+                <tbody>
+                    <tr>
+                        <td>{{NAME_1}}</td>
+                        <td>{{REFERENCE_1}}</td>
+                        <td></td>
+                        <td>{{NAME_2}}</td>
+                        <td>{{REFERENCE_2}}</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>{{ALIGNMENT_1}}</td>
+                        <td></td>
+                        <td></td>
+                        <td>{{ALIGNMENT_2}}</td>
+                    </tr>
+                    <tr>
+                        <td>Consensus</td>
+                        <td>{{CONSENSUS_1}}</td>
+                        <td></td>
+                        <td>Consensus</td>
+                        <td>{{CONSENSUS_2}}</td>
+                    </tr>
+                    <tr>
+                        <td>Qualities</td>
+                        <td>{{QUALITIES_1}}</td>
+                        <td></td>
+                        <td>Qualities</td>
+                        <td>{{QUALITIES_2}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- TEMPLATE: CONSENSUS_ADAPTER_KMER_HEAD -->
+            <h4>Top {{N_KMERS}} most common {{KMER_LENGTH}}-bp 5' adapter k-mers</h4>
+
+            <table class="pure-table kmer-table pure-table-striped" style="font-family: monospace;">
+                <thead>
+                    <tr>
+                        <td></td>
+                        <td>Adapter 1 k-mer</td>
+                        <td>Count</td>
+                        <td>%</td>
+                        <td></td>
+                        <td>Adapter 2 k-mer</td>
+                        <td>Count</td>
+                        <td>%</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- TEMPLATE: CONSENSUS_ADAPTER_KMER_ROW -->
+                    <tr>
+                        <td>{{INDEX}}</td>
+                        <td>{{KMER_1}}</td>
+                        <td>{{COUNT_1}}</td>
+                        <td>{{PCT_1}}</td>
+                        <td></td>
+                        <td>{{KMER_2}}</td>
+                        <td>{{COUNT_2}}</td>
+                        <td>{{PCT_2}}</td>
+                    </tr>
+                    <!-- TEMPLATE: CONSENSUS_ADAPTER_KMER_TAIL -->
+                </tbody>
+            </table>
 
             <!-- TEMPLATE: H2_TAG -->
         </div>

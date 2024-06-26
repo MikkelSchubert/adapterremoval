@@ -88,9 +88,6 @@ print_terminal_preamble(const userconfig& config)
     case ar_command::demultiplex_only:
       log::info() << "Demultiplexing reads";
       break;
-    case ar_command::identify_adapters:
-      log::info() << "Attempting to identify adapter sequences";
-      break;
     case ar_command::report_only:
       log::info() << "Generating FASTQ quality report";
       break;
@@ -109,7 +106,6 @@ print_terminal_postamble(const userconfig& config, bool any_errors)
         log::error() << "AdapterRemoval did not run to completion;\n"
                      << "    do NOT make use of the resulting reads!";
       case ar_command::benchmark:
-      case ar_command::identify_adapters:
       case ar_command::report_only:
         break;
       default:
@@ -128,9 +124,6 @@ print_terminal_postamble(const userconfig& config, bool any_errors)
       break;
     case ar_command::demultiplex_only:
       log::info() << "Demultiplexing complete";
-      break;
-    case ar_command::identify_adapters:
-      log::info() << "Adapter identification complete";
       break;
     case ar_command::report_only:
       log::info() << "FASTQ quality report generation complete";

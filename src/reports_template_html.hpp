@@ -289,6 +289,148 @@ private:
   bool m_n_total_proc_is_set;
 };
 
+class html_consensus_adapter_head : public html_template
+{
+public:
+  html_consensus_adapter_head();
+  ~html_consensus_adapter_head() override;
+
+  html_consensus_adapter_head(const html_consensus_adapter_head&) = delete;
+  html_consensus_adapter_head& operator=(const html_consensus_adapter_head&) = delete;
+
+  html_consensus_adapter_head& set_overlapping_pairs(const std::string& value);
+  html_consensus_adapter_head& set_pairs_with_adapters(const std::string& value);
+
+  void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_overlapping_pairs;
+  bool m_overlapping_pairs_is_set;
+  std::string m_pairs_with_adapters;
+  bool m_pairs_with_adapters_is_set;
+};
+
+class html_consensus_adapter_table : public html_template
+{
+public:
+  html_consensus_adapter_table();
+  ~html_consensus_adapter_table() override;
+
+  html_consensus_adapter_table(const html_consensus_adapter_table&) = delete;
+  html_consensus_adapter_table& operator=(const html_consensus_adapter_table&) = delete;
+
+  html_consensus_adapter_table& set_alignment_1(const std::string& value);
+  html_consensus_adapter_table& set_alignment_2(const std::string& value);
+  html_consensus_adapter_table& set_consensus_1(const std::string& value);
+  html_consensus_adapter_table& set_consensus_2(const std::string& value);
+  html_consensus_adapter_table& set_name_1(const std::string& value);
+  html_consensus_adapter_table& set_name_2(const std::string& value);
+  html_consensus_adapter_table& set_qualities_1(const std::string& value);
+  html_consensus_adapter_table& set_qualities_2(const std::string& value);
+  html_consensus_adapter_table& set_reference_1(const std::string& value);
+  html_consensus_adapter_table& set_reference_2(const std::string& value);
+
+  void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_alignment_1;
+  bool m_alignment_1_is_set;
+  std::string m_alignment_2;
+  bool m_alignment_2_is_set;
+  std::string m_consensus_1;
+  bool m_consensus_1_is_set;
+  std::string m_consensus_2;
+  bool m_consensus_2_is_set;
+  std::string m_name_1;
+  bool m_name_1_is_set;
+  std::string m_name_2;
+  bool m_name_2_is_set;
+  std::string m_qualities_1;
+  bool m_qualities_1_is_set;
+  std::string m_qualities_2;
+  bool m_qualities_2_is_set;
+  std::string m_reference_1;
+  bool m_reference_1_is_set;
+  std::string m_reference_2;
+  bool m_reference_2_is_set;
+};
+
+class html_consensus_adapter_kmer_head : public html_template
+{
+public:
+  html_consensus_adapter_kmer_head();
+  ~html_consensus_adapter_kmer_head() override;
+
+  html_consensus_adapter_kmer_head(const html_consensus_adapter_kmer_head&) = delete;
+  html_consensus_adapter_kmer_head& operator=(const html_consensus_adapter_kmer_head&) = delete;
+
+  html_consensus_adapter_kmer_head& set_kmer_length(const std::string& value);
+  html_consensus_adapter_kmer_head& set_n_kmers(const std::string& value);
+
+  void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_kmer_length;
+  bool m_kmer_length_is_set;
+  std::string m_n_kmers;
+  bool m_n_kmers_is_set;
+};
+
+class html_consensus_adapter_kmer_row : public html_template
+{
+public:
+  html_consensus_adapter_kmer_row();
+  ~html_consensus_adapter_kmer_row() override;
+
+  html_consensus_adapter_kmer_row(const html_consensus_adapter_kmer_row&) = delete;
+  html_consensus_adapter_kmer_row& operator=(const html_consensus_adapter_kmer_row&) = delete;
+
+  html_consensus_adapter_kmer_row& set_count_1(const std::string& value);
+  html_consensus_adapter_kmer_row& set_count_2(const std::string& value);
+  html_consensus_adapter_kmer_row& set_index(const std::string& value);
+  html_consensus_adapter_kmer_row& set_kmer_1(const std::string& value);
+  html_consensus_adapter_kmer_row& set_kmer_2(const std::string& value);
+  html_consensus_adapter_kmer_row& set_pct_1(const std::string& value);
+  html_consensus_adapter_kmer_row& set_pct_2(const std::string& value);
+
+  void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+  std::string m_count_1;
+  bool m_count_1_is_set;
+  std::string m_count_2;
+  bool m_count_2_is_set;
+  std::string m_index;
+  bool m_index_is_set;
+  std::string m_kmer_1;
+  bool m_kmer_1_is_set;
+  std::string m_kmer_2;
+  bool m_kmer_2_is_set;
+  std::string m_pct_1;
+  bool m_pct_1_is_set;
+  std::string m_pct_2;
+  bool m_pct_2_is_set;
+};
+
+class html_consensus_adapter_kmer_tail : public html_template
+{
+public:
+  html_consensus_adapter_kmer_tail();
+  ~html_consensus_adapter_kmer_tail() override;
+
+  html_consensus_adapter_kmer_tail(const html_consensus_adapter_kmer_tail&) = delete;
+  html_consensus_adapter_kmer_tail& operator=(const html_consensus_adapter_kmer_tail&) = delete;
+
+  void write(std::ofstream& out) override;
+
+private:
+  bool m_written;
+};
+
 class html_h2_tag : public html_template
 {
 public:

@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "adapter_id.hpp"            // for adapter_id_statistics
 #include "adapterset.hpp"            // for adapter_set
 #include "counts.hpp"                // for counts, indexed_count, counts_tmpl
 #include "debug.hpp"                 // for AR_REQUIRE
@@ -767,6 +768,17 @@ write_html_input_section(const userconfig& config,
 
   write_html_section_title("Input", output);
 
+  write_html_io_section(config, stats_vec, names, output);
+}
+
+void
+write_html_analyses_section(const userconfig& config,
+                            const statistics& stats,
+                            std::ofstream& output)
+
+{
+  write_html_section_title("Analyses", output);
+
   // Insert size distribution
   if (config.paired_ended_mode) {
     counts insert_sizes;
@@ -807,7 +819,84 @@ write_html_input_section(const userconfig& config,
     }
   }
 
-  write_html_io_section(config, stats_vec, names, output);
+  // Consensus adapter sequence inference
+  if (config.paired_ended_mode && config.run_type == ar_command::report_only) {
+    AR_REQUIRE(stats.adapter_id);
+
+    const auto adapter_1 = stats.adapter_id->adapter1.summarize();
+    const auto adapter_2 = stats.adapter_id->adapter2.summarize();
+
+    // Consensus adapter sequences
+    {
+      const auto reference_adapters =
+        config.adapters.get_raw_adapters().front();
+      const auto& reference_adapter_1 = reference_adapters.first.sequence();
+      auto reference_adapter_2 = reference_adapters.second;
+      // Convert to display/user orientation
+      reference_adapter_2.reverse_complement();
+
+      html_consensus_adapter_head()
+        .set_overlapping_pairs(
+          format_rough_number(stats.adapter_id->aligned_pairs))
+        .set_pairs_with_adapters(
+          format_rough_number(stats.adapter_id->pairs_with_adapters))
+        .write(output);
+
+      html_consensus_adapter_table()
+        .set_name_1("--adapter1")
+        .set_reference_1(reference_adapter_1)
+        .set_alignment_1(adapter_1.compare_with(reference_adapter_1))
+        .set_consensus_1(adapter_1.adapter().sequence())
+        .set_qualities_1(adapter_1.adapter().qualities())
+        .set_name_2("--adapter2")
+        .set_reference_2(reference_adapter_2.sequence())
+        .set_alignment_2(adapter_2.compare_with(reference_adapter_2.sequence()))
+        .set_consensus_2(adapter_2.adapter().sequence())
+        .set_qualities_2(adapter_2.adapter().qualities())
+        .write(output);
+    }
+
+    // Top N most common 5' kmers in adapter fragments
+    {
+      const auto& top_kmers_1 = adapter_1.top_kmers();
+      const auto& top_kmers_2 = adapter_2.top_kmers();
+
+      html_consensus_adapter_kmer_head()
+        .set_n_kmers(std::to_string(consensus_adapter_stats::top_n_kmers))
+        .set_kmer_length(std::to_string(consensus_adapter_stats::kmer_length))
+        .write(output);
+
+      const auto kmers = std::max(top_kmers_1.size(), top_kmers_2.size());
+      for (size_t i = 0; i < kmers; ++i) {
+        html_consensus_adapter_kmer_row row;
+        row.set_index(std::to_string(i + 1));
+
+        if (top_kmers_1.size() >= i) {
+          const auto& kmer = top_kmers_1.at(i);
+
+          row.set_kmer_1(kmer.first)
+            .set_count_1(format_rough_number(kmer.second))
+            .set_pct_1(format_percentage(kmer.second, adapter_1.total_kmers()));
+        } else {
+          row.set_kmer_1("").set_count_1("").set_pct_1("");
+        }
+
+        if (top_kmers_2.size() >= i) {
+          const auto& kmer = top_kmers_2.at(i);
+
+          row.set_kmer_2(kmer.first)
+            .set_count_2(format_rough_number(kmer.second))
+            .set_pct_2(format_percentage(kmer.second, adapter_2.total_kmers()));
+        } else {
+          row.set_kmer_2("").set_count_2("").set_pct_2("");
+        }
+
+        row.write(output);
+      }
+
+      html_consensus_adapter_kmer_tail().write(output);
+    }
+  }
 }
 
 void
@@ -975,6 +1064,10 @@ write_html_report(const userconfig& config,
     }
 
     write_html_input_section(config, stats, output);
+
+    if (config.run_type == ar_command::report_only) {
+      write_html_analyses_section(config, stats, output);
+    }
 
     if (config.adapters.barcode_count()) {
       write_html_demultiplexing_section(config, stats, output);

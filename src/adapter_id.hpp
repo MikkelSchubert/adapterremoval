@@ -29,7 +29,7 @@ namespace adapterremoval {
 using kmer_map = std::vector<uint32_t>;
 
 /** Structure containing results of consensus adapter inference */
-struct consensus_adapter
+class consensus_adapter
 {
 public:
   using kmer = std::pair<std::string, size_t>;
@@ -40,49 +40,72 @@ public:
                     const kmer_map& kmers,
                     const size_t n_kmers);
 
+  /**
+   * Build representation of identity between two sequences.
+   *
+   * The resulting string represents N with wildcards ('*'), matching bases with
+   * pipes ('|') and mismatches with spaces (' '). Only overlapping bases are
+   * compared.
+   */
+  std::string compare_with(const std::string& other) const;
+
+  /** Returns the consensus adapter sequence */
+  inline const fastq& adapter() const { return m_adapter; }
+
+  /** Returns vector containingthe top N KMers */
+  const kmer_vec& top_kmers() const { return m_top_kmers; }
+
+  /** Returns the total number of KMers recorded */
+  size_t total_kmers() const { return m_total_kmers; }
+
+private:
   //! Consensus adapter sequence
-  fastq adapter;
-  //! Vector of the top N kmer sequences and the number of observations
-  kmer_vec top_kmers;
-  //! Total number of kmers observed
-  size_t total_kmers;
+  fastq m_adapter;
+  //! Vector of the top N k-mer sequences and the number of observations
+  kmer_vec m_top_kmers;
+  //! Total number of k-mers observed
+  size_t m_total_kmers;
 };
 
 /** Raw statistics for consensus adapter */
-struct consensus_adapter_stats
+class consensus_adapter_stats
 {
 public:
-  //! Length of kmers to collect to find common kmers
+  //! Length of k-mers to collect to find common kmers
   static const size_t kmer_length = 9;
-  //! Size of vector needed for kmer counts
+  //! Size of vector needed for k-mer counts
   static const size_t kmer_count = 2 << (2 * kmer_length);
+  //! The N most common k-mers to print
+  static const size_t top_n_kmers = 5;
 
-  consensus_adapter_stats();
-
+  consensus_adapter_stats(size_t max_length);
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   consensus_adapter_stats& operator+=(const consensus_adapter_stats& other);
 
+  /** Returns the max size of inferred consensus adapter sequences */
+  size_t max_length() const;
   /** Process an adapter fragment, assumed to only contain bases ACGTN */
   void process(const std::string& sequence);
-
   /** Constructs consensus adapter sequence and selects the top N kmers */
-  consensus_adapter summarize(size_t n_kmers) const;
+  consensus_adapter summarize(size_t n_kmers = top_n_kmers) const;
 
 private:
+  //! Maximum length of consensus adapter sequence
+  size_t m_max_length;
   //! Nucleotide frequencies of putative adapter fragments
-  indexed_counts<ACGTN> consensus;
-  //! 5' KMer frequencies of putative adapter fragments
-  kmer_map kmers;
+  indexed_counts<ACGTN> m_consensus;
+  //! 5' k-mer frequencies of putative adapter fragments
+  kmer_map m_kmers;
 };
 
-/** Struct for collecting adapter fragments, kmer frequencies, and read stats */
-struct adapter_id_stats
+/** Struct for collecting adapter fragment statistics */
+class adapter_id_statistics
 {
 public:
-  adapter_id_stats();
+  adapter_id_statistics(size_t max_length);
 
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
-  adapter_id_stats& operator+=(const adapter_id_stats& other);
+  adapter_id_statistics& operator+=(const adapter_id_statistics& other);
 
   //! Statistics based on putative adapter 1 fragments
   consensus_adapter_stats adapter1;
@@ -90,15 +113,13 @@ public:
   consensus_adapter_stats adapter2;
   //! Number of properly aligned reads
   size_t aligned_pairs;
-  //! Number of reads that could not be aligned
-  size_t unaligned_pairs;
   //! Number of reads with adapter fragments
   size_t pairs_with_adapters;
 
   //! Copy construction not supported
-  adapter_id_stats(const adapter_id_stats&) = delete;
+  adapter_id_statistics(const adapter_id_statistics&) = delete;
   //! Assignment not supported
-  adapter_id_stats& operator=(const adapter_id_stats&) = delete;
+  adapter_id_statistics& operator=(const adapter_id_statistics&) = delete;
 };
 
 } // namespace adapterremoval

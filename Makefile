@@ -179,7 +179,6 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/main_adapter_rm.o \
 	$(OBJS_DIR)/main_benchmark.o \
 	$(OBJS_DIR)/main_demultiplex.o \
-	$(OBJS_DIR)/main_fastq_ro.o \
 	$(OBJS_DIR)/main.o \
 	$(OBJS_DIR)/reports_html.o \
 	$(OBJS_DIR)/reports_json.o \

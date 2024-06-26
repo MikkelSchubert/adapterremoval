@@ -19,15 +19,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "statistics.hpp"
-#include "debug.hpp"     // for AR_REQUIRE
-#include "fastq.hpp"     // for ACGTN, fastq, ACGT
-#include "fastq_enc.hpp" // for PHRED_OFFSET_MIN, PHRED_SCORE_MAX
-#include "simd.hpp"      // for size_t
-#include "utilities.hpp" // for prng_seed
-#include <algorithm>     // for max, min
-#include <cstdlib>       // for size_t
-#include <memory>        // for make_shared, __shared_ptr_access, __shared_...
-#include <string>        // for basic_string, string
+#include "adapter_id.hpp" // for adapter_id_statistics
+#include "debug.hpp"      // for AR_REQUIRE
+#include "fastq.hpp"      // for ACGTN, fastq, ACGT
+#include "fastq_enc.hpp"  // for PHRED_OFFSET_MIN, PHRED_SCORE_MAX
+#include "simd.hpp"       // for size_t
+#include "utilities.hpp"  // for prng_seed
+#include <algorithm>      // for max, min
+#include <cstdlib>        // for size_t
+#include <memory>         // for make_shared, __shared_ptr_access, __shared_...
+#include <string>         // for basic_string, string
 
 namespace adapterremoval {
 
@@ -419,6 +420,7 @@ statistics::statistics(double sample_rate)
   , input_2(std::make_shared<fastq_statistics>(sample_rate))
   , demultiplexing(std::make_shared<demux_statistics>(sample_rate))
   , trimming()
+  , adapter_id()
 {
 }
 
@@ -426,6 +428,7 @@ statistics_builder::statistics_builder()
   : m_barcode_count(0)
   , m_sample_rate(1.0)
   , m_max_unique(0)
+  , m_adapter_id(0)
 {
 }
 
@@ -453,6 +456,15 @@ statistics_builder::estimate_duplication(size_t max_unique)
   return *this;
 }
 
+/** Enable adapter identification */
+statistics_builder&
+statistics_builder::adapter_identification(size_t max_length)
+{
+  m_adapter_id = max_length;
+
+  return *this;
+}
+
 statistics
 statistics_builder::initialize() const
 {
@@ -463,6 +475,10 @@ statistics_builder::initialize() const
 
   stats.input_1->init_duplication_stats(m_max_unique);
   stats.input_2->init_duplication_stats(m_max_unique);
+
+  if (m_adapter_id) {
+    stats.adapter_id = std::make_shared<adapter_id_statistics>(m_adapter_id);
+  }
 
   return stats;
 }

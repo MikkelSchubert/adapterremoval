@@ -128,14 +128,14 @@ build_consensus_sequence(const indexed_counts<ACGTN>& consensus)
 consensus_adapter::consensus_adapter(const indexed_counts<ACGTN>& consensus,
                                      const kmer_map& kmers,
                                      const size_t n_kmers)
-  : adapter(build_consensus_sequence(consensus))
-  , top_kmers()
-  , total_kmers()
+  : m_adapter(build_consensus_sequence(consensus))
+  , m_top_kmers()
+  , m_total_kmers()
 {
   kmer_queue queue;
   for (size_t i = 0; i < kmers.size(); ++i) {
     adapter_kmer value(i, kmers.at(i));
-    total_kmers += value.second;
+    m_total_kmers += value.second;
 
     if (queue.size() >= n_kmers) {
       // The top value will be the currently lowest value in the queue
@@ -151,44 +151,71 @@ consensus_adapter::consensus_adapter(const indexed_counts<ACGTN>& consensus,
   while (!queue.empty()) {
     const auto pair = queue.top();
 
-    top_kmers.emplace_back(size_t_to_kmer(pair.first), pair.second);
+    m_top_kmers.emplace_back(size_t_to_kmer(pair.first), pair.second);
     queue.pop();
   }
 
-  std::reverse(top_kmers.begin(), top_kmers.end());
+  std::reverse(m_top_kmers.begin(), m_top_kmers.end());
+}
+
+std::string
+consensus_adapter::compare_with(const std::string& other) const
+{
+  const auto& adapter = m_adapter.sequence();
+  const auto size = std::min(adapter.size(), other.size());
+
+  std::ostringstream identity;
+  for (size_t i = 0; i < size; ++i) {
+    if (adapter.at(i) == 'N' || other.at(i) == 'N') {
+      identity << '*';
+    } else {
+      identity << (adapter.at(i) == other.at(i) ? '|' : ' ');
+    }
+  }
+
+  return identity.str();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // consensus_adapter_stats
 
-consensus_adapter_stats::consensus_adapter_stats()
-  : consensus()
-  , kmers(kmer_count, 0)
+consensus_adapter_stats::consensus_adapter_stats(size_t max_length)
+  : m_max_length(max_length)
+  , m_consensus()
+  , m_kmers(kmer_count, 0)
 {
 }
 
 consensus_adapter_stats&
 consensus_adapter_stats::operator+=(const consensus_adapter_stats& other)
 {
-  consensus += other.consensus;
-  merge(kmers, other.kmers);
+  m_consensus += other.m_consensus;
+  merge(m_kmers, other.m_kmers);
 
   return *this;
+}
+
+size_t
+consensus_adapter_stats::max_length() const
+{
+  return m_max_length;
 }
 
 void
 consensus_adapter_stats::process(const std::string& sequence)
 {
-  consensus.resize_up_to(sequence.length());
-  for (size_t i = 0; i < sequence.length(); ++i) {
-    consensus.inc(sequence.at(i), i);
+  const auto length = std::min(m_max_length, sequence.length());
+
+  m_consensus.resize_up_to(length);
+  for (size_t i = 0; i < length; ++i) {
+    m_consensus.inc(sequence.at(i), i);
   }
 
   if (sequence.length() >= consensus_adapter_stats::kmer_length) {
     const std::string kmer =
       sequence.substr(0, consensus_adapter_stats::kmer_length);
     if (kmer.find('N') == std::string::npos) {
-      kmers.at(kmer_to_size_t(kmer)) += 1;
+      m_kmers.at(kmer_to_size_t(kmer)) += 1;
     }
   }
 }
@@ -196,26 +223,24 @@ consensus_adapter_stats::process(const std::string& sequence)
 consensus_adapter
 consensus_adapter_stats::summarize(size_t n_kmers) const
 {
-  return consensus_adapter(consensus, kmers, n_kmers);
+  return consensus_adapter(m_consensus, m_kmers, n_kmers);
 }
 
-adapter_id_stats::adapter_id_stats()
-  : adapter1()
-  , adapter2()
+adapter_id_statistics::adapter_id_statistics(size_t max_length)
+  : adapter1(max_length)
+  , adapter2(max_length)
   , aligned_pairs(0)
-  , unaligned_pairs(0)
   , pairs_with_adapters(0)
 {
 }
 
 /** Merge overall trimming_statistics, consensus, and k-mer counts. */
-adapter_id_stats&
-adapter_id_stats::operator+=(const adapter_id_stats& other)
+adapter_id_statistics&
+adapter_id_statistics::operator+=(const adapter_id_statistics& other)
 {
   adapter1 += other.adapter1;
   adapter2 += other.adapter2;
   aligned_pairs += other.aligned_pairs;
-  unaligned_pairs += other.unaligned_pairs;
   pairs_with_adapters += other.pairs_with_adapters;
 
   return *this;
