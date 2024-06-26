@@ -1983,10 +1983,11 @@ html_body_end::write(std::ofstream& out)
   out << "            <p>\n";
   out << "                If you use AdapterRemoval, please cite\n";
   out << "                <a href=\"https://doi.org/10.1186/s13104-016-1900-2\">Schubert et. al. 2016</a>:\n";
+  out << "            </p>\n";
   out << "\n";
-  out << "            <pre>    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n";
-  out << "    adapter trimming, identification, and read merging.\n";
-  out << "    BMC Research Notes, 12;9(1):88.</pre>\n";
+  out << "            <p style=\"font-family: monospace; padding-left: 2em; padding-right: 2em; max-width: 50%;\">\n";
+  out << "                Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid adapter trimming, identification, and\n";
+  out << "                read merging. BMC Research Notes, 12;9(1):88.\n";
   out << "            </p>\n";
   out << "\n";
   out << "            <p>\n";
@@ -2000,7 +2001,7 @@ html_body_end::write(std::ofstream& out)
   out << "                    href=\"https://github.com/vega/vega-lite/blob/v5.2.0/LICENSE\">license</a>).\n";
   out << "            </p>\n";
   out << "        </div>\n";
-  out << "\n";
+  out << "    </div>\n";
   out << "</body>\n";
   out << "\n";
   out << "</html>";
