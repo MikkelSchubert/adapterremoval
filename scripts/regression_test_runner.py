@@ -1045,7 +1045,7 @@ def parse_args(argv: list[str]) -> Args:
     parser.add_argument(
         "--max-failures",
         type=int,
-        default=5,
+        default=0,
         help="Maximum number of failures to report. Set to zero or less for no limit",
     )
     parser.add_argument(
