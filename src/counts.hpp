@@ -50,7 +50,7 @@ public:
   {
   }
 
-  /** Increase the storage size to accomondate at least size items. */
+  /** Increase the storage size to accommodate at least size items. */
   inline void resize_up_to(size_t size)
   {
     if (m_counts.size() < size) {
@@ -229,7 +229,7 @@ private:
 /**
  * Counter for multiple classes of values, e.g. nucleotides. Allows for more
  * cache-efficient counting of several types along a sequence. However this
- * comes at the cost of making retrival of counter objects for each value type
+ * comes at the cost of making retrieval of counter objects for each value type
  * more expensive, since a new instance has to be created.
  */
 template<typename I, typename T = int64_t>
@@ -245,7 +245,7 @@ public:
   {
   }
 
-  /** Increase the storage size to accomondate at least size items. */
+  /** Increase the storage size to accommodate at least size items. */
   inline void resize_up_to(size_t size)
   {
     if (m_counts.size() < size) {

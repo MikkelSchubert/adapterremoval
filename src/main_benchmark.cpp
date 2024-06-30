@@ -32,7 +32,7 @@ namespace adapterremoval {
 
 /*
  * Pass pointer to results to a different compilation unit, to prevent the
- * compiler from aggressivly eliding otherwise effect-free code. This will
+ * compiler from aggressively eliding otherwise effect-free code. This will
  * probably break if LTO is enabled.
  */
 void
@@ -361,7 +361,7 @@ public:
         return strategy::benchmark;
       }
 
-      // Benchmark the prefered algorithm if no algorithms were specified
+      // Benchmark the preferred algorithm if no algorithms were specified
       const auto supported = simd::supported();
       if (supported.size() && supported.back() == m_is) {
         for (const auto is : supported) {

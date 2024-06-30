@@ -111,7 +111,7 @@ TEST_CASE("json_token::from_i64 for 0")
   REQUIRE(json_token::from_i64(0)->to_string() == "0");
 }
 
-TEST_CASE("json_token::from_i64 for postive")
+TEST_CASE("json_token::from_i64 for positive")
 {
   REQUIRE(json_token::from_i64(1324)->to_string() == "1324");
 }

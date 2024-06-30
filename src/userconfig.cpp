@@ -794,7 +794,7 @@ userconfig::userconfig()
   argparser.add("--trim-windows", "X")
     .help("Specifies the size of the window used for --trim-strategy 'window': "
           "If >= 1, this value will be used as the window size; if the value "
-          "is < 1, window size is the read lenght times this value. If the "
+          "is < 1, window size is the read length times this value. If the "
           "resulting window size is 0 or larger than the read length, the read "
           "length is used as the window size")
     .deprecated_alias("--trimwindows")
@@ -828,7 +828,7 @@ userconfig::userconfig()
     .help("Enable trimming of poly-X tails prior to read alignment and adapter "
           "trimming. Zero or more nucleotides (A, C, G, T) may be specified. "
           "Zero or more nucleotides may be specified after the option "
-          "seperated by spaces, with zero nucleotides corresponding to all of "
+          "separated by spaces, with zero nucleotides corresponding to all of "
           "A, C, G, and T")
     .bind_vec(&pre_trim_poly_x_sink)
     .with_min_values(0);
@@ -837,7 +837,7 @@ userconfig::userconfig()
           "trimming/merging, but before trimming of low-quality bases. Merged "
           "reads are not trimmed by this option (both ends are 5'). Zero or "
           "more nucleotides (A, C, G, T) may be specified. Zero or more "
-          "nucleotides may be specified after the option seperated by spaces, "
+          "nucleotides may be specified after the option separated by spaces, "
           "with zero nucleotides corresponding to all of A, C, G, and T")
     .bind_vec(&post_trim_poly_x_sink)
     .with_min_values(0);
@@ -876,7 +876,7 @@ userconfig::userconfig()
     .help("Enable filtering of low complexity reds after carrying out adapter "
           "trimming and trimming of low-quality bases.");
   argparser.add("--min-complexity", "X")
-    .help("Minimum complexity required when filtering low-complexity reasds "
+    .help("Minimum complexity required when filtering low-complexity reads "
           "Complexity is a value in the range 0 to 1, with 0 being the least "
           "complex reads")
     .bind_double(&min_complexity)
@@ -946,7 +946,7 @@ userconfig::userconfig()
   argparser.add_header("LOGGING:");
 
   argparser.add("--log-level", "X")
-    .help("The minimum severity of messagest to be written to stderr")
+    .help("The minimum severity of messages to be written to stderr")
     .bind_str(&log_level)
     .with_choices({ "debug", "info", "warning", "error" })
     .with_default("info");
@@ -954,14 +954,14 @@ userconfig::userconfig()
   argparser.add("--log-colors", "X")
     .help("Enable/disable the use of colors when writing log messages. If set "
           "to auto, colors will only be enabled if STDOUT is a terminal and "
-          "the NO_COLORS is environmetal variable is not set")
+          "the NO_COLORS is environmental variable is not set")
     .bind_str(&log_color)
     .with_choices({ "auto", "always", "never" })
     .with_default("auto");
   argparser.add("--log-progress", "X")
     .help("Specify the type of progress reports used. If set to auto, then a "
           "spinner will be used if STDERR is a terminal and the NO_COLORS "
-          "environmetal variable is not set, otherwise logging will be used")
+          "environmental variable is not set, otherwise logging will be used")
     .bind_str(&log_progress_sink)
     .with_choices({ "auto", "log", "spin", "never" })
     .with_default("auto");

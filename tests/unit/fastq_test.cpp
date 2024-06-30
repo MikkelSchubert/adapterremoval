@@ -142,7 +142,7 @@ TEST_CASE("constructor_simple_record_lowercase_to_uppercase", "[fastq::fastq]")
   REQUIRE(record.sequence() == "ANGAGTCA");
 }
 
-TEST_CASE("constructor_score_boundries_phred_33", "[fastq::fastq]")
+TEST_CASE("constructor_score_boundaries_phred_33", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_33));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_33),
@@ -152,7 +152,7 @@ TEST_CASE("constructor_score_boundries_phred_33", "[fastq::fastq]")
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", "IJO", FASTQ_ENCODING_33), fastq_error);
 }
 
-TEST_CASE("constructor_score_boundries_phred_64", "[fastq::fastq]")
+TEST_CASE("constructor_score_boundaries_phred_64", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "@@A", FASTQ_ENCODING_64));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", "?@A", FASTQ_ENCODING_64), fastq_error);
@@ -162,7 +162,7 @@ TEST_CASE("constructor_score_boundries_phred_64", "[fastq::fastq]")
                     fastq_error);
 }
 
-TEST_CASE("constructor_score_boundries_phred_64 suggests solexa")
+TEST_CASE("constructor_score_boundaries_phred_64 suggests solexa")
 {
   REQUIRE_THROWS_WITH(fastq("Rec", "A", ":", FASTQ_ENCODING_64),
                       !Catch::Contains("Solexa format"));
@@ -170,7 +170,7 @@ TEST_CASE("constructor_score_boundries_phred_64 suggests solexa")
                       Catch::Contains("Solexa format"));
 }
 
-TEST_CASE("constructor_score_boundries_solexa", "[fastq::fastq]")
+TEST_CASE("constructor_score_boundaries_solexa", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", ";;<", FASTQ_ENCODING_SOLEXA));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", ":;<", FASTQ_ENCODING_SOLEXA),
@@ -181,7 +181,7 @@ TEST_CASE("constructor_score_boundries_solexa", "[fastq::fastq]")
                     fastq_error);
 }
 
-TEST_CASE("constructor_score_boundries_phred_sam", "[fastq::fastq]")
+TEST_CASE("constructor_score_boundaries_phred_sam", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
@@ -192,7 +192,7 @@ TEST_CASE("constructor_score_boundries_phred_sam", "[fastq::fastq]")
                     fastq_error);
 }
 
-TEST_CASE("constructor_score_boundries_ignored", "[fastq::fastq]")
+TEST_CASE("constructor_score_boundaries_ignored", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
   REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
@@ -753,7 +753,7 @@ TEST_CASE("trim_poly_x no trimming of too short sequences")
   REQUIRE(poly_x_trimming("T", 5, "TTTTT") == "");
 }
 
-TEST_CASE("trim_poly_x trimming until, but not including last mismtches")
+TEST_CASE("trim_poly_x trimming until, but not including last mismatches")
 {
   REQUIRE(poly_x_trimming("T", 10, "TATTTTATTTTTTTT") == "TA");
   REQUIRE(poly_x_trimming("T", 10, "TAATTTTTTTTTTTT") == "TAA");

@@ -52,7 +52,7 @@ public:
   /** Returns the consensus adapter sequence */
   inline const fastq& adapter() const { return m_adapter; }
 
-  /** Returns vector containingthe top N KMers */
+  /** Returns vector containing the top N KMers */
   const kmer_vec& top_kmers() const { return m_top_kmers; }
 
   /** Returns the total number of KMers recorded */

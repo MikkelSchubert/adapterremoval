@@ -42,8 +42,8 @@ public:
   /**
    * Opens a file using fopen and returns the handle.
    *
-   * If too many handles are used, this funtion will close writers until
-   * the file can be succesfully opened.
+   * If too many handles are used, this function will close writers until
+   * the file can be successfully opened.
    */
   static FILE* fopen(const std::string& filename, const char* mode);
 
@@ -59,7 +59,7 @@ public:
   managed_writer& operator=(const managed_writer&) = delete;
 
 private:
-  /* Ensure that the writer is open, closing existing files if nessesary. */
+  /* Ensure that the writer is open, closing existing files if necessary. */
   static void open_writer(managed_writer* ptr);
   /* Removes the writer from the list of open writers. */
   static void remove_writer(managed_writer* ptr);

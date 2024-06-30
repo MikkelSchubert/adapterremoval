@@ -63,7 +63,7 @@ enum class color
   reset
 };
 
-/** Returns the color assosiated with a given log level */
+/** Returns the color associated with a given log level */
 color
 level_color(level l)
 {
@@ -139,7 +139,7 @@ log_linewidth(const std::ostream& out)
   // Piped logs are not pretty-printed, to make analyses easier
   if (&out == &std::cerr) {
     struct winsize params;
-    // Atempt to retrieve the number of columns in the terminal
+    // Attempt to retrieve the number of columns in the terminal
     if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
       return std::min<size_t>(120, std::max<size_t>(60, params.ws_col));
     }
@@ -153,7 +153,7 @@ log_print_lines(std::ostream& out,
                 const std::string& head,
                 const std::string& msg)
 {
-  // Acount for unprinted color codes:
+  // Account for unprinted color codes:
   // Size of color ("\033[0;XXm" = 7) + reset ("\033[0m" = 4)
   const int color_width = g_log_colors ? 11 : 0;
   const int head_width = head.size() - color_width;

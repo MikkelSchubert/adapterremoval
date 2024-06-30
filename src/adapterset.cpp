@@ -167,10 +167,10 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
       std::ostringstream error;
       error << "Inconsistent mate 1 barcode lengths found; last barcode "
                "was "
-            << mate_1_len << " basepairs long, but barcode "
+            << mate_1_len << " base-pairs long, but barcode "
             << (it - barcodes.begin()) + 1 << " mate 1 sequence is "
             << mate_1.length()
-            << " basepairs long! Variable length "
+            << " base-pairs long! Variable length "
                "barcodes are not supported!";
 
       return print_parse_error(error);
@@ -178,10 +178,10 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
       std::ostringstream error;
       error << "Inconsistent mate 2 barcode lengths found; last barcode "
                "was "
-            << mate_2_len << " basepairs long, but barcode "
+            << mate_2_len << " base-pairs long, but barcode "
             << (it - barcodes.begin()) + 1 << " mate 2 sequence is "
             << mate_2.length()
-            << " basepairs long! Variable length "
+            << " base-pairs long! Variable length "
                "barcodes are not supported!";
 
       return print_parse_error(error);

@@ -39,7 +39,7 @@ public:
 
 /**
  * Struct representing node in quad-tree; children are referenced using the
- * corresponding indice in the vector representing the tree; -1 is used to
+ * corresponding index in the vector representing the tree; -1 is used to
  * represent unassigned children.
  */
 struct demultiplexer_node

@@ -131,12 +131,12 @@ json_token::from_i64(const int64_t value)
 json_ptr
 json_token::from_i64_vec(const counts& values)
 {
-  string_vec svalues;
+  string_vec strings;
   for (size_t i = 0; i < values.size(); ++i) {
-    svalues.push_back(std::to_string(values.get(i)));
+    strings.push_back(std::to_string(values.get(i)));
   }
 
-  return json_token::from_raw_vec(svalues);
+  return json_token::from_raw_vec(strings);
 }
 
 json_ptr
@@ -148,12 +148,12 @@ json_token::from_f64(const double value)
 json_ptr
 json_token::from_f64_vec(const rates& values)
 {
-  string_vec svalues;
+  string_vec strings;
   for (size_t i = 0; i < values.size(); ++i) {
-    svalues.push_back(format_f64(values.get(i)));
+    strings.push_back(format_f64(values.get(i)));
   }
 
-  return json_token::from_raw_vec(svalues);
+  return json_token::from_raw_vec(strings);
 }
 
 json_ptr

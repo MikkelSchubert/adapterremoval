@@ -32,7 +32,7 @@ enum class level
   debug,
   // General information messages; feature flags, progress, etc.
   info,
-  // Warning messagess for mostly harmless things; duplicate arguments, etc.
+  // Warning messages for mostly harmless things; duplicate arguments, etc.
   warning,
   // Error messages for bugs, bad data, likely mistakes, and the like. Errors
   // should always be followed by the program terminating.

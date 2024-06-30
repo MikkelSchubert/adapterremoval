@@ -791,7 +791,7 @@ TEST_CASE("Adapter only sequences, with missing base",
           "[alignment::paired_end]")
 {
   // Test the case where both reads are adapters, but are missing a single base
-  // Normally, alignments that do not invovle read1 vs read2 are skipped, but
+  // Normally, alignments that do not involve read1 vs read2 are skipped, but
   // missing bases may cause some alignments to be missed.
   const fastq record1("Rec1", "CCGACC", "!!!!!!");
   const fastq record2("Rec2", "ATGCCT", "!!!!!!");

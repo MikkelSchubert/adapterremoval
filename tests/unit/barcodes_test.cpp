@@ -39,14 +39,14 @@ TEST_CASE("copy constructor", "[barcodes::errors]")
   REQUIRE(std::string(copy.what()) == "test error");
 }
 
-TEST_CASE("Empty barcode-table is OK", "[barcodes::constuctor]")
+TEST_CASE("Empty barcode-table is OK", "[barcodes::constructor]")
 {
   const fastq_pair_vec barcodes;
 
   barcode_table table(barcodes, 0, 0, 0);
 }
 
-TEST_CASE("Overlapping SE barcodes fail", "[barcodes::constuctor]")
+TEST_CASE("Overlapping SE barcodes fail", "[barcodes::constructor]")
 {
   fastq_pair_vec barcodes;
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
@@ -55,7 +55,7 @@ TEST_CASE("Overlapping SE barcodes fail", "[barcodes::constuctor]")
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
 }
 
-TEST_CASE("Overlapping PE barcodes fail", "[barcodes::constuctor]")
+TEST_CASE("Overlapping PE barcodes fail", "[barcodes::constructor]")
 {
   fastq_pair_vec barcodes;
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
@@ -64,7 +64,7 @@ TEST_CASE("Overlapping PE barcodes fail", "[barcodes::constuctor]")
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
 }
 
-TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constuctor]")
+TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
 {
   fastq_pair_vec barcodes;
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
@@ -248,7 +248,7 @@ TEST_CASE("Shorter and longer reads for PE barcodes and SE reads",
 }
 
 TEST_CASE(
-  "Exact match among different PE barcodes for SE reads with ambigous results",
+  "Exact match among different PE barcodes for SE reads with ambiguous results",
   "[barcodes::exact::se]")
 {
   fastq_pair_vec barcodes;

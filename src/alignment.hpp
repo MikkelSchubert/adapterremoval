@@ -203,8 +203,8 @@ private:
 
 /**
  * Class for merging two sequence fragments into a single sequence, either
- * picking the highest quality base and its assosiated quality score, or
- * recalulating the quality score of matching/mismatching bases using the
+ * picking the highest quality base and its associated quality score, or
+ * recalculating the quality score of matching/mismatching bases using the
  * original AR methodology.
  */
 class sequence_merger
@@ -220,7 +220,7 @@ public:
 
   /** Set the strategy used when merging bases. */
   void set_merge_strategy(merge_strategy strategy);
-  /** Sets the maximum base quality score for recaculated scores. */
+  /** Sets the maximum base quality score for recalculated scores. */
   void set_max_recalculated_score(char max);
   /* Set the RNG used for when performing "original" merging. */
   void set_rng(std::mt19937* rng = nullptr);

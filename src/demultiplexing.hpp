@@ -52,9 +52,9 @@ public:
 };
 
 /**
- * Baseclass for demultiplexing of reads; responsible for building the quad-tree
- * representing the set of adapter sequences, and for maintaining the cache of
- * demultiplexed reads.
+ * Base-class for demultiplexing of reads; responsible for building the
+ * quad-tree representing the set of adapter sequences, and for maintaining the
+ * cache of demultiplexed reads.
  */
 class demultiplex_reads : public analytical_step
 {

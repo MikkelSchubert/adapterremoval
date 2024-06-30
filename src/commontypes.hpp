@@ -74,7 +74,7 @@ enum class trimming_strategy
 {
   /** Quality trimming disabled */
   none,
-  //! Quality trimming using the modified Mott algorithem
+  //! Quality trimming using the modified Mott algorithm
   mott,
   //! Sliding window based quality trimming
   window,

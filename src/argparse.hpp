@@ -49,7 +49,7 @@ enum class parse_result
   exit,
   //! Error occurred parsing arguments / invalid combination of args
   error,
-  //! No errors parsing commandline arguments
+  //! No errors parsing command-line arguments
   ok
 };
 
@@ -190,7 +190,7 @@ public:
   string_vec keys() const;
   /** Returns true if this key is a deprecated alias for this argument. */
   bool is_deprecated_alias(const std::string& key) const;
-  /** Returns the metavariable. May be an empty string. */
+  /** Returns the meta-variable. May be an empty string. */
   const std::string& metavar() const;
   /** Returns help string with %default replaced with the current value. */
   std::string help() const;

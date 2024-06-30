@@ -120,12 +120,12 @@ to_lower(char c)
 std::string
 to_lower(const std::string& str)
 {
-  std::string uppercased = str;
-  for (auto& current : uppercased) {
+  std::string lowercase = str;
+  for (auto& current : lowercase) {
     current = to_lower(current);
   }
 
-  return uppercased;
+  return lowercase;
 }
 
 char
@@ -137,15 +137,15 @@ to_upper(char c)
 std::string
 to_upper(const std::string& str)
 {
-  std::string uppercased = str;
-  for (auto& current : uppercased) {
+  std::string uppercase = str;
+  for (auto& current : uppercase) {
     current = to_upper(current);
   }
 
-  return uppercased;
+  return uppercase;
 }
 
-/** Returns true if str1 endswith str2 (case sensitive) */
+/** Returns true if str1 ends with str2 (case sensitive) */
 bool
 ends_with(const std::string& str1, const std::string& str2)
 {

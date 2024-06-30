@@ -56,7 +56,7 @@ to_lower(const std::string& str);
 char
 to_upper(char c);
 
-/** Uppercases letters in the range a-z */
+/** Uppercase letters in the range a-z */
 std::string
 to_upper(const std::string& str);
 
@@ -70,7 +70,8 @@ split_lines(const std::string& text);
 
 /** Split text by newlines and add fixed indentation following newlines. */
 std::string
-indent_lines(const std::string& lines, size_t identation = DEFAULT_INDENTATION);
+indent_lines(const std::string& lines,
+             size_t indentation = DEFAULT_INDENTATION);
 
 /**
  * Formats text into fixed-width columns.
@@ -80,7 +81,7 @@ indent_lines(const std::string& lines, size_t identation = DEFAULT_INDENTATION);
  * @param ljust Indent lines after the first line by this amount of characters.
  *
  * Note that all whitespace in the input string is consumed; output words are
- * seperated by a single space, and the terminal line does not end with a
+ * separated by a single space, and the terminal line does not end with a
  * newline.
  */
 string_vec
@@ -115,7 +116,7 @@ public:
   std::string format(const std::string& value) const;
 
 private:
-  //! Specifices whether or not to indent the first line of output.
+  //! Specifies whether or not to indent the first line of output.
   bool m_indent_first;
   //! Number of spaces to indent the 2+ lines in each paragraph.
   size_t m_ljust;

@@ -107,7 +107,7 @@ add_sequence_to_tree(demux_node_vec& tree,
   bool added_last_node = false;
   for (auto nuc : sequence) {
     auto& node = tree.at(node_idx);
-    // Indicate when PE barcodes can be unambigiously identified from SE
+    // Indicate when PE barcodes can be unambiguously identified from SE
     // reads
     node.value = (node.value == barcode_table::no_match)
                    ? barcode_id

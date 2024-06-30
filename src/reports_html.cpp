@@ -197,14 +197,14 @@ build_base_qualities(const fastq_stats_vec& reads, const string_vec& names)
     auto total_quality = stats.qualities_pos();
     auto total_bases = stats.nucleotides_pos();
 
-    for (const auto nuc : ACGT::values) {
-      const auto nucleotides = stats.nucleotides_pos(nuc);
-      const auto quality = stats.qualities_pos(nuc);
+    for (const auto nucleotide : ACGT::values) {
+      const auto nucleotides = stats.nucleotides_pos(nucleotide);
+      const auto quality = stats.qualities_pos(nucleotide);
 
       auto dict = qualities.dict();
       dict->str("read", names.at(i));
       dict->i64("offset", 1);
-      dict->str("group", std::string(1, ::toupper(nuc)));
+      dict->str("group", std::string(1, ::toupper(nucleotide)));
       dict->f64_vec("y", quality / nucleotides);
     }
 
@@ -251,13 +251,13 @@ build_base_content(const fastq_stats_vec& reads, const string_vec& names)
 
     auto total_bases = stats.nucleotides_pos();
 
-    for (const auto nuc : ACGTN::values) {
-      const auto bases = stats.nucleotides_pos(nuc);
+    for (const auto nucleotide : ACGTN::values) {
+      const auto bases = stats.nucleotides_pos(nucleotide);
 
       const auto dict = content.dict();
       dict->str("read", names.at(i));
       dict->i64("offset", 1);
-      dict->str("group", std::string(1, nuc));
+      dict->str("group", std::string(1, nucleotide));
 
       // Ensure that values get written, to prevent the plot being omitted
       dict->f64_vec("y", require_values(bases / total_bases));

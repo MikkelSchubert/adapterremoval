@@ -90,7 +90,7 @@ public:
   /** Returns a measure of sequence complexity in the range [0; 1]. **/
   double complexity() const;
 
-  /** The number of bases trimmmed from the 5p and 3p end respectively. **/
+  /** The number of bases trimmed from the 5p and 3p end respectively. **/
   using ntrimmed = std::pair<size_t, size_t>;
 
   /**
@@ -134,7 +134,7 @@ public:
    *
    * @param nucleotides Nucleotides to consider ('A', 'G', 'C', and/or 'T').
    * @param min_length The minimum length of of a poly-G tail.
-   * @return The number of 3' bases trimmmed for the best matching nucleotide.
+   * @return The number of 3' bases trimmed for the best matching nucleotide.
    */
   std::pair<char, size_t> poly_x_trimming(const std::string& nucleotides,
                                           size_t min_length);

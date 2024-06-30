@@ -62,18 +62,18 @@ public:
 
 private:
   /** Construction intentionally omitted, to prevent default initialization */
-  struct noinit
+  struct no_init
   {
     unsigned char value;
   };
 
-  static_assert(sizeof(noinit) == sizeof(decltype(noinit::value)),
-                "unexpected size of buffer::noinit");
-  static_assert(alignof(noinit) == alignof(decltype(noinit::value)),
-                "unexpected alignment of buffer::noinit");
+  static_assert(sizeof(no_init) == sizeof(decltype(no_init::value)),
+                "unexpected size of buffer::no_init");
+  static_assert(alignof(no_init) == alignof(decltype(no_init::value)),
+                "unexpected alignment of buffer::no_init");
 
   //! Backing buffer
-  std::vector<noinit> m_buffer;
+  std::vector<no_init> m_buffer;
 };
 
 using buffer_vec = std::vector<buffer>;

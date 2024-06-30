@@ -107,7 +107,7 @@ class userconfig
 public:
   userconfig();
 
-  /** Parses a set of commandline arguments. */
+  /** Parses a set of command-line arguments. */
   argparse::parse_result parse_args(int argc, char* argv[]);
 
   output_files get_output_filenames() const;
@@ -228,7 +228,7 @@ public:
   //! RNG seed used when merging using the original strategy
   unsigned merge_seed;
 
-  // Allow for slipping basepairs by allowing missing bases in adapter
+  // Allow for slipping base-pairs by allowing missing bases in adapter
   unsigned shift;
 
   //! The maximum number of threads used by the program
@@ -321,7 +321,7 @@ private:
   //! Sinks for --pre-trim5p/--pre-trimp3p
   string_vec pre_trim5p;
   string_vec pre_trim3p;
-  //! Sinks for --post-trim5p/--post-trimp3p
+  //! Sinks for --post-trim5p/--post-trim3p
   string_vec post_trim5p;
   string_vec post_trim3p;
   //! Sink for --pre-trim-polyx

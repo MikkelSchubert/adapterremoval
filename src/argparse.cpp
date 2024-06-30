@@ -90,7 +90,7 @@ parser::parser()
   // Built-in arguments
   add("--help").abbreviation('h').help("Display this message.");
   add("--version").abbreviation('v').help("Print the version string.");
-  add("--licenses").help("Print licences for this software.");
+  add("--licenses").help("Print licenses for this software.");
   add_separator();
 }
 

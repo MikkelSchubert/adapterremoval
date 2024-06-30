@@ -47,7 +47,7 @@ public:
    */
   void add(const fastq& read, const read_type type);
 
-  /** Returns a chunk for each generated type of proccessed reads. */
+  /** Returns a chunk for each generated type of processed reads. */
   chunk_vec finalize();
 
 private:

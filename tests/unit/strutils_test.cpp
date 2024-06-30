@@ -149,7 +149,7 @@ TEST_CASE("Whitespace between words is stripped", "[strutils::wrap_text]")
   REQUIRE(wrap_text("\n \n foo \n bar \n") == vec{ "foo bar" });
 }
 
-TEST_CASE("Linebreaks are added by max width", "[strutils::wrap_text]")
+TEST_CASE("Line-breaks are added by max width", "[strutils::wrap_text]")
 {
   REQUIRE(wrap_text("foo bar\nzood", 12) == vec{ "foo bar zood" });
   REQUIRE(wrap_text("foo bar\nzood", 11) == vec{ "foo bar", "zood" });

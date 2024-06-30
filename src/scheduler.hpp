@@ -238,9 +238,9 @@ private:
   void do_run();
 
   /** Returns true if an error has occurred, and the run should terminate. */
-  bool errors_occured() const;
+  bool errors_occurred() const;
   /** Mark that an error has occurred, and that the run should terminate. */
-  void set_errors_occured();
+  void set_errors_occurred();
 
   //! Analytical steps
   pipeline m_steps;
@@ -252,7 +252,7 @@ private:
   size_t m_chunk_counter;
   //! The current number of running/queued tasks
   size_t m_tasks;
-  //! The maximum number of tasks to process simultanously
+  //! The maximum number of tasks to process simultaneously
   size_t m_tasks_max;
 
   //! Lock used to control access to chunks
@@ -305,13 +305,13 @@ analytical_step::name() const
 // Implementations for 'scheduler'
 
 inline bool
-scheduler::errors_occured() const
+scheduler::errors_occurred() const
 {
   return m_errors.load(std::memory_order::memory_order_relaxed);
 }
 
 inline void
-scheduler::set_errors_occured()
+scheduler::set_errors_occurred()
 {
   m_errors.store(true, std::memory_order::memory_order_relaxed);
 }

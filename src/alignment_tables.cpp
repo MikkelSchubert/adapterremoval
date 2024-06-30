@@ -37,7 +37,7 @@ namespace adapterremoval {
  * score is calculated for both the case where the two bases are identical, and
  * the case where they differ.
  *
- * The returned vector is inded by (phred1 * MAX_PHRED_SCORE) + phred2, where
+ * The returned vector is indexed by (phred1 * MAX_PHRED_SCORE) + phred2, where
  * phred1 is assumed to be >= phred2. This is because we always select the base
  * with the higher Phred score.
  */

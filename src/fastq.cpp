@@ -89,7 +89,7 @@ struct mate_info
   std::string name;
   //! Which mate in a pair, if identified
   read_mate mate;
-  //! Position of the seperator character in the header (if any)
+  //! Position of the separator character in the header (if any)
   size_t sep_pos;
 };
 

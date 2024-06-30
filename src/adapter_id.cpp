@@ -25,7 +25,7 @@
 namespace adapterremoval {
 
 ///////////////////////////////////////////////////////////////////////////////
-// Utiltity functions
+// Utility functions
 
 namespace {
 
@@ -78,7 +78,7 @@ using kmer_queue =
 /**
  * Takes an indexed_counts object, and returns a fastq sequence containing the
  * majority nucleotide at each position.The quality score of each base is
- * caculated as the proportion of the bases which match the majority nucleotide
+ * calculated as the proportion of the bases which match the majority nucleotide
  * (p = m / (N + 1)). If no majority nucleotide can be found 'N' is used
  * instead.
  */

@@ -115,7 +115,7 @@ public:
   /** Increment the next chunk to be processed; requires locking */
   void increment_next_chunk() { m_next_chunk++; }
 
-  /** Perform any final cleanup assosited with the task; requires locking */
+  /** Perform any final cleanup associated with the task; requires locking */
   void finalize() const { return m_ptr->finalize(); }
 
 private:
@@ -182,7 +182,7 @@ scheduler::run(int nthreads)
   } catch (const std::system_error& error) {
     log::error() << "Failed to create threads:\n" << indent_lines(error.what());
 
-    set_errors_occured();
+    set_errors_occurred();
   }
 
   // Run the main thread (the only thread in case of non-threaded mode)
@@ -193,11 +193,11 @@ scheduler::run(int nthreads)
       thread.join();
     } catch (const std::system_error& error) {
       log::error() << "Failed to join thread: " << error.what();
-      set_errors_occured();
+      set_errors_occurred();
     }
   }
 
-  if (errors_occured()) {
+  if (errors_occurred()) {
     return false;
   }
 
@@ -206,11 +206,11 @@ scheduler::run(int nthreads)
       log::error() << "Not all parts run for step " << step->name() << "; "
                    << step->chunks_queued() << " parts left";
 
-      set_errors_occured();
+      set_errors_occurred();
     }
   }
 
-  if (errors_occured()) {
+  if (errors_occurred()) {
     return false;
   }
 
@@ -233,10 +233,10 @@ scheduler::run_wrapper(scheduler* sch)
   try {
     sch->do_run();
   } catch (const thread_abort&) {
-    sch->set_errors_occured();
+    sch->set_errors_occurred();
     log::debug() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
-    sch->set_errors_occured();
+    sch->set_errors_occurred();
     log::error() << error.what();
   } catch (...) {
     AR_FAIL("Unhandled, non-standard exception in thread");
@@ -251,7 +251,7 @@ scheduler::do_run()
 {
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
-  while (!errors_occured()) {
+  while (!errors_occurred()) {
     step_ptr step;
     if (!m_io_active && !m_queue_io.empty()) {
       // Try to keep the disk busy by preferring IO tasks
@@ -334,7 +334,7 @@ scheduler::do_run()
       m_tasks--;
 
       // If possible continue processing this task using the same thread
-    } while (step->can_run_next() && !errors_occured());
+    } while (step->can_run_next() && !errors_occurred());
 
     // Unlock use of IO steps after finishing processing
     if (step->ordering() == processing_order::ordered_io) {

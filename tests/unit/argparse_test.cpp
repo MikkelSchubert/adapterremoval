@@ -447,7 +447,7 @@ TEST_CASE("str sink accepts value in choices", "[argparse::str_sink]")
   REQUIRE(value == "ghi");
 }
 
-TEST_CASE("str sink rejectes values not in choices", "[argparse::str_sink]")
+TEST_CASE("str sink rejects values not in choices", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
@@ -458,7 +458,7 @@ TEST_CASE("str sink rejectes values not in choices", "[argparse::str_sink]")
   REQUIRE(value == "");
 }
 
-TEST_CASE("str sink case-insenstive, returns choice", "[argparse::str_sink]")
+TEST_CASE("str sink case-insensitive, returns choice", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
@@ -901,7 +901,7 @@ const std::string HELP_HEADER =
   "OPTIONS:\n"
   "   -h, --help      Display this message.\n"
   "   -v, --version   Print the version string.\n"
-  "   --licenses      Print licences for this software.\n\n";
+  "   --licenses      Print licenses for this software.\n\n";
 
 TEST_CASE("--version", "[argparse::parser]")
 {
@@ -1094,7 +1094,7 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
                       "OPTIONS:\n"
                       "   -h, --help      Display this message.\n"
                       "   -v, --version   Print the version string.\n"
-                      "   --licenses      Print licences for this software.\n\n"
+                      "   --licenses      Print licenses for this software.\n\n"
                       "   --test <META>\n");
 }
 
@@ -1120,7 +1120,7 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
           "OPTIONS:\n"
           "   -h, --help      Display this message.\n"
           "   -v, --version   Print the version string.\n"
-          "   --licenses      Print licences for this software.\n\n"
+          "   --licenses      Print licenses for this software.\n\n"
           "   --test <META>   A long help message that exceeds the\n"
           "                   limit of 60 characters by some amount in\n"
           "                   order to test the line break\n"
@@ -1150,7 +1150,7 @@ TEST_CASE("help with default value", "[argparse::parser]")
           "OPTIONS:\n"
           "   -h, --help      Display this message.\n"
           "   -v, --version   Print the version string.\n"
-          "   --licenses      Print licences for this software.\n\n"
+          "   --licenses      Print licenses for this software.\n\n"
           "   --test <META>   A long help message that exceeds the\n"
           "                   limit of 60 characters by some amount in\n"
           "                   order to test the line break\n"
