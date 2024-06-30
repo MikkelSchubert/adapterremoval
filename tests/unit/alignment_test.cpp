@@ -1522,38 +1522,38 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
     const auto compare_subsequences = simd::get_compare_subsequences_func(is);
     const auto padding = simd::padding(is);
 
-  const std::vector<std::string> combinations = get_combinations();
-  for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
-    for (size_t pos = 0; pos < seqlen; ++pos) {
-      const size_t nbases = std::min<int>(3, seqlen - pos);
+    const std::vector<std::string> combinations = get_combinations();
+    for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
+      for (size_t pos = 0; pos < seqlen; ++pos) {
+        const size_t nbases = std::min<int>(3, seqlen - pos);
 
-      for (size_t i = 0; i < combinations.size(); ++i) {
-        for (size_t j = 0; j < combinations.size(); ++j) {
-          alignment_info expected;
-          expected.length = seqlen;
-          update_alignment(
-            expected, combinations.at(i), combinations.at(j), nbases);
+        for (size_t i = 0; i < combinations.size(); ++i) {
+          for (size_t j = 0; j < combinations.size(); ++j) {
+            alignment_info expected;
+            expected.length = seqlen;
+            update_alignment(
+              expected, combinations.at(i), combinations.at(j), nbases);
 
-          std::string mate1 = std::string(seqlen, 'A');
-          mate1.replace(pos, nbases, combinations.at(i).substr(0, nbases));
-          std::string mate2 = std::string(seqlen, 'A');
-          mate2.replace(pos, nbases, combinations.at(j).substr(0, nbases));
+            std::string mate1 = std::string(seqlen, 'A');
+            mate1.replace(pos, nbases, combinations.at(i).substr(0, nbases));
+            std::string mate2 = std::string(seqlen, 'A');
+            mate2.replace(pos, nbases, combinations.at(j).substr(0, nbases));
 
             mate1.resize(mate1.length() + padding, 'N');
             mate2.resize(mate2.length() + padding, 'N');
 
-          alignment_info current;
-          current.length = seqlen;
-          compare_subsequences(current.n_mismatches,
-                               current.n_ambiguous,
-                               mate1.c_str(),
-                               mate2.c_str(),
-                               current.length,
-                               current.length * 2);
+            alignment_info current;
+            current.length = seqlen;
+            compare_subsequences(current.n_mismatches,
+                                 current.n_ambiguous,
+                                 mate1.c_str(),
+                                 mate2.c_str(),
+                                 current.length,
+                                 current.length * 2);
 
-          // Don't count all these checks in test statistics
-          if (!(current == expected)) {
-            REQUIRE(current == expected);
+            // Don't count all these checks in test statistics
+            if (!(current == expected)) {
+              REQUIRE(current == expected);
             }
           }
         }
