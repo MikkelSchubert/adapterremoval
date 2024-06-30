@@ -113,6 +113,8 @@ struct alignment_info
            static_cast<int>(n_ambiguous + 2 * n_mismatches);
   }
 
+  //! 0-based ID of best matching adapter or a negative value if not set.
+  int adapter_id = -1;
   //! Zero based id of the adapter which offered the best alignment. Is less
   //! than zero if no alignment was found.
   int offset = 0;
@@ -125,8 +127,6 @@ struct alignment_info
   size_t n_mismatches = 0;
   //! Number of positions in the alignment where one or both bases were N.
   size_t n_ambiguous = 0;
-  //! 0-based ID of best matching adapter or a negative value if not set.
-  int adapter_id = -1;
 };
 
 class sequence_aligner
