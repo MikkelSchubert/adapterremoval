@@ -21,6 +21,10 @@
 
 #include <string>
 
+#ifdef __FAST_MATH__
+#error "AdapterRemoval cannot be compiled with -ffast-math"
+#endif
+
 namespace adapterremoval {
 
 const std::string NAME = "AdapterRemoval";
