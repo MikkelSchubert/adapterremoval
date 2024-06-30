@@ -59,13 +59,13 @@ TEST_CASE("bool sink is initialized", "[argparse::bool_sink]")
   REQUIRE_FALSE(value);
 }
 
-TEST_CASE("bool sink to_str", "[argparse::bool_sink]")
+TEST_CASE("bool sink current_value", "[argparse::bool_sink]")
 {
   bool value = false;
   argparse::bool_sink sink(&value);
-  REQUIRE(sink.to_str() == "off");
+  REQUIRE(sink.current_value() == "off");
   value = true;
-  REQUIRE(sink.to_str() == "on");
+  REQUIRE(sink.current_value() == "on");
 }
 
 TEST_CASE("bool sink has_default", "[argparse::bool_sink]")
@@ -82,7 +82,7 @@ TEST_CASE("bool sink does not require values", "[argparse::bool_sink]")
 
   string_vec values;
   REQUIRE(sink.consume(values.begin(), values.end()) == 0);
-  REQUIRE(sink.to_str() == "on");
+  REQUIRE(sink.current_value() == "on");
   REQUIRE(value);
 }
 
@@ -110,13 +110,13 @@ TEST_CASE("uint sink is initialized", "[argparse::uint_sink]")
   REQUIRE(value == 0);
 }
 
-TEST_CASE("uint sink to_str", "[argparse::uint_sink]")
+TEST_CASE("uint sink current_value", "[argparse::uint_sink]")
 {
   unsigned value = 1234567;
   argparse::uint_sink sink(&value);
-  REQUIRE(sink.to_str() == "0");
+  REQUIRE(sink.current_value() == "0");
   value = 1234567;
-  REQUIRE(sink.to_str() == "1234567");
+  REQUIRE(sink.current_value() == "1234567");
 }
 
 TEST_CASE("uint sink with_default", "[argparse::uint_sink]")
@@ -238,15 +238,15 @@ TEST_CASE("double sink is initialized", "[argparse::double_sink]")
   REQUIRE(value == 0);
 }
 
-TEST_CASE("double sink to_str", "[argparse::double_sink]")
+TEST_CASE("double sink current_value", "[argparse::double_sink]")
 {
   double value = 12345.67;
   argparse::double_sink sink(&value);
-  REQUIRE(sink.to_str() == "0");
+  REQUIRE(sink.current_value() == "0");
   value = 12345.67;
-  REQUIRE(sink.to_str() == "12345.67");
+  REQUIRE(sink.current_value() == "12345.67");
   value = 1234567;
-  REQUIRE(sink.to_str() == "1234567");
+  REQUIRE(sink.current_value() == "1234567");
 }
 
 TEST_CASE("double sink with_default", "[argparse::double_sink]")
@@ -334,20 +334,20 @@ TEST_CASE("str sink is initialized", "[argparse::str_sink]")
   REQUIRE(value.empty());
 }
 
-TEST_CASE("str sink to_str", "[argparse::str_sink]")
+TEST_CASE("str sink current_value", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
   value = "foobar";
-  REQUIRE(sink.to_str() == "foobar");
+  REQUIRE(sink.current_value() == "foobar");
 }
 
-TEST_CASE("str sink to_str escapes", "[argparse::str_sink]")
+TEST_CASE("str sink current_value escapes", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
   value = "foo bar";
-  REQUIRE(sink.to_str() == "foo bar");
+  REQUIRE(sink.current_value() == "foo bar");
 }
 
 TEST_CASE("str sink with_default (char*)", "[argparse::str_sink]")
@@ -500,7 +500,7 @@ TEST_CASE("vec sink to_vec #1", "[argparse::vec_sink]")
   string_vec value;
   argparse::vec_sink sink(&value);
   value.push_back("foobar");
-  REQUIRE(sink.to_str() == "foobar");
+  REQUIRE(sink.current_value() == "foobar");
 }
 
 TEST_CASE("vec sink to_vec #2", "[argparse::vec_sink]")
@@ -509,7 +509,7 @@ TEST_CASE("vec sink to_vec #2", "[argparse::vec_sink]")
   argparse::vec_sink sink(&value);
   value.push_back("foo");
   value.push_back("bar");
-  REQUIRE(sink.to_str() == "foo;bar");
+  REQUIRE(sink.current_value() == "foo;bar");
 }
 
 TEST_CASE("vec sink to_vec escapes", "[argparse::vec_sink]")
@@ -519,7 +519,7 @@ TEST_CASE("vec sink to_vec escapes", "[argparse::vec_sink]")
   value.push_back("foo");
   value.push_back("1 2");
   value.push_back("bar");
-  REQUIRE(sink.to_str() == "foo;'1 2';bar");
+  REQUIRE(sink.current_value() == "foo;'1 2';bar");
 }
 
 TEST_CASE("vec sink require value", "[argparse::vec_sink]")
@@ -685,7 +685,7 @@ TEST_CASE("default argument sink", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
 
-  REQUIRE(arg.to_str() == "off");
+  REQUIRE(arg.current_value() == "off");
 }
 
 TEST_CASE("canonical key", "[argparse::argument]")
@@ -1049,7 +1049,7 @@ TEST_CASE("parse multiple arguments", "[argparse::parser]")
   REQUIRE(sink == 1234);
 }
 
-TEST_CASE("to_str returns value as str", "[argparse::parser]")
+TEST_CASE("current_value returns value as str", "[argparse::parser]")
 {
   unsigned usink = 0;
   std::string ssink;
@@ -1059,8 +1059,8 @@ TEST_CASE("to_str returns value as str", "[argparse::parser]")
   const char* args[] = { "exe", "--arg1", "1234", "--arg2", "foo bar*" };
 
   REQUIRE(p.parse_args(5, args) == argparse::parse_result::ok);
-  REQUIRE(p.to_str("--arg1") == "1234");
-  REQUIRE(p.to_str("--arg2") == "foo bar*");
+  REQUIRE(p.current_value("--arg1") == "1234");
+  REQUIRE(p.current_value("--arg2") == "foo bar*");
 }
 
 TEST_CASE("user supplied argument", "[argparse::parser]")

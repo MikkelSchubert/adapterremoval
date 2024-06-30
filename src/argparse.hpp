@@ -104,7 +104,7 @@ public:
   /** Returns true if the option with the given key has been set. */
   bool is_set(const std::string& key) const;
   /** Returns the value associated with the argument as a string. */
-  std::string to_str(const std::string& key) const;
+  std::string current_value(const std::string& key) const;
 
   /** Add argument with metavar. By default this takes no values. */
   argument& add(const std::string& name, const std::string& metavar = "");
@@ -192,7 +192,7 @@ public:
   bool is_deprecated_alias(const std::string& key) const;
   /** Returns the meta-variable. May be an empty string. */
   const std::string& metavar() const;
-  /** Returns help string with %default replaced with the current value. */
+  /** Returns help string with %default replaced with the default (if any). */
   std::string help() const;
 
   /** Indicates the minimum number of values taken by this argument */
@@ -206,7 +206,9 @@ public:
   const string_vec& conflicts_with() const;
 
   /** Returns the value associated with the argument as a string. */
-  std::string to_str() const;
+  std::string current_value() const;
+  /** Returns the default value associated as a string. */
+  std::string default_value() const;
 
   /** Set the metavar for this argument. */
   argument& metavar(const std::string& metavar);
@@ -280,15 +282,16 @@ public:
 
   virtual ~sink() = default;
 
-  /** Returns the value associated with the consumer as a string. **/
-  virtual std::string to_str() const = 0;
+  /** Returns the current argument value as a string. **/
+  virtual std::string current_value() const = 0;
+  /** Returns string-representation of the default value */
+  virtual std::string default_value() const;
+  /** Indicates if the sink has been supplied with a default value. */
+  virtual bool has_default() const;
 
   /** See argument::consume */
   virtual size_t consume(string_vec_citer start,
                          const string_vec_citer& end) = 0;
-
-  /** Indicates if the sink has been supplied with a default value. */
-  virtual bool has_default() const;
 
   /** Returns the list of valid choices, if any, formatted as strings */
   virtual string_vec choices() const;
@@ -318,7 +321,7 @@ class bool_sink : public sink
 public:
   explicit bool_sink(bool* sink);
 
-  std::string to_str() const override;
+  std::string current_value() const override;
   size_t consume(string_vec_citer, const string_vec_citer& end) override;
 
 private:
@@ -336,8 +339,9 @@ public:
   explicit uint_sink(unsigned* sink);
 
   uint_sink& with_default(unsigned value);
+  std::string default_value() const override;
 
-  std::string to_str() const override;
+  std::string current_value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:
@@ -347,6 +351,8 @@ private:
   uint_sink& operator=(const uint_sink&) = delete;
 
   unsigned* m_sink;
+  //! Default value used for -h/--help output
+  unsigned m_default;
 };
 
 class double_sink : public sink
@@ -355,8 +361,9 @@ public:
   explicit double_sink(double* sink);
 
   double_sink& with_default(double value);
+  std::string default_value() const override;
 
-  std::string to_str() const override;
+  std::string current_value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:
@@ -366,6 +373,8 @@ private:
   double_sink& operator=(const double_sink&) = delete;
 
   double* m_sink;
+  //! Default value used for -h/--help output
+  double m_default;
 };
 
 class str_sink : public sink
@@ -376,8 +385,9 @@ public:
   str_sink& with_default(const char* value);
   str_sink& with_default(const std::string& value);
   str_sink& with_choices(const string_vec& choices);
+  std::string default_value() const override;
 
-  std::string to_str() const override;
+  std::string current_value() const override;
   string_vec choices() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
@@ -389,6 +399,8 @@ private:
 
   std::string* m_sink;
   string_vec m_choices;
+  //! Default value used for -h/--help output
+  std::string m_default;
 };
 
 class vec_sink : public sink
@@ -401,7 +413,7 @@ public:
   /** The maximum number of values expected on the command-line (default inf) */
   vec_sink& with_max_values(size_t n);
 
-  std::string to_str() const override;
+  std::string current_value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
 private:

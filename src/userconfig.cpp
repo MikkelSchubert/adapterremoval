@@ -1191,7 +1191,7 @@ userconfig::parse_args(int argc, char* argv[])
   if (adapters.barcode_count()) {
     bool any_illegal_keys = false;
     for (const auto& key : output_files_set(argparser)) {
-      if (argparser.to_str(key) != DEV_NULL) {
+      if (argparser.current_value(key) != DEV_NULL) {
         log::error() << "Command-line option " << key << " can only be set to "
                      << "/dev/null when demultiplexing!";
         any_illegal_keys = true;
@@ -1326,7 +1326,7 @@ userconfig::new_filename(const std::string& key,
                          const std::string& second) const
 {
   if (argparser.is_set(key)) {
-    return argparser.to_str(key);
+    return argparser.current_value(key);
   } else if (out_basename == DEV_NULL) {
     // Special case to allow dry runs with no output
     return DEV_NULL;

@@ -187,12 +187,12 @@ parser::is_set(const std::string& key) const
 }
 
 std::string
-parser::to_str(const std::string& key) const
+parser::current_value(const std::string& key) const
 {
   const auto it = m_keys.find(key);
   AR_REQUIRE(it != m_keys.end(), shell_escape(key));
 
-  return it->second->to_str();
+  return it->second->current_value();
 }
 
 argument&
@@ -513,7 +513,7 @@ argument::help() const
   }
 
   if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
-    ss << " [default: " << to_str() << "]";
+    ss << " [default: " << default_value() << "]";
   }
 
   return ss.str();
@@ -544,9 +544,15 @@ argument::conflicts_with() const
 }
 
 std::string
-argument::to_str() const
+argument::current_value() const
 {
-  return m_sink->to_str();
+  return m_sink->current_value();
+}
+
+std::string
+argument::default_value() const
+{
+  return m_sink->default_value();
 }
 
 template<typename A, typename B>
@@ -750,6 +756,12 @@ sink::sink(size_t min_values, size_t max_values)
 {
 }
 
+std::string
+sink::default_value() const
+{
+  AR_FAIL("sink::default_value not implemented");
+}
+
 bool
 sink::has_default() const
 {
@@ -787,7 +799,7 @@ bool_sink::bool_sink(bool* ptr)
 }
 
 std::string
-bool_sink::to_str() const
+bool_sink::current_value() const
 {
   return *m_sink ? "on" : "off";
 }
@@ -807,25 +819,33 @@ bool_sink::consume(string_vec_citer start, const string_vec_citer& end)
 uint_sink::uint_sink(unsigned* ptr)
   : sink(1)
   , m_sink(ptr)
+  , m_default()
 {
   AR_REQUIRE(ptr);
 
-  *m_sink = 0;
+  *m_sink = m_default;
 }
 
 uint_sink&
 uint_sink::with_default(unsigned value)
 {
   m_has_default = true;
-  *m_sink = value;
+  *m_sink = m_default = value;
 
   return *this;
 }
 
 std::string
-uint_sink::to_str() const
+uint_sink::current_value() const
 {
   return std::to_string(*m_sink);
+}
+
+std::string
+uint_sink::default_value() const
+{
+  AR_REQUIRE(has_default());
+  return std::to_string(m_default);
 }
 
 size_t
@@ -848,29 +868,47 @@ uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
 double_sink::double_sink(double* ptr)
   : sink(1)
   , m_sink(ptr)
+  , m_default()
 {
   AR_REQUIRE(ptr);
 
-  *m_sink = 0.0;
+  *m_sink = m_default;
 }
 
 double_sink&
 double_sink::with_default(double value)
 {
   m_has_default = true;
-  *m_sink = value;
+  *m_sink = m_default = value;
 
   return *this;
 }
 
+namespace {
+
 std::string
-double_sink::to_str() const
+double_to_string(double value)
 {
-  auto s = std::to_string(*m_sink);
+  auto s = std::to_string(value);
   s.erase(s.find_last_not_of('0') + 1, std::string::npos);
   s.erase(s.find_last_not_of('.') + 1, std::string::npos);
 
   return s;
+}
+
+} // namespace
+
+std::string
+double_sink::default_value() const
+{
+  AR_REQUIRE(has_default());
+  return double_to_string(m_default);
+}
+
+std::string
+double_sink::current_value() const
+{
+  return double_to_string(*m_sink);
 }
 
 size_t
@@ -894,17 +932,18 @@ str_sink::str_sink(std::string* ptr)
   : sink(1)
   , m_sink(ptr)
   , m_choices()
+  , m_default()
 {
   AR_REQUIRE(ptr);
 
-  m_sink->clear();
+  *m_sink = m_default;
 }
 
 str_sink&
 str_sink::with_default(const char* value)
 {
   m_has_default = true;
-  *m_sink = value;
+  *m_sink = m_default = value;
 
   return *this;
 }
@@ -913,7 +952,7 @@ str_sink&
 str_sink::with_default(const std::string& value)
 {
   m_has_default = true;
-  *m_sink = value;
+  *m_sink = m_default = value;
 
   return *this;
 }
@@ -927,9 +966,16 @@ str_sink::with_choices(const string_vec& value)
 }
 
 std::string
-str_sink::to_str() const
+str_sink::current_value() const
 {
   return *m_sink;
+}
+
+std::string
+str_sink::default_value() const
+{
+  AR_REQUIRE(has_default());
+  return m_default;
 }
 
 string_vec
@@ -997,7 +1043,7 @@ vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 }
 
 std::string
-vec_sink::to_str() const
+vec_sink::current_value() const
 {
   std::string output;
 
