@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#pragma once
+
 #include "commontypes.hpp" // for string, string_vec
 #include <chrono>          // for high_resolution_clock
 #include <vector>          // for vector
