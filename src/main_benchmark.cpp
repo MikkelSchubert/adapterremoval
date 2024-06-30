@@ -30,15 +30,22 @@
 
 namespace adapterremoval {
 
-/*
- * Pass pointer to results to a different compilation unit, to prevent the
- * compiler from aggressively eliding otherwise effect-free code. This will
- * probably break if LTO is enabled.
- */
-void
-blackbox(void* p);
-
 namespace {
+
+//! Variable used to store sum of bytes of results; this is used
+//! to prevent the optimizer from throwing away the results of
+//! benchmarks
+uint64_t g_blackbox_sink = 0;
+
+template<typename T>
+void
+blackbox(const T& p)
+{
+  const auto c = reinterpret_cast<const uint8_t*>(&p);
+  for (size_t i = 0; i < sizeof(T); ++i) {
+    g_blackbox_sink += c[i];
+  }
+}
 
 class readlines_benchmarker : public benchmarker
 {
@@ -72,8 +79,8 @@ protected:
     read_lines(m_filenames_1, m_lines_1);
     read_lines(m_filenames_2, m_lines_2);
 
-    blackbox(&m_lines_1);
-    blackbox(&m_lines_2);
+    blackbox(m_lines_1);
+    blackbox(m_lines_2);
   }
 
 private:
@@ -139,8 +146,8 @@ protected:
       }
     }
 
-    blackbox(&m_records_1);
-    blackbox(&m_records_2);
+    blackbox(m_records_1);
+    blackbox(m_records_2);
   }
 
 private:
@@ -195,7 +202,7 @@ protected:
     total += complexity(m_records_1);
     total += complexity(m_records_2);
 
-    blackbox(&total);
+    blackbox(total);
   }
 
 private:
@@ -240,8 +247,8 @@ protected:
     trim(m_trimmed_records_1);
     trim(m_trimmed_records_2);
 
-    blackbox(&m_trimmed_records_1);
-    blackbox(&m_trimmed_records_2);
+    blackbox(m_trimmed_records_1);
+    blackbox(m_trimmed_records_2);
   }
 
   virtual void trim(fastq_vec& reads) const = 0;
@@ -333,7 +340,7 @@ private:
       stats.process(it);
     }
 
-    blackbox(&stats);
+    blackbox(stats);
   }
 
   const fastq_vec& m_records_1;
@@ -412,7 +419,7 @@ protected:
       }
     }
 
-    blackbox(&best);
+    blackbox(best);
   }
 
 private:
@@ -473,7 +480,7 @@ protected:
       }
     }
 
-    blackbox(&best);
+    blackbox(best);
   }
 
 private:
@@ -555,6 +562,8 @@ benchmark(const userconfig& config)
         .run_if_toggled(toggles);
     }
   }
+
+  log::info() << "Optimization prevention value = " << g_blackbox_sink;
 
   return 0;
 }
