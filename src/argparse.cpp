@@ -229,7 +229,9 @@ parser::print_help() const
   print_version();
 
   auto cerr = log::cerr();
-  cerr << "\n" << m_preamble;
+  if (!m_preamble.empty()) {
+    cerr << "\n" << m_preamble;
+  }
 
   string_vec signatures;
 
