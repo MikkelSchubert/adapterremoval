@@ -54,6 +54,14 @@ from typing import (
     overload,
 )
 
+try:
+    import jsonschema
+except ImportError:
+    JSON_SCHEMA_VALIDATION = False  # pyright: ignore[reportConstantRedefinition]
+else:
+    JSON_SCHEMA_VALIDATION = True
+
+
 if TYPE_CHECKING:
     from typing_extensions import Literal, TypeAlias
 
@@ -301,6 +309,10 @@ class TestError(RuntimeError):
     pass
 
 
+class JSONSchemaError(TestError):
+    pass
+
+
 _INPUT_FILES_FQ = {
     "input_1",
     "input_2",
@@ -324,6 +336,35 @@ _OUTPUT_FILES = {
 } | _OUTPUT_FILES_FQ
 
 _TEST_FILES = _INPUT_FILES | _OUTPUT_FILES
+
+
+class JSONValidator:
+    _schema: JSON
+
+    __slots__ = [
+        "_schema",
+    ]
+
+    def __init__(self, filepath: str | None) -> None:
+        if filepath is None:
+            self._schema = {}
+        elif not JSON_SCHEMA_VALIDATION:
+            print_warn("JSON schema provided, but `jsonschema` could not be loaded")
+
+            self._schema = {}
+        else:
+            print(f"Reading JSON schema from {filepath!r}")
+            _, self._schema = read_json(filepath)
+
+    def __call__(self, data: JSON) -> None:
+        if self._schema:
+            try:
+                jsonschema.validate(instance=data, schema=self._schema)
+            except jsonschema.ValidationError as error:
+                raise JSONSchemaError("Invalid JSON file") from error
+
+    def __bool__(self) -> bool:
+        return bool(self._schema)
 
 
 def json_pop_value(data: JSON, path: tuple[str, ...], default: JSON) -> JSON:
@@ -378,7 +419,14 @@ class TestFile:
         raise NotImplementedError
 
     @classmethod
-    def parse(cls, root: str, name: str, kind: str) -> TestFile:
+    def parse(
+        cls,
+        *,
+        root: str,
+        name: str,
+        kind: str,
+        json_validator: JSONValidator | None,
+    ) -> TestFile:
         # HTML files are not compared in detail
         if kind in ("html", "ignore"):
             return TestMiscFile(name=name, kind=kind)
@@ -386,7 +434,13 @@ class TestFile:
         filename = os.path.join(root, name)
         if kind == "json":
             text, data = read_json(filename)
-            return TestJsonFile(name=name, kind=kind, text=text, data=data)
+            return TestJsonFile(
+                name=name,
+                kind=kind,
+                text=text,
+                data=data,
+                json_validator=json_validator,
+            )
 
         # Reference data is not compresses, regardless of extension
         return TestTextFile(name=name, kind=kind, text=read_file(filename))
@@ -437,6 +491,7 @@ class TestTextFile(TestFile):
 class TestJsonFile(TestFile):
     text: str
     data: JSON
+    json_validator: JSONValidator | None
 
     def compare_with_file(self, expected: str, observed: str) -> None:
         _, data = read_json(observed)
@@ -454,6 +509,9 @@ class TestJsonFile(TestFile):
                 observed=observed,
                 differences=differences,
             )
+
+        if self.json_validator is not None:
+            self.json_validator(data)
 
     def mask_filenames(self) -> TestJsonFile:
         def _mask_filenames(data: JSON) -> JSON:
@@ -476,6 +534,7 @@ class TestJsonFile(TestFile):
             kind=self.kind,
             text=self.text,
             data=_mask_filenames(self.data),
+            json_validator=self.json_validator,
         )
 
 
@@ -496,7 +555,12 @@ class TestConfig(NamedTuple):
     files: tuple[TestFile, ...]
 
     @classmethod
-    def load(cls, name: tuple[str, ...], filepath: str) -> TestConfig:
+    def load(
+        cls,
+        name: tuple[str, ...],
+        filepath: str,
+        json_validator: JSONValidator | None,
+    ) -> TestConfig:
         root = os.path.dirname(filepath)
         _, data = read_json(filepath)
 
@@ -504,7 +568,14 @@ class TestConfig(NamedTuple):
         test_files: list[TestFile] = []
         for key in _TEST_FILES:
             for filename in json_pop_tuple_of_str(files, ("files", key), []):
-                test_files.append(TestFile.parse(root, filename, key))
+                test_files.append(
+                    TestFile.parse(
+                        root=root,
+                        name=filename,
+                        kind=key,
+                        json_validator=json_validator,
+                    )
+                )
 
         if files:
             raise TestError(f"Unexpected files: {files}")
@@ -946,7 +1017,9 @@ def test_name(root: str, current: str, filename: str) -> tuple[str, ...]:
     return tuple(name)
 
 
-def collect_tests(root: str) -> list[TestConfig]:
+def collect_tests(
+    *, root: str, json_validator: JSONValidator | None
+) -> list[TestConfig]:
     tests: list[TestConfig] = []
     for dirname, _, filenames in os.walk(root):
         for filename in filenames:
@@ -957,7 +1030,11 @@ def collect_tests(root: str) -> list[TestConfig]:
                 filepath = os.path.join(dirname, filename)
 
                 try:
-                    test = TestConfig.load(name=name, filepath=filepath)
+                    test = TestConfig.load(
+                        name=name,
+                        filepath=filepath,
+                        json_validator=json_validator,
+                    )
                 except TestError as error:
                     print_err(f"Error while loading test {filepath!r}: {error}")
                     sys.exit(1)
@@ -1028,6 +1105,8 @@ class Args(argparse.Namespace):
     max_failures: float
     keep_all: bool
     exhaustive: bool
+    json_schema: str | None
+    schema_validation_required: bool
     create_updated_reference: bool
     threads: int
 
@@ -1062,6 +1141,18 @@ def parse_args(argv: list[str]) -> Args:
         help="Perform exhaustive testing by varying input/output formats",
     )
     parser.add_argument(
+        "--json-schema",
+        help="Validate output JSON files using the supplied schema; requires Python "
+        "module `jsonschema`; validating the schema is only performed if the "
+        "required is installed, otherwise it is skipped",
+    )
+    parser.add_argument(
+        "--schema-validation-required",
+        default=False,
+        action="store_true",
+        help="Terminate if JSON schema validation cannot be performed",
+    )
+    parser.add_argument(
         "--create-updated-reference",
         default=False,
         action="store_true",
@@ -1086,6 +1177,12 @@ def main(argv: list[str]) -> int:
     if not os.path.exists(args.executable):
         print_err("ERROR: Executable does not exist")
         return 1
+    elif args.schema_validation_required and not args.json_schema:
+        print_err("ERROR: No JSON schema was provided")
+        return 1
+    elif args.schema_validation_required and not JSON_SCHEMA_VALIDATION:
+        print_err("ERROR: Required module `jsonschema` could not be loaded")
+        return 1
 
     if args.max_failures <= 0:
         args.max_failures = float("inf")
@@ -1106,8 +1203,10 @@ def main(argv: list[str]) -> int:
         args.source_dir = args.work_dir
         args.keep_all = True
 
+    json_validator = JSONValidator(args.json_schema)
+
     print(f"Reading test-cases from {args.source_dir!r}")
-    tests = collect_tests(args.source_dir)
+    tests = collect_tests(root=args.source_dir, json_validator=json_validator)
     tests.sort(key=lambda it: it.path)
     print(f"  {len(tests):,} tests found")
 
@@ -1192,8 +1291,14 @@ def main(argv: list[str]) -> int:
     else:
         print_ok("\nAll %i tests succeeded." % (len(exhaustive_tests),))
 
+    if json_validator:
+        print_ok("JSON file validation performed.")
+
     if n_skipped:
         print_warn(f"Skipped {n_skipped} tests!")
+
+    if not json_validator:
+        print_warn("JSON files were not validated!")
 
     return 1 if n_failures else 0
 
