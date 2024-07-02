@@ -139,7 +139,7 @@ write_report_poly_x(const json_dict_ptr& json,
     if (!it.nucleotides.empty()) {
       const auto dict = json->dict(it.key);
       for (const auto nuc : it.nucleotides) {
-        const auto nuc_stats = dict->inline_dict(std::string(1, nuc));
+        const auto nuc_stats = dict->inline_dict(to_lower(std::string(1, nuc)));
         nuc_stats->i64("reads", it.reads.get(nuc));
         nuc_stats->i64("bases", it.bases.get(nuc));
       }
