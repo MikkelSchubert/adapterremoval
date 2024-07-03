@@ -388,9 +388,6 @@ struct io_section
           content_curves->f64_vec(std::string(1, to_lower(nuc)),
                                   bases / total_bases);
         }
-
-        content_curves->f64_vec("gc",
-                                m_stats->nucleotides_gc_pos() / total_bases);
       }
 
       const auto quality_dist = m_stats->quality_dist().trim();

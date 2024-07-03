@@ -748,10 +748,6 @@
                 "n": {
                     "description": "The fraction of uncalled nucleotides by position",
                     "$ref": "#/definitions/array-of-unit-intervals"
-                },
-                "gc": {
-                    "description": "The sum of guanine and cytosine by position",
-                    "$ref": "#/definitions/array-of-unit-intervals"
                 }
             },
             "required": [
@@ -759,8 +755,7 @@
                 "c",
                 "g",
                 "t",
-                "n",
-                "gc"
+                "n"
             ]
         },
         "optional-nucleotide-content-statistics": {
