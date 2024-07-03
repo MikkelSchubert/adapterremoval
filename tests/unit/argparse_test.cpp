@@ -38,12 +38,6 @@ using Catch::Matchers::Contains;
 #define REQUIRE_POSTFIX(a, b) REQUIRE_THAT((a), Catch::Matchers::EndsWith(b))
 #define REQUIRE_CONTAINS(a, b) REQUIRE_THAT((a), Catch::Matchers::Contains(b))
 
-size_t
-consume(argparse::sink& dst, const string_vec& values)
-{
-  return dst.consume(values.begin(), values.end());
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // boolean sink
 
@@ -918,6 +912,20 @@ TEST_CASE("--version", "[argparse::parser]")
   REQUIRE(ss.str() == "My App v1234\n");
 }
 
+TEST_CASE("--licenses", "[argparse::parser]")
+{
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_licenses("line 1\nline 2\nline 3");
+
+  const char* args[] = { "exe", "--licenses" };
+
+  log::log_capture ss;
+
+  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(ss.str() == "line 1\nline 2\nline 3\n");
+}
+
 TEST_CASE("--help", "[argparse::parser]")
 {
   argparse::parser p;
@@ -1228,6 +1236,98 @@ TEST_CASE("invalid value", "[argparse::parser]")
   const char* args[] = { "exe", "--foo", "one" };
   REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(), "[ERROR] Invalid value for --foo: one\n");
+}
+
+TEST_CASE("help with finite max number of values", "[argparse::parser]")
+{
+  string_vec sink;
+  log::log_capture ss;
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.add("--test", "X")
+    .help("Help text")
+    .bind_vec(&sink)
+    .with_min_values(0)
+    .with_max_values(2);
+
+  p.set_terminal_width(60);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "OPTIONS:\n"
+          "   -h, --help       Display this message.\n"
+          "   -v, --version    Print the version string.\n"
+          "   --licenses       Print licenses for this software.\n\n"
+          "   --test [X] [X]   Help text\n");
+}
+
+TEST_CASE("help with infinite number of values", "[argparse::parser]")
+{
+  string_vec sink;
+  log::log_capture ss;
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.add("--test", "X").help("Help text").bind_vec(&sink).with_min_values(0);
+
+  p.set_terminal_width(60);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "OPTIONS:\n"
+          "   -h, --help        Display this message.\n"
+          "   -v, --version     Print the version string.\n"
+          "   --licenses        Print licenses for this software.\n\n"
+          "   --test [X, ...]   Help text\n");
+}
+
+TEST_CASE("help with lower bound of values", "[argparse::parser]")
+{
+  string_vec sink;
+  log::log_capture ss;
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.add("--test", "X").help("Help text").bind_vec(&sink).with_min_values(1);
+
+  p.set_terminal_width(60);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "OPTIONS:\n"
+          "   -h, --help            Display this message.\n"
+          "   -v, --version         Print the version string.\n"
+          "   --licenses            Print licenses for this software.\n\n"
+          "   --test <X> [X, ...]   Help text\n");
+}
+
+TEST_CASE("help with lower and upper bound of values", "[argparse::parser]")
+{
+  string_vec sink;
+  log::log_capture ss;
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("v1234");
+  p.add("--test", "X")
+    .help("Help text")
+    .bind_vec(&sink)
+    .with_min_values(2)
+    .with_max_values(3);
+
+  p.set_terminal_width(60);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "OPTIONS:\n"
+          "   -h, --help           Display this message.\n"
+          "   -v, --version        Print the version string.\n"
+          "   --licenses           Print licenses for this software.\n\n"
+          "   --test <X> <X> [X]   Help text\n");
 }
 
 } // namespace adapterremoval
