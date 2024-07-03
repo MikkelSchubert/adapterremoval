@@ -408,10 +408,15 @@ adapter_set::get_adapter_set(size_t nth) const
   return adapters;
 }
 
-const fastq_pair_vec&
+fastq_pair_vec
 adapter_set::get_raw_adapters() const
 {
-  return m_adapters;
+  auto adapters = m_adapters;
+  for (auto& it : adapters) {
+    it.second.reverse_complement();
+  }
+
+  return adapters;
 }
 
 const fastq_pair_vec&

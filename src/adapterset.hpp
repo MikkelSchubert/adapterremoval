@@ -45,7 +45,7 @@ public:
 
   /**
    * Adds a pair of adapters to the set; it is assumed that the adapter 2
-   * sequence is * in read orientation (e.g. can be found as is in the raw mate
+   * sequence is in read orientation (e.g. can be found as is in the raw mate
    * 2 reads.
    */
   void add_adapters(const std::string& adapter1, const std::string& adapter2);
@@ -73,13 +73,17 @@ public:
 
   /**
    * Returns the nth set of adapters; when barcodes are specified, the
-   * raw adapters are merged with the 'nth' barcodes. If no barcodes are
-   * set, the get_adapters(0) == get_raw_adapters().
+   * raw adapters are merged with the 'nth' barcodes. Only the zeroth
+   * set is available if no barcodes were provided. Adapter 2 is converted to
+   * alignment orientation.
    */
   fastq_pair_vec get_adapter_set(size_t nth) const;
 
-  /** Returns adapter sequences absent of any barcodes. */
-  const fastq_pair_vec& get_raw_adapters() const;
+  /**
+   * Returns the user-supplied adapter sequences absent of any barcodes, with
+   * the adapter 2 sequence in input orientation.
+   **/
+  fastq_pair_vec get_raw_adapters() const;
 
   /** Returns the (pairs of) barcodes. */
   const fastq_pair_vec& get_barcodes() const;

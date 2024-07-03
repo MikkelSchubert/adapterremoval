@@ -831,9 +831,7 @@ write_html_analyses_section(const userconfig& config,
       const auto reference_adapters =
         config.adapters.get_raw_adapters().front();
       const auto& reference_adapter_1 = reference_adapters.first.sequence();
-      auto reference_adapter_2 = reference_adapters.second;
-      // Convert to display/user orientation
-      reference_adapter_2.reverse_complement();
+      const auto& reference_adapter_2 = reference_adapters.second.sequence();
 
       html_consensus_adapter_head()
         .set_overlapping_pairs(
@@ -849,8 +847,8 @@ write_html_analyses_section(const userconfig& config,
         .set_consensus_1(adapter_1.adapter().sequence())
         .set_qualities_1(adapter_1.adapter().qualities())
         .set_name_2("--adapter2")
-        .set_reference_2(reference_adapter_2.sequence())
-        .set_alignment_2(adapter_2.compare_with(reference_adapter_2.sequence()))
+        .set_reference_2(reference_adapter_2)
+        .set_alignment_2(adapter_2.compare_with(reference_adapter_2))
         .set_consensus_2(adapter_2.adapter().sequence())
         .set_qualities_2(adapter_2.adapter().qualities())
         .write(output);
