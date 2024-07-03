@@ -235,8 +235,13 @@ smoothed_gc_count(rates& distribution, size_t count, size_t length)
 } // namespace
 
 fastq_statistics::fastq_statistics(double sample_rate)
+  : fastq_statistics(sample_rate, prng_seed())
+{
+}
+
+fastq_statistics::fastq_statistics(double sample_rate, uint32_t seed)
   : m_sample_rate(sample_rate)
-  , m_rng(prng_seed())
+  , m_rng(seed)
   , m_number_of_input_reads()
   , m_number_of_output_reads()
   , m_number_of_sampled_reads()
@@ -336,8 +341,8 @@ fastq_statistics::operator+=(const fastq_statistics& other)
 }
 
 trimming_statistics::trimming_statistics(double sample_rate)
-  : read_1(std::make_shared<fastq_statistics>(sample_rate))
-  , read_2(std::make_shared<fastq_statistics>(sample_rate))
+  : read_1()
+  , read_2()
   , singleton(std::make_shared<fastq_statistics>(sample_rate))
   , merged(std::make_shared<fastq_statistics>(sample_rate))
   , discarded(std::make_shared<fastq_statistics>(sample_rate))
@@ -359,6 +364,10 @@ trimming_statistics::trimming_statistics(double sample_rate)
   , filtered_ambiguous()
   , filtered_low_complexity()
 {
+  // Synchronize sampling of mate 1 and mate 2 reads
+  const auto seed = prng_seed();
+  read_1 = std::make_shared<fastq_statistics>(sample_rate, seed);
+  read_2 = std::make_shared<fastq_statistics>(sample_rate, seed);
 }
 
 trimming_statistics&
