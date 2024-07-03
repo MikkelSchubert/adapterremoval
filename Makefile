@@ -256,6 +256,7 @@ regression: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running regression tests"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(REGRESSION_DIR)
 	$(QUIET) python3 scripts/regression_test_runner.py $(REGRESSION_DIR) $(REGRESSION_TESTS) \
+		--json-schema "schema.json" \
 		--executable $(EXECUTABLE)
 
 test: $(TEST_RUNNER)
