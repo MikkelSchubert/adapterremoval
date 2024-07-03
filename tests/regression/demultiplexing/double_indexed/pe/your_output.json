@@ -29,7 +29,7 @@
       "adapters": [
         {
           "sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-          "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+          "sequence_2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
           "reads": 8,
           "bases": 436
         }

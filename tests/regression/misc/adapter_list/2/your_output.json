@@ -20,31 +20,31 @@
       "adapters": [
         {
           "sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-          "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+          "sequence_2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
           "reads": 0,
           "bases": 0
         },
         {
           "sequence_1": "AAACTTGCTCTGTGCCCGCTCCGTATGTCACAA",
-          "sequence_2": "CGACGAACTACTGCCTCCAAATTACTCCCGATC",
+          "sequence_2": "GATCGGGAGTAATTTGGAGGCAGTAGTTCGTCG",
           "reads": 0,
           "bases": 0
         },
         {
           "sequence_1": "CTAATTTGCCGTAGCGACGTACTTCAGCCTCCA",
-          "sequence_2": "ACGCATATGCCACTAAGCGCACCTTTCACGGTA",
+          "sequence_2": "TACCGTGAAAGGTGCGCTTAGTGGCATATGCGT",
           "reads": 0,
           "bases": 0
         },
         {
           "sequence_1": "GTTCATACGACGACGACCAATGGCACACTTATC",
-          "sequence_2": "AGCTACCTCGCAGGCCAAACTCCGAGTTTCTTA",
+          "sequence_2": "TAAGAAACTCGGAGTTTGGCCTGCGAGGTAGCT",
           "reads": 0,
           "bases": 0
         },
         {
           "sequence_1": "CCATGCCCCGAAGATTCCTATACCCTTAAGGTC",
-          "sequence_2": "CCCTAAACATCGAGCCCTTCGGGTCAATGCAAC",
+          "sequence_2": "GTTGCATTGACCCGAAGGGCTCGATGTTTAGGG",
           "reads": 0,
           "bases": 0
         }
