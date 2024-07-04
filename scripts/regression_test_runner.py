@@ -1217,12 +1217,19 @@ def main(argv: list[str]) -> int:
         args.threads = 1
 
     if args.create_updated_reference:
+        # `dirs_exist_ok` for `copytree` requires Python >= 3.8
+        if args.work_dir.exists():
+            try:
+                args.work_dir.rmdir()
+            except OSError as error:
+                print_err(f"ERROR: Could not remove existing work-dir: {error}")
+                return 1
+
         args.work_dir.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(
             src=args.source_dir,
             dst=args.work_dir,
             symlinks=True,
-            dirs_exist_ok=True,
         )
 
         args.source_dir = args.work_dir
