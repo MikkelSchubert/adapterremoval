@@ -39,6 +39,7 @@ import tempfile
 import traceback
 from dataclasses import dataclass
 from itertools import groupby, islice
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Callable,
@@ -118,22 +119,22 @@ def print_err(*vargs: object, end: str = "\n") -> None:
 
 
 @overload
-def read_file(filename: str, mode: Literal["rt"] = "rt") -> str: ...
+def read_file(filename: Path, mode: Literal["rt"] = "rt") -> str: ...
 
 
 @overload
-def read_file(filename: str, mode: Literal["rb"] = "rb") -> bytes: ...
+def read_file(filename: Path, mode: Literal["rb"] = "rb") -> bytes: ...
 
 
-def read_file(filename: str, mode: Literal["rb", "rt"] = "rt") -> str | bytes:
+def read_file(filename: Path, mode: Literal["rb", "rt"] = "rt") -> str | bytes:
     try:
-        with open(filename, mode) as handle:
+        with filename.open(mode) as handle:
             return handle.read()
     except OSError as error:
         raise TestError(f"ERROR while reading data:\n    {error}") from error
 
 
-def read_json(filename: str) -> tuple[str, JSON]:
+def read_json(filename: Path) -> tuple[str, JSON]:
     text = read_file(filename)
 
     try:
@@ -142,16 +143,16 @@ def read_json(filename: str) -> tuple[str, JSON]:
         raise TestError(f"ERROR while reading {filename!r}:") from error
 
 
-def read_and_decompress_file(filename: str) -> str:
+def read_and_decompress_file(filename: Path) -> str:
     value = read_file(filename, "rb")
 
     header = value[:2]
     if header == b"\x1f\x8b":
-        if not filename.endswith(".gz"):
+        if not filename.suffix == ".gz":
             raise TestError(f"{filename} is gzipped, but lacks .gz extension")
 
         value = gzip.decompress(value)
-    elif filename.endswith(".gz"):
+    elif filename.suffix == ".gz":
         raise TestError(f"{filename} has .gz extension, but is not compressed")
 
     return value.decode("utf-8")
@@ -221,14 +222,21 @@ def filter_errors(
     return errors if errors else lines
 
 
-def write_data(path: str, data: str) -> None:
-    open_ = gzip.open if path.endswith(".gz") else open
+def write_data(path: Path, data: str) -> None:
+    open_ = gzip.open if path.suffix == ".gz" else open
     with open_(path, "wt") as handle:
         handle.write(data)
 
 
-def cmd_to_s(cmd: list[str]) -> str:
-    return " ".join(shlex.quote(field) for field in cmd)
+def quote(path: Path | str) -> str:
+    if isinstance(path, Path):
+        path = str(path)
+
+    return shlex.quote(path)
+
+
+def cmd_to_s(cmd: list[str | Path]) -> str:
+    return " ".join(quote(field) for field in cmd)
 
 
 def path_to_s(path: Iterable[str]) -> str:
@@ -345,7 +353,7 @@ class JSONValidator:
         "_schema",
     ]
 
-    def __init__(self, filepath: str | None) -> None:
+    def __init__(self, filepath: Path | None) -> None:
         if filepath is None:
             self._schema = {}
         elif not JSON_SCHEMA_VALIDATION:
@@ -415,14 +423,14 @@ class TestFile:
     name: str
     kind: str
 
-    def compare_with_file(self, expected: str, observed: str) -> None:
+    def compare_with_file(self, expected: Path, observed: Path) -> None:
         raise NotImplementedError
 
     @classmethod
     def parse(
         cls,
         *,
-        root: str,
+        root: Path,
         name: str,
         kind: str,
         json_validator: JSONValidator | None,
@@ -431,7 +439,7 @@ class TestFile:
         if kind in ("html", "ignore"):
             return TestMiscFile(name=name, kind=kind)
 
-        filename = os.path.join(root, name)
+        filename = root / name
         if kind == "json":
             text, data = read_json(filename)
             return TestJsonFile(
@@ -448,14 +456,14 @@ class TestFile:
     def _raise_test_error(
         self,
         label: str,
-        expected: str,
-        observed: str,
+        expected: Path,
+        observed: Path,
         differences: str,
     ) -> NoReturn:
         raise TestError(
             f"Mismatches in {label} file:\n"
-            f"  Expected   = {shlex.quote(expected)}\n"
-            f"  Observed   = {shlex.quote(observed)}\n"
+            f"  Expected   = {quote(expected)}\n"
+            f"  Observed   = {quote(observed)}\n"
             f"  Mismatches =\n{differences}"
         )
 
@@ -464,8 +472,8 @@ class TestFile:
 class TestTextFile(TestFile):
     text: str
 
-    def compare_with_file(self, expected: str, observed: str) -> None:
-        if not os.path.isfile(observed):
+    def compare_with_file(self, expected: Path, observed: Path) -> None:
+        if not observed.is_file():
             raise TestError(f"file {observed} not created")
 
         text = read_and_decompress_file(observed)
@@ -493,7 +501,7 @@ class TestJsonFile(TestFile):
     data: JSON
     json_validator: JSONValidator | None
 
-    def compare_with_file(self, expected: str, observed: str) -> None:
+    def compare_with_file(self, expected: Path, observed: Path) -> None:
         _, data = read_json(observed)
         differences = diff_json(reference=self.data, observed=data)
         differences = truncate_lines(differences, 4)
@@ -539,11 +547,11 @@ class TestJsonFile(TestFile):
 
 
 class TestMiscFile(TestFile):
-    def compare_with_file(self, expected: str, observed: str) -> None: ...
+    def compare_with_file(self, expected: Path, observed: Path) -> None: ...
 
 
 class TestConfig(NamedTuple):
-    path: str
+    path: Path
     name: tuple[str, ...]
     variant: tuple[str, ...]
     skip: bool
@@ -558,10 +566,10 @@ class TestConfig(NamedTuple):
     def load(
         cls,
         name: tuple[str, ...],
-        filepath: str,
+        filepath: Path,
         json_validator: JSONValidator | None,
     ) -> TestConfig:
-        root = os.path.dirname(filepath)
+        root = filepath.parent
         _, data = read_json(filepath)
 
         files = json_pop_dict(data, ("files",))
@@ -598,8 +606,8 @@ class TestConfig(NamedTuple):
 
         return self
 
-    def build_command(self, executable: str) -> list[str]:
-        command: list[str] = [executable, *self.arguments]
+    def build_command(self, executable: Path) -> list[str | Path]:
+        command: list[str | Path] = [executable, *self.arguments]
         input_1: list[str] = []
         input_2: list[str] = []
 
@@ -780,8 +788,8 @@ class TestRunner:
         self,
         *,
         test: TestConfig,
-        root: str,
-        executable: str,
+        root: Path,
+        executable: Path,
         keep_all: bool = False,
     ) -> None:
         self._test = test
@@ -791,13 +799,13 @@ class TestRunner:
         self.name = " / ".join(test.name)
 
         variant = test.variant if test.variant else ("basic",)
-        self.path = os.path.join(root, "_".join(test.name + variant))
+        self.path = root / "_".join(test.name + variant)
 
-        self._test_path = os.path.join(self.path, "test")
-        self._exp_path = os.path.join(self.path, "expected")
+        self._test_path = self.path / "test"
+        self._exp_path = self.path / "expected"
 
     @property
-    def spec_path(self) -> str:
+    def spec_path(self) -> Path:
         return self._test.path
 
     @property
@@ -805,7 +813,7 @@ class TestRunner:
         return self._test.skip
 
     @property
-    def command(self) -> list[str]:
+    def command(self) -> list[str | Path]:
         return self._test.build_command(self.executable)
 
     def run(self) -> None:
@@ -826,10 +834,10 @@ class TestRunner:
             self._setup(self._exp_path, _OUTPUT_FILES)
 
             # Write observed terminal output
-            write_data(os.path.join(self._test_path, "_stdout.txt"), stdout)
-            write_data(os.path.join(self._test_path, "_stderr.txt"), stderr)
+            write_data(self._test_path / "_stdout.txt", stdout)
+            write_data(self._test_path / "_stderr.txt", stderr)
             write_data(
-                os.path.join(self._test_path, "_run.sh"),
+                self._test_path / "_run.sh",
                 f"#!/bin/bash\n\n{cmd_to_s(self.command)}\n",
             )
 
@@ -839,13 +847,13 @@ class TestRunner:
         if not self.keep_all:
             shutil.rmtree(self.path)
 
-    def _setup(self, root: str, keys: Iterable[str]) -> None:
-        os.makedirs(root)
+    def _setup(self, root: Path, keys: Iterable[str]) -> None:
+        root.mkdir(parents=True)
 
         for it in self._test.get_files(keys):
             # Ignored files are not written in order to make diffing simpler
             if isinstance(it, (TestTextFile, TestJsonFile)):
-                write_data(os.path.join(root, it.name), it.text)
+                write_data(root / it.name, it.text)
 
     def _execute(self) -> tuple[int, str, str]:
         proc = subprocess.Popen(
@@ -914,8 +922,8 @@ class TestRunner:
             expected_files.add(it.name)
 
             it.compare_with_file(
-                expected=os.path.join(self._exp_path, it.name),
-                observed=os.path.join(self._test_path, it.name),
+                expected=self._exp_path / it.name,
+                observed=self._test_path / it.name,
             )
 
         observed_files = set(os.listdir(self._test_path))
@@ -928,17 +936,17 @@ class TestUpdater:
     def __init__(
         self,
         test: TestConfig,
-        executable: str,
+        executable: Path,
     ) -> None:
         self.executable = executable
         self.name = " / ".join(test.name)
-        self.path = os.path.dirname(test.path)
+        self.path = test.path.parent
         self.spec_path = test.path
         self.skip = test.skip or test.return_code or not test.files
         self._test = test
 
     @property
-    def command(self) -> list[str]:
+    def command(self) -> list[str | Path]:
         return self._test.build_command(self.executable)
 
     def run(self) -> None:
@@ -966,11 +974,11 @@ class TestUpdater:
 
     def _update_files(self) -> None:
         for it in self._test.files:
-            filename = os.path.join(self.path, it.name)
+            filename = self.path / it.name
 
             if it.kind in ("ignore", "html"):
                 try:
-                    os.remove(filename)
+                    filename.unlink()
                 except OSError as error:
                     if error.errno != errno.ENOENT:
                         raise
@@ -982,7 +990,7 @@ class TestUpdater:
                 ]
 
                 lines: list[bytes] = []
-                with open(filename, "rb") as handle:
+                with filename.open("rb") as handle:
                     for line in handle:
                         for key, value in list(metadata):
                             if line.startswith(key):
@@ -992,42 +1000,50 @@ class TestUpdater:
 
                         lines.append(line)
 
-                with open(filename, "wb") as handle:
+                with filename.open("wb") as handle:
                     handle.writelines(lines)
 
             else:
                 # Some files may intentionally be written compressed
                 data = read_file(filename, "rb")
                 if data.startswith(b"\x1f\x8b"):
-                    with open(filename, "wb") as handle:
+                    with filename.open("wb") as handle:
                         handle.write(gzip.decompress(data))
 
 
 ################################################################################
 
 
-def test_name(root: str, current: str, filename: str) -> tuple[str, ...]:
-    postfix = current[len(root) :]
-    name = [v.strip() for v in postfix.split("/") if v.strip()]
+def test_name(root: Path, current: Path, filename: str) -> tuple[str, ...]:
+    root_p = root.parts
+    current_p = current.parts
+    if len(root_p) > len(current_p) or current_p[: len(root_p)] != root_p:
+        raise ValueError((root, current))
+
+    name = list(current_p[len(root_p) :])
+
     if filename != "test.json":
         name.append(filename[4:-5].strip("_"))
     elif not name:
-        name = [os.path.basename(current)]
+        name = [current.name]
 
     return tuple(name)
 
 
 def collect_tests(
-    *, root: str, json_validator: JSONValidator | None
+    *,
+    root: Path,
+    json_validator: JSONValidator | None,
 ) -> list[TestConfig]:
     tests: list[TestConfig] = []
     for dirname, _, filenames in os.walk(root):
+        dirname = Path(dirname)
         for filename in filenames:
             normalized = filename.lower()
 
             if normalized.startswith("test") and normalized.endswith(".json"):
                 name = test_name(root, dirname, normalized)
-                filepath = os.path.join(dirname, filename)
+                filepath = dirname / filename
 
                 try:
                     test = TestConfig.load(
@@ -1036,7 +1052,7 @@ def collect_tests(
                         json_validator=json_validator,
                     )
                 except TestError as error:
-                    print_err(f"Error while loading test {filepath!r}: {error}")
+                    print_err(f"Error while loading test {quote(filepath)}: {error}")
                     sys.exit(1)
 
                 tests.append(test)
@@ -1066,18 +1082,18 @@ def build_test_updaters(args: Args, tests: list[TestConfig]) -> list[TestUpdater
     return [TestUpdater(test, args.executable) for test in tests if not test.skip]
 
 
-def collect_unused_files(root: str, tests: list[TestConfig]) -> set[str]:
-    observed_files: set[str] = set()
+def collect_unused_files(root: Path, tests: list[TestConfig]) -> set[Path]:
+    observed_files: set[Path] = set()
     for dirname, _, filenames in os.walk(root):
         for filename in filenames:
-            observed_files.add(os.path.join(dirname, filename))
+            observed_files.add(Path(dirname) / filename)
 
-    recorded_files: set[str] = set()
+    recorded_files: set[Path] = set()
     for test in tests:
         recorded_files.add(test.path)
-        dirname = os.path.dirname(test.path)
+        dirname = test.path.parent
         for it in test.files:
-            recorded_files.add(os.path.join(dirname, it.name))
+            recorded_files.add(dirname / it.name)
 
     return observed_files - recorded_files
 
@@ -1099,13 +1115,13 @@ def run_test(
 
 
 class Args(argparse.Namespace):
-    work_dir: str
-    source_dir: str
-    executable: str
+    work_dir: Path
+    source_dir: Path
+    executable: Path
     max_failures: float
     keep_all: bool
     exhaustive: bool
-    json_schema: str | None
+    json_schema: Path | None
     schema_validation_required: bool
     create_updated_reference: bool
     threads: int
@@ -1113,12 +1129,20 @@ class Args(argparse.Namespace):
 
 def parse_args(argv: list[str]) -> Args:
     parser = argparse.ArgumentParser()
-    parser.add_argument("work_dir", help="Directory in which to run test-cases.")
-    parser.add_argument("source_dir", help="Directory containing test-cases.")
+    parser.add_argument(
+        "work_dir",
+        type=Path,
+        help="Directory in which to run test-cases",
+    )
+    parser.add_argument(
+        "source_dir",
+        type=Path,
+        help="Directory containing test-cases",
+    )
     parser.add_argument(
         "--executable",
-        type=os.path.abspath,
-        default=os.path.abspath("./build/adapterremoval3"),
+        type=lambda value: Path(value).absolute(),
+        default=Path("./build/adapterremoval3").absolute(),
         help="Path to AdapterRemoval executable",
     )
     parser.add_argument(
@@ -1142,6 +1166,7 @@ def parse_args(argv: list[str]) -> Args:
     )
     parser.add_argument(
         "--json-schema",
+        type=Path,
         help="Validate output JSON files using the supplied schema; requires Python "
         "module `jsonschema`; validating the schema is only performed if the "
         "required is installed, otherwise it is skipped",
@@ -1174,7 +1199,7 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
     print(f"Testing executable {args.executable!r}")
-    if not os.path.exists(args.executable):
+    if not args.executable.is_file():
         print_err("ERROR: Executable does not exist")
         return 1
     elif args.schema_validation_required and not args.json_schema:
@@ -1192,7 +1217,7 @@ def main(argv: list[str]) -> int:
         args.threads = 1
 
     if args.create_updated_reference:
-        os.makedirs(os.path.dirname(args.work_dir), exist_ok=True)
+        args.work_dir.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(
             src=args.source_dir,
             dst=args.work_dir,
@@ -1214,15 +1239,15 @@ def main(argv: list[str]) -> int:
     if unused_files:
         print_err(f"Found {len(unused_files)} unused files:")
         for idx, filepath in enumerate(unused_files, start=1):
-            print(f"  {idx}. {shlex.quote(filepath)}")
+            print(f"  {idx}. {quote(filepath)}")
 
         return 1
 
     if args.create_updated_reference:
         exhaustive_tests = build_test_updaters(args, tests)
     else:
-        os.makedirs(args.work_dir, exist_ok=True)
-        args.work_dir = tempfile.mkdtemp(dir=args.work_dir)
+        args.work_dir.mkdir(parents=True, exist_ok=True)
+        args.work_dir = Path(tempfile.mkdtemp(dir=args.work_dir))
         exhaustive_tests = build_test_runners(args, tests)
 
     print(f"  {len(exhaustive_tests):,} test variants generated")
@@ -1279,7 +1304,7 @@ def main(argv: list[str]) -> int:
                     break
 
     if not (n_failures or args.create_updated_reference):
-        os.rmdir(args.work_dir)
+        args.work_dir.rmdir()
 
     if n_failures >= args.max_failures:
         print_err(
