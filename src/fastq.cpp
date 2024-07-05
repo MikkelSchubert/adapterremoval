@@ -225,6 +225,55 @@ fastq::count_ns() const
     std::count(m_sequence.begin(), m_sequence.end(), 'N'));
 }
 
+namespace {
+
+/**
+ * Calculate the absolute sequence complexity score, under the assumption that
+ * the sequence does not contain Ns. Should the sequence contain Ns, then this
+ * algorithm would overestimate the sequence complexity, and therefore returns
+ * -1 to indicate failure.
+ */
+int
+fast_calculate_complexity(const std::string& sequence)
+{
+  // The last base is not checked in the loop below
+  if (sequence.back() == 'N') {
+    return -1;
+  }
+
+  const size_t length = sequence.length() - 1;
+  size_t i = 0;
+  int score = 0;
+
+  // Fixed block sizes allows gcc/clang to optimize the loop
+  const size_t BLOCK_SIZE = 16;
+  for (; i + BLOCK_SIZE < length; i += BLOCK_SIZE) {
+    for (size_t j = 0; j < BLOCK_SIZE; ++j, ++i) {
+      if (sequence[i] != sequence[i + 1]) {
+        score++;
+      }
+
+      if (sequence[i] == 'N') {
+        return -1;
+      }
+    }
+  }
+
+  for (; i < length; ++i) {
+    if (sequence[i] != sequence[i + 1]) {
+      score++;
+    }
+
+    if (sequence[i] == 'N') {
+      return -1;
+    }
+  }
+
+  return score;
+}
+
+} // namespace
+
 double
 fastq::complexity() const
 {
@@ -232,18 +281,22 @@ fastq::complexity() const
     return 0.0;
   }
 
-  char prev = 'N';
-  size_t score = 0;
-  for (const auto nuc : m_sequence) {
-    if (nuc != 'N' && nuc != prev) {
-      prev = nuc;
-      score++;
+  // Try to use unrolled/vectorized algorithm
+  int score = fast_calculate_complexity(m_sequence);
+
+  if (score < 0) {
+    // If the sequence contains Ns then use the slower calculation, that does
+    // not treat Ns as distinct bases and thereby does not inflate the score
+    char prev = 'N';
+    for (const auto nuc : m_sequence) {
+      if (nuc != 'N' && nuc != prev) {
+        prev = nuc;
+        score++;
+      }
     }
   }
 
-  return std::max(0.0,
-                  (static_cast<double>(score) - 1.0) /
-                    static_cast<double>(m_sequence.length() - 1));
+  return std::max(0.0, score / static_cast<double>(m_sequence.length() - 1));
 }
 
 fastq::ntrimmed
