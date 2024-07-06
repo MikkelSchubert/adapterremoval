@@ -32,19 +32,19 @@ namespace adapterremoval {
 
 namespace {
 
-//! Variable used to store sum of bytes of results; this is used
-//! to prevent the optimizer from throwing away the results of
-//! benchmarks
-uint64_t g_blackbox_sink = 0;
+#ifdef __clang__
+#define NO_OPTIMIZE_CLANG __attribute__((optnone))
+#define NO_OPTIMIZE_GCC
+#else
+#define NO_OPTIMIZE_CLANG
+#define NO_OPTIMIZE_GCC __attribute__((optimize("O0")))
+#endif
 
+/** Unoptimized to prevent calculations from being elided by the compiler */
 template<typename T>
-void
-blackbox(const T& p)
+void NO_OPTIMIZE_GCC
+blackbox(const T&) NO_OPTIMIZE_CLANG
 {
-  const auto c = reinterpret_cast<const uint8_t*>(&p);
-  for (size_t i = 0; i < sizeof(T); ++i) {
-    g_blackbox_sink += c[i];
-  }
 }
 
 class readlines_benchmarker : public benchmarker
@@ -562,8 +562,6 @@ benchmark(const userconfig& config)
         .run_if_toggled(toggles);
     }
   }
-
-  log::info() << "Optimization prevention value = " << g_blackbox_sink;
 
   return 0;
 }
