@@ -140,7 +140,7 @@ def read_json(filename: Path) -> tuple[str, JSON]:
     try:
         return text, json.loads(text)
     except json.JSONDecodeError as error:
-        raise TestError(f"ERROR while reading {filename!r}:") from error
+        raise TestError(f"ERROR while reading {quote(filename)}:") from error
 
 
 def read_and_decompress_file(filename: Path) -> str:
@@ -361,7 +361,7 @@ class JSONValidator:
 
             self._schema = {}
         else:
-            print(f"Reading JSON schema from {filepath!r}")
+            print(f"Reading JSON schema from {quote(filepath)}")
             _, self._schema = read_json(filepath)
 
     def __call__(self, data: JSON) -> None:
@@ -1198,7 +1198,7 @@ def parse_args(argv: list[str]) -> Args:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
-    print(f"Testing executable {args.executable!r}")
+    print(f"Testing executable {quote(args.executable)}")
     if not args.executable.is_file():
         print_err("ERROR: Executable does not exist")
         return 1
@@ -1237,7 +1237,7 @@ def main(argv: list[str]) -> int:
 
     json_validator = JSONValidator(args.json_schema)
 
-    print(f"Reading test-cases from {args.source_dir!r}")
+    print(f"Reading test-cases from {quote(args.source_dir)}")
     tests = collect_tests(root=args.source_dir, json_validator=json_validator)
     tests.sort(key=lambda it: it.path)
     print(f"  {len(tests):,} tests found")
@@ -1258,7 +1258,7 @@ def main(argv: list[str]) -> int:
         exhaustive_tests = build_test_runners(args, tests)
 
     print(f"  {len(exhaustive_tests):,} test variants generated")
-    print(f"Writing test-cases results to {args.work_dir!r}")
+    print(f"Writing test-cases results to {quote(args.work_dir)}")
 
     n_failures = 0
     n_successes = 0
