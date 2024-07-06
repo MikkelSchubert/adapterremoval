@@ -525,11 +525,12 @@ benchmark(const userconfig& config)
     return 1;
   }
 
-  auto lines =
-    readlines_benchmarker(config.input_files_1, config.input_files_2, head);
+  readlines_benchmarker lines{ config.input_files_1,
+                               config.input_files_2,
+                               head };
   lines.run_if_toggled(toggles);
 
-  auto records = fastq_parser_benchmarker(lines.lines_1(), lines.lines_2());
+  fastq_parser_benchmarker records{ lines.lines_1(), lines.lines_2() };
   records.run_if_toggled(toggles);
 
   reverse_complement_benchmarker(records.records_1(), records.records_2())

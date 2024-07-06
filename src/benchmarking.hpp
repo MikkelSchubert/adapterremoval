@@ -69,6 +69,11 @@ public:
 
   virtual void run_if_toggled(const benchmark_toggles& toggles);
 
+  /** Copy construction not supported */
+  benchmarker(const benchmarker&) = delete;
+  /** Assignment not supported */
+  benchmarker& operator=(const benchmarker&) = delete;
+
 protected:
   /** Indicate that this benchmark *must* be run at least once */
   void set_required(bool value = true) { m_required = value; }
