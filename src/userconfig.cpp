@@ -632,19 +632,12 @@ userconfig::userconfig()
   argparser.add_header("OUTPUT COMPRESSION:");
 
   argparser.add("--gzip").help("Enable gzip-compression.").bind_bool(&gzip);
-  argparser
-    .add("--gzip-level", "N")
-#ifdef USE_LIBDEFLATE
+  argparser.add("--gzip-level", "N")
     .help("GZip compression level, 0 - 9. For compression levels 4 - 9, output "
           "consist of concatenated GZip blocks, which may cause compatibility "
           "problems in some rare cases")
     .bind_uint(&gzip_level)
     .with_default(6);
-#else
-    .help("GZip compression level, 0 - 3")
-    .bind_uint(&gzip_level)
-    .with_default(3);
-#endif
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("PROCESSING:");

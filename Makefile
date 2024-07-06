@@ -51,7 +51,7 @@ MKDIR      = install -d  # act as mkdir -p
 
 # Default compilation flags
 CXXFLAGS := ${CXXFLAGS} -std=c++14 -O3
-LDLIBS := -pthread -lisal ${LDLIBS}
+LDLIBS := -pthread -lisal -ldeflate ${LDLIBS}
 LDFLAGS := ${LDFLAGS}
 
 ifeq ($(strip ${VERBOSE}),no)
@@ -88,15 +88,6 @@ EXECUTABLE := $(BUILD_DIR)/$(EXEC_MAIN).static
 BUILD_NAME_PREFIX := static-
 else
 $(info Building static AdapterRemoval binary: no)
-endif
-
-ifeq ($(strip ${LIBDEFLATE}),yes)
-$(info Building AdapterRemoval with libdeflate: yes)
-CXXFLAGS := $(CXXFLAGS) -DUSE_LIBDEFLATE
-LDLIBS := $(LDLIBS) -ldeflate
-else
-$(info Building AdapterRemoval with libdeflate: no)
-BUILD_NAME_POSTFIX := -nolibdeflate
 endif
 
 ifeq ($(strip ${COVERAGE}), yes)

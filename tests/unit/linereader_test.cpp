@@ -18,16 +18,13 @@
 \*************************************************************************/
 #include "catch.hpp" // for operator""_catch_sr, AssertionHandler, Sourc...
 #include "linereader.hpp"
-#include "logging.hpp" // for log_capture
-#include <algorithm>   // for max
-#include <array>       // for array
-#include <cstdio>      // for fclose, fwrite, rewind, tmpfile, FILE, fread
-#include <string>      // for string, basic_string, operator==
-#include <vector>      // for operator==, vector
-
-#ifdef USE_LIBDEFLATE
+#include "logging.hpp"  // for log_capture
+#include <algorithm>    // for max
+#include <array>        // for array
+#include <cstdio>       // for fclose, fwrite, rewind, tmpfile, FILE, fread
 #include <libdeflate.h> // for libdeflate_alloc_compressor, libdeflate_free...
-#endif
+#include <string>       // for string, basic_string, operator==
+#include <vector>       // for operator==, vector
 
 namespace adapterremoval {
 
@@ -48,7 +45,6 @@ temporary_file(string_vec lines)
   return handle;
 }
 
-#ifdef USE_LIBDEFLATE
 FILE*
 temporary_gzip_file(string_vec blocks)
 {
@@ -70,7 +66,6 @@ temporary_gzip_file(string_vec blocks)
 
   return handle;
 }
-#endif
 
 string_vec
 read_lines(line_reader& reader)
@@ -102,8 +97,6 @@ TEST_CASE("line_reader throws on missing file")
 ////////////////////////////////////////////////////////////////////////////////
 // Newlines (LF and CRLF)
 
-#ifdef USE_LIBDEFLATE
-
 TEST_CASE("temporary_gzip_file returns gzipped file")
 {
   FILE* handle = temporary_gzip_file({ "foo" });
@@ -115,8 +108,6 @@ TEST_CASE("temporary_gzip_file returns gzipped file")
   REQUIRE(buffer.at(0) == '\x1f');
   REQUIRE(buffer.at(1) == '\x8b');
 }
-
-#endif
 
 TEST_CASE("line_reader on empty file returns no lines")
 {
@@ -214,8 +205,6 @@ TEST_CASE("line_reader handles mixed LF/CRLF")
   REQUIRE(read_lines(reader) == expected);
 }
 
-#ifdef USE_LIBDEFLATE
-
 TEST_CASE("line_reader handles gzipped file")
 {
   // One long string/single block:
@@ -291,14 +280,5 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
                Catch::Matchers::Contains(
                  "[WARNING] Ignoring trailing garbage at the end of"));
 }
-
-#else
-
-TEST_CASE("line_Reader gzip tests")
-{
-  WARN("line_reader tests of GZIP'd files disabled");
-}
-
-#endif
 
 } // namespace adapterremoval

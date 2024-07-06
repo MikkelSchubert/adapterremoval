@@ -30,10 +30,7 @@
 #include "userconfig.hpp"    // for userconfig
 #include <isa-l/crc.h>       // for crc32_gzip_refl
 #include <isa-l/igzip_lib.h> // for isal_zstream, isal_deflate_init, isal_d...
-
-#ifdef USE_LIBDEFLATE
-#include <libdeflate.h> // for libdeflate_alloc_compressor, libdeflate...
-#endif
+#include <libdeflate.h>      // for libdeflate_alloc_compressor, libdeflate...
 
 #include <algorithm> // for max, min
 #include <cerrno>    // for errno
@@ -78,11 +75,8 @@ isal_buffer_size(size_t level)
 bool
 isal_enabled(const userconfig& config, const std::string& filename)
 {
-  return (config.gzip || ends_with(to_lower(filename), ".gz"))
-#ifdef USE_LIBDEFLATE
-         && config.gzip_level <= MAX_ISAL_LEVEL
-#endif
-    ;
+  return (config.gzip || ends_with(to_lower(filename), ".gz")) &&
+         config.gzip_level <= MAX_ISAL_LEVEL;
 }
 
 } // namespace
@@ -479,9 +473,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
     AR_REQUIRE(stream.avail_in == 0);
 
     compressed_size = stream.total_out;
-  }
-#ifdef USE_LIBDEFLATE
-  else {
+  } else {
     auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
     compressed_size = libdeflate_gzip_compress(compressor,
                                                input_buffer.get(),
@@ -493,7 +485,6 @@ gzip_split_fastq::process(chunk_ptr chunk)
     // The easily compressible input should fit in a single output block
     AR_REQUIRE(compressed_size);
   }
-#endif
 
   output_buffer.resize(compressed_size);
 
