@@ -37,10 +37,10 @@
     },
     "output": {
       "passed": {
-        "reads": 2,
+        "reads": 1,
         "bases": 43,
-        "mean_length": 21.500,
-        "reads_sampled": 2,
+        "mean_length": 43.000,
+        "reads_sampled": 1,
         "q20_rate": 1.000,
         "q30_rate": 1.000,
         "uncalled_rate": 0.000,
@@ -137,7 +137,7 @@
       "filenames": ["your_output.merged.fastq"],
       "input_reads": 2,
       "output_reads": 1,
-      "reads_sampled": 2,
+      "reads_sampled": 1,
       "lengths": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
       "quality_curves": {
         "a": [40.000, null, 41.000, null, null, 41.000, null, null, 40.000, 40.000, null, 41.000, null, null, null, null, null, 39.000, 40.000, null, null, null, null, 39.000, null, null, null, 38.000, null, null, null, null, null, null, null, null, null, null, null, null, null, 41.000, null],

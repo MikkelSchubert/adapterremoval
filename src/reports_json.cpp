@@ -79,7 +79,7 @@ write_report_summary_stats(const json_dict_ptr& json,
   size_t n_q30 = 0;
 
   for (const auto& it : stats) {
-    n_reads += it->number_of_input_reads();
+    n_reads += it->number_of_output_reads();
     n_reads_s += it->number_of_sampled_reads();
     n_bases += it->length_dist().product();
     // The following stats are all (potentially) based on a subset of reads

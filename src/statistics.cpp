@@ -269,7 +269,7 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
     m_nucleotide_pos.resize_up_to(m_max_sequence_len);
     m_quality_pos.resize_up_to(m_max_sequence_len);
 
-    m_number_of_sampled_reads += num_input_reads;
+    m_number_of_sampled_reads++;
 
     const std::string& sequence = read.sequence();
     const std::string& qualities = read.qualities();
