@@ -16,17 +16,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "linereader.hpp"
-#include "debug.hpp"          // for AR_FAIL
-#include "logging.hpp"        // for warn, log_stream
-#include "managed_writer.hpp" // for managed_writer
-#include "strutils.hpp"       // for shell_escape
-#include <cerrno>             // for errno
-#include <cstdint>            // for uint8_t
-#include <cstring>            // for strerror, memchr
-#include <isa-l/igzip_lib.h>  // for inflate_state, isal_gzip_header, isal_...
-#include <memory>             // for unique_ptr, shared_ptr, __shared_ptr_a...
-#include <sstream>            // for operator<<, basic_ostream
+#include "linereader.hpp"    // declarations
+#include "debug.hpp"         // for AR_FAIL
+#include "logging.hpp"       // for warn, log_stream
+#include "managed_io.hpp"    // for managed_writer
+#include "strutils.hpp"      // for shell_escape
+#include <cerrno>            // for errno
+#include <cstdint>           // for uint8_t
+#include <cstring>           // for strerror, memchr
+#include <isa-l/igzip_lib.h> // for inflate_state, isal_gzip_header, isal_...
+#include <memory>            // for unique_ptr, shared_ptr, __shared_ptr_a...
+#include <sstream>           // for operator<<, basic_ostream
 
 namespace adapterremoval {
 

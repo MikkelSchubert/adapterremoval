@@ -148,7 +148,7 @@ CORE_OBJS := \
 	$(OBJS_DIR)/json.o \
 	$(OBJS_DIR)/linereader.o \
 	$(OBJS_DIR)/logging.o \
-	$(OBJS_DIR)/managed_writer.o \
+	$(OBJS_DIR)/managed_io.o \
 	$(OBJS_DIR)/mathutils.o \
 	$(OBJS_DIR)/simd_avx2.o \
 	$(OBJS_DIR)/simd_avx512bw.o \

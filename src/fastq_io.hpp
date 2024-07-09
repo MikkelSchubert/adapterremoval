@@ -23,7 +23,7 @@
 #include "fastq.hpp"             // for fastq
 #include "fastq_enc.hpp"         // for fastq_encoding
 #include "linereader_joined.hpp" // for joined_line_readers
-#include "managed_writer.hpp"    // for managed_writer
+#include "managed_io.hpp"        // for managed_writer
 #include "progress.hpp"          // for progress_timer
 #include "scheduler.hpp"         // for analytical_step, chunk_ptr, chunk_vec
 #include "statistics.hpp"        // for fastq_stats_ptr

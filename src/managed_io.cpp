@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "managed_writer.hpp"
+#include "managed_io.hpp"
 #include "debug.hpp"    // for AR_REQUIRE
 #include "logging.hpp"  // for log_stream, warn
 #include <cerrno>       // for EMFILE, errno
