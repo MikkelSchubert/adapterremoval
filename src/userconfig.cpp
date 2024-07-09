@@ -1212,6 +1212,11 @@ userconfig::parse_args(int argc, char* argv[])
     }
   }
 
+  if (!min_genomic_length) {
+    log::warn() << "--minlength is set to 0. This may produce FASTQ files that "
+                   "are incompatible with some tools!";
+  }
+
   if (!parse_head(head_sink, head)) {
     return argparse::parse_result::error;
   }
