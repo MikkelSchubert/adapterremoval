@@ -19,7 +19,7 @@ jobs:
           - os: ubuntu-22.04
             cxx: clang++
             coverage: "no"
-          - os: macos-11
+          - os: macos-latest
             cxx: clang++
             coverage: "no"
       # Do not auto-cancel other runners if one fails
@@ -38,7 +38,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev
       - name: dependencies
-        if: ${{ matrix.os == 'macos-11' }}
+        if: ${{ matrix.os == 'macos-latest' }}
         run: brew install isa-l libdeflate
 
       - name: make test
