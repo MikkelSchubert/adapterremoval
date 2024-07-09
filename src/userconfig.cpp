@@ -67,7 +67,7 @@ parse_trim_argument(const string_vec& values)
       throw std::invalid_argument("please specify exactly one or two values");
   }
 
-  return std::pair<unsigned, unsigned>(mate_1, mate_2);
+  return { mate_1, mate_2 };
 }
 
 bool
@@ -131,12 +131,12 @@ parse_head(const std::string& sink, uint64_t& out)
 
       case 'm':
       case 'M':
-        unit = 1000 * 1000;
+        unit = 1000'000;
         break;
 
       case 'g':
       case 'G':
-        unit = 1000 * 1000 * 1000;
+        unit = 1000'000'000;
         break;
 
       default:
@@ -323,8 +323,8 @@ fancy_output_allowed()
 {
   if (::isatty(STDERR_FILENO)) {
     // NO_COLOR is checked as suggested by https://no-color.org/
-    const char* no_color = ::getenv("NO_COLOR");
-    const char* term = ::getenv("TERM");
+    const char* no_color = std::getenv("NO_COLOR");
+    const char* term = std::getenv("TERM");
 
     return !(no_color && no_color[0] != '\0') &&
            !(term && strcmp(term, "dumb") == 0);
@@ -501,7 +501,7 @@ userconfig::userconfig()
   {
     std::vector<std::string> choices;
     for (const auto is : simd::supported()) {
-      choices.push_back(simd::name(is));
+      choices.emplace_back(simd::name(is));
     }
 
     AR_REQUIRE(!choices.empty());
@@ -1240,11 +1240,7 @@ userconfig::is_good_alignment(const alignment_info& alignment) const
     mm_threshold = std::min<size_t>(1, mm_threshold);
   }
 
-  if (alignment.n_mismatches > mm_threshold) {
-    return false;
-  }
-
-  return true;
+  return alignment.n_mismatches <= mm_threshold;
 }
 
 bool
@@ -1326,7 +1322,7 @@ userconfig::new_filename(const std::string& key,
   }
 
   std::string out = out_basename;
-  if (first.size() && first.front() != '.') {
+  if (!first.empty() && first.front() != '.') {
     out.push_back('.');
   }
 
@@ -1507,13 +1503,9 @@ userconfig::setup_adapter_sequences()
   }
 
   const auto& output_files = get_output_filenames();
-  if (!check_input_and_output("--file1", input_files_1, output_files)) {
-    return false;
-  } else if (!check_input_and_output("--file2", input_files_2, output_files)) {
-    return false;
-  }
 
-  return true;
+  return check_input_and_output("--file1", input_files_1, output_files) &&
+         check_input_and_output("--file2", input_files_2, output_files);
 }
 
 double
