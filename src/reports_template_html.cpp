@@ -70,15 +70,15 @@ html_head::write(std::ofstream& out)
   out << "    <meta charset='utf-8'>\n";
   out << "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
   out << "    <title>" << m_name << " " << m_version << "</title>\n";
-  out << "    <link rel='stylesheet' href='https://unpkg.com/purecss@2.1.0/build/pure-min.css'\n";
+  out << "    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/purecss@2.1.0/build/pure-min.css'\n";
   out << "        integrity='sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH' crossorigin='anonymous'>\n";
-  out << "    <script src=\"https://unpkg.com/vega@5.21.0/build/vega.min.js\"\n";
+  out << "    <script src=\"https://cdn.jsdelivr.net/npm/vega@5.21.0/build/vega.min.js\"\n";
   out << "        integrity=\"sha384-s2nYi9D0FfKNopEKsfINeS1Ffhcf+5uvwIrb7Zqso2II+HPhzBTWvXClt+NdUwFc\"\n";
   out << "        crossorigin=\"anonymous\"></script>\n";
-  out << "    <script src=\"https://unpkg.com/vega-lite@5.2.0/build/vega-lite.min.js\"\n";
+  out << "    <script src=\"https://cdn.jsdelivr.net/npm/vega-lite@5.2.0/build/vega-lite.min.js\"\n";
   out << "        integrity=\"sha384-tU6fj0fI2gxrcWwC7uBMp70QvipC9ukjcXyOs85VMmdCq33CrA7xQ3nJkJu0SmDm\"\n";
   out << "        crossorigin=\"anonymous\"></script>\n";
-  out << "    <script src=\"https://unpkg.com/vega-embed@6.20.2/build/vega-embed.min.js\"\n";
+  out << "    <script src=\"https://cdn.jsdelivr.net/npm/vega-embed@6.20.2/build/vega-embed.min.js\"\n";
   out << "        integrity=\"sha384-oP1rwLY7weRZ5jvAVzfnJsAn+sYA69rQC4geH82Y9oMvr8ruA1oeE9Jkft2noCHR\"\n";
   out << "        crossorigin=\"anonymous\"></script>\n";
   out << "    <style type='text/css'>\n";
@@ -2004,7 +2004,7 @@ html_body_end::write(std::ofstream& out)
   out << "    </div>\n";
   out << "</body>\n";
   out << "\n";
-  out << "</html>";
+  out << "</html>\n";
   // clang-format on
   m_written = true;
 }
