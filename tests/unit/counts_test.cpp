@@ -21,8 +21,8 @@
 #include "fastq.hpp"  // for ACGT, ACGTN, ACGT::size
 #include <array>      // for array
 #include <cmath>      // for isnan
+#include <cstddef>    // for size_t
 #include <sstream>    // for operator<<, ostream, ostringstream, basic_ostr...
-#include <stddef.h>   // for size_t
 #include <string>     // for basic_string, operator==
 
 namespace adapterremoval {

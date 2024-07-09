@@ -23,8 +23,8 @@
 #include "fastq_io.hpp"   // for output_chunk_ptr
 #include "scheduler.hpp"  // for chunk_vec, chunk_ptr, threadstate, analyt...
 #include "statistics.hpp" // for trimming_statistics, trim_stats_ptr
+#include <cstddef>        // for size_t
 #include <random>         // for mt19937
-#include <stddef.h>       // for size_t
 #include <vector>         // for vector
 
 namespace adapterremoval {

@@ -20,12 +20,12 @@
 
 #include "commontypes.hpp" // for string_vec
 #include "counts.hpp"      // for counts, rates
+#include <cstddef>         // for size_t
+#include <cstdint>         // for int64_t
 #include <functional>      // for less
 #include <map>             // for map
 #include <memory>          // for shared_ptr
 #include <ostream>         // for ostream
-#include <stddef.h>        // for size_t
-#include <stdint.h>        // for int64_t
 #include <string>          // for string, basic_string
 #include <vector>          // for vector
 

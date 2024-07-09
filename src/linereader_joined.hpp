@@ -20,8 +20,8 @@
 
 #include "commontypes.hpp" // for string_vec
 #include "linereader.hpp"  // for line_reader_base
+#include <cstddef>         // for size_t
 #include <memory>          // for unique_ptr
-#include <stddef.h>        // for size_t
 #include <string>          // for string
 
 namespace adapterremoval {

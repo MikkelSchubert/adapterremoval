@@ -22,7 +22,7 @@
 #include "debug.hpp"    // for assert_failed
 #include "logging.hpp"  // for log_capture
 #include "strutils.hpp" // for string_vec
-#include <stddef.h>     // for size_t
+#include <cstddef>      // for size_t
 #include <string>       // for basic_string, operator==, string, allocator
 #include <vector>       // for vector, operator==
 

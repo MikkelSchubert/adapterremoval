@@ -20,10 +20,10 @@
 #pragma once
 
 #include "commontypes.hpp" // for string_vec_citer, string_vec
+#include <cstddef>         // for size_t
 #include <functional>      // for less
 #include <map>             // for map
 #include <memory>          // for shared_ptr, unique_ptr
-#include <stddef.h>        // for size_t
 #include <string>          // for string
 #include <vector>          // for vector
 

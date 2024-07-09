@@ -22,11 +22,11 @@
 #include "managed_writer.hpp" // for managed_writer
 #include "strutils.hpp"       // for shell_escape
 #include <cerrno>             // for errno
+#include <cstdint>            // for uint8_t
 #include <cstring>            // for strerror, memchr
 #include <isa-l/igzip_lib.h>  // for inflate_state, isal_gzip_header, isal_...
 #include <memory>             // for unique_ptr, shared_ptr, __shared_ptr_a...
 #include <sstream>            // for operator<<, basic_ostream
-#include <stdint.h>           // for uint8_t
 
 namespace adapterremoval {
 

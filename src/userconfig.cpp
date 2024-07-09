@@ -28,13 +28,13 @@
 #include "simd.hpp"      // for size_t, name, supported, instruction_set
 #include "strutils.hpp"  // for string_vec, shell_escape, str_to_unsigned
 #include <algorithm>     // for find, max, min
+#include <cerrno>        // for errno
 #include <cmath>         // for pow
+#include <cstdlib>       // for getenv
 #include <cstring>       // for size_t, strerror, strcmp
-#include <errno.h>       // for errno
 #include <limits>        // for numeric_limits
 #include <random>        // for random_device
 #include <stdexcept>     // for invalid_argument
-#include <stdlib.h>      // for getenv
 #include <string>        // for string, basic_string, operator==, operator+
 #include <tuple>         // for get, tuple
 #include <unistd.h>      // for access, isatty, R_OK, STDERR_FILENO

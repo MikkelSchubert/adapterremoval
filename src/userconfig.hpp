@@ -27,7 +27,7 @@
 #include "timer.hpp"       // for monotonic_timer
 #include <array>           // for array
 #include <cstddef>         // for size_t
-#include <stdint.h>        // for uint64_t
+#include <cstdint>         // for uint64_t
 #include <string>          // for string
 #include <utility>         // for pair
 #include <vector>          // for vector

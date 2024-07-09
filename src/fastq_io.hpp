@@ -27,10 +27,10 @@
 #include "progress.hpp"          // for progress_timer
 #include "scheduler.hpp"         // for analytical_step, chunk_ptr, chunk_vec
 #include "statistics.hpp"        // for fastq_stats_ptr
+#include <cstddef>               // for size_t
+#include <cstdint>               // for uint32_t, uint64_t
 #include <memory>                // for unique_ptr
 #include <mutex>                 // for mutex
-#include <stddef.h>              // for size_t
-#include <stdint.h>              // for uint32_t, uint64_t
 #include <string>                // for string
 
 namespace adapterremoval {

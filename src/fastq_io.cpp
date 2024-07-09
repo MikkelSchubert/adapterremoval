@@ -28,17 +28,16 @@
 #include "strutils.hpp"      // for shell_escape, string_vec, ends_with
 #include "threads.hpp"       // for thread_error, thread_abort
 #include "userconfig.hpp"    // for userconfig
+#include <algorithm>         // for max, min
+#include <cerrno>            // for errno
+#include <cstring>           // for size_t, memcpy
 #include <isa-l/crc.h>       // for crc32_gzip_refl
 #include <isa-l/igzip_lib.h> // for isal_zstream, isal_deflate_init, isal_d...
 #include <libdeflate.h>      // for libdeflate_alloc_compressor, libdeflate...
-
-#include <algorithm> // for max, min
-#include <cerrno>    // for errno
-#include <cstring>   // for size_t, memcpy
-#include <memory>    // for unique_ptr, make_unique, __shared_ptr_a...
-#include <sstream>   // for basic_ostream, basic_ostringstream, ope...
-#include <utility>   // for move, swap
-#include <vector>    // for vector
+#include <memory>            // for unique_ptr, make_unique, __shared_ptr_a...
+#include <sstream>           // for basic_ostream, basic_ostringstream, ope...
+#include <utility>           // for move, swap
+#include <vector>            // for vector
 
 namespace adapterremoval {
 

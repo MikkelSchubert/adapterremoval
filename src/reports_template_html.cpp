@@ -18,7 +18,7 @@
 \*************************************************************************/
 #include "reports_template_html.hpp"
 #include "debug.hpp" // for AR_REQUIRE
-#include <stddef.h>  // for size_t
+#include <cstddef>   // for size_t
 
 namespace adapterremoval {
 

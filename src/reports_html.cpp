@@ -32,17 +32,17 @@
 #include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
 #include <algorithm>                 // for max
 #include <array>                     // for array
+#include <cctype>                    // for toupper
+#include <cerrno>                    // for errno
 #include <chrono>                    // for system_clock
 #include <cmath>                     // for fmod
+#include <cstdint>                   // for uint64_t
 #include <cstring>                   // for size_t, strerror
 #include <ctime>                     // for localtime
-#include <ctype.h>                   // for toupper
-#include <errno.h>                   // for errno
 #include <fstream>                   // for operator<<, ofstream, basic_ost...
 #include <iomanip>                   // for operator<<, setprecision, setw
 #include <memory>                    // for __shared_ptr_access, shared_ptr
 #include <sstream>                   // for basic_ostringstream
-#include <stdint.h>                  // for uint64_t
 #include <string>                    // for string, operator==, to_string
 #include <utility>                   // for pair
 #include <vector>                    // for vector

@@ -18,7 +18,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <stddef.h>  // for size_t
+#include <cstddef>   // for size_t
 #include <stdexcept> // for logic_error
 #include <string>    // for string
 

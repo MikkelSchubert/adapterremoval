@@ -23,8 +23,8 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>    // for array
-#include <stddef.h> // for size_t
+#include <array>   // for array
+#include <cstddef> // for size_t
 
 namespace adapterremoval {
 

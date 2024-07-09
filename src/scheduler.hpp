@@ -21,10 +21,10 @@
 #include <algorithm>          // for copy, max, copy_backward
 #include <atomic>             // for atomic_bool
 #include <condition_variable> // for condition_variable
+#include <cstddef>            // for size_t
 #include <memory>             // for unique_ptr, shared_ptr, make_unique
 #include <mutex>              // for mutex, lock_guard
 #include <queue>              // for queue
-#include <stddef.h>           // for size_t
 #include <string>             // for string
 #include <type_traits>        // for is_base_of
 #include <utility>            // for pair

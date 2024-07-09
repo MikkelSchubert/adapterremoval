@@ -25,8 +25,8 @@
 #include "scheduler.hpp"     // for chunk_vec, chunk_ptr, analytical_step
 #include "statistics.hpp"    // for demux_stats_ptr
 #include <algorithm>         // for max
+#include <cstddef>           // for size_t
 #include <mutex>             // for mutex
-#include <stddef.h>          // for size_t
 #include <vector>            // for vector
 
 namespace adapterremoval {

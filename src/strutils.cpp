@@ -21,11 +21,11 @@
 #include <algorithm>   // for min, reverse, max
 #include <cctype>      // for isprint, isalnum, tolower, toupper
 #include <cmath>       // for log10, pow, round
+#include <cstdint>     // for uint64_t, int64_t
 #include <iomanip>     // for operator<<, setprecision
 #include <limits>      // for numeric_limits
 #include <sstream>     // for ostringstream, operator<<, basic_ostream, bas...
 #include <stdexcept>   // for invalid_argument
-#include <stdint.h>    // for uint64_t, int64_t
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>    // for STDOUT_FILENO
 #include <vector>      // for vector, swap

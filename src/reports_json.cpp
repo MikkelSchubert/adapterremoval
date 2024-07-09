@@ -32,8 +32,8 @@
 #include "userconfig.hpp"  // for userconfig, output_files, output_sampl...
 #include <algorithm>       // for max
 #include <array>           // for array
+#include <cerrno>          // for errno
 #include <cstring>         // for size_t, strerror
-#include <errno.h>         // for errno
 #include <fstream>         // for ofstream, ios_base::failure, operator|
 #include <memory>          // for __shared_ptr_access, shared_ptr, make_...
 #include <string>          // for basic_string, string, operator+, char_...

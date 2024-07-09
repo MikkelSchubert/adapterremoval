@@ -21,7 +21,7 @@
 
 #include "fastq.hpp" // for fastq_pair_vec
 #include <array>     // for array
-#include <stddef.h>  // for size_t
+#include <cstddef>   // for size_t
 #include <stdexcept> // for runtime_error
 #include <string>    // for string
 #include <vector>    // for vector

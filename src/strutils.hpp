@@ -18,10 +18,10 @@
 \*************************************************************************/
 #pragma once
 
-#include <stddef.h> // for size_t
-#include <stdint.h> // for uint64_t
-#include <string>   // for string
-#include <vector>   // for vector
+#include <cstddef> // for size_t
+#include <cstdint> // for uint64_t
+#include <string>  // for string
+#include <vector>  // for vector
 
 namespace adapterremoval {
 

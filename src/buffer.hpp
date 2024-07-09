@@ -20,8 +20,8 @@
 
 #include "debug.hpp" // for AR_REQUIRE
 #include <algorithm> // for max
-#include <stddef.h>  // for size_t
-#include <stdint.h>  // for uint32_t
+#include <cstddef>   // for size_t
+#include <cstdint>   // for uint32_t
 #include <vector>    // for vector
 
 namespace adapterremoval {

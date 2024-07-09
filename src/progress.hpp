@@ -20,8 +20,8 @@
 #pragma once
 
 #include "timer.hpp" // for monotonic_timer
+#include <cstddef>   // for size_t
 #include <mutex>     // for mutex
-#include <stddef.h>  // for size_t
 #include <thread>    // for thread
 
 namespace adapterremoval {

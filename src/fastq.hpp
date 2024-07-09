@@ -21,7 +21,7 @@
 
 #include "fastq_enc.hpp" // for FASTQ_ENCODING_33, MATE_SEPARATOR
 #include <array>         // for array
-#include <stddef.h>      // for size_t
+#include <cstddef>       // for size_t
 #include <string>        // for string
 #include <utility>       // for pair
 #include <vector>        // for vector

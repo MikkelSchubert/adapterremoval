@@ -271,7 +271,7 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
     tprint(__doc__.strip())
     tprint('#include "{}"', header_name)
     tprint('#include "debug.hpp" // for AR_REQUIRE')
-    tprint("#include <stddef.h>  // for size_t")
+    tprint("#include <cstddef>   // for size_t")
     tprint("")
     tprint("namespace adapterremoval {{")
     tprint("")

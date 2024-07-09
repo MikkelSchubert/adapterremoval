@@ -24,10 +24,10 @@
 #include "counts.hpp"      // for counts, indexed_count, indexed_counts, rates
 #include "fastq.hpp"       // for ACGTN, ACGT
 #include "robin_hood.hpp"  // for unordered_flat_map
+#include <cstdint>         // for uint64_t
 #include <cstdlib>         // for size_t
 #include <memory>          // for shared_ptr
 #include <random>          // for mt19937
-#include <stdint.h>        // for uint64_t
 #include <string>          // for string
 #include <vector>          // for vector
 

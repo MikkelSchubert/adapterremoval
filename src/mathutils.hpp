@@ -18,9 +18,9 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstdint>  // for uint64_t
-#include <stddef.h> // for size_t
-#include <vector>   // for vector
+#include <cstddef> // for size_t
+#include <cstdint> // for uint64_t
+#include <vector>  // for vector
 
 namespace adapterremoval {
 

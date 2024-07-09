@@ -20,7 +20,7 @@
 #include "utilities.hpp" // for merge
 #include <algorithm>     // for max
 #include <array>         // for array, operator==
-#include <stddef.h>      // for size_t
+#include <cstddef>       // for size_t
 #include <vector>        // for vector, allocator, operator==
 
 namespace adapterremoval {

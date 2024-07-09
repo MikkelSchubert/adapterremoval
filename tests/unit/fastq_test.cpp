@@ -24,8 +24,8 @@
 #include "fastq_enc.hpp"   // for fastq_error (ptr only), FASTQ_ENCODING_33
 #include "linereader.hpp"  // for vec_reader
 #include "strutils.hpp"    // for string_vec
+#include <cstddef>         // for size_t
 #include <limits>          // for numeric_limits
-#include <stddef.h>        // for size_t
 #include <string>          // for operator==, basic_string, string, operator+
 #include <utility>         // for operator==, pair, move
 #include <vector>          // for vector, vector<>::const_iterator
