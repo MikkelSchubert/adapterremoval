@@ -1,6 +1,17 @@
-*.gcov
-*~
+# Build, cache, and program folders
+/.cache
+/.venv
 /.vscode
 /build
-/examples/output*
+
+# Compilation Database - for clang-tidy
 compile_commands.json
+
+# AdapterRemoval output
+/examples/output*
+your_output.*
+
+# Misc files
+*.patch
+*.gcov
+*~
