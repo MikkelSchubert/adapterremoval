@@ -25,11 +25,6 @@ namespace adapterremoval {
 [[noreturn]] void
 terminate(const std::string& message);
 
-assert_failed::assert_failed(const std::string& what)
-  : std::logic_error(what)
-{
-}
-
 void
 debug_raise_assert(const char* funcname,
                    const char* filename,

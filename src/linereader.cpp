@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "linereader.hpp"    // declarations
 #include "debug.hpp"         // for AR_FAIL
+#include "errors.hpp"        // for io_error
 #include "logging.hpp"       // for warn, log_stream
 #include "managed_io.hpp"    // for managed_writer
 #include "strutils.hpp"      // for shell_escape
@@ -29,34 +30,6 @@
 #include <sstream>           // for operator<<, basic_ostream
 
 namespace adapterremoval {
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'io_error'
-
-std::string
-format_io_msg(const std::string& message, int error_number)
-{
-  if (error_number) {
-    std::ostringstream stream;
-    stream << message << " ('" << std::strerror(error_number) << "')";
-
-    return stream.str();
-  } else {
-    return message;
-  }
-}
-
-io_error::io_error(const std::string& message, int error_number)
-  : std::ios_base::failure(format_io_msg(message, error_number))
-  , m_what(format_io_msg(message, error_number))
-{
-}
-
-const char*
-io_error::what() const noexcept
-{
-  return m_what.c_str();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_error'
@@ -72,11 +45,6 @@ throw_gzip_error(const std::string& filename,
          << error << "; " << diagnosis;
 
   throw gzip_error(stream.str());
-}
-
-gzip_error::gzip_error(const std::string& message)
-  : io_error(message)
-{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,7 +152,7 @@ line_reader::~line_reader()
 {
   // Pending input is ignored
   if (fclose(m_file)) {
-    AR_FAIL(format_io_msg("error closing input file", errno));
+    AR_FAIL(format_io_error("error closing input file", errno));
   }
 }
 

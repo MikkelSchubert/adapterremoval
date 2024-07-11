@@ -18,10 +18,10 @@
 \*************************************************************************/
 #include "managed_io.hpp"
 #include "debug.hpp"    // for AR_REQUIRE
+#include "errors.hpp"   // for io_error
 #include "logging.hpp"  // for log_stream, warn
 #include <cerrno>       // for EMFILE, errno
 #include <mutex>        // for mutex, lock_guard
-#include <stdexcept>    // for runtime_error
 #include <system_error> // for operator!=, errc, errc::too_many_files_open
 #include <vector>       // for vector
 
@@ -239,7 +239,7 @@ managed_writer::close_tail_writer()
     return;
   }
 
-  throw std::runtime_error(
+  throw io_error(
     "available number of file-handles too low; could not open any files");
 }
 

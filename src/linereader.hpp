@@ -18,13 +18,14 @@
 \*************************************************************************/
 #pragma once
 
-#include <array>   // for array
-#include <cstdio>  // for FILE, BUFSIZ
-#include <ios>     // for ios_base, ios_base::failure
-#include <isa-l.h> // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
-#include <memory>  // for shared_ptr, unique_ptr
-#include <string>  // for string
-#include <vector>  // for vector
+#include "managed_io.hpp" // for io_error
+#include <array>          // for array
+#include <cstdio>         // for FILE, BUFSIZ
+#include <ios>            // for ios_base, ios_base::failure
+#include <isa-l.h>        // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
+#include <memory>         // for shared_ptr, unique_ptr
+#include <string>         // for string
+#include <vector>         // for vector
 
 struct inflate_state;
 struct isal_gzip_header;
@@ -38,27 +39,6 @@ namespace adapterremoval {
 
 //! Buffer used for compressed and uncompressed line data
 using line_buffer = std::array<char, 10 * BUFSIZ>;
-
-/** Represents errors during basic IO. */
-class io_error : public std::ios_base::failure
-{
-public:
-  io_error(const std::string& message, int error_number = 0);
-
-  /** Returns the error message */
-  virtual const char* what() const noexcept;
-
-private:
-  //! Contains error message; workaround for base-class appending text
-  std::string m_what;
-};
-
-/** Represents errors during GZip (de)compression. */
-class gzip_error : public io_error
-{
-public:
-  explicit gzip_error(const std::string& message);
-};
 
 /** Base-class for line reading; used by receivers. */
 class line_reader_base

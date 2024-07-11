@@ -19,14 +19,12 @@
 
 #include "fastq_io.hpp"
 #include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "errors.hpp"        // for io_error, gzip_error, fastq_error
 #include "fastq.hpp"         // for fastq
-#include "fastq_enc.hpp"     // for fastq_error, MATE_SEPARATOR
-#include "linereader.hpp"    // for io_error
-#include "logging.hpp"       // for log_stream, error
+#include "fastq_enc.hpp"     // for MATE_SEPARATOR
 #include "simd.hpp"          // for size_t
 #include "statistics.hpp"    // for fastq_statistics, fastq_stats_ptr, stat...
 #include "strutils.hpp"      // for shell_escape, string_vec, ends_with
-#include "threads.hpp"       // for thread_error, thread_abort
 #include "userconfig.hpp"    // for userconfig
 #include <algorithm>         // for max, min
 #include <cerrno>            // for errno
@@ -136,11 +134,12 @@ read_record(joined_line_readers& reader,
       return false;
     }
   } catch (const fastq_error& error) {
-    log::error() << "Error reading FASTQ record from '" << reader.filename()
-                 << "' at line " << line_number << "; aborting:\n"
-                 << indent_lines(error.what());
+    std::ostringstream stream;
+    stream << "Error reading FASTQ record from '" << reader.filename()
+           << "' at line " << line_number << "; aborting:\n"
+           << indent_lines(error.what());
 
-    throw thread_abort();
+    throw fastq_error(stream.str());
   }
 }
 
@@ -223,17 +222,19 @@ read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
   }
 
   if (eof_1 && !eof_2) {
-    log::error() << "More mate 2 reads than mate 1 reads found in '"
-                 << m_io_input_1->filename() << "'; file may be truncated. "
-                 << "Please fix before continuing.";
+    std::ostringstream stream;
+    stream << "More mate 2 reads than mate 1 reads found in '"
+           << m_io_input_1->filename() << "'; file may be truncated. "
+           << "Please fix before continuing.";
 
-    throw thread_abort();
+    throw fastq_error(stream.str());
   } else if (eof_2 && !eof_1) {
-    log::error() << "More mate 1 reads than mate 2 reads found in '"
-                 << m_io_input_2->filename() << "'; file may be truncated. "
-                 << "Please fix before continuing.";
+    std::ostringstream stream;
+    stream << "More mate 1 reads than mate 2 reads found in '"
+           << m_io_input_2->filename() << "'; file may be truncated. "
+           << "Please fix before continuing.";
 
-    throw thread_abort();
+    throw fastq_error(stream.str());
   }
 
   if (!m_mate_separator) {
@@ -459,13 +460,13 @@ gzip_split_fastq::process(chunk_ptr chunk)
       case COMP_OK:
         break;
       case INVALID_FLUSH:
-        throw thread_error("isal_deflate_stateless: invalid flush");
+        throw gzip_error("isal_deflate_stateless: invalid flush");
       case ISAL_INVALID_LEVEL:
-        throw thread_error("isal_deflate_stateless: invalid level");
+        throw gzip_error("isal_deflate_stateless: invalid level");
       case ISAL_INVALID_LEVEL_BUF:
-        throw thread_error("isal_deflate_stateless: invalid buffer size");
+        throw gzip_error("isal_deflate_stateless: invalid buffer size");
       default:
-        throw thread_error("isal_deflate_stateless: unexpected error");
+        throw gzip_error("isal_deflate_stateless: unexpected error");
     }
 
     // The easily compressible input should fit in a single output block

@@ -143,6 +143,7 @@ CORE_OBJS := \
 	$(OBJS_DIR)/argparse.o \
 	$(OBJS_DIR)/barcode_table.o \
 	$(OBJS_DIR)/debug.o \
+	$(OBJS_DIR)/errors.o \
 	$(OBJS_DIR)/fastq_enc.o \
 	$(OBJS_DIR)/fastq.o \
 	$(OBJS_DIR)/json.o \
@@ -177,7 +178,6 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/reports_template_html.o \
 	$(OBJS_DIR)/scheduler.o \
 	$(OBJS_DIR)/statistics.o \
-	$(OBJS_DIR)/threads.o \
 	$(OBJS_DIR)/timer.o \
 	$(OBJS_DIR)/progress.o \
 	$(OBJS_DIR)/trimming.o \

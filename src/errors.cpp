@@ -1,7 +1,7 @@
 /*************************************************************************\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
  *                                                                       *
- * Copyright (C) 2015 by Mikkel Schubert - mikkelsch@gmail.com           *
+ * Copyright (C) 2024 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
  * it under the terms of the GNU General Public License as published by  *
@@ -16,33 +16,25 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#pragma once
 
-#include <stdexcept> // for runtime_error
-#include <string>    // for string
+#include "errors.hpp" // declarations
+#include <cerrno>     // for errno
+#include <cstring>    // for strerror, memchr
+#include <sstream>    // for operator<<, basic_ostream
 
 namespace adapterremoval {
 
-/**
- * Exception thrown for threading related errors, including errors with
- * threads, mutexes, and conditionals.
- */
-class thread_error : public std::runtime_error
+std::string
+format_io_error(const std::string& message, const int error_number)
 {
-public:
-  /** Constructor; takes an error-message. */
-  explicit thread_error(const std::string& message);
-};
+  if (error_number) {
+    std::ostringstream stream;
+    stream << message << " ('" << std::strerror(error_number) << "')";
 
-/**
- * This exception may be thrown by a task to abort the thread; error-messages
- * are assumed to have already been printed by the thrower, and no further
- * messages are printed.
- */
-class thread_abort : public thread_error
-{
-public:
-  thread_abort();
-};
+    return stream.str();
+  } else {
+    return message;
+  }
+}
 
 } // namespace adapterremoval

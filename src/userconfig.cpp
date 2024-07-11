@@ -20,6 +20,7 @@
 #include "userconfig.hpp"
 #include "alignment.hpp" // for alignment_info
 #include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"    // for fastq_error
 #include "fastq.hpp"     // for ACGT, ACGT::size, ACGT::values
 #include "licenses.hpp"  // for LICENSES
 #include "logging.hpp"   // for log_stream, error, set_level, set_colors, info

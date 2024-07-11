@@ -21,6 +21,7 @@
 #include "catch.hpp"       // for operator""_catch_sr, AssertionHandler
 #include "commontypes.hpp" // for merge_strategy, merge_strategy::determini...
 #include "debug.hpp"       // for assert_failed
+#include "errors.hpp"      // for assert_failed
 #include "fastq.hpp"       // for fastq, fastq_pair_vec, fastq_pair
 #include "fastq_enc.hpp"   // for FASTQ_ENCODING_SAM
 #include "simd.hpp"        // for size_t, instruction_set, supported, get_c...

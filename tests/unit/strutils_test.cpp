@@ -19,6 +19,7 @@
 \*************************************************************************/
 #include "catch.hpp"    // for operator""_catch_sr, AssertionHandler, Sourc...
 #include "debug.hpp"    // for assert_failed
+#include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_unsigned
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
 #include <stdexcept>    // for invalid_argument

@@ -24,14 +24,6 @@
 
 namespace adapterremoval {
 
-/** Exception explaining 'abort' calls when running unit-tests. */
-class assert_failed : public std::logic_error
-{
-public:
-  /** Creates exception with the specified error message. */
-  explicit assert_failed(const std::string& what);
-};
-
 /**
  * Aborts after printing the filename, line-number, and message, plus
  * instructions for how to report the problem.

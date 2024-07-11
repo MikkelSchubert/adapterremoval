@@ -16,7 +16,8 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp" // for operator""_catch_sr, AssertionHandler, Sourc...
+#include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, Sourc...
+#include "errors.hpp" // for io_error
 #include "linereader.hpp"
 #include "logging.hpp"  // for log_capture
 #include <algorithm>    // for max

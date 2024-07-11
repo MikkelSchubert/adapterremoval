@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "catch.hpp"   // for operator""_catch_sr, SourceLineInfo, Assertio...
 #include "debug.hpp"   // for assert_failed
+#include "errors.hpp"  // for assert_failed
 #include "logging.hpp" // for log_capture, info, log_stream, cerr, error, warn
 #include <string>      // for basic_string, operator==, string
 

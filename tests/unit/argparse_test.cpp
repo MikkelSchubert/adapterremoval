@@ -20,6 +20,7 @@
 #include "argparse.hpp" // for argument, parser, str_sink, parse_result
 #include "catch.hpp"    // for operator""_catch_sr, AssertionHandler
 #include "debug.hpp"    // for assert_failed
+#include "errors.hpp"   // for assert_failed
 #include "logging.hpp"  // for log_capture
 #include "strutils.hpp" // for string_vec
 #include <cstddef>      // for size_t

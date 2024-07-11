@@ -19,6 +19,7 @@
 \*************************************************************************/
 #include "fastq.hpp"
 #include "debug.hpp"      // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"     // for fastq_error
 #include "linereader.hpp" // for line_reader_base
 #include <algorithm>      // for reverse, count, max, min
 #include <cmath>          // for log10, pow

@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "catch.hpp"     // for SourceLineInfo, operator""_catch_sr, Assert...
 #include "debug.hpp"     // for assert_failed
+#include "errors.hpp"    // for assert_failed
 #include "mathutils.hpp" // for arithmetic_mean, standard_deviation
 #include <vector>        // for vector
 

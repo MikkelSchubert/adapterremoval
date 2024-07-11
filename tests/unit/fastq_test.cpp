@@ -20,8 +20,9 @@
 #include "catch.hpp"       // for operator""_catch_sr, AssertionHandler
 #include "commontypes.hpp" // for fastq_vec
 #include "debug.hpp"       // for assert_failed
+#include "errors.hpp"      // for fastq_error
 #include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
-#include "fastq_enc.hpp"   // for fastq_error (ptr only), FASTQ_ENCODING_33
+#include "fastq_enc.hpp"   // for FASTQ_ENCODING_33
 #include "linereader.hpp"  // for vec_reader
 #include "strutils.hpp"    // for string_vec
 #include <cstddef>         // for size_t

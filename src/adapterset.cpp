@@ -19,7 +19,7 @@
 \*************************************************************************/
 #include "adapterset.hpp"
 #include "debug.hpp"      // for AR_REQUIRE
-#include "fastq_enc.hpp"  // for fastq_error
+#include "errors.hpp"     // for fastq_error
 #include "linereader.hpp" // for line_reader
 #include "logging.hpp"    // for error, log_stream
 #include "strutils.hpp"   // for string_vec, indent_lines

@@ -18,9 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "barcode_table.hpp"
-#include "debug.hpp" // for AR_REQUIRE
-#include <algorithm> // for min, max, sort
-#include <utility>   // for pair
+#include "debug.hpp"  // for AR_REQUIRE
+#include "errors.hpp" // for parsing_error
+#include <algorithm>  // for min, max, sort
+#include <utility>    // for pair
 
 namespace adapterremoval {
 
@@ -39,14 +40,6 @@ struct next_subsequence
   const char* seq;
   const size_t max_local_mismatches;
 };
-
-///////////////////////////////////////////////////////////////////////////////
-// barcode_error
-
-barcode_error::barcode_error(const std::string& message)
-  : std::runtime_error(message)
-{
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -79,9 +72,9 @@ sort_barcodes(const fastq_pair_vec& barcodes)
   const size_t max_key_2_len = barcodes.front().second.length();
   for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
     if (it->first.length() != max_key_1_len) {
-      throw barcode_error("mate 1 barcodes do not have the same length");
+      throw parsing_error("mate 1 barcodes do not have the same length");
     } else if (it->second.length() != max_key_2_len) {
-      throw barcode_error("mate 2 barcodes do not have the same length");
+      throw parsing_error("mate 2 barcodes do not have the same length");
     }
 
     std::string barcode;
@@ -130,7 +123,7 @@ add_sequence_to_tree(demux_node_vec& tree,
   }
 
   if (!added_last_node) {
-    throw barcode_error(std::string("duplicate barcode (pair): ") + sequence);
+    throw parsing_error(std::string("duplicate barcode (pair): ") + sequence);
   }
 
   tree.at(node_idx).value = barcode_id;

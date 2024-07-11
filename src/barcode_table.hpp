@@ -30,13 +30,6 @@ namespace adapterremoval {
 
 struct next_subsequence;
 
-/** Exception raised for FASTQ parsing and validation errors. */
-class barcode_error : public std::runtime_error
-{
-public:
-  explicit barcode_error(const std::string& message);
-};
-
 /**
  * Struct representing node in quad-tree; children are referenced using the
  * corresponding index in the vector representing the tree; -1 is used to

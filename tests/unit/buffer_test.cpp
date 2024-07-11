@@ -17,9 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "buffer.hpp"
-#include "catch.hpp" // for operator""_catch_sr, AssertionHandler, SourceLi...
-#include <cstring>   // for memset
-#include <utility>   // for move
+#include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, SourceLi...
+#include "errors.hpp" // for assert_failed
+#include <cstring>    // for memset
+#include <utility>    // for move
 
 namespace adapterremoval {
 

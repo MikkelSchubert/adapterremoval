@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, SourceL...
 #include "counts.hpp" // for counts, indexed_counts, counts_tmpl, indexed_c...
+#include "errors.hpp" // for assert_failed
 #include "fastq.hpp"  // for ACGT, ACGTN, ACGT::size
 #include <array>      // for array
 #include <cmath>      // for isnan

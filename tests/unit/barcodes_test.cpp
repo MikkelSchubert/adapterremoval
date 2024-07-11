@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "barcode_table.hpp" // for barcode_table, barcode_error
+#include "barcode_table.hpp" // for barcode_table
 #include "catch.hpp"         // for operator""_catch_sr, AssertionHandler
+#include "errors.hpp"        // for parsing_error
 #include "fastq.hpp"         // for fastq, fastq_pair_vec, fastq_pair
 #include <string>            // for basic_string, operator==, string
 
@@ -26,15 +27,15 @@ namespace adapterremoval {
 
 TEST_CASE("what()", "[barcodes::errors]")
 {
-  barcode_error err("test error");
+  parsing_error err("test error");
 
   REQUIRE(std::string(err.what()) == "test error");
 }
 
 TEST_CASE("copy constructor", "[barcodes::errors]")
 {
-  barcode_error err("test error");
-  barcode_error copy(err);
+  parsing_error err("test error");
+  parsing_error copy(err);
 
   REQUIRE(std::string(copy.what()) == "test error");
 }
@@ -52,7 +53,7 @@ TEST_CASE("Overlapping SE barcodes fail", "[barcodes::constructor]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
   barcodes.push_back(fastq_pair(fastq("2", "ACGT"), fastq()));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Overlapping PE barcodes fail", "[barcodes::constructor]")
@@ -61,7 +62,7 @@ TEST_CASE("Overlapping PE barcodes fail", "[barcodes::constructor]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
   barcodes.push_back(fastq_pair(fastq("2", "ACGT"), fastq("4", "CGTG")));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
@@ -79,7 +80,7 @@ TEST_CASE("Variable length SE barcodes fail #1", "[barcodes::construction]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
   barcodes.push_back(fastq_pair(fastq("2", "TGCTA"), fastq()));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length SE barcodes fail #2", "[barcodes::construction]")
@@ -88,7 +89,7 @@ TEST_CASE("Variable length SE barcodes fail #2", "[barcodes::construction]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
   barcodes.push_back(fastq_pair(fastq("2", "TGCTA"), fastq()));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #1", "[barcodes::construction]")
@@ -97,7 +98,7 @@ TEST_CASE("Variable length PE barcodes fail #1", "[barcodes::construction]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGTT"), fastq("3", "CGTG")));
   barcodes.push_back(fastq_pair(fastq("2", "CGTG"), fastq("4", "ACGT")));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #2", "[barcodes::construction]")
@@ -106,7 +107,7 @@ TEST_CASE("Variable length PE barcodes fail #2", "[barcodes::construction]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTGT")));
   barcodes.push_back(fastq_pair(fastq("2", "CGTG"), fastq("4", "ACGT")));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #3", "[barcodes::construction]")
@@ -115,7 +116,7 @@ TEST_CASE("Variable length PE barcodes fail #3", "[barcodes::construction]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
   barcodes.push_back(fastq_pair(fastq("2", "CGTGA"), fastq("4", "ACGT")));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #4", "[barcodes::construction]")
@@ -124,7 +125,7 @@ TEST_CASE("Variable length PE barcodes fail #4", "[barcodes::construction]")
   barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
   barcodes.push_back(fastq_pair(fastq("2", "CGTGA"), fastq("4", "ACGTA")));
 
-  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), barcode_error);
+  REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

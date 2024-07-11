@@ -19,6 +19,7 @@
 \*************************************************************************/
 #include "fastq_enc.hpp" // header
 #include "debug.hpp"     // for AR_FAIL, AR_REQUIRE
+#include "errors.hpp"    // for fastq_error
 #include "strutils.hpp"  // for shell_escape
 #include <algorithm>     // for min, max
 #include <array>         // for array
@@ -56,14 +57,6 @@ const int SOLEXA_OFFSET_MAX = 'h';
 const int SOLEXA_SCORE_MIN = -5;
 //! Maximum Phred encoded score allowed
 const int SOLEXA_SCORE_MAX = SOLEXA_OFFSET_MAX - SOLEXA_OFFSET_MIN;
-
-///////////////////////////////////////////////////////////////////////////////
-// fastq_error
-
-fastq_error::fastq_error(const std::string& message)
-  : std::runtime_error(message)
-{
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Pre-calculation of Solexa <-> Phred conversions

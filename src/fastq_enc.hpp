@@ -44,13 +44,6 @@ enum class quality_encoding
   sam,
 };
 
-/** Exception raised for FASTQ parsing and validation errors. */
-class fastq_error : public std::runtime_error
-{
-public:
-  explicit fastq_error(const std::string& message);
-};
-
 class fastq_encoding
 {
 public:

@@ -20,7 +20,6 @@
 #include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
 #include "logging.hpp"  // for error, log_stream, debug
 #include "strutils.hpp" // for indent_lines
-#include "threads.hpp"  // for thread_abort
 #include <algorithm>    // for max
 #include <exception>    // for exception
 #include <functional>   // for greater
@@ -232,9 +231,6 @@ scheduler::run_wrapper(scheduler* sch)
 {
   try {
     sch->do_run();
-  } catch (const thread_abort&) {
-    sch->set_errors_occurred();
-    log::debug() << "Aborting thread due to errors";
   } catch (const std::exception& error) {
     sch->set_errors_occurred();
     log::error() << error.what();
