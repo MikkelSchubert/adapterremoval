@@ -66,7 +66,7 @@ format_progress(size_t reads,
                 double rate,
                 bool finalize = false)
 {
-  std::stringstream ss;
+  std::ostringstream ss;
 
   if (finalize) {
     ss << "Processed " << format_thousand_sep(reads) << " reads in "
