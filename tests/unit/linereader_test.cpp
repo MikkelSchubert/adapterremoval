@@ -85,7 +85,7 @@ read_lines(line_reader& reader)
 
 TEST_CASE("line_reader throws on null")
 {
-  REQUIRE_THROWS_AS(line_reader(nullptr), io_error);
+  REQUIRE_THROWS_AS(line_reader(nullptr), assert_failed);
 }
 
 TEST_CASE("line_reader throws on missing file")

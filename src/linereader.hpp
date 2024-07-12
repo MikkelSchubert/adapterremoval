@@ -18,9 +18,9 @@
 \*************************************************************************/
 #pragma once
 
-#include "managed_io.hpp" // for io_error
+#include "managed_io.hpp" // for managed_reader
 #include <array>          // for array
-#include <cstdio>         // for FILE, BUFSIZ
+#include <cstdio>         // for BUFSIZ
 #include <ios>            // for ios_base, ios_base::failure
 #include <isa-l.h>        // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
 #include <memory>         // for shared_ptr, unique_ptr
@@ -90,12 +90,8 @@ class line_reader : public line_reader_base
 public:
   /** Creates a line handler from an existing handle */
   explicit line_reader(FILE* handle);
-
   /** Constructor; opens file and throws on errors. */
-  explicit line_reader(const std::string& fpath);
-
-  /** Closes the file, if still open. */
-  ~line_reader() override;
+  explicit line_reader(std::string filename);
 
   /** Reads a line into dst, returning false on EOF. */
   bool getline(std::string& dst) override;
@@ -109,10 +105,8 @@ private:
   //! Refills 'm_buffer' and sets 'm_buffer_ptr' and 'm_buffer_end'.
   void refill_buffers();
 
-  //! Filename of file
-  std::string m_filename;
-  //! Raw file used to read input.
-  FILE* m_file;
+  //! Reader used to fill unparsed buffers
+  managed_reader m_reader;
   /** Refills 'm_raw_buffer'; sets 'm_raw_buffer_ptr' and 'm_raw_buffer_end'. */
   void refill_raw_buffer(size_t avail_in = 0);
   /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */

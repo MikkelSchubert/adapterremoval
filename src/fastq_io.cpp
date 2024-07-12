@@ -533,7 +533,7 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
 
     output_buf.resize(stream.total_out);
 
-    m_output.write_buffer(output_buf, false);
+    m_output.write(output_buf);
   }
 }
 
@@ -549,14 +549,14 @@ write_fastq::process(chunk_ptr chunk)
     m_eof = file_chunk.eof;
     m_uncompressed_bytes += file_chunk.uncompressed_size;
 
-    const bool flush = m_eof && !m_isal_enabled;
+    const auto mode = (m_eof && !m_isal_enabled) ? flush::on : flush::off;
 
     if (file_chunk.buffers.empty()) {
-      m_output.write_string(file_chunk.reads, flush);
+      m_output.write(file_chunk.reads, mode);
     } else {
       AR_REQUIRE(file_chunk.reads.empty());
 
-      m_output.write_buffers(file_chunk.buffers, flush);
+      m_output.write(file_chunk.buffers, mode);
     }
 
     if (m_eof && m_isal_enabled) {
@@ -564,7 +564,7 @@ write_fastq::process(chunk_ptr chunk)
       trailer.write_u32(0, file_chunk.crc32);
       trailer.write_u32(4, m_uncompressed_bytes);
 
-      m_output.write_buffer(trailer, true);
+      m_output.write(trailer, flush::on);
     }
   } catch (const std::ios_base::failure&) {
     std::ostringstream msg;

@@ -19,11 +19,54 @@
 #pragma once
 
 #include "buffer.hpp" // for buffer_vec
+#include <array>      // for array
 #include <cstdio>     // for FILE
-#include <fstream>    // for ofstream
 #include <string>     // for string
 
 namespace adapterremoval {
+
+/** Indicates if the writes should be flushed */
+enum class flush
+{
+  on,
+  off
+};
+
+/** Reader that closes unused writer handles if open files exceeds ulimits. */
+class managed_reader
+{
+public:
+  /** Take ownership of an existing file handle */
+  explicit managed_reader(FILE* handle);
+  /*
+   * Opens a managed reader. If too many handles are used, this function will
+   * close writers until the file can be successfully opened.
+   */
+  explicit managed_reader(std::string filename);
+
+  /** Closes the handle if it has not been closed already */
+  ~managed_reader();
+
+  /** Closes the handle; no-op if the handle has been closed already */
+  void close();
+
+  /** Returns the filename of the (previously opened) file */
+  const std::string& filename() const { return m_filename; }
+
+  /** Reads `size` bytes into the destination buffer */
+  size_t read(void* buffer, size_t size);
+
+  managed_reader(const managed_reader&) = delete;
+  managed_reader(managed_reader&& other) = delete;
+  managed_reader& operator=(managed_reader&& other) = delete;
+  managed_reader& operator=(const managed_reader&) = delete;
+
+private:
+  //! Source filename
+  std::string m_filename{};
+  //! File handle or nullptr if the file has been closed
+  FILE* m_file = nullptr;
+};
 
 /**
  * Writer that manages open handles if open files exceeds ulimits.
@@ -36,56 +79,42 @@ namespace adapterremoval {
 class managed_writer
 {
 public:
-  explicit managed_writer(const std::string& filename);
+  /** Create lazy writer; does not open filename immediately */
+  explicit managed_writer(std::string filename);
+  /** Checks that the file handle has been closed */
   ~managed_writer();
 
-  /**
-   * Opens a file using fopen and returns the handle.
-   *
-   * If too many handles are used, this function will close writers until
-   * the file can be successfully opened.
-   */
-  static FILE* fopen(const std::string& filename, const char* mode);
+  /** Write buffers, opening/creating the file as needed */
+  void write(const buffer& buf, flush mode = flush::off);
+  void write(const buffer_vec& buffers, flush mode = flush::off);
+  void write(const std::string& buffer, flush mode = flush::off);
 
-  void write_buffer(const buffer& buf, bool flush);
-  void write_buffers(const buffer_vec& buffers, bool flush);
-  void write_string(const std::string& buffer, bool flush);
-
+  /** Closes the handle; no-op if the handle has been closed already */
   void close();
 
-  const std::string& filename() const;
+  /** Returns the filename of the (previously opened) file */
+  const std::string& filename() const { return m_filename; }
 
   managed_writer(const managed_writer&) = delete;
+  managed_writer(managed_writer&& other) = delete;
+  managed_writer& operator=(managed_writer&& other) = delete;
   managed_writer& operator=(const managed_writer&) = delete;
 
 private:
-  /* Ensure that the writer is open, closing existing files if necessary. */
-  static void open_writer(managed_writer* ptr);
-  /* Removes the writer from the list of open writers. */
-  static void remove_writer(managed_writer* ptr);
-  /* Sets the writer as the most recently used writer. */
-  static void add_head_writer(managed_writer* ptr);
-  /* Close the least recently used writer. */
-  static void close_tail_writer();
-
   //! Destination filename; is created lazily.
-  std::string m_filename;
+  std::string m_filename{};
+  //! Indicates if the file has been created/truncated
+  bool m_created = false;
   //! Lazily opened, managed handle; may be closed to free up handles.
-  std::ofstream m_stream;
-  //! Indicates if the file has been created
-  bool m_created;
+  FILE* m_file = nullptr;
 
-  //! Previous managed_writer; used more recently than this.
-  managed_writer* m_prev;
-  //! Next managed_writer; used before this.
-  managed_writer* m_next;
+  //! Managed writer used more recently than this writer.
+  managed_writer* m_prev = nullptr;
+  //! Managed writer used prior to this writer.
+  managed_writer* m_next = nullptr;
 
-  //! Most recently used managed_writer
-  static managed_writer* s_head;
-  //! Least recently used managed_writer
-  static managed_writer* s_tail;
-  //! Indicates if a performance warning has been printed
-  static bool s_warning_printed;
+  friend class writer_list;
+  friend class writer_lock;
 };
 
 } // namespace adapterremoval

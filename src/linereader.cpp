@@ -124,8 +124,7 @@ vec_reader::getline(std::string& dst)
 // Implementations for 'line_reader'
 
 line_reader::line_reader(FILE* handle)
-  : m_filename("<unnamed file>")
-  , m_file(handle)
+  : m_reader(handle)
   , m_gzip_stream(nullptr)
   , m_gzip_header(nullptr)
   , m_buffer(nullptr)
@@ -135,25 +134,21 @@ line_reader::line_reader(FILE* handle)
   , m_raw_buffer_end(m_raw_buffer->begin())
   , m_eof(false)
 {
-  if (!m_file) {
-    throw io_error("could not open file", errno);
-  }
-
   refill_buffers();
 }
 
-line_reader::line_reader(const std::string& fpath)
-  : line_reader(managed_writer::fopen(fpath, "rb"))
+line_reader::line_reader(std::string filename)
+  : m_reader(std::move(filename))
+  , m_gzip_stream(nullptr)
+  , m_gzip_header(nullptr)
+  , m_buffer(nullptr)
+  , m_buffer_ptr(nullptr)
+  , m_buffer_end(nullptr)
+  , m_raw_buffer(std::make_shared<line_buffer>())
+  , m_raw_buffer_end(m_raw_buffer->begin())
+  , m_eof(false)
 {
-  m_filename = fpath;
-}
-
-line_reader::~line_reader()
-{
-  // Pending input is ignored
-  if (fclose(m_file)) {
-    AR_FAIL(format_io_error("error closing input file", errno));
-  }
+  refill_buffers();
 }
 
 bool
@@ -223,18 +218,12 @@ line_reader::refill_raw_buffer(size_t avail_in)
     std::memmove(m_raw_buffer->data(), m_raw_buffer_end - avail_in, avail_in);
   }
 
-  const size_t nread = fread(m_raw_buffer->data() + avail_in,
-                             1,
-                             m_raw_buffer->size() - avail_in,
-                             m_file);
+  const size_t nread = m_reader.read(m_raw_buffer->data() + avail_in,
+                                     m_raw_buffer->size() - avail_in);
 
-  if (ferror(m_file)) {
-    throw io_error("read error while filling buffer", errno);
-  } else {
-    // EOF set only once all data has been consumed
-    m_eof = (nread + avail_in == 0);
-    m_raw_buffer_end = m_raw_buffer->data() + nread + avail_in;
-  }
+  // EOF set only once all data has been consumed
+  m_eof = (nread + avail_in == 0);
+  m_raw_buffer_end = m_raw_buffer->data() + nread + avail_in;
 }
 
 bool
@@ -261,7 +250,8 @@ line_reader::initialize_buffers_gzip()
 
   isal_gzip_header_init(m_gzip_header.get());
   auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-  check_isal_return_code(result, m_filename, "reading first gzip header from");
+  check_isal_return_code(
+    result, m_reader.filename(), "reading first gzip header from");
 }
 
 void
@@ -285,10 +275,10 @@ line_reader::refill_buffers_gzip()
         const auto result =
           isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
         check_isal_return_code(
-          result, m_filename, "reading next gzip header from");
+          result, m_reader.filename(), "reading next gzip header from");
       } else if (m_gzip_stream->avail_in) {
         log::warn() << "Ignoring trailing garbage at the end of "
-                    << shell_escape(m_filename);
+                    << shell_escape(m_reader.filename());
 
         m_buffer_ptr = m_buffer->data();
         m_buffer_end = m_buffer_ptr;
@@ -299,14 +289,14 @@ line_reader::refill_buffers_gzip()
   }
 
   check_isal_return_code(
-    isal_inflate(m_gzip_stream.get()), m_filename, "decompressing");
+    isal_inflate(m_gzip_stream.get()), m_reader.filename(), "decompressing");
 
   m_buffer_ptr = m_buffer->data();
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
 
   if (m_eof && !m_gzip_stream->avail_in &&
       m_gzip_stream->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
-    throw_gzip_error(m_filename,
+    throw_gzip_error(m_reader.filename(),
                      "decompressing",
                      "unexpected end of file",
                      "file is likely truncated!");
