@@ -18,7 +18,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <fstream>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -29,7 +29,7 @@ class html_template
 public:
   html_template() = default;
   virtual ~html_template() = default;
-  virtual void write(std::ofstream& out) = 0;
+  virtual void write(std::ostream& out) = 0;
 };
 
 class html_head : public html_template
@@ -44,7 +44,7 @@ public:
   html_head& set_name(const std::string& value);
   html_head& set_version(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -63,7 +63,7 @@ public:
   html_body_start(const html_body_start&) = delete;
   html_body_start& operator=(const html_body_start&) = delete;
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -83,7 +83,7 @@ public:
   html_summary& set_runtime(const std::string& value);
   html_summary& set_version(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -116,7 +116,7 @@ public:
   html_summary_io& add_q30(const std::string& value);
   html_summary_io& set_title(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -153,7 +153,7 @@ public:
   html_sampling_note& set_pct(const std::string& value);
   html_sampling_note& set_reads(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -176,7 +176,7 @@ public:
 
   html_output_note& set_text(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -196,7 +196,7 @@ public:
   html_output_footnote& set_symbol(const std::string& value);
   html_output_footnote& set_text(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -215,7 +215,7 @@ public:
   html_summary_trimming_head(const html_summary_trimming_head&) = delete;
   html_summary_trimming_head& operator=(const html_summary_trimming_head&) = delete;
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -239,7 +239,7 @@ public:
   html_summary_trimming_row& set_reads(const std::string& value);
   html_summary_trimming_row& set_stage(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -275,7 +275,7 @@ public:
   html_summary_trimming_tail& set_n_total_filt(const std::string& value);
   html_summary_trimming_tail& set_n_total_proc(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -301,7 +301,7 @@ public:
   html_consensus_adapter_head& set_overlapping_pairs(const std::string& value);
   html_consensus_adapter_head& set_pairs_with_adapters(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -331,7 +331,7 @@ public:
   html_consensus_adapter_table& set_reference_1(const std::string& value);
   html_consensus_adapter_table& set_reference_2(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -369,7 +369,7 @@ public:
   html_consensus_adapter_kmer_head& set_kmer_length(const std::string& value);
   html_consensus_adapter_kmer_head& set_n_kmers(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -396,7 +396,7 @@ public:
   html_consensus_adapter_kmer_row& set_pct_1(const std::string& value);
   html_consensus_adapter_kmer_row& set_pct_2(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -425,7 +425,7 @@ public:
   html_consensus_adapter_kmer_tail(const html_consensus_adapter_kmer_tail&) = delete;
   html_consensus_adapter_kmer_tail& operator=(const html_consensus_adapter_kmer_tail&) = delete;
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -442,7 +442,7 @@ public:
 
   html_h2_tag& set_title(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -468,7 +468,7 @@ public:
   html_line_plot& set_x_axis(const std::string& value);
   html_line_plot& set_y_axis(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -501,7 +501,7 @@ public:
   html_facet_line_plot& set_x_axis(const std::string& value);
   html_facet_line_plot& set_y_axis(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -531,7 +531,7 @@ public:
   html_bar_plot& set_x_axis(const std::string& value);
   html_bar_plot& set_y_axis(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -554,7 +554,7 @@ public:
   html_demultiplexing_head(const html_demultiplexing_head&) = delete;
   html_demultiplexing_head& operator=(const html_demultiplexing_head&) = delete;
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -579,7 +579,7 @@ public:
   html_demultiplexing_row& set_pct(const std::string& value);
   html_demultiplexing_row& set_reads(const std::string& value);
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -612,7 +612,7 @@ public:
   html_demultiplexing_tail(const html_demultiplexing_tail&) = delete;
   html_demultiplexing_tail& operator=(const html_demultiplexing_tail&) = delete;
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;
@@ -627,7 +627,7 @@ public:
   html_body_end(const html_body_end&) = delete;
   html_body_end& operator=(const html_body_end&) = delete;
 
-  void write(std::ofstream& out) override;
+  void write(std::ostream& out) override;
 
 private:
   bool m_written;

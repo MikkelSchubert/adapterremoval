@@ -56,7 +56,7 @@ html_head::set_version(const std::string& value)
 }
 
 void
-html_head::write(std::ofstream& out)
+html_head::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_head already written");
   AR_REQUIRE(m_name_is_set, "html_head::name not set");
@@ -220,7 +220,7 @@ html_body_start::~html_body_start()
 }
 
 void
-html_body_start::write(std::ofstream& out)
+html_body_start::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_body_start already written");
   // clang-format off
@@ -288,7 +288,7 @@ html_summary::set_version(const std::string& value)
 }
 
 void
-html_summary::write(std::ofstream& out)
+html_summary::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary already written");
   AR_REQUIRE(m_command_is_set, "html_summary::command not set");
@@ -430,7 +430,7 @@ html_summary_io::set_title(const std::string& value)
 }
 
 void
-html_summary_io::write(std::ofstream& out)
+html_summary_io::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_io already written");
   AR_REQUIRE(m_columns_is_set, "html_summary_io::columns not set");
@@ -546,7 +546,7 @@ html_sampling_note::set_reads(const std::string& value)
 }
 
 void
-html_sampling_note::write(std::ofstream& out)
+html_sampling_note::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_sampling_note already written");
   AR_REQUIRE(m_label_is_set, "html_sampling_note::label not set");
@@ -586,7 +586,7 @@ html_output_note::set_text(const std::string& value)
 }
 
 void
-html_output_note::write(std::ofstream& out)
+html_output_note::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_output_note already written");
   AR_REQUIRE(m_text_is_set, "html_output_note::text not set");
@@ -631,7 +631,7 @@ html_output_footnote::set_text(const std::string& value)
 }
 
 void
-html_output_footnote::write(std::ofstream& out)
+html_output_footnote::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_output_footnote already written");
   AR_REQUIRE(m_symbol_is_set, "html_output_footnote::symbol not set");
@@ -657,7 +657,7 @@ html_summary_trimming_head::~html_summary_trimming_head()
 }
 
 void
-html_summary_trimming_head::write(std::ofstream& out)
+html_summary_trimming_head::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_trimming_head already written");
   // clang-format off
@@ -773,7 +773,7 @@ html_summary_trimming_row::set_stage(const std::string& value)
 }
 
 void
-html_summary_trimming_row::write(std::ofstream& out)
+html_summary_trimming_row::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_trimming_row already written");
   AR_REQUIRE(m_avg_bases_is_set, "html_summary_trimming_row::avg_bases not set");
@@ -852,7 +852,7 @@ html_summary_trimming_tail::set_n_total_proc(const std::string& value)
 }
 
 void
-html_summary_trimming_tail::write(std::ofstream& out)
+html_summary_trimming_tail::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_summary_trimming_tail already written");
   AR_REQUIRE(m_n_enabled_filt_is_set, "html_summary_trimming_tail::n_enabled_filt not set");
@@ -908,7 +908,7 @@ html_consensus_adapter_head::set_pairs_with_adapters(const std::string& value)
 }
 
 void
-html_consensus_adapter_head::write(std::ofstream& out)
+html_consensus_adapter_head::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_consensus_adapter_head already written");
   AR_REQUIRE(m_overlapping_pairs_is_set, "html_consensus_adapter_head::overlapping_pairs not set");
@@ -1038,7 +1038,7 @@ html_consensus_adapter_table::set_reference_2(const std::string& value)
 }
 
 void
-html_consensus_adapter_table::write(std::ofstream& out)
+html_consensus_adapter_table::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_consensus_adapter_table already written");
   AR_REQUIRE(m_alignment_1_is_set, "html_consensus_adapter_table::alignment_1 not set");
@@ -1122,7 +1122,7 @@ html_consensus_adapter_kmer_head::set_n_kmers(const std::string& value)
 }
 
 void
-html_consensus_adapter_kmer_head::write(std::ofstream& out)
+html_consensus_adapter_kmer_head::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_head already written");
   AR_REQUIRE(m_kmer_length_is_set, "html_consensus_adapter_kmer_head::kmer_length not set");
@@ -1231,7 +1231,7 @@ html_consensus_adapter_kmer_row::set_pct_2(const std::string& value)
 }
 
 void
-html_consensus_adapter_kmer_row::write(std::ofstream& out)
+html_consensus_adapter_kmer_row::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_row already written");
   AR_REQUIRE(m_count_1_is_set, "html_consensus_adapter_kmer_row::count_1 not set");
@@ -1269,7 +1269,7 @@ html_consensus_adapter_kmer_tail::~html_consensus_adapter_kmer_tail()
 }
 
 void
-html_consensus_adapter_kmer_tail::write(std::ofstream& out)
+html_consensus_adapter_kmer_tail::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_tail already written");
   // clang-format off
@@ -1303,7 +1303,7 @@ html_h2_tag::set_title(const std::string& value)
 }
 
 void
-html_h2_tag::write(std::ofstream& out)
+html_h2_tag::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_h2_tag already written");
   AR_REQUIRE(m_title_is_set, "html_h2_tag::title not set");
@@ -1402,7 +1402,7 @@ html_line_plot::set_y_axis(const std::string& value)
 }
 
 void
-html_line_plot::write(std::ofstream& out)
+html_line_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_line_plot already written");
   AR_REQUIRE(m_title_is_set, "html_line_plot::title not set");
@@ -1562,7 +1562,7 @@ html_facet_line_plot::set_y_axis(const std::string& value)
 }
 
 void
-html_facet_line_plot::write(std::ofstream& out)
+html_facet_line_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_facet_line_plot already written");
   AR_REQUIRE(m_title_is_set, "html_facet_line_plot::title not set");
@@ -1714,7 +1714,7 @@ html_bar_plot::set_y_axis(const std::string& value)
 }
 
 void
-html_bar_plot::write(std::ofstream& out)
+html_bar_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_bar_plot already written");
   AR_REQUIRE(m_title_is_set, "html_bar_plot::title not set");
@@ -1774,7 +1774,7 @@ html_demultiplexing_head::~html_demultiplexing_head()
 }
 
 void
-html_demultiplexing_head::write(std::ofstream& out)
+html_demultiplexing_head::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_demultiplexing_head already written");
   // clang-format off
@@ -1904,7 +1904,7 @@ html_demultiplexing_row::set_reads(const std::string& value)
 }
 
 void
-html_demultiplexing_row::write(std::ofstream& out)
+html_demultiplexing_row::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_demultiplexing_row already written");
   AR_REQUIRE(m_barcode_1_is_set, "html_demultiplexing_row::barcode_1 not set");
@@ -1947,7 +1947,7 @@ html_demultiplexing_tail::~html_demultiplexing_tail()
 }
 
 void
-html_demultiplexing_tail::write(std::ofstream& out)
+html_demultiplexing_tail::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_demultiplexing_tail already written");
   // clang-format off
@@ -1972,7 +1972,7 @@ html_body_end::~html_body_end()
 }
 
 void
-html_body_end::write(std::ofstream& out)
+html_body_end::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written, "template html_body_end already written");
   // clang-format off

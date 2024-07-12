@@ -67,7 +67,7 @@ class html_template
 public:
   html_template() = default;
   virtual ~html_template() = default;
-  virtual void write(std::ofstream& out) = 0;
+  virtual void write(std::ostream& out) = 0;
 };"""
 
 
@@ -210,7 +210,7 @@ def write_header(sections: dict[str, Section]) -> str:
 
     tprint(__doc__.strip())
     tprint("#pragma once\n")
-    tprint("#include <fstream>")
+    tprint("#include <ostream>")
     tprint("#include <string>")
     tprint("#include <vector>")
     tprint("")
@@ -240,7 +240,7 @@ def write_header(sections: dict[str, Section]) -> str:
             else:
                 tprint("  {}& set_{}(const std::string& value);", classname, field.name)
 
-        tprint("\n  void write(std::ofstream& out) override;")
+        tprint("\n  void write(std::ostream& out) override;")
 
         tprint("\nprivate:")
         tprint("  bool m_written;")
@@ -314,7 +314,7 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
             tprint("}}\n")
 
         tprint("void")
-        tprint("{}::write(std::ofstream& out)", classname)
+        tprint("{}::write(std::ostream& out)", classname)
         tprint("{{")
         tprint('  AR_REQUIRE(!m_written, "template {} already written");', classname)
 

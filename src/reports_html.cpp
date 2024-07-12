@@ -71,8 +71,7 @@ json_encode(const std::string& s)
 }
 
 /** JSON escaped string */
-std::string
-operator""_json(const char* s, size_t length)
+std::string operator""_json(const char* s, size_t length)
 {
   return json_encode(std::string(s, length));
 }
@@ -160,7 +159,7 @@ public:
     m_writer.set_title(title);
   }
 
-  void write(std::ofstream& output) { m_writer.write(output); }
+  void write(std::ostream& output) { m_writer.write(output); }
 
   void add_column(const std::string& title, const fastq_statistics& stats)
   {
@@ -285,7 +284,7 @@ void
 write_html_sampling_note(const userconfig& config,
                          const std::string& label,
                          const fastq_statistics& stats,
-                         std::ofstream& output)
+                         std::ostream& output)
 {
   if (config.report_sample_rate < 1.0) {
     html_sampling_note()
@@ -300,7 +299,7 @@ write_html_sampling_note(const userconfig& config,
 void
 write_html_summary_section(const userconfig& config,
                            const statistics& stats,
-                           std::ofstream& output)
+                           std::ostream& output)
 {
   html_head().set_name(NAME).set_version(VERSION).write(output);
 
@@ -439,7 +438,7 @@ struct trimming_stats
 };
 
 void
-write_html_trimming_stats(std::ofstream& output,
+write_html_trimming_stats(std::ostream& output,
                           const std::vector<trimming_stats>& stats,
                           const reads_and_bases& totals)
 {
@@ -554,7 +553,7 @@ build_polyx_trimming_rows(std::vector<trimming_stats>& out,
 void
 write_html_processing_section(const userconfig& config,
                               const statistics& stats,
-                              std::ofstream& output)
+                              std::ostream& output)
 {
   trimming_statistics totals;
   for (const auto& it : stats.trimming) {
@@ -665,7 +664,7 @@ write_html_processing_section(const userconfig& config,
 }
 
 void
-write_html_section_title(const std::string& title, std::ofstream& output)
+write_html_section_title(const std::string& title, std::ostream& output)
 {
   html_h2_tag().set_title(title).write(output);
 }
@@ -674,7 +673,7 @@ void
 write_html_io_section(const userconfig& config,
                       const fastq_stats_vec& statistics,
                       const string_vec& names,
-                      std::ofstream& output,
+                      std::ostream& output,
                       const fastq_stats_ptr& merged = fastq_stats_ptr())
 {
   AR_REQUIRE(statistics.size() == names.size());
@@ -756,7 +755,7 @@ write_html_io_section(const userconfig& config,
 void
 write_html_input_section(const userconfig& config,
                          const statistics& stats,
-                         std::ofstream& output)
+                         std::ostream& output)
 {
   fastq_stats_vec stats_vec = { stats.input_1 };
   string_vec names = { "File 1" };
@@ -774,7 +773,7 @@ write_html_input_section(const userconfig& config,
 void
 write_html_analyses_section(const userconfig& config,
                             const statistics& stats,
-                            std::ofstream& output)
+                            std::ostream& output)
 
 {
   write_html_section_title("Analyses", output);
@@ -900,7 +899,7 @@ write_html_analyses_section(const userconfig& config,
 void
 write_html_demultiplexing_section(const userconfig& config,
                                   const statistics& stats,
-                                  std::ofstream& output)
+                                  std::ostream& output)
 
 {
   write_html_section_title("Demultiplexing", output);
@@ -991,7 +990,7 @@ write_html_demultiplexing_section(const userconfig& config,
 void
 write_html_output_section(const userconfig& config,
                           const statistics& stats,
-                          std::ofstream& output)
+                          std::ostream& output)
 
 {
   fastq_stats_vec stats_vec;
