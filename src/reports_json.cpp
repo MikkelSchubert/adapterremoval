@@ -25,6 +25,7 @@
 #include "json.hpp"        // for json_dict, json_dict_ptr, json_list
 #include "logging.hpp"     // for log_stream, error
 #include "main.hpp"        // for NAME, VERSION
+#include "managed_io.hpp"  // for managed_writer
 #include "reports.hpp"     // for write_json_report
 #include "simd.hpp"        // for size_t
 #include "statistics.hpp"  // for fastq_stats_ptr, trimming_statistics
@@ -583,25 +584,24 @@ write_json_report(const userconfig& config,
     return true;
   }
 
+  std::ostringstream output;
+
+  {
+    json_dict report;
+    write_report_meta(config, report);
+    write_report_summary(config, report, stats);
+    write_report_input(config, report, stats);
+    write_report_demultiplexing(config, report, stats);
+    write_report_output(config, report, stats);
+    report.write(output);
+  }
+
+  output << std::endl;
+
   try {
-    std::ofstream output(filename, std::ofstream::out);
-    if (!output.is_open()) {
-      throw std::ofstream::failure(std::strerror(errno));
-    }
-
-    output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-
-    {
-      json_dict report;
-      write_report_meta(config, report);
-      write_report_summary(config, report, stats);
-      write_report_input(config, report, stats);
-      write_report_demultiplexing(config, report, stats);
-      write_report_output(config, report, stats);
-      report.write(output);
-    }
-
-    output << std::endl;
+    managed_writer writer{ filename };
+    writer.write(output.str());
+    writer.close();
   } catch (const std::ios_base::failure& error) {
     log::error() << "Error writing JSON report to '" << filename << "':\n"
                  << indent_lines(error.what());

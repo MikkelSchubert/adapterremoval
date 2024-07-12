@@ -16,14 +16,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapter_id.hpp"            // for adapter_id_statistics
-#include "adapterset.hpp"            // for adapter_set
-#include "counts.hpp"                // for counts, indexed_count, counts_tmpl
-#include "debug.hpp"                 // for AR_REQUIRE
-#include "fastq.hpp"                 // for ACGT, ACGT::values, fastq, ACGTN
-#include "json.hpp"                  // for json_dict, json_list, json_ptr
-#include "logging.hpp"               // for log_stream, error
-#include "main.hpp"                  // for VERSION, NAME
+#include "adapter_id.hpp" // for adapter_id_statistics
+#include "adapterset.hpp" // for adapter_set
+#include "counts.hpp"     // for counts, indexed_count, counts_tmpl
+#include "debug.hpp"      // for AR_REQUIRE
+#include "fastq.hpp"      // for ACGT, ACGT::values, fastq, ACGTN
+#include "json.hpp"       // for json_dict, json_list, json_ptr
+#include "logging.hpp"    // for log_stream, error
+#include "main.hpp"       // for VERSION, NAME
+#include "managed_io.hpp"
 #include "reports.hpp"               // for write_html_report
 #include "reports_template_html.hpp" // for html_line_plot, html_demultiple...
 #include "simd.hpp"                  // for size_t
@@ -42,7 +43,7 @@
 #include <fstream>                   // for operator<<, ofstream, basic_ost...
 #include <iomanip>                   // for operator<<, setprecision, setw
 #include <memory>                    // for __shared_ptr_access, shared_ptr
-#include <sstream>                   // for basic_ostringstream
+#include <sstream>                   // for ostringstream
 #include <string>                    // for string, operator==, to_string
 #include <utility>                   // for pair
 #include <vector>                    // for vector
@@ -1045,36 +1046,35 @@ write_html_report(const userconfig& config,
     return true;
   }
 
+  std::ostringstream output;
+
+  write_html_summary_section(config, stats, output);
+
+  if (config.run_type != ar_command::demultiplex_only &&
+      config.run_type != ar_command::report_only) {
+    write_html_processing_section(config, stats, output);
+  }
+
+  write_html_input_section(config, stats, output);
+
+  if (config.run_type == ar_command::report_only) {
+    write_html_analyses_section(config, stats, output);
+  }
+
+  if (config.adapters.barcode_count()) {
+    write_html_demultiplexing_section(config, stats, output);
+  }
+
+  if (config.run_type != ar_command::report_only) {
+    write_html_output_section(config, stats, output);
+  }
+
+  html_body_end().write(output);
+
   try {
-    std::ofstream output(filename, std::ofstream::out);
-    if (!output.is_open()) {
-      throw std::ofstream::failure(std::strerror(errno));
-    }
-
-    output.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-
-    write_html_summary_section(config, stats, output);
-
-    if (config.run_type != ar_command::demultiplex_only &&
-        config.run_type != ar_command::report_only) {
-      write_html_processing_section(config, stats, output);
-    }
-
-    write_html_input_section(config, stats, output);
-
-    if (config.run_type == ar_command::report_only) {
-      write_html_analyses_section(config, stats, output);
-    }
-
-    if (config.adapters.barcode_count()) {
-      write_html_demultiplexing_section(config, stats, output);
-    }
-
-    if (config.run_type != ar_command::report_only) {
-      write_html_output_section(config, stats, output);
-    }
-
-    html_body_end().write(output);
+    managed_writer writer{ filename };
+    writer.write(output.str());
+    writer.close();
   } catch (const std::ios_base::failure& error) {
     log::error() << "Error writing JSON report to '" << filename << "':\n"
                  << indent_lines(error.what());
