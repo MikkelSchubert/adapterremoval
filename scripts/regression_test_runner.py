@@ -986,7 +986,8 @@ class TestUpdater:
                 metadata: list[tuple[bytes, bytes]] = [
                     (b'    "version":', b' "...str",\n'),
                     (b'    "command":', b' "...[str]",\n'),
-                    (b'    "runtime":', b' "...float"\n'),
+                    (b'    "runtime":', b' "...float",\n'),
+                    (b'    "timestamp":', b' "...str"\n'),
                 ]
 
                 lines: list[bytes] = []

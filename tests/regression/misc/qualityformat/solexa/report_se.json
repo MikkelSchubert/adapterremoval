@@ -2,7 +2,8 @@
   "meta": {
     "version": "...str",
     "command": "...[str]",
-    "runtime": "...float"
+    "runtime": "...float",
+    "timestamp": "...str"
   },
   "summary": "...",
   "input": {

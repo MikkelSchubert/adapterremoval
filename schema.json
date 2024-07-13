@@ -22,6 +22,10 @@
                 "version": {
                     "description": "The version of AdapterRemoved used to create this report",
                     "$ref": "#/definitions/non-empty-string"
+                },
+                "timestamp": {
+                    "description": "Timestamp indicating when the program execution completed",
+                    "$ref": "#/definitions/non-empty-string"
                 }
             },
             "required": [
