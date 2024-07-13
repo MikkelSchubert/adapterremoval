@@ -105,10 +105,10 @@ public:
   /** Destructor; does nothing. */
   virtual ~analytical_chunk() = default;
 
-  //! Copy construction not supported
   analytical_chunk(const analytical_chunk&) = delete;
-  //! Assignment not supported
+  analytical_chunk(analytical_chunk&&) = delete;
   analytical_chunk& operator=(const analytical_chunk&) = delete;
+  analytical_chunk& operator=(analytical_chunk&&) = delete;
 };
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
@@ -143,7 +143,7 @@ public:
    *                   ordered in order to ensure that output order matches
    *                   input order.
    */
-  analytical_step(processing_order step_order, const std::string& name);
+  analytical_step(processing_order step_order, std::string name);
 
   /** Destructor; does nothing in base class. **/
   virtual ~analytical_step() = default;
@@ -175,18 +175,18 @@ public:
    * Called once the pipeline has been run to completion; this function is
    * called on nodes in the same order as the pipeline.
    */
-  virtual void finalize();
+  virtual void finalize() {}
 
   /** Returns the expected ordering (ordered / unordered) for input data. **/
-  processing_order ordering() const;
+  processing_order ordering() const { return m_step_order; }
 
   /** Returns the name of the analytical step (type) */
-  const std::string& name() const;
+  const std::string& name() const { return m_name; }
 
-  //! Copy construction not supported
   analytical_step(const analytical_step&) = delete;
-  //! Assignment not supported
+  analytical_step(analytical_step&&) = delete;
   analytical_step& operator=(const analytical_step&) = delete;
+  analytical_step& operator=(analytical_step&&) = delete;
 
 private:
   //! Stores the ordering of data chunks expected by the step
@@ -203,8 +203,8 @@ private:
 class scheduler
 {
 public:
-  /** Constructor. */
-  scheduler();
+  scheduler() = default;
+  ~scheduler() = default;
 
   /**
    * Adds a step to the pipeline.
@@ -216,15 +216,20 @@ public:
    * in order to determine to which analytical step a chunk is assigned.
    **/
   template<typename T, typename... Args>
-  size_t add(Args&&... args);
+  size_t add(Args&&... args)
+  {
+    static_assert(std::is_base_of<analytical_step, T>(),
+                  "requires analytical_step sub-class");
+    return add_step(std::make_unique<T>(std::forward<Args>(args)...));
+  }
 
   /** Runs the pipeline with n threads; return false on error. */
   bool run(int nthreads);
 
-  //! Copy construction not supported
   scheduler(const scheduler&) = delete;
-  //! Assignment not supported
+  scheduler(scheduler&&) = delete;
   scheduler& operator=(const scheduler&) = delete;
+  scheduler& operator=(scheduler&&) = delete;
 
 private:
   using step_ptr = std::shared_ptr<scheduler_step>;
@@ -241,62 +246,29 @@ private:
   void run_io_loop();
 
   //! Analytical steps
-  pipeline m_steps;
+  pipeline m_steps{};
 
   //! Condition used to signal the (potential) availability of IO work
-  std::condition_variable m_condition_io;
+  std::condition_variable m_condition_io{};
   //! Condition used to signal the (potential) availability of calculation work
-  std::condition_variable m_condition_calc;
+  std::condition_variable m_condition_calc{};
 
   //! Counter used for sequential processing of data
-  size_t m_chunk_counter;
+  size_t m_chunk_counter = 0;
   //! The current number of running/queued tasks
-  size_t m_tasks;
+  size_t m_tasks = 0;
   //! The maximum number of tasks to process simultaneously
-  size_t m_tasks_max;
+  size_t m_tasks_max = 0;
 
   //! Lock used to control access to member variables
-  std::mutex m_queue_lock;
+  std::mutex m_queue_lock{};
   //! Queue used for currently runnable steps involving calculations
-  step_queue m_queue_calc;
+  step_queue m_queue_calc{};
   //! Queue used for currently runnable steps involving only IO
-  step_queue m_queue_io;
+  step_queue m_queue_io{};
 
   //! Set to indicate if errors have occurred
-  std::atomic_bool m_errors;
+  std::atomic_bool m_errors{ false };
 };
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'scheduler'
-
-template<typename T, typename... Args>
-size_t
-scheduler::add(Args&&... args)
-{
-  static_assert(std::is_base_of<analytical_step, T>(),
-                "requires analytical_step sub-class");
-
-  return add_step(std::make_unique<T>(std::forward<Args>(args)...));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'analytical_step'
-
-inline void
-analytical_step::finalize()
-{
-}
-
-inline processing_order
-analytical_step::ordering() const
-{
-  return m_step_order;
-}
-
-inline const std::string&
-analytical_step::name() const
-{
-  return m_name;
-}
 
 } // namespace adapterremoval
