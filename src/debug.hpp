@@ -40,7 +40,11 @@ debug_raise_assert(const char* funcname,
 #define AR_REQUIRE_2_(test, msg)                                               \
   do {                                                                         \
     if (!(test)) {                                                             \
-      debug_raise_assert(__FUNCTION__, __FILE__, __LINE__, #test, msg);        \
+      debug_raise_assert(static_cast<const char*>(__FUNCTION__),               \
+                         static_cast<const char*>(__FILE__),                   \
+                         __LINE__,                                             \
+                         #test,                                                \
+                         msg);                                                 \
     }                                                                          \
   } while (0)
 
@@ -52,8 +56,11 @@ debug_raise_assert(const char* funcname,
 
 /** Raise an assert failure with a user-specified message. */
 #define AR_FAIL(msg)                                                           \
-  adapterremoval::debug_raise_assert(                                          \
-    __FUNCTION__, __FILE__, __LINE__, std::string(), msg)
+  adapterremoval::debug_raise_assert(static_cast<const char*>(__FUNCTION__),   \
+                                     static_cast<const char*>(__FILE__),       \
+                                     __LINE__,                                 \
+                                     std::string(),                            \
+                                     msg)
 
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)
