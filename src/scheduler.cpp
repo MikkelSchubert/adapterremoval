@@ -273,63 +273,66 @@ scheduler::do_run()
       break;
     }
 
-    do {
-      const bool wake_thread =
-        // CPU bound tasks can always be run (if there are any idle threads)
-        m_queue_calc.size() ||
-        // IO bound tasks can be run if IO is idle or we are low on tasks
-        (!m_io_active && (m_queue_io.size() || m_tasks < m_tasks_max));
+    const bool wake_thread =
+      // CPU bound tasks can always be run (if there are any idle threads)
+      m_queue_calc.size() ||
+      // IO bound tasks can be run if IO is idle or we are low on tasks
+      (!m_io_active && (m_queue_io.size() || m_tasks < m_tasks_max));
 
-      data_chunk chunk = step->pop_chunk();
+    data_chunk chunk = step->pop_chunk();
 
-      lock.unlock();
-      if (wake_thread) {
-        m_condition.notify_one();
-      }
+    lock.unlock();
+    if (wake_thread) {
+      m_condition.notify_one();
+    }
 
-      chunk_vec chunks = step->process(std::move(chunk.second));
-      lock.lock();
+    chunk_vec chunks = step->process(std::move(chunk.second));
+    lock.lock();
 
-      if (chunks.empty() && step == m_steps.back()) {
-        // The source has stopped producing chunks; nothing more to do
-        m_tasks_max = 0;
-      }
+    if (chunks.empty() && step == m_steps.back()) {
+      // The source has stopped producing chunks; nothing more to do
+      m_tasks_max = 0;
+    }
 
-      // Schedule each of the resulting blocks
-      for (auto& result : chunks) {
-        AR_REQUIRE(result.first < m_steps.size());
-        const step_ptr& recipient = m_steps.at(result.first);
+    // Schedule each of the resulting blocks
+    for (auto& result : chunks) {
+      AR_REQUIRE(result.first < m_steps.size());
+      const step_ptr& recipient = m_steps.at(result.first);
 
-        // Inherit reference count from source chunk
-        auto next_id = chunk.first;
-        if (step->ordering() != processing_order::unordered) {
-          // Ordered steps are allowed to not return results, so the chunk
-          // numbering is remembered for down-stream steps
-          next_id = recipient->new_chunk_id();
-        }
-
-        recipient->push_chunk(next_id, std::move(result.second));
-        if (recipient->can_run(next_id)) {
-          if (recipient->ordering() == processing_order::ordered_io) {
-            m_queue_io.push(recipient);
-          } else {
-            m_queue_calc.push(recipient);
-          }
-        }
-
-        m_tasks++;
-      }
-
+      // Inherit reference count from source chunk
+      auto next_id = chunk.first;
       if (step->ordering() != processing_order::unordered) {
-        // Indicate that the next chunk can be processed
-        step->increment_next_chunk();
+        // Ordered steps are allowed to not return results, so the chunk
+        // numbering is remembered for down-stream steps
+        next_id = recipient->new_chunk_id();
       }
 
-      // One less task in memory
-      m_tasks--;
+      recipient->push_chunk(next_id, std::move(result.second));
+      if (recipient->can_run(next_id)) {
+        if (recipient->ordering() == processing_order::ordered_io) {
+          m_queue_io.push(recipient);
+        } else {
+          m_queue_calc.push(recipient);
+        }
+      }
 
-      // If possible continue processing this task using the same thread
-    } while (step->can_run_next() && !m_errors);
+      m_tasks++;
+    }
+
+    if (step->ordering() != processing_order::unordered) {
+      // Indicate that the next chunk can be processed
+      step->increment_next_chunk();
+      if (step->can_run_next()) {
+        if (step->ordering() == processing_order::ordered_io) {
+          m_queue_io.push(step);
+        } else {
+          m_queue_calc.push(step);
+        }
+      }
+    }
+
+    // One less task in memory
+    m_tasks--;
 
     // Unlock use of IO steps after finishing processing
     if (step->ordering() == processing_order::ordered_io) {
