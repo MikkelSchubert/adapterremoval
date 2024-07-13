@@ -180,8 +180,7 @@ scheduler::run(int nthreads)
     }
   } catch (const std::system_error& error) {
     log::error() << "Failed to create threads:\n" << indent_lines(error.what());
-
-    set_errors_occurred();
+    m_errors = true;
   }
 
   // Run the main thread (the only thread in case of non-threaded mode)
@@ -192,11 +191,11 @@ scheduler::run(int nthreads)
       thread.join();
     } catch (const std::system_error& error) {
       log::error() << "Failed to join thread: " << error.what();
-      set_errors_occurred();
+      m_errors = true;
     }
   }
 
-  if (errors_occurred()) {
+  if (m_errors) {
     return false;
   }
 
@@ -205,11 +204,11 @@ scheduler::run(int nthreads)
       log::error() << "Not all parts run for step " << step->name() << "; "
                    << step->chunks_queued() << " parts left";
 
-      set_errors_occurred();
+      m_errors = true;
     }
   }
 
-  if (errors_occurred()) {
+  if (m_errors) {
     return false;
   }
 
@@ -232,7 +231,7 @@ scheduler::run_wrapper(scheduler* sch)
   try {
     sch->do_run();
   } catch (const std::exception& error) {
-    sch->set_errors_occurred();
+    sch->m_errors = true;
     log::error() << error.what();
   } catch (...) {
     AR_FAIL("Unhandled, non-standard exception in thread");
@@ -247,7 +246,7 @@ scheduler::do_run()
 {
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
-  while (!errors_occurred()) {
+  while (!m_errors) {
     step_ptr step;
     if (!m_io_active && !m_queue_io.empty()) {
       // Try to keep the disk busy by preferring IO tasks
@@ -330,7 +329,7 @@ scheduler::do_run()
       m_tasks--;
 
       // If possible continue processing this task using the same thread
-    } while (step->can_run_next() && !errors_occurred());
+    } while (step->can_run_next() && !m_errors);
 
     // Unlock use of IO steps after finishing processing
     if (step->ordering() == processing_order::ordered_io) {

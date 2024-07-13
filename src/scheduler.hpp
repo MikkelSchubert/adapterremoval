@@ -237,11 +237,6 @@ private:
   /** Work function; invoked by each thread. */
   void do_run();
 
-  /** Returns true if an error has occurred, and the run should terminate. */
-  bool errors_occurred() const;
-  /** Mark that an error has occurred, and that the run should terminate. */
-  void set_errors_occurred();
-
   //! Analytical steps
   pipeline m_steps;
 
@@ -299,21 +294,6 @@ inline const std::string&
 analytical_step::name() const
 {
   return m_name;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'scheduler'
-
-inline bool
-scheduler::errors_occurred() const
-{
-  return m_errors.load(std::memory_order::memory_order_relaxed);
-}
-
-inline void
-scheduler::set_errors_occurred()
-{
-  m_errors.store(true, std::memory_order::memory_order_relaxed);
 }
 
 } // namespace adapterremoval
