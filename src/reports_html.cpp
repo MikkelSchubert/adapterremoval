@@ -35,11 +35,9 @@
 #include <array>                     // for array
 #include <cctype>                    // for toupper
 #include <cerrno>                    // for errno
-#include <chrono>                    // for system_clock
 #include <cmath>                     // for fmod
 #include <cstdint>                   // for uint64_t
 #include <cstring>                   // for size_t, strerror
-#include <ctime>                     // for localtime
 #include <fstream>                   // for operator<<, ofstream, basic_ost...
 #include <iomanip>                   // for operator<<, setprecision, setw
 #include <memory>                    // for __shared_ptr_access, shared_ptr
@@ -308,14 +306,8 @@ write_html_summary_section(const userconfig& config,
 
   // Basic information about the executable / call
   {
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
-    std::ostringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X");
-
     html_summary()
-      .set_date_and_time(ss.str())
+      .set_date_and_time(timestamp("%F %T"))
       .set_version(VERSION)
       .set_command(shell_escape_command(config.args))
       .set_runtime(runtime_to_str(config.runtime()))

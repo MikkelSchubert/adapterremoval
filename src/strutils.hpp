@@ -35,6 +35,13 @@ size_t
 levenshtein(const std::string& s, const std::string& t);
 
 /**
+ * Returns a timestamp in the specified format, see
+ * https://en.cppreference.com/w/cpp/io/manip/put_time
+ */
+std::string
+timestamp(const char* format, bool milliseconds = false);
+
+/**
  * Convert a string to an unsigned integer.
  *
  * Throws std::invalid_argument if the string does not contain a proper number,

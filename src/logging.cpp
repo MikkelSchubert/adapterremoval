@@ -20,8 +20,6 @@
 #include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
 #include "strutils.hpp" // for split_lines, cli_formatter, string_vec
 #include <algorithm>    // for max, min
-#include <chrono>       // for system_clock
-#include <ctime>        // for localtime
 #include <iomanip>      // for operator<<, put_time
 #include <iostream>     // for cerr
 #include <mutex>        // for mutex, unique_lock
@@ -116,21 +114,18 @@ operator<<(std::ostream& out, color c)
 std::string
 log_header(level l, bool colors = false)
 {
-  auto now = std::chrono::system_clock::now();
-  auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
-  std::ostringstream prefixss;
+  std::ostringstream header;
   if (g_log_timestamps) {
-    prefixss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X") << " ";
+    header << timestamp("%Y-%m-%d %X", true) << " ";
   }
 
   if (colors) {
-    prefixss << "[" << level_color(l) << l << color::reset << "] ";
+    header << "[" << level_color(l) << l << color::reset << "] ";
   } else {
-    prefixss << "[" << l << "] ";
+    header << "[" << l << "] ";
   }
 
-  return prefixss.str();
+  return header.str();
 }
 
 size_t
