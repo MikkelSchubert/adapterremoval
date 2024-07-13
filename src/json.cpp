@@ -100,8 +100,8 @@ json_value::to_string() const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-json_token::json_token(const std::string& value)
-  : m_value(value)
+json_token::json_token(std::string value)
+  : m_value(std::move(value))
 {
 }
 
@@ -137,6 +137,12 @@ json_token::from_i64_vec(const counts& values)
   }
 
   return json_token::from_raw_vec(strings);
+}
+
+json_ptr
+json_token::from_u64(const uint64_t value)
+{
+  return std::make_shared<json_token>(std::to_string(value));
 }
 
 json_ptr
@@ -278,7 +284,7 @@ json_dict::write(std::ostream& out, size_t indent_) const
 json_dict_ptr
 json_dict::dict(const std::string& key)
 {
-  const auto ptr = std::make_shared<json_dict>();
+  auto ptr = std::make_shared<json_dict>();
   ptr->m_multi_line = m_multi_line;
   _set(key, ptr);
 
@@ -288,7 +294,7 @@ json_dict::dict(const std::string& key)
 json_dict_ptr
 json_dict::inline_dict(const std::string& key)
 {
-  const auto ptr = dict(key);
+  auto ptr = dict(key);
   ptr->m_multi_line = false;
 
   return ptr;
@@ -325,6 +331,12 @@ void
 json_dict::i64_vec(const std::string& key, const counts& values)
 {
   _set(key, json_token::from_i64_vec(values));
+}
+
+void
+json_dict::u64(const std::string& key, const uint64_t value)
+{
+  _set(key, json_token::from_u64(value));
 }
 
 void

@@ -43,6 +43,7 @@ using json_ptr = std::shared_ptr<json_value>;
 class json_value
 {
 public:
+  json_value() = default;
   virtual ~json_value() = default;
 
   /** Returns the value as a valid JSON string */
@@ -53,13 +54,18 @@ public:
    * subsequent lines are indented by `indent` spaces.
    */
   virtual void write(std::ostream& out, size_t indent = 0) const = 0;
+
+  json_value(const json_value&) = delete;
+  json_value(json_value&&) = delete;
+  json_value& operator=(const json_value&) = delete;
+  json_value& operator=(json_value&&) = delete;
 };
 
 class json_token : public json_value
 {
 public:
   /** Constructor takes a single assumed-to-be-valid JSON token/string */
-  explicit json_token(const std::string& value);
+  explicit json_token(std::string value);
 
   /** Create a JSON token from a string; special characters are escaped */
   static json_ptr from_str(const std::string& value);
@@ -67,17 +73,20 @@ public:
   static json_ptr from_str_vec(const string_vec& values);
 
   /** Create a JSON token from an integer value. */
-  static json_ptr from_i64(const int64_t value);
+  static json_ptr from_i64(int64_t value);
   /** Create a single-line JSON token representing a list of count values */
   static json_ptr from_i64_vec(const counts& values);
 
+  /** Create a JSON token from an integer value. */
+  static json_ptr from_u64(uint64_t value);
+
   /** Create a JSON token from a floating point value; formatted as '%.3f' */
-  static json_ptr from_f64(const double value);
+  static json_ptr from_f64(double value);
   /** Create a single-line JSON token representing a list of '%.3f' values */
   static json_ptr from_f64_vec(const rates& values);
 
   /** Create a JSON token from a boolean value */
-  static json_ptr from_boolean(const bool value);
+  static json_ptr from_boolean(bool value);
   /** Create a JSON token representing null */
   static json_ptr from_null();
 
@@ -139,17 +148,20 @@ public:
   void str_vec(const std::string& key, const string_vec& value);
 
   /** Assign integer value. */
-  void i64(const std::string& key, const int64_t value);
+  void i64(const std::string& key, int64_t value);
   /** Assign integer value array. */
   void i64_vec(const std::string& key, const counts& value);
 
+  /** Assign integer value. */
+  void u64(const std::string& key, uint64_t value);
+
   /** Assign floating point value. */
-  void f64(const std::string& key, const double value);
+  void f64(const std::string& key, double value);
   /** Assign float value array. */
   void f64_vec(const std::string& key, const rates& value);
 
   /** Assign boolean value (true/false). */
-  void boolean(const std::string& key, const bool value);
+  void boolean(const std::string& key, bool value);
   /** Assign null value. */
   void null(const std::string& key);
 

@@ -95,14 +95,19 @@ write_report_summary_stats(const json_dict_ptr& json,
 
   const auto n_bases_s = n_a + n_c + n_g + n_t + n_n;
 
-  json->i64("reads", n_reads);
-  json->i64("bases", n_bases);
-  json->f64("mean_length", static_cast<double>(n_bases) / n_reads);
-  json->i64("reads_sampled", n_reads_s);
-  json->f64("q20_rate", static_cast<double>(n_q20) / n_bases_s);
-  json->f64("q30_rate", static_cast<double>(n_q30) / n_bases_s);
-  json->f64("uncalled_rate", static_cast<double>(n_n) / n_bases_s);
-  json->f64("gc_content", static_cast<double>(n_g + n_c) / n_bases_s);
+  json->u64("reads", n_reads);
+  json->u64("bases", n_bases);
+  json->f64("mean_length",
+            static_cast<double>(n_bases) / static_cast<double>(n_reads));
+  json->u64("reads_sampled", n_reads_s);
+  json->f64("q20_rate",
+            static_cast<double>(n_q20) / static_cast<double>(n_bases_s));
+  json->f64("q30_rate",
+            static_cast<double>(n_q30) / static_cast<double>(n_bases_s));
+  json->f64("uncalled_rate",
+            static_cast<double>(n_n) / static_cast<double>(n_bases_s));
+  json->f64("gc_content",
+            static_cast<double>(n_g + n_c) / static_cast<double>(n_bases_s));
 }
 
 void
@@ -113,8 +118,8 @@ write_report_counts(const json_dict_ptr& json,
     if (it.enabled) {
       const auto dict = json->inline_dict(it.key);
 
-      dict->i64("reads", it.count.reads());
-      dict->i64("bases", it.count.bases());
+      dict->u64("reads", it.count.reads());
+      dict->u64("bases", it.count.bases());
     }
   }
 }
@@ -175,7 +180,7 @@ write_report_trimming(const userconfig& config,
       adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
     }
 
-    trimming->i64("overlapping_reads", totals.overlapping_reads);
+    trimming->u64("overlapping_reads", totals.overlapping_reads);
     if (config.paired_ended_mode) {
       trimming->i64_vec("insert_sizes", totals.insert_sizes);
     } else {
@@ -236,15 +241,15 @@ write_report_summary(const userconfig& config,
     const auto& demux = *stats.demultiplexing;
     const auto total = demux.total();
 
-    summary_demux->i64("total_reads", total);
-    summary_demux->i64("assigned_reads",
+    summary_demux->u64("total_reads", total);
+    summary_demux->u64("assigned_reads",
                        total - demux.unidentified - demux.ambiguous);
-    summary_demux->i64("ambiguous_reads", demux.ambiguous);
-    summary_demux->i64("unassigned_reads", demux.unidentified);
+    summary_demux->u64("ambiguous_reads", demux.ambiguous);
+    summary_demux->u64("unassigned_reads", demux.unidentified);
 
     const auto samples = summary_demux->dict("samples");
     for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-      samples->i64(config.adapters.get_sample_name(i), demux.barcodes.at(i));
+      samples->u64(config.adapters.get_sample_name(i), demux.barcodes.at(i));
     }
   } else {
     summary->null("demultiplexing");
@@ -310,12 +315,10 @@ struct io_section
     }
   }
 
-  io_section(read_type rtype,
-             const fastq_stats_ptr& stats,
-             const string_vec& filenames)
+  io_section(read_type rtype, fastq_stats_ptr stats, string_vec filenames)
     : m_read_type(rtype)
-    , m_stats(stats)
-    , m_filenames(filenames)
+    , m_stats(std::move(stats))
+    , m_filenames(std::move(filenames))
   {
   }
 
@@ -357,9 +360,9 @@ struct io_section
       section->str_vec("filenames", m_filenames);
     }
 
-    section->i64("input_reads", m_stats->number_of_input_reads());
-    section->i64("output_reads", m_stats->number_of_output_reads());
-    section->i64("reads_sampled", m_stats->number_of_sampled_reads());
+    section->u64("input_reads", m_stats->number_of_input_reads());
+    section->u64("output_reads", m_stats->number_of_output_reads());
+    section->u64("reads_sampled", m_stats->number_of_sampled_reads());
     section->i64_vec("lengths", m_stats->length_dist());
 
     if (m_stats->length_dist().product()) {
@@ -465,9 +468,9 @@ write_report_demultiplexing(const userconfig& config,
       assigned_reads += it;
     }
 
-    demultiplexing->i64("assigned_reads", assigned_reads);
-    demultiplexing->i64("ambiguous_reads", demux.ambiguous);
-    demultiplexing->i64("unassigned_reads", demux.unidentified);
+    demultiplexing->u64("assigned_reads", assigned_reads);
+    demultiplexing->u64("ambiguous_reads", demux.ambiguous);
+    demultiplexing->u64("unassigned_reads", demux.unidentified);
 
     const auto samples = demultiplexing->dict("samples");
     for (size_t i = 0; i < demux.barcodes.size(); ++i) {
@@ -475,7 +478,7 @@ write_report_demultiplexing(const userconfig& config,
       const auto& stats = *sample_stats.trimming.at(i);
       const auto& files = out_files.samples.at(i);
 
-      sample->i64("reads", demux.barcodes.at(i));
+      sample->u64("reads", demux.barcodes.at(i));
 
       write_report_trimming(
         config, sample, stats, config.adapters.get_adapter_set(i));

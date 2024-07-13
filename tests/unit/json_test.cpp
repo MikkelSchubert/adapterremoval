@@ -22,6 +22,7 @@
 #include "json.hpp"     // for json_dict, json_value, json_token, json_list
 #include "strutils.hpp" // for string_vec
 #include <cmath>        // for nan
+#include <limits>       // for numeric_limits
 #include <memory>       // for __shared_ptr_access, shared_ptr, __shared_pt...
 #include <sstream>      // for ostringstream
 #include <string>       // for basic_string, operator==, string
@@ -43,7 +44,7 @@ _write_json(const T& json)
 
 TEST_CASE("empty json string to string")
 {
-  const auto s = "";
+  const auto* s = "";
   const json_token t(s);
 
   REQUIRE(t.to_string() == s);
@@ -51,7 +52,7 @@ TEST_CASE("empty json string to string")
 
 TEST_CASE("simple json string")
 {
-  const auto s = "simple test 123";
+  const auto* s = "simple test 123";
   const json_token t(s);
 
   REQUIRE(t.to_string() == s);
@@ -59,7 +60,7 @@ TEST_CASE("simple json string")
 
 TEST_CASE("special characters are not encoded in json token")
 {
-  const auto s = "\\simple\ttest\n123";
+  const auto* s = "\\simple\ttest\n123";
   const json_token t(s);
 
   REQUIRE(t.to_string() == s);
@@ -67,7 +68,7 @@ TEST_CASE("special characters are not encoded in json token")
 
 TEST_CASE("json string to_string and write produces identical results")
 {
-  const auto s = "\\simple\ttest\n123";
+  const auto* s = "\\simple\ttest\n123";
   const json_token t(s);
 
   REQUIRE(t.to_string() == _write_json(t));
@@ -104,27 +105,58 @@ TEST_CASE("identical to_string and write for json_token::from_str")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// json_token::from_i64
+// json_token::from_i64 / json_token::from_u64
 
-TEST_CASE("json_token::from_i64 for 0")
+TEST_CASE("json_token::from_<int> for 0")
 {
   REQUIRE(json_token::from_i64(0)->to_string() == "0");
+  REQUIRE(json_token::from_u64(0)->to_string() == "0");
 }
 
-TEST_CASE("json_token::from_i64 for positive")
+TEST_CASE("json_token::from_<int> for positive")
 {
   REQUIRE(json_token::from_i64(1324)->to_string() == "1324");
+  REQUIRE(json_token::from_u64(1324)->to_string() == "1324");
 }
 
-TEST_CASE("json_token::from_i64 for negative")
+TEST_CASE("json_token::from_<int> for negative")
 {
   REQUIRE(json_token::from_i64(-8671)->to_string() == "-8671");
 }
 
-TEST_CASE("identical to_string and write for json_token::from_i64")
+TEST_CASE("json_token::from_<int> limits")
 {
-  auto s = json_token::from_i64(-83754);
-  REQUIRE(s->to_string() == _write_json(*s));
+  SECTION("i64")
+  {
+    REQUIRE(
+      json_token::from_i64(std::numeric_limits<int64_t>::min())->to_string() ==
+      std::to_string(std::numeric_limits<int64_t>::min()));
+    REQUIRE(
+      json_token::from_i64(std::numeric_limits<int64_t>::max())->to_string() ==
+      std::to_string(std::numeric_limits<int64_t>::max()));
+  }
+
+  SECTION("u64")
+  {
+    REQUIRE(
+      json_token::from_u64(std::numeric_limits<uint64_t>::max())->to_string() ==
+      std::to_string(std::numeric_limits<uint64_t>::max()));
+  }
+}
+
+TEST_CASE("identical to_string and write for json_token::from_<int>")
+{
+  SECTION("i64")
+  {
+    auto s = json_token::from_i64(-83754);
+    REQUIRE(s->to_string() == _write_json(*s));
+  }
+
+  SECTION("u64")
+  {
+    auto s = json_token::from_u64(-83754);
+    REQUIRE(s->to_string() == _write_json(*s));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
