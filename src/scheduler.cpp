@@ -29,6 +29,15 @@
 
 namespace adapterremoval {
 
+/** Indicates the role of a worker thread */
+enum class threadtype
+{
+  //! Mainly compute threads; may optionally perform IO
+  cpu,
+  //! Pure IO threads; compute work must be minimized
+  io
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
@@ -135,17 +144,16 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 // scheduler
-
 scheduler::scheduler()
   : m_steps()
-  , m_condition()
+  , m_condition_io()
+  , m_condition_calc()
   , m_chunk_counter(0)
   , m_tasks(0)
   , m_tasks_max(0)
   , m_queue_lock()
   , m_queue_calc()
   , m_queue_io()
-  , m_io_active(false)
   , m_errors(false)
 {
 }
@@ -168,23 +176,30 @@ scheduler::run(int nthreads)
   AR_REQUIRE(nthreads >= 1);
   AR_REQUIRE(!m_chunk_counter);
   // The last step added is assumed to be the initial/producing step
-  AR_REQUIRE(m_steps.back()->ordering() == processing_order::ordered_io);
+  AR_REQUIRE(m_steps.back()->ordering() == processing_order::ordered ||
+             m_steps.back()->ordering() == processing_order::ordered_io);
 
   m_tasks_max = static_cast<size_t>(nthreads) * 3;
 
   std::vector<std::thread> threads;
 
   try {
+    // CPU bound threads
     for (int i = 0; i < nthreads - 1; ++i) {
-      threads.emplace_back(run_wrapper, this);
+      threads.emplace_back(run_wrapper, this, threadtype::cpu);
+    }
+
+    // IO only threads
+    for (int i = 0; i < 2; ++i) {
+      threads.emplace_back(run_wrapper, this, threadtype::io);
     }
   } catch (const std::system_error& error) {
     log::error() << "Failed to create threads:\n" << indent_lines(error.what());
     m_errors = true;
   }
 
-  // Run the main thread (the only thread in case of non-threaded mode)
-  run_wrapper(this);
+  // Run the main thread; the only calculation thread when "single-threaded"
+  run_wrapper(this, threadtype::cpu);
 
   for (auto& thread : threads) {
     try {
@@ -226,10 +241,19 @@ scheduler::run(int nthreads)
 }
 
 void
-scheduler::run_wrapper(scheduler* sch)
+scheduler::run_wrapper(scheduler* sch, threadtype thread_type)
 {
   try {
-    sch->do_run();
+    switch (thread_type) {
+      case threadtype::cpu:
+        sch->run_calc_loop();
+        break;
+      case threadtype::io:
+        sch->run_io_loop();
+        break;
+      default:
+        AR_FAIL("unexpected threadtype value");
+    }
   } catch (const std::exception& error) {
     sch->m_errors = true;
     log::error() << error.what();
@@ -238,52 +262,91 @@ scheduler::run_wrapper(scheduler* sch)
   }
 
   // Signal any waiting threads
-  sch->m_condition.notify_all();
+  sch->m_condition_calc.notify_all();
+  sch->m_condition_io.notify_all();
 }
 
 void
-scheduler::do_run()
+scheduler::run_io_loop()
 {
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
   while (!m_errors) {
     step_ptr step;
-    if (!m_io_active && !m_queue_io.empty()) {
-      // Try to keep the disk busy by preferring IO tasks
+    if (!m_queue_io.empty()) {
       step = m_queue_io.front();
       m_queue_io.pop();
-      m_io_active = true;
-    } else if (!m_queue_calc.empty()) {
-      // Otherwise try do do some non-IO work
-      step = m_queue_calc.front();
-      m_queue_calc.pop();
-    } else if (!m_io_active && m_tasks < m_tasks_max) {
-      // If all (or no) tasks are running and IO is idle then read another chunk
-      m_tasks++;
-      m_io_active = true;
-      step = m_steps.back();
-      step->push_chunk(m_chunk_counter, chunk_ptr());
-      m_chunk_counter++;
-    } else if (m_tasks) {
-      // There are either tasks running (which may produce new tasks) or tasks
-      // that cannot yet be run due to IO already being active.
-      m_condition.wait(lock);
+    } else if (m_tasks || m_tasks_max) {
+      m_condition_io.wait(lock);
       continue;
     } else {
       break;
     }
 
-    const bool wake_thread =
-      // CPU bound tasks can always be run (if there are any idle threads)
-      m_queue_calc.size() ||
-      // IO bound tasks can be run if IO is idle or we are low on tasks
-      (!m_io_active && (m_queue_io.size() || m_tasks < m_tasks_max));
-
+    const bool wake_thread = !m_queue_io.empty();
     data_chunk chunk = step->pop_chunk();
 
     lock.unlock();
     if (wake_thread) {
-      m_condition.notify_one();
+      m_condition_io.notify_one();
+    }
+
+    chunk_vec chunks = step->process(std::move(chunk.second));
+    // Currently only (final) output steps
+    AR_REQUIRE(chunks.empty());
+    lock.lock();
+
+    // Indicate that the next chunk can be processed
+    step->increment_next_chunk();
+    if (step->can_run_next()) {
+      m_queue_io.push(step);
+    }
+
+    // One less task in memory
+    m_tasks--;
+
+    // Queue additional read tasks
+    m_condition_calc.notify_one();
+  }
+
+  m_condition_io.notify_all();
+  m_condition_calc.notify_all();
+}
+
+void
+scheduler::run_calc_loop()
+{
+  std::unique_lock<std::mutex> lock(m_queue_lock);
+
+  while (!m_errors) {
+    step_ptr step;
+    if (!m_queue_calc.empty()) {
+      // Otherwise try do do some non-IO work
+      step = m_queue_calc.front();
+      m_queue_calc.pop();
+    } else if (m_tasks < m_tasks_max) {
+      // If all (or no) tasks are running and IO is idle then read another chunk
+      m_tasks++;
+      step = m_steps.back();
+      step->push_chunk(m_chunk_counter++, chunk_ptr());
+      if (!step->can_run_next()) {
+        continue;
+      }
+    } else if (m_tasks || m_tasks_max) {
+      // There are either tasks running (which may produce new tasks) or tasks
+      // that cannot yet be run due to IO already being active.
+      m_condition_calc.wait(lock);
+      continue;
+    } else {
+      break;
+    }
+
+    const bool wake_thread = !m_queue_calc.empty() || (m_tasks < m_tasks_max);
+    data_chunk chunk = step->pop_chunk();
+
+    lock.unlock();
+    if (wake_thread) {
+      m_condition_calc.notify_one();
     }
 
     chunk_vec chunks = step->process(std::move(chunk.second));
@@ -323,22 +386,20 @@ scheduler::do_run()
       // Indicate that the next chunk can be processed
       step->increment_next_chunk();
       if (step->can_run_next()) {
-        if (step->ordering() == processing_order::ordered_io) {
-          m_queue_io.push(step);
-        } else {
-          m_queue_calc.push(step);
-        }
+        m_queue_calc.push(step);
       }
     }
 
     // One less task in memory
     m_tasks--;
 
-    // Unlock use of IO steps after finishing processing
-    if (step->ordering() == processing_order::ordered_io) {
-      m_io_active = false;
+    if (!m_queue_io.empty()) {
+      m_condition_io.notify_one();
     }
   }
+
+  m_condition_io.notify_all();
+  m_condition_calc.notify_all();
 }
 
 } // namespace adapterremoval

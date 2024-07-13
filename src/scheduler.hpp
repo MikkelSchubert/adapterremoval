@@ -33,6 +33,7 @@
 namespace adapterremoval {
 
 class scheduler_step;
+enum class threadtype;
 
 /** Simple thread-safe storage backed by a vector. **/
 template<typename T>
@@ -117,11 +118,11 @@ using chunk_vec = std::vector<chunk_pair>;
 /** Ordering of input for analytical steps. */
 enum class processing_order
 {
-  //! Data must be consumed in the input order
+  //! Data must be consumed in the input order. May involve IO
   ordered,
-  //! Data must be consumed in the input order and involves disk IO
+  //! Data must be consumed in the input order and only involves IO
   ordered_io,
-  //! Data may be consumed in any order
+  //! Data may be consumed in any order. May involve IO
   unordered
 };
 
@@ -227,21 +228,25 @@ public:
 
 private:
   using step_ptr = std::shared_ptr<scheduler_step>;
-  using runables = std::queue<step_ptr>;
+  using step_queue = std::queue<step_ptr>;
   using pipeline = std::vector<step_ptr>;
 
   size_t add_step(std::unique_ptr<analytical_step> step);
 
   /** Wrapper function which calls do_run on the provided thread. */
-  static void run_wrapper(scheduler*);
-  /** Work function; invoked by each thread. */
-  void do_run();
+  static void run_wrapper(scheduler*, threadtype);
+  /** Work function for calculation heavy threads; invoked by each thread. */
+  void run_calc_loop();
+  /** Work function for IO threads; invoked by each thread. */
+  void run_io_loop();
 
   //! Analytical steps
   pipeline m_steps;
 
-  //! Condition used to signal the (potential) availability of work
-  std::condition_variable m_condition;
+  //! Condition used to signal the (potential) availability of IO work
+  std::condition_variable m_condition_io;
+  //! Condition used to signal the (potential) availability of calculation work
+  std::condition_variable m_condition_calc;
 
   //! Counter used for sequential processing of data
   size_t m_chunk_counter;
@@ -250,15 +255,13 @@ private:
   //! The maximum number of tasks to process simultaneously
   size_t m_tasks_max;
 
-  //! Lock used to control access to chunks
+  //! Lock used to control access to member variables
   std::mutex m_queue_lock;
-  //! Queue used for currently runnable steps involving only calculations
-  runables m_queue_calc;
-  //! Queue used for currently runnable steps involving IO
-  runables m_queue_io;
+  //! Queue used for currently runnable steps involving calculations
+  step_queue m_queue_calc;
+  //! Queue used for currently runnable steps involving only IO
+  step_queue m_queue_io;
 
-  //! Indicates if a thread is doing IO; access control through 'm_queue_lock'
-  bool m_io_active;
   //! Set to indicate if errors have occurred
   std::atomic_bool m_errors;
 };

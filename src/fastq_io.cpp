@@ -144,7 +144,7 @@ read_record(joined_line_readers& reader,
 }
 
 read_fastq::read_fastq(const userconfig& config, size_t next_step)
-  : analytical_step(processing_order::ordered_io, "read_fastq")
+  : analytical_step(processing_order::ordered, "read_fastq")
   , m_io_input_1_base(config.input_files_1)
   , m_io_input_2_base(config.input_files_2)
   , m_io_input_1(&m_io_input_1_base)
@@ -497,13 +497,9 @@ gzip_split_fastq::process(chunk_ptr chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'write_fastq'
 
-const std::string STDOUT = "/dev/stdout";
-
 write_fastq::write_fastq(const userconfig& config, const std::string& filename)
   // Allow disk IO and writing to STDOUT at the same time
-  : analytical_step(filename == STDOUT ? processing_order::ordered
-                                       : processing_order::ordered_io,
-                    "write_fastq")
+  : analytical_step(processing_order::ordered_io, "write_fastq")
   , m_output(filename)
   , m_isal_enabled(isal_enabled(config, filename))
   , m_uncompressed_bytes()
