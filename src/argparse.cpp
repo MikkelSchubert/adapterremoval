@@ -180,12 +180,12 @@ parser::is_set(const std::string& key) const
 }
 
 std::string
-parser::current_value(const std::string& key) const
+parser::value(const std::string& key) const
 {
   const auto it = m_keys.find(key);
   AR_REQUIRE(it != m_keys.end(), shell_escape(key));
 
-  return it->second->current_value();
+  return it->second->value();
 }
 
 argument&
@@ -539,9 +539,9 @@ argument::conflicts_with() const
 }
 
 std::string
-argument::current_value() const
+argument::value() const
 {
-  return m_sink->current_value();
+  return m_sink->value();
 }
 
 std::string
@@ -781,7 +781,7 @@ bool_sink::bool_sink(bool* ptr)
 }
 
 std::string
-bool_sink::current_value() const
+bool_sink::value() const
 {
   return *m_sink ? "on" : "off";
 }
@@ -818,7 +818,7 @@ uint_sink::with_default(unsigned value)
 }
 
 std::string
-uint_sink::current_value() const
+uint_sink::value() const
 {
   return std::to_string(*m_sink);
 }
@@ -888,7 +888,7 @@ double_sink::default_value() const
 }
 
 std::string
-double_sink::current_value() const
+double_sink::value() const
 {
   return double_to_string(*m_sink);
 }
@@ -949,7 +949,7 @@ str_sink::with_choices(const string_vec& choices)
 }
 
 std::string
-str_sink::current_value() const
+str_sink::value() const
 {
   return *m_sink;
 }
@@ -1029,7 +1029,7 @@ vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 }
 
 std::string
-vec_sink::current_value() const
+vec_sink::value() const
 {
   std::string output;
 

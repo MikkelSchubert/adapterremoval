@@ -1007,8 +1007,7 @@ userconfig::parse_args(int argc, char* argv[])
 
   configure_log_colors(log_color);
   configure_log_levels(log_level);
-  log_progress =
-    configure_log_progress(argparser.current_value("--log-progress"));
+  log_progress = configure_log_progress(argparser.value("--log-progress"));
   io_encoding = configure_encoding(quality_input_base);
 
   if (argparser.is_set("--mate-separator")) {
@@ -1043,7 +1042,7 @@ userconfig::parse_args(int argc, char* argv[])
                  << "not " << trim_window_length;
     return argparse::parse_result::error;
   } else {
-    const auto strategy = argparser.current_value("--trim-strategy");
+    const auto strategy = argparser.value("--trim-strategy");
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
 
@@ -1111,7 +1110,7 @@ userconfig::parse_args(int argc, char* argv[])
       merge = merge_strategy::conservative;
     } else if (argparser.is_set("--merge") ||
                argparser.is_set("--merge-strategy")) {
-      const auto strategy = argparser.current_value("--merge-strategy");
+      const auto strategy = argparser.value("--merge-strategy");
       if (strategy == "conservative") {
         merge = merge_strategy::conservative;
       } else if (strategy == "deterministic") {
@@ -1157,7 +1156,7 @@ userconfig::parse_args(int argc, char* argv[])
 
   {
     bool found = false;
-    const auto simd_choice = argparser.current_value("--simd");
+    const auto simd_choice = argparser.value("--simd");
     for (const auto is : simd::supported()) {
       if (simd_choice == simd::name(is)) {
         simd = is;
@@ -1210,7 +1209,7 @@ userconfig::parse_args(int argc, char* argv[])
   if (adapters.barcode_count()) {
     bool any_illegal_keys = false;
     for (const auto& key : output_files_set(argparser)) {
-      if (argparser.current_value(key) != DEV_NULL) {
+      if (argparser.value(key) != DEV_NULL) {
         log::error() << "Command-line option " << key << " can only be set to "
                      << "/dev/null when demultiplexing!";
         any_illegal_keys = true;
@@ -1243,7 +1242,7 @@ userconfig::parse_args(int argc, char* argv[])
                    "are incompatible with some tools!";
   }
 
-  if (!parse_head(argparser.current_value("--head"), head)) {
+  if (!parse_head(argparser.value("--head"), head)) {
     return argparse::parse_result::error;
   }
 
@@ -1346,7 +1345,7 @@ userconfig::new_filename(const std::string& key,
                          const std::string& second) const
 {
   if (argparser.is_set(key)) {
-    return argparser.current_value(key);
+    return argparser.value(key);
   } else if (out_basename == DEV_NULL) {
     // Special case to allow dry runs with no output
     return DEV_NULL;

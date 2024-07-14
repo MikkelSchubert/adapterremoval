@@ -106,7 +106,7 @@ public:
   /** Returns true if the option with the given key has been set. */
   bool is_set(const std::string& key) const;
   /** Returns the value associated with the argument as a string. */
-  std::string current_value(const std::string& key) const;
+  std::string value(const std::string& key) const;
 
   /** Add argument with metavar. By default this takes no values. */
   argument& add(const std::string& name, const std::string& metavar = "");
@@ -209,7 +209,7 @@ public:
   const string_vec& conflicts_with() const;
 
   /** Returns the value associated with the argument as a string. */
-  std::string current_value() const;
+  std::string value() const;
   /** Returns the default value associated as a string. */
   std::string default_value() const;
 
@@ -286,7 +286,7 @@ public:
   virtual ~sink() = default;
 
   /** Returns the current argument value as a string. **/
-  virtual std::string current_value() const = 0;
+  virtual std::string value() const = 0;
   /** Returns string-representation of the default value */
   virtual std::string default_value() const;
 
@@ -345,7 +345,7 @@ public:
   explicit bool_sink(bool* ptr);
   ~bool_sink() override = default;
 
-  std::string current_value() const override;
+  std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   bool_sink(const bool_sink&) = delete;
@@ -366,7 +366,7 @@ public:
   uint_sink& with_default(unsigned value);
   std::string default_value() const override;
 
-  std::string current_value() const override;
+  std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   uint_sink(const uint_sink&) = delete;
@@ -389,7 +389,7 @@ public:
   double_sink& with_default(double value);
   std::string default_value() const override;
 
-  std::string current_value() const override;
+  std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   double_sink(const double_sink&) = delete;
@@ -414,7 +414,7 @@ public:
   str_sink& with_choices(const string_vec& choices);
   std::string default_value() const override;
 
-  std::string current_value() const override;
+  std::string value() const override;
   string_vec choices() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
@@ -443,7 +443,7 @@ public:
   /** The maximum number of values expected on the command-line (default inf) */
   vec_sink& with_max_values(size_t n);
 
-  std::string current_value() const override;
+  std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   vec_sink(const vec_sink&) = delete;
