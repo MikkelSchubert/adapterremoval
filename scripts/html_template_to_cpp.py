@@ -68,6 +68,11 @@ public:
   html_template() = default;
   virtual ~html_template() = default;
   virtual void write(std::ostream& out) = 0;
+
+  html_template(const html_template&) = delete;
+  html_template(html_template&&) = delete;
+  html_template& operator=(const html_template&) = delete;
+  html_template& operator=(html_template&&) = delete;
 };"""
 
 
@@ -215,7 +220,9 @@ def write_header(sections: dict[str, Section]) -> str:
     tprint("#include <vector>")
     tprint("")
     tprint("namespace adapterremoval {{")
-
+    tprint("")
+    tprint("using string_vec = std::vector<std::string>;")
+    tprint("")
     tprint("{}", _BASE_CLASS_HEADER)
 
     for key, props in sections.items():
@@ -224,12 +231,14 @@ def write_header(sections: dict[str, Section]) -> str:
         tprint("\nclass {} : public html_template", classname)
         tprint("{{")
         tprint("public:")
-        tprint("  {}();", classname)
+        tprint("  {}() = default;", classname)
         tprint("  ~{}() override;", classname)
 
         tprint("")
         tprint("  {}(const {}&) = delete;", classname, classname)
+        tprint("  {}({}&&) = delete;", classname, classname)
         tprint("  {}& operator=(const {}&) = delete;", classname, classname)
+        tprint("  {}& operator=({}&&) = delete;", classname, classname)
 
         if props.variables:
             tprint("")
@@ -243,16 +252,19 @@ def write_header(sections: dict[str, Section]) -> str:
         tprint("\n  void write(std::ostream& out) override;")
 
         tprint("\nprivate:")
-        tprint("  bool m_written;")
+        tprint("  bool m_written{{}};")
+
+        for field in props.variables:
+            if field.kind != FieldType.DEFAULT:
+                tprint("  bool m_{}_is_set{{}};", field.name)
 
         for field in props.variables:
             if field.kind == FieldType.REPEATED:
-                tprint("  std::vector<std::string> m_{};", field.name)
+                tprint("  string_vec m_{}{{}};", field.name)
+            elif field.kind == FieldType.DEFAULT:
+                tprint('  std::string m_{}{{"{}"}};', field.name, field.default)
             else:
-                tprint("  std::string m_{};", field.name)
-
-            if field.kind != FieldType.DEFAULT:
-                tprint("  bool m_{}_is_set;", field.name)
+                tprint("  std::string m_{}{{}};", field.name)
 
         tprint("}};")
 
@@ -280,20 +292,9 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
     for key, props in sections.items():
         classname = to_classname(key)
 
-        tprint("\n{}::{}()", classname, classname)
-        tprint("  : m_written()")
-        for field in props.variables:
-            if field.kind == FieldType.DEFAULT:
-                tprint('  , m_{}("{}")', field.name, field.default)
-            else:
-                tprint("  , m_{}()", field.name)
-                tprint("  , m_{}_is_set()", field.name)
-        # Dummy comment to prevent re-formatting depending on num. of variables
-        tprint("{{\n  //\n}}")
-
         tprint("\n{}::~{}()", classname, classname)
         tprint("{{")
-        tprint('  AR_REQUIRE(m_written, "template {} was not written");', classname)
+        tprint("  AR_REQUIRE(m_written);")
         tprint("}}\n")
 
         for field in props.variables:
@@ -316,20 +317,16 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
         tprint("void")
         tprint("{}::write(std::ostream& out)", classname)
         tprint("{{")
-        tprint('  AR_REQUIRE(!m_written, "template {} already written");', classname)
+        tprint("  AR_REQUIRE(!m_written);")
 
         for field in props.variables:
             if field.kind != FieldType.DEFAULT:
-                tprint(
-                    '  AR_REQUIRE(m_{0}_is_set, "{1}::{0} not set");',
-                    field.name,
-                    classname,
-                )
+                tprint("  AR_REQUIRE(m_{0}_is_set);", field.name)
 
         # prevent clang-format from adding linebreaks
         tprint("  // clang-format off")
         # cast to void to silence unused-variable warnings when ID isn't used
-        tprint("  auto id = g_html_id; ++g_html_id; (void)id;")
+        tprint("  auto id = g_html_id++; (void)id;")
 
         for line in props.lines:
             tprint("{}", inject_variables(line))

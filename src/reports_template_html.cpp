@@ -24,19 +24,9 @@ namespace adapterremoval {
 
 size_t g_html_id = 1;
 
-html_head::html_head()
-  : m_written()
-  , m_name()
-  , m_name_is_set()
-  , m_version()
-  , m_version_is_set()
-{
-  //
-}
-
 html_head::~html_head()
 {
-  AR_REQUIRE(m_written, "template html_head was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_head&
@@ -58,11 +48,11 @@ html_head::set_version(const std::string& value)
 void
 html_head::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_head already written");
-  AR_REQUIRE(m_name_is_set, "html_head::name not set");
-  AR_REQUIRE(m_version_is_set, "html_head::version not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_name_is_set);
+  AR_REQUIRE(m_version_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "<!DOCTYPE html>\n";
   out << "<html lang='en'>\n";
   out << "\n";
@@ -208,23 +198,17 @@ html_head::write(std::ostream& out)
   m_written = true;
 }
 
-html_body_start::html_body_start()
-  : m_written()
-{
-  //
-}
-
 html_body_start::~html_body_start()
 {
-  AR_REQUIRE(m_written, "template html_body_start was not written");
+  AR_REQUIRE(m_written);
 }
 
 void
 html_body_start::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_body_start already written");
+  AR_REQUIRE(!m_written);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "<body>\n";
   out << "    <div id='layout'>\n";
@@ -236,23 +220,9 @@ html_body_start::write(std::ostream& out)
   m_written = true;
 }
 
-html_summary::html_summary()
-  : m_written()
-  , m_command()
-  , m_command_is_set()
-  , m_date_and_time()
-  , m_date_and_time_is_set()
-  , m_runtime()
-  , m_runtime_is_set()
-  , m_version()
-  , m_version_is_set()
-{
-  //
-}
-
 html_summary::~html_summary()
 {
-  AR_REQUIRE(m_written, "template html_summary was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_summary&
@@ -290,13 +260,13 @@ html_summary::set_version(const std::string& value)
 void
 html_summary::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_summary already written");
-  AR_REQUIRE(m_command_is_set, "html_summary::command not set");
-  AR_REQUIRE(m_date_and_time_is_set, "html_summary::date_and_time not set");
-  AR_REQUIRE(m_runtime_is_set, "html_summary::runtime not set");
-  AR_REQUIRE(m_version_is_set, "html_summary::version not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_command_is_set);
+  AR_REQUIRE(m_date_and_time_is_set);
+  AR_REQUIRE(m_runtime_is_set);
+  AR_REQUIRE(m_version_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "        <div class=\"section\">\n";
   out << "            <div class=\"title\">\n";
   out << "                <h2>Summary</h2>\n";
@@ -328,33 +298,9 @@ html_summary::write(std::ostream& out)
   m_written = true;
 }
 
-html_summary_io::html_summary_io()
-  : m_written()
-  , m_columns()
-  , m_columns_is_set()
-  , m_gc()
-  , m_gc_is_set()
-  , m_lengths()
-  , m_lengths_is_set()
-  , m_n_bases()
-  , m_n_bases_is_set()
-  , m_n_reads()
-  , m_n_reads_is_set()
-  , m_ns()
-  , m_ns_is_set()
-  , m_q20()
-  , m_q20_is_set()
-  , m_q30()
-  , m_q30_is_set()
-  , m_title()
-  , m_title_is_set()
-{
-  //
-}
-
 html_summary_io::~html_summary_io()
 {
-  AR_REQUIRE(m_written, "template html_summary_io was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_summary_io&
@@ -432,18 +378,18 @@ html_summary_io::set_title(const std::string& value)
 void
 html_summary_io::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_summary_io already written");
-  AR_REQUIRE(m_columns_is_set, "html_summary_io::columns not set");
-  AR_REQUIRE(m_gc_is_set, "html_summary_io::gc not set");
-  AR_REQUIRE(m_lengths_is_set, "html_summary_io::lengths not set");
-  AR_REQUIRE(m_n_bases_is_set, "html_summary_io::n_bases not set");
-  AR_REQUIRE(m_n_reads_is_set, "html_summary_io::n_reads not set");
-  AR_REQUIRE(m_ns_is_set, "html_summary_io::ns not set");
-  AR_REQUIRE(m_q20_is_set, "html_summary_io::q20 not set");
-  AR_REQUIRE(m_q30_is_set, "html_summary_io::q30 not set");
-  AR_REQUIRE(m_title_is_set, "html_summary_io::title not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_columns_is_set);
+  AR_REQUIRE(m_gc_is_set);
+  AR_REQUIRE(m_lengths_is_set);
+  AR_REQUIRE(m_n_bases_is_set);
+  AR_REQUIRE(m_n_reads_is_set);
+  AR_REQUIRE(m_ns_is_set);
+  AR_REQUIRE(m_q20_is_set);
+  AR_REQUIRE(m_q30_is_set);
+  AR_REQUIRE(m_title_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "            <h4>" << m_title << "</h4>\n";
   out << "            <table class=\"pure-table io-table pure-table-striped\">\n";
   out << "                <thead>\n";
@@ -504,21 +450,9 @@ html_summary_io::write(std::ostream& out)
   m_written = true;
 }
 
-html_sampling_note::html_sampling_note()
-  : m_written()
-  , m_label()
-  , m_label_is_set()
-  , m_pct()
-  , m_pct_is_set()
-  , m_reads()
-  , m_reads_is_set()
-{
-  //
-}
-
 html_sampling_note::~html_sampling_note()
 {
-  AR_REQUIRE(m_written, "template html_sampling_note was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_sampling_note&
@@ -548,12 +482,12 @@ html_sampling_note::set_reads(const std::string& value)
 void
 html_sampling_note::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_sampling_note already written");
-  AR_REQUIRE(m_label_is_set, "html_sampling_note::label not set");
-  AR_REQUIRE(m_pct_is_set, "html_sampling_note::pct not set");
-  AR_REQUIRE(m_reads_is_set, "html_sampling_note::reads not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_label_is_set);
+  AR_REQUIRE(m_pct_is_set);
+  AR_REQUIRE(m_reads_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <p class=\"note\">\n";
   out << "                Base composition statistics/plots are based on " << m_reads << " (" << m_pct << "%) of " << m_label << " reads sampled during\n";
@@ -564,17 +498,9 @@ html_sampling_note::write(std::ostream& out)
   m_written = true;
 }
 
-html_output_note::html_output_note()
-  : m_written()
-  , m_text()
-  , m_text_is_set()
-{
-  //
-}
-
 html_output_note::~html_output_note()
 {
-  AR_REQUIRE(m_written, "template html_output_note was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_output_note&
@@ -588,10 +514,10 @@ html_output_note::set_text(const std::string& value)
 void
 html_output_note::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_output_note already written");
-  AR_REQUIRE(m_text_is_set, "html_output_note::text not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_text_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <p class=\"note\">" << m_text << "</p>\n";
   out << "\n";
@@ -599,19 +525,9 @@ html_output_note::write(std::ostream& out)
   m_written = true;
 }
 
-html_output_footnote::html_output_footnote()
-  : m_written()
-  , m_symbol()
-  , m_symbol_is_set()
-  , m_text()
-  , m_text_is_set()
-{
-  //
-}
-
 html_output_footnote::~html_output_footnote()
 {
-  AR_REQUIRE(m_written, "template html_output_footnote was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_output_footnote&
@@ -633,11 +549,11 @@ html_output_footnote::set_text(const std::string& value)
 void
 html_output_footnote::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_output_footnote already written");
-  AR_REQUIRE(m_symbol_is_set, "html_output_footnote::symbol not set");
-  AR_REQUIRE(m_text_is_set, "html_output_footnote::text not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_symbol_is_set);
+  AR_REQUIRE(m_text_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <p class=\"note\"><b>" << m_symbol << "</b> " << m_text << "</p>\n";
   out << "\n";
@@ -645,23 +561,17 @@ html_output_footnote::write(std::ostream& out)
   m_written = true;
 }
 
-html_summary_trimming_head::html_summary_trimming_head()
-  : m_written()
-{
-  //
-}
-
 html_summary_trimming_head::~html_summary_trimming_head()
 {
-  AR_REQUIRE(m_written, "template html_summary_trimming_head was not written");
+  AR_REQUIRE(m_written);
 }
 
 void
 html_summary_trimming_head::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_summary_trimming_head already written");
+  AR_REQUIRE(!m_written);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "            <h4>Process summary</h4>\n";
   out << "            <table class=\"pure-table trimming-table pure-table-striped\">\n";
   out << "                <thead>\n";
@@ -681,31 +591,9 @@ html_summary_trimming_head::write(std::ostream& out)
   m_written = true;
 }
 
-html_summary_trimming_row::html_summary_trimming_row()
-  : m_written()
-  , m_avg_bases()
-  , m_avg_bases_is_set()
-  , m_bases()
-  , m_bases_is_set()
-  , m_label_1()
-  , m_label_1_is_set()
-  , m_label_2()
-  , m_label_2_is_set()
-  , m_pct_bases()
-  , m_pct_bases_is_set()
-  , m_pct_reads()
-  , m_pct_reads_is_set()
-  , m_reads()
-  , m_reads_is_set()
-  , m_stage()
-  , m_stage_is_set()
-{
-  //
-}
-
 html_summary_trimming_row::~html_summary_trimming_row()
 {
-  AR_REQUIRE(m_written, "template html_summary_trimming_row was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_summary_trimming_row&
@@ -775,17 +663,17 @@ html_summary_trimming_row::set_stage(const std::string& value)
 void
 html_summary_trimming_row::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_summary_trimming_row already written");
-  AR_REQUIRE(m_avg_bases_is_set, "html_summary_trimming_row::avg_bases not set");
-  AR_REQUIRE(m_bases_is_set, "html_summary_trimming_row::bases not set");
-  AR_REQUIRE(m_label_1_is_set, "html_summary_trimming_row::label_1 not set");
-  AR_REQUIRE(m_label_2_is_set, "html_summary_trimming_row::label_2 not set");
-  AR_REQUIRE(m_pct_bases_is_set, "html_summary_trimming_row::pct_bases not set");
-  AR_REQUIRE(m_pct_reads_is_set, "html_summary_trimming_row::pct_reads not set");
-  AR_REQUIRE(m_reads_is_set, "html_summary_trimming_row::reads not set");
-  AR_REQUIRE(m_stage_is_set, "html_summary_trimming_row::stage not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_avg_bases_is_set);
+  AR_REQUIRE(m_bases_is_set);
+  AR_REQUIRE(m_label_1_is_set);
+  AR_REQUIRE(m_label_2_is_set);
+  AR_REQUIRE(m_pct_bases_is_set);
+  AR_REQUIRE(m_pct_reads_is_set);
+  AR_REQUIRE(m_reads_is_set);
+  AR_REQUIRE(m_stage_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "                    <tr>\n";
   out << "                        <td>" << m_stage << "</td>\n";
   out << "                        <td>" << m_label_1 << "</td>\n";
@@ -800,23 +688,9 @@ html_summary_trimming_row::write(std::ostream& out)
   m_written = true;
 }
 
-html_summary_trimming_tail::html_summary_trimming_tail()
-  : m_written()
-  , m_n_enabled_filt()
-  , m_n_enabled_filt_is_set()
-  , m_n_enabled_proc()
-  , m_n_enabled_proc_is_set()
-  , m_n_total_filt()
-  , m_n_total_filt_is_set()
-  , m_n_total_proc()
-  , m_n_total_proc_is_set()
-{
-  //
-}
-
 html_summary_trimming_tail::~html_summary_trimming_tail()
 {
-  AR_REQUIRE(m_written, "template html_summary_trimming_tail was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_summary_trimming_tail&
@@ -854,13 +728,13 @@ html_summary_trimming_tail::set_n_total_proc(const std::string& value)
 void
 html_summary_trimming_tail::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_summary_trimming_tail already written");
-  AR_REQUIRE(m_n_enabled_filt_is_set, "html_summary_trimming_tail::n_enabled_filt not set");
-  AR_REQUIRE(m_n_enabled_proc_is_set, "html_summary_trimming_tail::n_enabled_proc not set");
-  AR_REQUIRE(m_n_total_filt_is_set, "html_summary_trimming_tail::n_total_filt not set");
-  AR_REQUIRE(m_n_total_proc_is_set, "html_summary_trimming_tail::n_total_proc not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_n_enabled_filt_is_set);
+  AR_REQUIRE(m_n_enabled_proc_is_set);
+  AR_REQUIRE(m_n_total_filt_is_set);
+  AR_REQUIRE(m_n_total_proc_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "                </tbody>\n";
   out << "            </table>\n";
@@ -876,19 +750,9 @@ html_summary_trimming_tail::write(std::ostream& out)
   m_written = true;
 }
 
-html_consensus_adapter_head::html_consensus_adapter_head()
-  : m_written()
-  , m_overlapping_pairs()
-  , m_overlapping_pairs_is_set()
-  , m_pairs_with_adapters()
-  , m_pairs_with_adapters_is_set()
-{
-  //
-}
-
 html_consensus_adapter_head::~html_consensus_adapter_head()
 {
-  AR_REQUIRE(m_written, "template html_consensus_adapter_head was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_consensus_adapter_head&
@@ -910,11 +774,11 @@ html_consensus_adapter_head::set_pairs_with_adapters(const std::string& value)
 void
 html_consensus_adapter_head::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_consensus_adapter_head already written");
-  AR_REQUIRE(m_overlapping_pairs_is_set, "html_consensus_adapter_head::overlapping_pairs not set");
-  AR_REQUIRE(m_pairs_with_adapters_is_set, "html_consensus_adapter_head::pairs_with_adapters not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_overlapping_pairs_is_set);
+  AR_REQUIRE(m_pairs_with_adapters_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "            <h4>Consensus adapter sequences</h4>\n";
   out << "\n";
   out << "            <p class=\"note\">\n";
@@ -926,35 +790,9 @@ html_consensus_adapter_head::write(std::ostream& out)
   m_written = true;
 }
 
-html_consensus_adapter_table::html_consensus_adapter_table()
-  : m_written()
-  , m_alignment_1()
-  , m_alignment_1_is_set()
-  , m_alignment_2()
-  , m_alignment_2_is_set()
-  , m_consensus_1()
-  , m_consensus_1_is_set()
-  , m_consensus_2()
-  , m_consensus_2_is_set()
-  , m_name_1()
-  , m_name_1_is_set()
-  , m_name_2()
-  , m_name_2_is_set()
-  , m_qualities_1()
-  , m_qualities_1_is_set()
-  , m_qualities_2()
-  , m_qualities_2_is_set()
-  , m_reference_1()
-  , m_reference_1_is_set()
-  , m_reference_2()
-  , m_reference_2_is_set()
-{
-  //
-}
-
 html_consensus_adapter_table::~html_consensus_adapter_table()
 {
-  AR_REQUIRE(m_written, "template html_consensus_adapter_table was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_consensus_adapter_table&
@@ -1040,19 +878,19 @@ html_consensus_adapter_table::set_reference_2(const std::string& value)
 void
 html_consensus_adapter_table::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_consensus_adapter_table already written");
-  AR_REQUIRE(m_alignment_1_is_set, "html_consensus_adapter_table::alignment_1 not set");
-  AR_REQUIRE(m_alignment_2_is_set, "html_consensus_adapter_table::alignment_2 not set");
-  AR_REQUIRE(m_consensus_1_is_set, "html_consensus_adapter_table::consensus_1 not set");
-  AR_REQUIRE(m_consensus_2_is_set, "html_consensus_adapter_table::consensus_2 not set");
-  AR_REQUIRE(m_name_1_is_set, "html_consensus_adapter_table::name_1 not set");
-  AR_REQUIRE(m_name_2_is_set, "html_consensus_adapter_table::name_2 not set");
-  AR_REQUIRE(m_qualities_1_is_set, "html_consensus_adapter_table::qualities_1 not set");
-  AR_REQUIRE(m_qualities_2_is_set, "html_consensus_adapter_table::qualities_2 not set");
-  AR_REQUIRE(m_reference_1_is_set, "html_consensus_adapter_table::reference_1 not set");
-  AR_REQUIRE(m_reference_2_is_set, "html_consensus_adapter_table::reference_2 not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_alignment_1_is_set);
+  AR_REQUIRE(m_alignment_2_is_set);
+  AR_REQUIRE(m_consensus_1_is_set);
+  AR_REQUIRE(m_consensus_2_is_set);
+  AR_REQUIRE(m_name_1_is_set);
+  AR_REQUIRE(m_name_2_is_set);
+  AR_REQUIRE(m_qualities_1_is_set);
+  AR_REQUIRE(m_qualities_2_is_set);
+  AR_REQUIRE(m_reference_1_is_set);
+  AR_REQUIRE(m_reference_2_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "            <table class=\"pure-table adapter-table pure-table-striped\" style=\"font-family: monospace;\">\n";
   out << "                <tbody>\n";
   out << "                    <tr>\n";
@@ -1090,19 +928,9 @@ html_consensus_adapter_table::write(std::ostream& out)
   m_written = true;
 }
 
-html_consensus_adapter_kmer_head::html_consensus_adapter_kmer_head()
-  : m_written()
-  , m_kmer_length()
-  , m_kmer_length_is_set()
-  , m_n_kmers()
-  , m_n_kmers_is_set()
-{
-  //
-}
-
 html_consensus_adapter_kmer_head::~html_consensus_adapter_kmer_head()
 {
-  AR_REQUIRE(m_written, "template html_consensus_adapter_kmer_head was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_consensus_adapter_kmer_head&
@@ -1124,11 +952,11 @@ html_consensus_adapter_kmer_head::set_n_kmers(const std::string& value)
 void
 html_consensus_adapter_kmer_head::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_head already written");
-  AR_REQUIRE(m_kmer_length_is_set, "html_consensus_adapter_kmer_head::kmer_length not set");
-  AR_REQUIRE(m_n_kmers_is_set, "html_consensus_adapter_kmer_head::n_kmers not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_kmer_length_is_set);
+  AR_REQUIRE(m_n_kmers_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "            <h4>Top " << m_n_kmers << " most common " << m_kmer_length << "-bp 5' adapter k-mers</h4>\n";
   out << "\n";
   out << "            <table class=\"pure-table kmer-table pure-table-striped\" style=\"font-family: monospace;\">\n";
@@ -1149,29 +977,9 @@ html_consensus_adapter_kmer_head::write(std::ostream& out)
   m_written = true;
 }
 
-html_consensus_adapter_kmer_row::html_consensus_adapter_kmer_row()
-  : m_written()
-  , m_count_1()
-  , m_count_1_is_set()
-  , m_count_2()
-  , m_count_2_is_set()
-  , m_index()
-  , m_index_is_set()
-  , m_kmer_1()
-  , m_kmer_1_is_set()
-  , m_kmer_2()
-  , m_kmer_2_is_set()
-  , m_pct_1()
-  , m_pct_1_is_set()
-  , m_pct_2()
-  , m_pct_2_is_set()
-{
-  //
-}
-
 html_consensus_adapter_kmer_row::~html_consensus_adapter_kmer_row()
 {
-  AR_REQUIRE(m_written, "template html_consensus_adapter_kmer_row was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_consensus_adapter_kmer_row&
@@ -1233,16 +1041,16 @@ html_consensus_adapter_kmer_row::set_pct_2(const std::string& value)
 void
 html_consensus_adapter_kmer_row::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_row already written");
-  AR_REQUIRE(m_count_1_is_set, "html_consensus_adapter_kmer_row::count_1 not set");
-  AR_REQUIRE(m_count_2_is_set, "html_consensus_adapter_kmer_row::count_2 not set");
-  AR_REQUIRE(m_index_is_set, "html_consensus_adapter_kmer_row::index not set");
-  AR_REQUIRE(m_kmer_1_is_set, "html_consensus_adapter_kmer_row::kmer_1 not set");
-  AR_REQUIRE(m_kmer_2_is_set, "html_consensus_adapter_kmer_row::kmer_2 not set");
-  AR_REQUIRE(m_pct_1_is_set, "html_consensus_adapter_kmer_row::pct_1 not set");
-  AR_REQUIRE(m_pct_2_is_set, "html_consensus_adapter_kmer_row::pct_2 not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_count_1_is_set);
+  AR_REQUIRE(m_count_2_is_set);
+  AR_REQUIRE(m_index_is_set);
+  AR_REQUIRE(m_kmer_1_is_set);
+  AR_REQUIRE(m_kmer_2_is_set);
+  AR_REQUIRE(m_pct_1_is_set);
+  AR_REQUIRE(m_pct_2_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "                    <tr>\n";
   out << "                        <td>" << m_index << "</td>\n";
   out << "                        <td>" << m_kmer_1 << "</td>\n";
@@ -1257,23 +1065,17 @@ html_consensus_adapter_kmer_row::write(std::ostream& out)
   m_written = true;
 }
 
-html_consensus_adapter_kmer_tail::html_consensus_adapter_kmer_tail()
-  : m_written()
-{
-  //
-}
-
 html_consensus_adapter_kmer_tail::~html_consensus_adapter_kmer_tail()
 {
-  AR_REQUIRE(m_written, "template html_consensus_adapter_kmer_tail was not written");
+  AR_REQUIRE(m_written);
 }
 
 void
 html_consensus_adapter_kmer_tail::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_consensus_adapter_kmer_tail already written");
+  AR_REQUIRE(!m_written);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "                </tbody>\n";
   out << "            </table>\n";
   out << "\n";
@@ -1281,17 +1083,9 @@ html_consensus_adapter_kmer_tail::write(std::ostream& out)
   m_written = true;
 }
 
-html_h2_tag::html_h2_tag()
-  : m_written()
-  , m_title()
-  , m_title_is_set()
-{
-  //
-}
-
 html_h2_tag::~html_h2_tag()
 {
-  AR_REQUIRE(m_written, "template html_h2_tag was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_h2_tag&
@@ -1305,10 +1099,10 @@ html_h2_tag::set_title(const std::string& value)
 void
 html_h2_tag::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_h2_tag already written");
-  AR_REQUIRE(m_title_is_set, "html_h2_tag::title not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_title_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "        </div>\n";
   out << "\n";
   out << "        <div class=\"section\">\n";
@@ -1320,26 +1114,9 @@ html_h2_tag::write(std::ostream& out)
   m_written = true;
 }
 
-html_line_plot::html_line_plot()
-  : m_written()
-  , m_legend("{ \"title\": \"Legend\", \"padding\": 5 }")
-  , m_sub_title("\"\"")
-  , m_title()
-  , m_title_is_set()
-  , m_title_anchor("null")
-  , m_values()
-  , m_values_is_set()
-  , m_width()
-  , m_width_is_set()
-  , m_x_axis("null")
-  , m_y_axis("null")
-{
-  //
-}
-
 html_line_plot::~html_line_plot()
 {
-  AR_REQUIRE(m_written, "template html_line_plot was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_line_plot&
@@ -1404,12 +1181,12 @@ html_line_plot::set_y_axis(const std::string& value)
 void
 html_line_plot::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_line_plot already written");
-  AR_REQUIRE(m_title_is_set, "html_line_plot::title not set");
-  AR_REQUIRE(m_values_is_set, "html_line_plot::values not set");
-  AR_REQUIRE(m_width_is_set, "html_line_plot::width not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_title_is_set);
+  AR_REQUIRE(m_values_is_set);
+  AR_REQUIRE(m_width_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
@@ -1496,24 +1273,9 @@ html_line_plot::write(std::ostream& out)
   m_written = true;
 }
 
-html_facet_line_plot::html_facet_line_plot()
-  : m_written()
-  , m_legend("{ \"title\": \"Legend\", \"padding\": 5 }")
-  , m_title()
-  , m_title_is_set()
-  , m_values()
-  , m_values_is_set()
-  , m_width()
-  , m_width_is_set()
-  , m_x_axis("null")
-  , m_y_axis("null")
-{
-  //
-}
-
 html_facet_line_plot::~html_facet_line_plot()
 {
-  AR_REQUIRE(m_written, "template html_facet_line_plot was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_facet_line_plot&
@@ -1564,12 +1326,12 @@ html_facet_line_plot::set_y_axis(const std::string& value)
 void
 html_facet_line_plot::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_facet_line_plot already written");
-  AR_REQUIRE(m_title_is_set, "html_facet_line_plot::title not set");
-  AR_REQUIRE(m_values_is_set, "html_facet_line_plot::values not set");
-  AR_REQUIRE(m_width_is_set, "html_facet_line_plot::width not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_title_is_set);
+  AR_REQUIRE(m_values_is_set);
+  AR_REQUIRE(m_width_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
@@ -1656,23 +1418,9 @@ html_facet_line_plot::write(std::ostream& out)
   m_written = true;
 }
 
-html_bar_plot::html_bar_plot()
-  : m_written()
-  , m_title()
-  , m_title_is_set()
-  , m_values()
-  , m_values_is_set()
-  , m_width()
-  , m_width_is_set()
-  , m_x_axis("null")
-  , m_y_axis("null")
-{
-  //
-}
-
 html_bar_plot::~html_bar_plot()
 {
-  AR_REQUIRE(m_written, "template html_bar_plot was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_bar_plot&
@@ -1716,12 +1464,12 @@ html_bar_plot::set_y_axis(const std::string& value)
 void
 html_bar_plot::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_bar_plot already written");
-  AR_REQUIRE(m_title_is_set, "html_bar_plot::title not set");
-  AR_REQUIRE(m_values_is_set, "html_bar_plot::values not set");
-  AR_REQUIRE(m_width_is_set, "html_bar_plot::width not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_title_is_set);
+  AR_REQUIRE(m_values_is_set);
+  AR_REQUIRE(m_width_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
@@ -1762,23 +1510,17 @@ html_bar_plot::write(std::ostream& out)
   m_written = true;
 }
 
-html_demultiplexing_head::html_demultiplexing_head()
-  : m_written()
-{
-  //
-}
-
 html_demultiplexing_head::~html_demultiplexing_head()
 {
-  AR_REQUIRE(m_written, "template html_demultiplexing_head was not written");
+  AR_REQUIRE(m_written);
 }
 
 void
 html_demultiplexing_head::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_demultiplexing_head already written");
+  AR_REQUIRE(!m_written);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "            <h5>Per sample statistics</h5>\n";
   out << "\n";
@@ -1802,33 +1544,9 @@ html_demultiplexing_head::write(std::ostream& out)
   m_written = true;
 }
 
-html_demultiplexing_row::html_demultiplexing_row()
-  : m_written()
-  , m_barcode_1()
-  , m_barcode_1_is_set()
-  , m_barcode_2()
-  , m_barcode_2_is_set()
-  , m_bp()
-  , m_bp_is_set()
-  , m_gc()
-  , m_gc_is_set()
-  , m_length()
-  , m_length_is_set()
-  , m_n()
-  , m_n_is_set()
-  , m_name()
-  , m_name_is_set()
-  , m_pct()
-  , m_pct_is_set()
-  , m_reads()
-  , m_reads_is_set()
-{
-  //
-}
-
 html_demultiplexing_row::~html_demultiplexing_row()
 {
-  AR_REQUIRE(m_written, "template html_demultiplexing_row was not written");
+  AR_REQUIRE(m_written);
 }
 
 html_demultiplexing_row&
@@ -1906,18 +1624,18 @@ html_demultiplexing_row::set_reads(const std::string& value)
 void
 html_demultiplexing_row::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_demultiplexing_row already written");
-  AR_REQUIRE(m_barcode_1_is_set, "html_demultiplexing_row::barcode_1 not set");
-  AR_REQUIRE(m_barcode_2_is_set, "html_demultiplexing_row::barcode_2 not set");
-  AR_REQUIRE(m_bp_is_set, "html_demultiplexing_row::bp not set");
-  AR_REQUIRE(m_gc_is_set, "html_demultiplexing_row::gc not set");
-  AR_REQUIRE(m_length_is_set, "html_demultiplexing_row::length not set");
-  AR_REQUIRE(m_n_is_set, "html_demultiplexing_row::n not set");
-  AR_REQUIRE(m_name_is_set, "html_demultiplexing_row::name not set");
-  AR_REQUIRE(m_pct_is_set, "html_demultiplexing_row::pct not set");
-  AR_REQUIRE(m_reads_is_set, "html_demultiplexing_row::reads not set");
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_barcode_1_is_set);
+  AR_REQUIRE(m_barcode_2_is_set);
+  AR_REQUIRE(m_bp_is_set);
+  AR_REQUIRE(m_gc_is_set);
+  AR_REQUIRE(m_length_is_set);
+  AR_REQUIRE(m_n_is_set);
+  AR_REQUIRE(m_name_is_set);
+  AR_REQUIRE(m_pct_is_set);
+  AR_REQUIRE(m_reads_is_set);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "\n";
   out << "                        <tr>\n";
   out << "                            <td>" << m_n << "</td>\n";
@@ -1935,23 +1653,17 @@ html_demultiplexing_row::write(std::ostream& out)
   m_written = true;
 }
 
-html_demultiplexing_tail::html_demultiplexing_tail()
-  : m_written()
-{
-  //
-}
-
 html_demultiplexing_tail::~html_demultiplexing_tail()
 {
-  AR_REQUIRE(m_written, "template html_demultiplexing_tail was not written");
+  AR_REQUIRE(m_written);
 }
 
 void
 html_demultiplexing_tail::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_demultiplexing_tail already written");
+  AR_REQUIRE(!m_written);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "                    </tbody>\n";
   out << "                </table>\n";
   out << "            </div>\n";
@@ -1960,23 +1672,17 @@ html_demultiplexing_tail::write(std::ostream& out)
   m_written = true;
 }
 
-html_body_end::html_body_end()
-  : m_written()
-{
-  //
-}
-
 html_body_end::~html_body_end()
 {
-  AR_REQUIRE(m_written, "template html_body_end was not written");
+  AR_REQUIRE(m_written);
 }
 
 void
 html_body_end::write(std::ostream& out)
 {
-  AR_REQUIRE(!m_written, "template html_body_end already written");
+  AR_REQUIRE(!m_written);
   // clang-format off
-  auto id = g_html_id; ++g_html_id; (void)id;
+  auto id = g_html_id++; (void)id;
   out << "        </div>\n";
   out << "\n";
   out << "        <div class=\"section epilogue\">\n";
