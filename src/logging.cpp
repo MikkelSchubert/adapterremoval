@@ -18,6 +18,7 @@
 \*************************************************************************/
 #include "logging.hpp"
 #include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
+#include "main.hpp"     // for NAME, VERSION
 #include "strutils.hpp" // for split_lines, cli_formatter, string_vec
 #include <algorithm>    // for max, min
 #include <iomanip>      // for operator<<, put_time
@@ -35,7 +36,7 @@ namespace log {
 namespace {
 
 //! Shared mutex for STDOUT / STDERR
-std::mutex g_log_mutex;
+std::recursive_mutex g_log_mutex;
 //! Pointer to logging stream; normally this will be std::cerr;
 std::ostream* g_log_out = &std::cerr;
 
@@ -47,6 +48,8 @@ bool g_log_timestamps = true;
 bool g_log_colors = false;
 //! Indicates if the last message was transient
 bool g_log_transient = false;
+//! Indicates that the preamble has been logged
+bool g_preamble_logged = false;
 
 //! ANSI color codes: https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 enum class color
@@ -180,9 +183,19 @@ log_print_lines(std::ostream& out,
 ////////////////////////////////////////////////////////////////////////////////
 
 void
+log_preamble()
+{
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  if (!g_preamble_logged) {
+    g_preamble_logged = true;
+    log::info() << NAME << " " << VERSION;
+  }
+}
+
+void
 set_level(level l)
 {
-  std::unique_lock<std::mutex> lock(g_log_mutex);
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   g_log_level = l;
 }
@@ -190,7 +203,7 @@ set_level(level l)
 void
 set_colors(bool enabled)
 {
-  std::unique_lock<std::mutex> lock(g_log_mutex);
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   g_log_colors = enabled;
 }
@@ -198,7 +211,7 @@ set_colors(bool enabled)
 void
 set_timestamps(bool enabled)
 {
-  std::unique_lock<std::mutex> lock(g_log_mutex);
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   g_log_timestamps = enabled;
 }
@@ -227,7 +240,8 @@ log_stream::log_stream(level lvl)
 
 log_stream::~log_stream()
 {
-  std::unique_lock<std::mutex> lock(g_log_mutex);
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  log_preamble();
 
   if (g_log_transient) {
     *g_log_out << "\r\033[K";
@@ -271,7 +285,7 @@ log_capture::log_capture()
   , m_timestamps()
   , m_stream()
 {
-  std::unique_lock<std::mutex> lock(g_log_mutex);
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   AR_REQUIRE(g_log_out == &std::cerr);
   g_log_out = &m_stream;
@@ -283,7 +297,7 @@ log_capture::log_capture()
 
 log_capture::~log_capture()
 {
-  std::unique_lock<std::mutex> lock(g_log_mutex);
+  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   AR_REQUIRE(g_log_out == &m_stream);
   g_log_out = &std::cerr;

@@ -19,7 +19,6 @@
 #include "commontypes.hpp" // for trimming_strategy, trimming_strategy::mott
 #include "debug.hpp"       // for AR_FAIL
 #include "logging.hpp"     // for info, log_stream, error, warn
-#include "main.hpp"        // for NAME, VERSION
 #include "reports.hpp"     // for print_terminal_postamble, print_terminal_...
 #include "simd.hpp"        // for name, instruction_set, instruction_set::none
 #include "userconfig.hpp"  // for userconfig, ar_command, ar_command::demul...
@@ -64,12 +63,13 @@ print_trimming_parameters(const userconfig& config)
 void
 print_terminal_preamble(const userconfig& config)
 {
+  log::log_preamble();
+
   if (config.simd == simd::instruction_set::none) {
-    log::info() << NAME << " " << VERSION;
-    log::warn() << "Hardware acceleration disabled!";
+    log::warn() << "Hardware accelerated alignments disabled!";
   } else {
-    log::info() << NAME << " " << VERSION << " (" << simd::name(config.simd)
-                << ")";
+    log::info() << "Using " << simd::name(config.simd)
+                << " accelerated alignments";
   }
 
   switch (config.run_type) {

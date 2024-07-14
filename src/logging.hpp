@@ -75,12 +75,10 @@ public:
     return *this;
   }
 
-  /** Not implemented */
-  log_stream(log_stream&&) noexcept = default;
-  /** Not implemented */
   log_stream(const log_stream&) = delete;
-  /** Not implemented */
+  log_stream(log_stream&&) noexcept = default;
   log_stream& operator=(const log_stream&) = delete;
+  log_stream& operator=(log_stream&&) = delete;
 
 private:
   //! Log level of the current message
@@ -107,12 +105,10 @@ public:
   /** Returns all output captured log messages / output written to cerr. */
   std::string str() const;
 
-  /** Not implemented */
-  log_capture(log_capture&&) = default;
-  /** Not implemented */
   log_capture(const log_capture&) = delete;
-  /** Not implemented */
+  log_capture(log_capture&&) = default;
   log_capture& operator=(const log_capture&) = delete;
+  log_capture& operator=(log_capture&&) = delete;
 
 private:
   //! Original log level
@@ -163,6 +159,10 @@ error()
 {
   return log_stream(level::error);
 }
+
+/** Logs preamble (version, etc.) if it has not already been logged */
+void
+log_preamble();
 
 /** Sets the minimum log level to print */
 void
