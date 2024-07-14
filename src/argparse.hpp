@@ -41,6 +41,7 @@ class str_sink;
 class vec_sink;
 
 using argument_ptr = std::shared_ptr<argument>;
+using preprocess_ptr = void (*)(std::string&);
 
 //! Parse results for command-line arguments
 enum class parse_result
@@ -305,6 +306,13 @@ public:
   /** Indicates the maximum number of values taken by this sink */
   size_t max_values() const { return m_max_values; };
 
+  /** Sets pre-processor function used before validating input  */
+  sink& with_preprocessor(preprocess_ptr func)
+  {
+    m_preprocess = func;
+    return *this;
+  }
+
   sink(const sink&) = delete;
   sink(sink&&) = delete;
   sink& operator=(const sink&) = delete;
@@ -317,6 +325,9 @@ protected:
 
   void set_max_values(size_t n) { m_max_values = n; }
 
+  /** Preprocess the value if a preprocessor was set */
+  std::string preprocess(std::string value) const;
+
 private:
   //! Indicates if the sink has been supplied with a default value
   bool m_has_default;
@@ -324,6 +335,8 @@ private:
   size_t m_min_values;
   //! The maximum number of values taken by this sink
   size_t m_max_values;
+  //! Function used to pre-process the user supplied arguments
+  preprocess_ptr m_preprocess;
 };
 
 class bool_sink : public sink

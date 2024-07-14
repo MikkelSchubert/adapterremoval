@@ -748,6 +748,7 @@ sink::sink(size_t min_values, size_t max_values)
   : m_has_default()
   , m_min_values(min_values)
   , m_max_values(max_values)
+  , m_preprocess(nullptr)
 {
 }
 
@@ -755,6 +756,16 @@ std::string
 sink::default_value() const
 {
   AR_FAIL("sink::default_value not implemented");
+}
+
+std::string
+sink::preprocess(std::string value) const
+{
+  if (m_preprocess) {
+    m_preprocess(value);
+  }
+
+  return value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -825,7 +836,7 @@ uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
   AR_REQUIRE(end - start == 1);
 
   try {
-    *m_sink = str_to_unsigned(*start);
+    *m_sink = str_to_unsigned(preprocess(*start));
 
     return 1;
   } catch (const std::invalid_argument&) {
@@ -888,7 +899,7 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
   AR_REQUIRE(end - start == 1);
 
   double value = 0;
-  if (!to_double(*start, value)) {
+  if (!to_double(preprocess(*start), value)) {
     return parsing_failed;
   }
 
@@ -961,12 +972,13 @@ str_sink::consume(string_vec_citer start, const string_vec_citer& end)
   AR_REQUIRE(end - start == 1);
 
   if (m_choices.empty()) {
-    *m_sink = *start;
+    *m_sink = preprocess(*start);
     return 1;
   } else {
-    const auto value = to_lower(*start);
+    const auto value = preprocess(*start);
+    const auto choice = to_lower(value);
     for (const auto& it : m_choices) {
-      if (value == to_lower(it)) {
+      if (choice == to_lower(it)) {
         *m_sink = it;
         return 1;
       }
@@ -1008,7 +1020,9 @@ vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(static_cast<size_t>(end - start) >= min_values());
   AR_REQUIRE(static_cast<size_t>(end - start) <= max_values());
-  m_sink->assign(start, end);
+  for (auto it = start; it != end; ++it) {
+    m_sink->emplace_back(preprocess(*it));
+  }
 
   return static_cast<size_t>(end - start);
 }
