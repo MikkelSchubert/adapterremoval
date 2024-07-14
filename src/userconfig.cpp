@@ -898,15 +898,13 @@ userconfig::userconfig()
     .bind_uint(&max_genomic_length)
     .with_default(std::numeric_limits<unsigned>::max());
 
-  argparser.add("--filter-low-complexity")
-    .help("Enable filtering of low complexity reds after carrying out adapter "
-          "trimming and trimming of low-quality bases.");
   argparser.add("--min-complexity", "X")
-    .help("Minimum complexity required when filtering low-complexity reads "
-          "Complexity is a value in the range 0 to 1, with 0 being the least "
-          "complex reads")
+    .help(
+      "Filter reads with a complexity score less than this value. Complexity "
+      "is measured as the fraction of positions that differ from the previous "
+      "position. A suggested value is 0.3")
     .bind_double(&min_complexity)
-    .with_default(0.3);
+    .with_default(0);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("DEMULTIPLEXING:");
@@ -1076,11 +1074,9 @@ userconfig::parse_args(int argc, char* argv[])
   }
 
   if (min_complexity < 0.0 || min_complexity > 1.0) {
-    log::error() << "--filter-low-complexity must be a value in the range 0 to "
+    log::error() << "--min-complexity must be a value in the range 0 to "
                  << "1, not " << min_complexity;
     return argparse::parse_result::error;
-  } else if (!argparser.is_set("--filter-low-complexity")) {
-    min_complexity = 0.0;
   }
 
   // Check for invalid combinations of settings
