@@ -175,7 +175,7 @@ read_fastq::process(chunk_ptr chunk)
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!chunk);
   if (m_eof) {
-    return chunk_vec();
+    return {};
   }
 
   auto file_chunk = std::make_unique<fastq_read_chunk>();
@@ -207,6 +207,27 @@ read_fastq::read_single_end(fastq_vec& reads_1)
 
   return !eof && m_head;
 }
+
+namespace {
+
+char
+identify_mate_separators(const fastq_vec& reads_1, const fastq_vec& reads_2)
+{
+  AR_REQUIRE(reads_1.size() == reads_2.size());
+
+  // Attempt to determine the mate separator character
+  char mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
+
+  if (!mate_separator) {
+    // Fall back to the default so that a human-readable error will be thrown
+    // during normalization below.
+    mate_separator = MATE_SEPARATOR;
+  }
+
+  return mate_separator;
+}
+
+} // namespace
 
 bool
 read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
@@ -248,24 +269,6 @@ read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
   }
 
   return !eof_1 && !eof_2 && m_head;
-}
-
-char
-read_fastq::identify_mate_separators(const fastq_vec& reads_1,
-                                     const fastq_vec& reads_2) const
-{
-  AR_REQUIRE(reads_1.size() == reads_2.size());
-
-  // Attempt to determine the mate separator character
-  char mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
-
-  if (!mate_separator) {
-    // Fall back to the default so that a human-readable error will be thrown
-    // during normalization below.
-    mate_separator = MATE_SEPARATOR;
-  }
-
-  return mate_separator;
 }
 
 void
@@ -440,7 +443,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
   size_t compressed_size = 0;
 
   if (m_isal_enabled) {
-    isal_zstream stream;
+    isal_zstream stream{};
     isal_deflate_stateless_init(&stream);
 
     stream.flush = FULL_FLUSH;
@@ -474,7 +477,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
 
     compressed_size = stream.total_out;
   } else {
-    auto compressor = libdeflate_alloc_compressor(m_config.gzip_level);
+    auto* compressor = libdeflate_alloc_compressor(m_config.gzip_level);
     compressed_size = libdeflate_gzip_compress(compressor,
                                                input_buffer.get(),
                                                input_buffer.size(),
@@ -510,8 +513,8 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
     buffer level_buf(isal_buffer_size(config.gzip_level));
     buffer output_buf(OUTPUT_BLOCK_SIZE);
 
-    struct isal_zstream stream;
-    struct isal_gzip_header header;
+    struct isal_zstream stream = {};
+    struct isal_gzip_header header = {};
 
     isal_gzip_header_init(&header);
     isal_deflate_init(&stream);
@@ -569,7 +572,7 @@ write_fastq::process(chunk_ptr chunk)
     throw io_error(msg.str(), errno);
   }
 
-  return chunk_vec();
+  return {};
 }
 
 void

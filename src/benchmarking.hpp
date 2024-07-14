@@ -39,7 +39,7 @@ enum class strategy
 class benchmark_toggles
 {
 public:
-  benchmark_toggles(const string_vec& keys);
+  explicit benchmark_toggles(string_vec keys);
 
   /** Parses user-supplied toggles and returns true if valid */
   bool update_toggles(const string_vec& keys);
@@ -63,16 +63,16 @@ private:
 class benchmarker
 {
 public:
-  benchmarker(const std::string& desc, string_vec toggles);
+  benchmarker(std::string desc, string_vec toggles);
 
-  virtual ~benchmarker();
+  virtual ~benchmarker() = default;
 
   virtual void run_if_toggled(const benchmark_toggles& toggles);
 
-  /** Copy construction not supported */
   benchmarker(const benchmarker&) = delete;
-  /** Assignment not supported */
+  benchmarker(benchmarker&&) = delete;
   benchmarker& operator=(const benchmarker&) = delete;
+  benchmarker& operator=(benchmarker&&) = delete;
 
 protected:
   /** Indicate that this benchmark *must* be run at least once */
@@ -88,7 +88,7 @@ protected:
 private:
   size_t count() const { return m_description.size(); }
 
-  void run(const strategy s);
+  void run(strategy s);
 
   std::string summarize(size_t loops) const;
 

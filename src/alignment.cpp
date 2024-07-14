@@ -230,7 +230,7 @@ sequence_aligner::align_paired_end(const fastq& read1,
                                    const fastq& read2,
                                    int max_shift) const
 {
-  size_t adapter_id = 0;
+  int adapter_id = 0;
   alignment_info alignment;
 
   std::string buffer;
@@ -271,7 +271,7 @@ sequence_aligner::align_paired_end(const fastq& read1,
       alignment.offset -= adapter2.length();
     }
 
-    ++adapter_id;
+    adapter_id++;
   }
 
   return alignment;

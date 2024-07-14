@@ -53,9 +53,9 @@ public:
    * The quality scores are expected to be in the range of 0 .. 40, unless
    * the format is Phred+33, in which case the range 0 .. 41 is accepted.
    */
-  fastq(const std::string& header,
-        const std::string& sequence,
-        const std::string& qualities,
+  fastq(std::string header,
+        std::string sequence,
+        std::string qualities,
         const fastq_encoding& encoding = FASTQ_ENCODING_33);
 
   /**
@@ -66,7 +66,7 @@ public:
    *
    * Works like the full constructor, except that qualities are all 0 ('!').
    */
-  fastq(const std::string& header, const std::string& sequence);
+  fastq(std::string header, std::string sequence);
 
   /** Returns true IFF all fields are identical. **/
   bool operator==(const fastq& other) const;
@@ -101,9 +101,9 @@ public:
    * @param preserve5p Only trim from the 3p end if true.
    * @return A pair containing the number of 5' and 3' bases trimmed.
    */
-  ntrimmed trim_trailing_bases(const bool trim_ns = true,
+  ntrimmed trim_trailing_bases(bool trim_ns = true,
                                char low_quality = -1,
-                               const bool preserve5p = false);
+                               bool preserve5p = false);
 
   /**
    * Trims low-quality bases using a sliding window approach.
@@ -114,10 +114,10 @@ public:
    * @param preserve5p Only trim from the 3p end if true.
    * @return A pair containing the number of 5' and 3' bases trimmed.
    */
-  ntrimmed trim_windowed_bases(const bool trim_ns = true,
+  ntrimmed trim_windowed_bases(bool trim_ns = true,
                                char low_quality = -1,
-                               const double window_size = 0.1,
-                               const bool preserve5p = false);
+                               double window_size = 0.1,
+                               bool preserve5p = false);
 
   /**
    * Performs quality based trimming using the modified Mott's algorithm.
@@ -126,8 +126,7 @@ public:
    * @param preserve5p Only trim from the 3p end if true.
    * @return A pair containing the number of 5' and 3' bases trimmed.
    */
-  ntrimmed mott_trimming(const double error_limit,
-                         const bool preserve5p = false);
+  ntrimmed mott_trimming(double error_limit, bool preserve5p = false);
 
   /**
    * Trims the longest poly-X tail, where X is one of the specified nucleotides.
@@ -215,8 +214,8 @@ private:
    * Trims the read to the specified bases, and returns a pair specifying the
    * number of 5' and 3' bases removed.
    */
-  ntrimmed trim_sequence_and_qualities(const size_t left_inclusive,
-                                       const size_t right_exclusive);
+  ntrimmed trim_sequence_and_qualities(size_t left_inclusive,
+                                       size_t right_exclusive);
 
   //! Header excluding the @ sigil, but (possibly) including meta-info
   std::string m_header;

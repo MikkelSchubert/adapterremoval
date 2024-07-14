@@ -56,7 +56,7 @@ const size_t post_demux_steps::disabled = static_cast<size_t>(-1);
 // Implementations for `demultiplex_reads`
 
 demultiplex_reads::demultiplex_reads(const userconfig& config,
-                                     const post_demux_steps& steps,
+                                     post_demux_steps steps,
                                      demux_stats_ptr stats)
   : analytical_step(processing_order::ordered, "demultiplex_reads")
   , m_barcodes(config.adapters.get_barcodes())
@@ -68,8 +68,8 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   , m_cache()
   , m_unidentified_1()
   , m_unidentified_2()
-  , m_steps(steps)
-  , m_statistics(stats)
+  , m_steps(std::move(steps))
+  , m_statistics(std::move(stats))
   , m_lock()
 {
   AR_REQUIRE(!m_barcodes.empty());
@@ -118,7 +118,7 @@ demultiplex_reads::flush_cache(bool eof)
 demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
                                            const post_demux_steps& steps,
                                            demux_stats_ptr stats)
-  : demultiplex_reads(config, steps, stats)
+  : demultiplex_reads(config, steps, std::move(stats))
 {
 }
 
@@ -169,7 +169,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
 demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
                                            const post_demux_steps& steps,
                                            demux_stats_ptr stats)
-  : demultiplex_reads(config, steps, stats)
+  : demultiplex_reads(config, steps, std::move(stats))
 {
 }
 

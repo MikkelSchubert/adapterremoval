@@ -218,7 +218,7 @@ throw_invalid_score(const quality_encoding encoding, const char raw_score)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fastq_encoding::fastq_encoding(quality_encoding encoding)
+fastq_encoding::fastq_encoding(quality_encoding encoding) noexcept
   : m_encoding(encoding)
   , m_offset_min()
   , m_offset_max()

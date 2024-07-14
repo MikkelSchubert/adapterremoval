@@ -88,6 +88,7 @@ class parser
 {
 public:
   parser();
+  ~parser() = default;
 
   /** Sets the name used in --help and --version messages */
   void set_name(const std::string& name);
@@ -125,10 +126,10 @@ public:
   /** Set the maximum terminal width. */
   void set_terminal_width(unsigned w);
 
-  //! Copy construction not supported
   parser(const parser&) = delete;
-  //! Assignment not supported
+  parser(parser&&) = delete;
   parser& operator=(const parser&) = delete;
+  parser& operator=(parser&&) = delete;
 
 private:
   void update_argument_map();
@@ -173,7 +174,8 @@ public:
     bool deprecated;
   };
 
-  argument(const std::string& key, const std::string& metavar = "");
+  explicit argument(const std::string& key, std::string metavar = "");
+  ~argument() = default;
 
   /** Returns true if the consumer has consumed a value. */
   bool is_set() const;
@@ -213,11 +215,11 @@ public:
   /** Set the metavar for this argument. */
   argument& metavar(const std::string& metavar);
   /** Set help string for this argument. */
-  argument& help(const std::string& alias);
+  argument& help(const std::string& text);
   /** Create a short form of the argument. */
   argument& abbreviation(char key);
   /** Create deprecated alias for the argument. */
-  argument& deprecated_alias(const std::string& alias);
+  argument& deprecated_alias(const std::string& key);
   /** The argument is deprecated. Implies `hidden()` */
   argument& deprecated();
   /** The argument will not be printed by -h/--help */
@@ -228,19 +230,19 @@ public:
   /** Option `key` must NOT be specified along with this argument. */
   argument& conflicts_with(const std::string& key);
 
-  bool_sink& bind_bool(bool* sink);
-  uint_sink& bind_uint(unsigned* sink);
-  double_sink& bind_double(double* sink);
-  str_sink& bind_str(std::string* sink);
-  vec_sink& bind_vec(string_vec* sink);
+  bool_sink& bind_bool(bool* ptr);
+  uint_sink& bind_uint(unsigned* ptr);
+  double_sink& bind_double(double* ptr);
+  str_sink& bind_str(std::string* ptr);
+  vec_sink& bind_vec(string_vec* ptr);
 
   /** Parse the next arguments, returning the number of items parsed or -1. */
   size_t parse(string_vec_citer start, const string_vec_citer& end);
 
-  //! Copy construction not supported
   argument(const argument&) = delete;
-  //! Assignment not supported
+  argument(argument&&) = delete;
   argument& operator=(const argument&) = delete;
+  argument& operator=(argument&&) = delete;
 
 private:
   //! Number of times the argument has been specified
@@ -286,57 +288,67 @@ public:
   virtual std::string current_value() const = 0;
   /** Returns string-representation of the default value */
   virtual std::string default_value() const;
+
   /** Indicates if the sink has been supplied with a default value. */
-  virtual bool has_default() const;
+  virtual bool has_default() const { return m_has_default; }
 
   /** See argument::consume */
   virtual size_t consume(string_vec_citer start,
                          const string_vec_citer& end) = 0;
 
   /** Returns the list of valid choices, if any, formatted as strings */
-  virtual string_vec choices() const;
+  virtual string_vec choices() const { return {}; };
 
   /** Indicates the minimum number of values taken by this sink */
-  size_t min_values() const;
+  size_t min_values() const { return m_min_values; };
+
   /** Indicates the maximum number of values taken by this sink */
-  size_t max_values() const;
+  size_t max_values() const { return m_max_values; };
+
+  sink(const sink&) = delete;
+  sink(sink&&) = delete;
+  sink& operator=(const sink&) = delete;
+  sink& operator=(sink&&) = delete;
 
 protected:
+  void set_has_default() { m_has_default = true; }
+
+  void set_min_values(size_t n) { m_min_values = n; }
+
+  void set_max_values(size_t n) { m_max_values = n; }
+
+private:
   //! Indicates if the sink has been supplied with a default value
   bool m_has_default;
   //! The minimum number of values taken by this sink
   size_t m_min_values;
   //! The maximum number of values taken by this sink
   size_t m_max_values;
-
-private:
-  //! Copy construction not supported
-  sink(const sink&) = delete;
-  //! Assignment not supported
-  sink& operator=(const sink&) = delete;
 };
 
 class bool_sink : public sink
 {
 public:
-  explicit bool_sink(bool* sink);
+  explicit bool_sink(bool* ptr);
+  ~bool_sink() override = default;
 
   std::string current_value() const override;
-  size_t consume(string_vec_citer, const string_vec_citer& end) override;
+  size_t consume(string_vec_citer start, const string_vec_citer& end) override;
+
+  bool_sink(const bool_sink&) = delete;
+  bool_sink(bool_sink&&) = delete;
+  bool_sink& operator=(const bool_sink&) = delete;
+  bool_sink& operator=(bool_sink&&) = delete;
 
 private:
-  //! Copy construction not supported
-  bool_sink(const bool_sink&) = delete;
-  //! Assignment not supported
-  bool_sink& operator=(const bool_sink&) = delete;
-
   bool* m_sink;
 };
 
 class uint_sink : public sink
 {
 public:
-  explicit uint_sink(unsigned* sink);
+  explicit uint_sink(unsigned* ptr);
+  ~uint_sink() override = default;
 
   uint_sink& with_default(unsigned value);
   std::string default_value() const override;
@@ -344,12 +356,12 @@ public:
   std::string current_value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
-private:
-  //! Copy construction not supported
   uint_sink(const uint_sink&) = delete;
-  //! Assignment not supported
+  uint_sink(uint_sink&&) = delete;
   uint_sink& operator=(const uint_sink&) = delete;
+  uint_sink& operator=(uint_sink&&) = delete;
 
+private:
   unsigned* m_sink;
   //! Default value used for -h/--help output
   unsigned m_default;
@@ -358,7 +370,8 @@ private:
 class double_sink : public sink
 {
 public:
-  explicit double_sink(double* sink);
+  explicit double_sink(double* ptr);
+  ~double_sink() override = default;
 
   double_sink& with_default(double value);
   std::string default_value() const override;
@@ -366,12 +379,12 @@ public:
   std::string current_value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
-private:
-  //! Copy construction not supported
   double_sink(const double_sink&) = delete;
-  //! Assignment not supported
+  double_sink(double_sink&&) = delete;
   double_sink& operator=(const double_sink&) = delete;
+  double_sink& operator=(double_sink&&) = delete;
 
+private:
   double* m_sink;
   //! Default value used for -h/--help output
   double m_default;
@@ -380,7 +393,8 @@ private:
 class str_sink : public sink
 {
 public:
-  explicit str_sink(std::string* sink);
+  explicit str_sink(std::string* ptr);
+  ~str_sink() override = default;
 
   str_sink& with_default(const char* value);
   str_sink& with_default(const std::string& value);
@@ -391,12 +405,12 @@ public:
   string_vec choices() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
-private:
-  //! Copy construction not supported
   str_sink(const str_sink&) = delete;
-  //! Assignment not supported
+  str_sink(str_sink&&) = delete;
   str_sink& operator=(const str_sink&) = delete;
+  str_sink& operator=(str_sink&&) = delete;
 
+private:
   std::string* m_sink;
   string_vec m_choices;
   //! Default value used for -h/--help output
@@ -406,7 +420,8 @@ private:
 class vec_sink : public sink
 {
 public:
-  explicit vec_sink(string_vec* sink);
+  explicit vec_sink(string_vec* ptr);
+  ~vec_sink() override = default;
 
   /** The minimum number of values expected on the command-line (default 1) */
   vec_sink& with_min_values(size_t n);
@@ -416,12 +431,12 @@ public:
   std::string current_value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
-private:
-  //! Copy construction not supported
   vec_sink(const vec_sink&) = delete;
-  //! Assignment not supported
+  vec_sink(vec_sink&&) = delete;
   vec_sink& operator=(const vec_sink&) = delete;
+  vec_sink& operator=(vec_sink&&) = delete;
 
+private:
   string_vec* m_sink;
 };
 

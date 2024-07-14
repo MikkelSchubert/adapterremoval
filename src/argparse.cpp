@@ -48,11 +48,8 @@ is_similar_argument(const std::string& user,
   }
 
   const auto diff = std::max(user.size(), ref.size()) - overlap;
-  if (diff <= max_distance && levenshtein(user, ref) <= max_distance) {
-    return true;
-  }
 
-  return false;
+  return (diff <= max_distance && levenshtein(user, ref) <= max_distance);
 }
 
 bool
@@ -64,12 +61,8 @@ to_double(const std::string& value, double& out)
   }
 
   // Failing on trailing, non-numerical values
-  char trailing;
-  if (stream >> trailing) {
-    return false;
-  }
-
-  return true;
+  char trailing = 0;
+  return (!(stream >> trailing));
 }
 
 } // namespace
@@ -310,7 +303,7 @@ parser::print_licenses() const
       }
 
       size_t ljust = 0;
-      if (block.size() && block.at(indentation) == '*') {
+      if (!block.empty() && block.at(indentation) == '*') {
         ljust = 2;
       } else if (block.size() > indentation + 1 &&
                  block.at(indentation + 1) == '.') {
@@ -395,7 +388,7 @@ parser::find_argument(const std::string& key)
     auto error = log::error();
     error << "Unknown argument '" << key << "'";
 
-    if (candidates.size()) {
+    if (!candidates.empty()) {
       std::sort(candidates.begin(), candidates.end());
 
       error << ". Did you mean " << candidates.front();
@@ -413,12 +406,12 @@ parser::find_argument(const std::string& key)
     log::error() << "Unexpected positional argument '" << key << "'";
   }
 
-  return argument_ptr();
+  return {};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-argument::argument(const std::string& key, const std::string& metavar)
+argument::argument(const std::string& key, std::string metavar)
   : m_times_set()
   , m_default_sink()
   , m_deprecated()
@@ -426,13 +419,13 @@ argument::argument(const std::string& key, const std::string& metavar)
   , m_hidden()
   , m_key_long(key)
   , m_key_short()
-  , m_metavar(metavar)
+  , m_metavar(std::move(metavar))
   , m_help()
   , m_depends_on()
   , m_conflicts_with()
   , m_sink(std::make_unique<bool_sink>(&m_default_sink))
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
+  AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
 }
 
 argument&
@@ -567,33 +560,33 @@ bind(std::unique_ptr<sink>& ptr, B* sink)
 }
 
 bool_sink&
-argument::bind_bool(bool* sink)
+argument::bind_bool(bool* ptr)
 {
-  return bind<bool_sink>(m_sink, sink);
+  return bind<bool_sink>(m_sink, ptr);
 }
 
 uint_sink&
-argument::bind_uint(unsigned* sink)
+argument::bind_uint(unsigned* ptr)
 {
-  return bind<uint_sink>(m_sink, sink);
+  return bind<uint_sink>(m_sink, ptr);
 }
 
 double_sink&
-argument::bind_double(double* sink)
+argument::bind_double(double* ptr)
 {
-  return bind<double_sink>(m_sink, sink);
+  return bind<double_sink>(m_sink, ptr);
 }
 
 str_sink&
-argument::bind_str(std::string* sink)
+argument::bind_str(std::string* ptr)
 {
-  return bind<str_sink>(m_sink, sink);
+  return bind<str_sink>(m_sink, ptr);
 }
 
 vec_sink&
-argument::bind_vec(string_vec* sink)
+argument::bind_vec(string_vec* ptr)
 {
-  return bind<vec_sink>(m_sink, sink);
+  return bind<vec_sink>(m_sink, ptr);
 }
 
 argument&
@@ -609,7 +602,7 @@ argument::abbreviation(char key)
 argument&
 argument::deprecated_alias(const std::string& key)
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
+  AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
   m_deprecated_keys.emplace_back(key);
 
   return *this;
@@ -634,7 +627,7 @@ argument::hidden()
 argument&
 argument::depends_on(const std::string& key)
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
+  AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
   m_depends_on.push_back(key);
 
   return *this;
@@ -643,7 +636,7 @@ argument::depends_on(const std::string& key)
 argument&
 argument::conflicts_with(const std::string& key)
 {
-  AR_REQUIRE(key.size() && key.at(0) == '-', shell_escape(key));
+  AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
   m_conflicts_with.push_back(key);
 
   return *this;
@@ -678,7 +671,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
 
   bool is_deprecated = is_deprecated_alias(*start);
   AR_REQUIRE(is_deprecated || *start == m_key_long ||
-             (m_key_short.size() && *start == m_key_short));
+             (!m_key_short.empty() && *start == m_key_short));
 
   if (m_deprecated) {
     log::warn() << "Option " << *start << " is deprecated and will "
@@ -764,30 +757,6 @@ sink::default_value() const
   AR_FAIL("sink::default_value not implemented");
 }
 
-bool
-sink::has_default() const
-{
-  return m_has_default;
-}
-
-string_vec
-sink::choices() const
-{
-  return string_vec();
-}
-
-size_t
-sink::min_values() const
-{
-  return m_min_values;
-}
-
-size_t
-sink::max_values() const
-{
-  return m_max_values;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // bool_sink
 
@@ -831,7 +800,7 @@ uint_sink::uint_sink(unsigned* ptr)
 uint_sink&
 uint_sink::with_default(unsigned value)
 {
-  m_has_default = true;
+  set_has_default();
   *m_sink = m_default = value;
 
   return *this;
@@ -880,7 +849,7 @@ double_sink::double_sink(double* ptr)
 double_sink&
 double_sink::with_default(double value)
 {
-  m_has_default = true;
+  set_has_default();
   *m_sink = m_default = value;
 
   return *this;
@@ -944,7 +913,7 @@ str_sink::str_sink(std::string* ptr)
 str_sink&
 str_sink::with_default(const char* value)
 {
-  m_has_default = true;
+  set_has_default();
   *m_sink = m_default = value;
 
   return *this;
@@ -953,16 +922,16 @@ str_sink::with_default(const char* value)
 str_sink&
 str_sink::with_default(const std::string& value)
 {
-  m_has_default = true;
+  set_has_default();
   *m_sink = m_default = value;
 
   return *this;
 }
 
 str_sink&
-str_sink::with_choices(const string_vec& value)
+str_sink::with_choices(const string_vec& choices)
 {
-  m_choices = value;
+  m_choices = choices;
 
   return *this;
 }
@@ -1019,8 +988,8 @@ vec_sink::vec_sink(string_vec* ptr)
 vec_sink&
 vec_sink::with_min_values(size_t n)
 {
-  AR_REQUIRE(n <= m_max_values);
-  m_min_values = n;
+  AR_REQUIRE(n <= max_values());
+  set_min_values(n);
 
   return *this;
 }
@@ -1028,8 +997,8 @@ vec_sink::with_min_values(size_t n)
 vec_sink&
 vec_sink::with_max_values(size_t n)
 {
-  AR_REQUIRE(n >= m_min_values);
-  m_max_values = n;
+  AR_REQUIRE(n >= min_values());
+  set_max_values(n);
 
   return *this;
 }
@@ -1037,8 +1006,8 @@ vec_sink::with_max_values(size_t n)
 size_t
 vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_REQUIRE(static_cast<size_t>(end - start) >= m_min_values);
-  AR_REQUIRE(static_cast<size_t>(end - start) <= m_max_values);
+  AR_REQUIRE(static_cast<size_t>(end - start) >= min_values());
+  AR_REQUIRE(static_cast<size_t>(end - start) <= max_values());
   m_sink->assign(start, end);
 
   return static_cast<size_t>(end - start);

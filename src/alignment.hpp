@@ -268,7 +268,7 @@ private:
  */
 bool
 extract_adapter_sequences(const alignment_info& alignment,
-                          fastq& adapter1,
-                          fastq& adapter2);
+                          fastq& read1,
+                          fastq& read2);
 
 } // namespace adapterremoval

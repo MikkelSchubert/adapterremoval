@@ -52,7 +52,7 @@ public:
    * quality-scores up to a given value (0 - N). Input with higher scores
    * is rejected, and output is truncated to this score.
    */
-  explicit fastq_encoding(quality_encoding encoding);
+  explicit fastq_encoding(quality_encoding encoding) noexcept;
 
   /** Decodes a string of ASCII values in-place. */
   void decode(std::string& qualities) const;

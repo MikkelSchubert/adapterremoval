@@ -43,9 +43,9 @@ const double BENCHMARK_CUTOFF_TIME_NS = BENCHMARK_MIN_TIME_NS / 100'000;
 
 } // namespace
 
-benchmark_toggles::benchmark_toggles(const string_vec& keys)
-  : m_toggles(keys)
-  , m_enabled(keys.size(), false)
+benchmark_toggles::benchmark_toggles(string_vec keys)
+  : m_toggles(std::move(keys))
+  , m_enabled(m_toggles.size(), false)
   , m_defaults()
 {
 }
@@ -88,15 +88,13 @@ benchmark_toggles::is_set(const std::string& key) const
   return m_enabled.at(it - m_toggles.begin());
 }
 
-benchmarker::benchmarker(const std::string& desc, string_vec toggles)
-  : m_description(desc)
+benchmarker::benchmarker(std::string desc, string_vec toggles)
+  : m_description(std::move(desc))
   , m_durations()
-  , m_toggles(toggles)
+  , m_toggles(std::move(toggles))
   , m_required(false)
 {
 }
-
-benchmarker::~benchmarker() {}
 
 void
 benchmarker::run_if_toggled(const benchmark_toggles& toggles)
@@ -143,7 +141,6 @@ benchmarker::run(const strategy s)
     }
   }
 
-  const auto timer = clock();
   size_t loops = 0;
   do {
     uint64_t elapsed =
@@ -151,9 +148,9 @@ benchmarker::run(const strategy s)
 
     do {
       setup();
-      const auto start = timer.now();
+      const auto start = clock::now();
       execute();
-      const auto duration = (timer.now() - start).count();
+      const auto duration = (clock::now() - start).count();
 
       loops++;
       elapsed += duration;
@@ -187,7 +184,7 @@ benchmarker::summarize(size_t loops) const
 
   ss << m_description;
 
-  if (m_durations.size()) {
+  if (!m_durations.empty()) {
     ss << " in " << std::fixed << std::setprecision(5)
        << arithmetic_mean(m_durations) / 1e9;
 

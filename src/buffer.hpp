@@ -135,10 +135,10 @@ buffer::write_u32(size_t offset, uint32_t value)
   AR_REQUIRE(offset + 4 <= size());
 
   unsigned char* dst = get() + offset;
-  dst[0] = value & 0xFFu;
-  dst[1] = (value >> 8) & 0xFFu;
-  dst[2] = (value >> 16) & 0xFFu;
-  dst[3] = (value >> 24) & 0xFFu;
+  dst[0] = value & 0xFFU;
+  dst[1] = (value >> 8U) & 0xFFU;
+  dst[2] = (value >> 16U) & 0xFFU;
+  dst[3] = (value >> 24U) & 0xFFU;
 }
 
 } // namespace adapterremoval

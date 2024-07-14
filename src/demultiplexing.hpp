@@ -61,16 +61,16 @@ class demultiplex_reads : public analytical_step
 public:
   /** Setup demultiplexer; keeps reference to config object. */
   demultiplex_reads(const userconfig& config,
-                    const post_demux_steps& steps,
+                    post_demux_steps steps,
                     demux_stats_ptr stats);
 
   /** Frees any unflushed caches. */
   ~demultiplex_reads() override = default;
 
-  //! Copy construction not supported
   demultiplex_reads(const demultiplex_reads&) = delete;
-  //! Assignment not supported
+  demultiplex_reads(demultiplex_reads&&) = delete;
   demultiplex_reads& operator=(const demultiplex_reads&) = delete;
+  demultiplex_reads& operator=(demultiplex_reads&&) = delete;
 
 protected:
   //! List of barcode (pairs) supplied by caller

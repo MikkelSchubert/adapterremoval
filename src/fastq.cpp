@@ -65,13 +65,6 @@ enum class read_mate
 
 struct mate_info
 {
-  mate_info()
-    : name()
-    , mate(read_mate::unknown)
-    , sep_pos(std::string::npos)
-  {
-  }
-
   std::string desc() const
   {
     switch (mate) {
@@ -87,11 +80,11 @@ struct mate_info
   }
 
   //! Read name without mate number or meta-data
-  std::string name;
+  std::string name{};
   //! Which mate in a pair, if identified
-  read_mate mate;
+  read_mate mate = read_mate::unknown;
   //! Position of the separator character in the header (if any)
-  size_t sep_pos;
+  size_t sep_pos = std::string::npos;
 };
 
 mate_info
@@ -188,13 +181,13 @@ fastq::fastq()
 {
 }
 
-fastq::fastq(const std::string& header,
-             const std::string& sequence,
-             const std::string& qualities,
+fastq::fastq(std::string header,
+             std::string sequence,
+             std::string qualities,
              const fastq_encoding& encoding)
-  : m_header(header)
-  , m_sequence(sequence)
-  , m_qualities(qualities)
+  : m_header(std::move(header))
+  , m_sequence(std::move(sequence))
+  , m_qualities(std::move(qualities))
 {
   if (m_qualities.length() != m_sequence.length()) {
     throw fastq_error(
@@ -204,10 +197,10 @@ fastq::fastq(const std::string& header,
   post_process(encoding);
 }
 
-fastq::fastq(const std::string& header, const std::string& sequence)
-  : m_header(header)
-  , m_sequence(sequence)
-  , m_qualities(std::string(sequence.length(), '!'))
+fastq::fastq(std::string header, std::string sequence)
+  : m_header(std::move(header))
+  , m_sequence(std::move(sequence))
+  , m_qualities(std::string(m_sequence.length(), '!'))
 {
   post_process(FASTQ_ENCODING_33);
 }
@@ -355,7 +348,7 @@ fastq::trim_windowed_bases(const bool trim_ns,
 {
   AR_REQUIRE(window_size >= 0.0);
   if (m_sequence.empty()) {
-    return ntrimmed();
+    return {};
   }
 
   low_quality += PHRED_OFFSET_MIN;
@@ -452,7 +445,7 @@ fastq::poly_x_trimming(const std::string& nucleotides, size_t min_length)
 {
   size_t best_count = 0;
   char best_nucleotide = 'N';
-  if (m_sequence.length() >= min_length && nucleotides.size()) {
+  if (m_sequence.length() >= min_length && !nucleotides.empty()) {
     // Looping over all nucleotides ended up faster than a single pass algorithm
     for (const auto nucleotide : nucleotides) {
       const auto count = count_poly_x_tail(m_sequence, nucleotide, min_length);

@@ -241,7 +241,7 @@ cli_formatter::cli_formatter()
   , m_columns(DEFAULT_MAX_COLUMNS)
   , m_indentation(4)
 {
-  struct winsize size;
+  struct winsize size = {};
   if (!ioctl(STDOUT_FILENO, TIOCGWINSZ, &size)) {
     m_columns = size.ws_col;
   }
@@ -280,11 +280,11 @@ cli_formatter::set_indent_first_line(bool value)
 }
 
 std::string
-cli_formatter::format(const std::string& lines) const
+cli_formatter::format(const std::string& value) const
 {
   std::ostringstream lines_out;
 
-  for (const auto& line : split_lines(lines)) {
+  for (const auto& line : split_lines(value)) {
     const auto block = wrap_text(line, m_columns, m_ljust);
 
     join(lines_out, indent(block, m_indentation, m_indent_first));

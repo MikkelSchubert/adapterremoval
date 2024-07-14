@@ -74,13 +74,13 @@ private:
 
   candidate lookup(const char* seq,
                    int parent,
-                   const size_t max_global_mismatches,
+                   size_t max_global_mismatches,
                    const next_subsequence* next) const;
 
   candidate lookup_with_mm(const char* seq,
                            int parent,
-                           const size_t max_global_mismatches,
-                           const size_t max_local_mismatches,
+                           size_t max_global_mismatches,
+                           size_t max_local_mismatches,
                            const next_subsequence* next) const;
 
   demux_node_vec m_nodes;

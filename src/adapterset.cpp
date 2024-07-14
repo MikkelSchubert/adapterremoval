@@ -192,9 +192,8 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
 
   std::sort(sequences.begin(), sequences.end());
   string_pair_vec::const_iterator prev = sequences.begin();
-  string_pair_vec::const_iterator curr = prev + 1;
 
-  for (; curr != sequences.end(); ++prev, ++curr) {
+  for (auto curr = prev + 1; curr != sequences.end(); ++prev, ++curr) {
     if (prev->first == curr->first) {
       if (paired_end) {
         if (prev->second == curr->second) {
@@ -271,8 +270,7 @@ check_sample_names(const string_vec& names)
   std::sort(sorted_names.begin(), sorted_names.end());
 
   string_vec::const_iterator prev = sorted_names.begin();
-  string_vec::const_iterator curr = prev + 1;
-  for (; curr != sorted_names.end(); ++prev, ++curr) {
+  for (auto curr = prev + 1; curr != sorted_names.end(); ++prev, ++curr) {
     if (*prev == *curr) {
       std::ostringstream error;
       error << "Duplicate sample name '" << *prev

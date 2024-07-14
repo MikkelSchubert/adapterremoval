@@ -38,7 +38,7 @@ public:
   /** Constructs consensus adapter sequence and selects the top N kmers */
   consensus_adapter(const indexed_counts<ACGTN>& consensus,
                     const kmer_map& kmers,
-                    const size_t n_kmers);
+                    size_t n_kmers);
 
   /**
    * Build representation of identity between two sequences.
@@ -74,11 +74,11 @@ public:
   //! Length of k-mers to collect to find common kmers
   static const size_t kmer_length = 9;
   //! Size of vector needed for k-mer counts
-  static const size_t kmer_count = 2 << (2 * kmer_length);
+  static const size_t kmer_count = 2LLU << (2 * kmer_length);
   //! The N most common k-mers to print
   static const size_t top_n_kmers = 5;
 
-  consensus_adapter_stats(size_t max_length);
+  explicit consensus_adapter_stats(size_t max_length);
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   consensus_adapter_stats& operator+=(const consensus_adapter_stats& other);
 
@@ -102,7 +102,8 @@ private:
 class adapter_id_statistics
 {
 public:
-  adapter_id_statistics(size_t max_length);
+  explicit adapter_id_statistics(size_t max_length);
+  ~adapter_id_statistics() = default;
 
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
   adapter_id_statistics& operator+=(const adapter_id_statistics& other);
@@ -116,10 +117,10 @@ public:
   //! Number of reads with adapter fragments
   size_t pairs_with_adapters;
 
-  //! Copy construction not supported
   adapter_id_statistics(const adapter_id_statistics&) = delete;
-  //! Assignment not supported
+  adapter_id_statistics(adapter_id_statistics&&) = delete;
   adapter_id_statistics& operator=(const adapter_id_statistics&) = delete;
+  adapter_id_statistics& operator=(adapter_id_statistics&&) = delete;
 };
 
 } // namespace adapterremoval

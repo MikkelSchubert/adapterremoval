@@ -43,11 +43,11 @@ using output_chunk_ptr = std::unique_ptr<fastq_output_chunk>;
 using read_chunk_ptr = std::unique_ptr<fastq_read_chunk>;
 
 //! Rough number of nucleotides to read every cycle
-const size_t INPUT_BLOCK_SIZE = 4 * 64 * 1024;
+const size_t INPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 //! Size of chunks of when performing block compression
-const size_t GZIP_BLOCK_SIZE = 64 * 1024;
+const size_t GZIP_BLOCK_SIZE = 1LLU * 64 * 1024;
 //! Size of blocks to generate before writing to output
-const size_t OUTPUT_BLOCK_SIZE = 4 * 64 * 1024;
+const size_t OUTPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 
 /**
  * Container object for (demultiplexed) reads.
@@ -70,6 +70,11 @@ public:
   fastq_vec reads_1;
   //! Lines read from the mate 2 files
   fastq_vec reads_2;
+
+  fastq_read_chunk(const fastq_read_chunk&) = delete;
+  fastq_read_chunk(fastq_read_chunk&&) = delete;
+  fastq_read_chunk& operator=(const fastq_read_chunk&) = delete;
+  fastq_read_chunk& operator=(fastq_read_chunk&&) = delete;
 };
 
 /**
@@ -102,6 +107,11 @@ public:
 
   //! Size of (uncompressed) data in buffers;
   size_t uncompressed_size;
+
+  fastq_output_chunk(const fastq_output_chunk&) = delete;
+  fastq_output_chunk(fastq_output_chunk&&) = delete;
+  fastq_output_chunk& operator=(const fastq_output_chunk&) = delete;
+  fastq_output_chunk& operator=(fastq_output_chunk&&) = delete;
 };
 
 /**
@@ -114,10 +124,9 @@ public:
 class read_fastq : public analytical_step
 {
 public:
-  /**
-   * Constructor.
-   */
   read_fastq(const userconfig& config, size_t next_step);
+
+  ~read_fastq() override = default;
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -125,19 +134,16 @@ public:
   /** Finalizer; checks that all input has been processed. */
   void finalize() override;
 
-  //! Copy construction not supported
   read_fastq(const read_fastq&) = delete;
-  //! Assignment not supported
+  read_fastq(read_fastq&&) = delete;
   read_fastq& operator=(const read_fastq&) = delete;
+  read_fastq& operator=(read_fastq&&) = delete;
 
 private:
   /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
   bool read_single_end(fastq_vec& reads_1);
   /** Fills a chunk with PE reads; stops on EOF or after `head` reads. */
   bool read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2);
-  /** Attempt to identify the mate separator for the provided reads */
-  char identify_mate_separators(const fastq_vec& reads_1,
-                                const fastq_vec& reads_2) const;
 
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_io_input_1_base;
@@ -180,16 +186,18 @@ public:
                      statistics& stats,
                      const fastq_encoding& encoding);
 
+  ~post_process_fastq() override = default;
+
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
 
   /** Finalizer; checks that all input has been processed. */
   void finalize() override;
 
-  //! Copy construction not supported
   post_process_fastq(const post_process_fastq&) = delete;
-  //! Assignment not supported
+  post_process_fastq(post_process_fastq&&) = delete;
   post_process_fastq& operator=(const post_process_fastq&) = delete;
+  post_process_fastq& operator=(post_process_fastq&&) = delete;
 
 private:
   //! Statistics collected from raw mate 1 reads
@@ -217,16 +225,18 @@ public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
   gzip_fastq(const userconfig& config, size_t next_step);
 
+  ~gzip_fastq() override = default;
+
   /** Compresses input lines, saving compressed chunks to chunk->buffers. */
   chunk_vec process(chunk_ptr chunk) override;
 
   /** Checks that all input has been processed and frees stream. */
   void finalize() override;
 
-  //! Copy construction not supported
   gzip_fastq(const gzip_fastq&) = delete;
-  //! Assignment not supported
+  gzip_fastq(gzip_fastq&&) = delete;
   gzip_fastq& operator=(const gzip_fastq&) = delete;
+  gzip_fastq& operator=(gzip_fastq&&) = delete;
 
 private:
   //! The analytical step following this step
@@ -249,13 +259,15 @@ public:
               const std::string& filename,
               size_t next_step);
 
+  ~split_fastq() override = default;
+
   chunk_vec process(chunk_ptr chunk) override;
   void finalize() override;
 
-  //! Copy construction not supported
   split_fastq(const split_fastq&) = delete;
-  //! Assignment not supported
+  split_fastq(split_fastq&&) = delete;
   split_fastq& operator=(const split_fastq&) = delete;
+  split_fastq& operator=(split_fastq&&) = delete;
 
 private:
   //! The analytical step following this step
@@ -288,13 +300,15 @@ public:
                    const std::string& filename,
                    size_t next_step);
 
+  ~gzip_split_fastq() override = default;
+
   /** Compresses input lines, saving compressed chunks to chunk->buffers. */
   chunk_vec process(chunk_ptr chunk) override;
 
-  //! Copy construction not supported
   gzip_split_fastq(const gzip_split_fastq&) = delete;
-  //! Assignment not supported
+  gzip_split_fastq(gzip_split_fastq&&) = delete;
   gzip_split_fastq& operator=(const gzip_split_fastq&) = delete;
+  gzip_split_fastq& operator=(gzip_split_fastq&&) = delete;
 
 private:
   const userconfig& m_config;
@@ -314,12 +328,7 @@ private:
 class write_fastq : public analytical_step
 {
 public:
-  /**
-   * Opens the specified file for writing using a managed writer.
-   *
-   * The filename "/dev/stdout" is handled specially and does not count as IO
-   * for the purpose of scheduling the pipeline.
-   */
+  /** Opens the specified file for writing using a managed writer */
   write_fastq(const userconfig& config, const std::string& filename);
 
   /** Writes the reads of the type specified in the constructor. */
