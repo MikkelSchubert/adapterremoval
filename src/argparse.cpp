@@ -912,11 +912,12 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 
 str_sink::str_sink(std::string* ptr)
   : sink(1)
-  , m_sink(ptr)
+  , m_sink(ptr ? ptr : &m_fallback_sink)
   , m_choices()
   , m_default()
+  , m_fallback_sink()
 {
-  AR_REQUIRE(ptr);
+  AR_REQUIRE(m_sink);
 
   *m_sink = m_default;
 }

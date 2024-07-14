@@ -317,11 +317,6 @@ TEST_CASE("double requires valid double #2", "[argparse::double_sink]")
 ///////////////////////////////////////////////////////////////////////////////
 // str sink
 
-TEST_CASE("str sink is required", "[argparse::str_sink]")
-{
-  REQUIRE_THROWS_AS(argparse::str_sink(nullptr), assert_failed);
-}
-
 TEST_CASE("str sink is initialized", "[argparse::str_sink]")
 {
   std::string value = "foo";

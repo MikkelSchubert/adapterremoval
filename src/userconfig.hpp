@@ -294,8 +294,6 @@ private:
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser;
 
-  //! Sink for --simd, for user selected SIMD instruction set
-  std::string simd_sink;
   //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
   std::string adapter_1;
   //! Sink for --adapter2, adapter sequence expected at 3' of mate 2 reads
@@ -313,11 +311,6 @@ private:
   //! Sink for --interleaved
   bool interleaved;
 
-  //! Sink used for --merge-strategy
-  std::string m_merge_strategy_sink;
-  //! Sink used for --trim-strategy
-  std::string m_trim_strategy_sink;
-
   //! Sinks for --pre-trim5p/--pre-trimp3p
   string_vec pre_trim5p;
   string_vec pre_trim3p;
@@ -333,11 +326,6 @@ private:
   std::string log_color;
   //! Sink for log levels
   std::string log_level;
-  //! Sink for progress indicators
-  std::string log_progress_sink;
-
-  //! Sink for head
-  std::string head_sink;
 
   //! Measures runtime since the program was started
   monotonic_timer m_runtime;

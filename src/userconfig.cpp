@@ -488,7 +488,6 @@ userconfig::userconfig()
   , log_progress()
   , benchmarks()
   , argparser()
-  , simd_sink()
   , adapter_1()
   , adapter_2()
   , adapter_list()
@@ -496,8 +495,6 @@ userconfig::userconfig()
   , quality_input_base()
   , mate_separator_str()
   , interleaved()
-  , m_merge_strategy_sink()
-  , m_trim_strategy_sink()
   , pre_trim5p()
   , pre_trim3p()
   , post_trim5p()
@@ -506,8 +503,6 @@ userconfig::userconfig()
   , post_trim_poly_x_sink()
   , log_color()
   , log_level()
-  , log_progress_sink()
-  , head_sink()
   , m_runtime()
 {
   argparser.set_name(NAME);
@@ -532,7 +527,7 @@ userconfig::userconfig()
     argparser.add("--simd", "NAME")
       .help("SIMD instruction set to use; defaults to the most advanced "
             "instruction set supported by this computer")
-      .bind_str(&simd_sink)
+      .bind_str(nullptr)
       .with_choices(choices)
       .with_default(choices.back());
   }
@@ -565,7 +560,7 @@ userconfig::userconfig()
     .help("Process only the first N reads in single-end mode or the first N "
           "read-pairs in paired-end mode. Accepts suffixes K (thousands), M "
           "(millions), and G (billions) [default: all reads]")
-    .bind_str(&head_sink);
+    .bind_str(nullptr);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("OUTPUT FILES:");
@@ -730,7 +725,7 @@ userconfig::userconfig()
           "uses  Q=Q1+Q2 for matches and picks a base at random for same-"
           "quality mismatches. All strategies use Q=abs(Q1-Q2) for mismatches. "
           "Setting this option implies --merge")
-    .bind_str(&m_merge_strategy_sink)
+    .bind_str(nullptr)
     .with_choices({ "conservative", "deterministic", "original" })
     .with_default("conservative");
   argparser.add("--merge-quality-max", "N")
@@ -802,7 +797,7 @@ userconfig::userconfig()
           "Mott's algorithm; 'window' for window based trimming; 'per-base' "
           "for a per-base trimming of low quality base; and 'none' for no "
           "trimming of low quality bases")
-    .bind_str(&m_trim_strategy_sink)
+    .bind_str(nullptr)
     .with_choices({ "mott", "window", "per-base", "none" })
     .with_default("mott");
 
@@ -986,7 +981,7 @@ userconfig::userconfig()
     .help("Specify the type of progress reports used. If set to auto, then a "
           "spinner will be used if STDERR is a terminal and the NO_COLORS "
           "environmental variable is not set, otherwise logging will be used")
-    .bind_str(&log_progress_sink)
+    .bind_str(nullptr)
     .with_choices({ "auto", "log", "spin", "never" })
     .with_default("auto");
 }
@@ -1012,7 +1007,8 @@ userconfig::parse_args(int argc, char* argv[])
 
   configure_log_colors(log_color);
   configure_log_levels(log_level);
-  log_progress = configure_log_progress(log_progress_sink);
+  log_progress =
+    configure_log_progress(argparser.current_value("--log-progress"));
   io_encoding = configure_encoding(quality_input_base);
 
   if (argparser.is_set("--mate-separator")) {
@@ -1047,7 +1043,7 @@ userconfig::parse_args(int argc, char* argv[])
                  << "not " << trim_window_length;
     return argparse::parse_result::error;
   } else {
-    const auto strategy = to_lower(m_trim_strategy_sink);
+    const auto strategy = argparser.current_value("--trim-strategy");
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
 
@@ -1115,7 +1111,7 @@ userconfig::parse_args(int argc, char* argv[])
       merge = merge_strategy::conservative;
     } else if (argparser.is_set("--merge") ||
                argparser.is_set("--merge-strategy")) {
-      const auto strategy = to_lower(m_merge_strategy_sink);
+      const auto strategy = argparser.current_value("--merge-strategy");
       if (strategy == "conservative") {
         merge = merge_strategy::conservative;
       } else if (strategy == "deterministic") {
@@ -1123,7 +1119,7 @@ userconfig::parse_args(int argc, char* argv[])
       } else if (strategy == "original") {
         merge = merge_strategy::original;
       } else {
-        AR_FAIL(m_merge_strategy_sink);
+        AR_FAIL(strategy);
       }
     }
   }
@@ -1161,8 +1157,9 @@ userconfig::parse_args(int argc, char* argv[])
 
   {
     bool found = false;
+    const auto simd_choice = argparser.current_value("--simd");
     for (const auto is : simd::supported()) {
-      if (simd_sink == simd::name(is)) {
+      if (simd_choice == simd::name(is)) {
         simd = is;
         found = true;
         break;
@@ -1246,7 +1243,7 @@ userconfig::parse_args(int argc, char* argv[])
                    "are incompatible with some tools!";
   }
 
-  if (!parse_head(head_sink, head)) {
+  if (!parse_head(argparser.current_value("--head"), head)) {
     return argparse::parse_result::error;
   }
 

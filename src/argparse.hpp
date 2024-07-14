@@ -428,6 +428,8 @@ private:
   string_vec m_choices;
   //! Default value used for -h/--help output
   std::string m_default;
+  //! Sink variable used if no sink was supplied
+  std::string m_fallback_sink;
 };
 
 class vec_sink : public sink
