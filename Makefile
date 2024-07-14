@@ -208,14 +208,14 @@ all: $(EXECUTABLE)
 
 clean:
 	@echo $(COLOR_GREEN)"Cleaning"$(COLOR_END)
-	$(QUIET) rm -rf $(BUILD_DIR)
-	$(QUIET) make -C examples clean
+	$(QUIET) $(RM) -r $(BUILD_DIR)
+	$(QUIET) $(MAKE) -C examples clean
 
 everything: all test regression docs examples
 
 examples: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
-	$(QUIET) make -C examples EXE=$(CURDIR)/$(EXECUTABLE)
+	$(QUIET) $(MAKE) -C examples EXE=$(CURDIR)/$(EXECUTABLE)
 
 install: $(EXECUTABLE) $(MAN_PAGE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)

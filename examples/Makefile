@@ -10,7 +10,7 @@ TARGETS := single_end paired_end phred_64_encoded \
 all: ${TARGETS}
 
 clean:
-	rm -f output_*
+	$(RM) output_*
 
 single_end:
 	$(EXE) --file1 reads_1.fastq --basename output_single --gzip
