@@ -52,16 +52,22 @@ unsigned
 str_to_unsigned(const std::string& s);
 
 /** Lowercases letters in the range a-z */
-char
-to_lower(char c);
+constexpr char
+to_lower(char c)
+{
+  return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + 32) : c;
+}
 
 /** Lowercases letters in the range a-z */
 std::string
 to_lower(const std::string& str);
 
-/** Lowercases letters in the range a-z */
-char
-to_upper(char c);
+/** Uppercase letters in the range a-z */
+constexpr char
+to_upper(char c)
+{
+  return (c >= 'a' && c <= 'z') ? static_cast<char>(c - 32) : c;
+}
 
 /** Uppercase letters in the range a-z */
 std::string

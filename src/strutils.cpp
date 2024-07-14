@@ -134,12 +134,6 @@ str_to_unsigned(const std::string& s)
   return static_cast<unsigned>(temp);
 }
 
-char
-to_lower(char c)
-{
-  return static_cast<char>(::tolower(c));
-}
-
 std::string
 to_lower(const std::string& str)
 {
@@ -149,12 +143,6 @@ to_lower(const std::string& str)
   }
 
   return lowercase;
-}
-
-char
-to_upper(char c)
-{
-  return static_cast<char>(::toupper(c));
 }
 
 std::string
