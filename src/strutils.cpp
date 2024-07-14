@@ -16,20 +16,19 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "strutils.hpp"
-#include "debug.hpp"   // for AR_REQUIRE
-#include <algorithm>   // for min, reverse, max
-#include <cctype>      // for isprint, isalnum, tolower, toupper
-#include <chrono>      // for system_clock
-#include <cmath>       // for log10, pow, round
-#include <cstdint>     // for uint64_t, int64_t
-#include <iomanip>     // for operator<<, setprecision
-#include <limits>      // for numeric_limits
-#include <sstream>     // for ostringstream, operator<<, basic_ostream, bas...
-#include <stdexcept>   // for invalid_argument
-#include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
-#include <unistd.h>    // for STDOUT_FILENO
-#include <vector>      // for vector, swap
+#include "strutils.hpp" // declarations
+#include "debug.hpp"    // for AR_REQUIRE
+#include <algorithm>    // for min, reverse, max
+#include <cctype>       // for isprint, isalnum, tolower, toupper
+#include <chrono>       // for system_clock
+#include <cmath>        // for log10, pow, round
+#include <cstdint>      // for uint64_t, int64_t
+#include <iomanip>      // for operator<<, setprecision
+#include <limits>       // for numeric_limits
+#include <sstream>      // for ostringstream, operator<<, basic_ostream, bas...
+#include <stdexcept>    // for invalid_argument
+#include <unistd.h>     // for STDOUT_FILENO
+#include <vector>       // for vector, swap
 
 namespace adapterremoval {
 
@@ -241,10 +240,6 @@ cli_formatter::cli_formatter()
   , m_columns(DEFAULT_MAX_COLUMNS)
   , m_indentation(4)
 {
-  struct winsize size = {};
-  if (!ioctl(STDOUT_FILENO, TIOCGWINSZ, &size)) {
-    m_columns = size.ws_col;
-  }
 }
 
 cli_formatter&

@@ -22,6 +22,7 @@
 #include <algorithm>    // for max, min
 #include <iomanip>      // for operator<<, put_time
 #include <iostream>     // for cerr
+#include <limits>       // for numeric_limits
 #include <mutex>        // for mutex, unique_lock
 #include <sys/ioctl.h>  // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>     // for size_t, STDERR_FILENO
@@ -133,14 +134,10 @@ log_linewidth(const std::ostream& out)
 {
   // Piped logs are not pretty-printed, to make analyses easier
   if (&out == &std::cerr) {
-    struct winsize params;
-    // Attempt to retrieve the number of columns in the terminal
-    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
-      return std::min<size_t>(120, std::max<size_t>(60, params.ws_col));
-    }
+    return get_terminal_width();
   }
 
-  return static_cast<size_t>(-1);
+  return std::numeric_limits<size_t>::max();
 }
 
 void
@@ -204,6 +201,18 @@ set_timestamps(bool enabled)
   std::unique_lock<std::mutex> lock(g_log_mutex);
 
   g_log_timestamps = enabled;
+}
+
+size_t
+get_terminal_width()
+{
+  struct winsize params = {};
+  // Attempt to retrieve the number of columns in the terminal
+  if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
+    return std::min<size_t>(120, std::max<size_t>(60, params.ws_col));
+  }
+
+  return std::numeric_limits<size_t>::max();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -176,6 +176,10 @@ set_colors(bool enabled);
 void
 set_timestamps(bool enabled);
 
+/** Returns the terminal column width if available, otherwise (size_t)-1 */
+size_t
+get_terminal_width();
+
 } // namespace log
 
 } // namespace adapterremoval

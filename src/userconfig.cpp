@@ -492,6 +492,7 @@ userconfig::userconfig()
   argparser.set_version(VERSION);
   argparser.set_preamble(HELPTEXT);
   argparser.set_licenses(LICENSES);
+  argparser.set_terminal_width(log::get_terminal_width());
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add("--threads", "N")
