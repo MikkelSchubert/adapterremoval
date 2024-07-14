@@ -44,6 +44,8 @@ namespace adapterremoval {
 
 const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
 
+namespace {
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
@@ -178,6 +180,24 @@ check_no_clobber(const std::string& label,
   return true;
 }
 
+/** Replace the STDIN pseudo-filename with the device path */
+void
+normalize_input_file(std::string& filename)
+{
+  if (filename == "-") {
+    filename = "/dev/stdin";
+  }
+}
+
+/** Replace the STDIN pseudo-filename with the device path */
+void
+normalize_output_file(std::string& filename)
+{
+  if (filename == "-") {
+    filename = "/dev/stdout";
+  }
+}
+
 bool
 check_input_and_output(const std::string& label,
                        const string_vec& filenames,
@@ -210,6 +230,8 @@ check_input_and_output(const std::string& label,
 
   return true;
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `output_files`
@@ -532,11 +554,13 @@ userconfig::userconfig()
 
   argparser.add("--file1", "FILE")
     .help("One or more input files containing mate 1 reads [REQUIRED]")
-    .bind_vec(&input_files_1);
+    .bind_vec(&input_files_1)
+    .with_preprocessor(normalize_input_file);
   argparser.add("--file2", "FILE")
     .help("Input files containing mate 2 reads; if used, then the same number "
           "of files as --file1 must be listed [OPTIONAL]")
-    .bind_vec(&input_files_2);
+    .bind_vec(&input_files_2)
+    .with_preprocessor(normalize_input_file);
   argparser.add("--head", "N")
     .help("Process only the first N reads in single-end mode or the first N "
           "read-pairs in paired-end mode. Accepts suffixes K (thousands), M "
@@ -562,39 +586,46 @@ userconfig::userconfig()
     .help("Output file containing trimmed mate 1 reads")
     .deprecated_alias("--output1")
     .bind_str(&out_pair_1)
-    .with_default("{basename}[.sample].r1.fastq");
+    .with_default("{basename}[.sample].r1.fastq")
+    .with_preprocessor(normalize_output_file);
   argparser.add("--out-file2", "FILE")
     .help("Output file containing trimmed mate 2 reads")
     .deprecated_alias("--output2")
     .bind_str(&out_pair_2)
-    .with_default("{basename}[.sample].r2.fastq");
+    .with_default("{basename}[.sample].r2.fastq")
+    .with_preprocessor(normalize_output_file);
   argparser.add("--out-merged", "FILE")
     .help("Output file that, if --merge is set, contains overlapping "
           "read-pairs that have been merged into a single read (PE mode only)")
     .deprecated_alias("--outputcollapsed")
     .bind_str(&out_merged)
-    .with_default("{basename}[.sample].merged.fastq");
+    .with_default("{basename}[.sample].merged.fastq")
+    .with_preprocessor(normalize_output_file);
   argparser.add("--out-singleton", "FILE")
     .help("Output file containing paired reads for which the mate "
           "has been discarded")
     .deprecated_alias("--singleton")
     .bind_str(&out_singleton)
-    .with_default("{basename}[.sample].singleton.fastq");
+    .with_default("{basename}[.sample].singleton.fastq")
+    .with_preprocessor(normalize_output_file);
   argparser.add("--out-discarded", "FILE")
     .help("Output file containing discarded reads are written")
     .deprecated_alias("--discarded")
     .bind_str(&out_discarded)
-    .with_default("{basename}[.sample].discarded.fastq");
+    .with_default("{basename}[.sample].discarded.fastq")
+    .with_preprocessor(normalize_output_file);
   argparser.add("--out-json", "FILE")
     .help("Output file containing statistics about input files, trimming, "
           "merging, and more in JSON format")
     .bind_str(&out_json)
-    .with_default("{basename}[.sample].json");
+    .with_default("{basename}[.sample].json")
+    .with_preprocessor(normalize_output_file);
   argparser.add("--out-html", "FILE")
     .help("Output file containing statistics about input files, trimming, "
           "merging, and more in HTML format")
     .bind_str(&out_html)
-    .with_default("{basename}[.sample].html");
+    .with_default("{basename}[.sample].html")
+    .with_preprocessor(normalize_output_file);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("FASTQ OPTIONS:");
