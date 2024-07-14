@@ -26,38 +26,51 @@
 #include <cstdio>         // for fopen, fread, fwrite, ...
 #include <mutex>          // for mutex, lock_guard
 #include <string>         // for string
+#include <sys/stat.h>     // for fstat
 
 namespace adapterremoval {
 
-class writer_list
+class io_manager
 {
 public:
-  writer_list() = default;
-
-  ~writer_list()
+  static void open(managed_reader* reader)
   {
-    AR_REQUIRE(m_head == nullptr);
-    AR_REQUIRE(m_tail == nullptr);
-  }
-
-  FILE* fopen(const std::string& filename, const char* mode)
-  {
-    while (true) {
-      FILE* handle = ::fopen(filename.c_str(), mode);
-
-      if (handle) {
-        AR_REQUIRE(!::ferror_unlocked(handle));
-        return handle;
-      } else if (errno == EMFILE) {
-        close_one();
-      } else {
-        throw io_error("failed to open file", errno);
-      }
+    if (reader->m_file) {
+      return;
+    } else if (reader->filename() == "/dev/stdin") {
+      reader->m_file = stdin;
+    } else if (reader->filename() != "-") {
+      reader->m_file = io_manager::fopen(reader->filename(), "rb");
+    } else {
+      // Merged I/O depends on filenames being identical
+      AR_FAIL("unhandled STDIN marker");
     }
   }
 
+  static void open(managed_writer* writer)
+  {
+    if (writer->m_file) {
+      return;
+    } else if (writer->filename() == "/dev/stdout") {
+      writer->m_file = stdout;
+    } else if (writer->filename() == "/dev/stderr") {
+      // Not sure why anyone would do this, but ¯\_(ツ)_/¯
+      writer->m_file = stderr;
+    } else if (writer->filename() != "-") {
+      writer->m_file =
+        io_manager::fopen(writer->filename(), writer->m_created ? "ab" : "wb");
+    } else {
+      // Merged I/O depends on filenames being identical
+      AR_FAIL("unhandled STDOUT marker");
+    }
+
+    writer->m_created = true;
+    writer->m_stream =
+      io_manager::is_stream(writer->filename(), writer->m_file);
+  }
+
   /** Adds writer to list of inactive writers */
-  void add(managed_writer* writer)
+  static void add(managed_writer* writer)
   {
     std::lock_guard<std::mutex> lock(m_lock);
 
@@ -81,7 +94,7 @@ public:
   }
 
   /* Removes the writer from the list of inactive writers */
-  void remove(managed_writer* writer)
+  static void remove(managed_writer* writer)
   {
     std::lock_guard<std::mutex> lock(m_lock);
 
@@ -118,14 +131,49 @@ public:
     AR_REQUIRE(!m_tail || !m_tail->m_next);
   }
 
-  writer_list(const writer_list&) = delete;
-  writer_list(writer_list&&) = delete;
-  writer_list& operator=(const writer_list&) = delete;
-  writer_list& operator=(writer_list&&) = delete;
+  io_manager() = delete;
+  ~io_manager() = delete;
+  io_manager(const io_manager&) = delete;
+  io_manager(io_manager&&) = delete;
+  io_manager& operator=(const io_manager&) = delete;
+  io_manager& operator=(io_manager&&) = delete;
 
 private:
+  static FILE* fopen(const std::string& filename, const char* mode)
+  {
+    while (true) {
+      FILE* handle = ::fopen(filename.c_str(), mode);
+
+      if (handle) {
+        AR_REQUIRE(!::ferror_unlocked(handle));
+        return handle;
+      } else if (errno == EMFILE) {
+        close_one();
+      } else {
+        throw io_error("failed to open file", errno);
+      }
+    }
+  }
+
+  static bool is_stream(const std::string& filename, FILE* handle)
+  {
+    if (handle == stdin || handle == stdout || handle == stderr) {
+      return true;
+    }
+
+    struct stat statbuf = {};
+    if (fstat(fileno(handle), &statbuf) == 0) {
+      return S_ISFIFO(statbuf.st_mode);
+    }
+
+    log::warn() << "Could not fstat " << log_escape(filename);
+
+    // Assumed to be a stream to be safe
+    return true;
+  }
+
   /** Try to close the least recently used writer */
-  void close_one()
+  static void close_one()
   {
     AR_REQUIRE(!m_head == !m_tail);
     if (!m_warning_printed) {
@@ -151,21 +199,19 @@ private:
   }
 
   //! Indicates if a performance warning has been printed
-  bool m_warning_printed = false;
+  static bool m_warning_printed;
   //! Most recently used managed_writer
-  managed_writer* m_head = nullptr;
+  static managed_writer* m_head;
   //! Least recently used managed_writer
-  managed_writer* m_tail = nullptr;
+  static managed_writer* m_tail;
   //! Lock used to control access to internal state
-  std::mutex m_lock{};
+  static std::mutex m_lock;
 };
 
-namespace {
-
-//! List of (currently) inactive writers
-writer_list g_writers;
-
-} // namespace
+bool io_manager::m_warning_printed = false;
+managed_writer* io_manager::m_head = nullptr;
+managed_writer* io_manager::m_tail = nullptr;
+std::mutex io_manager::m_lock{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -178,8 +224,8 @@ managed_reader::managed_reader(FILE* handle)
 
 managed_reader::managed_reader(std::string filename)
   : m_filename(std::move(filename))
-  , m_file(g_writers.fopen(m_filename, "rb"))
 {
+  io_manager::open(this);
 }
 
 managed_reader::~managed_reader()
@@ -223,20 +269,16 @@ public:
     AR_REQUIRE(m_writer);
 
     // Remove from global queue to prevent other threads from manipulating it
-    g_writers.remove(m_writer);
-
-    if (!m_writer->m_file) {
-      m_writer->m_file = g_writers.fopen(m_writer->filename(),
-                                         m_writer->m_created ? "ab" : "wb");
-      m_writer->m_created = true;
-    }
+    io_manager::remove(m_writer);
+    io_manager::open(m_writer);
   };
 
   ~writer_lock()
   {
-    if (m_writer->m_file) {
+    // Streams cannot be managed, since they cannot be reopened
+    if (m_writer->m_file && !m_writer->m_stream) {
       // Allow this writer to be closed if we run out of file handles
-      g_writers.add(m_writer);
+      io_manager::add(m_writer);
     }
   }
 
@@ -327,7 +369,7 @@ managed_writer::write(const std::string& buf, const flush mode)
 void
 managed_writer::close()
 {
-  g_writers.remove(this);
+  io_manager::remove(this);
   if (m_file) {
     if (fclose(m_file)) {
       m_file = nullptr;

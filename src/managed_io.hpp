@@ -66,6 +66,8 @@ private:
   std::string m_filename{};
   //! File handle or nullptr if the file has been closed
   FILE* m_file = nullptr;
+
+  friend class io_manager;
 };
 
 /**
@@ -107,13 +109,15 @@ private:
   bool m_created = false;
   //! Lazily opened, managed handle; may be closed to free up handles.
   FILE* m_file = nullptr;
+  //! Indicates if the handle is a stream and can't be closed
+  bool m_stream = false;
 
   //! Managed writer used more recently than this writer.
   managed_writer* m_prev = nullptr;
   //! Managed writer used prior to this writer.
   managed_writer* m_next = nullptr;
 
-  friend class writer_list;
+  friend class io_manager;
   friend class writer_lock;
 };
 
