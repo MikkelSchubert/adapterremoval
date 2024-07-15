@@ -290,7 +290,9 @@ scheduler::run_io_loop()
     m_tasks--;
 
     // Queue additional read tasks
-    m_condition_calc.notify_one();
+    if (!m_queue_calc.empty() || m_tasks < m_tasks_max) {
+      m_condition_calc.notify_one();
+    }
   }
 
   m_condition_io.notify_all();
