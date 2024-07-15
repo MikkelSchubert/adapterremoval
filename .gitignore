@@ -9,7 +9,8 @@ compile_commands.json
 
 # AdapterRemoval output
 /examples/output*
-your_output.*
+/examples/your_output.*
+/your_output.*
 
 # Misc files
 *.patch
