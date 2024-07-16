@@ -37,6 +37,7 @@ jobs:
       - name: dependencies
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev
+
       - name: dependencies
         if: ${{ matrix.os == 'macos-latest' }}
         run: brew install isa-l libdeflate
@@ -45,15 +46,17 @@ jobs:
         run: |
           export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
           make -j ${NPROCS} test VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
+
       - name: make regression
         run: |
           export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
-          make -j ${NPROCS} regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
+          make -j ${NPROCS} regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=no
 
       - name: sphinx
         run: python3 -m pip install sphinx
+
       - name: make install
-        run: make install VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }} PREFIX=${PWD}/install
+        run: make install VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=no PREFIX=${PWD}/install
 
       # Coverage statistics
       - name: setup coveralls
