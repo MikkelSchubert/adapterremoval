@@ -100,8 +100,6 @@ public:
           stats_ins->insert_sizes.inc(insert_size);
           stats_ins->overlapping_reads += 2;
 
-          const auto orig_1 = read_1;
-          const auto orig_2 = read_2;
           if (extract_adapter_sequences(alignment, read_1, read_2)) {
             stats_id->pairs_with_adapters++;
 
