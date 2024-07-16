@@ -63,7 +63,7 @@ jobs:
         if: ${{ matrix.coverage == 'yes' }}
         run: |
           python3 -m pip install cpp-coveralls
-          coveralls --exclude tests --gcov-options '\-lpbc'
+          coveralls --exclude tests --build-root "${PWD}" --gcov-options '\-lpbc' 
 
       - name: examples
         run: make -C examples EXE=${PWD}/install/bin/adapterremoval3
