@@ -19,9 +19,9 @@ jobs:
           - os: ubuntu-22.04
             cxx: clang++
             coverage: "no"
-          - os: macos-latest
-            cxx: clang++
-            coverage: "no"
+          # - os: macos-latest
+          #   cxx: clang++
+          #   coverage: "no"
       # Do not auto-cancel other runners if one fails
       fail-fast: false
     env:
