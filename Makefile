@@ -202,7 +202,7 @@ TEST_OBJS := \
 
 ################################################################################
 
-.PHONY: all clean docs man everything examples install regression test
+.PHONY: all clean coverage docs man everything examples install regression test
 
 all: $(EXECUTABLE)
 
@@ -253,6 +253,8 @@ regression: $(EXECUTABLE)
 test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
 	$(QUIET) $(TEST_RUNNER) --invisibles --use-colour $(COLOR)
+
+coverage: test
 ifeq ($(strip ${COVERAGE}), yes)
 ifneq ($(shell which gcovr), )
 	@echo $(COLOR_GREEN)"Running coverage analysis"$(COLOR_END)
@@ -268,8 +270,10 @@ ifneq ($(shell which gcovr), )
 		--delete
 	$(QUIET) cat "$(COV_DIR)/index.txt"
 else
-	@echo $(COLOR_YELLOW)"Cannot analyse coverage: gcovr not found"$(COLOR_END)
+	$(error Cannot analyse coverage: gcovr not found)
 endif
+else
+	$(error Cannot analyse coverage: tests not compiled with coverage support)
 endif
 
 $(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
