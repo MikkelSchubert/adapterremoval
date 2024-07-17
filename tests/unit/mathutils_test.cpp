@@ -16,10 +16,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp"     // for SourceLineInfo, operator""_catch_sr, Assert...
-#include "debug.hpp"     // for assert_failed
 #include "errors.hpp"    // for assert_failed
 #include "mathutils.hpp" // for arithmetic_mean, standard_deviation
+#include "testing.hpp"   // for catch.hpp, StringMaker
 #include <vector>        // for vector
 
 namespace adapterremoval {

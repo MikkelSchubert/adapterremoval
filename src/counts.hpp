@@ -264,6 +264,12 @@ public:
   }
 
   /** Returns the count for n for a given index. */
+  inline const indexed_count<I, T>& get(size_t offset) const
+  {
+    return m_counts.at(offset);
+  }
+
+  /** Returns the count for n for a given index. */
   template<typename V>
   inline T get(V index, size_t offset) const
   {

@@ -16,11 +16,11 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "buffer.hpp"
-#include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, SourceLi...
-#include "errors.hpp" // for assert_failed
-#include <cstring>    // for memset
-#include <utility>    // for move
+#include "buffer.hpp"  // declarations
+#include "errors.hpp"  // for assert_failed
+#include "testing.hpp" // for catch.hpp, StringMaker
+#include <cstring>     // for memset
+#include <utility>     // for move
 
 namespace adapterremoval {
 

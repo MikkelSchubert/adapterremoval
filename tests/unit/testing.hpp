@@ -20,45 +20,18 @@
 #pragma once
 
 #include "catch.hpp"
-#include "fastq.hpp"
-#include "strutils.hpp"
-#include <ostream>
-#include <sstream>
+#include <utility>
 
 namespace Catch {
 
-template<>
-struct StringMaker<adapterremoval::fastq::ntrimmed>
+// This template is designed to match all types not handled natively by Catch,
+// in order to ensure that the StringMaker is implemented for all tested types
+template<typename T>
+struct StringMaker<
+  T,
+  typename std::enable_if<std::is_class<T>::value && !is_range<T>::value>::type>
 {
-  static std::string convert(adapterremoval::fastq::ntrimmed const& value)
-  {
-    std::stringstream ss;
-    ss << "ntrimmed{" << value.first << ", " << value.second << "}";
-    return ss.str();
-  }
-};
-
-template<>
-struct StringMaker<adapterremoval::fastq>
-{
-  static std::string convert(adapterremoval::fastq const& value)
-  {
-    std::string s;
-    value.into_string(s);
-    return adapterremoval::shell_escape(s);
-  }
+  static std::string convert(T const& value);
 };
 
 } // namespace Catch
-
-namespace adapterremoval {
-
-inline std::ostream&
-operator<<(std::ostream& stream, const adapterremoval::fastq& record)
-{
-  return stream << "'@" << record.header() << "\\n"
-                << record.sequence() << "\\n+\\n"
-                << record.qualities() << "\\n'";
-}
-
-} // namespace adapterremoval

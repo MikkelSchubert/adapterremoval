@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp"    // for AssertionHandler, SourceLineInfo, StringRef
 #include "counts.hpp"   // for rates, counts
 #include "json.hpp"     // for json_dict, json_value, json_token, json_list
 #include "strutils.hpp" // for string_vec
+#include "testing.hpp"  // for catch.hpp, StringMaker
 #include <cmath>        // for nan
 #include <limits>       // for numeric_limits
 #include <memory>       // for __shared_ptr_access, shared_ptr, __shared_pt...

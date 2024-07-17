@@ -18,13 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "alignment.hpp"   // for alignment_info, sequence_merger, extract_...
-#include "catch.hpp"       // for operator""_catch_sr, AssertionHandler
 #include "commontypes.hpp" // for merge_strategy, merge_strategy::determini...
 #include "debug.hpp"       // for assert_failed
 #include "errors.hpp"      // for assert_failed
 #include "fastq.hpp"       // for fastq, fastq_pair_vec, fastq_pair
 #include "fastq_enc.hpp"   // for FASTQ_ENCODING_SAM
 #include "simd.hpp"        // for size_t, instruction_set, supported, get_c...
+#include "testing.hpp"     // for catch.hpp, StringMaker
 #include <algorithm>       // for min
 #include <cstddef>         // for size_t
 #include <cstdint>         // for int64_t
@@ -79,45 +79,6 @@ bool
 operator==(const alignment_info& first, const ALN& second)
 {
   return first == second.info;
-}
-
-std::ostream&
-operator<<(std::ostream& stream, const alignment_info& aln)
-{
-  std::vector<std::string> labels = { "score",       "offset",
-                                      "length",      "n_mismatches",
-                                      "n_ambiguous", "adapter_id" };
-
-  std::vector<int64_t> values = {
-    static_cast<int64_t>(aln.score()),
-    static_cast<int64_t>(aln.offset),
-    static_cast<int64_t>(aln.length),
-    static_cast<int64_t>(aln.n_mismatches),
-    static_cast<int64_t>(aln.n_ambiguous),
-    static_cast<int64_t>(aln.adapter_id),
-  };
-
-  stream << "alignment_info(";
-
-  bool any_streamed = false;
-  for (size_t i = 0; i < labels.size(); ++i) {
-    if (values.at(i)) {
-      if (any_streamed) {
-        stream << "\n               ";
-      }
-
-      stream << labels.at(i) << " = " << values.at(i);
-      any_streamed = true;
-    }
-  }
-
-  return stream << ")";
-}
-
-std::ostream&
-operator<<(std::ostream& stream, const ALN& aln)
-{
-  return stream << aln.info;
 }
 
 fastq_pair_vec
@@ -1564,3 +1525,53 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 }
 
 } // namespace adapterremoval
+
+namespace Catch {
+
+using namespace adapterremoval;
+
+template<>
+std::string
+StringMaker<alignment_info, void>::convert(alignment_info const& value)
+{
+  std::vector<std::string> labels = { "score",       "offset",
+                                      "length",      "n_mismatches",
+                                      "n_ambiguous", "adapter_id" };
+
+  std::vector<int64_t> values = {
+    static_cast<int64_t>(value.score()),
+    static_cast<int64_t>(value.offset),
+    static_cast<int64_t>(value.length),
+    static_cast<int64_t>(value.n_mismatches),
+    static_cast<int64_t>(value.n_ambiguous),
+    static_cast<int64_t>(value.adapter_id),
+  };
+
+  std::ostringstream stream;
+  stream << "alignment_info(";
+
+  bool any_streamed = false;
+  for (size_t i = 0; i < labels.size(); ++i) {
+    if (values.at(i)) {
+      if (any_streamed) {
+        stream << ", ";
+      }
+
+      stream << labels.at(i) << " = " << values.at(i);
+      any_streamed = true;
+    }
+  }
+
+  stream << ")";
+
+  return stream.str();
+}
+
+template<>
+std::string
+StringMaker<ALN, void>::convert(ALN const& value)
+{
+  return StringMaker<alignment_info>::convert(value.info);
+}
+
+} // namespace Catch

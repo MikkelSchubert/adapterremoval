@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp"     // for SourceLineInfo, operator""_catch_sr, Assert...
+#include "testing.hpp"   // for catch.hpp, StringMaker
 #include "utilities.hpp" // for merge
 #include <algorithm>     // for max
 #include <array>         // for array, operator==

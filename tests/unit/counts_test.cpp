@@ -16,41 +16,17 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, SourceL...
-#include "counts.hpp" // for counts, indexed_counts, counts_tmpl, indexed_c...
-#include "errors.hpp" // for assert_failed
-#include "fastq.hpp"  // for ACGT, ACGTN, ACGT::size
-#include <array>      // for array
-#include <cmath>      // for isnan
-#include <cstddef>    // for size_t
-#include <sstream>    // for operator<<, ostream, ostringstream, basic_ostr...
-#include <string>     // for basic_string, operator==
+#include "counts.hpp"  // for counts, indexed_counts, counts_tmpl, indexed_c...
+#include "errors.hpp"  // for assert_failed
+#include "fastq.hpp"   // for ACGT, ACGTN, ACGT::size
+#include "testing.hpp" // for catch.hpp, StringMaker
+#include <array>       // for array
+#include <cmath>       // for isnan
+#include <cstddef>     // for size_t
+#include <sstream>     // for operator<<, ostream, ostringstream, basic_ostr...
+#include <string>      // for basic_string, operator==
 
 namespace adapterremoval {
-
-template<typename T>
-std::ostream&
-operator<<(std::ostream& os, counts_tmpl<T> const& value)
-{
-  os << "{";
-  for (size_t i = 0; i < value.size(); ++i) {
-    if (i) {
-      os << ", ";
-    }
-
-    os << value.get(i);
-  }
-
-  return os << "}";
-}
-
-TEST_CASE("counts debug operator<<")
-{
-  std::ostringstream os;
-  os << counts({ 7, 9, 13 });
-
-  REQUIRE(os.str() == "{7, 9, 13}");
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // counts
@@ -557,4 +533,105 @@ TEST_CASE("indexed_counts<ACGT> operator==")
   REQUIRE(!(non_empty_1 == non_empty_2));
 }
 
+template<typename T>
+std::string
+debug_stringify(const counts_tmpl<T>& value)
+{
+  std::ostringstream stream;
+  stream << "{";
+  for (size_t i = 0; i < value.size(); ++i) {
+    if (i) {
+      stream << ", ";
+    }
+
+    stream << value.get(i);
+  }
+
+  stream << "}";
+
+  return stream.str();
+}
+
+template<typename I, typename T>
+std::string
+debug_stringify(const indexed_count<I, T>& value)
+{
+  std::ostringstream stream;
+  stream << "{";
+
+  bool first = true;
+  for (const auto key : I::values) {
+    if (!first) {
+      stream << ", ";
+    }
+
+    stream << key << " = " << value.get(key);
+    first = false;
+  }
+
+  stream << "}";
+
+  return stream.str();
+}
+
+template<typename I, typename T>
+std::string
+debug_stringify(const indexed_counts<I, T>& value)
+{
+  std::ostringstream stream;
+  stream << "[";
+
+  bool first = true;
+  for (size_t i = 0; i < value.size(); ++i) {
+    if (!first) {
+      stream << ", ";
+    }
+
+    stream << i << " = " << debug_stringify(value.get(i));
+    first = false;
+  }
+
+  stream << "]";
+
+  return stream.str();
+}
+
 } // namespace adapterremoval
+
+namespace Catch {
+
+using namespace adapterremoval;
+
+template<>
+std::string
+StringMaker<counts_tmpl<int64_t>, void>::convert(
+  counts_tmpl<int64_t> const& value)
+{
+  return debug_stringify(value);
+}
+
+template<>
+std::string
+StringMaker<counts_tmpl<double>, void>::convert(
+  counts_tmpl<double> const& value)
+{
+  return debug_stringify(value);
+}
+
+template<>
+std::string
+StringMaker<indexed_count<ACGT, int64_t>, void>::convert(
+  indexed_count<ACGT, int64_t> const& value)
+{
+  return debug_stringify(value);
+}
+
+template<>
+std::string
+StringMaker<indexed_counts<ACGT, int64_t>, void>::convert(
+  indexed_counts<ACGT, int64_t> const& value)
+{
+  return debug_stringify(value);
+}
+
+} // namespace Catch

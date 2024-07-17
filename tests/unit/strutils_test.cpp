@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp"    // for operator""_catch_sr, AssertionHandler, Sourc...
-#include "debug.hpp"    // for assert_failed
 #include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_unsigned
+#include "testing.hpp"  // for catch.hpp, StringMaker
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string

@@ -18,9 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "barcode_table.hpp" // for barcode_table
-#include "catch.hpp"         // for operator""_catch_sr, AssertionHandler
 #include "errors.hpp"        // for parsing_error
 #include "fastq.hpp"         // for fastq, fastq_pair_vec, fastq_pair
+#include "testing.hpp"       // for catch.hpp, StringMaker
 #include <string>            // for basic_string, operator==, string
 
 namespace adapterremoval {

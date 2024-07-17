@@ -16,16 +16,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "catch.hpp"  // for operator""_catch_sr, AssertionHandler, Sourc...
-#include "errors.hpp" // for io_error
-#include "linereader.hpp"
-#include "logging.hpp"  // for log_capture
-#include <algorithm>    // for max
-#include <array>        // for array
-#include <cstdio>       // for fclose, fwrite, rewind, tmpfile, FILE, fread
-#include <libdeflate.h> // for libdeflate_alloc_compressor, libdeflate_free...
-#include <string>       // for string, basic_string, operator==
-#include <vector>       // for operator==, vector
+#include "errors.hpp"     // for io_error
+#include "linereader.hpp" // declarations
+#include "logging.hpp"    // for log_capture
+#include "testing.hpp"    // for catch.hpp, StringMaker
+#include <algorithm>      // for max
+#include <array>          // for array
+#include <cstdio>         // for fclose, fwrite, rewind, tmpfile, FILE, fread
+#include <libdeflate.h>   // for libdeflate_alloc_compressor, libdeflate_free...
+#include <string>         // for string, basic_string, operator==
+#include <vector>         // for operator==, vector
 
 namespace adapterremoval {
 
