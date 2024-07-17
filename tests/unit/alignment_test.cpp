@@ -1426,98 +1426,115 @@ TEST_CASE("Extracting both sequences extending past each other",
 
 ///////////////////////////////////////////////////////////////////////////////
 // Brute-force checking of alignment calculations
-// Simply check all combinations involving 3 bases varying, for a range of
-// sequence lengths to help catch corner cases with the optimizations
 
-/** Naive reimplementation of alignment calculation. **/
-void
-update_alignment(alignment_info& aln,
-                 const std::string& a,
-                 const std::string& b,
-                 size_t nbases)
+struct MMNs
 {
-  // Don't count all these checks in test statistics
-  if (a.length() != b.length()) {
-    REQUIRE(a.length() == b.length());
+  size_t mismatches = 0;
+  size_t ambiguous = 0;
+
+  bool operator==(const MMNs& other) const
+  {
+    return mismatches == other.mismatches && ambiguous == other.ambiguous;
   }
 
-  for (size_t i = 0; i < nbases; ++i) {
-    const char nt1 = a.at(i);
-    const char nt2 = b.at(i);
+  bool operator!=(const MMNs& other) const { return !(*this == other); }
+};
 
-    if (nt1 == 'N' || nt2 == 'N') {
-      aln.n_ambiguous++;
-    } else if (nt1 != nt2) {
-      aln.n_mismatches++;
-    }
+char
+rotate_nucleotide(char c)
+{
+  switch (c) {
+    case 'A':
+      return 'C';
+    case 'C':
+      return 'G';
+    case 'G':
+      return 'T';
+    case 'T':
+      return 'A';
+
+    default:
+      AR_FAIL("invalid nucleotide");
   }
 }
 
-/** Returns all 3 nt combinations of the bases ACGTN. **/
-std::vector<std::string>
-get_combinations()
+void
+compare(simd::compare_subsequences_func func,
+        const std::string& seq_1,
+        const std::string& seq_2,
+        const size_t length,
+        const MMNs& expected)
 {
-  std::vector<std::string> result;
-  const std::string nts = "ACGTN";
-  for (size_t i = 0; i < nts.length(); ++i) {
-    for (size_t j = 0; j < nts.length(); ++j) {
-      for (size_t k = 0; k < nts.length(); ++k) {
-        std::string combination(3, 'A');
-        combination.at(0) = nts.at(i);
-        combination.at(1) = nts.at(j);
-        combination.at(2) = nts.at(k);
-        result.push_back(combination);
-      }
-    }
-  }
+  AR_REQUIRE(seq_1.size() == seq_2.size());
 
-  return result;
+  MMNs alignment{ 0, 0 };
+  const auto result = func(alignment.mismatches,
+                           alignment.ambiguous,
+                           seq_1.c_str(),
+                           seq_2.c_str(),
+                           length,
+                           length * 2);
+
+  AR_REQUIRE(result);
+
+  if (alignment != expected) {
+    REQUIRE(alignment == expected);
+  }
 }
 
 TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
+  // Parameterize tests over supported SIMD instruction sets
   const auto is = PARAMETERIZE_IS;
+  const auto func = simd::get_compare_subsequences_func(is);
+  const auto padding = simd::padding(is);
+  // Randomly generated sequence
+  const std::string reference =
+    "CTGGTTAAAGATCAGAATCCTTTTATTTGCGGAAATTCGAATTATATCCTGATCAGTCGGTGGCGCTAGTGTCC"
+    "AGGGGATCTTGGAATTGGATCCAAAAAGTGCTGGGGAATGCGGATTCCATTATGAGACCTGT";
 
   // The SECTION identifies the instruction set in failure messages
   SECTION(simd::name(is))
   {
-    const auto compare_subsequences = simd::get_compare_subsequences_func(is);
-    const auto padding = simd::padding(is);
+    compare(func, "", "", 0, MMNs{ 0, 0 });
 
-    const std::vector<std::string> combinations = get_combinations();
-    for (size_t seqlen = 10; seqlen <= 40; ++seqlen) {
-      for (size_t pos = 0; pos < seqlen; ++pos) {
-        const size_t nbases = std::min<int>(3, seqlen - pos);
+    for (size_t length = 1; length < reference.size(); ++length) {
+      SECTION(std::to_string(length))
+      {
+        std::string seq_1 = reference.substr(0, length);
+        seq_1.resize(length + padding, 'N');
+        std::string seq_2 = seq_1;
 
-        for (size_t i = 0; i < combinations.size(); ++i) {
-          for (size_t j = 0; j < combinations.size(); ++j) {
-            alignment_info expected;
-            expected.length = seqlen;
-            update_alignment(
-              expected, combinations.at(i), combinations.at(j), nbases);
+        compare(func, seq_1, seq_2, length, MMNs{ 0, 0 });
 
-            std::string mate1 = std::string(seqlen, 'A');
-            mate1.replace(pos, nbases, combinations.at(i).substr(0, nbases));
-            std::string mate2 = std::string(seqlen, 'A');
-            mate2.replace(pos, nbases, combinations.at(j).substr(0, nbases));
+        for (size_t i = 0; i < length; ++i) {
+          seq_2.at(i) = rotate_nucleotide(seq_2.at(i));
+          compare(func, seq_1, seq_2, length, MMNs{ 1, 0 });
 
-            mate1.resize(mate1.length() + padding, 'N');
-            mate2.resize(mate2.length() + padding, 'N');
+          if (i > 0) {
+            seq_1.at(i - 1) = rotate_nucleotide(seq_1.at(i - 1));
+            compare(func, seq_1, seq_2, length, MMNs{ 2, 0 });
 
-            alignment_info current;
-            current.length = seqlen;
-            compare_subsequences(current.n_mismatches,
-                                 current.n_ambiguous,
-                                 mate1.c_str(),
-                                 mate2.c_str(),
-                                 current.length,
-                                 current.length * 2);
+            seq_1.at(i - 1) = 'N';
+            compare(func, seq_1, seq_2, length, MMNs{ 1, 1 });
 
-            // Don't count all these checks in test statistics
-            if (!(current == expected)) {
-              REQUIRE(current == expected);
-            }
+            seq_1.at(i - 1) = reference.at(i - 1);
           }
+
+          seq_2.at(i) = 'N';
+          compare(func, seq_1, seq_2, length, MMNs{ 0, 1 });
+
+          if (i > 0) {
+            seq_1.at(i - 1) = rotate_nucleotide(seq_1.at(i - 1));
+            compare(func, seq_1, seq_2, length, MMNs{ 1, 1 });
+
+            seq_1.at(i - 1) = 'N';
+            compare(func, seq_1, seq_2, length, MMNs{ 0, 2 });
+
+            seq_1.at(i - 1) = reference.at(i - 1);
+          }
+
+          seq_2.at(i) = reference.at(i);
         }
       }
     }
@@ -1572,6 +1589,17 @@ std::string
 StringMaker<ALN, void>::convert(ALN const& value)
 {
   return StringMaker<alignment_info>::convert(value.info);
+}
+
+template<>
+std::string
+StringMaker<adapterremoval::MMNs, void>::convert(
+  adapterremoval::MMNs const& value)
+{
+  std::ostringstream stream;
+  stream << "{MMs = " << value.mismatches << ", Ns = " << value.ambiguous
+         << "}";
+  return stream.str();
 }
 
 } // namespace Catch
