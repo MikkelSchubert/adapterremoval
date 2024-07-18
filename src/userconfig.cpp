@@ -987,20 +987,19 @@ userconfig::userconfig()
 }
 
 argparse::parse_result
-userconfig::parse_args(int argc, char* argv[])
+userconfig::parse_args(const string_vec& argvec)
 {
-  if (argc <= 1) {
+  args = argvec;
+  if (args.size() <= 1) {
     argparser.print_help();
     return argparse::parse_result::error;
   }
-
-  args = string_vec(argv, argv + argc);
 
   // ad-hoc arg parsing to make argparse output consistent with rest of run
   configure_log_colors(try_parse_argument(args, "--log-color", "auto"), true);
   configure_log_levels(try_parse_argument(args, "--log-level", "info"), true);
 
-  const argparse::parse_result result = argparser.parse_args(argc, argv);
+  const argparse::parse_result result = argparser.parse_args(args);
   if (result != argparse::parse_result::ok) {
     return result;
   }

@@ -898,12 +898,10 @@ TEST_CASE("--version", "[argparse::parser]")
   p.set_name("My App");
   p.set_version("v1234");
 
-  const auto* arg = GENERATE("-v", "--version");
-  const char* args[] = { "exe", arg };
-
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(p.parse_args({ "exe", GENERATE("-v", "--version") }) ==
+          argparse::parse_result::exit);
   REQUIRE(ss.str() == "My App v1234\n");
 }
 
@@ -913,11 +911,10 @@ TEST_CASE("--licenses", "[argparse::parser]")
   p.set_name("My App");
   p.set_licenses("line 1\nline 2\nline 3");
 
-  const char* args[] = { "exe", "--licenses" };
-
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(p.parse_args({ "exe", "--licenses" }) ==
+          argparse::parse_result::exit);
   REQUIRE(ss.str() == "line 1\nline 2\nline 3\n");
 }
 
@@ -927,12 +924,11 @@ TEST_CASE("--help", "[argparse::parser]")
   p.set_name("My App");
   p.set_version("v1234");
   p.set_preamble("basic help");
-  const auto arg = GENERATE("-h", "--help");
-  const char* args[] = { "exe", arg };
 
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(p.parse_args({ "exe", GENERATE("-h", "--help") }) ==
+          argparse::parse_result::exit);
   REQUIRE(ss.str() == HELP_HEADER);
 }
 
@@ -940,11 +936,11 @@ TEST_CASE("--help with deprecated argument", "[argparse::parser]")
 {
   argparse::parser p;
   p.add("--foo").deprecated();
-  const char* args[] = { "exe", "--help" };
+  const string_vec args = { "exe", "--help" };
 
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(p.parse_args(args) == argparse::parse_result::exit);
   REQUIRE_THAT(ss.str(), !Contains("--foo"));
 }
 
@@ -952,44 +948,37 @@ TEST_CASE("--help with hidden argument", "[argparse::parser]")
 {
   argparse::parser p;
   p.add("--foo").hidden();
-  const char* args[] = { "exe", "--help" };
 
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::exit);
+  REQUIRE(p.parse_args({ "exe", "--help" }) == argparse::parse_result::exit);
   REQUIRE_THAT(ss.str(), !Contains("--foo"));
 }
 
 TEST_CASE("unexpected positional argument", "[argparse::parser]")
 {
   argparse::parser p;
-  const char* args[] = { "exe", "foo" };
-
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(), "[ERROR] Unexpected positional argument 'foo'\n");
 }
 
 TEST_CASE("unexpected argument", "[argparse::parser]")
 {
   argparse::parser p;
-  const char* args[] = { "exe", "--foo" };
-
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(), "[ERROR] Unknown argument '--foo'\n");
 }
 
 TEST_CASE("typo in argument", "[argparse::parser]")
 {
   argparse::parser p;
-  const char* args[] = { "exe", "--halp" };
-
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--halp" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--halp'. "
                       "Did you mean --help?\n");
 }
@@ -998,11 +987,10 @@ TEST_CASE("partial argument", "[argparse::parser]")
 {
   argparse::parser p;
   p.add("--partofalongargument");
-  const char* args[] = { "exe", "--part" };
 
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--part" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--part'. "
                       "Did you mean --partofalongargument?\n");
 }
@@ -1012,11 +1000,10 @@ TEST_CASE("two possible arguments", "[argparse::parser]")
   argparse::parser p;
   p.add("--arg1");
   p.add("--arg2");
-  const char* args[] = { "exe", "--arg" };
 
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--arg" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
                       "Did you mean --arg1 or --arg2?\n");
 }
@@ -1027,11 +1014,10 @@ TEST_CASE("three possible arguments", "[argparse::parser]")
   p.add("--arg1");
   p.add("--arg2");
   p.add("--arg3");
-  const char* args[] = { "exe", "--arg" };
 
   log::log_capture ss;
 
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--arg" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
                       "Did you mean --arg1, --arg2 or --arg3?\n");
 }
@@ -1043,9 +1029,9 @@ TEST_CASE("parse multiple arguments", "[argparse::parser]")
   p.add("--arg1").bind_uint(&sink);
   p.add("--arg2");
   p.add("--arg3");
-  const char* args[] = { "exe", "--arg1", "1234", "--arg3" };
 
-  REQUIRE(p.parse_args(4, args) == argparse::parse_result::ok);
+  REQUIRE(p.parse_args({ "exe", "--arg1", "1234", "--arg3" }) ==
+          argparse::parse_result::ok);
   REQUIRE(p.is_set("--arg1"));
   REQUIRE_FALSE(p.is_set("--arg2"));
   REQUIRE(p.is_set("--arg3"));
@@ -1059,9 +1045,9 @@ TEST_CASE("value returns value as str", "[argparse::parser]")
   argparse::parser p;
   p.add("--arg1").bind_uint(&usink);
   p.add("--arg2").bind_str(&ssink);
-  const char* args[] = { "exe", "--arg1", "1234", "--arg2", "foo bar*" };
 
-  REQUIRE(p.parse_args(5, args) == argparse::parse_result::ok);
+  REQUIRE(p.parse_args({ "exe", "--arg1", "1234", "--arg2", "foo bar*" }) ==
+          argparse::parse_result::ok);
   REQUIRE(p.value("--arg1") == "1234");
   REQUIRE(p.value("--arg2") == "foo bar*");
 }
@@ -1167,8 +1153,7 @@ TEST_CASE("required option missing", "[argparse::parser]")
   p.add("--foo").depends_on("--bar");
   p.add("--bar");
 
-  const char* args[] = { "exe", "--foo" };
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(),
                   "[ERROR] Option --bar is required when using option --foo\n");
 }
@@ -1179,8 +1164,8 @@ TEST_CASE("required option supplied", "[argparse::parser]")
   p.add("--foo").depends_on("--bar");
   p.add("--bar");
 
-  const char* args[] = { "exe", "--foo", "--bar" };
-  REQUIRE(p.parse_args(3, args) == argparse::parse_result::ok);
+  REQUIRE(p.parse_args({ "exe", "--foo", "--bar" }) ==
+          argparse::parse_result::ok);
 }
 
 TEST_CASE("conflicting option missing", "[argparse::parser]")
@@ -1189,8 +1174,7 @@ TEST_CASE("conflicting option missing", "[argparse::parser]")
   p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
 
-  const char* args[] = { "exe", "--foo" };
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::ok);
+  REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::ok);
 }
 
 TEST_CASE("conflicting option supplied", "[argparse::parser]")
@@ -1200,8 +1184,8 @@ TEST_CASE("conflicting option supplied", "[argparse::parser]")
   p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
 
-  const char* args[] = { "exe", "--foo", "--bar" };
-  REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--foo", "--bar" }) ==
+          argparse::parse_result::error);
   REQUIRE_POSTFIX(
     ss.str(),
     "[ERROR] Option --bar cannot be used together with option --foo\n");
@@ -1214,8 +1198,7 @@ TEST_CASE("missing value", "[argparse::parser]")
   argparse::parser p;
   p.add("--foo").bind_uint(&sink);
 
-  const char* args[] = { "exe", "--foo" };
-  REQUIRE(p.parse_args(2, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(),
                   "[ERROR] Command-line argument --foo takes 1 value, but 0 "
                   "values were provided!\n");
@@ -1228,8 +1211,8 @@ TEST_CASE("invalid value", "[argparse::parser]")
   argparse::parser p;
   p.add("--foo").bind_uint(&sink);
 
-  const char* args[] = { "exe", "--foo", "one" };
-  REQUIRE(p.parse_args(3, args) == argparse::parse_result::error);
+  REQUIRE(p.parse_args({ "exe", "--foo", "one" }) ==
+          argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(), "[ERROR] Invalid value for --foo: one\n");
 }
 

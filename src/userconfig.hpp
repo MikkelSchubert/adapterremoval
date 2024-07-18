@@ -108,7 +108,7 @@ public:
   userconfig();
 
   /** Parses a set of command-line arguments. */
-  argparse::parse_result parse_args(int argc, char* argv[]);
+  argparse::parse_result parse_args(const string_vec& argvec);
 
   output_files get_output_filenames() const;
 

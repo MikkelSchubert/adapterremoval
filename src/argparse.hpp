@@ -101,7 +101,7 @@ public:
   void set_licenses(const std::string& text);
 
   /** Parses a set of command-line options as passed to main(argc, argv). */
-  parse_result parse_args(int argc, char const* const* argv);
+  parse_result parse_args(const string_vec& args);
 
   /** Returns true if the option with the given key has been set. */
   bool is_set(const std::string& key) const;

@@ -68,7 +68,8 @@ main(int argc, char* argv[])
 
   userconfig config;
 
-  switch (config.parse_args(argc, argv)) {
+  const std::vector<std::string> argvec(argv, argv + argc);
+  switch (config.parse_args(argvec)) {
     case argparse::parse_result::error:
       return 1;
 

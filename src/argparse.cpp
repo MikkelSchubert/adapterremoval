@@ -112,22 +112,22 @@ parser::set_licenses(const std::string& text)
 }
 
 parse_result
-parser::parse_args(int argc, char const* const* argv)
+parser::parse_args(const string_vec& args)
 {
+  AR_REQUIRE(!args.empty());
   update_argument_map();
-  const string_vec argvec(argv + 1, argv + argc);
 
-  for (auto it = argvec.begin(); it != argvec.end();) {
+  for (auto it = args.begin() + 1; it != args.end();) {
     const auto argument = find_argument(*it);
     if (argument) {
-      const size_t consumed = argument->parse(it, argvec.end());
+      const size_t consumed = argument->parse(it, args.end());
 
       if (consumed == parsing_failed) {
         return parse_result::error;
       }
 
       it += static_cast<string_vec::iterator::difference_type>(consumed);
-      AR_REQUIRE(it <= argvec.end());
+      AR_REQUIRE(it <= args.end());
     } else {
       return parse_result::error;
     }
