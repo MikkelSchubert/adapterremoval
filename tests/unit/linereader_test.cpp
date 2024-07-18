@@ -32,7 +32,7 @@ namespace adapterremoval {
 using string_vec = std::vector<std::string>;
 
 FILE*
-temporary_file(string_vec lines)
+temporary_file(const string_vec& lines)
 {
   FILE* handle = std::tmpfile();
 
@@ -47,13 +47,13 @@ temporary_file(string_vec lines)
 }
 
 FILE*
-temporary_gzip_file(string_vec blocks)
+temporary_gzip_file(const string_vec& blocks)
 {
   FILE* handle = std::tmpfile();
 
-  auto compressor = libdeflate_alloc_compressor(6);
+  auto* compressor = libdeflate_alloc_compressor(6);
   for (const auto& block : blocks) {
-    std::array<char, 1024> buffer;
+    std::array<char, 1024> buffer{};
     auto size = libdeflate_gzip_compress(
       compressor, block.data(), block.size(), buffer.data(), buffer.size());
 
@@ -101,7 +101,7 @@ TEST_CASE("line_reader throws on missing file")
 TEST_CASE("temporary_gzip_file returns gzipped file")
 {
   FILE* handle = temporary_gzip_file({ "foo" });
-  std::array<char, 10> buffer;
+  std::array<char, 10> buffer{};
   auto n = std::fread(buffer.data(), sizeof(char), buffer.size(), handle);
 
   REQUIRE_FALSE(std::fclose(handle));
@@ -113,7 +113,7 @@ TEST_CASE("temporary_gzip_file returns gzipped file")
 TEST_CASE("line_reader on empty file returns no lines")
 {
   line_reader reader(temporary_file({}));
-  REQUIRE(read_lines(reader) == string_vec());
+  REQUIRE(read_lines(reader).empty());
 }
 
 TEST_CASE("line_reader on empty line returns single, empty line")
@@ -270,8 +270,8 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
                                 "tiuSGNsadNZpAehX8GBlmyOPR" };
 
   FILE* handle = temporary_gzip_file(input);
-  std::fseek(handle, 0, SEEK_END);
-  std::fwrite("trailing junk", sizeof(char), 13, handle);
+  REQUIRE(std::fseek(handle, 0, SEEK_END) == 0);
+  REQUIRE(std::fwrite("trailing junk", sizeof(char), 13, handle) == 13);
   std::rewind(handle);
 
   log::log_capture ss;

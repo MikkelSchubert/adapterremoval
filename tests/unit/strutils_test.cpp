@@ -51,7 +51,7 @@ TEST_CASE("Levenshtein distance", "[strutils::levenshtein]")
 
 TEST_CASE("ASCII letters are lowercased", "[strutils::to_lower]")
 {
-  REQUIRE(to_lower("") == "");
+  REQUIRE(to_lower("").empty());
   REQUIRE(to_lower("a1{2BZ`zAdeK") == "a1{2bz`zadek");
 }
 
@@ -60,7 +60,7 @@ TEST_CASE("ASCII letters are lowercased", "[strutils::to_lower]")
 
 TEST_CASE("ASCII letters are uppercased", "[strutils::to_upper]")
 {
-  REQUIRE(to_upper("") == "");
+  REQUIRE(to_upper("").empty());
   REQUIRE(to_upper("a1{2BZ`zAdeK") == "A1{2BZ`ZADEK");
 }
 
@@ -90,7 +90,7 @@ TEST_CASE("ends_with")
 
 TEST_CASE("Empty lines are not indented", "[strutils::indent_lines]")
 {
-  REQUIRE(indent_lines("") == "");
+  REQUIRE(indent_lines("").empty());
   REQUIRE(indent_lines("\n") == "\n");
   REQUIRE(indent_lines("\n\n") == "\n\n");
   REQUIRE(indent_lines("\n\n\n") == "\n\n\n");
@@ -127,14 +127,14 @@ using vec = std::vector<std::string>;
 
 TEST_CASE("Whitespace only is stripped", "[strutils::wrap_text]")
 {
-  REQUIRE(wrap_text("") == vec{});
-  REQUIRE(wrap_text(" ") == vec{});
-  REQUIRE(wrap_text("\n") == vec{});
-  REQUIRE(wrap_text("\n\n") == vec{});
-  REQUIRE(wrap_text("\n \n") == vec{});
-  REQUIRE(wrap_text("\n ") == vec{});
-  REQUIRE(wrap_text(" \n") == vec{});
-  REQUIRE(wrap_text(" \n ") == vec{});
+  REQUIRE(wrap_text("").empty());
+  REQUIRE(wrap_text(" ").empty());
+  REQUIRE(wrap_text("\n").empty());
+  REQUIRE(wrap_text("\n\n").empty());
+  REQUIRE(wrap_text("\n \n").empty());
+  REQUIRE(wrap_text("\n ").empty());
+  REQUIRE(wrap_text(" \n").empty());
+  REQUIRE(wrap_text(" \n ").empty());
 }
 
 TEST_CASE("Whitespace between words is stripped", "[strutils::wrap_text]")
@@ -278,7 +278,7 @@ TEST_CASE("log_escape tests")
 
 TEST_CASE("shell_escape_command with empty list")
 {
-  REQUIRE(shell_escape_command({}) == "");
+  REQUIRE(shell_escape_command({}).empty());
 }
 
 TEST_CASE("shell_escape_command with mixed command")

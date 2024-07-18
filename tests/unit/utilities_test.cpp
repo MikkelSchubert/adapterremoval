@@ -60,7 +60,7 @@ TEST_CASE("merging vectors")
   {
     vec dst;
     merge(dst, {});
-    REQUIRE(dst == vec{});
+    REQUIRE(dst.empty());
   }
 
   SECTION("values into empty")

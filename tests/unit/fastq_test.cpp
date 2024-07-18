@@ -32,6 +32,11 @@
 #include <utility>         // for operator==, pair, move
 #include <vector>          // for vector, vector<>::const_iterator
 
+// Ignore nucleotide and quality strings
+// spell-checker:ignoreRegExp /"[!-~]+"/g
+// Ignore nucleotide comments
+// spell-checker:ignoreRegExp /\W[acgtnACGTN]+\W/g
+
 namespace adapterremoval {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,9 +102,9 @@ TEST_CASE("ACGTN::to_value", "[fastq::*]")
 TEST_CASE("default_constructor", "[fastq::fastq]")
 {
   const fastq record;
-  REQUIRE(record.header() == "");
-  REQUIRE(record.sequence() == "");
-  REQUIRE(record.qualities() == "");
+  REQUIRE(record.header().empty());
+  REQUIRE(record.sequence().empty());
+  REQUIRE(record.qualities().empty());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,9 +113,9 @@ TEST_CASE("default_constructor", "[fastq::fastq]")
 TEST_CASE("constructor_empty_fields", "[fastq::fastq]")
 {
   const fastq record("", "", "");
-  REQUIRE(record.header() == "");
-  REQUIRE(record.sequence() == "");
-  REQUIRE(record.qualities() == "");
+  REQUIRE(record.header().empty());
+  REQUIRE(record.sequence().empty());
+  REQUIRE(record.qualities().empty());
 }
 
 TEST_CASE("constructor_simple_record_phred_33_encoded", "[fastq::fastq]")
@@ -244,8 +249,8 @@ TEST_CASE("constructor_no_qualities_no_sequence", "[fastq::fastq]")
 {
   const fastq record("record_1", "");
   REQUIRE(record.header() == "record_1");
-  REQUIRE(record.sequence() == "");
-  REQUIRE(record.qualities() == "");
+  REQUIRE(record.sequence().empty());
+  REQUIRE(record.qualities().empty());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,9 +261,9 @@ TEST_CASE("move_constructor", "[fastq::fastq]")
   fastq record1("record_1", "ACGT", "1234");
   fastq record2(std::move(record1));
 
-  REQUIRE(record1.header() == "");
-  REQUIRE(record1.sequence() == "");
-  REQUIRE(record1.qualities() == "");
+  REQUIRE(record1.header().empty());
+  REQUIRE(record1.sequence().empty());
+  REQUIRE(record1.qualities().empty());
 
   REQUIRE(record2.header() == "record_1");
   REQUIRE(record2.sequence() == "ACGT");
@@ -720,7 +725,7 @@ TEST_CASE("Mott trimming shorter segments if last")
 std::string
 poly_x_trimming(const std::string& nucleotides,
                 const size_t min_length,
-                const std::string sequence)
+                const std::string& sequence)
 {
   fastq record("Test", sequence);
   const auto result = record.poly_x_trimming(nucleotides, min_length);
@@ -731,12 +736,12 @@ poly_x_trimming(const std::string& nucleotides,
 
 TEST_CASE("trim_poly_x on empty sequence and with empty X")
 {
-  REQUIRE(poly_x_trimming("", 10, "") == "");
+  REQUIRE(poly_x_trimming("", 10, "").empty());
 }
 
 TEST_CASE("trim_poly_x on empty sequence and with X")
 {
-  REQUIRE(poly_x_trimming("ACGT", 10, "") == "");
+  REQUIRE(poly_x_trimming("ACGT", 10, "").empty());
 }
 
 TEST_CASE("trim_poly_x on sequence with empty X")
@@ -747,12 +752,12 @@ TEST_CASE("trim_poly_x on sequence with empty X")
 
 TEST_CASE("trim_poly_x no trimming of too short sequences")
 {
-  REQUIRE(poly_x_trimming("T", 5, "") == "");
+  REQUIRE(poly_x_trimming("T", 5, "").empty());
   REQUIRE(poly_x_trimming("T", 5, "T") == "T");
   REQUIRE(poly_x_trimming("T", 5, "TT") == "TT");
   REQUIRE(poly_x_trimming("T", 5, "TTT") == "TTT");
   REQUIRE(poly_x_trimming("T", 5, "TTTT") == "TTTT");
-  REQUIRE(poly_x_trimming("T", 5, "TTTTT") == "");
+  REQUIRE(poly_x_trimming("T", 5, "TTTTT").empty());
 }
 
 TEST_CASE("trim_poly_x trimming until, but not including last mismatches")
@@ -774,55 +779,55 @@ TEST_CASE("trim_poly_x trims only exact matches")
 
 TEST_CASE("trim_poly_x accept one mismatch per 8 bases")
 {
-  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAA") == "");
-  REQUIRE(poly_x_trimming("A", 10, "AAAAAATAAA") == "");
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAA").empty());
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAATAAA").empty());
   REQUIRE(poly_x_trimming("A", 10, "TTAAAAAAAAA") == "TT");
   REQUIRE(poly_x_trimming("A", 10, "AATAAATAAA") == "AATAAATAAA");
   REQUIRE(poly_x_trimming("A", 10, "AAATAAAAAAAAATAAA") == "AAAT");
   REQUIRE(poly_x_trimming("A", 10, "AATAAAAAAAAAATAAA") == "AAT");
-  REQUIRE(poly_x_trimming("A", 10, "ATAAAAAAAAAAATAAA") == "");
+  REQUIRE(poly_x_trimming("A", 10, "ATAAAAAAAAAAATAAA").empty());
 }
 
 TEST_CASE("trim_poly_x accept early mismatches if in window")
 {
-  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAAAAATAAA") == "");
-  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAAAAATAAA") == "");
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAAAAATAAA").empty());
+  REQUIRE(poly_x_trimming("A", 10, "AAAAAAAAAAAAATAAA").empty());
 }
 
 TEST_CASE("trim_poly_x stops trims best candidate")
 {
   REQUIRE(poly_x_trimming("ACGT", 10, "AAAAAAAATT") == "AAAAAAAATT");
-  REQUIRE(poly_x_trimming("ACGT", 10, "AAAAAAAAAT") == "");
+  REQUIRE(poly_x_trimming("ACGT", 10, "AAAAAAAAAT").empty());
 
   REQUIRE(poly_x_trimming("ACGT", 10, "GCCCCCTCCC") == "GCCCCCTCCC");
-  REQUIRE(poly_x_trimming("ACGT", 10, "CCCCCCTCCC") == "");
+  REQUIRE(poly_x_trimming("ACGT", 10, "CCCCCCTCCC").empty());
 
   REQUIRE(poly_x_trimming("ACGT", 10, "GGGGGGGGAA") == "GGGGGGGGAA");
   REQUIRE(poly_x_trimming("ACGT", 10, "AGGGGGGGGG") == "A");
 
   REQUIRE(poly_x_trimming("ACGT", 10, "AATTTTTTTT") == "AATTTTTTTT");
-  REQUIRE(poly_x_trimming("ACGT", 10, "TATTTTTTTT") == "");
+  REQUIRE(poly_x_trimming("ACGT", 10, "TATTTTTTTT").empty());
 }
 
 TEST_CASE("trim_poly_x doesn't count Ns in alignnment")
 {
-  REQUIRE(poly_x_trimming("C", 5, "CCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "CCCCCC").empty());
   REQUIRE(poly_x_trimming("C", 5, "CTCCCC") == "CTCCCC");
-  REQUIRE(poly_x_trimming("C", 5, "CNCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "CNCCCC").empty());
   REQUIRE(poly_x_trimming("C", 5, "CNCCNC") == "CNCCNC");
 
   REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCCC") == "CCCCNCCCCC");
-  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC").empty());
   REQUIRE(poly_x_trimming("C", 10, "TCCCCNCCCCC") == "T");
 
-  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC").empty());
   REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCNCCCCCTCCC") == "CCCCT");
 }
 
 TEST_CASE("trim_poly_x only trims trailing Ns after matches")
 {
-  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC") == "");
-  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC").empty());
+  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC").empty());
   REQUIRE(poly_x_trimming("C", 5, "NNTCCCCCCC") == "NNT");
 }
 
@@ -1281,6 +1286,7 @@ TEST_CASE("guess_mate_separator asserts on mismatching input lengths")
 
   REQUIRE_THROWS_AS(fastq::guess_mate_separator(reads_1, reads_2),
                     assert_failed);
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
   REQUIRE_THROWS_AS(fastq::guess_mate_separator(reads_2, reads_1),
                     assert_failed);
 }
@@ -1358,12 +1364,14 @@ TEST_CASE("normalize_paired_reads__throws_if_order_or_number_is_wrong",
   {
     fastq mate0 = ref_mate0;
     fastq mate1 = ref_mate1;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate0, mate1), fastq_error);
   }
 
   {
     fastq mate0 = ref_mate0;
     fastq mate1 = ref_mate1;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate0), fastq_error);
   }
 
@@ -1376,24 +1384,28 @@ TEST_CASE("normalize_paired_reads__throws_if_order_or_number_is_wrong",
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 
   {
     fastq mate2 = ref_mate2;
     fastq mate3 = ref_mate3;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate3), fastq_error);
   }
 
   {
     fastq mate2 = ref_mate2;
     fastq mate3 = ref_mate3;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate3, mate2), fastq_error);
   }
 
   {
     fastq matea = ref_matea;
     fastq mateb = ref_mateb;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(matea, mateb), fastq_error);
   }
 
@@ -1418,6 +1430,7 @@ TEST_CASE("normalize_paired_reads__allows_other_separators", "[fastq::fastq]")
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 }
@@ -1448,13 +1461,14 @@ TEST_CASE("normalize_paired_reads__throws_if_mate_is_empty", "[fastq::fastq]")
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate1), fastq_error);
+    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
   }
 }
 
@@ -1474,6 +1488,7 @@ TEST_CASE("normalize_paired_reads__throws_if_only_mate_1_is_numbered",
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 }
@@ -1493,6 +1508,8 @@ TEST_CASE("normalize_paired_reads__throws_if_only_mate_2_is_numbered",
   {
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
+
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
   }
 }
@@ -1522,7 +1539,7 @@ TEST_CASE("normalize_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 
 TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
 {
-  const auto name = GENERATE("Name", "Name and meta");
+  const auto* name = GENERATE("Name", "Name and meta");
   fastq mate1 = fastq(name, "GCTAA", "$!@#$");
   fastq mate2 = fastq(name, "ACGTA", "@$!$#");
 

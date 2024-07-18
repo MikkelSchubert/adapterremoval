@@ -29,7 +29,6 @@
 
 namespace adapterremoval {
 
-using argparse::argument;
 using argparse::argument_ptr;
 
 const size_t parsing_failed = static_cast<size_t>(-1);
@@ -412,7 +411,7 @@ TEST_CASE("str sink consumes empty string", "[argparse::str_sink]")
   sink.with_default("foo");
 
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
-  REQUIRE(value == "");
+  REQUIRE(value.empty());
 }
 
 TEST_CASE("str sink accepts any value if no choices", "[argparse::str_sink]")
@@ -445,7 +444,7 @@ TEST_CASE("str sink rejects values not in choices", "[argparse::str_sink]")
 
   string_vec values{ "foo" };
   REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
-  REQUIRE(value == "");
+  REQUIRE(value.empty());
 }
 
 TEST_CASE("str sink case-insensitive, returns choice", "[argparse::str_sink]")
@@ -555,7 +554,7 @@ TEST_CASE("vec sink consumes empty string", "[argparse::vec_sink]")
 
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
   REQUIRE(value.size() == 1);
-  REQUIRE(value.front() == "");
+  REQUIRE(value.front().empty());
 }
 
 TEST_CASE("vec sink with minimum n values", "[argparse::vec_sink]")
@@ -590,7 +589,7 @@ TEST_CASE("argument properties", "[argparse::argument]")
 TEST_CASE("help without default", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
-  REQUIRE(arg.help() == "");
+  REQUIRE(arg.help().empty());
 
   arg.help("pointless gibberish");
   REQUIRE(arg.help() == "pointless gibberish");
@@ -704,7 +703,7 @@ TEST_CASE("deprecated argument alias", "[argparse::argument]")
   arg.deprecated_alias("--foo");
 
   REQUIRE(arg.key() == "--12345");
-  REQUIRE(arg.short_key() == "");
+  REQUIRE(arg.short_key().empty());
   REQUIRE(arg.keys() == string_vec{ "--foo", "--12345" });
   REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
   REQUIRE(arg.is_deprecated_alias("--foo"));
@@ -844,7 +843,7 @@ TEST_CASE("warning on first duplicate argument", "[argparse::argument]")
   log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE(ss.str() == "");
+  REQUIRE(ss.str().empty());
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE_POSTFIX(ss.str(),
                   "[WARNING] Command-line option --12345 has been specified "
@@ -865,7 +864,7 @@ TEST_CASE("no warning on main alias", "[argparse::argument]")
   log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE(ss.str() == "");
+  REQUIRE(ss.str().empty());
 }
 
 TEST_CASE("warning on deprecated alias", "[argparse::argument]")
@@ -885,7 +884,7 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 ///////////////////////////////////////////////////////////////////////////////
 // parser
 
-const std::string HELP_HEADER =
+const char* HELP_HEADER =
   "My App v1234\n\n"
   "basic help\n"
   "OPTIONS:\n"
@@ -899,7 +898,7 @@ TEST_CASE("--version", "[argparse::parser]")
   p.set_name("My App");
   p.set_version("v1234");
 
-  const auto arg = GENERATE("-v", "--version");
+  const auto* arg = GENERATE("-v", "--version");
   const char* args[] = { "exe", arg };
 
   log::log_capture ss;
@@ -1078,7 +1077,7 @@ TEST_CASE("user supplied argument", "[argparse::parser]")
 
   p.print_help();
 
-  REQUIRE(ss.str() == HELP_HEADER + "   --test\n");
+  REQUIRE(ss.str() == std::string(HELP_HEADER) + "   --test\n");
 }
 
 TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")

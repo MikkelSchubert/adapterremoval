@@ -23,6 +23,11 @@
 #include "testing.hpp"       // for catch.hpp, StringMaker
 #include <string>            // for basic_string, operator==, string
 
+// Ignore nucleotide and quality strings
+// spell-checker:ignoreRegExp /"[!-~]+"/g
+// Ignore nucleotide comments
+// spell-checker:ignoreRegExp /\W[acgtnACGTN]+\W/g
+
 namespace adapterremoval {
 
 TEST_CASE("what()", "[barcodes::errors]")
@@ -35,9 +40,8 @@ TEST_CASE("what()", "[barcodes::errors]")
 TEST_CASE("copy constructor", "[barcodes::errors]")
 {
   parsing_error err("test error");
-  parsing_error copy(err);
 
-  REQUIRE(std::string(copy.what()) == "test error");
+  REQUIRE(std::string(parsing_error(err).what()) == "test error");
 }
 
 TEST_CASE("Empty barcode-table is OK", "[barcodes::constructor]")

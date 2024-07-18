@@ -37,14 +37,13 @@ TEST_CASE("buffer defaults to empty/nullptr")
 TEST_CASE("buffer with size allocates")
 {
   buffer buf(7);
-  const buffer& cbuf = buf;
 
   REQUIRE(buf.size() == 7);
   REQUIRE(buf.capacity() == 7);
   REQUIRE(buf.get() != nullptr);
-  REQUIRE(buf.get() == cbuf.get());
+  REQUIRE(buf.get() == static_cast<const buffer&>(buf).get());
   REQUIRE(buf.get_signed() != nullptr);
-  REQUIRE(buf.get_signed() == cbuf.get_signed());
+  REQUIRE(buf.get_signed() == static_cast<const buffer&>(buf).get_signed());
   REQUIRE(static_cast<void*>(buf.get()) ==
           static_cast<void*>(buf.get_signed()));
 }
@@ -79,8 +78,8 @@ TEST_CASE("buffer resizing up is allowed")
 TEST_CASE("buffer move constructor clears source")
 {
   buffer src(7);
-  auto src_ptr = src.get();
-  auto src_signed_ptr = src.get_signed();
+  auto* src_ptr = src.get();
+  auto* src_signed_ptr = src.get_signed();
   buffer dst(std::move(src));
 
   REQUIRE(src.size() == 0);
@@ -97,8 +96,8 @@ TEST_CASE("buffer move constructor clears source")
 TEST_CASE("buffer move assignment clears source")
 {
   buffer src(7);
-  auto src_ptr = src.get();
-  auto src_signed_ptr = src.get_signed();
+  auto* src_ptr = src.get();
+  auto* src_signed_ptr = src.get_signed();
   buffer dst(7);
 
   dst = std::move(src);
@@ -118,7 +117,7 @@ TEST_CASE("buffer write_u32 is le")
 {
   buffer buf(4);
   buf.write_u32(0, 0xDEADBEEF);
-  auto ptr = buf.get();
+  auto* ptr = buf.get();
 
   REQUIRE(ptr[3] == 0xDE);
   REQUIRE(ptr[2] == 0xAD);
@@ -129,7 +128,7 @@ TEST_CASE("buffer write_u32 is le")
 TEST_CASE("buffer write_u32 with offset")
 {
   buffer buf(6);
-  auto ptr = buf.get();
+  auto* ptr = buf.get();
   std::memset(ptr, 0, buf.size());
 
   buf.write_u32(1, 0xDEADBEEF);

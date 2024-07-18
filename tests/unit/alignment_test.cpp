@@ -33,6 +33,11 @@
 #include <string>          // for string, basic_string, operator<<
 #include <vector>          // for vector
 
+// Ignore nucleotide and quality strings
+// spell-checker:ignoreRegExp /"[!-~]+"/g
+// Ignore nucleotide comments
+// spell-checker:ignoreRegExp /\W[acgtnACGTN]+\W/g
+
 namespace adapterremoval {
 
 struct ALN;
@@ -70,7 +75,8 @@ struct ALN
   TEST_ALIGNMENT_SETTER(size_t, n_ambiguous);
   TEST_ALIGNMENT_SETTER(int, adapter_id);
 
-  operator alignment_info() { return info; }
+  // NOLINTNEXTLINE(hicpp-explicit-conversions)
+  operator const alignment_info&() const { return info; }
 
   alignment_info info;
 };
@@ -135,10 +141,6 @@ REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
   REQUIRE(tmp_record2 == record2);
 }
 
-std::random_device g_seed;
-std::mt19937 g_rng_instance(g_seed());
-std::mt19937* g_rng(&g_rng_instance);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST_CASE("alignment_info::score")
@@ -152,15 +154,7 @@ TEST_CASE("alignment_info::score")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Cases for SE alignments (a = read 1, b = adapter, o = overlap):
-//  1. No overlap = aaaaaa bbbbbb
-//  2. Partial overlap = aaaaaooobbbbbb
-//  3. Complete overlap = ooooooooo
-//  4. a contains b = aaaaoooooo
-//  5. b contains a = ooooobbbbb
-//  6. a extends past b = aaaaoooooaaaa
-//  7. b extends past a = bbbbooooobbbb
-//  8. both extends past other = bbbbooooaaaa
+// Single end alignment using `align_single_ended_sequence`
 
 ///////////////////////////////////////////////////////////////////////////////
 // Case 1: No overlap between sequences:
@@ -626,14 +620,13 @@ TEST_CASE("Partial overlap in sequence pair", "[alignment::paired_end]")
 TEST_CASE("Completely overlapping sequence pair", "[alignment::paired_end]")
 {
   const fastq record1("Rec", "ACGTAGTA", "!!!!!!!!");
-  const fastq record2 = record1;
   const fastq_pair_vec adapters = create_adapter_vec(
     fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
   const alignment_info expected = ALN().length(8);
   const alignment_info result =
-    align_paired_ended_sequences(record1, record2, adapters, 0);
+    align_paired_ended_sequences(record1, record1, adapters, 0);
   REQUIRE(result == expected);
-  REQUIRE_TRUNCATED_PE_IS_UNCHANGED(result, record1, record2);
+  REQUIRE_TRUNCATED_PE_IS_UNCHANGED(result, record1, record1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1166,7 +1159,7 @@ TEST_CASE("Identical nucleotides gets higher qualities")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Identical nucleotides gets higher qualities [determinsitic]")
+TEST_CASE("Identical nucleotides gets higher qualities [deterministic]")
 {
   sequence_merger merger;
   merger.set_merge_strategy(merge_strategy::deterministic);
@@ -1180,7 +1173,7 @@ TEST_CASE("Identical nucleotides gets higher qualities [determinsitic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Identical nucleotides gets higher qualities, max 41 [determinsitic]")
+TEST_CASE("Identical nucleotides gets higher qualities, max 41 [deterministic]")
 {
   sequence_merger merger;
   merger.set_merge_strategy(merge_strategy::deterministic);
