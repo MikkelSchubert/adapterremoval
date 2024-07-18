@@ -217,38 +217,6 @@ private:
 };
 
 /**
- * GZip compression step; takes any lines in the input chunk, compresses them,
- * and adds them to the buffer list of the chunk, before forwarding it. */
-class gzip_fastq : public analytical_step
-{
-public:
-  /** Constructor; 'next_step' sets the destination of compressed chunks. */
-  gzip_fastq(const userconfig& config, size_t next_step);
-
-  ~gzip_fastq() override = default;
-
-  /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-  chunk_vec process(chunk_ptr chunk) override;
-
-  /** Checks that all input has been processed and frees stream. */
-  void finalize() override;
-
-  gzip_fastq(const gzip_fastq&) = delete;
-  gzip_fastq(gzip_fastq&&) = delete;
-  gzip_fastq& operator=(const gzip_fastq&) = delete;
-  gzip_fastq& operator=(gzip_fastq&&) = delete;
-
-private:
-  //! The analytical step following this step
-  const size_t m_next_step;
-  //! Used to track whether an EOF block has been received.
-  bool m_eof;
-
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
-};
-
-/**
  * Splits input into chunks that can be GZipped in parallel.
  */
 class split_fastq : public analytical_step
