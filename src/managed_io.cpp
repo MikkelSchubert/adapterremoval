@@ -230,7 +230,7 @@ managed_reader::managed_reader(std::string filename)
 
 managed_reader::~managed_reader()
 {
-  if (::fclose(m_file)) {
+  if (m_file && ::fclose(m_file) != 0) {
     AR_FAIL(format_io_error("error closing " + log_escape(m_filename), errno));
   }
 }
@@ -238,11 +238,13 @@ managed_reader::~managed_reader()
 void
 managed_reader::close()
 {
-  const auto ret = ::fclose(m_file);
-  m_file = nullptr;
+  if (m_file) {
+    if (::fclose(m_file) != 0) {
+      m_file = nullptr;
+      throw io_error("error closing " + log_escape(m_filename), errno);
+    }
 
-  if (ret) {
-    throw io_error("error closing " + log_escape(m_filename), errno);
+    m_file = nullptr;
   }
 }
 
