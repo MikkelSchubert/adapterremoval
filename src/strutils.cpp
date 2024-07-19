@@ -39,7 +39,7 @@ indent(string_vec lines, size_t n_indent, bool indent_first)
 {
   const std::string indentation(n_indent, ' ');
   for (auto it = lines.begin(); it != lines.end(); ++it) {
-    if (it->size() && (indent_first || it != lines.begin())) {
+    if (!it->empty() && (indent_first || it != lines.begin())) {
       it->insert(0, indentation);
     }
   }
@@ -193,10 +193,10 @@ split_lines(const std::string& text)
 }
 
 std::string
-indent_lines(const std::string& text, size_t n_indent)
+indent_lines(const std::string& lines, size_t indentation)
 {
   std::ostringstream lines_out;
-  join(lines_out, indent(split_lines(text), n_indent, true));
+  join(lines_out, indent(split_lines(lines), indentation, true));
 
   return lines_out.str();
 }

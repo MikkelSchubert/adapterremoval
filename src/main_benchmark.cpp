@@ -43,22 +43,20 @@ namespace {
 /** Unoptimized to prevent calculations from being elided by the compiler */
 template<typename T>
 void NO_OPTIMIZE_GCC
-blackbox(const T&) NO_OPTIMIZE_CLANG
+blackbox(const T& /* unused */) NO_OPTIMIZE_CLANG
 {
 }
 
 class readlines_benchmarker : public benchmarker
 {
 public:
-  readlines_benchmarker(const string_vec& filenames_1,
-                        const string_vec& filenames_2,
+  readlines_benchmarker(string_vec filenames_1,
+                        string_vec filenames_2,
                         const size_t head)
     : benchmarker("FASTQ reading", { "read" })
-    , m_filenames_1(filenames_1)
-    , m_filenames_2(filenames_2)
+    , m_filenames_1(std::move(filenames_1))
+    , m_filenames_2(std::move(filenames_2))
     , m_head(head)
-    , m_lines_1()
-    , m_lines_2()
   {
     set_required();
   }
@@ -96,12 +94,12 @@ private:
     }
   }
 
-  const string_vec m_filenames_1;
-  const string_vec m_filenames_2;
-  const size_t m_head;
+  string_vec m_filenames_1{};
+  string_vec m_filenames_2{};
+  size_t m_head = 0;
   // Vector containing files set of lines read
-  string_vec m_lines_1;
-  string_vec m_lines_2;
+  string_vec m_lines_1{};
+  string_vec m_lines_2{};
 };
 
 /** Benchmarking of FASTQ parsing excluding file IO */
@@ -112,8 +110,6 @@ public:
     : benchmarker("FASTQ parsing", { "parse" })
     , m_lines_1(lines_1)
     , m_lines_2(lines_2)
-    , m_records_1()
-    , m_records_2()
   {
     set_required();
   }
@@ -153,18 +149,17 @@ protected:
 private:
   const string_vec& m_lines_1;
   const string_vec& m_lines_2;
-  fastq_vec m_records_1;
-  fastq_vec m_records_2;
+  fastq_vec m_records_1{};
+  fastq_vec m_records_2{};
 };
 
 class reverse_complement_benchmarker : public benchmarker
 {
 public:
-  reverse_complement_benchmarker(const fastq_vec& records_1,
-                                 const fastq_vec& records_2)
+  reverse_complement_benchmarker(fastq_vec records_1, fastq_vec records_2)
     : benchmarker("reverse complement", { "revcompl" })
-    , m_records_1(records_1)
-    , m_records_2(records_2)
+    , m_records_1(std::move(records_1))
+    , m_records_2(std::move(records_2))
   {
   }
 
@@ -181,8 +176,8 @@ protected:
   }
 
 private:
-  fastq_vec m_records_1;
-  fastq_vec m_records_2;
+  fastq_vec m_records_1{};
+  fastq_vec m_records_2{};
 };
 
 class complexity_benchmarker : public benchmarker
@@ -206,10 +201,10 @@ protected:
   }
 
 private:
-  double complexity(const fastq_vec& records) const
+  static double complexity(const fastq_vec& records)
   {
     double total = 0.0;
-    for (auto& it : records) {
+    for (const auto& it : records) {
       total += it.complexity();
     }
 
@@ -230,8 +225,6 @@ public:
     : benchmarker(desc, { "trim", "trim:" + toggle })
     , m_records_1(records_1)
     , m_records_2(records_2)
-    , m_trimmed_records_1()
-    , m_trimmed_records_2()
   {
   }
 
@@ -256,8 +249,8 @@ protected:
 private:
   const fastq_vec& m_records_1;
   const fastq_vec& m_records_2;
-  fastq_vec m_trimmed_records_1;
-  fastq_vec m_trimmed_records_2;
+  fastq_vec m_trimmed_records_1{};
+  fastq_vec m_trimmed_records_2{};
 };
 
 class basic_trimming_benchmarker : public trimming_benchmarker
@@ -333,7 +326,7 @@ public:
   }
 
 private:
-  void collect_statistics(const fastq_vec& records) const
+  static void collect_statistics(const fastq_vec& records)
   {
     fastq_statistics stats;
     for (const auto& it : records) {
@@ -370,7 +363,7 @@ public:
 
       // Benchmark the preferred algorithm if no algorithms were specified
       const auto supported = simd::supported();
-      if (supported.size() && supported.back() == m_is) {
+      if (!supported.empty() && supported.back() == m_is) {
         for (const auto is : supported) {
           if (toggles.is_set("simd:" + to_lower(simd::name(is)))) {
             return strategy::skip;
@@ -441,7 +434,6 @@ public:
     , m_config(config)
     , m_mate_1(mate_1)
     , m_mate_2(mate_2)
-    , m_mate_2_reversed()
     , m_adapters(config.adapters.get_adapter_set(0))
     , m_aligner(m_adapters, is)
   {
@@ -487,9 +479,9 @@ private:
   const userconfig& m_config;
   const fastq_vec& m_mate_1;
   const fastq_vec& m_mate_2;
-  fastq_vec m_mate_2_reversed;
-  const fastq_pair_vec m_adapters;
-  const sequence_aligner m_aligner;
+  fastq_vec m_mate_2_reversed{};
+  fastq_pair_vec m_adapters{};
+  sequence_aligner m_aligner;
 };
 
 string_vec

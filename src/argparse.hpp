@@ -139,23 +139,23 @@ private:
 
   struct argument_entry
   {
-    std::string header;
-    argument_ptr argument;
+    std::string header{};
+    argument_ptr argument{};
   };
 
-  std::vector<argument_entry> m_args;
-  std::map<std::string, argument_ptr, std::less<>> m_keys;
+  std::vector<argument_entry> m_args{};
+  std::map<std::string, argument_ptr, std::less<>> m_keys{};
 
   //! Name of the program
-  std::string m_name;
+  std::string m_name{};
   //! Version string for the program (excluding the name)
-  std::string m_version;
+  std::string m_version{};
   //! Preamble text for the program.
-  std::string m_preamble;
+  std::string m_preamble{};
   //! Licenses for the program.
-  std::string m_licenses;
+  std::string m_licenses{};
   //! Maximum terminal width used for printing help messages
-  unsigned m_terminal_width;
+  unsigned m_terminal_width = 100;
 };
 
 /**
@@ -179,22 +179,28 @@ public:
   ~argument() = default;
 
   /** Returns true if the consumer has consumed a value. */
-  bool is_set() const;
+  bool is_set() const { return m_times_set; }
+
   /** Returns true if the argument is deprecated. */
-  bool is_deprecated() const;
+  bool is_deprecated() const { return m_deprecated; }
+
   /** Returns true if the argument is hidden. */
-  bool is_hidden() const;
+  bool is_hidden() const { return m_hidden; }
 
   /** Returns the canonical argument key. */
-  const std::string& key() const;
+  const std::string& key() const { return m_key_long; }
+
   /** Returns the short argument key; may be an empty string. */
-  const std::string& short_key() const;
+  const std::string& short_key() const { return m_key_short; }
+
   /** Returns long, short, and deprecated argument keys. */
   string_vec keys() const;
   /** Returns true if this key is a deprecated alias for this argument. */
   bool is_deprecated_alias(const std::string& key) const;
+
   /** Returns the meta-variable. May be an empty string. */
-  const std::string& metavar() const;
+  const std::string& metavar() const { return m_metavar; }
+
   /** Returns help string with %default replaced with the default (if any). */
   std::string help() const;
 
@@ -204,9 +210,10 @@ public:
   size_t max_values() const;
 
   /** Options that MUST be specified along with this argument. */
-  const string_vec& depends_on() const;
+  const string_vec& depends_on() const { return m_depends_on; }
+
   /** Options that must NOT be specified along with this argument. */
-  const string_vec& conflicts_with() const;
+  const string_vec& conflicts_with() const { return m_conflicts_with; }
 
   /** Returns the value associated with the argument as a string. */
   std::string value() const;
@@ -247,32 +254,32 @@ public:
 
 private:
   //! Number of times the argument has been specified
-  unsigned m_times_set;
+  unsigned m_times_set{};
   //! Default sink value
-  bool m_default_sink;
+  bool m_default_sink{};
   //! Indicates if the argument is deprecated
-  bool m_deprecated;
+  bool m_deprecated{};
   //! Deprecated keys (long and short) for this argument
-  string_vec m_deprecated_keys;
+  string_vec m_deprecated_keys{};
   //! Indicates if the argument is hidden
-  bool m_hidden;
+  bool m_hidden{};
 
   //! The long, canonical argument key
-  std::string m_key_long;
+  std::string m_key_long{};
   //! An optional, short argument key
-  std::string m_key_short;
+  std::string m_key_short{};
 
   //! Optional metavar (defaults to uppercase `m_name` without dashes)
-  std::string m_metavar;
+  std::string m_metavar{};
   //! Help string; the string '%default' will be replaced with the current value
-  std::string m_help;
+  std::string m_help{};
 
   //! This argument must be specified along with these arguments.
-  string_vec m_depends_on;
+  string_vec m_depends_on{};
   //! This argument cannot be specified along with these arguments.
-  string_vec m_conflicts_with;
+  string_vec m_conflicts_with{};
 
-  std::unique_ptr<sink> m_sink;
+  std::unique_ptr<sink> m_sink{};
 };
 
 class sink
@@ -330,13 +337,13 @@ protected:
 
 private:
   //! Indicates if the sink has been supplied with a default value
-  bool m_has_default;
+  bool m_has_default{};
   //! The minimum number of values taken by this sink
-  size_t m_min_values;
+  size_t m_min_values{};
   //! The maximum number of values taken by this sink
-  size_t m_max_values;
+  size_t m_max_values{};
   //! Function used to pre-process the user supplied arguments
-  preprocess_ptr m_preprocess;
+  preprocess_ptr m_preprocess = nullptr;
 };
 
 class bool_sink : public sink
@@ -375,9 +382,9 @@ public:
   uint_sink& operator=(uint_sink&&) = delete;
 
 private:
-  unsigned* m_sink;
+  unsigned* m_sink = nullptr;
   //! Default value used for -h/--help output
-  unsigned m_default;
+  unsigned m_default{};
 };
 
 class double_sink : public sink
@@ -398,9 +405,9 @@ public:
   double_sink& operator=(double_sink&&) = delete;
 
 private:
-  double* m_sink;
+  double* m_sink = nullptr;
   //! Default value used for -h/--help output
-  double m_default;
+  double m_default{};
 };
 
 class str_sink : public sink
@@ -415,7 +422,9 @@ public:
   std::string default_value() const override;
 
   std::string value() const override;
-  string_vec choices() const override;
+
+  string_vec choices() const override { return m_choices; }
+
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   str_sink(const str_sink&) = delete;
@@ -424,12 +433,12 @@ public:
   str_sink& operator=(str_sink&&) = delete;
 
 private:
-  std::string* m_sink;
-  string_vec m_choices;
+  std::string* m_sink = nullptr;
+  string_vec m_choices{};
   //! Default value used for -h/--help output
-  std::string m_default;
+  std::string m_default{};
   //! Sink variable used if no sink was supplied
-  std::string m_fallback_sink;
+  std::string m_fallback_sink{};
 };
 
 class vec_sink : public sink
@@ -452,7 +461,7 @@ public:
   vec_sink& operator=(vec_sink&&) = delete;
 
 private:
-  string_vec* m_sink;
+  string_vec* m_sink = nullptr;
 };
 
 } // namespace argparse

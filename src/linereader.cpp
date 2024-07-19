@@ -69,7 +69,7 @@ check_isal_return_code(int returncode,
       throw_gzip_error(file, action, "end of gzip name buffer reached");
 
     case ISAL_COMMENT_OVERFLOW:
-      throw_gzip_error(file, action, "end of gzip name buffer reached");
+      throw_gzip_error(file, action, "end of gzip comment buffer reached");
 
     case ISAL_EXTRA_OVERFLOW:
       throw_gzip_error(file, action, "end of extra buffer reached");

@@ -36,7 +36,7 @@ const int PHRED_33_OFFSET_MIN = '!';
 //! higher and higher quality scores for Phred+33 data.
 const int PHRED_33_OFFSET_MAX = 'N';
 //! Minimum Phred score allowed
-const int PHRED_33_SCORE_MIN = 0;
+// const int PHRED_33_SCORE_MIN = 0;
 //! Maximum Phred score allowed
 const int PHRED_33_SCORE_MAX = PHRED_33_OFFSET_MAX - PHRED_33_OFFSET_MIN;
 
@@ -47,7 +47,7 @@ const int PHRED_64_OFFSET_MAX = '~';
 //! Minimum Phred+64 score allowed
 const int PHRED_64_SCORE_MIN = 0;
 //! Maximum Phred+64 score allowed
-const int PHRED_64_SCORE_MAX = PHRED_64_OFFSET_MAX - PHRED_64_OFFSET_MIN;
+// const int PHRED_64_SCORE_MAX = PHRED_64_OFFSET_MAX - PHRED_64_OFFSET_MIN;
 
 //! Offset used by Solexa encoding quality scores
 const int SOLEXA_OFFSET_MIN = '@';

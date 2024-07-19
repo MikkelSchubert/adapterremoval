@@ -30,27 +30,53 @@ class buffer
 {
 public:
   /** Creates a buffer of the specified size, if non-zero */
-  explicit buffer(size_t size = 0);
+  explicit buffer(size_t size = 0) { m_buffer.resize(size); }
 
   /** Returns pointer to the buffer, if any */
-  unsigned char* get();
+  unsigned char* get()
+  {
+    return reinterpret_cast<unsigned char*>(m_buffer.data());
+  }
+
   /** Returns pointer to the buffer, if any */
-  const unsigned char* get() const;
+  const unsigned char* get() const
+  {
+    return reinterpret_cast<const unsigned char*>(m_buffer.data());
+  }
+
   /** Returns pointer to the buffer, if any */
-  char* get_signed();
+  char* get_signed() { return reinterpret_cast<char*>(get()); }
+
   /** Returns pointer to the buffer, if any */
-  const char* get_signed() const;
+  const char* get_signed() const
+  {
+    return reinterpret_cast<const char*>(get());
+  }
 
   /** Returns the current size of the buffer */
-  size_t size() const;
+  size_t size() const { return m_buffer.size(); }
+
   /** Returns the capacity of the buffer */
-  size_t capacity() const;
+  size_t capacity() const { return m_buffer.capacity(); }
 
   /** Changes the reported size of the buffer; must be 0 <= x <= capacity. */
-  void resize(size_t size);
+  void resize(size_t size)
+  {
+    AR_REQUIRE(size <= capacity());
+    m_buffer.resize(size);
+  }
 
   /** Copies uint32 into buffer */
-  void write_u32(size_t offset, uint32_t value);
+  void write_u32(size_t offset, uint32_t value)
+  {
+    AR_REQUIRE(offset + 4 <= size());
+
+    unsigned char* dst = get() + offset;
+    dst[0] = value & 0xFFU;
+    dst[1] = (value >> 8U) & 0xFFU;
+    dst[2] = (value >> 16U) & 0xFFU;
+    dst[3] = (value >> 24U) & 0xFFU;
+  }
 
   buffer(buffer&& other) noexcept = default;
   buffer& operator=(buffer&& other) noexcept = default;
@@ -73,72 +99,9 @@ private:
                 "unexpected alignment of buffer::no_init");
 
   //! Backing buffer
-  std::vector<no_init> m_buffer;
+  std::vector<no_init> m_buffer{};
 };
 
 using buffer_vec = std::vector<buffer>;
-
-////////////////////////////////////////////////////////////////////////////////
-
-inline buffer::buffer(size_t size)
-  : m_buffer()
-{
-  m_buffer.resize(size);
-}
-
-inline unsigned char*
-buffer::get()
-{
-  return reinterpret_cast<unsigned char*>(m_buffer.data());
-}
-
-inline const unsigned char*
-buffer::get() const
-{
-  return reinterpret_cast<const unsigned char*>(m_buffer.data());
-}
-
-inline char*
-buffer::get_signed()
-{
-  return reinterpret_cast<char*>(get());
-}
-
-inline const char*
-buffer::get_signed() const
-{
-  return reinterpret_cast<const char*>(get());
-}
-
-inline size_t
-buffer::size() const
-{
-  return m_buffer.size();
-}
-
-inline size_t
-buffer::capacity() const
-{
-  return m_buffer.capacity();
-}
-
-inline void
-buffer::resize(size_t size)
-{
-  AR_REQUIRE(size <= capacity());
-  m_buffer.resize(size);
-}
-
-inline void
-buffer::write_u32(size_t offset, uint32_t value)
-{
-  AR_REQUIRE(offset + 4 <= size());
-
-  unsigned char* dst = get() + offset;
-  dst[0] = value & 0xFFU;
-  dst[1] = (value >> 8U) & 0xFFU;
-  dst[2] = (value >> 16U) & 0xFFU;
-  dst[3] = (value >> 24U) & 0xFFU;
-}
 
 } // namespace adapterremoval

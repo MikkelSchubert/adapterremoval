@@ -73,6 +73,11 @@ public:
 
     return chunks.finalize();
   }
+
+  se_demuxed_processor(const se_demuxed_processor&) = delete;
+  se_demuxed_processor(se_demuxed_processor&&) = delete;
+  se_demuxed_processor& operator=(const se_demuxed_processor&) = delete;
+  se_demuxed_processor& operator=(se_demuxed_processor&&) = delete;
 };
 
 class pe_demuxed_processor : public reads_processor
@@ -113,6 +118,11 @@ public:
 
     return chunks.finalize();
   }
+
+  pe_demuxed_processor(const pe_demuxed_processor&) = delete;
+  pe_demuxed_processor(pe_demuxed_processor&&) = delete;
+  pe_demuxed_processor& operator=(const pe_demuxed_processor&) = delete;
+  pe_demuxed_processor& operator=(pe_demuxed_processor&&) = delete;
 };
 
 int

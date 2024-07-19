@@ -90,9 +90,7 @@ benchmark_toggles::is_set(const std::string& key) const
 
 benchmarker::benchmarker(std::string desc, string_vec toggles)
   : m_description(std::move(desc))
-  , m_durations()
   , m_toggles(std::move(toggles))
-  , m_required(false)
 {
 }
 

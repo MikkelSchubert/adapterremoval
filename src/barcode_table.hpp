@@ -39,7 +39,7 @@ struct demultiplexer_node
 {
   demultiplexer_node();
 
-  std::array<int, 4> children;
+  std::array<int32_t, 4> children;
   int value;
 };
 
@@ -83,12 +83,12 @@ private:
                            size_t max_local_mismatches,
                            const next_subsequence* next) const;
 
-  demux_node_vec m_nodes;
-  size_t m_max_mismatches;
-  size_t m_max_mismatches_r1;
-  size_t m_max_mismatches_r2;
-  size_t m_barcode_1_len;
-  size_t m_barcode_2_len;
+  demux_node_vec m_nodes{};
+  size_t m_max_mismatches = 0;
+  size_t m_max_mismatches_r1 = 0;
+  size_t m_max_mismatches_r2 = 0;
+  size_t m_barcode_1_len = 0;
+  size_t m_barcode_2_len = 0;
 };
 
 } // namespace adapterremoval

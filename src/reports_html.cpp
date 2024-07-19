@@ -152,8 +152,7 @@ public:
   };
 
   io_summary_writer(const std::string& title, io type)
-    : m_writer()
-    , m_type(type)
+    : m_type(type)
   {
     m_writer.set_title(title);
   }
@@ -180,7 +179,7 @@ public:
   }
 
 private:
-  html_summary_io m_writer;
+  html_summary_io m_writer{};
   io m_type;
 };
 
@@ -515,7 +514,8 @@ summarize_input(const fastq_stats_ptr& ptr)
   const auto n_bases = ptr->length_dist().product();
   AR_REQUIRE(n_bases >= 0);
 
-  return { ptr->number_of_input_reads(), static_cast<uint64_t>(n_bases) };
+  return reads_and_bases{ ptr->number_of_input_reads(),
+                          static_cast<uint64_t>(n_bases) };
 }
 
 void

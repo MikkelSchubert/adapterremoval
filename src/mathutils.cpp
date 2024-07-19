@@ -16,10 +16,11 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "mathutils.hpp"
-#include "debug.hpp" // for AR_REQUIRES
-#include <cmath>     // for sqrt
-#include <numeric>   // for accumulate
+#include "mathutils.hpp" // declarations
+#include "debug.hpp"     // for AR_REQUIRES
+#include <array>         // for array
+#include <cmath>         // for sqrt
+#include <numeric>       // for accumulate
 
 namespace adapterremoval {
 
@@ -27,7 +28,7 @@ namespace {
 
 //! Critical Values of the Student's t Distribution at 0.995 for 0 to 100 df,
 //! calculated via `qt(0.995, 1:100)` in R
-const std::vector<double> STUDENTS_T_CRITICAL_VALUES = {
+const std::array<double, 101> STUDENTS_T_CRITICAL_VALUES = {
   NAN,    63.657, 9.9248, 5.8409, 4.6041, 4.0321, 3.7074, 3.4995, 3.3554,
   3.2498, 3.1693, 3.1058, 3.0545, 3.0123, 2.9768, 2.9467, 2.9208, 2.8982,
   2.8784, 2.8609, 2.8453, 2.8314, 2.8188, 2.8073, 2.7969, 2.7874, 2.7787,
@@ -47,7 +48,7 @@ const std::vector<double> STUDENTS_T_CRITICAL_VALUES = {
 double
 arithmetic_mean(const std::vector<uint64_t>& values)
 {
-  AR_REQUIRE(values.size());
+  AR_REQUIRE(!values.empty());
 
   return std::accumulate(values.begin(), values.end(), uint64_t()) /
          static_cast<double>(values.size());

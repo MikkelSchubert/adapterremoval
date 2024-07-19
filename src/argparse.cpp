@@ -70,13 +70,6 @@ to_double(const std::string& value, double& out)
 ///////////////////////////////////////////////////////////////////////////////
 
 parser::parser()
-  : m_args()
-  , m_keys()
-  , m_name()
-  , m_version()
-  , m_preamble()
-  , m_licenses()
-  , m_terminal_width(100)
 {
   add_header("OPTIONS:");
 
@@ -412,17 +405,8 @@ parser::find_argument(const std::string& key)
 ///////////////////////////////////////////////////////////////////////////////
 
 argument::argument(const std::string& key, std::string metavar)
-  : m_times_set()
-  , m_default_sink()
-  , m_deprecated()
-  , m_deprecated_keys()
-  , m_hidden()
-  , m_key_long(key)
-  , m_key_short()
+  : m_key_long(key)
   , m_metavar(std::move(metavar))
-  , m_help()
-  , m_depends_on()
-  , m_conflicts_with()
   , m_sink(std::make_unique<bool_sink>(&m_default_sink))
 {
   AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
@@ -436,36 +420,6 @@ argument::help(const std::string& text)
   return *this;
 }
 
-bool
-argument::is_set() const
-{
-  return m_times_set;
-}
-
-bool
-argument::is_deprecated() const
-{
-  return m_deprecated;
-}
-
-bool
-argument::is_hidden() const
-{
-  return m_hidden;
-}
-
-const std::string&
-argument::key() const
-{
-  return m_key_long;
-}
-
-const std::string&
-argument::short_key() const
-{
-  return m_key_short;
-}
-
 string_vec
 argument::keys() const
 {
@@ -477,12 +431,6 @@ argument::keys() const
   }
 
   return keys;
-}
-
-const std::string&
-argument::metavar() const
-{
-  return m_metavar;
 }
 
 std::string
@@ -524,18 +472,6 @@ size_t
 argument::max_values() const
 {
   return m_sink->max_values();
-}
-
-const string_vec&
-argument::depends_on() const
-{
-  return m_depends_on;
-}
-
-const string_vec&
-argument::conflicts_with() const
-{
-  return m_conflicts_with;
 }
 
 std::string
@@ -745,10 +681,8 @@ sink::sink(size_t n_values)
 }
 
 sink::sink(size_t min_values, size_t max_values)
-  : m_has_default()
-  , m_min_values(min_values)
+  : m_min_values(min_values)
   , m_max_values(max_values)
-  , m_preprocess(nullptr)
 {
 }
 
@@ -801,7 +735,6 @@ bool_sink::consume(string_vec_citer start, const string_vec_citer& end)
 uint_sink::uint_sink(unsigned* ptr)
   : sink(1)
   , m_sink(ptr)
-  , m_default()
 {
   AR_REQUIRE(ptr);
 
@@ -850,7 +783,6 @@ uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
 double_sink::double_sink(double* ptr)
   : sink(1)
   , m_sink(ptr)
-  , m_default()
 {
   AR_REQUIRE(ptr);
 
@@ -913,9 +845,6 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 str_sink::str_sink(std::string* ptr)
   : sink(1)
   , m_sink(ptr ? ptr : &m_fallback_sink)
-  , m_choices()
-  , m_default()
-  , m_fallback_sink()
 {
   AR_REQUIRE(m_sink);
 
@@ -959,12 +888,6 @@ str_sink::default_value() const
 {
   AR_REQUIRE(has_default());
   return m_default;
-}
-
-string_vec
-str_sink::choices() const
-{
-  return m_choices;
 }
 
 size_t

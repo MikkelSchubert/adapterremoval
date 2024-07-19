@@ -83,9 +83,6 @@ isal_enabled(const userconfig& config, const std::string& filename)
 
 fastq_read_chunk::fastq_read_chunk(bool eof_)
   : eof(eof_)
-  , nucleotides()
-  , reads_1()
-  , reads_2()
 {
 }
 
@@ -95,10 +92,6 @@ fastq_read_chunk::fastq_read_chunk(bool eof_)
 fastq_output_chunk::fastq_output_chunk(bool eof_, uint32_t crc32_)
   : eof(eof_)
   , crc32(crc32_)
-  , nucleotides()
-  , reads()
-  , buffers()
-  , uncompressed_size()
 {
 }
 
@@ -151,11 +144,8 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_io_input_2(&m_io_input_2_base)
   , m_next_step(next_step)
   , m_mate_separator(config.mate_separator)
-  , m_single_end(false)
-  , m_eof(false)
   , m_timer(config.log_progress)
   , m_head(config.head)
-  , m_lock()
 {
   if (config.interleaved_input) {
     AR_REQUIRE(config.input_files_2.empty());
@@ -291,8 +281,6 @@ post_process_fastq::post_process_fastq(size_t next_step,
   , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
   , m_encoding(encoding)
-  , m_eof(false)
-  , m_lock()
 {
 }
 
@@ -340,12 +328,7 @@ split_fastq::split_fastq(const userconfig& config,
                          size_t next_step)
   : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
-  , m_buffer(GZIP_BLOCK_SIZE)
-  , m_offset()
   , m_isal_enabled(isal_enabled(config, filename))
-  , m_isal_crc32()
-  , m_eof(false)
-  , m_lock()
 {
 }
 
@@ -505,9 +488,6 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
   : analytical_step(processing_order::ordered_io, "write_fastq")
   , m_output(filename)
   , m_isal_enabled(isal_enabled(config, filename))
-  , m_uncompressed_bytes()
-  , m_eof(false)
-  , m_lock()
 {
   if (m_isal_enabled) {
     buffer level_buf(isal_buffer_size(config.gzip_level));

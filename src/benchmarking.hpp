@@ -96,9 +96,9 @@ private:
   using time_point = std::chrono::time_point<clock>;
 
   const std::string m_description;
-  std::vector<uint64_t> m_durations;
-  string_vec m_toggles;
-  bool m_required;
+  std::vector<uint64_t> m_durations{};
+  string_vec m_toggles{};
+  bool m_required = false;
 };
 
 } // namespace adapterremoval

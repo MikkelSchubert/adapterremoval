@@ -53,7 +53,7 @@ compare_subsequences_avx512(size_t& n_mismatches,
     __m512i s2;
 
     if (length < 64) {
-      const auto mask = 0xFFFFFFFFFFFFFFFFllu >> (64 - length);
+      const auto mask = 0xFFFFFFFFFFFFFFFFLLU >> (64 - length);
       s1 = _mm512_maskz_loadu_epi8(mask, seq_1);
       s2 = _mm512_maskz_loadu_epi8(mask, seq_2);
 

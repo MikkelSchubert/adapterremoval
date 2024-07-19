@@ -60,11 +60,11 @@ public:
 
 private:
   //! Consensus adapter sequence
-  fastq m_adapter;
+  fastq m_adapter{};
   //! Vector of the top N k-mer sequences and the number of observations
-  kmer_vec m_top_kmers;
+  kmer_vec m_top_kmers{};
   //! Total number of k-mers observed
-  size_t m_total_kmers;
+  size_t m_total_kmers = 0;
 };
 
 /** Raw statistics for consensus adapter */
@@ -83,7 +83,8 @@ public:
   consensus_adapter_stats& operator+=(const consensus_adapter_stats& other);
 
   /** Returns the max size of inferred consensus adapter sequences */
-  size_t max_length() const;
+  size_t max_length() const { return m_max_length; }
+
   /** Process an adapter fragment, assumed to only contain bases ACGTN */
   void process(const std::string& sequence);
   /** Constructs consensus adapter sequence and selects the top N kmers */
@@ -91,11 +92,11 @@ public:
 
 private:
   //! Maximum length of consensus adapter sequence
-  size_t m_max_length;
+  size_t m_max_length = 0;
   //! Nucleotide frequencies of putative adapter fragments
-  indexed_counts<ACGTN> m_consensus;
+  indexed_counts<ACGTN> m_consensus{};
   //! 5' k-mer frequencies of putative adapter fragments
-  kmer_map m_kmers;
+  kmer_map m_kmers{};
 };
 
 /** Struct for collecting adapter fragment statistics */

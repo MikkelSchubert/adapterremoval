@@ -51,9 +51,9 @@ using adapter_id_stats_ptr = std::shared_ptr<adapter_id_statistics>;
 class reads_and_bases
 {
 public:
-  reads_and_bases(uint64_t reads = 0, uint64_t bases = 0);
+  explicit reads_and_bases(uint64_t reads = 0, uint64_t bases = 0);
   reads_and_bases& operator+=(const reads_and_bases& other);
-  reads_and_bases operator+(const reads_and_bases& other);
+  reads_and_bases operator+(const reads_and_bases& other) const;
 
   /** Increments the number of reads by one the number of bases by an amount */
   void inc(uint64_t bases = 1);
@@ -106,7 +106,7 @@ public:
 
   summary summarize() const;
 
-  size_t max_unique() const;
+  size_t max_unique() const { return m_max_unique_sequences; }
 
 private:
   void insert(const std::string& key);
@@ -131,6 +131,7 @@ class fastq_statistics
 public:
   explicit fastq_statistics(double sample_rate = 1.0);
   explicit fastq_statistics(double sample_rate, uint32_t seed);
+  ~fastq_statistics() = default;
 
   void process(const fastq& read, size_t num_input_reads = 1);
 
@@ -165,7 +166,7 @@ public:
   }
 
   /** Sum of nucleotide counts by position */
-  counts nucleotides_pos() const;
+  counts nucleotides_pos() const { return m_nucleotide_pos.merge(); }
 
   /** Sum of nucleotide counts by position for GC only */
   inline counts nucleotides_gc_pos() const
@@ -180,51 +181,52 @@ public:
   }
 
   /** Sum of base qualities for ACGTN by position */
-  counts qualities_pos() const;
+  counts qualities_pos() const { return m_quality_pos.merge(); }
 
   /** Count duplications with the given max number of unique sequences. */
   void init_duplication_stats(size_t max_unique);
+
   /** Return the duplication statistics, if any. */
-  const duplication_stats_ptr& duplication() const;
+  const duplication_stats_ptr& duplication() const { return m_duplication; }
 
   /** Sum statistics, e.g. those used by different threads. */
   fastq_statistics& operator+=(const fastq_statistics& other);
 
+  fastq_statistics(const fastq_statistics&) = delete;
+  fastq_statistics(fastq_statistics&&) = delete;
+  fastq_statistics& operator=(const fastq_statistics&) = delete;
+  fastq_statistics& operator=(fastq_statistics&&) = delete;
+
 private:
   //! Sample every nth read for statistics.
-  double m_sample_rate;
+  double m_sample_rate = 1.0;
   //! RNG used to downsample sample reads for curves
-  std::mt19937 m_rng;
+  std::mt19937 m_rng{};
 
   //! Number of input reads used to produce these statistics
-  size_t m_number_of_input_reads;
+  size_t m_number_of_input_reads = 0;
   //! The actual number of reads written, e.g. input / 2 for merged.
-  size_t m_number_of_output_reads;
+  size_t m_number_of_output_reads = 0;
   //! Number of reads sampled for computationally expensive stats
-  size_t m_number_of_sampled_reads;
+  size_t m_number_of_sampled_reads = 0;
 
   /** Length distribution. */
-  counts m_length_dist;
+  counts m_length_dist{};
   /** Quality distribution. */
-  counts m_quality_dist;
+  counts m_quality_dist{};
   /** GC content distribution. */
-  rates m_gc_content_dist;
+  rates m_gc_content_dist{};
 
   /** Per position nucleotide counts indexed using ACGTN_TO_IDX. */
-  indexed_counts<ACGTN> m_nucleotide_pos;
+  indexed_counts<ACGTN> m_nucleotide_pos{};
   /** Per position quality score sums indexed using ACGTN_TO_IDX. */
-  indexed_counts<ACGTN> m_quality_pos;
+  indexed_counts<ACGTN> m_quality_pos{};
 
   //! Maximum size of read processed; used to resize counters as needed
-  size_t m_max_sequence_len;
+  size_t m_max_sequence_len = 0;
 
   //! Optional duplication statistics
-  duplication_stats_ptr m_duplication;
-
-  //! Copy construction not supported
-  fastq_statistics(const fastq_statistics&) = delete;
-  //! Assignment not supported
-  fastq_statistics& operator=(const fastq_statistics&) = delete;
+  duplication_stats_ptr m_duplication{};
 };
 
 /** Object used to collect summary statistics for trimming. */
@@ -232,67 +234,68 @@ class trimming_statistics
 {
 public:
   explicit trimming_statistics(double sample_rate = 1.0);
+  ~trimming_statistics() = default;
 
   //! Statistics for first reads
-  fastq_stats_ptr read_1;
+  fastq_stats_ptr read_1{};
   //! Statistics for second reads
-  fastq_stats_ptr read_2;
+  fastq_stats_ptr read_2{};
   //! Statistics for discarded reads
-  fastq_stats_ptr singleton;
+  fastq_stats_ptr singleton{};
   //! Statistics for merged reads
-  fastq_stats_ptr merged;
+  fastq_stats_ptr merged{};
   //! Statistics for discarded reads
-  fastq_stats_ptr discarded;
+  fastq_stats_ptr discarded{};
 
   /** Insert size distribution. */
-  counts insert_sizes;
+  counts insert_sizes{};
 
   //! Number of reads with adapters trimmed
-  counts adapter_trimmed_reads;
+  counts adapter_trimmed_reads{};
   //! Number of bases trimmed for a given adapter (pair)
-  counts adapter_trimmed_bases;
+  counts adapter_trimmed_bases{};
 
   //! Number of reads that overlap/can be merged
-  size_t overlapping_reads;
+  size_t overlapping_reads = 0;
 
   //! Total number of reads/bases merged
-  reads_and_bases reads_merged;
+  reads_and_bases reads_merged{};
 
   //! Number of reads/bases trimmed with --pre-trim5p/3p
-  reads_and_bases terminal_pre_trimmed;
+  reads_and_bases terminal_pre_trimmed{};
   //! Number of reads/bases trimmed with --post-trim5p/3p
-  reads_and_bases terminal_post_trimmed;
+  reads_and_bases terminal_post_trimmed{};
 
   //! Number of reads trimmed with --pre-trim-polyx
-  indexed_count<ACGT> poly_x_pre_trimmed_reads;
+  indexed_count<ACGT> poly_x_pre_trimmed_reads{};
   //! Number of 3' bases trimmed with --pre-trim-polyx
-  indexed_count<ACGT> poly_x_pre_trimmed_bases;
+  indexed_count<ACGT> poly_x_pre_trimmed_bases{};
 
   //! Number of reads trimmed with --post-trim-polyx
-  indexed_count<ACGT> poly_x_post_trimmed_reads;
+  indexed_count<ACGT> poly_x_post_trimmed_reads{};
   //! Number of 3' bases trimmed with --post-trim-polyx
-  indexed_count<ACGT> poly_x_post_trimmed_bases;
+  indexed_count<ACGT> poly_x_post_trimmed_bases{};
 
   //! Number of reads/bases trimmed for low quality bases
-  reads_and_bases low_quality_trimmed;
+  reads_and_bases low_quality_trimmed{};
   //! Total number of reads/bases trimmed
-  reads_and_bases total_trimmed;
+  reads_and_bases total_trimmed{};
 
   //! Number of reads/bases filtered due to length (min)
-  reads_and_bases filtered_min_length;
-  reads_and_bases filtered_max_length;
+  reads_and_bases filtered_min_length{};
+  reads_and_bases filtered_max_length{};
   //! Number of reads filtered due to too many Ns
-  reads_and_bases filtered_ambiguous;
+  reads_and_bases filtered_ambiguous{};
   //! Number of reads filtered due to low complexity
-  reads_and_bases filtered_low_complexity;
+  reads_and_bases filtered_low_complexity{};
 
   /** Combine statistics objects, e.g. those used by different threads. */
   trimming_statistics& operator+=(const trimming_statistics& other);
 
-  //! Copy construction not supported
   trimming_statistics(const trimming_statistics&) = delete;
-  //! Assignment not supported
+  trimming_statistics(trimming_statistics&&) = delete;
   trimming_statistics& operator=(const trimming_statistics&) = delete;
+  trimming_statistics& operator=(trimming_statistics&&) = delete;
 };
 
 /** Object used to collect summary statistics for demultiplexing. */
@@ -300,25 +303,26 @@ class demux_statistics
 {
 public:
   explicit demux_statistics(double sample_rate = 1.0);
+  ~demux_statistics() = default;
 
   size_t total() const;
 
   //! Number of reads identified for for each barcode (pair)
-  std::vector<size_t> barcodes;
+  std::vector<size_t> barcodes{};
   //! Number of reads with no hits
-  size_t unidentified;
+  size_t unidentified = 0;
   //! Number of reads with no single best hit
-  size_t ambiguous;
+  size_t ambiguous = 0;
 
   //! Statistics for unidentified mate 1 reads
-  fastq_stats_ptr unidentified_stats_1;
+  fastq_stats_ptr unidentified_stats_1{};
   //! Statistics for unidentified mate 2 reads
-  fastq_stats_ptr unidentified_stats_2;
+  fastq_stats_ptr unidentified_stats_2{};
 
-  //! Copy construction not supported
   demux_statistics(const demux_statistics&) = delete;
-  //! Assignment not supported
+  demux_statistics(demux_statistics&&) = delete;
   demux_statistics& operator=(const demux_statistics&) = delete;
+  demux_statistics& operator=(demux_statistics&&) = delete;
 
   friend class statistics_builder;
 };
@@ -326,14 +330,14 @@ public:
 class statistics
 {
 public:
-  fastq_stats_ptr input_1;
-  fastq_stats_ptr input_2;
+  fastq_stats_ptr input_1{};
+  fastq_stats_ptr input_2{};
 
-  demux_stats_ptr demultiplexing;
-  std::vector<trim_stats_ptr> trimming;
+  demux_stats_ptr demultiplexing{};
+  std::vector<trim_stats_ptr> trimming{};
 
   //! Optional adapter identification statistics
-  adapter_id_stats_ptr adapter_id;
+  adapter_id_stats_ptr adapter_id{};
 
 private:
   explicit statistics(double sample_rate);
@@ -385,9 +389,9 @@ reads_and_bases::operator+=(const reads_and_bases& other)
 }
 
 inline reads_and_bases
-reads_and_bases::operator+(const reads_and_bases& other)
+reads_and_bases::operator+(const reads_and_bases& other) const
 {
-  return { m_reads + other.m_reads, m_bases + other.m_bases };
+  return reads_and_bases{ m_reads + other.m_reads, m_bases + other.m_bases };
 }
 
 inline void

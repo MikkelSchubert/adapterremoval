@@ -72,17 +72,19 @@ public:
   bool operator==(const fastq& other) const;
 
   /** Returns the header (excluding the @) of the record. **/
-  const std::string& header() const;
+  const std::string& header() const { return m_header; }
+
   /** Returns the nucleotide sequence (ACGTN only) of the record. **/
-  const std::string& sequence() const;
+  const std::string& sequence() const { return m_sequence; }
+
   /** Returns the Phred+33 encoded scores (0 .. 41) for each base. **/
-  const std::string& qualities() const;
+  const std::string& qualities() const { return m_qualities; }
 
   /** Returns the name (excluding the @ and other fields) of the header. **/
   std::string name() const;
 
   /** Returns the length of the sequence. */
-  size_t length() const;
+  size_t length() const { return m_sequence.length(); }
 
   /** Returns the number of ambiguous nucleotides in the sequence (N). **/
   size_t count_ns() const;
@@ -244,12 +246,12 @@ struct ACGT
    * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
    * only) will result in hash collisions.
    */
-  static inline auto to_index(value_type nt) { return (nt >> 1) & 0x3; }
+  static constexpr auto to_index(value_type nt) { return (nt >> 1) & 0x3; }
 
   /**
    * Inverse of to_index. Only values in the range 0 to 3 are allowed.
    */
-  static inline value_type to_value(size_t idx) { return "ACTG"[idx]; }
+  static constexpr value_type to_value(size_t idx) { return "ACTG"[idx]; }
 };
 
 struct ACGTN
@@ -266,12 +268,15 @@ struct ACGTN
    * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
    * only) will result in hash collisions.
    */
-  static inline auto to_index(value_type nt) { return ((nt >> 1) + 1) & 0x7; }
+  static constexpr auto to_index(value_type nt)
+  {
+    return ((nt >> 1) + 1) & 0x7;
+  }
 
   /**
    * Inverse of to_index. Only values in the range 0 to 4 are allowed.
    */
-  static inline value_type to_value(size_t idx) { return "NACTG"[idx]; }
+  static constexpr value_type to_value(size_t idx) { return "NACTG"[idx]; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,11 +285,6 @@ using fastq_pair = std::pair<fastq, fastq>;
 using fastq_pair_vec = std::vector<fastq_pair>;
 
 ///////////////////////////////////////////////////////////////////////////////
-inline const std::string&
-fastq::header() const
-{
-  return m_header;
-}
 
 inline std::string
 fastq::name() const
@@ -295,24 +295,6 @@ fastq::name() const
   }
 
   return m_header;
-}
-
-inline const std::string&
-fastq::sequence() const
-{
-  return m_sequence;
-}
-
-inline const std::string&
-fastq::qualities() const
-{
-  return m_qualities;
-}
-
-inline size_t
-fastq::length() const
-{
-  return m_sequence.length();
 }
 
 } // namespace adapterremoval

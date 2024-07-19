@@ -40,11 +40,7 @@ template<typename T>
 class threadstate
 {
 public:
-  threadstate()
-    : m_mutex()
-    , m_values()
-  {
-  }
+  threadstate() = default;
 
   using pointer = std::unique_ptr<T>;
 
@@ -89,8 +85,8 @@ public:
   }
 
 private:
-  mutable std::mutex m_mutex;
-  std::vector<pointer> m_values;
+  mutable std::mutex m_mutex{};
+  std::vector<pointer> m_values{};
 };
 
 /**

@@ -174,12 +174,6 @@ json_token::from_null()
   return std::make_shared<json_token>("null");
 }
 
-std::string
-json_token::to_string() const
-{
-  return m_value;
-}
-
 void
 json_token::write(std::ostream& out, size_t /* indent */) const
 {
@@ -204,11 +198,6 @@ json_token::from_raw_vec(const string_vec& values)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-json_list::json_list()
-  : m_values()
-{
-}
 
 void
 json_list::write(std::ostream& out, size_t indent_) const
@@ -245,12 +234,6 @@ json_list::dict()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-json_dict::json_dict()
-  : m_keys()
-  , m_values()
-  , m_multi_line(true)
-{
-}
 
 void
 json_dict::write(std::ostream& out, size_t indent_) const

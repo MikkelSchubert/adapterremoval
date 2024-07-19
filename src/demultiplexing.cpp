@@ -43,13 +43,6 @@ flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `post_demux_steps`
 
-post_demux_steps::post_demux_steps()
-  : unidentified_1(post_demux_steps::disabled)
-  , unidentified_2(post_demux_steps::disabled)
-  , samples()
-{
-}
-
 const size_t post_demux_steps::disabled = static_cast<size_t>(-1);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,12 +58,8 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
                     config.barcode_mm_r1,
                     config.barcode_mm_r2)
   , m_config(config)
-  , m_cache()
-  , m_unidentified_1()
-  , m_unidentified_2()
   , m_steps(std::move(steps))
   , m_statistics(std::move(stats))
-  , m_lock()
 {
   AR_REQUIRE(!m_barcodes.empty());
   AR_REQUIRE(m_barcodes.size() == m_steps.samples.size());

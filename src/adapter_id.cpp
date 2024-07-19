@@ -42,8 +42,8 @@ inline size_t
 kmer_to_size_t(const std::string& kmer)
 {
   size_t index = 0;
-  for (size_t i = 0; i < kmer.length(); ++i) {
-    index = (index << 2) | ACGT::to_index(kmer.at(i));
+  for (const char c : kmer) {
+    index = (index << 2) | ACGT::to_index(c);
   }
 
   return index;
@@ -117,7 +117,7 @@ build_consensus_sequence(const indexed_counts<ACGTN>& consensus)
     }
   }
 
-  return fastq("consensus", sequence.str(), qualities.str());
+  return { "consensus", sequence.str(), qualities.str() };
 }
 
 } // namespace
@@ -129,8 +129,6 @@ consensus_adapter::consensus_adapter(const indexed_counts<ACGTN>& consensus,
                                      const kmer_map& kmers,
                                      const size_t n_kmers)
   : m_adapter(build_consensus_sequence(consensus))
-  , m_top_kmers()
-  , m_total_kmers()
 {
   kmer_queue queue;
   for (size_t i = 0; i < kmers.size(); ++i) {
@@ -181,7 +179,6 @@ consensus_adapter::compare_with(const std::string& other) const
 
 consensus_adapter_stats::consensus_adapter_stats(size_t max_length)
   : m_max_length(max_length)
-  , m_consensus()
   , m_kmers(kmer_count, 0)
 {
 }
@@ -193,12 +190,6 @@ consensus_adapter_stats::operator+=(const consensus_adapter_stats& other)
   merge(m_kmers, other.m_kmers);
 
   return *this;
-}
-
-size_t
-consensus_adapter_stats::max_length() const
-{
-  return m_max_length;
 }
 
 void
@@ -223,7 +214,7 @@ consensus_adapter_stats::process(const std::string& sequence)
 consensus_adapter
 consensus_adapter_stats::summarize(size_t n_kmers) const
 {
-  return consensus_adapter(m_consensus, m_kmers, n_kmers);
+  return { m_consensus, m_kmers, n_kmers };
 }
 
 adapter_id_statistics::adapter_id_statistics(size_t max_length)

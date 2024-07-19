@@ -84,9 +84,9 @@ private:
   //! Log level of the current message
   const level m_level;
   //! Indicates if the message is transient
-  bool m_transient;
+  bool m_transient = false;
   //! Stream for caching log output prior to writing
-  std::ostringstream m_stream;
+  std::ostringstream m_stream{};
 };
 
 /**
@@ -103,7 +103,7 @@ public:
   ~log_capture();
 
   /** Returns all output captured log messages / output written to cerr. */
-  std::string str() const;
+  std::string str() const { return m_stream.str(); }
 
   log_capture(const log_capture&) = delete;
   log_capture(log_capture&&) = default;
@@ -112,13 +112,13 @@ public:
 
 private:
   //! Original log level
-  level m_level;
+  level m_level{};
   //! Original colors setting
-  bool m_colors;
+  bool m_colors = false;
   //! Original timestamps setting
-  bool m_timestamps;
+  bool m_timestamps = false;
   //! Stream containing text written using `log_stream`
-  std::ostringstream m_stream;
+  std::ostringstream m_stream{};
 };
 
 /**

@@ -24,9 +24,6 @@ namespace adapterremoval {
 
 joined_line_readers::joined_line_readers(const string_vec& filenames)
   : m_filenames(filenames.rbegin(), filenames.rend())
-  , m_reader()
-  , m_filename()
-  , m_current_line(0)
 {
 }
 
@@ -41,18 +38,6 @@ joined_line_readers::getline(std::string& dst)
       return false;
     }
   }
-}
-
-const std::string&
-joined_line_readers::filename() const
-{
-  return m_filename;
-}
-
-size_t
-joined_line_readers::linenumber() const
-{
-  return m_current_line;
 }
 
 bool

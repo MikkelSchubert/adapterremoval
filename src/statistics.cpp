@@ -128,12 +128,6 @@ duplication_statistics::summarize() const
   return result;
 }
 
-size_t
-duplication_statistics::max_unique() const
-{
-  return m_max_unique_sequences;
-}
-
 double
 duplication_statistics::correct_count(size_t bin, size_t count) const
 {
@@ -203,7 +197,7 @@ duplication_statistics::insert(const std::string& key)
 
 namespace {
 
-inline void
+void
 smoothed_gc_count(rates& distribution, size_t count, size_t length)
 {
   // counts are smoothed across adjacent (percentage) bins
@@ -242,16 +236,8 @@ fastq_statistics::fastq_statistics(double sample_rate)
 fastq_statistics::fastq_statistics(double sample_rate, uint32_t seed)
   : m_sample_rate(sample_rate)
   , m_rng(seed)
-  , m_number_of_input_reads()
-  , m_number_of_output_reads()
-  , m_number_of_sampled_reads()
-  , m_length_dist()
   , m_quality_dist(PHRED_SCORE_MAX + 1)
   , m_gc_content_dist(101)
-  , m_nucleotide_pos()
-  , m_quality_pos()
-  , m_max_sequence_len()
-  , m_duplication()
 {
 }
 
@@ -299,30 +285,12 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
   }
 }
 
-counts
-fastq_statistics::nucleotides_pos() const
-{
-  return m_nucleotide_pos.merge();
-}
-
-counts
-fastq_statistics::qualities_pos() const
-{
-  return m_quality_pos.merge();
-}
-
 void
 fastq_statistics::init_duplication_stats(size_t max_unique_sequences)
 {
   AR_REQUIRE(!m_duplication);
   m_duplication =
     std::make_shared<duplication_statistics>(max_unique_sequences);
-}
-
-const duplication_stats_ptr&
-fastq_statistics::duplication() const
-{
-  return m_duplication;
 }
 
 fastq_statistics&
@@ -341,28 +309,9 @@ fastq_statistics::operator+=(const fastq_statistics& other)
 }
 
 trimming_statistics::trimming_statistics(double sample_rate)
-  : read_1()
-  , read_2()
-  , singleton(std::make_shared<fastq_statistics>(sample_rate))
+  : singleton(std::make_shared<fastq_statistics>(sample_rate))
   , merged(std::make_shared<fastq_statistics>(sample_rate))
   , discarded(std::make_shared<fastq_statistics>(sample_rate))
-  , insert_sizes()
-  , adapter_trimmed_reads()
-  , adapter_trimmed_bases()
-  , overlapping_reads()
-  , reads_merged()
-  , terminal_pre_trimmed()
-  , terminal_post_trimmed()
-  , poly_x_pre_trimmed_reads()
-  , poly_x_pre_trimmed_bases()
-  , poly_x_post_trimmed_reads()
-  , poly_x_post_trimmed_bases()
-  , low_quality_trimmed()
-  , total_trimmed()
-  , filtered_min_length()
-  , filtered_max_length()
-  , filtered_ambiguous()
-  , filtered_low_complexity()
 {
   // Synchronize sampling of mate 1 and mate 2 reads
   const auto seed = prng_seed();
@@ -401,10 +350,7 @@ trimming_statistics::operator+=(const trimming_statistics& other)
 }
 
 demux_statistics::demux_statistics(double sample_rate)
-  : barcodes()
-  , unidentified(0)
-  , ambiguous(0)
-  , unidentified_stats_1(std::make_shared<fastq_statistics>(sample_rate))
+  : unidentified_stats_1(std::make_shared<fastq_statistics>(sample_rate))
   , unidentified_stats_2(std::make_shared<fastq_statistics>(sample_rate))
 {
 }
@@ -424,8 +370,6 @@ statistics::statistics(double sample_rate)
   : input_1(std::make_shared<fastq_statistics>(sample_rate))
   , input_2(std::make_shared<fastq_statistics>(sample_rate))
   , demultiplexing(std::make_shared<demux_statistics>(sample_rate))
-  , trimming()
-  , adapter_id()
 {
 }
 
@@ -438,9 +382,9 @@ statistics_builder::statistics_builder()
 }
 
 statistics_builder&
-statistics_builder::sample_rate(double value)
+statistics_builder::sample_rate(double rate)
 {
-  m_sample_rate = value;
+  m_sample_rate = rate;
 
   return *this;
 }

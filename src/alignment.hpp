@@ -184,10 +184,10 @@ private:
    */
   bool pairwise_align_sequences(alignment_info& alignment,
                                 const char* seq1,
-                                const size_t seq1_len,
+                                size_t seq1_len,
                                 const char* seq2,
-                                const size_t seq2_len,
-                                const int min_offset) const;
+                                size_t seq2_len,
+                                int min_offset) const;
 
   //! Adapter sequences against which to align the sequences
   const fastq_pair_vec& m_adapters;

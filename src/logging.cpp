@@ -232,8 +232,6 @@ get_terminal_width()
 
 log_stream::log_stream(level lvl)
   : m_level(lvl)
-  , m_transient()
-  , m_stream()
 {
   AR_REQUIRE(lvl < level::none);
 }
@@ -258,7 +256,7 @@ log_stream::~log_stream()
     // Trailing newlines are permitted for ease of use, e.g. when writing
     // complex, multi-line log messages
     auto msg = m_stream.str();
-    while (msg.size() && msg.back() == '\n') {
+    while (!msg.empty() && msg.back() == '\n') {
       msg.pop_back();
     }
 
@@ -280,10 +278,6 @@ log_stream::transient()
 ////////////////////////////////////////////////////////////////////////////////
 
 log_capture::log_capture()
-  : m_level()
-  , m_colors()
-  , m_timestamps()
-  , m_stream()
 {
   std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
@@ -304,12 +298,6 @@ log_capture::~log_capture()
   g_log_level = m_level;
   g_log_timestamps = m_colors;
   g_log_colors = m_colors;
-}
-
-std::string
-log_capture::str() const
-{
-  return m_stream.str();
 }
 
 } // namespace log

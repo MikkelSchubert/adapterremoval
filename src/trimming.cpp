@@ -48,8 +48,6 @@ public:
     : m_len_1(read1.length())
     , m_len_2(read2.length())
     , m_overlap(m_len_1 + m_len_2 - insert_size)
-    , m_trimmed_5p()
-    , m_trimmed_3p()
   {
   }
 
@@ -73,8 +71,8 @@ private:
   const size_t m_len_2;
   const size_t m_overlap;
 
-  size_t m_trimmed_5p;
-  size_t m_trimmed_3p;
+  size_t m_trimmed_5p = 0;
+  size_t m_trimmed_3p = 0;
 };
 
 /** Trims poly-X tails from sequence prior to adapter trimming **/
@@ -83,7 +81,7 @@ pre_trim_poly_x_tail(const userconfig& config,
                      trimming_statistics& stats,
                      fastq& read)
 {
-  if (config.pre_trim_poly_x.size()) {
+  if (!config.pre_trim_poly_x.empty()) {
     const auto result = read.poly_x_trimming(config.pre_trim_poly_x,
                                              config.trim_poly_x_threshold);
 
@@ -100,7 +98,7 @@ post_trim_poly_x_tail(const userconfig& config,
                       trimming_statistics& stats,
                       fastq& read)
 {
-  if (config.post_trim_poly_x.size()) {
+  if (!config.post_trim_poly_x.empty()) {
     const auto result = read.poly_x_trimming(config.post_trim_poly_x,
                                              config.trim_poly_x_threshold);
 
@@ -275,7 +273,6 @@ is_acceptable_read(const userconfig& config,
 
 trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
   : m_map(map)
-  , m_chunks()
 {
   const auto& filenames = map.filenames();
   const auto& pipeline_steps = map.pipeline_steps();
@@ -320,8 +317,7 @@ reads_processor::reads_processor(const userconfig& config,
   , m_adapters(config.adapters.get_adapter_set(nth))
   , m_output(output)
   , m_nth(nth)
-  , m_stats()
-  , m_stats_sink(sink)
+  , m_stats_sink(std::move(sink))
 {
   AR_REQUIRE(m_stats_sink);
 
@@ -451,7 +447,6 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const size_t nth,
                                        trim_stats_ptr sink)
   : reads_processor(config, output, nth, sink)
-  , m_rngs()
 {
   if (m_config.merge == merge_strategy::original) {
     std::mt19937 seed(config.merge_seed);

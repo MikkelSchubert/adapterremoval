@@ -38,7 +38,7 @@ static_assert((ISAL_MAJOR_VERSION > 2 ||
 namespace adapterremoval {
 
 //! Buffer used for compressed and uncompressed line data
-using line_buffer = std::array<char, 10 * BUFSIZ>;
+using line_buffer = std::array<char, 10LLU * BUFSIZ>;
 
 /** Base-class for line reading; used by receivers. */
 class line_reader_base
@@ -53,10 +53,10 @@ public:
   /** Reads a line into dst, returning false on EOF. */
   virtual bool getline(std::string& dst) = 0;
 
-  //! Copy construction not supported
   line_reader_base(const line_reader_base&) = delete;
-  //! Assignment not supported
+  line_reader_base(line_reader_base&&) = delete;
   line_reader_base& operator=(const line_reader_base&) = delete;
+  line_reader_base& operator=(line_reader_base&&) = delete;
 };
 
 /** Simple helper class for reading strings from memory */
@@ -64,10 +64,10 @@ class vec_reader : public line_reader_base
 {
 public:
   /** Constructs a reader from a set of lines (not copied) */
-  vec_reader(const std::vector<std::string>& lines);
+  explicit vec_reader(const std::vector<std::string>& lines);
 
   /** Reads a line into dst, returning false on EOF. */
-  bool getline(std::string& dst);
+  bool getline(std::string& dst) override;
 
 private:
   //! Reference to vector containing lines of text
@@ -93,13 +93,15 @@ public:
   /** Constructor; opens file and throws on errors. */
   explicit line_reader(std::string filename);
 
+  ~line_reader() override = default;
+
   /** Reads a line into dst, returning false on EOF. */
   bool getline(std::string& dst) override;
 
-  //! Copy construction not supported
   line_reader(const line_reader&) = delete;
-  //! Assignment not supported
+  line_reader(line_reader&&) = delete;
   line_reader& operator=(const line_reader&) = delete;
+  line_reader& operator=(line_reader&&) = delete;
 
 private:
   //! Refills 'm_buffer' and sets 'm_buffer_ptr' and 'm_buffer_end'.

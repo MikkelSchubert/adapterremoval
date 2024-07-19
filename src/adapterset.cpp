@@ -289,9 +289,6 @@ check_sample_names(const string_vec& names)
 // Implementations for 'adapters' class
 
 adapter_set::adapter_set()
-  : m_samples()
-  , m_barcodes()
-  , m_adapters()
 {
   // Default name if no barcodes are used
   m_samples.emplace_back("main");
@@ -359,12 +356,6 @@ adapter_set::load_barcodes(const std::string& filename, bool paired_end)
 }
 
 size_t
-adapter_set::adapter_count() const
-{
-  return m_adapters.size();
-}
-
-size_t
 adapter_set::adapter_set_count() const
 {
   if (m_barcodes.empty()) {
@@ -372,12 +363,6 @@ adapter_set::adapter_set_count() const
   } else {
     return barcode_count();
   }
-}
-
-size_t
-adapter_set::barcode_count() const
-{
-  return m_barcodes.size();
 }
 
 fastq_pair_vec
@@ -415,18 +400,6 @@ adapter_set::get_raw_adapters() const
   }
 
   return adapters;
-}
-
-const fastq_pair_vec&
-adapter_set::get_barcodes() const
-{
-  return m_barcodes;
-}
-
-const std::string&
-adapter_set::get_sample_name(size_t nth) const
-{
-  return m_samples.at(nth);
 }
 
 } // namespace adapterremoval

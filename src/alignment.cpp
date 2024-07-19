@@ -244,11 +244,10 @@ sequence_aligner::align_paired_end(const fastq& read1,
     buffer.clear();
     buffer += adapter2.sequence();
     buffer += read1.sequence();
-    buffer.resize(buffer.size() + m_padding, 'N');
-
+    buffer.append(m_padding, 'N');
     buffer += read2.sequence();
     buffer += adapter1.sequence();
-    buffer.resize(buffer.size() + m_padding, 'N');
+    buffer.append(m_padding, 'N');
 
     const char* sequence1 = buffer.data();
     const size_t sequence1_len = adapter2.length() + read1.length();
@@ -346,8 +345,8 @@ sequence_merger::merge(const alignment_info& alignment,
   AR_REQUIRE(read1.length() - read_1_offset == read_2_offset);
 
   // Produce draft by merging r1 and the parts of r2 that extend past r1
-  read1.m_sequence.append(read2.sequence(), read_2_offset, std::string::npos);
-  read1.m_qualities.append(read2.qualities(), read_2_offset, std::string::npos);
+  read1.m_sequence.append(read2.sequence(), read_2_offset);
+  read1.m_qualities.append(read2.qualities(), read_2_offset);
   AR_REQUIRE(read1.m_sequence.length() == read1.m_qualities.length());
 
   // Pick the best bases for the overlapping part of the reads

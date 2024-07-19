@@ -37,15 +37,15 @@ class userconfig;
 class post_demux_steps
 {
 public:
-  post_demux_steps();
+  post_demux_steps() = default;
 
   /* Step used to write unidentified mate 1 reads. */
-  size_t unidentified_1;
+  size_t unidentified_1 = post_demux_steps::disabled;
   /* Step used to write unidentified mate 2 reads; may be disabled. */
-  size_t unidentified_2;
+  size_t unidentified_2 = post_demux_steps::disabled;
 
   /* Processing step for each sample. */
-  std::vector<size_t> samples;
+  std::vector<size_t> samples{};
 
   /** Constant indicating that a step has been disabled. */
   static const size_t disabled;
@@ -90,20 +90,20 @@ protected:
   //! Cache of demultiplex reads; used to reduce the number of output chunks
   //! generated from each processed chunk, which would otherwise increase
   //! linearly with the number of barcodes.
-  demultiplexed_cache m_cache;
+  demultiplexed_cache m_cache{};
   //! Cache of unidentified mate 1 reads
-  output_chunk_ptr m_unidentified_1;
+  output_chunk_ptr m_unidentified_1{};
   //! Cache of unidentified mate 2 reads
-  output_chunk_ptr m_unidentified_2;
+  output_chunk_ptr m_unidentified_2{};
 
   //! Map of steps for output chunks;
-  post_demux_steps m_steps;
+  post_demux_steps m_steps{};
 
   //! Sink for demultiplexing statistics; used by subclasses.
-  demux_stats_ptr m_statistics;
+  demux_stats_ptr m_statistics{};
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
+  std::mutex m_lock{};
 };
 
 /** Demultiplexer for single-end reads. */

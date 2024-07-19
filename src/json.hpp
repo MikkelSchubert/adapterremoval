@@ -91,7 +91,8 @@ public:
   static json_ptr from_null();
 
   /** See json_value::to_string */
-  std::string to_string() const override;
+  std::string to_string() const override { return m_value; }
+
   /** See json_value::write */
   void write(std::ostream& out, size_t indent = 0) const override;
 
@@ -108,7 +109,7 @@ class json_list : public json_value
 {
 public:
   /** Creates empty list */
-  json_list();
+  json_list() = default;
 
   /** See json_value::write */
   void write(std::ostream& out, size_t indent = 0) const override;
@@ -118,7 +119,7 @@ public:
 
 private:
   //! Items in the list
-  std::vector<json_ptr> m_values;
+  std::vector<json_ptr> m_values{};
 };
 
 /**
@@ -130,7 +131,7 @@ class json_dict : public json_value
 {
 public:
   /** Creates empty dictionary */
-  json_dict();
+  json_dict() = default;
 
   /** See json_value::write */
   void write(std::ostream& out, size_t indent = 0) const override;
@@ -170,11 +171,11 @@ private:
   void _set(const std::string& key, const json_ptr& ptr);
 
   //! List of keys in insertion order
-  std::vector<std::string> m_keys;
+  std::vector<std::string> m_keys{};
   //! Map of unencoded keys to JSON objects
-  std::map<std::string, json_ptr, std::less<>> m_values;
+  std::map<std::string, json_ptr, std::less<>> m_values{};
   //! Multi-line or single (inline) dictionary
-  bool m_multi_line;
+  bool m_multi_line = true;
 };
 
 } // namespace adapterremoval

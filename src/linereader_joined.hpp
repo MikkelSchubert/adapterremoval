@@ -39,9 +39,6 @@ public:
   /** Creates line-reader over multiple files in the specified order. */
   explicit joined_line_readers(const string_vec& filenames);
 
-  /** Closes any still open files. */
-  ~joined_line_readers() override = default;
-
   /**
    * Reads a line from the currently open file; if EOF is encountered, the
    * currently open file is closed and the next file is opened. Returns true
@@ -50,14 +47,15 @@ public:
   bool getline(std::string& dst) override;
 
   /** Currently open file; empty if no file is open. */
-  const std::string& filename() const;
-  /** Line number in the current file (1-based); 0 if no file is open. */
-  size_t linenumber() const;
+  const std::string& filename() const { return m_filename; }
 
-  //! Copy construction not supported
+  /** Line number in the current file (1-based); 0 if no file is open. */
+  size_t linenumber() const { return m_current_line; }
+
   joined_line_readers(const joined_line_readers&) = delete;
-  //! Assignment not supported
+  joined_line_readers(joined_line_readers&&) = delete;
   joined_line_readers& operator=(const joined_line_readers&) = delete;
+  joined_line_readers& operator=(joined_line_readers&&) = delete;
 
 private:
   /**
@@ -67,13 +65,13 @@ private:
   bool open_next_file();
 
   //! Files left to read; stored in reverse order.
-  string_vec m_filenames;
+  string_vec m_filenames{};
   //! Currently open file, if any.
-  std::unique_ptr<line_reader> m_reader;
+  std::unique_ptr<line_reader> m_reader{};
   //! The currently open file
-  std::string m_filename;
+  std::string m_filename{};
   //! Current line across all files.
-  size_t m_current_line;
+  size_t m_current_line = 0;
 };
 
 } // namespace adapterremoval

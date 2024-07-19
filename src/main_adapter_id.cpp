@@ -37,7 +37,7 @@ public:
   {
   }
 
-  chunk_vec process(chunk_ptr) override { return chunk_vec(); }
+  chunk_vec process(chunk_ptr /* chunk */) override { return {}; }
 };
 
 class adapter_identification : public analytical_step
@@ -46,9 +46,6 @@ public:
   explicit adapter_identification(const userconfig& config, statistics& stats)
     : analytical_step(processing_order::unordered, "adapter_identification")
     , m_config(config)
-    , m_stats_id()
-    , m_stats_ins()
-    , m_sink_trim()
     , m_sink_id(stats.adapter_id)
   {
     AR_REQUIRE(!stats.trimming.empty());
@@ -114,7 +111,7 @@ public:
     m_stats_id.release(stats_id);
     m_stats_ins.release(stats_ins);
 
-    return chunk_vec();
+    return {};
   }
 
   void finalize() override
@@ -128,14 +125,19 @@ public:
     }
   }
 
+  adapter_identification(const adapter_identification&) = delete;
+  adapter_identification(adapter_identification&&) = delete;
+  adapter_identification& operator=(const adapter_identification&) = delete;
+  adapter_identification& operator=(adapter_identification&&) = delete;
+
 private:
   const userconfig& m_config;
 
-  threadstate<adapter_id_statistics> m_stats_id;
-  threadstate<trimming_statistics> m_stats_ins;
+  threadstate<adapter_id_statistics> m_stats_id{};
+  threadstate<trimming_statistics> m_stats_ins{};
 
-  trim_stats_ptr m_sink_trim;
-  adapter_id_stats_ptr m_sink_id;
+  trim_stats_ptr m_sink_trim{};
+  adapter_id_stats_ptr m_sink_id{};
 };
 
 int

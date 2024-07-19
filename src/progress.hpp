@@ -62,6 +62,11 @@ public:
   /** Print final summary of the reads processed and ends the animation. */
   void finalize();
 
+  progress_timer(const progress_timer&) = delete;
+  progress_timer(progress_timer&&) = delete;
+  progress_timer& operator=(const progress_timer&) = delete;
+  progress_timer& operator=(progress_timer&&) = delete;
+
 private:
   /** Starts the loop (if enabled) and hides the cursor */
   void start();
@@ -73,20 +78,20 @@ private:
   //! The kind of progress messages to be printed
   const progress_type m_type;
   //! Total number of items processed
-  size_t m_total;
+  size_t m_total = 0;
   //! Number of items processed since last update
-  size_t m_current;
+  size_t m_current = 0;
   //! Starting time (in seconds) of the timer.
-  monotonic_timer m_timer;
+  monotonic_timer m_timer{};
   //! Time (in seconds) of the last update
-  double m_last_time;
+  double m_last_time{};
 
   //! Thread used for animated spinner
-  std::thread m_spinner;
+  std::thread m_spinner{};
   //! Mutex protecting the following member variables when using a spinner
-  std::mutex m_lock;
+  std::mutex m_lock{};
   //! Indicates if the spinner is active
-  bool m_spinning;
+  bool m_spinning = false;
 };
 
 } // namespace adapterremoval

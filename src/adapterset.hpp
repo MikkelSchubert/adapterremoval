@@ -63,13 +63,13 @@ public:
   bool load_barcodes(const std::string& filename, bool paired_end_mode);
 
   /** Returns the number of adapters per set. */
-  size_t adapter_count() const;
+  size_t adapter_count() const { return m_adapters.size(); }
 
   /** Returns the number of adapter sets; namely 1 or barcode_count() */
   size_t adapter_set_count() const;
 
   /** Returns the number of barcodes. */
-  size_t barcode_count() const;
+  size_t barcode_count() const { return m_barcodes.size(); }
 
   /**
    * Returns the nth set of adapters; when barcodes are specified, the
@@ -86,18 +86,21 @@ public:
   fastq_pair_vec get_raw_adapters() const;
 
   /** Returns the (pairs of) barcodes. */
-  const fastq_pair_vec& get_barcodes() const;
+  const fastq_pair_vec& get_barcodes() const { return m_barcodes; }
 
   /** Returns the name associated with the nth set of barcodes. */
-  const std::string& get_sample_name(size_t nth) const;
+  const std::string& get_sample_name(size_t nth) const
+  {
+    return m_samples.at(nth);
+  }
 
 private:
   //! Names associated with barcodes
-  string_vec m_samples;
+  string_vec m_samples{};
   //! User-supplied barcodes
-  fastq_pair_vec m_barcodes;
+  fastq_pair_vec m_barcodes{};
   //! User-supplied adapter sequences, without barcodes added
-  fastq_pair_vec m_adapters;
+  fastq_pair_vec m_adapters{};
 };
 
 } // namespace adapterremoval

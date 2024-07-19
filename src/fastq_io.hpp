@@ -29,9 +29,10 @@
 #include "statistics.hpp"        // for fastq_stats_ptr
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint32_t, uint64_t
-#include <memory>                // for unique_ptr
-#include <mutex>                 // for mutex
-#include <string>                // for string
+#include <limits>
+#include <memory> // for unique_ptr
+#include <mutex>  // for mutex
+#include <string> // for string
 
 namespace adapterremoval {
 
@@ -61,15 +62,15 @@ public:
   ~fastq_read_chunk() override = default;
 
   //! Indicates that EOF has been reached.
-  bool eof;
+  bool eof = false;
 
   //! Total number of nucleotides in this chunk
-  size_t nucleotides;
+  size_t nucleotides = 0;
 
   //! Lines read from the mate 1 files
-  fastq_vec reads_1;
+  fastq_vec reads_1{};
   //! Lines read from the mate 2 files
-  fastq_vec reads_2;
+  fastq_vec reads_2{};
 
   fastq_read_chunk(const fastq_read_chunk&) = delete;
   fastq_read_chunk(fastq_read_chunk&&) = delete;
@@ -92,21 +93,21 @@ public:
   void add(const fastq& read);
 
   //! Indicates that EOF has been reached.
-  bool eof;
+  bool eof = false;
   //! CRC32 of (uncompressed) data; only set if eof is true
-  uint32_t crc32;
+  uint32_t crc32 = 0;
 
   //! Total number of nucleotides in this chunk
-  size_t nucleotides;
+  size_t nucleotides = 0;
 
   //! Encoded FASTQ reads
-  std::string reads;
+  std::string reads{};
 
   //! Buffers of (compressed) FASTQ reads
-  buffer_vec buffers;
+  buffer_vec buffers{};
 
   //! Size of (uncompressed) data in buffers;
-  size_t uncompressed_size;
+  size_t uncompressed_size = 0;
 
   fastq_output_chunk(const fastq_output_chunk&) = delete;
   fastq_output_chunk(fastq_output_chunk&&) = delete;
@@ -150,27 +151,27 @@ private:
   //! The underlying file reader for mate 2 read (if not interleaved)
   joined_line_readers m_io_input_2_base;
   //! The reader used to read mate 1 reads.
-  joined_line_readers* m_io_input_1;
+  joined_line_readers* m_io_input_1 = nullptr;
   //! The reader used to read mate 1 reads; may be equal to m_io_input_1.
-  joined_line_readers* m_io_input_2;
+  joined_line_readers* m_io_input_2 = nullptr;
   //! The analytical step following this step
   const size_t m_next_step;
 
   //! Character used to join read-names with mate numbers, e.g. '/'
   char m_mate_separator;
   //! True if input is single-end
-  bool m_single_end;
+  bool m_single_end = false;
   //! Used to track whether an EOF block has been received.
-  bool m_eof;
+  bool m_eof = false;
 
   //! Timer for displaying read progress.
   progress_timer m_timer;
 
   //! Number of reads to process
-  uint64_t m_head;
+  uint64_t m_head{ std::numeric_limits<uint64_t>::max() };
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
+  std::mutex m_lock{};
 };
 
 /**
@@ -210,10 +211,10 @@ private:
   const fastq_encoding m_encoding;
 
   //! Used to track whether an EOF block has been received.
-  bool m_eof;
+  bool m_eof = false;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
+  std::mutex m_lock{};
 };
 
 /**
@@ -241,20 +242,20 @@ private:
   //! The analytical step following this step
   const size_t m_next_step;
   //! Buffer used to store partial blocks
-  buffer m_buffer;
+  buffer m_buffer{ GZIP_BLOCK_SIZE };
   //! Offset in current buffer
-  size_t m_offset;
+  size_t m_offset = 0;
 
   //! Set if compression is carried out using isa-l
-  bool m_isal_enabled;
+  bool m_isal_enabled = false;
   //! CRC32 calculated across all input data (if using isa-l)
-  uint32_t m_isal_crc32;
+  uint32_t m_isal_crc32 = 0;
 
   //! Used to track whether an EOF block has been received.
-  bool m_eof;
+  bool m_eof = false;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
+  std::mutex m_lock{};
 };
 
 /**
@@ -310,14 +311,14 @@ private:
   managed_writer m_output;
 
   //! Set if compression is carried out using isa-l
-  bool m_isal_enabled;
+  bool m_isal_enabled = false;
   //! Used to track the total number of (uncompressed) bytes written
-  size_t m_uncompressed_bytes;
+  size_t m_uncompressed_bytes = 0;
   //! Used to track whether an EOF block has been received.
-  bool m_eof;
+  bool m_eof = false;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock;
+  std::mutex m_lock{};
 };
 
 } // namespace adapterremoval

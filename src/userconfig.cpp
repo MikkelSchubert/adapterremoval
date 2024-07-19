@@ -236,19 +236,7 @@ check_input_and_output(const std::string& label,
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `output_files`
 
-output_files::output_files()
-  : settings_json()
-  , settings_html()
-  , unidentified_1()
-  , unidentified_2()
-  , samples()
-{
-}
-
 output_sample_files::output_sample_files()
-  : m_filenames()
-  , m_pipeline_steps()
-  , m_offsets()
 {
   m_offsets.fill(output_sample_files::disabled);
 }
@@ -273,18 +261,6 @@ output_sample_files::set_filename(const read_type rtype,
       m_offsets.at(index) = it - m_filenames.begin();
     }
   }
-}
-
-const string_vec&
-output_sample_files::filenames() const
-{
-  return m_filenames;
-}
-
-const std::vector<size_t>&
-output_sample_files::pipeline_steps() const
-{
-  return m_pipeline_steps;
 }
 
 void
@@ -428,82 +404,6 @@ configure_encoding(const std::string& value)
 // Implementations for `userconfig`
 
 userconfig::userconfig()
-  : args()
-  , run_type(ar_command::trim_adapters)
-  , input_files_1()
-  , input_files_2()
-  , out_basename()
-  , out_json()
-  , out_html()
-  , out_pair_1()
-  , out_pair_2()
-  , out_merged()
-  , out_discarded()
-  // FIXME: Support both .1 and .2
-  , out_singleton()
-  , prefix_read_1()
-  , prefix_read_2()
-  , prefix_merged()
-  , paired_ended_mode()
-  , interleaved_input()
-  , interleaved_output()
-  , head()
-  , mate_separator()
-  , min_genomic_length()
-  , max_genomic_length()
-  , min_adapter_overlap()
-  , mismatch_threshold()
-  , io_encoding(FASTQ_ENCODING_33)
-  , pre_trim_fixed_5p()
-  , pre_trim_fixed_3p()
-  , post_trim_fixed_5p()
-  , post_trim_fixed_3p()
-  , trim(trimming_strategy::none)
-  , trim_mott_rate()
-  , trim_window_length()
-  , trim_quality_score()
-  , trim_low_quality_bases()
-  , trim_ambiguous_bases()
-  , pre_trim_poly_x()
-  , post_trim_poly_x()
-  , trim_poly_x_threshold()
-  , max_ambiguous_bases()
-  , min_complexity()
-  , preserve5p()
-  , merge(merge_strategy::none)
-  , merge_threshold()
-  , merge_quality_max()
-  , merge_seed()
-  , shift()
-  , max_threads()
-  , simd(simd::instruction_set::none)
-  , gzip()
-  , gzip_level()
-  , barcode_mm()
-  , barcode_mm_r1()
-  , barcode_mm_r2()
-  , adapters()
-  , report_sample_rate()
-  , report_duplication()
-  , log_progress()
-  , benchmarks()
-  , argparser()
-  , adapter_1()
-  , adapter_2()
-  , adapter_list()
-  , barcode_list()
-  , quality_input_base()
-  , mate_separator_str()
-  , interleaved()
-  , pre_trim5p()
-  , pre_trim3p()
-  , post_trim5p()
-  , post_trim3p()
-  , pre_trim_poly_x_sink()
-  , post_trim_poly_x_sink()
-  , log_color()
-  , log_level()
-  , m_runtime()
 {
   argparser.set_name(NAME);
   argparser.set_version(VERSION);
@@ -1535,12 +1435,6 @@ userconfig::setup_adapter_sequences()
 
   return check_input_and_output("--file1", input_files_1, output_files) &&
          check_input_and_output("--file2", input_files_2, output_files);
-}
-
-double
-userconfig::runtime() const
-{
-  return m_runtime.duration();
 }
 
 } // namespace adapterremoval

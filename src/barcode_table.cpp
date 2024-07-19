@@ -147,7 +147,7 @@ build_demux_tree(const fastq_pair_vec& barcodes)
   tree.push_back(demultiplexer_node());
 
   // Step 3: Add each barcode to the tree, in sorted order
-  for (auto& pair : sorted_barcodes) {
+  for (const auto& pair : sorted_barcodes) {
     add_sequence_to_tree(tree, pair.first, pair.second);
   }
 
@@ -160,19 +160,13 @@ const int barcode_table::no_match;
 const int barcode_table::ambiguous;
 
 barcode_table::barcode_table(const fastq_pair_vec& barcodes,
-                             size_t mismatches,
-                             size_t mm_r1,
-                             size_t mm_r2)
-  : m_nodes()
-  , m_max_mismatches()
-  , m_max_mismatches_r1()
-  , m_max_mismatches_r2()
-  , m_barcode_1_len()
-  , m_barcode_2_len()
+                             size_t max_mm,
+                             size_t max_mm_r1,
+                             size_t max_mm_r2)
 {
-  m_max_mismatches = std::min<size_t>(mismatches, mm_r1 + mm_r2);
-  m_max_mismatches_r1 = std::min<size_t>(m_max_mismatches, mm_r1);
-  m_max_mismatches_r2 = std::min<size_t>(m_max_mismatches, mm_r2);
+  m_max_mismatches = std::min<size_t>(max_mm, max_mm_r1 + max_mm_r2);
+  m_max_mismatches_r1 = std::min<size_t>(m_max_mismatches, max_mm_r1);
+  m_max_mismatches_r2 = std::min<size_t>(m_max_mismatches, max_mm_r2);
 
   if (!barcodes.empty()) {
     m_nodes = build_demux_tree(barcodes);

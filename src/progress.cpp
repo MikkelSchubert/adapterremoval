@@ -45,12 +45,12 @@ format_time(double seconds)
   stream << std::setfill('0');
 
   if (seconds > 60 * 60) {
-    stream << static_cast<size_t>(seconds) / (60 * 60) << ":";
+    stream << static_cast<size_t>(seconds) / (60LU * 60) << ":";
     stream << std::setw(2);
   }
 
   if (seconds > 60) {
-    stream << (static_cast<size_t>(seconds) % (60 * 60)) / 60 << ":";
+    stream << (static_cast<size_t>(seconds) % (60LU * 60)) / 60 << ":";
     stream << std::setw(4) << std::setfill('0');
   }
 
@@ -85,13 +85,6 @@ format_progress(size_t reads,
 
 progress_timer::progress_timer(progress_type type)
   : m_type(type)
-  , m_total(0)
-  , m_current(0)
-  , m_timer()
-  , m_last_time()
-  , m_spinner()
-  , m_lock()
-  , m_spinning()
 {
   start();
 }
