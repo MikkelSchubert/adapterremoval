@@ -235,7 +235,7 @@ sequence_aligner::align_paired_end(const fastq& read1,
 
   std::string buffer;
   buffer.reserve(m_max_adapter_len_2 + read1.length() + m_padding +
-                 m_max_adapter_len_1 + read2.length());
+                 m_max_adapter_len_1 + read2.length() + m_padding);
 
   for (const auto& adapter_pair : m_adapters) {
     const fastq& adapter1 = adapter_pair.first;
