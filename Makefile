@@ -266,7 +266,7 @@ ifneq ($(shell which gcovr), )
 		--exclude-lines-by-pattern ".*\\sREQUIRE[_A-Z]*\\(.*" \
 		--sort-percentage \
 		--exclude tests/unit/catch.hpp  \
-		--html-details $(COV_DIR)/index.html \
+		--branch \
 		--delete
 	$(QUIET) cat "$(COV_DIR)/index.txt"
 else
