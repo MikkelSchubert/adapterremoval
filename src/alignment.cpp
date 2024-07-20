@@ -88,10 +88,15 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
 
 struct phred_scores
 {
-  explicit phred_scores(size_t index)
-    : identical_nts(IDENTICAL_NTS.at(index))
-    , different_nts(DIFFERENT_NTS.at(index))
+  static phred_scores update(char qual_1, char qual_2)
   {
+    AR_REQUIRE(qual_1 >= qual_2);
+
+    const auto phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
+    const auto phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
+    const size_t index = (phred_1 * (PHRED_SCORE_MAX + 1)) + phred_2;
+
+    return { IDENTICAL_NTS.at(index), DIFFERENT_NTS.at(index) };
   }
 
   //! Phred score to assign if the two nucleotides are identical
@@ -99,18 +104,6 @@ struct phred_scores
   //! Phred score to assign if the two nucleotides differ
   char different_nts;
 };
-
-phred_scores
-get_updated_phred_scores(char qual_1, char qual_2)
-{
-  AR_REQUIRE(qual_1 >= qual_2);
-
-  const auto phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
-  const auto phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
-  const size_t index = (phred_1 * (PHRED_SCORE_MAX + 1)) + phred_2;
-
-  return phred_scores(index);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
@@ -388,7 +381,7 @@ sequence_merger::original_merge(char& nt_1,
     if (m_rng) {
       nt_1 = ((*m_rng)() & 1) ? nt_1 : nt_2;
 
-      const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+      const phred_scores& new_scores = phred_scores::update(qual_1, qual_2);
       qual_1 = new_scores.different_nts;
     } else {
       nt_1 = 'N';
@@ -402,7 +395,8 @@ sequence_merger::original_merge(char& nt_1,
       std::swap(qual_1, qual_2);
     }
 
-    const phred_scores& new_scores = get_updated_phred_scores(qual_1, qual_2);
+    const phred_scores& new_scores = phred_scores::update(qual_1, qual_2);
+
 
     qual_1 = std::min<char>(m_max_score,
                             (nt_1 == nt_2) ? new_scores.identical_nts
