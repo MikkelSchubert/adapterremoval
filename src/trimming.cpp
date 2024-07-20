@@ -527,10 +527,6 @@ pe_reads_processor::process(chunk_ptr chunk)
         // Merge read_2 into read_1
         merger.merge(alignment, read_1, read_2);
 
-        // Track amount of overlapping bases "lost" due to read merging
-        stats->reads_merged.inc_reads(2);
-        stats->reads_merged.inc_bases(post_trimmed_bp - read_1.length());
-
         // Add (optional) user specified prefix to read names
         read_1.add_prefix_to_name(m_config.prefix_merged);
 
@@ -614,6 +610,10 @@ pe_reads_processor::process(chunk_ptr chunk)
     chunks.add(read_1, type_1);
     chunks.add(read_2, type_2);
   }
+
+  // Track amount of overlapping bases "lost" due to read merging
+  stats->reads_merged.inc_reads(merger.reads_merged());
+  stats->reads_merged.inc_bases(merger.bases_merged());
 
   m_stats.release(stats);
   m_rngs.release(rng);

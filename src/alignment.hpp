@@ -230,32 +230,45 @@ public:
    * quality scores are assigned based on the merge_strategy chosen.
    * The sequences are assumed to have been trimmed using the given alignment.
    * This function will produce undefined results if that is not the case!
-   *
-   * TODO: Simplify to take a "size_t overlap" param instead of "alignment".
    */
-  void merge(const alignment_info& alignment,
-             fastq& read1,
-             const fastq& read2) const;
+  void merge(const alignment_info& alignment, fastq& read1, const fastq& read2);
+
+  /* Returns number of reads merged */
+  size_t reads_merged() const { return m_reads_merged; }
+
+  /* Returns number of bases merged */
+  size_t bases_merged() const { return m_bases_merged; }
+
+  /* Returns number of mismatches where a higher quality base was selected */
+  size_t mismatches_resolved() const { return m_mismatches_resolved; }
+
+  /* Returns number of mismatches where there was no higher quality base */
+  size_t mismatches_unresolved() const { return m_mismatches_unresolved; }
 
 private:
   /** The original merging algorithm implemented in AdapterRemoval. */
-  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2) const;
+  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
 
   /** Alternative merging algorithm added in 2.4.0. */
-  void conservative_merge(char& nt_1,
-                          char& qual_1,
-                          char nt_2,
-                          char qual_2) const;
+  void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
 
   //! Mate separator used in read names
-  char m_mate_sep;
+  char m_mate_sep = MATE_SEPARATOR;
   //! Strategy used when merging reads
   merge_strategy m_merge_strategy;
   //! Maximum score when recalculating qualities in non-conservative mode
-  char m_max_score;
-  //! Optional RNG for picking bases at random for mismatches with the same
-  //! quality
-  std::mt19937* m_rng;
+  char m_max_score = PHRED_OFFSET_MAX;
+  //! RNG for picking a random base for mismatches with the same quality
+  std::mt19937* m_rng = nullptr;
+
+  //! Total number of reads merged
+  size_t m_reads_merged = 0;
+  //! The  number of bases merged
+  size_t m_bases_merged = 0;
+  //! The number of mismatches where a higher quality base was selected
+  size_t m_mismatches_resolved = 0;
+  //! The number of mismatches where there was no higher quality base
+  size_t m_mismatches_unresolved = 0;
 };
 
 /**

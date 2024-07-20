@@ -287,10 +287,7 @@ strip_mate_info(std::string& header, const char mate_sep)
 }
 
 sequence_merger::sequence_merger()
-  : m_mate_sep(MATE_SEPARATOR)
-  , m_merge_strategy(merge_strategy::conservative)
-  , m_max_score(PHRED_OFFSET_MAX)
-  , m_rng()
+  : m_merge_strategy(merge_strategy::conservative)
 {
 }
 
@@ -321,7 +318,7 @@ sequence_merger::set_rng(std::mt19937* rng)
 void
 sequence_merger::merge(const alignment_info& alignment,
                        fastq& read1,
-                       const fastq& read2) const
+                       const fastq& read2)
 {
   AR_REQUIRE(m_merge_strategy != merge_strategy::none);
   AR_REQUIRE((m_merge_strategy == merge_strategy::original) == !!m_rng);
@@ -356,6 +353,9 @@ sequence_merger::merge(const alignment_info& alignment,
     }
   }
 
+  m_reads_merged += 2;
+  m_bases_merged += read_2_offset;
+
   // Remove mate number from read, if present
   if (m_mate_sep) {
     strip_mate_info(read1.m_header, m_mate_sep);
@@ -366,7 +366,7 @@ void
 sequence_merger::original_merge(char& nt_1,
                                 char& qual_1,
                                 char nt_2,
-                                char qual_2) const
+                                char qual_2)
 {
   if (nt_1 == 'N' || nt_2 == 'N') {
     // If one of the bases are N, then we suppose that we just have (at
@@ -387,6 +387,8 @@ sequence_merger::original_merge(char& nt_1,
       nt_1 = 'N';
       qual_1 = PHRED_OFFSET_MIN;
     }
+
+    m_mismatches_unresolved++;
   } else {
     // Ensure that nt_1 / qual_1 always contains the preferred nt / score
     // This is an assumption of the g_updated_phred_scores cache.
@@ -397,20 +399,23 @@ sequence_merger::original_merge(char& nt_1,
 
     const phred_scores& new_scores = phred_scores::update(qual_1, qual_2);
 
+    if (nt_1 == nt_2) {
+      qual_1 = new_scores.identical_nts;
+    } else {
+      qual_1 = new_scores.different_nts;
+      m_mismatches_resolved++;
+    }
 
-    qual_1 = std::min<char>(m_max_score,
-                            (nt_1 == nt_2) ? new_scores.identical_nts
-                                           : new_scores.different_nts);
+    qual_1 = std::min<char>(m_max_score, qual_1);
   }
 }
 
 void
 sequence_merger::conservative_merge(char& nt_1,
                                     char& qual_1,
-                                    char nt_2,
-                                    char qual_2) const
+                                    const char nt_2,
+                                    const char qual_2)
 {
-
   if (nt_2 == 'N' || nt_1 == 'N') {
     if (nt_1 == 'N' && nt_2 == 'N') {
       qual_1 = PHRED_OFFSET_MIN;
@@ -424,12 +429,15 @@ sequence_merger::conservative_merge(char& nt_1,
     if (qual_1 < qual_2) {
       nt_1 = nt_2;
       qual_1 = qual_2 - qual_1 + PHRED_OFFSET_MIN;
+      m_mismatches_resolved++;
     } else if (qual_1 > qual_2) {
       qual_1 = qual_1 - qual_2 + PHRED_OFFSET_MIN;
+      m_mismatches_resolved++;
     } else {
       // No way to reasonably pick a base
       nt_1 = 'N';
       qual_1 = PHRED_OFFSET_MIN;
+      m_mismatches_unresolved++;
     }
   }
 }
