@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "alignment.hpp"
-#include "alignment_tables.hpp" // for DIFFERENT_NTS, IDENTICAL_NTS
-#include "commontypes.hpp"      // for merge_strategy
-#include "debug.hpp"            // for AR_REQUIRE
-#include "fastq.hpp"            // for fastq, fastq_pair_vec
-#include "simd.hpp"             // for size_t, get_compare_subsequences_func
-#include <algorithm>            // for max, min
-#include <array>                // for array
-#include <string>               // for string, operator+
-#include <utility>              // for swap, pair
-#include <vector>               // for vector
+#include "alignment.hpp"   // declarations
+#include "commontypes.hpp" // for merge_strategy
+#include "debug.hpp"       // for AR_REQUIRE
+#include "fastq.hpp"       // for fastq, fastq_pair_vec
+#include "simd.hpp"        // for size_t, get_compare_subsequences_func
+#include <algorithm>       // for max, min
+#include <array>           // for array
+#include <string>          // for string, operator+
+#include <utility>         // for swap, pair
+#include <vector>          // for vector
 
 namespace adapterremoval {
 
@@ -85,25 +84,6 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
 
   return alignment_found;
 }
-
-struct phred_scores
-{
-  static phred_scores update(char qual_1, char qual_2)
-  {
-    AR_REQUIRE(qual_1 >= qual_2);
-
-    const auto phred_1 = static_cast<size_t>(qual_1 - PHRED_OFFSET_MIN);
-    const auto phred_2 = static_cast<size_t>(qual_2 - PHRED_OFFSET_MIN);
-    const size_t index = (phred_1 * (PHRED_SCORE_MAX + 1)) + phred_2;
-
-    return { IDENTICAL_NTS.at(index), DIFFERENT_NTS.at(index) };
-  }
-
-  //! Phred score to assign if the two nucleotides are identical
-  char identical_nts;
-  //! Phred score to assign if the two nucleotides differ
-  char different_nts;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
@@ -287,7 +267,7 @@ strip_mate_info(std::string& header, const char mate_sep)
 }
 
 sequence_merger::sequence_merger()
-  : m_merge_strategy(merge_strategy::conservative)
+  : m_merge_strategy(merge_strategy::maximum)
 {
 }
 
@@ -310,18 +290,11 @@ sequence_merger::set_max_recalculated_score(char max)
 }
 
 void
-sequence_merger::set_rng(std::mt19937* rng)
-{
-  m_rng = rng;
-}
-
-void
 sequence_merger::merge(const alignment_info& alignment,
                        fastq& read1,
                        const fastq& read2)
 {
   AR_REQUIRE(m_merge_strategy != merge_strategy::none);
-  AR_REQUIRE((m_merge_strategy == merge_strategy::original) == !!m_rng);
 
   // Gap between the two reads is not allowed
   AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
@@ -346,10 +319,34 @@ sequence_merger::merge(const alignment_info& alignment,
     const char nt_2 = read2.sequence().at(i);
     const char qual_2 = read2.qualities().at(i);
 
-    if (m_merge_strategy == merge_strategy::conservative) {
-      conservative_merge(nt_1, qual_1, nt_2, qual_2);
+    if (nt_2 == 'N' || nt_1 == 'N') {
+      if (nt_1 == 'N' && nt_2 == 'N') {
+        qual_1 = PHRED_OFFSET_MIN;
+      } else if (nt_1 == 'N') {
+        nt_1 = nt_2;
+        qual_1 = qual_2;
+      }
+    } else if (nt_1 == nt_2) {
+      if (m_merge_strategy == merge_strategy::maximum) {
+        qual_1 = std::max(qual_1, qual_2);
+      } else {
+        qual_1 =
+          std::min<char>(m_max_score, qual_1 + qual_2 - PHRED_OFFSET_MIN);
+      }
     } else {
-      original_merge(nt_1, qual_1, nt_2, qual_2);
+      if (qual_1 < qual_2) {
+        nt_1 = nt_2;
+        qual_1 = qual_2 - qual_1 + PHRED_OFFSET_MIN;
+        m_mismatches_resolved++;
+      } else if (qual_1 > qual_2) {
+        qual_1 = qual_1 - qual_2 + PHRED_OFFSET_MIN;
+        m_mismatches_resolved++;
+      } else {
+        // No way to reasonably pick a base
+        nt_1 = 'N';
+        qual_1 = PHRED_OFFSET_MIN;
+        m_mismatches_unresolved++;
+      }
     }
   }
 
@@ -359,86 +356,6 @@ sequence_merger::merge(const alignment_info& alignment,
   // Remove mate number from read, if present
   if (m_mate_sep) {
     strip_mate_info(read1.m_header, m_mate_sep);
-  }
-}
-
-void
-sequence_merger::original_merge(char& nt_1,
-                                char& qual_1,
-                                char nt_2,
-                                char qual_2)
-{
-  if (nt_1 == 'N' || nt_2 == 'N') {
-    // If one of the bases are N, then we suppose that we just have (at
-    // most) a single read at that site and choose that.
-    if (nt_1 == 'N' && nt_2 == 'N') {
-      qual_1 = PHRED_OFFSET_MIN;
-    } else if (nt_1 == 'N') {
-      nt_1 = nt_2;
-      qual_1 = qual_2;
-    }
-  } else if (nt_1 != nt_2 && qual_1 == qual_2) {
-    if (m_rng) {
-      nt_1 = ((*m_rng)() & 1) ? nt_1 : nt_2;
-
-      const phred_scores& new_scores = phred_scores::update(qual_1, qual_2);
-      qual_1 = new_scores.different_nts;
-    } else {
-      nt_1 = 'N';
-      qual_1 = PHRED_OFFSET_MIN;
-    }
-
-    m_mismatches_unresolved++;
-  } else {
-    // Ensure that nt_1 / qual_1 always contains the preferred nt / score
-    // This is an assumption of the g_updated_phred_scores cache.
-    if (qual_1 < qual_2) {
-      std::swap(nt_1, nt_2);
-      std::swap(qual_1, qual_2);
-    }
-
-    const phred_scores& new_scores = phred_scores::update(qual_1, qual_2);
-
-    if (nt_1 == nt_2) {
-      qual_1 = new_scores.identical_nts;
-    } else {
-      qual_1 = new_scores.different_nts;
-      m_mismatches_resolved++;
-    }
-
-    qual_1 = std::min<char>(m_max_score, qual_1);
-  }
-}
-
-void
-sequence_merger::conservative_merge(char& nt_1,
-                                    char& qual_1,
-                                    const char nt_2,
-                                    const char qual_2)
-{
-  if (nt_2 == 'N' || nt_1 == 'N') {
-    if (nt_1 == 'N' && nt_2 == 'N') {
-      qual_1 = PHRED_OFFSET_MIN;
-    } else if (nt_1 == 'N') {
-      nt_1 = nt_2;
-      qual_1 = qual_2;
-    }
-  } else if (nt_1 == nt_2) {
-    qual_1 = std::max(qual_1, qual_2);
-  } else {
-    if (qual_1 < qual_2) {
-      nt_1 = nt_2;
-      qual_1 = qual_2 - qual_1 + PHRED_OFFSET_MIN;
-      m_mismatches_resolved++;
-    } else if (qual_1 > qual_2) {
-      qual_1 = qual_1 - qual_2 + PHRED_OFFSET_MIN;
-      m_mismatches_resolved++;
-    } else {
-      // No way to reasonably pick a base
-      nt_1 = 'N';
-      qual_1 = PHRED_OFFSET_MIN;
-      m_mismatches_unresolved++;
-    }
   }
 }
 

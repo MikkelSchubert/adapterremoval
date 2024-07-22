@@ -22,7 +22,6 @@
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
 #include <cstddef>       // for size_t
-#include <random>        // for mt19937
 #include <string>        // for string
 
 namespace adapterremoval {
@@ -222,8 +221,6 @@ public:
   void set_merge_strategy(merge_strategy strategy);
   /** Sets the maximum base quality score for recalculated scores. */
   void set_max_recalculated_score(char max);
-  /* Set the RNG used for when performing "original" merging. */
-  void set_rng(std::mt19937* rng = nullptr);
 
   /**
    * Merges two overlapping, trimmed reads into a single sequence. Bases and
@@ -246,20 +243,12 @@ public:
   size_t mismatches_unresolved() const { return m_mismatches_unresolved; }
 
 private:
-  /** The original merging algorithm implemented in AdapterRemoval. */
-  void original_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
-
-  /** Alternative merging algorithm added in 2.4.0. */
-  void conservative_merge(char& nt_1, char& qual_1, char nt_2, char qual_2);
-
   //! Mate separator used in read names
   char m_mate_sep = MATE_SEPARATOR;
   //! Strategy used when merging reads
   merge_strategy m_merge_strategy;
   //! Maximum score when recalculating qualities in non-conservative mode
   char m_max_score = PHRED_OFFSET_MAX;
-  //! RNG for picking a random base for mismatches with the same quality
-  std::mt19937* m_rng = nullptr;
 
   //! Total number of reads merged
   size_t m_reads_merged = 0;

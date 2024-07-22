@@ -138,7 +138,6 @@ $(info Build configuration: $(BUILD_NAME))
 
 # Build objects shared between unit tests and executable
 CORE_OBJS := \
-	$(OBJS_DIR)/alignment_tables.o \
 	$(OBJS_DIR)/alignment.o \
 	$(OBJS_DIR)/argparse.o \
 	$(OBJS_DIR)/barcode_table.o \

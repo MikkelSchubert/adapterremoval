@@ -62,12 +62,10 @@ enum class merge_strategy
 {
   /** Merging disabled */
   none,
-  /** Use highest quality for matches and Ns for same-quality mismatches */
-  conservative,
-  /** Recalculate quality and assign Ns for same-quality mismatches */
-  deterministic,
-  /** Recalculate quality and pick random base for same-quality mismatches */
-  original,
+  /** Assign max(Q1,Q2) to matches, abs(Q1-Q2) to mismatches, N to ambiguous */
+  maximum,
+  /** Assign Q1+Q2 to matches, abs(Q1-Q2) to mismatches, N to ambiguous */
+  additive,
 };
 
 enum class trimming_strategy

@@ -34,7 +34,6 @@
 #include <cstdlib>       // for getenv
 #include <cstring>       // for size_t, strerror, strcmp
 #include <limits>        // for numeric_limits
-#include <random>        // for random_device
 #include <stdexcept>     // for invalid_argument
 #include <string>        // for string, basic_string, operator==, operator+
 #include <tuple>         // for get, tuple
@@ -619,30 +618,20 @@ userconfig::userconfig()
     .bind_uint(&merge_threshold)
     .with_default(11);
   argparser.add("--merge-strategy", "X")
-    .help("The 'conservative' strategy uses Q=max(Q1,Q2) for matches and set "
-          "same-quality mismatches to N; 'deterministic' use Q=Q1+Q2 for "
-          "matches and assigns set same-quality mismatches to N; 'original' "
-          "uses  Q=Q1+Q2 for matches and picks a base at random for same-"
-          "quality mismatches. All strategies use Q=abs(Q1-Q2) for mismatches. "
-          "Setting this option implies --merge")
+    .help(
+      "The 'maximum' strategy uses Q=max(Q1,Q2) for matches while the "
+      "'additive' strategy uses Q=Q1+Q2. Both strategies use Q=abs(Q1-Q2) for "
+      "mismatches and picks the highest quality base, unless the qualities are "
+      "the same in which case 'N' is used. Setting this option implies --merge")
     .bind_str(nullptr)
-    .with_choices({ "conservative", "deterministic", "original" })
-    .with_default("conservative");
+    .with_choices({ "maximum", "additive" })
+    .with_default("maximum");
   argparser.add("--merge-quality-max", "N")
     .help("Sets the maximum Phred score for re-calculated quality scores when "
-          "read merging is enabled with the 'deterministic' and 'original' "
-          "merging strategies")
+          "read merging is enabled with the 'additive' merging strategy")
     .deprecated_alias("--qualitymax")
     .bind_uint(&merge_quality_max)
     .with_default(41);
-  argparser.add("--merge-seed", "N")
-    .help("Sets the RNG seed for picking a random base when merging reads "
-          "using the 'original' merging strategy. Cannot be used in multi-"
-          "threaded mode [default: random value]")
-    .deprecated_alias("--seed")
-    .conflicts_with("--threads")
-    .bind_uint(&merge_seed)
-    .with_default(std::random_device()());
   argparser.add("--collapse-deterministic")
     .conflicts_with("--collapse-conservatively")
     .conflicts_with("--merge-strategy")
@@ -1004,18 +993,16 @@ userconfig::parse_args(const string_vec& argvec)
 
     // merge related options implies --merge
     if (argparser.is_set("--collapse-deterministic")) {
-      merge = merge_strategy::deterministic;
+      merge = merge_strategy::additive;
     } else if (argparser.is_set("--collapse-conservatively")) {
-      merge = merge_strategy::conservative;
+      merge = merge_strategy::maximum;
     } else if (argparser.is_set("--merge") ||
                argparser.is_set("--merge-strategy")) {
       const auto strategy = argparser.value("--merge-strategy");
-      if (strategy == "conservative") {
-        merge = merge_strategy::conservative;
-      } else if (strategy == "deterministic") {
-        merge = merge_strategy::deterministic;
-      } else if (strategy == "original") {
-        merge = merge_strategy::original;
+      if (strategy == "maximum") {
+        merge = merge_strategy::maximum;
+      } else if (strategy == "additive") {
+        merge = merge_strategy::additive;
       } else {
         AR_FAIL(strategy);
       }

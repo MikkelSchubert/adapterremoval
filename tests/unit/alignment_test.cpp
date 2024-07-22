@@ -28,7 +28,6 @@
 #include <algorithm>       // for min
 #include <cstddef>         // for size_t
 #include <cstdint>         // for int64_t
-#include <random>          // for mt19937, seed_seq, random_device
 #include <sstream>         // for operator<<, ostream, basic_ostream, char_...
 #include <string>          // for string, basic_string, operator<<
 #include <vector>          // for vector
@@ -787,10 +786,10 @@ TEST_CASE("Invalid alignment", "[alignment::paired_end]")
 ///////////////////////////////////////////////////////////////////////////////
 // Merging of reads using the conservative method implemented in AdapterRemoval
 
-TEST_CASE("Merge partial overlap [deterministic]")
+TEST_CASE("Merge partial overlap [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -800,52 +799,52 @@ TEST_CASE("Merge partial overlap [deterministic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Merge complete overlap [deterministic]")
+TEST_CASE("Merge complete overlap [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATATTATAA", "JJJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
   REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 2);
   const fastq expected =
-    fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
+    fastq("Rec1", "ATATTATA", "ssssssss", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Merge complete overlap for mate 1 [deterministic]")
+TEST_CASE("Merge complete overlap for mate 1 [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
   fastq record2("Rec2", "ATATTATA", "JJJJJJJJ");
   const alignment_info alignment = ALN();
   REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
   const fastq expected =
-    fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
+    fastq("Rec1", "ATATTATA", "ssssssss", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Merge complete overlap for mate 2 [deterministic]")
+TEST_CASE("Merge complete overlap for mate 2 [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATATTATA", "JJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
   REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
   const fastq expected =
-    fastq("Rec1", "ATATTATA", "wwwwwwww", FASTQ_ENCODING_SAM);
+    fastq("Rec1", "ATATTATA", "ssssssss", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Unequal sequence lengths, mate 1 shorter [deterministic]")
+TEST_CASE("Unequal sequence lengths, mate 1 shorter [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(3);
@@ -856,10 +855,10 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter [deterministic]")
 }
 
 TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past "
-          "[deterministic]")
+          "[additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
   const alignment_info alignment = ALN().offset(-2);
@@ -869,10 +868,10 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past "
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Unequal sequence lengths, mate 2 shorter [deterministic]")
+TEST_CASE("Unequal sequence lengths, mate 2 shorter [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "ACG", "EFG");
   const alignment_info alignment = ALN().offset(8);
@@ -882,10 +881,10 @@ TEST_CASE("Unequal sequence lengths, mate 2 shorter [deterministic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Ambiguous sites are filled from mate [deterministic]")
+TEST_CASE("Ambiguous sites are filled from mate [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "NNNNNNTATA", "0123456789");
   fastq record2("Rec2", "ACGTNNNNNN", "ABCDEFGHIJ");
   const alignment_info alignment;
@@ -895,109 +894,77 @@ TEST_CASE("Ambiguous sites are filled from mate [deterministic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Identical nucleotides gets higher qualities [deterministic]")
+TEST_CASE("Identical nucleotides gets higher qualities [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "GCATGATATA", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
   REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
   const fastq expected =
-    fastq("Rec1", "GCATGATATATACAAC", "012345(FBcEFGHIJ", FASTQ_ENCODING_SAM);
+    fastq("Rec1", "GCATGATATATACAAC", "012345(B?_EFGHIJ", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
 TEST_CASE("Identical nucleotides gets higher qualities, no more than 41 "
-          "[deterministic]")
+          "[additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_max_recalculated_score(41);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "GCATGATATA", "0123456789");
   fastq record2("Rec2", "TATATACAAC", "ABCDEFGHIJ");
   const alignment_info alignment = ALN().offset(6);
   REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
   const fastq expected =
-    fastq("Rec1", "GCATGATATATACAAC", "012345Z\\^`EFGHIJ", FASTQ_ENCODING_SAM);
+    fastq("Rec1", "GCATGATATATACAAC", "012345JJJJEFGHIJ", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Higher quality nucleotide is selected [deterministic]")
+TEST_CASE("Higher quality nucleotide is selected [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "GCATGAGCAT", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
   REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
-  const fastq expected = fastq("Rec1", "GCATGATAATTACAAC", "012345(%5%EFGHIJ");
+  const fastq expected =
+    fastq("Rec1", "GCATGATAATTACAAC", "012345($5#EFGHIJ", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Randomly select between different nucleotides with same quality #1",
-          "[alignment::collapse]")
-{
-  fastq record1("Rec1", "G", "1");
-  const fastq record2("Rec2", "T", "1");
-  const alignment_info alignment;
-  std::seed_seq seed{ 1 };
-  std::mt19937 rng(seed);
-  sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::original);
-  merger.set_rng(&rng);
-
-  const fastq collapsed_expected = fastq("Rec1", "G", "#");
-  merger.merge(alignment, record1, record2);
-  REQUIRE(record1 == collapsed_expected);
-}
-
-TEST_CASE("Randomly select between different nucleotides with same quality #2",
-          "[alignment::collapse]")
-{
-  fastq record1("Rec1", "G", "1");
-  const fastq record2("Rec2", "T", "1");
-  const alignment_info alignment;
-  std::seed_seq seed{ 2 };
-  std::mt19937 rng(seed);
-  sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::original);
-  merger.set_rng(&rng);
-
-  const fastq collapsed_expected = fastq("Rec1", "T", "#");
-  merger.merge(alignment, record1, record2);
-  REQUIRE(record1 == collapsed_expected);
-}
-
-TEST_CASE("Set conflicts to N/! [deterministic]")
+TEST_CASE("Set conflicts to N/! [additive]")
 {
   fastq record1("Rec1", "G", "1");
   const fastq record2("Rec2", "T", "1");
   const alignment_info alignment;
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
 
   const fastq expected = fastq("Rec1", "N", "!");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Offsets past the end throws [deterministic]")
+TEST_CASE("Offsets past the end throws [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "G", "1");
   const fastq record2("Rec2", "T", "1");
   const alignment_info alignment = ALN().offset(2);
   REQUIRE_THROWS_AS(merger.merge(alignment, record1, record2), assert_failed);
 }
 
-TEST_CASE("Mate numbering is removed [deterministic]")
+TEST_CASE("Mate numbering is removed [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Read/1", "ATATTATA", "01234567");
   const fastq record2("Read/2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -1007,10 +974,10 @@ TEST_CASE("Mate numbering is removed [deterministic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Mate numbering removed, meta from 1 kept [deterministic]")
+TEST_CASE("Mate numbering removed, meta from 1 kept [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Read/1 Meta1", "ATATTATA", "01234567");
   const fastq record2("Read/2 Meta2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -1020,10 +987,10 @@ TEST_CASE("Mate numbering removed, meta from 1 kept [deterministic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Mate numbering removed, custom separator [deterministic]")
+TEST_CASE("Mate numbering removed, custom separator [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   merger.set_mate_separator(':');
 
   fastq record1("Read:1", "ATATTATA", "01234567");
@@ -1035,10 +1002,10 @@ TEST_CASE("Mate numbering removed, custom separator [deterministic]")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Mate number removed, custom separator, not set [deterministic]")
+TEST_CASE("Mate number removed, custom separator, not set [additive]")
 {
   sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
+  merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Read:1", "ATATTATA", "01234567");
   const fastq record2("Read:2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
@@ -1049,7 +1016,7 @@ TEST_CASE("Mate number removed, custom separator, not set [deterministic]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Merging of reads using the deterministic merging method
+// Merging of reads using the additive merging method
 
 TEST_CASE("Merge partial overlap")
 {

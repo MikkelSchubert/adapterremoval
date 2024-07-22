@@ -24,7 +24,6 @@
 #include "scheduler.hpp"  // for chunk_vec, chunk_ptr, threadstate, analyt...
 #include "statistics.hpp" // for trimming_statistics, trim_stats_ptr
 #include <cstddef>        // for size_t
-#include <random>         // for mt19937
 #include <vector>         // for vector
 
 namespace adapterremoval {
@@ -97,9 +96,6 @@ public:
                      trim_stats_ptr sink);
 
   chunk_vec process(chunk_ptr chunk) override;
-
-private:
-  threadstate<std::mt19937> m_rngs{};
 };
 
 } // namespace adapterremoval

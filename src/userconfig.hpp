@@ -228,8 +228,6 @@ public:
   unsigned merge_threshold{};
   //! The maximum quality allowed when recalculating quality scores
   unsigned merge_quality_max{};
-  //! RNG seed used when merging using the original strategy
-  unsigned merge_seed{};
 
   // Allow for slipping base-pairs by allowing missing bases in adapter
   unsigned shift{};

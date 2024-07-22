@@ -448,12 +448,6 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        trim_stats_ptr sink)
   : reads_processor(config, output, nth, sink)
 {
-  if (m_config.merge == merge_strategy::original) {
-    std::mt19937 seed(config.merge_seed);
-    for (size_t i = 0; i < m_config.max_threads; ++i) {
-      m_rngs.emplace_back(seed());
-    }
-  }
 }
 
 chunk_vec
@@ -473,11 +467,6 @@ pe_reads_processor::process(chunk_ptr chunk)
   stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
   AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
-  std::unique_ptr<std::mt19937> rng;
-  if (m_config.merge == merge_strategy::original) {
-    rng = m_rngs.acquire();
-    merger.set_rng(rng.get());
-  }
 
   auto it_1 = read_chunk.reads_1.begin();
   auto it_2 = read_chunk.reads_2.begin();
@@ -616,7 +605,6 @@ pe_reads_processor::process(chunk_ptr chunk)
   stats->reads_merged.inc_bases(merger.bases_merged());
 
   m_stats.release(stats);
-  m_rngs.release(rng);
 
   return chunks.finalize();
 }
