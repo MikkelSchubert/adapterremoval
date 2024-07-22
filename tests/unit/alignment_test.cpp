@@ -1159,34 +1159,6 @@ TEST_CASE("Identical nucleotides gets higher qualities")
   REQUIRE(record1 == expected);
 }
 
-TEST_CASE("Identical nucleotides gets higher qualities [deterministic]")
-{
-  sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
-  fastq record1("Rec1", "GCATGATATA", "012345!0:A");
-  fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
-  const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
-  const fastq expected =
-    fastq("Rec1", "GCATGATATATACAAC", "012345(FBcEFGHIJ", FASTQ_ENCODING_SAM);
-  merger.merge(alignment, record1, record2);
-  REQUIRE(record1 == expected);
-}
-
-TEST_CASE("Identical nucleotides gets higher qualities, max 41 [deterministic]")
-{
-  sequence_merger merger;
-  merger.set_merge_strategy(merge_strategy::deterministic);
-  fastq record1("Rec1", "GCATGATATA", "0123456789");
-  fastq record2("Rec2", "TATATACAAC", "ABCDEFGHIJ");
-  const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
-  const fastq expected =
-    fastq("Rec1", "GCATGATATATACAAC", "012345Z\\^`EFGHIJ", FASTQ_ENCODING_SAM);
-  merger.merge(alignment, record1, record2);
-  REQUIRE(record1 == expected);
-}
-
 TEST_CASE("Higher quality nucleotide is selected")
 {
   sequence_merger merger;
