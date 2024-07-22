@@ -1531,6 +1531,14 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
         }
       }
     }
+
+    const size_t length = reference.length();
+    auto seq_1 = std::string(length, 'A') + std::string(padding, 'N');
+    auto seq_2 = std::string(length, 'N') + std::string(padding, 'N');
+    compare(func, seq_1, seq_2, length, MMNs{ 0, length });
+
+    seq_2 = std::string(length, 'T') + std::string(padding, 'N');
+    compare(func, seq_1, seq_2, length, MMNs{ length, 0 });
   }
 }
 
