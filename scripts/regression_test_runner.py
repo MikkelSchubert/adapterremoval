@@ -131,7 +131,7 @@ def read_file(filename: Path, mode: Literal["rb", "rt"] = "rt") -> str | bytes:
         with filename.open(mode) as handle:
             return handle.read()
     except OSError as error:
-        raise TestError(f"ERROR while reading data:\n    {error}") from error
+        raise TestError(f"ERROR while reading data: {error}") from error
 
 
 def read_json(filename: Path) -> tuple[str, JSON]:
@@ -140,7 +140,7 @@ def read_json(filename: Path) -> tuple[str, JSON]:
     try:
         return text, json.loads(text)
     except json.JSONDecodeError as error:
-        raise TestError(f"ERROR while reading {quote(filename)}:") from error
+        raise TestError(f"ERROR while reading {quote(filename)}: {error}") from error
 
 
 def read_and_decompress_file(filename: Path) -> str:
@@ -369,7 +369,7 @@ class JSONValidator:
             try:
                 jsonschema.validate(instance=data, schema=self._schema)
             except jsonschema.ValidationError as error:
-                raise JSONSchemaError("Invalid JSON file") from error
+                raise JSONSchemaError(f"Invalid JSON file: {error}") from error
 
     def __bool__(self) -> bool:
         return bool(self._schema)
