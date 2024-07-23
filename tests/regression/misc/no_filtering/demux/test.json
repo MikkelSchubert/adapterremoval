@@ -1,0 +1,18 @@
+{
+  "arguments": ["--minlength", "0"],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "barcodes": ["barcodes.txt"],
+    "output": [
+      "your_output.sample_1.r1.fastq",
+      "your_output.sample_1.r2.fastq",
+      "your_output.sample_2.r1.fastq",
+      "your_output.sample_2.r2.fastq",
+      "your_output.unidentified.r1.fastq",
+      "your_output.unidentified.r2.fastq"
+    ],
+    "json": ["your_output.json"],
+    "html": ["your_output.html"]
+  }
+}
