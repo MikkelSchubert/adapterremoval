@@ -1175,15 +1175,15 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings_json = new_filename("--out-json", ".json");
-  files.settings_html = new_filename("--out-html", ".html");
+  files.settings_json = new_filename("--out-json", { ".json" });
+  files.settings_html = new_filename("--out-html", { ".html" });
 
   const std::string ext = gzip ? ".fastq.gz" : ".fastq";
   const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
   const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
 
-  files.unidentified_1 = new_filename("--out-file1", ".unidentified" + out1);
-  files.unidentified_2 = new_filename("--out-file2", ".unidentified" + out2);
+  files.unidentified_1 = new_filename("--out-file1", { ".unidentified", out1 });
+  files.unidentified_2 = new_filename("--out-file2", { ".unidentified", out2 });
 
   const bool demultiplexing = adapters.barcode_count();
   files.samples.resize(adapters.adapter_set_count());
@@ -1192,7 +1192,7 @@ userconfig::get_output_filenames() const
     const auto sample = demultiplexing ? adapters.get_sample_name(i) : "";
     auto& map = files.samples.at(i);
 
-    const auto mate_1_filename = new_filename("--out-file1", sample, out1);
+    const auto mate_1_filename = new_filename("--out-file1", { sample, out1 });
     map.set_filename(read_type::mate_1, mate_1_filename);
 
     if (paired_ended_mode) {
@@ -1200,7 +1200,7 @@ userconfig::get_output_filenames() const
         map.set_filename(read_type::mate_2, mate_1_filename);
       } else {
         map.set_filename(read_type::mate_2,
-                         new_filename("--out-file2", sample, out2));
+                         new_filename("--out-file2", { sample, out2 }));
       }
     }
 
@@ -1208,20 +1208,20 @@ userconfig::get_output_filenames() const
       if (is_any_filtering_enabled()) {
         map.set_filename(
           read_type::discarded,
-          new_filename("--out-discarded", sample, ".discarded" + ext));
+          new_filename("--out-discarded", { sample, ".discarded", ext }));
       }
 
       if (paired_ended_mode) {
         if (is_any_filtering_enabled()) {
           map.set_filename(
             read_type::singleton,
-            new_filename("--out-singleton", sample, ".singleton" + ext));
+            new_filename("--out-singleton", { sample, ".singleton", ext }));
         }
 
         if (is_read_merging_enabled()) {
           map.set_filename(
             read_type::merged,
-            new_filename("--out-merged", sample, ".merged" + ext));
+            new_filename("--out-merged", { sample, ".merged", ext }));
         }
       }
     }
@@ -1231,9 +1231,7 @@ userconfig::get_output_filenames() const
 }
 
 std::string
-userconfig::new_filename(const std::string& key,
-                         const std::string& first,
-                         const std::string& second) const
+userconfig::new_filename(const std::string& key, const string_vec& values) const
 {
   if (argparser.is_set(key)) {
     return argparser.value(key);
@@ -1243,12 +1241,13 @@ userconfig::new_filename(const std::string& key,
   }
 
   std::string out = out_basename;
-  if (!first.empty() && first.front() != '.') {
-    out.push_back('.');
-  }
+  for (const auto& value : values) {
+    if (!value.empty() && value.front() != '.') {
+      out.push_back('.');
+    }
 
-  out.append(first);
-  out.append(second);
+    out.append(value);
+  }
 
   return out;
 }

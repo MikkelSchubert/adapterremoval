@@ -289,8 +289,7 @@ private:
   bool setup_adapter_sequences();
 
   std::string new_filename(const std::string& key,
-                           const std::string& first,
-                           const std::string& second = std::string()) const;
+                           const string_vec& values) const;
 
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser{};
