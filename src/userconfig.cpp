@@ -497,13 +497,14 @@ userconfig::userconfig()
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-singleton", "FILE")
     .help("Output file containing paired reads for which the mate "
-          "has been discarded")
+          "has been discarded. This file is only created if filtering is "
+          "enabled")
     .deprecated_alias("--singleton")
     .bind_str(&out_singleton)
     .with_default("{basename}[.sample].singleton.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-discarded", "FILE")
-    .help("Output file containing discarded reads are written")
+    .help("Output file containing filtered reads, if filtering is enabled")
     .deprecated_alias("--discarded")
     .bind_str(&out_discarded)
     .with_default("{basename}[.sample].discarded.fastq")
@@ -1204,14 +1205,18 @@ userconfig::get_output_filenames() const
     }
 
     if (run_type == ar_command::trim_adapters) {
-      map.set_filename(
-        read_type::discarded,
-        new_filename("--out-discarded", sample, ".discarded" + ext));
+      if (is_any_filtering_enabled()) {
+        map.set_filename(
+          read_type::discarded,
+          new_filename("--out-discarded", sample, ".discarded" + ext));
+      }
 
       if (paired_ended_mode) {
-        map.set_filename(
-          read_type::singleton,
-          new_filename("--out-singleton", sample, ".singleton" + ext));
+        if (is_any_filtering_enabled()) {
+          map.set_filename(
+            read_type::singleton,
+            new_filename("--out-singleton", sample, ".singleton" + ext));
+        }
 
         if (is_read_merging_enabled()) {
           map.set_filename(

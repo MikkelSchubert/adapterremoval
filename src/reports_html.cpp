@@ -368,10 +368,15 @@ write_html_summary_section(const userconfig& config,
           summary.add_column("Merged", merged);
         }
 
-        summary.add_column("Singleton", singleton);
+        if (config.is_any_filtering_enabled()) {
+          summary.add_column("Singleton", singleton);
+        }
       }
 
-      summary.add_column("Discarded*", discarded);
+      if (config.is_any_filtering_enabled()) {
+        summary.add_column("Discarded*", discarded);
+      }
+
       summary.write(output);
 
       write_html_sampling_note(config, "output", totals, output);
@@ -395,7 +400,9 @@ write_html_summary_section(const userconfig& config,
 
     summary.add_column("Input", *stats.input_1);
     summary.add_column("Output", output_1);
-    summary.add_column("Discarded*", discarded);
+    if (config.is_any_filtering_enabled()) {
+      summary.add_column("Discarded*", discarded);
+    }
     summary.write(output);
 
     fastq_statistics totals;
@@ -404,12 +411,14 @@ write_html_summary_section(const userconfig& config,
 
     write_html_sampling_note(config, "input/output", totals, output);
 
-    // Note regarding discarded reads in output
-    html_output_footnote()
-      .set_symbol("*")
-      .set_text(
-        "<b>Discarded</b> reads are not included in the <b>Output</b> column.")
-      .write(output);
+    if (config.is_any_filtering_enabled()) {
+      // Note regarding discarded reads in output
+      html_output_footnote()
+        .set_symbol("*")
+        .set_text("<b>Discarded</b> reads are not included in the "
+                  "<b>Output</b> column.")
+        .write(output);
+    }
   }
 }
 
@@ -1010,14 +1019,18 @@ write_html_output_section(const userconfig& config,
 
     if (config.paired_ended_mode) {
       stats_vec.push_back(output_2);
-      stats_vec.push_back(singleton);
-
       names.emplace_back("Output 2");
-      names.emplace_back("Singleton");
+
+      if (config.is_any_filtering_enabled()) {
+        stats_vec.push_back(singleton);
+        names.emplace_back("Singleton");
+      }
     }
 
-    stats_vec.push_back(discarded);
-    names.emplace_back("Discarded");
+    if (config.is_any_filtering_enabled()) {
+      stats_vec.push_back(discarded);
+      names.emplace_back("Discarded");
+    }
   }
 
   write_html_section_title("Output", output);

@@ -289,7 +289,7 @@ write_report_summary(const userconfig& config,
       output->null("unidentified");
     }
 
-    if (demux_only) {
+    if (demux_only || !config.is_any_filtering_enabled()) {
       output->null("discarded");
     } else {
       std::vector<fastq_stats_ptr> discarded;
@@ -492,13 +492,15 @@ write_report_demultiplexing(const userconfig& config,
         .write_to_if(output, config.paired_ended_mode);
 
       io_section(read_type::singleton, stats.singleton, files)
-        .write_to_if(output, config.paired_ended_mode && !demux_only);
+        .write_to_if(output,
+                     config.paired_ended_mode && !demux_only &&
+                       config.is_any_filtering_enabled());
 
       io_section(read_type::merged, stats.merged, files)
         .write_to_if(output, config.is_read_merging_enabled());
 
       io_section(read_type::discarded, stats.discarded, files)
-        .write_to_if(output, !demux_only);
+        .write_to_if(output, !demux_only && config.is_any_filtering_enabled());
     }
   } else {
     report.null("demultiplexing");
@@ -572,10 +574,12 @@ write_report_output(const userconfig& config,
                  config.adapters.barcode_count() && config.paired_ended_mode);
 
   io_section(read_type::singleton, singleton, singleton_files)
-    .write_to_if(output, config.paired_ended_mode && !demux_only);
+    .write_to_if(output,
+                 config.paired_ended_mode && !demux_only &&
+                   config.is_any_filtering_enabled());
 
   io_section(read_type::discarded, discarded, discarded_files)
-    .write_to_if(output, !demux_only);
+    .write_to_if(output, !demux_only && config.is_any_filtering_enabled());
 }
 
 bool
