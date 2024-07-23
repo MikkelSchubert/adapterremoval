@@ -45,6 +45,29 @@ const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
 
 namespace {
 
+const char* HELPTEXT =
+  "This program searches for and removes remnant adapter sequences, poly-X\n"
+  "tails and low-quality base from FASTQ reads. For detailed explanation of\n"
+  "the parameters, please refer to the man page. For comments, suggestions\n"
+  "and feedback please use\n"
+  "  https://github.com/MikkelSchubert/adapterremoval/issues/new\n"
+  "\n"
+  "If you use the program, please cite the paper:\n"
+  "  Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
+  "  adapter trimming, identification, and read merging.\n"
+  "  BMC Research Notes, 12;9(1):88.\n"
+  "\n"
+  "    "
+  "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n"
+  "\n"
+  "Use the filename '-' to read from STDIN or to write to STDOUT. If the same\n"
+  "filenames are used for --file1 and --file2 then those files are read in\n"
+  "interleaved mode. If the same filename is used for two or more of the\n"
+  "--out options (excluding --out-json and --out-html), then output is\n"
+  "written to that file in interleaved mode. Use the filename '/dev/null'\n"
+  "with --out options to disable the generation of undesirable output files\n"
+  "or use '--basename /dev/null' to disable all output by default.\n";
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 

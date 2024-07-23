@@ -29,19 +29,5 @@ namespace adapterremoval {
 
 const std::string NAME = "AdapterRemoval";
 const std::string VERSION = "v3.0.0-alpha2";
-const std::string HELPTEXT =
-  "This program searches for and removes remnant adapter sequences, poly-X\n"
-  "tails and low-quality base from FASTQ reads. For detailed explanation of\n"
-  "the parameters, please refer to the man page. For comments, suggestions\n"
-  "and feedback please use\n"
-  "  https://github.com/MikkelSchubert/adapterremoval/issues/new\n"
-  "\n"
-  "If you use the program, please cite the paper:\n"
-  "    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
-  "    adapter trimming, identification, and read merging.\n"
-  "    BMC Research Notes, 12;9(1):88.\n"
-  "\n"
-  "    "
-  "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n";
 
 } // namespace adapterremoval
