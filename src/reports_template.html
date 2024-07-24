@@ -131,11 +131,14 @@
             padding-top: 0px;
         }
 
-        .epilogue,
         .note {
             color: #777;
             font-size: small;
+        }
+
+        .epilogue {
             padding-top: 10px;
+
         }
     </style>
 </head>
@@ -244,7 +247,7 @@
                         <th>(%)</th>
                         <th>Reads</th>
                         <th>(%)</th>
-                        <th>Mean</th>
+                        <th>Mean Bases</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -267,8 +270,8 @@
             <p class="note">
                 {{N_ENABLED_PROC}} of {{N_TOTAL_PROC}} processing steps enabled, {{N_ENABLED_FILT}} of {{N_TOTAL_FILT}}
                 filtering steps enabled. Numbers of reads are given in terms of input reads, meaning that a merged read
-                counts for two. For Processing and Filtering, the numbers of bases specify how many were lost during
-                that step.
+                counts for two. For <b>Processing</b> and <b>Filtering</b>, the numbers of bases specify how many were
+                lost during each step.
             </p>
 
             <!-- TEMPLATE: CONSENSUS_ADAPTER_HEAD -->
@@ -355,16 +358,13 @@
 
             <!-- TEMPLATE: LINE_PLOT -->
 
+            <h4>{{TITLE}}</h4>
+            <div class="note">{{SUB_TITLE}}</div>
             <div id="vis_{{ID}}"></div>
 
             <script>
                 var schema = {
                     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-                    "title": {
-                        "text": JS_TEMPLATE_TITLE,
-                        "subtitle": JS_DEFAULT_SUB_TITLE = "\"\"",
-                        "anchor": JS_DEFAULT_TITLE_ANCHOR = null,
-                    },
                     "width": JS_TEMPLATE_WIDTH,
                     "height": 250,
                     "padding": 5,
@@ -438,12 +438,12 @@
 
             <!-- TEMPLATE: FACET_LINE_PLOT -->
 
+            <h4>{{TITLE}}</h4>
             <div id="vis_{{ID}}"></div>
 
             <script>
                 var schema = {
                     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-                    "title": JS_TEMPLATE_TITLE,
                     "padding": 5,
                     "spec": {
                         "width": JS_TEMPLATE_WIDTH,
@@ -521,12 +521,12 @@
 
             <!-- TEMPLATE: BAR_PLOT -->
 
+            <h4>{{TITLE}}</h4>
             <div id="vis_{{ID}}"></div>
 
             <script>
                 var schema = {
                     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-                    "title": { "text": JS_TEMPLATE_TITLE, "anchor": "start" },
                     "width": JS_TEMPLATE_WIDTH,
                     "height": 250,
                     "padding": 5,
@@ -558,7 +558,7 @@
 
             <!-- TEMPLATE: DEMULTIPLEXING_HEAD -->
 
-            <h5>Per sample statistics</h5>
+            <h4>Per sample statistics</h4>
 
             <div class="fixed-height-table">
                 <table class="pure-table pure-table-striped">
@@ -598,7 +598,7 @@
             <!-- TEMPLATE: BODY_END -->
         </div>
 
-        <div class="section epilogue">
+        <div class="section note epilogue">
             <p>
                 If you use AdapterRemoval, please cite
                 <a href="https://doi.org/10.1186/s13104-016-1900-2">Schubert et. al. 2016</a>:

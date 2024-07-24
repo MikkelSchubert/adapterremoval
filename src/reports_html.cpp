@@ -684,7 +684,7 @@ write_html_io_section(const userconfig& config,
     config.paired_ended_mode || merged ? FACET_WIDTH_2 : FACET_WIDTH_1;
 
   html_facet_line_plot()
-    .set_title("Position quality distribution"_json)
+    .set_title("Position quality distribution")
     .set_x_axis(config.is_read_merging_enabled() && merged ? "null"
                                                            : "Position"_json)
     .set_y_axis("Phred score"_json)
@@ -693,18 +693,17 @@ write_html_io_section(const userconfig& config,
     .write(output);
 
   if (config.is_read_merging_enabled() && merged) {
-    html_line_plot()
-      .set_title(" "_json)
-      .set_sub_title("Merged"_json)
+    html_facet_line_plot()
+      .set_title("")
       .set_x_axis("Position"_json)
       .set_y_axis("Phred score"_json)
       .set_width(FIGURE_WIDTH)
-      .set_values(build_base_qualities({ merged }, { "merged" }))
+      .set_values(build_base_qualities({ merged }, { "Merged" }))
       .write(output);
   }
 
   html_facet_line_plot()
-    .set_title("Nucleotide content"_json)
+    .set_title("Nucleotide content")
     .set_x_axis(config.is_read_merging_enabled() && merged ? "null"
                                                            : "Position"_json)
     .set_y_axis("Frequency"_json)
@@ -713,20 +712,18 @@ write_html_io_section(const userconfig& config,
     .write(output);
 
   if (config.is_read_merging_enabled() && merged) {
-    html_line_plot()
-      .set_title(" "_json)
-      .set_sub_title("Merged"_json)
-      .set_title_anchor("start"_json)
+    html_facet_line_plot()
+      .set_title(" ")
       .set_x_axis("Position"_json)
       .set_y_axis("Frequency"_json)
       .set_width(FIGURE_WIDTH)
-      .set_values(build_base_content({ merged }, { "merged" }))
+      .set_values(build_base_content({ merged }, { "Merged" }))
       .write(output);
   }
 
   html_line_plot()
-    .set_title("Quality score distribution"_json)
-    .set_title_anchor("start"_json)
+    .set_title("Quality score distribution")
+    .set_sub_title("")
     .set_x_axis("Phred score"_json)
     .set_y_axis("Frequency"_json)
     .set_width(FIGURE_WIDTH)
@@ -744,8 +741,8 @@ write_html_io_section(const userconfig& config,
     }
 
     html_line_plot()
-      .set_title("GC Content"_json)
-      .set_title_anchor("start"_json)
+      .set_title("GC Content")
+      .set_sub_title("")
       .set_x_axis("%GC"_json)
       .set_y_axis("Frequency"_json)
       .set_width(FIGURE_WIDTH)
@@ -802,13 +799,12 @@ write_html_analyses_section(const userconfig& config,
        << "% of reads";
 
     html_line_plot()
-      .set_title("Insert-size distribution"_json)
-      .set_title_anchor("start"_json)
+      .set_title("Insert-size distribution")
+      .set_sub_title(ss.str())
       .set_x_axis("Insert size"_json)
       .set_y_axis("Frequency"_json)
       .set_legend("null")
       .set_width(FIGURE_WIDTH)
-      .set_sub_title(json_encode(ss.str()))
       .set_values(samples.to_string())
       .write(output);
 
@@ -923,7 +919,7 @@ write_html_demultiplexing_section(const userconfig& config,
   }
 
   html_bar_plot()
-    .set_title("Samples identified"_json)
+    .set_title("Samples identified")
     .set_x_axis("Samples"_json)
     .set_y_axis("Percent"_json)
     .set_width(FIGURE_WIDTH)
@@ -1062,7 +1058,7 @@ write_html_report(const userconfig& config,
 
   write_html_input_section(config, stats, output);
 
-  if (config.run_type == ar_command::report_only) {
+  if (config.paired_ended_mode || config.run_type == ar_command::report_only) {
     write_html_analyses_section(config, stats, output);
   }
 

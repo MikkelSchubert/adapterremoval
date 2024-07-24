@@ -185,11 +185,14 @@ html_head::write(std::ostream& out)
   out << "            padding-top: 0px;\n";
   out << "        }\n";
   out << "\n";
-  out << "        .epilogue,\n";
   out << "        .note {\n";
   out << "            color: #777;\n";
   out << "            font-size: small;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .epilogue {\n";
   out << "            padding-top: 10px;\n";
+  out << "\n";
   out << "        }\n";
   out << "    </style>\n";
   out << "</head>\n";
@@ -583,7 +586,7 @@ html_summary_trimming_head::write(std::ostream& out)
   out << "                        <th>(%)</th>\n";
   out << "                        <th>Reads</th>\n";
   out << "                        <th>(%)</th>\n";
-  out << "                        <th>Mean</th>\n";
+  out << "                        <th>Mean Bases</th>\n";
   out << "                    </tr>\n";
   out << "                </thead>\n";
   out << "                <tbody>\n";
@@ -742,8 +745,8 @@ html_summary_trimming_tail::write(std::ostream& out)
   out << "            <p class=\"note\">\n";
   out << "                " << m_n_enabled_proc << " of " << m_n_total_proc << " processing steps enabled, " << m_n_enabled_filt << " of " << m_n_total_filt << "\n";
   out << "                filtering steps enabled. Numbers of reads are given in terms of input reads, meaning that a merged read\n";
-  out << "                counts for two. For Processing and Filtering, the numbers of bases specify how many were lost during\n";
-  out << "                that step.\n";
+  out << "                counts for two. For <b>Processing</b> and <b>Filtering</b>, the numbers of bases specify how many were\n";
+  out << "                lost during each step.\n";
   out << "            </p>\n";
   out << "\n";
   // clang-format on
@@ -1130,6 +1133,7 @@ html_line_plot&
 html_line_plot::set_sub_title(const std::string& value)
 {
   m_sub_title = value;
+  m_sub_title_is_set = true;
   return *this;
 }
 
@@ -1138,13 +1142,6 @@ html_line_plot::set_title(const std::string& value)
 {
   m_title = value;
   m_title_is_set = true;
-  return *this;
-}
-
-html_line_plot&
-html_line_plot::set_title_anchor(const std::string& value)
-{
-  m_title_anchor = value;
   return *this;
 }
 
@@ -1182,22 +1179,20 @@ void
 html_line_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_sub_title_is_set);
   AR_REQUIRE(m_title_is_set);
   AR_REQUIRE(m_values_is_set);
   AR_REQUIRE(m_width_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
+  out << "            <h4>" << m_title << "</h4>\n";
+  out << "            <div class=\"note\">" << m_sub_title << "</div>\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
   out << "            <script>\n";
   out << "                var schema = {\n";
   out << "                    \"$schema\": \"https://vega.github.io/schema/vega-lite/v5.json\",\n";
-  out << "                    \"title\": {\n";
-  out << "                        \"text\": " << m_title << ",\n";
-  out << "                        \"subtitle\": " << m_sub_title  << ",\n";
-  out << "                        \"anchor\": " << m_title_anchor  << ",\n";
-  out << "                    },\n";
   out << "                    \"width\": " << m_width << ",\n";
   out << "                    \"height\": 250,\n";
   out << "                    \"padding\": 5,\n";
@@ -1333,12 +1328,12 @@ html_facet_line_plot::write(std::ostream& out)
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
+  out << "            <h4>" << m_title << "</h4>\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
   out << "            <script>\n";
   out << "                var schema = {\n";
   out << "                    \"$schema\": \"https://vega.github.io/schema/vega-lite/v5.json\",\n";
-  out << "                    \"title\": " << m_title << ",\n";
   out << "                    \"padding\": 5,\n";
   out << "                    \"spec\": {\n";
   out << "                        \"width\": " << m_width << ",\n";
@@ -1471,12 +1466,12 @@ html_bar_plot::write(std::ostream& out)
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
+  out << "            <h4>" << m_title << "</h4>\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
   out << "            <script>\n";
   out << "                var schema = {\n";
   out << "                    \"$schema\": \"https://vega.github.io/schema/vega-lite/v5.json\",\n";
-  out << "                    \"title\": { \"text\": " << m_title << ", \"anchor\": \"start\" },\n";
   out << "                    \"width\": " << m_width << ",\n";
   out << "                    \"height\": 250,\n";
   out << "                    \"padding\": 5,\n";
@@ -1522,7 +1517,7 @@ html_demultiplexing_head::write(std::ostream& out)
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
-  out << "            <h5>Per sample statistics</h5>\n";
+  out << "            <h4>Per sample statistics</h4>\n";
   out << "\n";
   out << "            <div class=\"fixed-height-table\">\n";
   out << "                <table class=\"pure-table pure-table-striped\">\n";
@@ -1685,7 +1680,7 @@ html_body_end::write(std::ostream& out)
   auto id = g_html_id++; (void)id;
   out << "        </div>\n";
   out << "\n";
-  out << "        <div class=\"section epilogue\">\n";
+  out << "        <div class=\"section note epilogue\">\n";
   out << "            <p>\n";
   out << "                If you use AdapterRemoval, please cite\n";
   out << "                <a href=\"https://doi.org/10.1186/s13104-016-1900-2\">Schubert et. al. 2016</a>:\n";
@@ -1710,7 +1705,7 @@ html_body_end::write(std::ostream& out)
   out << "    </div>\n";
   out << "</body>\n";
   out << "\n";
-  out << "</html>\n";
+  out << "</html>";
   // clang-format on
   m_written = true;
 }

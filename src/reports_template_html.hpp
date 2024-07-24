@@ -504,7 +504,6 @@ public:
   html_line_plot& set_legend(const std::string& value);
   html_line_plot& set_sub_title(const std::string& value);
   html_line_plot& set_title(const std::string& value);
-  html_line_plot& set_title_anchor(const std::string& value);
   html_line_plot& set_values(const std::string& value);
   html_line_plot& set_width(const std::string& value);
   html_line_plot& set_x_axis(const std::string& value);
@@ -514,13 +513,13 @@ public:
 
 private:
   bool m_written{};
+  bool m_sub_title_is_set{};
   bool m_title_is_set{};
   bool m_values_is_set{};
   bool m_width_is_set{};
   std::string m_legend{"{ \"title\": \"Legend\", \"padding\": 5 }"};
-  std::string m_sub_title{"\"\""};
+  std::string m_sub_title{};
   std::string m_title{};
-  std::string m_title_anchor{"null"};
   std::string m_values{};
   std::string m_width{};
   std::string m_x_axis{"null"};
