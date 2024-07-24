@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 
-#include "fastq_io.hpp"
+#include "fastq_io.hpp"      // declarations
 #include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "errors.hpp"        // for io_error, gzip_error, fastq_error
 #include "fastq.hpp"         // for fastq
@@ -35,7 +35,6 @@
 #include <memory>            // for unique_ptr, make_unique, __shared_ptr_a...
 #include <sstream>           // for basic_ostream, basic_ostringstream, ope...
 #include <utility>           // for move, swap
-#include <vector>            // for vector
 
 namespace adapterremoval {
 
@@ -105,10 +104,17 @@ fastq_output_chunk::add(const fastq& read)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'read_fastq'
 
+enum class read_fastq::file_type
+{
+  read_1,
+  read_2,
+  interleaved
+};
+
+namespace {
+
 bool
-read_record(joined_line_readers& reader,
-            fastq_vec& chunk,
-            size_t& n_nucleotides)
+read_record(joined_line_readers& reader, fastq_vec& chunk, size_t& nucleotides)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
@@ -119,7 +125,7 @@ read_record(joined_line_readers& reader,
     auto& record = chunk.back();
 
     if (record.read_unsafe(reader)) {
-      n_nucleotides += record.length();
+      nucleotides += record.length();
 
       return true;
     } else {
@@ -136,25 +142,46 @@ read_record(joined_line_readers& reader,
   }
 }
 
-read_fastq::read_fastq(const userconfig& config, size_t next_step)
+const string_vec&
+select_filenames(const userconfig& config, const read_fastq::file_type mode)
+{
+  switch (mode) {
+    case read_fastq::file_type::read_1:
+    case read_fastq::file_type::interleaved:
+      return config.input_files_1;
+    case read_fastq::file_type::read_2:
+      return config.input_files_2;
+    default:
+      AR_FAIL("invalid read_fastq::file_type value");
+  }
+}
+
+} // namespace
+
+read_fastq::read_fastq(const userconfig& config,
+                       const size_t next_step,
+                       const read_fastq::file_type mode)
   : analytical_step(processing_order::ordered, "read_fastq")
-  , m_io_input_1_base(config.input_files_1)
-  , m_io_input_2_base(config.input_files_2)
-  , m_io_input_1(&m_io_input_1_base)
-  , m_io_input_2(&m_io_input_2_base)
+  , m_reader(select_filenames(config, mode))
   , m_next_step(next_step)
-  , m_timer(config.log_progress)
+  , m_mode(mode)
   , m_head(config.head)
 {
-  if (config.interleaved_input) {
-    AR_REQUIRE(config.input_files_2.empty());
+}
 
-    m_io_input_2 = &m_io_input_1_base;
-  } else if (config.input_files_2.empty()) {
-    m_io_input_2 = &m_io_input_1_base;
-    m_single_end = true;
+void
+read_fastq::add_steps(scheduler& sch,
+                      const userconfig& config,
+                      size_t next_step)
+{
+  if (config.interleaved_input) {
+    sch.add<read_fastq>(config, next_step, read_fastq::file_type::interleaved);
+  } else if (config.paired_ended_mode) {
+    next_step =
+      sch.add<read_fastq>(config, next_step, read_fastq::file_type::read_2);
+    sch.add<read_fastq>(config, next_step, read_fastq::file_type::read_1);
   } else {
-    AR_REQUIRE(config.input_files_1.size() == config.input_files_2.size());
+    sch.add<read_fastq>(config, next_step, read_fastq::file_type::read_1);
   }
 }
 
@@ -162,40 +189,76 @@ chunk_vec
 read_fastq::process(chunk_ptr chunk)
 {
   AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(!chunk);
-  if (m_eof) {
-    return {};
-  }
 
-  auto file_chunk = std::make_unique<fastq_read_chunk>();
-  if (m_single_end) {
-    m_eof = !read_single_end(file_chunk->reads_1);
+  if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
+    // The scheduler only terminates when the first step stops returning chunks
+    if (m_eof) {
+      return {};
+    }
+
+    chunk = std::make_unique<fastq_read_chunk>();
   } else {
-    m_eof = !read_paired_end(file_chunk->reads_1, file_chunk->reads_2);
+    AR_REQUIRE(!m_eof && chunk);
   }
 
-  file_chunk->eof = m_eof;
+  auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
+  auto& reads_1 = file_chunk.reads_1;
+  auto& reads_2 = file_chunk.reads_2;
 
-  m_timer.increment(file_chunk->reads_1.size() + file_chunk->reads_2.size());
+  if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
+    if (m_mode == file_type::read_1) {
+      read_single_end(reads_1);
+    } else {
+      read_interleaved(reads_1, reads_2);
+    }
+  } else if (m_mode == file_type::read_2) {
+    read_single_end(reads_2);
+  } else {
+    AR_FAIL("invalid file_type value");
+  }
+
+  if (m_mode != file_type::read_1 && reads_1.size() != reads_2.size()) {
+    throw fastq_error("Found unequal number of mate 1 and mate 2 reads; input "
+                      "files may be truncated. Please fix before continuing.");
+  }
+
+  // Head must be checked after the first loop, to produce at least one chunk
+  m_eof |= !m_head;
+  file_chunk.eof = m_eof;
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(file_chunk));
-
+  chunks.emplace_back(m_next_step, std::move(chunk));
   return chunks;
 }
 
-bool
-read_fastq::read_single_end(fastq_vec& reads_1)
+void
+read_fastq::read_single_end(fastq_vec& reads)
 {
-  bool eof = false;
-  size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !eof) {
-    eof = !read_record(*m_io_input_1, reads_1, n_nucleotides);
-    m_head--;
+  size_t nucleotides = 0;
+  for (; nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof; m_head--) {
+    m_eof = !read_record(m_reader, reads, nucleotides);
   }
-
-  return !eof && m_head;
 }
+
+void
+read_fastq::read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2)
+{
+  size_t nucleotides = 0;
+  for (; nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof; m_head--) {
+    m_eof = !read_record(m_reader, reads_1, nucleotides);
+    read_record(m_reader, reads_2, nucleotides);
+  }
+}
+
+void
+read_fastq::finalize()
+{
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'post_process_fastq'
 
 namespace {
 
@@ -218,50 +281,6 @@ identify_mate_separators(const fastq_vec& reads_1, const fastq_vec& reads_2)
 
 } // namespace
 
-bool
-read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
-{
-  bool eof_1 = false;
-  bool eof_2 = false;
-
-  size_t n_nucleotides = 0;
-  while (n_nucleotides < INPUT_BLOCK_SIZE && m_head && !eof_1 && !eof_2) {
-    eof_1 = !read_record(*m_io_input_1, reads_1, n_nucleotides);
-    eof_2 = !read_record(*m_io_input_2, reads_2, n_nucleotides);
-    m_head--;
-  }
-
-  if (eof_1 && !eof_2) {
-    std::ostringstream stream;
-    stream << "More mate 2 reads than mate 1 reads found in '"
-           << m_io_input_1->filename() << "'; file may be truncated. "
-           << "Please fix before continuing.";
-
-    throw fastq_error(stream.str());
-  } else if (eof_2 && !eof_1) {
-    std::ostringstream stream;
-    stream << "More mate 1 reads than mate 2 reads found in '"
-           << m_io_input_2->filename() << "'; file may be truncated. "
-           << "Please fix before continuing.";
-
-    throw fastq_error(stream.str());
-  }
-
-  return !eof_1 && !eof_2 && m_head;
-}
-
-void
-read_fastq::finalize()
-{
-  AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(m_eof);
-
-  m_timer.finalize();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'post_process_fastq'
-
 post_process_fastq::post_process_fastq(const userconfig& config,
                                        size_t next_step,
                                        statistics& stats)
@@ -270,6 +289,7 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
   , m_encoding(config.io_encoding)
+  , m_timer(config.log_progress)
   , m_mate_separator(config.mate_separator)
 {
 }
@@ -310,6 +330,8 @@ post_process_fastq::process(chunk_ptr chunk)
     }
   }
 
+  m_timer.increment(reads_1.size() + reads_2.size());
+
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
 
@@ -321,6 +343,8 @@ post_process_fastq::finalize()
 {
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
+
+  m_timer.finalize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

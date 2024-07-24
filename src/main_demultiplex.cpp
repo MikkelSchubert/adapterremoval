@@ -189,7 +189,7 @@ demultiplex_sequences(const userconfig& config)
     sch.add<post_process_fastq>(config, processing_step, stats);
 
   // Step 1: Read input file(s)
-  sch.add<read_fastq>(config, postproc_step);
+  read_fastq::add_steps(sch, config, postproc_step);
 
   if (!sch.run(config.max_threads)) {
     return 1;

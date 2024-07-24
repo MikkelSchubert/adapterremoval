@@ -125,9 +125,15 @@ public:
 class read_fastq : public analytical_step
 {
 public:
-  read_fastq(const userconfig& config, size_t next_step);
+  enum class file_type;
 
+  read_fastq(const userconfig& config, size_t next_step, file_type mode);
   ~read_fastq() override = default;
+
+  /** Adds read_fastq step(s) to the scheduler depending on current input */
+  static void add_steps(scheduler& sch,
+                        const userconfig& config,
+                        size_t next_step);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -142,31 +148,21 @@ public:
 
 private:
   /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
-  bool read_single_end(fastq_vec& reads_1);
-  /** Fills a chunk with PE reads; stops on EOF or after `head` reads. */
-  bool read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2);
+  void read_single_end(fastq_vec& reads);
+  /** Fills a chunk of interleaved reads; stops on EOF or after `head` reads. */
+  void read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2);
 
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
-  joined_line_readers m_io_input_1_base;
-  //! The underlying file reader for mate 2 read (if not interleaved)
-  joined_line_readers m_io_input_2_base;
-  //! The reader used to read mate 1 reads.
-  joined_line_readers* m_io_input_1 = nullptr;
-  //! The reader used to read mate 1 reads; may be equal to m_io_input_1.
-  joined_line_readers* m_io_input_2 = nullptr;
-  //! The analytical step following this step
+  joined_line_readers m_reader;
+
   const size_t m_next_step;
 
-  //! True if input is single-end
-  bool m_single_end = false;
+  //! The kind of data read by the reader (SE, PE, interleaved)
+  file_type m_mode;
   //! Used to track whether an EOF block has been received.
   bool m_eof = false;
-
-  //! Timer for displaying read progress.
-  progress_timer m_timer;
-
   //! Number of reads to process
-  uint64_t m_head{ std::numeric_limits<uint64_t>::max() };
+  uint64_t m_head = std::numeric_limits<uint64_t>::max();
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock{};
@@ -207,6 +203,9 @@ private:
   const size_t m_next_step;
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
+
+  //! Timer for displaying read progress.
+  progress_timer m_timer;
 
   //! Character used to join read-names with mate numbers, e.g. '/'
   char m_mate_separator;
