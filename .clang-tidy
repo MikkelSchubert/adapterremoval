@@ -1,0 +1,23 @@
+Checks: "
+    bugprone-*,
+    -bugprone-easily-swappable-parameters,
+    -bugprone-narrowing-conversions,
+    -bugprone-reserved-identifier,
+    hicpp-*,
+    -hicpp-no-array-decay,
+    -hicpp-signed-bitwise,
+    misc-*,
+    -misc-non-private-member-variables-in-classes,
+    modernize-*,
+    -modernize-use-trailing-return-type,
+    -modernize-raw-string-literal,
+    readability-*,
+    -readability-else-after-return,
+    -readability-function-cognitive-complexity,
+    -readability-identifier-length,
+    -readability-implicit-bool-conversion,
+    -readability-magic-numbers,
+    -readability-use-anyofallof,
+    "
+
+FormatStyle: "file"
