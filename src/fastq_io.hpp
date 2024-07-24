@@ -157,8 +157,6 @@ private:
   //! The analytical step following this step
   const size_t m_next_step;
 
-  //! Character used to join read-names with mate numbers, e.g. '/'
-  char m_mate_separator;
   //! True if input is single-end
   bool m_single_end = false;
   //! Used to track whether an EOF block has been received.
@@ -183,9 +181,9 @@ class post_process_fastq : public analytical_step
 {
 public:
   /** Constructor. */
-  post_process_fastq(size_t next_step,
-                     statistics& stats,
-                     const fastq_encoding& encoding);
+  post_process_fastq(const userconfig& config,
+                     size_t next_step,
+                     statistics& stats);
 
   ~post_process_fastq() override = default;
 
@@ -210,6 +208,8 @@ private:
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
 
+  //! Character used to join read-names with mate numbers, e.g. '/'
+  char m_mate_separator;
   //! Used to track whether an EOF block has been received.
   bool m_eof = false;
 

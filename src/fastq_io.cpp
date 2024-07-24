@@ -143,7 +143,6 @@ read_fastq::read_fastq(const userconfig& config, size_t next_step)
   , m_io_input_1(&m_io_input_1_base)
   , m_io_input_2(&m_io_input_2_base)
   , m_next_step(next_step)
-  , m_mate_separator(config.mate_separator)
   , m_timer(config.log_progress)
   , m_head(config.head)
 {
@@ -248,16 +247,6 @@ read_fastq::read_paired_end(fastq_vec& reads_1, fastq_vec& reads_2)
     throw fastq_error(stream.str());
   }
 
-  if (!m_mate_separator) {
-    m_mate_separator = identify_mate_separators(reads_1, reads_2);
-  }
-
-  auto it_1 = reads_1.begin();
-  auto it_2 = reads_2.begin();
-  while (it_1 != reads_1.end()) {
-    fastq::normalize_paired_reads(*it_1++, *it_2++, m_mate_separator);
-  }
-
   return !eof_1 && !eof_2 && m_head;
 }
 
@@ -273,14 +262,15 @@ read_fastq::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
-post_process_fastq::post_process_fastq(size_t next_step,
-                                       statistics& stats,
-                                       const fastq_encoding& encoding)
+post_process_fastq::post_process_fastq(const userconfig& config,
+                                       size_t next_step,
+                                       statistics& stats)
   : analytical_step(processing_order::ordered, "post_process_fastq")
   , m_statistics_1(stats.input_1)
   , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
-  , m_encoding(encoding)
+  , m_encoding(config.io_encoding)
+  , m_mate_separator(config.mate_separator)
 {
 }
 
@@ -297,14 +287,27 @@ post_process_fastq::process(chunk_ptr chunk)
   auto& reads_2 = file_chunk.reads_2;
 
   AR_REQUIRE((reads_1.size() == reads_2.size()) || reads_2.empty());
-  for (auto& read_1 : reads_1) {
-    read_1.post_process(m_encoding);
-    m_statistics_1->process(read_1);
-  }
+  if (reads_2.empty()) {
+    for (auto& read_1 : reads_1) {
+      read_1.post_process(m_encoding);
+      m_statistics_1->process(read_1);
+    }
+  } else {
+    if (!m_mate_separator) {
+      m_mate_separator = identify_mate_separators(reads_1, reads_2);
+    }
 
-  for (auto& read_2 : reads_2) {
-    read_2.post_process(m_encoding);
-    m_statistics_2->process(read_2);
+    auto it_1 = reads_1.begin();
+    auto it_2 = reads_2.begin();
+    for (; it_1 != reads_1.end(); ++it_1, ++it_2) {
+      fastq::normalize_paired_reads(*it_1, *it_2, m_mate_separator);
+
+      it_1->post_process(m_encoding);
+      m_statistics_1->process(*it_1);
+
+      it_2->post_process(m_encoding);
+      m_statistics_2->process(*it_2);
+    }
   }
 
   chunk_vec chunks;

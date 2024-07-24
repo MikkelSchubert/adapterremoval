@@ -166,7 +166,7 @@ identify_adapter_sequences(const userconfig& config)
 
   // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
   const size_t postproc_step =
-    sch.add<post_process_fastq>(final_step, stats, config.io_encoding);
+    sch.add<post_process_fastq>(config, final_step, stats);
 
   // Step 1: Read input file(s)
   sch.add<read_fastq>(config, postproc_step);
