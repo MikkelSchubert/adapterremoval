@@ -67,6 +67,9 @@ public:
   //! Total number of nucleotides in this chunk
   size_t nucleotides = 0;
 
+  //! Original mate separator for (paired) reads
+  char mate_separator = MATE_SEPARATOR;
+
   //! Lines read from the mate 1 files
   fastq_vec reads_1{};
   //! Lines read from the mate 2 files
@@ -163,6 +166,8 @@ private:
   bool m_eof = false;
   //! Number of reads to process
   uint64_t m_head = std::numeric_limits<uint64_t>::max();
+  //! Character used to join read-names with mate numbers, e.g. '/'
+  char m_mate_separator;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock{};
@@ -195,25 +200,23 @@ public:
   post_process_fastq& operator=(post_process_fastq&&) = delete;
 
 private:
-  //! Statistics collected from raw mate 1 reads
+  //! Per thread statistics collected from raw reads
+  threadstate<fastq_statistics> m_stats_1{};
+  //! Per thread statistics collected from raw mate 2 reads
+  threadstate<fastq_statistics> m_stats_2{};
+  //! Destination for statistics collected from raw mate 1 reads
   fastq_stats_ptr m_statistics_1;
-  //! Statistics collected from raw mate 2 reads
+  //! Destination for statistics collected from raw mate 2 reads
   fastq_stats_ptr m_statistics_2;
   //! The analytical step following this step
   const size_t m_next_step;
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
 
+  //! Lock used to control access to progress timer
+  std::mutex m_timer_lock{};
   //! Timer for displaying read progress.
   progress_timer m_timer;
-
-  //! Character used to join read-names with mate numbers, e.g. '/'
-  char m_mate_separator;
-  //! Used to track whether an EOF block has been received.
-  bool m_eof = false;
-
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock{};
 };
 
 /**

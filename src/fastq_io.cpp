@@ -156,6 +156,23 @@ select_filenames(const userconfig& config, const read_fastq::file_type mode)
   }
 }
 
+char
+identify_mate_separators(const fastq_vec& reads_1, const fastq_vec& reads_2)
+{
+  AR_REQUIRE(reads_1.size() == reads_2.size());
+
+  // Attempt to determine the mate separator character
+  char mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
+
+  if (!mate_separator) {
+    // Fall back to the default so that a human-readable error will be thrown
+    // during normalization below.
+    mate_separator = MATE_SEPARATOR;
+  }
+
+  return mate_separator;
+}
+
 } // namespace
 
 read_fastq::read_fastq(const userconfig& config,
@@ -166,6 +183,7 @@ read_fastq::read_fastq(const userconfig& config,
   , m_next_step(next_step)
   , m_mode(mode)
   , m_head(config.head)
+  , m_mate_separator(config.mate_separator)
 {
 }
 
@@ -217,14 +235,22 @@ read_fastq::process(chunk_ptr chunk)
     AR_FAIL("invalid file_type value");
   }
 
-  if (m_mode != file_type::read_1 && reads_1.size() != reads_2.size()) {
-    throw fastq_error("Found unequal number of mate 1 and mate 2 reads; input "
-                      "files may be truncated. Please fix before continuing.");
+  if (m_mode != file_type::read_1) {
+    if (reads_1.size() != reads_2.size()) {
+      throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
+                        "input files may be truncated. Please fix before "
+                        "continuing.");
+    } else if (!m_mate_separator) {
+      // Mate separators are identified using the first block, in order to
+      // reduce the need for locking in the post-processing step
+      m_mate_separator = identify_mate_separators(reads_1, reads_2);
+    }
   }
 
   // Head must be checked after the first loop, to produce at least one chunk
   m_eof |= !m_head;
   file_chunk.eof = m_eof;
+  file_chunk.mate_separator = m_mate_separator;
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
@@ -260,77 +286,64 @@ read_fastq::finalize()
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
-namespace {
-
-char
-identify_mate_separators(const fastq_vec& reads_1, const fastq_vec& reads_2)
-{
-  AR_REQUIRE(reads_1.size() == reads_2.size());
-
-  // Attempt to determine the mate separator character
-  char mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
-
-  if (!mate_separator) {
-    // Fall back to the default so that a human-readable error will be thrown
-    // during normalization below.
-    mate_separator = MATE_SEPARATOR;
-  }
-
-  return mate_separator;
-}
-
-} // namespace
-
 post_process_fastq::post_process_fastq(const userconfig& config,
                                        size_t next_step,
                                        statistics& stats)
-  : analytical_step(processing_order::ordered, "post_process_fastq")
+  : analytical_step(processing_order::unordered, "post_process_fastq")
   , m_statistics_1(stats.input_1)
   , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
   , m_encoding(config.io_encoding)
   , m_timer(config.log_progress)
-  , m_mate_separator(config.mate_separator)
 {
+  AR_REQUIRE(m_statistics_1 && m_statistics_2);
+
+  for (size_t i = 0; i < config.max_threads; ++i) {
+    // Synchronize sampling of mate 1 and mate 2 reads
+    const auto seed = prng_seed();
+
+    m_stats_1.emplace_back(config.report_sample_rate, seed);
+    m_stats_2.emplace_back(config.report_sample_rate, seed);
+  }
 }
 
 chunk_vec
 post_process_fastq::process(chunk_ptr chunk)
 {
   auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  AR_REQUIRE(!m_eof);
-  AR_REQUIRE_SINGLE_THREAD(m_lock);
-
-  m_eof = file_chunk.eof;
-
   auto& reads_1 = file_chunk.reads_1;
   auto& reads_2 = file_chunk.reads_2;
+
+  auto stats_1 = m_stats_1.acquire();
+  auto stats_2 = m_stats_2.acquire();
 
   AR_REQUIRE((reads_1.size() == reads_2.size()) || reads_2.empty());
   if (reads_2.empty()) {
     for (auto& read_1 : reads_1) {
       read_1.post_process(m_encoding);
-      m_statistics_1->process(read_1);
+      stats_1->process(read_1);
     }
   } else {
-    if (!m_mate_separator) {
-      m_mate_separator = identify_mate_separators(reads_1, reads_2);
-    }
-
     auto it_1 = reads_1.begin();
     auto it_2 = reads_2.begin();
     for (; it_1 != reads_1.end(); ++it_1, ++it_2) {
-      fastq::normalize_paired_reads(*it_1, *it_2, m_mate_separator);
+      fastq::normalize_paired_reads(*it_1, *it_2, file_chunk.mate_separator);
 
       it_1->post_process(m_encoding);
-      m_statistics_1->process(*it_1);
+      stats_1->process(*it_1);
 
       it_2->post_process(m_encoding);
-      m_statistics_2->process(*it_2);
+      stats_2->process(*it_2);
     }
   }
 
-  m_timer.increment(reads_1.size() + reads_2.size());
+  m_stats_1.release(stats_1);
+  m_stats_2.release(stats_2);
+
+  {
+    std::unique_lock<std::mutex> lock(m_timer_lock);
+    m_timer.increment(reads_1.size() + reads_2.size());
+  }
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
@@ -341,8 +354,15 @@ post_process_fastq::process(chunk_ptr chunk)
 void
 post_process_fastq::finalize()
 {
-  AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(m_eof);
+  AR_REQUIRE_SINGLE_THREAD(m_timer_lock);
+
+  while (auto next = m_stats_1.try_acquire()) {
+    *m_statistics_1 += *next;
+  }
+
+  while (auto next = m_stats_2.try_acquire()) {
+    *m_statistics_2 += *next;
+  }
 
   m_timer.finalize();
 }
