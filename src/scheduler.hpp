@@ -44,44 +44,42 @@ public:
 
   using pointer = std::unique_ptr<T>;
 
-  /** Create new state value. **/
+  /** Create N new state values **/
   template<class... Args>
-  void emplace_back(Args&&... args)
+  void emplace_back_n(size_t n, Args&&... args)
   {
     std::lock_guard<std::mutex> lock(m_mutex);
-
-    m_values.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+    for (; n; n--) {
+      m_values.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+    }
   }
 
   /** Acquire ownership of a value. **/
   pointer acquire()
   {
-    auto ptr = try_acquire();
-    AR_REQUIRE(ptr);
-
-    return ptr;
-  }
-
-  /** Try to acquire ownership of a value, returning null if there are none. */
-  pointer try_acquire()
-  {
     std::lock_guard<std::mutex> lock(m_mutex);
+    AR_REQUIRE(!m_values.empty());
 
-    pointer value;
-    if (!m_values.empty()) {
-      value = std::move(m_values.back());
-      m_values.pop_back();
-    }
-
+    pointer value = std::move(m_values.back());
+    m_values.pop_back();
     return value;
   }
 
   /** Release ownership of a value. **/
   void release(pointer& value)
   {
+    AR_REQUIRE(value);
     std::lock_guard<std::mutex> lock(m_mutex);
 
     m_values.push_back(std::move(value));
+  }
+
+  void merge_into(T& value)
+  {
+    while (!m_values.empty()) {
+      value += *m_values.back();
+      m_values.pop_back();
+    }
   }
 
 private:

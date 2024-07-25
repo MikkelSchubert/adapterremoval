@@ -302,8 +302,8 @@ post_process_fastq::post_process_fastq(const userconfig& config,
     // Synchronize sampling of mate 1 and mate 2 reads
     const auto seed = prng_seed();
 
-    m_stats_1.emplace_back(config.report_sample_rate, seed);
-    m_stats_2.emplace_back(config.report_sample_rate, seed);
+    m_stats_1.emplace_back_n(1, config.report_sample_rate, seed);
+    m_stats_2.emplace_back_n(1, config.report_sample_rate, seed);
   }
 }
 
@@ -356,13 +356,8 @@ post_process_fastq::finalize()
 {
   AR_REQUIRE_SINGLE_THREAD(m_timer_lock);
 
-  while (auto next = m_stats_1.try_acquire()) {
-    *m_statistics_1 += *next;
-  }
-
-  while (auto next = m_stats_2.try_acquire()) {
-    *m_statistics_2 += *next;
-  }
+  m_stats_1.merge_into(*m_statistics_1);
+  m_stats_2.merge_into(*m_statistics_2);
 
   m_timer.finalize();
 }

@@ -52,11 +52,10 @@ public:
     AR_REQUIRE(stats.adapter_id);
     m_sink_trim = stats.trimming.back();
 
-    for (size_t i = 0; i < m_config.max_threads; ++i) {
-      // FIXME: Shouldn't be adapter specific
-      m_stats_id.emplace_back(m_sink_id->adapter1.max_length());
-      m_stats_ins.emplace_back();
-    }
+    // FIXME: Shouldn't be adapter specific
+    m_stats_id.emplace_back_n(m_config.max_threads,
+                              m_sink_id->adapter1.max_length());
+    m_stats_ins.emplace_back_n(m_config.max_threads);
   }
 
   ~adapter_identification() override = default;
@@ -116,13 +115,8 @@ public:
 
   void finalize() override
   {
-    while (auto next = m_stats_id.try_acquire()) {
-      *m_sink_id += *next;
-    }
-
-    while (auto next = m_stats_ins.try_acquire()) {
-      *m_sink_trim += *next;
-    }
+    m_stats_id.merge_into(*m_sink_id);
+    m_stats_ins.merge_into(*m_sink_trim);
   }
 
   adapter_identification(const adapter_identification&) = delete;

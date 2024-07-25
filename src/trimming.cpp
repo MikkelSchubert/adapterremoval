@@ -321,17 +321,13 @@ reads_processor::reads_processor(const userconfig& config,
 {
   AR_REQUIRE(m_stats_sink);
 
-  for (size_t i = 0; i < m_config.max_threads; ++i) {
-    m_stats.emplace_back(m_config.report_sample_rate);
-  }
+  m_stats.emplace_back_n(m_config.max_threads, m_config.report_sample_rate);
 }
 
 void
 reads_processor::finalize()
 {
-  while (auto next = m_stats.try_acquire()) {
-    *m_stats_sink += *next;
-  }
+  m_stats.merge_into(*m_stats_sink);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
