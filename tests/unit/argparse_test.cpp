@@ -877,8 +877,8 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE_POSTFIX(ss.str(),
-                  "[WARNING] Option --foo is deprecated and will be removed "
-                  "in the future. Please use --12345 instead.\n");
+                  "[WARNING] Option --foo has been renamed to --12345. "
+                  "Support for the old name will be removed in the future.\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

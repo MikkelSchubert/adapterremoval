@@ -605,17 +605,16 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(start != end);
 
-  bool is_deprecated = is_deprecated_alias(*start);
-  AR_REQUIRE(is_deprecated || *start == m_key_long ||
+  const bool deprecated_alias = is_deprecated_alias(*start);
+  AR_REQUIRE(deprecated_alias || *start == m_key_long ||
              (!m_key_short.empty() && *start == m_key_short));
 
   if (m_deprecated) {
     log::warn() << "Option " << *start << " is deprecated and will "
                 << "be removed in the future.";
-  } else if (is_deprecated) {
-    log::warn() << "Option " << *start << " is deprecated and will "
-                << "be removed in the future. Please use " << key()
-                << " instead.";
+  } else if (deprecated_alias) {
+    log::warn() << "Option " << *start << " has been renamed to " << key()
+                << ". Support for the old name will be removed in the future.";
   }
 
   if (m_times_set == 1) {

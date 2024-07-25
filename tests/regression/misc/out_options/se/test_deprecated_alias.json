@@ -19,7 +19,7 @@
     "html": ["out.html"]
   },
   "stderr": [
-    "[WARNING] Option --discarded is deprecated and will be removed in the future. Please use --out-discarded instead.",
-    "[WARNING] Option --output1 is deprecated and will be removed in the future. Please use --out-file1 instead."
+    "[WARNING] Option --discarded has been renamed to --out-discarded. Support for the old name will be removed in the future.",
+    "[WARNING] Option --output1 has been renamed to --out-file1. Support for the old name will be removed in the future."
   ]
 }
