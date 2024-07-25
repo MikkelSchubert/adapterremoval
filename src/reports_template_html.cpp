@@ -192,7 +192,16 @@ html_head::write(std::ostream& out)
   out << "\n";
   out << "        .epilogue {\n";
   out << "            padding-top: 10px;\n";
+  out << "        }\n";
   out << "\n";
+  out << "        .anchor {\n";
+  out << "            color: #104fc6;\n";
+  out << "            font-size: smaller;\n";
+  out << "            text-decoration: none;\n";
+  out << "        }\n";
+  out << "\n";
+  out << "        .anchor:hover {\n";
+  out << "            text-decoration: underline;\n";
   out << "        }\n";
   out << "    </style>\n";
   out << "</head>\n";
@@ -271,11 +280,13 @@ html_summary::write(std::ostream& out)
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "        <div class=\"section\">\n";
-  out << "            <div class=\"title\">\n";
-  out << "                <h2>Summary</h2>\n";
+  out << "            <div class=\"title\" id=\"summary\">\n";
+  out << "                <h2>Summary <a class=\"anchor\" href=\"#summary\">#</a></h2>\n";
   out << "            </div>\n";
   out << "\n";
-  out << "            <h4>Program</h4>\n";
+  out << "            <h4 id=\"summary-program\">\n";
+  out << "                Program <a class=\"anchor\" href=\"#summary-program\">#</a>\n";
+  out << "            </h4>\n";
   out << "            <table class=\"pure-table pure-table-striped summary-table\">\n";
   out << "                <tbody>\n";
   out << "                    <tr>\n";
@@ -319,6 +330,14 @@ html_summary_io::add_gc(const std::string& value)
 {
   m_gc.push_back(value);
   m_gc_is_set = true;
+  return *this;
+}
+
+html_summary_io&
+html_summary_io::set_href(const std::string& value)
+{
+  m_href = value;
+  m_href_is_set = true;
   return *this;
 }
 
@@ -384,6 +403,7 @@ html_summary_io::write(std::ostream& out)
   AR_REQUIRE(!m_written);
   AR_REQUIRE(m_columns_is_set);
   AR_REQUIRE(m_gc_is_set);
+  AR_REQUIRE(m_href_is_set);
   AR_REQUIRE(m_lengths_is_set);
   AR_REQUIRE(m_n_bases_is_set);
   AR_REQUIRE(m_n_reads_is_set);
@@ -393,7 +413,9 @@ html_summary_io::write(std::ostream& out)
   AR_REQUIRE(m_title_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
-  out << "            <h4>" << m_title << "</h4>\n";
+  out << "            <h4 id=\"" << m_href << "\">\n";
+  out << "                " << m_title << " <a class=\"anchor\" href=\"#" << m_href << "\">#</a>\n";
+  out << "            </h4>\n";
   out << "            <table class=\"pure-table io-table pure-table-striped\">\n";
   out << "                <thead>\n";
   out << "                    <tr>\n";
@@ -575,7 +597,9 @@ html_summary_trimming_head::write(std::ostream& out)
   AR_REQUIRE(!m_written);
   // clang-format off
   auto id = g_html_id++; (void)id;
-  out << "            <h4>Process summary</h4>\n";
+  out << "            <h4 id=\"summary-process\">\n";
+  out << "                Process summary <a class=\"anchor\" href=\"#summary-process\">#</a>\n";
+  out << "            </h4>\n";
   out << "            <table class=\"pure-table trimming-table pure-table-striped\">\n";
   out << "                <thead>\n";
   out << "                    <tr>\n";
@@ -782,7 +806,9 @@ html_consensus_adapter_head::write(std::ostream& out)
   AR_REQUIRE(m_pairs_with_adapters_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
-  out << "            <h4>Consensus adapter sequences</h4>\n";
+  out << "            <h4 id=\"analyses-consensus-adapter\">\n";
+  out << "                Consensus adapter sequences <a class=\"anchor\" href=\"#analyses-consensus-adapter\">#</a>\n";
+  out << "            </h4>\n";
   out << "\n";
   out << "            <p class=\"note\">\n";
   out << "                Found " << m_overlapping_pairs << " overlapping pairs of which " << m_pairs_with_adapters << " contained adapter\n";
@@ -960,7 +986,10 @@ html_consensus_adapter_kmer_head::write(std::ostream& out)
   AR_REQUIRE(m_n_kmers_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
-  out << "            <h4>Top " << m_n_kmers << " most common " << m_kmer_length << "-bp 5' adapter k-mers</h4>\n";
+  out << "            <h4 id=\"analyses-top-kmers\">\n";
+  out << "                Top " << m_n_kmers << " most common " << m_kmer_length << "-bp 5' adapter k-mers <a class=\"anchor\"\n";
+  out << "                    href=\"#analyses-top-kmers\">#</a>\n";
+  out << "            </h4>\n";
   out << "\n";
   out << "            <table class=\"pure-table kmer-table pure-table-striped\" style=\"font-family: monospace;\">\n";
   out << "                <thead>\n";
@@ -1092,6 +1121,14 @@ html_h2_tag::~html_h2_tag()
 }
 
 html_h2_tag&
+html_h2_tag::set_href(const std::string& value)
+{
+  m_href = value;
+  m_href_is_set = true;
+  return *this;
+}
+
+html_h2_tag&
 html_h2_tag::set_title(const std::string& value)
 {
   m_title = value;
@@ -1103,6 +1140,7 @@ void
 html_h2_tag::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_href_is_set);
   AR_REQUIRE(m_title_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
@@ -1110,8 +1148,71 @@ html_h2_tag::write(std::ostream& out)
   out << "\n";
   out << "        <div class=\"section\">\n";
   out << "            <div class=\"title\">\n";
-  out << "                <h2>" << m_title << "</h2>\n";
+  out << "                <h2>" << m_title << " <a class=\"anchor\" id=\"" << m_href << "\" href=\"#" << m_href << "\">#</a></h2>\n";
   out << "            </div>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_plot_title::~html_plot_title()
+{
+  AR_REQUIRE(m_written);
+}
+
+html_plot_title&
+html_plot_title::set_href(const std::string& value)
+{
+  m_href = value;
+  m_href_is_set = true;
+  return *this;
+}
+
+html_plot_title&
+html_plot_title::set_title(const std::string& value)
+{
+  m_title = value;
+  m_title_is_set = true;
+  return *this;
+}
+
+void
+html_plot_title::write(std::ostream& out)
+{
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_href_is_set);
+  AR_REQUIRE(m_title_is_set);
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "            <h4 id=\"" << m_href << "\">\n";
+  out << "                " << m_title << " <a class=\"anchor\" href=\"#" << m_href << "\">#</a>\n";
+  out << "            </h4>\n";
+  out << "\n";
+  // clang-format on
+  m_written = true;
+}
+
+html_plot_sub_title::~html_plot_sub_title()
+{
+  AR_REQUIRE(m_written);
+}
+
+html_plot_sub_title&
+html_plot_sub_title::set_sub_title(const std::string& value)
+{
+  m_sub_title = value;
+  m_sub_title_is_set = true;
+  return *this;
+}
+
+void
+html_plot_sub_title::write(std::ostream& out)
+{
+  AR_REQUIRE(!m_written);
+  AR_REQUIRE(m_sub_title_is_set);
+  // clang-format off
+  auto id = g_html_id++; (void)id;
+  out << "            <div class=\"note\">" << m_sub_title << "</div>\n";
   out << "\n";
   // clang-format on
   m_written = true;
@@ -1126,22 +1227,6 @@ html_line_plot&
 html_line_plot::set_legend(const std::string& value)
 {
   m_legend = value;
-  return *this;
-}
-
-html_line_plot&
-html_line_plot::set_sub_title(const std::string& value)
-{
-  m_sub_title = value;
-  m_sub_title_is_set = true;
-  return *this;
-}
-
-html_line_plot&
-html_line_plot::set_title(const std::string& value)
-{
-  m_title = value;
-  m_title_is_set = true;
   return *this;
 }
 
@@ -1179,15 +1264,11 @@ void
 html_line_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written);
-  AR_REQUIRE(m_sub_title_is_set);
-  AR_REQUIRE(m_title_is_set);
   AR_REQUIRE(m_values_is_set);
   AR_REQUIRE(m_width_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
-  out << "            <h4>" << m_title << "</h4>\n";
-  out << "            <div class=\"note\">" << m_sub_title << "</div>\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
   out << "            <script>\n";
@@ -1281,14 +1362,6 @@ html_facet_line_plot::set_legend(const std::string& value)
 }
 
 html_facet_line_plot&
-html_facet_line_plot::set_title(const std::string& value)
-{
-  m_title = value;
-  m_title_is_set = true;
-  return *this;
-}
-
-html_facet_line_plot&
 html_facet_line_plot::set_values(const std::string& value)
 {
   m_values = value;
@@ -1322,13 +1395,11 @@ void
 html_facet_line_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written);
-  AR_REQUIRE(m_title_is_set);
   AR_REQUIRE(m_values_is_set);
   AR_REQUIRE(m_width_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
-  out << "            <h4>" << m_title << "</h4>\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
   out << "            <script>\n";
@@ -1419,14 +1490,6 @@ html_bar_plot::~html_bar_plot()
 }
 
 html_bar_plot&
-html_bar_plot::set_title(const std::string& value)
-{
-  m_title = value;
-  m_title_is_set = true;
-  return *this;
-}
-
-html_bar_plot&
 html_bar_plot::set_values(const std::string& value)
 {
   m_values = value;
@@ -1460,13 +1523,11 @@ void
 html_bar_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written);
-  AR_REQUIRE(m_title_is_set);
   AR_REQUIRE(m_values_is_set);
   AR_REQUIRE(m_width_is_set);
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
-  out << "            <h4>" << m_title << "</h4>\n";
   out << "            <div id=\"vis_" << id << "\"></div>\n";
   out << "\n";
   out << "            <script>\n";
@@ -1517,7 +1578,9 @@ html_demultiplexing_head::write(std::ostream& out)
   // clang-format off
   auto id = g_html_id++; (void)id;
   out << "\n";
-  out << "            <h4>Per sample statistics</h4>\n";
+  out << "            <h4 id=\"demux-per-sample\">\n";
+  out << "                Per sample statistics <a class=\"anchor\" href=\"#demux-per-sample\">#</a>\n";
+  out << "            </h4>\n";
   out << "\n";
   out << "            <div class=\"fixed-height-table\">\n";
   out << "                <table class=\"pure-table pure-table-striped\">\n";
@@ -1705,7 +1768,7 @@ html_body_end::write(std::ostream& out)
   out << "    </div>\n";
   out << "</body>\n";
   out << "\n";
-  out << "</html>";
+  out << "</html>\n";
   // clang-format on
   m_written = true;
 }

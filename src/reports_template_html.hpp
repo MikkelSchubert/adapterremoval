@@ -124,6 +124,7 @@ public:
 
   html_summary_io& add_columns(const std::string& value);
   html_summary_io& add_gc(const std::string& value);
+  html_summary_io& set_href(const std::string& value);
   html_summary_io& add_lengths(const std::string& value);
   html_summary_io& add_n_bases(const std::string& value);
   html_summary_io& add_n_reads(const std::string& value);
@@ -138,6 +139,7 @@ private:
   bool m_written{};
   bool m_columns_is_set{};
   bool m_gc_is_set{};
+  bool m_href_is_set{};
   bool m_lengths_is_set{};
   bool m_n_bases_is_set{};
   bool m_n_reads_is_set{};
@@ -147,6 +149,7 @@ private:
   bool m_title_is_set{};
   string_vec m_columns{};
   string_vec m_gc{};
+  std::string m_href{};
   string_vec m_lengths{};
   string_vec m_n_bases{};
   string_vec m_n_reads{};
@@ -480,14 +483,62 @@ public:
   html_h2_tag& operator=(const html_h2_tag&) = delete;
   html_h2_tag& operator=(html_h2_tag&&) = delete;
 
+  html_h2_tag& set_href(const std::string& value);
   html_h2_tag& set_title(const std::string& value);
 
   void write(std::ostream& out) override;
 
 private:
   bool m_written{};
+  bool m_href_is_set{};
   bool m_title_is_set{};
+  std::string m_href{};
   std::string m_title{};
+};
+
+class html_plot_title : public html_template
+{
+public:
+  html_plot_title() = default;
+  ~html_plot_title() override;
+
+  html_plot_title(const html_plot_title&) = delete;
+  html_plot_title(html_plot_title&&) = delete;
+  html_plot_title& operator=(const html_plot_title&) = delete;
+  html_plot_title& operator=(html_plot_title&&) = delete;
+
+  html_plot_title& set_href(const std::string& value);
+  html_plot_title& set_title(const std::string& value);
+
+  void write(std::ostream& out) override;
+
+private:
+  bool m_written{};
+  bool m_href_is_set{};
+  bool m_title_is_set{};
+  std::string m_href{};
+  std::string m_title{};
+};
+
+class html_plot_sub_title : public html_template
+{
+public:
+  html_plot_sub_title() = default;
+  ~html_plot_sub_title() override;
+
+  html_plot_sub_title(const html_plot_sub_title&) = delete;
+  html_plot_sub_title(html_plot_sub_title&&) = delete;
+  html_plot_sub_title& operator=(const html_plot_sub_title&) = delete;
+  html_plot_sub_title& operator=(html_plot_sub_title&&) = delete;
+
+  html_plot_sub_title& set_sub_title(const std::string& value);
+
+  void write(std::ostream& out) override;
+
+private:
+  bool m_written{};
+  bool m_sub_title_is_set{};
+  std::string m_sub_title{};
 };
 
 class html_line_plot : public html_template
@@ -502,8 +553,6 @@ public:
   html_line_plot& operator=(html_line_plot&&) = delete;
 
   html_line_plot& set_legend(const std::string& value);
-  html_line_plot& set_sub_title(const std::string& value);
-  html_line_plot& set_title(const std::string& value);
   html_line_plot& set_values(const std::string& value);
   html_line_plot& set_width(const std::string& value);
   html_line_plot& set_x_axis(const std::string& value);
@@ -513,13 +562,9 @@ public:
 
 private:
   bool m_written{};
-  bool m_sub_title_is_set{};
-  bool m_title_is_set{};
   bool m_values_is_set{};
   bool m_width_is_set{};
   std::string m_legend{"{ \"title\": \"Legend\", \"padding\": 5 }"};
-  std::string m_sub_title{};
-  std::string m_title{};
   std::string m_values{};
   std::string m_width{};
   std::string m_x_axis{"null"};
@@ -538,7 +583,6 @@ public:
   html_facet_line_plot& operator=(html_facet_line_plot&&) = delete;
 
   html_facet_line_plot& set_legend(const std::string& value);
-  html_facet_line_plot& set_title(const std::string& value);
   html_facet_line_plot& set_values(const std::string& value);
   html_facet_line_plot& set_width(const std::string& value);
   html_facet_line_plot& set_x_axis(const std::string& value);
@@ -548,11 +592,9 @@ public:
 
 private:
   bool m_written{};
-  bool m_title_is_set{};
   bool m_values_is_set{};
   bool m_width_is_set{};
   std::string m_legend{"{ \"title\": \"Legend\", \"padding\": 5 }"};
-  std::string m_title{};
   std::string m_values{};
   std::string m_width{};
   std::string m_x_axis{"null"};
@@ -570,7 +612,6 @@ public:
   html_bar_plot& operator=(const html_bar_plot&) = delete;
   html_bar_plot& operator=(html_bar_plot&&) = delete;
 
-  html_bar_plot& set_title(const std::string& value);
   html_bar_plot& set_values(const std::string& value);
   html_bar_plot& set_width(const std::string& value);
   html_bar_plot& set_x_axis(const std::string& value);
@@ -580,10 +621,8 @@ public:
 
 private:
   bool m_written{};
-  bool m_title_is_set{};
   bool m_values_is_set{};
   bool m_width_is_set{};
-  std::string m_title{};
   std::string m_values{};
   std::string m_width{};
   std::string m_x_axis{"null"};

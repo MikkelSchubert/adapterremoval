@@ -138,7 +138,16 @@
 
         .epilogue {
             padding-top: 10px;
+        }
 
+        .anchor {
+            color: #104fc6;
+            font-size: smaller;
+            text-decoration: none;
+        }
+
+        .anchor:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -153,11 +162,13 @@
 
         <!-- TEMPLATE: SUMMARY -->
         <div class="section">
-            <div class="title">
-                <h2>Summary</h2>
+            <div class="title" id="summary">
+                <h2>Summary <a class="anchor" href="#summary">#</a></h2>
             </div>
 
-            <h4>Program</h4>
+            <h4 id="summary-program">
+                Program <a class="anchor" href="#summary-program">#</a>
+            </h4>
             <table class="pure-table pure-table-striped summary-table">
                 <tbody>
                     <tr>
@@ -180,7 +191,9 @@
             </table>
 
             <!-- TEMPLATE: SUMMARY_IO -->
-            <h4>{{TITLE}}</h4>
+            <h4 id="{{HREF}}">
+                {{TITLE}} <a class="anchor" href="#{{HREF}}">#</a>
+            </h4>
             <table class="pure-table io-table pure-table-striped">
                 <thead>
                     <tr>
@@ -236,7 +249,9 @@
             <p class="note"><b>{{SYMBOL}}</b> {{TEXT}}</p>
 
             <!-- TEMPLATE: SUMMARY_TRIMMING_HEAD -->
-            <h4>Process summary</h4>
+            <h4 id="summary-process">
+                Process summary <a class="anchor" href="#summary-process">#</a>
+            </h4>
             <table class="pure-table trimming-table pure-table-striped">
                 <thead>
                     <tr>
@@ -275,7 +290,9 @@
             </p>
 
             <!-- TEMPLATE: CONSENSUS_ADAPTER_HEAD -->
-            <h4>Consensus adapter sequences</h4>
+            <h4 id="analyses-consensus-adapter">
+                Consensus adapter sequences <a class="anchor" href="#analyses-consensus-adapter">#</a>
+            </h4>
 
             <p class="note">
                 Found {{OVERLAPPING_PAIRS}} overlapping pairs of which {{PAIRS_WITH_ADAPTERS}} contained adapter
@@ -317,7 +334,10 @@
             </table>
 
             <!-- TEMPLATE: CONSENSUS_ADAPTER_KMER_HEAD -->
-            <h4>Top {{N_KMERS}} most common {{KMER_LENGTH}}-bp 5' adapter k-mers</h4>
+            <h4 id="analyses-top-kmers">
+                Top {{N_KMERS}} most common {{KMER_LENGTH}}-bp 5' adapter k-mers <a class="anchor"
+                    href="#analyses-top-kmers">#</a>
+            </h4>
 
             <table class="pure-table kmer-table pure-table-striped" style="font-family: monospace;">
                 <thead>
@@ -353,13 +373,19 @@
 
         <div class="section">
             <div class="title">
-                <h2>{{TITLE}}</h2>
+                <h2>{{TITLE}} <a class="anchor" id="{{HREF}}" href="#{{HREF}}">#</a></h2>
             </div>
+
+            <!-- TEMPLATE: PLOT_TITLE -->
+            <h4 id="{{HREF}}">
+                {{TITLE}} <a class="anchor" href="#{{HREF}}">#</a>
+            </h4>
+
+            <!-- TEMPLATE: PLOT_SUB_TITLE -->
+            <div class="note">{{SUB_TITLE}}</div>
 
             <!-- TEMPLATE: LINE_PLOT -->
 
-            <h4>{{TITLE}}</h4>
-            <div class="note">{{SUB_TITLE}}</div>
             <div id="vis_{{ID}}"></div>
 
             <script>
@@ -438,7 +464,6 @@
 
             <!-- TEMPLATE: FACET_LINE_PLOT -->
 
-            <h4>{{TITLE}}</h4>
             <div id="vis_{{ID}}"></div>
 
             <script>
@@ -521,7 +546,6 @@
 
             <!-- TEMPLATE: BAR_PLOT -->
 
-            <h4>{{TITLE}}</h4>
             <div id="vis_{{ID}}"></div>
 
             <script>
@@ -558,7 +582,9 @@
 
             <!-- TEMPLATE: DEMULTIPLEXING_HEAD -->
 
-            <h4>Per sample statistics</h4>
+            <h4 id="demux-per-sample">
+                Per sample statistics <a class="anchor" href="#demux-per-sample">#</a>
+            </h4>
 
             <div class="fixed-height-table">
                 <table class="pure-table pure-table-striped">

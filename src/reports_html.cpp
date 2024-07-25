@@ -157,6 +157,8 @@ public:
     m_writer.set_title(title);
   }
 
+  void set_href(const std::string& value) { m_writer.set_href(value); }
+
   void write(std::ostream& output) { m_writer.write(output); }
 
   void add_column(const std::string& title, const fastq_statistics& stats)
@@ -336,6 +338,8 @@ write_html_summary_section(const userconfig& config,
 
       io_summary_writer summary("Input", io_summary_writer::io::input);
 
+      summary.set_href("summary-input");
+
       if (config.paired_ended_mode) {
         summary.add_column("Summary", totals);
         summary.add_column("File 1", *stats.input_1);
@@ -358,6 +362,8 @@ write_html_summary_section(const userconfig& config,
       // totals += discarded;
 
       io_summary_writer summary("Output", io_summary_writer::io::output);
+
+      summary.set_href("summary-output");
       summary.add_column("Passed*", totals);
 
       if (config.paired_ended_mode) {
@@ -390,6 +396,8 @@ write_html_summary_section(const userconfig& config,
     }
   } else if (config.run_type == ar_command::report_only) {
     io_summary_writer summary("Input summary", io_summary_writer::io::input);
+
+    summary.set_href("summary-input");
     summary.add_column("Input", *stats.input_1);
     summary.write(output);
 
@@ -398,6 +406,7 @@ write_html_summary_section(const userconfig& config,
     io_summary_writer summary("Input/Output summary",
                               io_summary_writer::io::input);
 
+    summary.set_href("summary-input-output");
     summary.add_column("Input", *stats.input_1);
     summary.add_column("Output", output_1);
     if (config.is_any_filtering_enabled()) {
@@ -668,11 +677,12 @@ write_html_processing_section(const userconfig& config,
 void
 write_html_section_title(const std::string& title, std::ostream& output)
 {
-  html_h2_tag().set_title(title).write(output);
+  html_h2_tag().set_title(title).set_href(to_lower(title)).write(output);
 }
 
 void
 write_html_io_section(const userconfig& config,
+                      const std::string& title,
                       const fastq_stats_vec& statistics,
                       const string_vec& names,
                       std::ostream& output,
@@ -680,11 +690,16 @@ write_html_io_section(const userconfig& config,
 {
   AR_REQUIRE(statistics.size() == names.size());
 
+  write_html_section_title(title, output);
+
   const char* dynamic_width =
     config.paired_ended_mode || merged ? FACET_WIDTH_2 : FACET_WIDTH_1;
 
-  html_facet_line_plot()
+  html_plot_title()
+    .set_href(to_lower(title) + "-position-qualities")
     .set_title("Position quality distribution")
+    .write(output);
+  html_facet_line_plot()
     .set_x_axis(config.is_read_merging_enabled() && merged ? "null"
                                                            : "Position"_json)
     .set_y_axis("Phred score"_json)
@@ -694,7 +709,6 @@ write_html_io_section(const userconfig& config,
 
   if (config.is_read_merging_enabled() && merged) {
     html_facet_line_plot()
-      .set_title("")
       .set_x_axis("Position"_json)
       .set_y_axis("Phred score"_json)
       .set_width(FIGURE_WIDTH)
@@ -702,8 +716,11 @@ write_html_io_section(const userconfig& config,
       .write(output);
   }
 
-  html_facet_line_plot()
+  html_plot_title()
+    .set_href(to_lower(title) + "-nucleotide-content")
     .set_title("Nucleotide content")
+    .write(output);
+  html_facet_line_plot()
     .set_x_axis(config.is_read_merging_enabled() && merged ? "null"
                                                            : "Position"_json)
     .set_y_axis("Frequency"_json)
@@ -713,7 +730,6 @@ write_html_io_section(const userconfig& config,
 
   if (config.is_read_merging_enabled() && merged) {
     html_facet_line_plot()
-      .set_title(" ")
       .set_x_axis("Position"_json)
       .set_y_axis("Frequency"_json)
       .set_width(FIGURE_WIDTH)
@@ -721,9 +737,11 @@ write_html_io_section(const userconfig& config,
       .write(output);
   }
 
-  html_line_plot()
+  html_plot_title()
+    .set_href(to_lower(title) + "-quality-scores")
     .set_title("Quality score distribution")
-    .set_sub_title("")
+    .write(output);
+  html_line_plot()
     .set_x_axis("Phred score"_json)
     .set_y_axis("Frequency"_json)
     .set_width(FIGURE_WIDTH)
@@ -740,9 +758,11 @@ write_html_io_section(const userconfig& config,
       m->f64_vec("y", statistics.at(i)->gc_content().normalize());
     }
 
-    html_line_plot()
+    html_plot_title()
+      .set_href(to_lower(title) + "-gc-content")
       .set_title("GC Content")
-      .set_sub_title("")
+      .write(output);
+    html_line_plot()
       .set_x_axis("%GC"_json)
       .set_y_axis("Frequency"_json)
       .set_width(FIGURE_WIDTH)
@@ -764,9 +784,7 @@ write_html_input_section(const userconfig& config,
     names.emplace_back("File 2");
   }
 
-  write_html_section_title("Input", output);
-
-  write_html_io_section(config, stats_vec, names, output);
+  write_html_io_section(config, "Input", stats_vec, names, output);
 }
 
 void
@@ -798,9 +816,12 @@ write_html_analyses_section(const userconfig& config,
                             stats.input_1->number_of_input_reads())
        << "% of reads";
 
-    html_line_plot()
+    html_plot_title()
+      .set_href("analyses-insert-sizes")
       .set_title("Insert-size distribution")
-      .set_sub_title(ss.str())
+      .write(output);
+    html_plot_sub_title().set_sub_title(ss.str()).write(output);
+    html_line_plot()
       .set_x_axis("Insert size"_json)
       .set_y_axis("Frequency"_json)
       .set_legend("null")
@@ -918,8 +939,11 @@ write_html_demultiplexing_section(const userconfig& config,
     }
   }
 
-  html_bar_plot()
+  html_plot_title()
+    .set_href("demux-samples")
     .set_title("Samples identified")
+    .write(output);
+  html_bar_plot()
     .set_x_axis("Samples"_json)
     .set_y_axis("Percent"_json)
     .set_width(FIGURE_WIDTH)
@@ -1029,8 +1053,7 @@ write_html_output_section(const userconfig& config,
     }
   }
 
-  write_html_section_title("Output", output);
-  write_html_io_section(config, stats_vec, names, output, merged);
+  write_html_io_section(config, "Output", stats_vec, names, output, merged);
 }
 
 } // namespace
