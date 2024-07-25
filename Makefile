@@ -214,7 +214,7 @@ everything: all test regression docs examples
 
 examples: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
-	$(QUIET) $(MAKE) -C examples EXE=$(CURDIR)/$(EXECUTABLE)
+	$(QUIET) $(MAKE) -j1 -C examples EXE=$(CURDIR)/$(EXECUTABLE)
 
 install: $(EXECUTABLE) $(MAN_PAGE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
