@@ -145,7 +145,7 @@ private:
       FILE* handle = ::fopen(filename.c_str(), mode);
 
       if (handle) {
-        AR_REQUIRE(!::ferror_unlocked(handle));
+        AR_REQUIRE(!::ferror(handle));
         return handle;
       } else if (errno == EMFILE) {
         close_one();
@@ -251,7 +251,7 @@ managed_reader::close()
 size_t
 managed_reader::read(void* buffer, size_t size)
 {
-  const auto nread = ::fread_unlocked(buffer, 1, size, m_file);
+  const auto nread = ::fread(buffer, 1, size, m_file);
   if (ferror(m_file)) {
     throw io_error("error reading " + log_escape(m_filename), errno);
   }
@@ -287,7 +287,7 @@ public:
   void write(const void* buffer, size_t size)
   {
     AR_REQUIRE(m_writer && m_writer->m_file);
-    const auto ret = ::fwrite_unlocked(buffer, 1, size, m_writer->m_file);
+    const auto ret = ::fwrite(buffer, 1, size, m_writer->m_file);
     if (ret != size) {
       throw io_error("error writing to " + log_escape(m_writer->m_filename),
                      errno);
@@ -297,7 +297,7 @@ public:
   void flush()
   {
     AR_REQUIRE(m_writer && m_writer->m_file);
-    if (::fflush_unlocked(m_writer->m_file)) {
+    if (::fflush(m_writer->m_file)) {
       throw io_error("error flushing file " + log_escape(m_writer->filename()),
                      errno);
     }
