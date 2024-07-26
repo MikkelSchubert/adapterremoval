@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "catch.hpp"
 #include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_unsigned
 #include "testing.hpp"  // for catch.hpp, StringMaker
@@ -383,6 +384,25 @@ TEST_CASE("format_percentage")
   REQUIRE(format_percentage(55, 300, 0) == "18");
   REQUIRE(format_percentage(55, 300, 1) == "18.3");
   REQUIRE(format_percentage(55, 300, 2) == "18.33");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'join_text'
+
+TEST_CASE("join_text")
+{
+  REQUIRE(join_text<std::string>({}, ", ").empty());
+  REQUIRE(join_text<std::string>({}, ", ", ", ").empty());
+
+  REQUIRE(join_text<int>({ 1 }, ", ") == "1");
+  REQUIRE(join_text<int>({ 1, 2 }, ", ") == "1, 2");
+  REQUIRE(join_text<int>({ 1, 2, 3 }, ", ") == "1, 2, 3");
+
+  REQUIRE(join_text<int>({ 1 }, ", ", ", or ") == "1");
+  REQUIRE(join_text<int>({ 1, 2 }, ", ", ", or ") == "1, or 2");
+  REQUIRE(join_text<int>({ 1, 2, 3 }, ", ", ", or ") == "1, 2, or 3");
+
+  REQUIRE(join_text<int>({ 1, 2, 3 }, ". ", ", or ") == "1. 2, or 3");
 }
 
 } // namespace adapterremoval

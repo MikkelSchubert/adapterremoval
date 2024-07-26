@@ -20,6 +20,8 @@
 
 #include <cstddef> // for size_t
 #include <cstdint> // for uint64_t
+#include <ostream> // for ostream
+#include <sstream> // for ostringstream
 #include <string>  // for string
 #include <vector>  // for vector
 
@@ -101,6 +103,35 @@ string_vec
 wrap_text(const std::string& value,
           size_t max_width = DEFAULT_MAX_COLUMNS,
           size_t ljust = 0);
+
+template<typename T>
+std::string
+join_text(const std::vector<T>& values,
+          const std::string& sep,
+          const std::string& final_sep)
+{
+  std::ostringstream stream;
+  for (auto it = values.begin(); it != values.end(); ++it) {
+    if (it != values.begin()) {
+      if (it + 1 == values.end()) {
+        stream << final_sep;
+      } else {
+        stream << sep;
+      }
+    }
+
+    stream << *it;
+  }
+
+  return stream.str();
+}
+
+template<typename T>
+std::string
+join_text(const std::vector<T>& values, const std::string& sep)
+{
+  return join_text(values, sep, sep);
+}
 
 /**
  * Wrapper around 'indent_lines' and 'wrap_text'.

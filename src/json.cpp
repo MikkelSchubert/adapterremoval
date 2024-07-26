@@ -17,12 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "json.hpp"
-#include "debug.hpp" // for AR_REQUIRE
-#include <algorithm> // for max, find
-#include <cmath>     // for isinf, isnan
-#include <memory>    // for make_shared, __shared_ptr_access, shar...
-#include <sstream>   // for ostringstream
-#include <utility>   // for pair
+#include "debug.hpp"    // for AR_REQUIRE
+#include "strutils.hpp" // for join_text
+#include <algorithm>    // for max, find
+#include <cmath>        // for isinf, isnan
+#include <memory>       // for make_shared, __shared_ptr_access, shar...
+#include <sstream>      // for ostringstream
+#include <utility>      // for pair
 
 namespace adapterremoval {
 
@@ -184,15 +185,7 @@ json_ptr
 json_token::from_raw_vec(const string_vec& values)
 {
   std::ostringstream ss;
-  ss << "[";
-  for (size_t i = 0; i < values.size(); ++i) {
-    if (i) {
-      ss << ", ";
-    }
-
-    ss << values.at(i);
-  }
-  ss << "]";
+  ss << "[" << join_text(values, ", ") << "]";
 
   return std::make_shared<json_token>(ss.str());
 }

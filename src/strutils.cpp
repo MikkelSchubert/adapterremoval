@@ -47,18 +47,6 @@ indent(string_vec lines, size_t n_indent, bool indent_first)
   return lines;
 }
 
-void
-join(std::ostringstream& lines_out, string_vec lines)
-{
-  for (auto it = lines.begin(); it != lines.end(); ++it) {
-    if (it != lines.begin()) {
-      lines_out << "\n";
-    }
-
-    lines_out << *it;
-  }
-}
-
 } // namespace
 
 size_t
@@ -195,10 +183,7 @@ split_lines(const std::string& text)
 std::string
 indent_lines(const std::string& lines, size_t indentation)
 {
-  std::ostringstream lines_out;
-  join(lines_out, indent(split_lines(lines), indentation, true));
-
-  return lines_out.str();
+  return join_text(indent(split_lines(lines), indentation, true), "\n");
 }
 
 string_vec
@@ -282,7 +267,7 @@ cli_formatter::format(const std::string& value) const
   for (const auto& line : split_lines(value)) {
     const auto block = wrap_text(line, m_columns, m_ljust);
 
-    join(lines_out, indent(block, m_indentation, m_indent_first));
+    lines_out << join_text(indent(block, m_indentation, m_indent_first), "\n");
   }
 
   return lines_out.str();

@@ -442,17 +442,7 @@ argument::help() const
 
   const auto choices = m_sink->choices();
   if (!choices.empty()) {
-    ss << ". Possible values are ";
-
-    for (size_t i = 0; i < choices.size(); ++i) {
-      if (i && i == choices.size() - 1) {
-        ss << ", and ";
-      } else if (i) {
-        ss << ", ";
-      }
-
-      ss << choices.at(i);
-    }
+    ss << ". Possible values are " << join_text(choices, ", ", ", and ");
   }
 
   if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
