@@ -253,26 +253,26 @@ test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)
 	$(QUIET) $(TEST_RUNNER) --invisibles --use-colour $(COLOR)
 
-coverage: test
+coverage:
 ifeq ($(strip ${COVERAGE}), yes)
 ifneq ($(shell which gcovr), )
+	$(MAKE) test
 	@echo $(COLOR_GREEN)"Running coverage analysis"$(COLOR_END)
 	$(QUIET) mkdir -p "$(COV_DIR)"
 	$(QUIET) gcovr \
 		--txt $(COV_DIR)/index.txt \
 		--xml $(COV_DIR)/coverage.xml \
-		--exclude-throw-branches \
 		--exclude-lines-by-pattern ".*\\sREQUIRE[_A-Z]*\\(.*" \
 		--sort-percentage \
+		--exclude src/robin_hood.hpp \
 		--exclude tests/unit/catch.hpp  \
-		--branch \
 		--delete
 	$(QUIET) cat "$(COV_DIR)/index.txt"
 else
 	$(error Cannot analyse coverage: gcovr not found)
 endif
 else
-	$(error Cannot analyse coverage: tests not compiled with coverage support)
+	$(MAKE) coverage COVERAGE=yes
 endif
 
 $(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
