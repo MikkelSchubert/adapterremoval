@@ -3,6 +3,8 @@
   "arguments": [
     "--basename",
     "your_output",
+    "--out-discarded",
+    "your_output",
     "--barcode-list",
     "barcodes.txt",
     "--interleaved-output"

@@ -9,7 +9,6 @@
       "input_1.fastq"
     ],
     "output": [
-      "alternative.discarded.fastq",
       "alternative.r1.fastq"
     ],
     "json": [

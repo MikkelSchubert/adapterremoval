@@ -12,7 +12,6 @@
       "input_1.fastq"
     ],
     "output": [
-      "output_4.discarded.fastq",
       "output_4.r1.fastq"
     ],
     "ignore": [

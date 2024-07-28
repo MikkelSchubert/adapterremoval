@@ -16,7 +16,6 @@
     ],
     "output": [
       "interleaved.fastq",
-      "your_output.discarded.fastq",
       "your_output.singleton.fastq"
     ],
     "json": [

@@ -1,7 +1,9 @@
 {
   "arguments": [
     "--basename",
-    "your_output"
+    "your_output",
+    "--out-discarded",
+    "your_output.discarded.fastq"
   ],
   "files": {
     "input_1": [

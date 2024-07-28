@@ -252,13 +252,20 @@ def classname(v: object) -> str:
 
 ################################################################################
 
+
+def _is_str_list(value: object) -> bool:
+    return isinstance(value, list) and all(
+        isinstance(v, str) for v in cast(List[object], value)
+    )
+
+
 # Wildcards with (limited) type checking
 JSON_WILDCARDS: dict[str, Callable[[object], bool]] = {
     "...": lambda _: True,
     "...str": lambda it: isinstance(it, str),
     "...float": lambda it: isinstance(it, float) and not math.isnan(it),
-    "...[str]": lambda it: isinstance(it, list)
-    and all(isinstance(v, str) for v in cast(List[object], it)),
+    "...[str]": _is_str_list,
+    "...[str] | None": lambda it: it is None or _is_str_list(it),
 }
 
 # JSON path elements that do not require quoting
@@ -540,7 +547,7 @@ class TestJsonFile(TestFile):
                 data = dict(data)
                 for key, value in data.items():
                     if key == "filenames":
-                        data[key] = "...[str]"
+                        data[key] = "...[str] | None"
                     else:
                         new_value = _mask_filenames(value)
                         if new_value is not value:

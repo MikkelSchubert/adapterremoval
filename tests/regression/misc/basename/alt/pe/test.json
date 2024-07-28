@@ -13,7 +13,6 @@
       "input_2.fastq"
     ],
     "output": [
-      "alternative.discarded.fastq",
       "alternative.merged.fastq",
       "alternative.r1.fastq",
       "alternative.r2.fastq",

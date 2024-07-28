@@ -14,7 +14,6 @@
       "input_2.fastq"
     ],
     "output": [
-      "output_3.discarded.fastq",
       "output_3.r1.fastq",
       "output_3.r2.fastq",
       "output_3.singleton.fastq"

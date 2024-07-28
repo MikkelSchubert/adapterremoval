@@ -3,6 +3,8 @@
   "arguments": [
     "--basename",
     "your_output",
+    "--out-discarded",
+    "your_output.discarded.fastq",
     "--maxlength",
     "49"
   ],

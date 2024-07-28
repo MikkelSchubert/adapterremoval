@@ -5,6 +5,8 @@
     "barcodes.txt",
     "--basename",
     "your_output",
+    "--out-discarded",
+    "your_output",
     "--prefix-read1",
     "R1_",
     "--minlength",

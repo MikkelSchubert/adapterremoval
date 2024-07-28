@@ -2,6 +2,8 @@
   "arguments": [
     "--basename",
     "your_output",
+    "--out-discarded",
+    "your_output.discarded.fastq",
     "--trim-strategy",
     "window",
     "--trimwindows",

@@ -118,7 +118,7 @@
     "unidentified_2": null,
     "singleton": null,
     "discarded": {
-      "filenames": ["your_output.discarded.fastq"],
+      "filenames": null,
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,

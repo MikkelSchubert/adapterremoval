@@ -1,0 +1,52 @@
+{
+  "description": "Demultiplexing, trimming, and merging of PE reads with custom basenames",
+  "exhaustive": true,
+  "arguments": [
+    "--basename",
+    "basename_1",
+    "--out-discarded",
+    "basename_2",
+    "--out-merged",
+    "basename_3",
+    "--out-singleton",
+    "basename_4",
+    "--out-file1",
+    "basename_5",
+    "--out-file2",
+    "basename_6",
+    "--barcode-list",
+    "barcodes.txt",
+    "--merge"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "basename_1.unidentified.r1.fastq",
+      "basename_1.unidentified.r2.fastq",
+      "basename_2.sample_1.discarded.fastq",
+      "basename_2.sample_2.discarded.fastq",
+      "basename_3.sample_1.merged.fastq",
+      "basename_3.sample_2.merged.fastq",
+      "basename_4.sample_1.singleton.fastq",
+      "basename_4.sample_2.singleton.fastq",
+      "basename_5.sample_1.r1.fastq",
+      "basename_5.sample_2.r1.fastq",
+      "basename_6.sample_1.r2.fastq",
+      "basename_6.sample_2.r2.fastq"
+    ],
+    "json": [
+      "basename_1.json"
+    ],
+    "html": [
+      "basename_1.html"
+    ]
+  }
+}

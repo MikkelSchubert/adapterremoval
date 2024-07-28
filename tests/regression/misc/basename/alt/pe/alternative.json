@@ -171,7 +171,7 @@
       "gc_content": null
     },
     "discarded": {
-      "filenames": ["alternative.discarded.fastq"],
+      "filenames": null,
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,

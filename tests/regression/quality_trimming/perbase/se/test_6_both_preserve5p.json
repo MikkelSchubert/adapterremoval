@@ -13,7 +13,6 @@
       "input_1.fastq"
     ],
     "output": [
-      "output_6.discarded.fastq",
       "output_6.r1.fastq"
     ],
     "ignore": [
