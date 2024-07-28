@@ -1,27 +1,7 @@
 {
+  "inherit_from": "test_defaults.json",
   "arguments": [
     "--threads",
     "3"
-  ],
-  "files": {
-    "input_1": [
-      "input_1.fastq"
-    ],
-    "barcodes": [
-      "barcodes.txt"
-    ],
-    "output": [
-      "your_output.sample_1.discarded.fastq",
-      "your_output.sample_1.r1.fastq",
-      "your_output.sample_2.discarded.fastq",
-      "your_output.sample_2.r1.fastq",
-      "your_output.unidentified.r1.fastq"
-    ],
-    "json": [
-      "your_output.json"
-    ],
-    "html": [
-      "your_output.html"
-    ]
-  }
+  ]
 }

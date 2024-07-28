@@ -1,4 +1,6 @@
 {
+  "description": "Demultiplexing of double-indexed SE reads using 1-3 threads",
+  "exhaustive": true,
   "arguments": [],
   "files": {
     "input_1": [

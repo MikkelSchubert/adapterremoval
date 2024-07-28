@@ -1,4 +1,5 @@
 {
+  "description": "Processing PE reads using explicitly specified non-standard mate separator",
   "arguments": [
     "--mate-separator",
     "."

@@ -585,6 +585,17 @@ class TestConfig(NamedTuple):
     ) -> TestConfig:
         root = filepath.parent
         _, data = read_json(filepath)
+        assert isinstance(data, dict)
+
+        while True:
+            inherit_from = json_pop_optional_str(data, ("inherit_from",))
+            if inherit_from is not None:
+                _, template = read_json(filepath.parent / inherit_from)
+                assert isinstance(template, dict)
+                template.update(data)
+                data = template
+            else:
+                break
 
         files = json_pop_dict(data, ("files",))
         test_files: list[TestFile] = []

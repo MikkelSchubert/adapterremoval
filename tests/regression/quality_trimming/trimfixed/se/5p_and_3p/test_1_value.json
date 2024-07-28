@@ -1,4 +1,5 @@
 {
+  "description": "Trimming 5p and 3p ends of SE reads",
   "arguments": [
     "--trim5p",
     "4",
