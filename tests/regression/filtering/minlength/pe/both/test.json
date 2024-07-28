@@ -1,4 +1,5 @@
 {
+  "description": "Filtering reads by minimum length, excluding both mate reads",
   "arguments": [
     "--minlength",
     "50"

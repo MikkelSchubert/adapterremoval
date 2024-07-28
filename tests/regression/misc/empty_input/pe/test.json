@@ -1,4 +1,5 @@
 {
+  "description": "Trimming of empty FASTQ files (SE)",
   "exhaustive": true,
   "arguments": [],
   "files": {

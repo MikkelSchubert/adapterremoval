@@ -1,4 +1,5 @@
 {
+  "description": "Processing SE reads using --head; reference run with all reads",
   "arguments": [
     "--report-only",
     "--out-json",

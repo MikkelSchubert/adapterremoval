@@ -1,4 +1,5 @@
 {
+  "description": "Filtering reads by maximum length, generating orphan mate 1 read",
   "arguments": [
     "--maxlength",
     "49"

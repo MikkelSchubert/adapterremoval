@@ -1,4 +1,5 @@
 {
+  "description": "Filtering reads by minimum length, generating orphan mate 2 read",
   "arguments": [
     "--minlength",
     "50"

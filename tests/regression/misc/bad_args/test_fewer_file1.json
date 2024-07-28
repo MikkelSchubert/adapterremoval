@@ -1,4 +1,5 @@
 {
+  "description": "The same number of input files must be specified for both --file1 and --file2",
   "exhaustive": false,
   "arguments": [],
   "return_code": 1,

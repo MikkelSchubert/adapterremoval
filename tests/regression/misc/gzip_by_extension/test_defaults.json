@@ -1,4 +1,5 @@
 {
+  "description": "Compression of output files based on the extension",
   "arguments": [
     "--out-discarded",
     "your_output.discarded.fastq.gz",

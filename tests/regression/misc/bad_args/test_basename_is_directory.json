@@ -1,4 +1,5 @@
 {
+  "description": "Basename must not be a directory, to prevent the creation of dot files",
   "exhaustive": false,
   "arguments": [
     "--basename",

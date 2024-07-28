@@ -1,4 +1,5 @@
 {
+  "description": "Processing 0 SE reads using --head",
   "arguments": [
     "--report-only",
     "--out-json",

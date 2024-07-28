@@ -1,4 +1,5 @@
 {
+  "description": "Filtering reads by maximum length excluding both mate reads",
   "arguments": [
     "--maxlength",
     "49"
