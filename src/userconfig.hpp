@@ -135,21 +135,6 @@ public:
   string_vec input_files_2{};
   //! Prefix used for output files for which no filename was explicitly set
   std::string out_basename{};
-  //! Template filename used for writing JSON report
-  std::string out_json{};
-  //! Template filename used for writing HTML report
-  std::string out_html{};
-  //! Template filename used for writing mate 1 reads
-  std::string out_pair_1{};
-  //! Template filename used for writing mate 2 reads
-  std::string out_pair_2{};
-  //! Template filename used for writing merged mate 1/2 reads
-  std::string out_merged{};
-  //! Template filename used for writing discarded reads
-  std::string out_discarded{};
-  //! FIXME: Support both .1 and .2
-  //! Template filename used for writing singleton reads
-  std::string out_singleton{};
 
   //! Name prefix for mate 1 reads
   std::string prefix_read_1{};
@@ -264,6 +249,7 @@ public:
 
   /* Helper functions for logging / reporting */
   bool is_adapter_trimming_enabled() const;
+  bool is_demultiplexing_enabled() const;
   bool is_read_merging_enabled() const;
 
   bool is_any_quality_trimming_enabled() const;

@@ -64,9 +64,7 @@ const char* HELPTEXT =
   "filenames are used for --file1 and --file2 then those files are read in\n"
   "interleaved mode. If the same filename is used for two or more of the\n"
   "--out options (excluding --out-json and --out-html), then output is\n"
-  "written to that file in interleaved mode. Use the filename '/dev/null'\n"
-  "with --out options to disable the generation of undesirable output files\n"
-  "or use '--basename /dev/null' to disable all output by default.\n";
+  "written to that file in interleaved mode.";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -483,55 +481,78 @@ userconfig::userconfig()
   argparser.add_header("OUTPUT FILES:");
 
   argparser.add("--basename", "PREFIX")
-    .help("Prefix for output files for which no filename was explicitly set")
+    .help("Prefix for output files for which the corresponding --out option "
+          "was not set [default: not set]")
     .bind_str(&out_basename)
     .with_default("/dev/null");
 
   argparser.add_separator();
   argparser.add("--out-file1", "FILE")
-    .help("Output file containing trimmed mate 1 reads")
+    .help("Output file containing trimmed mate 1 reads. Setting this value in "
+          "in demultiplexing mode overrides --basename for this file")
     .deprecated_alias("--output1")
-    .bind_str(&out_pair_1)
+    .bind_str(nullptr)
     .with_default("{basename}[.sample].r1.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-file2", "FILE")
-    .help("Output file containing trimmed mate 2 reads")
+    .help("Output file containing trimmed mate 2 reads. Setting this value in "
+          "in demultiplexing mode overrides --basename for this file")
     .deprecated_alias("--output2")
-    .bind_str(&out_pair_2)
+    .bind_str(nullptr)
     .with_default("{basename}[.sample].r2.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-merged", "FILE")
     .help("Output file that, if --merge is set, contains overlapping "
-          "read-pairs that have been merged into a single read (PE mode only)")
+          "read-pairs that have been merged into a single read (PE mode only). "
+          "Setting this value in demultiplexing mode overrides --basename for "
+          "this file")
     .deprecated_alias("--outputcollapsed")
-    .bind_str(&out_merged)
+    .bind_str(nullptr)
     .with_default("{basename}[.sample].merged.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-singleton", "FILE")
     .help("Output file containing paired reads for which the mate "
           "has been discarded. This file is only created if filtering is "
-          "enabled")
+          "enabled. Setting this value in demultiplexing mode overrides "
+          "-- for this filebasename")
     .deprecated_alias("--singleton")
-    .bind_str(&out_singleton)
+    .bind_str(nullptr)
     .with_default("{basename}[.sample].singleton.fastq")
     .with_preprocessor(normalize_output_file);
-  argparser.add("--out-discarded", "FILE")
-    .help("Output file containing filtered reads, if filtering is enabled")
-    .deprecated_alias("--discarded")
-    .bind_str(&out_discarded)
-    .with_default("{basename}[.sample].discarded.fastq")
+
+  argparser.add_separator();
+  argparser.add("--out-unidentified1", "FILE")
+    .help("In demultiplexing mode, contains mate 1 reads that could not be "
+          "assigned to a single sample")
+    .bind_str(nullptr)
+    .with_default("{basename}.unidentified.r1.fastq")
     .with_preprocessor(normalize_output_file);
+  argparser.add("--out-unidentified2", "FILE")
+    .help("In demultiplexing mode, contains mate 2 reads that could not be "
+          "assigned to a single sample")
+    .bind_str(nullptr)
+    .with_default("{basename}.unidentified.r2.fastq")
+    .with_preprocessor(normalize_output_file);
+  argparser.add("--out-discarded", "FILE")
+    .help("Output file containing filtered reads. Setting this value in "
+          "demultiplexing mode overrides --basename for this file [default: "
+          "not saved]")
+    .deprecated_alias("--discarded")
+    .bind_str(nullptr)
+    .with_preprocessor(normalize_output_file);
+
+  argparser.add_separator();
   argparser.add("--out-json", "FILE")
     .help("Output file containing statistics about input files, trimming, "
           "merging, and more in JSON format")
-    .bind_str(&out_json)
-    .with_default("{basename}[.sample].json")
+    .bind_str(nullptr)
+    .with_default("{basename}.json")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-html", "FILE")
     .help("Output file containing statistics about input files, trimming, "
           "merging, and more in HTML format")
-    .bind_str(&out_html)
-    .with_default("{basename}[.sample].html")
+    .bind_str(nullptr)
+    .with_default("{basename}.html")
     .with_preprocessor(normalize_output_file);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1101,14 +1122,27 @@ userconfig::parse_args(const string_vec& argvec)
 
     return argparse::parse_result::error;
   } else if (out_basename == DEV_NULL) {
+    // Relevant output options depend on input files and other settings
+    const std::vector<std::pair<std::string, bool>> output_keys = {
+      { "--out-file1",
+        is_adapter_trimming_enabled() || is_demultiplexing_enabled() },
+      { "--out-file2",
+        is_adapter_trimming_enabled() || is_demultiplexing_enabled() },
+      { "--out-singleton", is_any_filtering_enabled() },
+      { "--out-merged", is_read_merging_enabled() },
+      { "--out-discarded", is_any_filtering_enabled() },
+      { "--out-unidentified1", is_demultiplexing_enabled() },
+      { "--out-unidentified2", is_demultiplexing_enabled() },
+      { "--out-json", true },
+      { "--out-html", true },
+      { "--basename", true },
+    };
+
     string_vec required_keys;
-    if (run_type == ar_command::report_only || adapters.barcode_count()) {
-      required_keys = { "--out-json", "--out-html", "--basename" };
-    } else {
-      required_keys = {
-        "--out-file1",     "--out-file2", "--out-singleton", "--out-merged",
-        "--out-discarded", "--out-json",  "--out-html",      "--basename",
-      };
+    for (const auto& it : output_keys) {
+      if (it.second) {
+        required_keys.push_back(it.first);
+      }
     }
 
     const auto user_keys = user_supplied_keys(argparser, required_keys);
@@ -1117,31 +1151,7 @@ userconfig::parse_args(const string_vec& argvec)
       error << "No output would be generated; at least one of the options "
             << join_text(required_keys, ", ", ", or ")
             << " must be used. The --basename option automatically enables all "
-               "--out options.";
-
-      return argparse::parse_result::error;
-    }
-  }
-
-  if (adapters.barcode_count()) {
-    const string_vec illegal_keys = { "--out-file1",
-                                      "--out-file2",
-                                      "--out-singleton",
-                                      "--out-merged",
-                                      "--out-discarded" };
-    string_vec illegal_keys_used;
-    for (const auto& key : illegal_keys) {
-      if (argparser.is_set(key) && argparser.value(key) != DEV_NULL) {
-        illegal_keys_used.push_back(key);
-      }
-    }
-
-    if (!illegal_keys_used.empty()) {
-      auto error = log::error();
-      error << "When demultiplexing, command-line option(s) "
-            << join_text(illegal_keys_used, ", ", ", and ")
-            << " can only be set to '/dev/null'. Use --basename to set the "
-               "base filename for demultiplexed reads.";
+               "relevant --out options.";
 
       return argparse::parse_result::error;
     }
@@ -1221,14 +1231,16 @@ userconfig::get_output_filenames() const
   const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
   const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
 
-  files.unidentified_1 = new_filename("--out-file1", { ".unidentified", out1 });
-  files.unidentified_2 = new_filename("--out-file2", { ".unidentified", out2 });
+  files.unidentified_1 =
+    new_filename("--out-unidentified1", { ".unidentified", out1 });
+  files.unidentified_2 =
+    new_filename("--out-unidentified2", { ".unidentified", out2 });
 
-  const bool demultiplexing = adapters.barcode_count();
   files.samples.resize(adapters.adapter_set_count());
 
   for (size_t i = 0; i < files.samples.size(); ++i) {
-    const auto sample = demultiplexing ? adapters.get_sample_name(i) : "";
+    const auto sample =
+      is_demultiplexing_enabled() ? adapters.get_sample_name(i) : "";
     auto& map = files.samples.at(i);
 
     const auto mate_1_filename = new_filename("--out-file1", { sample, out1 });
@@ -1272,14 +1284,19 @@ userconfig::get_output_filenames() const
 std::string
 userconfig::new_filename(const std::string& key, const string_vec& values) const
 {
+  std::string out;
   if (argparser.is_set(key)) {
-    return argparser.value(key);
-  } else if (out_basename == DEV_NULL) {
-    // Special case to allow dry runs with no output
+    if (!is_demultiplexing_enabled()) {
+      return argparser.value(key);
+    }
+
+    out = argparser.value(key);
+  } else if (out_basename == DEV_NULL || key == "--out-discarded") {
     return DEV_NULL;
+  } else {
+    out = out_basename;
   }
 
-  std::string out = out_basename;
   for (const auto& value : values) {
     if (!value.empty() && value.front() != '.') {
       out.push_back('.');
@@ -1315,6 +1332,12 @@ bool
 userconfig::is_adapter_trimming_enabled() const
 {
   return run_type == ar_command::trim_adapters;
+}
+
+bool
+userconfig::is_demultiplexing_enabled() const
+{
+  return adapters.barcode_count();
 }
 
 bool
