@@ -390,6 +390,19 @@ def json_pop_dict(data: JSON, path: tuple[str, ...]) -> dict[str, JSON]:
     raise TestError(f"expected dict at {path_to_s(path)}, found {value!r}")
 
 
+def json_pop_optional_str(
+    data: JSON,
+    path: tuple[str, ...],
+    *,
+    default: JSON = None,
+) -> str | None:
+    value = json_pop_value(data, path, default)
+    if value is None or isinstance(value, str):
+        return value
+
+    raise TestError(f"expected string or null at {path_to_s(path)}, found {value!r}")
+
+
 def json_pop_tuple_of_str(
     data: JSON,
     path: tuple[str, ...],
@@ -551,6 +564,7 @@ class TestMiscFile(TestFile):
 
 
 class TestConfig(NamedTuple):
+    description: str | None
     path: Path
     name: tuple[str, ...]
     variant: tuple[str, ...]
@@ -589,6 +603,7 @@ class TestConfig(NamedTuple):
             raise TestError(f"Unexpected files: {files}")
 
         self = TestConfig(
+            description=json_pop_optional_str(data, ("description",)),
             path=filepath,
             name=name,
             variant=(),
@@ -805,6 +820,10 @@ class TestRunner:
         self._exp_path = self.path / "expected"
 
     @property
+    def description(self) -> str | None:
+        return self._test.description
+
+    @property
     def spec_path(self) -> Path:
         return self._test.path
 
@@ -944,6 +963,10 @@ class TestUpdater:
         self.spec_path = test.path
         self.skip = test.skip or test.return_code or not test.files
         self._test = test
+
+    @property
+    def description(self) -> str | None:
+        return self._test.description
 
     @property
     def command(self) -> list[str | Path]:
@@ -1300,6 +1323,8 @@ def main(argv: list[str]) -> int:
                 n_failures += 1
                 assert last_test is not None
                 print_err(f"\nTest {last_test.name} failed:")
+                if last_test.description is not None:
+                    print_err(f"  Description   = {last_test.description}")
                 print_err(f"  Specification = {last_test.spec_path}")
                 print_err(f"  Directory     = {last_test.path}")
                 print_err(f"  Command       = {cmd_to_s(last_test.command)}")
