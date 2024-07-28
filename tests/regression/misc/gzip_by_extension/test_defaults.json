@@ -1,6 +1,8 @@
 {
   "description": "Compression of output files based on the extension",
   "arguments": [
+    "--basename",
+    "your_output",
     "--out-discarded",
     "your_output.discarded.fastq.gz",
     "--out-file2",

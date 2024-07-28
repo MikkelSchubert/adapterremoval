@@ -1,5 +1,8 @@
 {
-  "arguments": [],
+  "arguments": [
+    "--basename",
+    "your_output"
+  ],
   "return_code": 1,
   "stderr": [
     "Found unequal number of mate 1 and mate 2 reads"

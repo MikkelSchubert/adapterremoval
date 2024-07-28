@@ -1,6 +1,8 @@
 {
   "description": "Discarded files should not be created when demultiplexing if no filtering is enabled",
   "arguments": [
+    "--basename",
+    "your_output",
     "--barcode-list",
     "barcodes.txt",
     "--minlength",

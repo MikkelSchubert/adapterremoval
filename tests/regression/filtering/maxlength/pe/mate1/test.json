@@ -1,6 +1,8 @@
 {
   "description": "Filtering reads by maximum length, generating orphan mate 2 read",
   "arguments": [
+    "--basename",
+    "your_output",
     "--maxlength",
     "49"
   ],

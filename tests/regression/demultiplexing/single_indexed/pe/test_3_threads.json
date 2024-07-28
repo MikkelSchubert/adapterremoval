@@ -1,6 +1,8 @@
 {
   "inherit_from": "test_defaults.json",
   "arguments": [
+    "--basename",
+    "your_output",
     "--barcode-list",
     "barcodes.txt",
     "--threads",

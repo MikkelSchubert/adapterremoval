@@ -320,13 +320,8 @@ try_parse_argument(const string_vec& args,
 
 /** Returns vector of keys for output files that have been set by the user. */
 string_vec
-output_files_set(const argparse::parser& argparser)
+user_supplied_keys(const argparse::parser& argparser, const string_vec& keys)
 {
-  const string_vec keys = {
-    "--out-json",      "--out-html",   "--out-file1",     "--out-file2",
-    "--out-singleton", "--out-merged", "--out-discarded",
-  };
-
   string_vec result;
   for (const auto& key : keys) {
     if (argparser.is_set(key)) {
@@ -489,14 +484,8 @@ userconfig::userconfig()
 
   argparser.add("--basename", "PREFIX")
     .help("Prefix for output files for which no filename was explicitly set")
-    .conflicts_with("--no-basename")
     .bind_str(&out_basename)
-    .with_default("your_output");
-  argparser.add("--no-basename")
-    .help("No default filenames for output files; instead only files specified "
-          "with --out options are written. Cannot be used when demultiplexing")
-    .conflicts_with("--barcode-list")
-    .conflicts_with("--basename");
+    .with_default("/dev/null");
 
   argparser.add_separator();
   argparser.add("--out-file1", "FILE")
@@ -1101,11 +1090,8 @@ userconfig::parse_args(const string_vec& argvec)
     }
   }
 
-  // Required since a missing filename part results in the creation of
-  // dot-files
-  if (argparser.is_set("--no-basename")) {
-    out_basename = DEV_NULL;
-  } else if (out_basename.empty()) {
+  // An empty basename or directory would results in the creation of dot-files
+  if (out_basename.empty()) {
     log::error() << "--basename must be a non-empty value.";
 
     return argparse::parse_result::error;
@@ -1114,19 +1100,49 @@ userconfig::parse_args(const string_vec& argvec)
                  << shell_escape(out_basename);
 
     return argparse::parse_result::error;
+  } else if (out_basename == DEV_NULL) {
+    string_vec required_keys;
+    if (run_type == ar_command::report_only || adapters.barcode_count()) {
+      required_keys = { "--out-json", "--out-html", "--basename" };
+    } else {
+      required_keys = {
+        "--out-file1",     "--out-file2", "--out-singleton", "--out-merged",
+        "--out-discarded", "--out-json",  "--out-html",      "--basename",
+      };
+    }
+
+    const auto user_keys = user_supplied_keys(argparser, required_keys);
+    if (user_keys.empty()) {
+      auto error = log::error();
+      error << "No output would be generated; at least one of the options "
+            << join_text(required_keys, ", ", ", or ")
+            << " must be used. The --basename option automatically enables all "
+               "--out options.";
+
+      return argparse::parse_result::error;
+    }
   }
 
   if (adapters.barcode_count()) {
-    bool any_illegal_keys = false;
-    for (const auto& key : output_files_set(argparser)) {
-      if (argparser.value(key) != DEV_NULL) {
-        log::error() << "Command-line option " << key << " can only be set to "
-                     << "/dev/null when demultiplexing!";
-        any_illegal_keys = true;
+    const string_vec illegal_keys = { "--out-file1",
+                                      "--out-file2",
+                                      "--out-singleton",
+                                      "--out-merged",
+                                      "--out-discarded" };
+    string_vec illegal_keys_used;
+    for (const auto& key : illegal_keys) {
+      if (argparser.is_set(key) && argparser.value(key) != DEV_NULL) {
+        illegal_keys_used.push_back(key);
       }
     }
 
-    if (any_illegal_keys) {
+    if (!illegal_keys_used.empty()) {
+      auto error = log::error();
+      error << "When demultiplexing, command-line option(s) "
+            << join_text(illegal_keys_used, ", ", ", and ")
+            << " can only be set to '/dev/null'. Use --basename to set the "
+               "base filename for demultiplexed reads.";
+
       return argparse::parse_result::error;
     }
   }

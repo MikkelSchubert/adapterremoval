@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--basename",
+    "your_output",
     "--report-only"
   ],
   "return_code": 1,

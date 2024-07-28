@@ -2,6 +2,8 @@
   "description": "Trimming 5p and 3p ends of SE reads; second argument has no effect on mate 1 reads",
   "inherit_from": "test_1_value.json",
   "arguments": [
+    "--basename",
+    "your_output",
     "--trim5p",
     "4",
     "3",

@@ -1,6 +1,8 @@
 {
   "description": "Demultiplexing of PE reads with interleaved output",
   "arguments": [
+    "--basename",
+    "your_output",
     "--barcode-list",
     "barcodes.txt",
     "--interleaved-output"

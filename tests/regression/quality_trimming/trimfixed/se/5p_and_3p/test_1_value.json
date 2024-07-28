@@ -1,6 +1,8 @@
 {
   "description": "Trimming 5p and 3p ends of SE reads",
   "arguments": [
+    "--basename",
+    "your_output",
     "--trim5p",
     "4",
     "--trim3p",

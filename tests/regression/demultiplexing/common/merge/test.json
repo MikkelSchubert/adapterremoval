@@ -2,6 +2,8 @@
   "description": "Demultiplexing, trimming, and merging of PE reads",
   "exhaustive": true,
   "arguments": [
+    "--basename",
+    "your_output",
     "--barcode-list",
     "barcodes.txt",
     "--merge"

@@ -1,6 +1,8 @@
 {
   "description": "The barcode list not being found should be handled gracefully",
   "arguments": [
+    "--basename",
+    "your_output",
     "--barcode-list",
     "not_found.txt",
     "--file1",

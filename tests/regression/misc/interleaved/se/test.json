@@ -1,6 +1,8 @@
 {
   "exhaustive": false,
   "arguments": [
+    "--basename",
+    "your_output",
     "--interleaved-output",
     "--out-file1",
     "interleaved.fastq"

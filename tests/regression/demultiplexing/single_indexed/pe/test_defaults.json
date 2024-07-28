@@ -2,6 +2,8 @@
   "description": "Demultiplexing of single-indexed PE reads using 1-3 threads",
   "exhaustive": true,
   "arguments": [
+    "--basename",
+    "your_output",
     "--barcode-list",
     "barcodes.txt"
   ],

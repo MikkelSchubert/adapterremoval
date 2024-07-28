@@ -1,7 +1,10 @@
 {
   "description": "Trimming of empty FASTQ files (SE)",
   "exhaustive": true,
-  "arguments": [],
+  "arguments": [
+    "--basename",
+    "your_output"
+  ],
   "files": {
     "input_1": [
       "input_1.fastq"

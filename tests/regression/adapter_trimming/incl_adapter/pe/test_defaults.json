@@ -1,7 +1,10 @@
 {
   "description": "Adapter trimming of PE reads containing adapters using 1-3 threads",
   "exhaustive": true,
-  "arguments": [],
+  "arguments": [
+    "--basename",
+    "your_output"
+  ],
   "files": {
     "input_1": [
       "input_1.fastq"

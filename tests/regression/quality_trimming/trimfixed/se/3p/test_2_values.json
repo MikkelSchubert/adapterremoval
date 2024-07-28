@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--basename",
+    "your_output",
     "--trim3p",
     "5",
     "20"

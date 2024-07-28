@@ -1,5 +1,8 @@
 {
-  "arguments": [],
+  "arguments": [
+    "--basename",
+    "your_output"
+  ],
   "return_code": 1,
   "stderr": [
     "invalid character in FASTQ sequence; only A, C, G, T and N are expected!"

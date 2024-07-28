@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--basename",
+    "your_output",
     "--identify-adapters"
   ],
   "return_code": 1,

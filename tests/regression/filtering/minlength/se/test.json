@@ -1,6 +1,8 @@
 {
   "description": "Filtering by minimum length, all reads excluded",
   "arguments": [
+    "--basename",
+    "your_output",
     "--minlength",
     "999"
   ],

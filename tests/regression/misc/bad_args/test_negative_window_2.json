@@ -1,6 +1,8 @@
 {
   "exhaustive": false,
   "arguments": [
+    "--basename",
+    "your_output",
     "--trim-windows",
     "-1"
   ],

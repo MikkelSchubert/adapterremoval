@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--basename",
+    "your_output",
     "--report-only",
     "--out-json",
     "report_se.json",

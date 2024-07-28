@@ -1,6 +1,8 @@
 {
   "description": "Filtering reads by minimum length, generating orphan mate 1 read",
   "arguments": [
+    "--basename",
+    "your_output",
     "--minlength",
     "50"
   ],

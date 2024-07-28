@@ -12,9 +12,6 @@
     ],
     "json": [
       "report_se.json"
-    ],
-    "html": [
-      "your_output.html"
     ]
   }
 }
