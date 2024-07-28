@@ -1,5 +1,9 @@
 {
-  "arguments": [],
+  "description": "Trimming list of adapters containing multiple adapter pairs",
+  "arguments": [
+    "--adapter-list",
+    "adapters.txt"
+  ],
   "files": {
     "input_1": [
       "reads_1.fastq"

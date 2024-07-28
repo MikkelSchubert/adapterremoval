@@ -630,6 +630,14 @@ class TestConfig(NamedTuple):
         if data:
             raise TestError(f"Unexpected JSON values: {data}")
 
+        def has_filetype(filetype: str) -> bool:
+            return any(it.kind == filetype for it in self.files)
+
+        if has_filetype("barcodes") and "--barcode-list" not in self.arguments:
+            raise TestError(f"Missing --barcode-list in {quote(filepath)}")
+        if has_filetype("adapters") and "--adapter-list" not in self.arguments:
+            raise TestError(f"Missing --adapter-list in {quote(filepath)}")
+
         return self
 
     def build_command(self, executable: Path) -> list[str | Path]:
@@ -642,13 +650,17 @@ class TestConfig(NamedTuple):
                 input_1.append(it.name)
             elif it.kind == "input_2":
                 input_2.append(it.name)
-            elif it.kind == "barcodes":
-                command += ["--barcode-list", it.name]
-            elif it.kind == "adapters":
-                command += ["--adapter-list", it.name]
             elif it.kind == "json":
+                # Ensure that report generation is deterministic
                 command += ["--report-sample-rate", "1"]
-            elif it.kind not in ("output", "json", "html", "ignore"):
+            elif it.kind not in (
+                "adapters",
+                "barcodes",
+                "output",
+                "json",
+                "html",
+                "ignore",
+            ):
                 raise NotImplementedError(it.kind)
 
         if input_1:

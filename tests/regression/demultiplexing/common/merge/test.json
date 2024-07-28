@@ -1,6 +1,9 @@
 {
+  "description": "Demultiplexing, trimming, and merging of PE reads",
   "exhaustive": true,
   "arguments": [
+    "--barcode-list",
+    "barcodes.txt",
     "--merge"
   ],
   "files": {

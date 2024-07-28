@@ -1,7 +1,10 @@
 {
   "description": "Demultiplexing of double-indexed SE reads using 1-3 threads",
   "exhaustive": true,
-  "arguments": [],
+  "arguments": [
+    "--barcode-list",
+    "barcodes.txt"
+  ],
   "files": {
     "input_1": [
       "input_1.fastq"

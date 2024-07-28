@@ -1,5 +1,8 @@
 {
+  "description": "Demultiplexing of PE reads without adapter-trimming/post-processing",
   "arguments": [
+    "--barcode-list",
+    "barcodes.txt",
     "--demultiplex-only"
   ],
   "files": {

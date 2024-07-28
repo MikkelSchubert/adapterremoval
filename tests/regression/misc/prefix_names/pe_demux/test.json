@@ -1,5 +1,8 @@
 {
+  "description": "User-supplied prefixes must be added to demultiplexed reads",
   "arguments": [
+    "--barcode-list",
+    "barcodes.txt",
     "--basename",
     "your_output",
     "--prefix-read1",

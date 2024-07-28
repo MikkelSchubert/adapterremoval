@@ -1,5 +1,8 @@
 {
+  "description": "Demultiplexed reads must be processed and validated (mate 1)",
   "arguments": [
+    "--barcode-list",
+    "barcodes.txt",
     "--demultiplex-only"
   ],
   "return_code": 1,
