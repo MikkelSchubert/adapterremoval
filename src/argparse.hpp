@@ -362,6 +362,8 @@ public:
 
 private:
   bool* m_sink;
+  //! Sink variable used if no sink was supplied
+  bool m_fallback_sink = false;
 };
 
 class uint_sink : public sink

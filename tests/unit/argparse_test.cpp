@@ -41,11 +41,6 @@ using Catch::Matchers::Contains;
 ///////////////////////////////////////////////////////////////////////////////
 // boolean sink
 
-TEST_CASE("bool sink is required", "[argparse::bool_sink]")
-{
-  REQUIRE_THROWS_AS(argparse::bool_sink(nullptr), assert_failed);
-}
-
 TEST_CASE("bool sink is initialized", "[argparse::bool_sink]")
 {
   bool value = true;

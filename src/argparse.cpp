@@ -696,10 +696,8 @@ sink::preprocess(std::string value) const
 
 bool_sink::bool_sink(bool* ptr)
   : sink(0)
-  , m_sink(ptr)
+  , m_sink(ptr ? ptr : &m_fallback_sink)
 {
-  AR_REQUIRE(ptr);
-
   *m_sink = false;
 }
 
