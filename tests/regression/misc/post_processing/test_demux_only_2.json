@@ -1,10 +1,20 @@
 {
-  "arguments": ["--demultiplex-only"],
+  "arguments": [
+    "--demultiplex-only"
+  ],
   "return_code": 1,
-  "stderr": ["invalid character in FASTQ sequence; only A, C, G, T and N are expected!"],
+  "stderr": [
+    "invalid character in FASTQ sequence; only A, C, G, T and N are expected!"
+  ],
   "files": {
-    "barcodes": ["barcodes.txt"],
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2_invalid.fastq"]
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2_invalid.fastq"
+    ]
   }
 }

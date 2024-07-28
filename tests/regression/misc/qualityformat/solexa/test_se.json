@@ -7,8 +7,14 @@
     "solexa"
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "json": ["report_se.json"],
-    "html": ["your_output.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "json": [
+      "report_se.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

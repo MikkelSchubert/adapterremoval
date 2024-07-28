@@ -1,11 +1,17 @@
 {
-  "arguments": ["--report-only"],
+  "arguments": [
+    "--report-only"
+  ],
   "return_code": 1,
   "stderr": [
     "Found Phred+33 encoded quality score of 46 (encoded as O), which is greater than the expected maximum score of 45 (encoded as N). This suggests that input may be Phred+64 encoded."
   ],
   "files": {
-    "input_1": ["input_high.fastq"],
-    "input_2": ["input_2.fastq"]
+    "input_1": [
+      "input_high.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ]
   }
 }

@@ -1,7 +1,16 @@
 {
-    "exhaustive": false,
-    "arguments": ["--trim-windows", "-1"],
-    "return_code": 1,
-    "stderr": ["[ERROR] --trim-windows must be greater than or equal to zero, not -1"],
-    "files": {"input_1": ["input_1a.fastq"]}
+  "exhaustive": false,
+  "arguments": [
+    "--trim-windows",
+    "-1"
+  ],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] --trim-windows must be greater than or equal to zero, not -1"
+  ],
+  "files": {
+    "input_1": [
+      "input_1a.fastq"
+    ]
   }
+}

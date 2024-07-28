@@ -13,8 +13,12 @@
     "30"
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
     "output": [
       "your_output.discarded.fastq",
       "your_output.merged.fastq",
@@ -22,6 +26,9 @@
       "your_output.r2.fastq",
       "your_output.singleton.fastq"
     ],
-    "ignore": ["your_output.json", "your_output.html"]
+    "ignore": [
+      "your_output.json",
+      "your_output.html"
+    ]
   }
 }

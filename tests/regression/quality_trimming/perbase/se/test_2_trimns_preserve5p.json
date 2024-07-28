@@ -1,8 +1,23 @@
 {
-  "arguments": ["--trim-strategy", "per-base", "--trimns", "--preserve5p", "--basename", "output_2"],
+  "arguments": [
+    "--trim-strategy",
+    "per-base",
+    "--trimns",
+    "--preserve5p",
+    "--basename",
+    "output_2"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "output": ["output_2.discarded.fastq", "output_2.r1.fastq"],
-    "ignore": ["output_2.json", "output_2.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "output_2.discarded.fastq",
+      "output_2.r1.fastq"
+    ],
+    "ignore": [
+      "output_2.json",
+      "output_2.html"
+    ]
   }
 }

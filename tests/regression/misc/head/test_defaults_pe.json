@@ -1,9 +1,21 @@
 {
-  "arguments": ["--report-only", "--out-json", "head_3_pe.json"],
+  "arguments": [
+    "--report-only",
+    "--out-json",
+    "head_3_pe.json"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
-    "json": ["head_3_pe.json"],
-    "html": ["your_output.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "json": [
+      "head_3_pe.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

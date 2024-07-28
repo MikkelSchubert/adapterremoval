@@ -1,11 +1,19 @@
 {
-  "arguments": ["--report-only", "--quality-format", "solexa"],
+  "arguments": [
+    "--report-only",
+    "--quality-format",
+    "solexa"
+  ],
   "return_code": 1,
   "stderr": [
     "Found Solexa encoded quality score of -6 (encoded as ':'), which is less than the expected minimum score of -5 (encoded as ';'). This suggests that input may be Phred+33 encoded."
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_low.fastq"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_low.fastq"
+    ]
   }
 }

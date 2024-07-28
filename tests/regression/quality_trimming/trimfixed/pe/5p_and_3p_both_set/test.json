@@ -1,15 +1,30 @@
 {
-  "arguments": ["--trim5p", "1", "3", "--trim3p", "4", "2"],
+  "arguments": [
+    "--trim5p",
+    "1",
+    "3",
+    "--trim3p",
+    "4",
+    "2"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
     "output": [
       "your_output.discarded.fastq",
       "your_output.r1.fastq",
       "your_output.r2.fastq",
       "your_output.singleton.fastq"
     ],
-    "json": ["your_output.json"],
-    "html": ["your_output.html"]
+    "json": [
+      "your_output.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

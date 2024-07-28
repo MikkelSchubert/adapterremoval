@@ -1,16 +1,26 @@
 {
   "arguments": [],
   "files": {
-    "input_1": ["reads_1.fastq"],
-    "input_2": ["reads_2.fastq"],
-    "adapters": ["adapters.txt"],
+    "input_1": [
+      "reads_1.fastq"
+    ],
+    "input_2": [
+      "reads_2.fastq"
+    ],
+    "adapters": [
+      "adapters.txt"
+    ],
     "output": [
       "your_output.r1.fastq",
       "your_output.r2.fastq",
       "your_output.singleton.fastq",
       "your_output.discarded.fastq"
     ],
-    "json": ["your_output.json"],
-    "html": ["your_output.html"]
+    "json": [
+      "your_output.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

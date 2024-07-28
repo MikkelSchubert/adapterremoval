@@ -13,9 +13,18 @@
     "out.html"
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "output": ["disc", "out1"],
-    "json": ["out.json"],
-    "html": ["out.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "disc",
+      "out1"
+    ],
+    "json": [
+      "out.json"
+    ],
+    "html": [
+      "out.html"
+    ]
   }
 }

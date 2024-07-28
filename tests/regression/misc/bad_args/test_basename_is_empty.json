@@ -1,10 +1,19 @@
 {
   "exhaustive": false,
-  "arguments": ["--basename", ""],
+  "arguments": [
+    "--basename",
+    ""
+  ],
   "return_code": 1,
-  "stderr": ["[ERROR] --basename must be a non-empty value."],
+  "stderr": [
+    "[ERROR] --basename must be a non-empty value."
+  ],
   "files": {
-    "input_1": ["input_1a.fastq"],
-    "input_2": ["input_2a.fastq"]
+    "input_1": [
+      "input_1a.fastq"
+    ],
+    "input_2": [
+      "input_2a.fastq"
+    ]
   }
 }

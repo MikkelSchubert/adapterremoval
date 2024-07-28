@@ -1,6 +1,8 @@
 {
   "arguments": [],
   "return_code": 1,
-  "stderr": ["This program searches for"],
+  "stderr": [
+    "This program searches for"
+  ],
   "files": {}
 }

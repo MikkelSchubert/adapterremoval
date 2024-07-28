@@ -1,9 +1,16 @@
 {
   "exhaustive": true,
-  "arguments": ["--threads", "1"],
+  "arguments": [
+    "--threads",
+    "1"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "barcodes": ["barcodes.txt"],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
     "output": [
       "your_output.sample_1.discarded.fastq",
       "your_output.sample_1.r1.fastq",
@@ -11,7 +18,11 @@
       "your_output.sample_2.r1.fastq",
       "your_output.unidentified.r1.fastq"
     ],
-    "json": ["your_output.json"],
-    "html": ["your_output.html"]
+    "json": [
+      "your_output.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

@@ -18,10 +18,24 @@
     "out.html"
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
-    "output": ["disc", "oc", "out1", "out2", "singles"],
-    "json": ["out.json"],
-    "html": ["out.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "disc",
+      "oc",
+      "out1",
+      "out2",
+      "singles"
+    ],
+    "json": [
+      "out.json"
+    ],
+    "html": [
+      "out.html"
+    ]
   }
 }

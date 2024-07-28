@@ -1,9 +1,17 @@
 {
-  "arguments": ["--interleaved-output"],
+  "arguments": [
+    "--interleaved-output"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
-    "barcodes": ["barcodes.txt"],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
     "output": [
       "your_output.sample_1.discarded.fastq",
       "your_output.sample_1.fastq",
@@ -13,7 +21,11 @@
       "your_output.sample_2.singleton.fastq",
       "your_output.unidentified.fastq"
     ],
-    "json": ["your_output.json"],
-    "html": ["your_output.html"]
+    "json": [
+      "your_output.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

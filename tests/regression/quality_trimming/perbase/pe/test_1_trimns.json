@@ -1,14 +1,27 @@
 {
-  "arguments": ["--trim-strategy", "per-base", "--trimns", "--basename", "output_1"],
+  "arguments": [
+    "--trim-strategy",
+    "per-base",
+    "--trimns",
+    "--basename",
+    "output_1"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
     "output": [
       "output_1.discarded.fastq",
       "output_1.r1.fastq",
       "output_1.r2.fastq",
       "output_1.singleton.fastq"
     ],
-    "ignore": ["output_1.json", "output_1.html"]
+    "ignore": [
+      "output_1.json",
+      "output_1.html"
+    ]
   }
 }

@@ -1,9 +1,18 @@
 {
-  "arguments": ["--identify-adapters"],
+  "arguments": [
+    "--identify-adapters"
+  ],
   "stdout": [
     "Consensus:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "Consensus:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT"
   ],
-  "files": {"input_1": ["input_1.fastq"], "input_2": ["input_2.fastq"]},
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ]
+  },
   "skip": true
 }

@@ -7,9 +7,17 @@
     "64"
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
-    "json": ["report_pe.json"],
-    "html": ["your_output.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "json": [
+      "report_pe.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   }
 }

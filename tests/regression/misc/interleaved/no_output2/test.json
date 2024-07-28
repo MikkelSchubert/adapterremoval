@@ -10,5 +10,12 @@
   "stderr": [
     "[ERROR] Option --out-file2 cannot be used together with option --interleaved-output"
   ],
-  "files": { "input_1": ["input_1.fastq"], "input_2": ["input_2.fastq"] }
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ]
+  }
 }

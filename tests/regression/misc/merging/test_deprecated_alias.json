@@ -1,8 +1,14 @@
 {
-  "arguments": ["--collapse"],
+  "arguments": [
+    "--collapse"
+  ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "input_2": ["input_2.fastq"],
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
     "output": [
       "your_output.discarded.fastq",
       "your_output.merged.fastq",
@@ -10,8 +16,12 @@
       "your_output.r2.fastq",
       "your_output.singleton.fastq"
     ],
-    "json": ["your_output.json"],
-    "html": ["your_output.html"]
+    "json": [
+      "your_output.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
   },
   "stderr": [
     "[WARNING] Option --collapse has been renamed to --merge. Support for the old name will be removed in the future."

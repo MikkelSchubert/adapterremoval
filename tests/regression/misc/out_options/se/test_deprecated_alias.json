@@ -13,10 +13,19 @@
     "out.html"
   ],
   "files": {
-    "input_1": ["input_1.fastq"],
-    "output": ["disc", "out1"],
-    "json": ["out.json"],
-    "html": ["out.html"]
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "disc",
+      "out1"
+    ],
+    "json": [
+      "out.json"
+    ],
+    "html": [
+      "out.html"
+    ]
   },
   "stderr": [
     "[WARNING] Option --discarded has been renamed to --out-discarded. Support for the old name will be removed in the future.",

@@ -1,12 +1,20 @@
 {
-  "arguments": ["--report-only", "--quality-format", "64"],
+  "arguments": [
+    "--report-only",
+    "--quality-format",
+    "64"
+  ],
   "return_code": 1,
   "stderr": [
     "Found Phred+64 encoded quality score of -1 (encoded as '?'), which is less than the expected minimum score of 0 (encoded as '@'). This suggests that input may be Phred+33 encoded.",
     "The quality score could also be the older Solexa format, which has a minimum score of -5, but data of this type is rare. If it is actually Solexa encoded FASTQ data, then use the '--quality-format solexa' command-line option."
   ],
   "files": {
-    "input_1": ["input_low.fastq"],
-    "input_2": ["input_2.fastq"]
+    "input_1": [
+      "input_low.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ]
   }
 }

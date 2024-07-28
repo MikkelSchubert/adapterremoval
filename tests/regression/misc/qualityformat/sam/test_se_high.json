@@ -1,10 +1,16 @@
 {
-  "arguments": ["--report-only", "--quality-format", "sam"],
+  "arguments": [
+    "--report-only",
+    "--quality-format",
+    "sam"
+  ],
   "return_code": 1,
   "stderr": [
     "Found raw FASTQ quality score of 127 ('\\x7f'). This is outside of the range of valid ASCII encoded quality scores (33 to 126), meaning that the input file is either corrupt or not in FASTQ format!"
   ],
   "files": {
-    "input_1": ["input_high.fastq"]
+    "input_1": [
+      "input_high.fastq"
+    ]
   }
 }

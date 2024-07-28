@@ -1,7 +1,15 @@
 {
   "exhaustive": false,
-  "arguments": ["--interleaved"],
+  "arguments": [
+    "--interleaved"
+  ],
   "return_code": 1,
-  "stderr": ["Pair contains reads with mismatching names:"],
-  "files": {"input_1": ["input_1a.fastq"]}
+  "stderr": [
+    "Pair contains reads with mismatching names:"
+  ],
+  "files": {
+    "input_1": [
+      "input_1a.fastq"
+    ]
+  }
 }
