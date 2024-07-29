@@ -1,23 +1,10 @@
 {
+  "inherit_from": "test_1_value.json",
   "arguments": [
     "--basename",
     "your_output",
     "--trim3p",
     "5",
     "20"
-  ],
-  "files": {
-    "input_1": [
-      "input_1.fastq"
-    ],
-    "output": [
-      "your_output.r1.fastq"
-    ],
-    "json": [
-      "your_output.json"
-    ],
-    "html": [
-      "your_output.html"
-    ]
-  }
+  ]
 }

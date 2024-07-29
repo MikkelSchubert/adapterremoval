@@ -16,7 +16,7 @@
     ],
     "output": [
       "interleaved.fastq",
-      "your_output.singleton.fastq"
+      "your_output.singleton.fastq.gz"
     ],
     "json": [
       "your_output.json"

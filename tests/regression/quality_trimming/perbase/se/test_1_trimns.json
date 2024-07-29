@@ -11,7 +11,7 @@
       "input_1.fastq"
     ],
     "output": [
-      "output_1.r1.fastq"
+      "output_1.r1.fastq.gz"
     ],
     "ignore": [
       "output_1.json",

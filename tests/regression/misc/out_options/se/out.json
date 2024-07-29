@@ -90,7 +90,7 @@
   "demultiplexing": null,
   "output": {
     "read1": {
-      "filenames": ["out1"],
+      "filenames": ["out1.fq"],
       "input_reads": 1,
       "output_reads": 1,
       "reads_sampled": 1,
@@ -118,7 +118,7 @@
     "unidentified_2": null,
     "singleton": null,
     "discarded": {
-      "filenames": ["disc"],
+      "filenames": ["disc.fq"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,

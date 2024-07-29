@@ -1,43 +1,22 @@
 {
-  "exhaustive": false,
+  "inherit_from": "test.json",
   "arguments": [
     "--collapse",
     "--discarded",
-    "disc",
+    "disc.fq",
     "--output1",
-    "out1",
+    "out1.fq",
     "--output2",
-    "out2",
+    "out2.fq",
     "--outputcollapsed",
-    "oc",
+    "oc.fq",
     "--out-json",
     "out.json",
     "--singleton",
-    "singles",
+    "singles.fq",
     "--out-html",
     "out.html"
   ],
-  "files": {
-    "input_1": [
-      "input_1.fastq"
-    ],
-    "input_2": [
-      "input_2.fastq"
-    ],
-    "output": [
-      "disc",
-      "oc",
-      "out1",
-      "out2",
-      "singles"
-    ],
-    "json": [
-      "out.json"
-    ],
-    "html": [
-      "out.html"
-    ]
-  },
   "stderr": [
     "[WARNING] Option --discarded has been renamed to --out-discarded. Support for the old name will be removed in the future.",
     "[WARNING] Option --output1 has been renamed to --out-file1. Support for the old name will be removed in the future.",

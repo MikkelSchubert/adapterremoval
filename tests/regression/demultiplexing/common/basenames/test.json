@@ -29,18 +29,18 @@
       "barcodes.txt"
     ],
     "output": [
-      "basename_1.unidentified.r1.fastq",
-      "basename_1.unidentified.r2.fastq",
-      "basename_2.sample_1.discarded.fastq",
-      "basename_2.sample_2.discarded.fastq",
-      "basename_3.sample_1.merged.fastq",
-      "basename_3.sample_2.merged.fastq",
-      "basename_4.sample_1.singleton.fastq",
-      "basename_4.sample_2.singleton.fastq",
-      "basename_5.sample_1.r1.fastq",
-      "basename_5.sample_2.r1.fastq",
-      "basename_6.sample_1.r2.fastq",
-      "basename_6.sample_2.r2.fastq"
+      "basename_1.unidentified.r1.fastq.gz",
+      "basename_1.unidentified.r2.fastq.gz",
+      "basename_2.sample_1.discarded.fastq.gz",
+      "basename_2.sample_2.discarded.fastq.gz",
+      "basename_3.sample_1.merged.fastq.gz",
+      "basename_3.sample_2.merged.fastq.gz",
+      "basename_4.sample_1.singleton.fastq.gz",
+      "basename_4.sample_2.singleton.fastq.gz",
+      "basename_5.sample_1.r1.fastq.gz",
+      "basename_5.sample_2.r1.fastq.gz",
+      "basename_6.sample_1.r2.fastq.gz",
+      "basename_6.sample_2.r2.fastq.gz"
     ],
     "json": [
       "basename_1.json"

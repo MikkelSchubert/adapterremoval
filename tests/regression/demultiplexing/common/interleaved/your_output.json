@@ -156,7 +156,7 @@
         },
         "output": {
           "read1": {
-            "filenames": ["your_output.sample_1.fastq"],
+            "filenames": ["your_output.sample_1.fastq.gz"],
             "input_reads": 3,
             "output_reads": 3,
             "reads_sampled": 3,
@@ -179,7 +179,7 @@
             "gc_content": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.065, 1.000, 0.022, 0.891, 0.196, 0.000, 0.333, 1.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
           },
           "read2": {
-            "filenames": ["your_output.sample_1.fastq"],
+            "filenames": ["your_output.sample_1.fastq.gz"],
             "input_reads": 3,
             "output_reads": 3,
             "reads_sampled": 3,
@@ -202,7 +202,7 @@
             "gc_content": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.333, 1.000, 0.000, 0.000, 0.283, 0.804, 0.000, 0.000, 0.000, 0.000, 0.848, 0.239, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
           },
           "singleton": {
-            "filenames": ["your_output.sample_1.singleton.fastq"],
+            "filenames": ["your_output.sample_1.singleton.fastq.gz"],
             "input_reads": 0,
             "output_reads": 0,
             "reads_sampled": 0,
@@ -214,7 +214,7 @@
           },
           "merged": null,
           "discarded": {
-            "filenames": ["your_output.sample_1.discarded.fastq"],
+            "filenames": ["your_output.sample_1.discarded.fastq.gz"],
             "input_reads": 2,
             "output_reads": 2,
             "reads_sampled": 2,
@@ -249,7 +249,7 @@
         },
         "output": {
           "read1": {
-            "filenames": ["your_output.sample_2.fastq"],
+            "filenames": ["your_output.sample_2.fastq.gz"],
             "input_reads": 3,
             "output_reads": 3,
             "reads_sampled": 3,
@@ -272,7 +272,7 @@
             "gc_content": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.667, 1.297, 0.457, 0.000, 0.000, 0.000, 0.196, 0.891, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
           },
           "read2": {
-            "filenames": ["your_output.sample_2.fastq"],
+            "filenames": ["your_output.sample_2.fastq.gz"],
             "input_reads": 3,
             "output_reads": 3,
             "reads_sampled": 3,
@@ -295,7 +295,7 @@
             "gc_content": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.413, 0.674, 0.000, 0.000, 0.000, 0.000, 0.000, 0.891, 0.196, 0.667, 0.667, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
           },
           "singleton": {
-            "filenames": ["your_output.sample_2.singleton.fastq"],
+            "filenames": ["your_output.sample_2.singleton.fastq.gz"],
             "input_reads": 0,
             "output_reads": 0,
             "reads_sampled": 0,
@@ -307,7 +307,7 @@
           },
           "merged": null,
           "discarded": {
-            "filenames": ["your_output.sample_2.discarded.fastq"],
+            "filenames": ["your_output.sample_2.discarded.fastq.gz"],
             "input_reads": 2,
             "output_reads": 2,
             "reads_sampled": 2,
@@ -323,7 +323,7 @@
   },
   "output": {
     "read1": {
-      "filenames": ["your_output.sample_1.fastq", "your_output.sample_2.fastq"],
+      "filenames": ["your_output.sample_1.fastq.gz", "your_output.sample_2.fastq.gz"],
       "input_reads": 6,
       "output_reads": 6,
       "reads_sampled": 6,
@@ -346,7 +346,7 @@
       "gc_content": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.065, 1.000, 0.022, 0.891, 0.196, 0.667, 1.630, 1.457, 0.000, 0.000, 0.000, 0.196, 0.891, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
     },
     "read2": {
-      "filenames": ["your_output.sample_1.fastq", "your_output.sample_2.fastq"],
+      "filenames": ["your_output.sample_1.fastq.gz", "your_output.sample_2.fastq.gz"],
       "input_reads": 6,
       "output_reads": 6,
       "reads_sampled": 6,
@@ -370,7 +370,7 @@
     },
     "merged": null,
     "unidentified_1": {
-      "filenames": ["your_output.unidentified.fastq"],
+      "filenames": ["your_output.unidentified.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -381,7 +381,7 @@
       "gc_content": null
     },
     "unidentified_2": {
-      "filenames": ["your_output.unidentified.fastq"],
+      "filenames": ["your_output.unidentified.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -392,7 +392,7 @@
       "gc_content": null
     },
     "singleton": {
-      "filenames": ["your_output.sample_1.singleton.fastq", "your_output.sample_2.singleton.fastq"],
+      "filenames": ["your_output.sample_1.singleton.fastq.gz", "your_output.sample_2.singleton.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -403,7 +403,7 @@
       "gc_content": null
     },
     "discarded": {
-      "filenames": ["your_output.sample_1.discarded.fastq", "your_output.sample_2.discarded.fastq"],
+      "filenames": ["your_output.sample_1.discarded.fastq.gz", "your_output.sample_2.discarded.fastq.gz"],
       "input_reads": 4,
       "output_reads": 4,
       "reads_sampled": 4,

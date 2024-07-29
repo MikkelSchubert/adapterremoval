@@ -9,7 +9,7 @@
       "input_1.fastq"
     ],
     "output": [
-      "alternative.r1.fastq"
+      "alternative.r1.fastq.gz"
     ],
     "json": [
       "alternative.json"

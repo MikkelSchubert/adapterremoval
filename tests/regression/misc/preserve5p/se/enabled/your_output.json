@@ -90,7 +90,7 @@
   "demultiplexing": null,
   "output": {
     "read1": {
-      "filenames": ["your_output.r1.fastq"],
+      "filenames": ["your_output.r1.fastq.gz"],
       "input_reads": 6,
       "output_reads": 6,
       "reads_sampled": 6,

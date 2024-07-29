@@ -89,7 +89,7 @@
   "demultiplexing": null,
   "output": {
     "read1": {
-      "filenames": ["your_output.r1.fastq"],
+      "filenames": ["your_output.r1.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -100,7 +100,7 @@
       "gc_content": null
     },
     "read2": {
-      "filenames": ["your_output.r2.fastq"],
+      "filenames": ["your_output.r2.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -114,7 +114,7 @@
     "unidentified_1": null,
     "unidentified_2": null,
     "singleton": {
-      "filenames": ["your_output.singleton.fastq"],
+      "filenames": ["your_output.singleton.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,

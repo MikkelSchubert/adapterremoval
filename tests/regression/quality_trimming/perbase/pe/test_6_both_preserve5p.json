@@ -16,9 +16,9 @@
       "input_2.fastq"
     ],
     "output": [
-      "output_6.r1.fastq",
-      "output_6.r2.fastq",
-      "output_6.singleton.fastq"
+      "output_6.r1.fastq.gz",
+      "output_6.r2.fastq.gz",
+      "output_6.singleton.fastq.gz"
     ],
     "ignore": [
       "output_6.json",

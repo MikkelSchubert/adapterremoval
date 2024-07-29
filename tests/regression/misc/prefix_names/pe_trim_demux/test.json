@@ -28,13 +28,13 @@
       "barcodes.txt"
     ],
     "output": [
-      "your_output.sample_1.discarded.fastq",
-      "your_output.sample_1.merged.fastq",
-      "your_output.sample_1.r1.fastq",
-      "your_output.sample_1.r2.fastq",
-      "your_output.sample_1.singleton.fastq",
-      "your_output.unidentified.r1.fastq",
-      "your_output.unidentified.r2.fastq"
+      "your_output.sample_1.discarded.fastq.gz",
+      "your_output.sample_1.merged.fastq.gz",
+      "your_output.sample_1.r1.fastq.gz",
+      "your_output.sample_1.r2.fastq.gz",
+      "your_output.sample_1.singleton.fastq.gz",
+      "your_output.unidentified.r1.fastq.gz",
+      "your_output.unidentified.r2.fastq.gz"
     ],
     "ignore": [
       "your_output.json",

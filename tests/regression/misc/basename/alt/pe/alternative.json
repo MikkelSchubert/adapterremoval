@@ -113,7 +113,7 @@
   "demultiplexing": null,
   "output": {
     "read1": {
-      "filenames": ["alternative.r1.fastq"],
+      "filenames": ["alternative.r1.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -124,7 +124,7 @@
       "gc_content": null
     },
     "read2": {
-      "filenames": ["alternative.r2.fastq"],
+      "filenames": ["alternative.r2.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -135,7 +135,7 @@
       "gc_content": null
     },
     "merged": {
-      "filenames": ["alternative.merged.fastq"],
+      "filenames": ["alternative.merged.fastq.gz"],
       "input_reads": 2,
       "output_reads": 1,
       "reads_sampled": 1,
@@ -160,7 +160,7 @@
     "unidentified_1": null,
     "unidentified_2": null,
     "singleton": {
-      "filenames": ["alternative.singleton.fastq"],
+      "filenames": ["alternative.singleton.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,

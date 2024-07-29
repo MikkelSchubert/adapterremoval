@@ -133,7 +133,7 @@
         },
         "output": {
           "read1": {
-            "filenames": ["your_output.sample_1.r1.fastq"],
+            "filenames": ["your_output.sample_1.r1.fastq.gz"],
             "input_reads": 3,
             "output_reads": 3,
             "reads_sampled": 3,
@@ -159,7 +159,7 @@
           "singleton": null,
           "merged": null,
           "discarded": {
-            "filenames": ["your_output.sample_1.discarded.fastq"],
+            "filenames": ["your_output.sample_1.discarded.fastq.gz"],
             "input_reads": 1,
             "output_reads": 1,
             "reads_sampled": 1,
@@ -194,7 +194,7 @@
         },
         "output": {
           "read1": {
-            "filenames": ["your_output.sample_2.r1.fastq"],
+            "filenames": ["your_output.sample_2.r1.fastq.gz"],
             "input_reads": 3,
             "output_reads": 3,
             "reads_sampled": 3,
@@ -220,7 +220,7 @@
           "singleton": null,
           "merged": null,
           "discarded": {
-            "filenames": ["your_output.sample_2.discarded.fastq"],
+            "filenames": ["your_output.sample_2.discarded.fastq.gz"],
             "input_reads": 1,
             "output_reads": 1,
             "reads_sampled": 1,
@@ -236,7 +236,7 @@
   },
   "output": {
     "read1": {
-      "filenames": ["your_output.sample_1.r1.fastq", "your_output.sample_2.r1.fastq"],
+      "filenames": ["your_output.sample_1.r1.fastq.gz", "your_output.sample_2.r1.fastq.gz"],
       "input_reads": 6,
       "output_reads": 6,
       "reads_sampled": 6,
@@ -261,7 +261,7 @@
     "read2": null,
     "merged": null,
     "unidentified_1": {
-      "filenames": ["your_output.unidentified.r1.fastq"],
+      "filenames": ["your_output.unidentified.r1.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,
@@ -274,7 +274,7 @@
     "unidentified_2": null,
     "singleton": null,
     "discarded": {
-      "filenames": ["your_output.sample_1.discarded.fastq", "your_output.sample_2.discarded.fastq"],
+      "filenames": ["your_output.sample_1.discarded.fastq.gz", "your_output.sample_2.discarded.fastq.gz"],
       "input_reads": 2,
       "output_reads": 2,
       "reads_sampled": 2,

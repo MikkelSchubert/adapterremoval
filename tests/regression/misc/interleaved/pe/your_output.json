@@ -162,7 +162,7 @@
     "unidentified_1": null,
     "unidentified_2": null,
     "singleton": {
-      "filenames": ["your_output.singleton.fastq"],
+      "filenames": ["your_output.singleton.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
       "reads_sampled": 0,

@@ -3,17 +3,17 @@
   "arguments": [
     "--collapse",
     "--out-discarded",
-    "disc",
+    "disc.fq",
     "--out-file1",
-    "out1",
+    "out1.fq",
     "--out-file2",
-    "out2",
+    "out2.fq",
     "--out-merged",
-    "oc",
+    "oc.fq",
     "--out-json",
     "out.json",
     "--out-singleton",
-    "singles",
+    "singles.fq",
     "--out-html",
     "out.html"
   ],
@@ -25,11 +25,11 @@
       "input_2.fastq"
     ],
     "output": [
-      "disc",
-      "oc",
-      "out1",
-      "out2",
-      "singles"
+      "disc.fq",
+      "oc.fq",
+      "out1.fq",
+      "out2.fq",
+      "singles.fq"
     ],
     "json": [
       "out.json"

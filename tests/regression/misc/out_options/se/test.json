@@ -2,13 +2,13 @@
   "exhaustive": false,
   "arguments": [
     "--out-discarded",
-    "disc",
+    "disc.fq",
     "--out-file1",
-    "out1",
+    "out1.fq",
     "--out-json",
     "out.json",
     "--out-singleton",
-    "singles",
+    "singles.fq",
     "--out-html",
     "out.html"
   ],
@@ -17,8 +17,8 @@
       "input_1.fastq"
     ],
     "output": [
-      "disc",
-      "out1"
+      "disc.fq",
+      "out1.fq"
     ],
     "json": [
       "out.json"

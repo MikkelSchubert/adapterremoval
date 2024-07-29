@@ -13,10 +13,10 @@
       "input_2.fastq"
     ],
     "output": [
-      "alternative.merged.fastq",
-      "alternative.r1.fastq",
-      "alternative.r2.fastq",
-      "alternative.singleton.fastq"
+      "alternative.merged.fastq.gz",
+      "alternative.r1.fastq.gz",
+      "alternative.r2.fastq.gz",
+      "alternative.singleton.fastq.gz"
     ],
     "json": [
       "alternative.json"

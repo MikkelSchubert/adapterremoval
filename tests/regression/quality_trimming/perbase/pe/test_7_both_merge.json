@@ -16,10 +16,10 @@
       "input_2.fastq"
     ],
     "output": [
-      "output_7.merged.fastq",
-      "output_7.r1.fastq",
-      "output_7.r2.fastq",
-      "output_7.singleton.fastq"
+      "output_7.merged.fastq.gz",
+      "output_7.r1.fastq.gz",
+      "output_7.r2.fastq.gz",
+      "output_7.singleton.fastq.gz"
     ],
     "ignore": [
       "output_7.json",
