@@ -45,9 +45,16 @@ add_write_step(scheduler& sch,
   AR_REQUIRE(filename != DEV_NULL);
   size_t step_id = sch.add<write_fastq>(config, filename);
 
-  if (config.gzip || ends_with(to_lower(filename), ".gz")) {
-    step_id = sch.add<gzip_split_fastq>(config, filename, step_id);
-    step_id = sch.add<split_fastq>(config, filename, step_id);
+  switch (config.infer_output_format(filename)) {
+    case output_format::fastq:
+      break;
+    case output_format::fastq_gzip: {
+      step_id = sch.add<gzip_split_fastq>(config, filename, step_id);
+      step_id = sch.add<split_fastq>(config, filename, step_id);
+      break;
+    }
+    default:
+      AR_FAIL("invalid output format");
   }
 
   return step_id;

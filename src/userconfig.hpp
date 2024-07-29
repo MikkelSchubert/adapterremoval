@@ -123,6 +123,9 @@ public:
   /** Returns runtime in seconds. */
   double runtime() const { return m_runtime.duration(); }
 
+  /** Returns the file format in which to write the give file */
+  output_format infer_output_format(const std::string& filename) const;
+
   //! Command-line arguments
   string_vec args{};
 
@@ -222,10 +225,12 @@ public:
   //! SIMD instruction set used for alignments
   simd::instruction_set simd = simd::instruction_set::none;
 
-  //! GZip compression enabled / disabled
-  bool gzip = false;
-  //! GZip compression level used for output reads
-  unsigned int gzip_level{};
+  //! The format in which in which output reads are written to files
+  output_format out_file_format = output_format::fastq_gzip;
+  //! The format in which in which output reads are written to STDOUT
+  output_format out_stdout_format = output_format::fastq;
+  //! Compression level used for output reads where appropriate
+  unsigned int compression_level{};
 
   //! Maximum number of mismatches (considering both barcodes for PE)
   unsigned barcode_mm{};

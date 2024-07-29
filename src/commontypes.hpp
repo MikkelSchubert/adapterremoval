@@ -57,6 +57,23 @@ enum class read_type : size_t
   unidentified_2,
 };
 
+/** Enum describing the user-requested output format for processed reads */
+enum class output_format
+{
+  //! Uncompressed FASTQ reads
+  fastq,
+  //! Gzipped FASTQ reads
+  fastq_gzip,
+
+  // TODO:
+  //! Unaligned SAM (Sequence Alignment Map) records
+  // sam,
+  //! Unaligned BAM (Binary Alignment Map) records
+  // bam,
+  //! Uncompressed, unaligned BAM (Binary Alignment Map) records
+  // ubam,
+};
+
 /** Strategy used when merging reads */
 enum class merge_strategy
 {

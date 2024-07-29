@@ -48,9 +48,9 @@ namespace {
 const uint32_t MAX_ISAL_LEVEL = 3;
 
 uint32_t
-isal_level(uint32_t gzip_level)
+isal_level(uint32_t compression_level)
 {
-  return std::min<uint32_t>(gzip_level, MAX_ISAL_LEVEL);
+  return std::min<uint32_t>(compression_level, MAX_ISAL_LEVEL);
 }
 
 size_t
@@ -71,8 +71,14 @@ isal_buffer_size(size_t level)
 bool
 isal_enabled(const userconfig& config, const std::string& filename)
 {
-  return (config.gzip || ends_with(to_lower(filename), ".gz")) &&
-         config.gzip_level <= MAX_ISAL_LEVEL;
+  switch (config.infer_output_format(filename)) {
+    case output_format::fastq:
+      return false;
+    case output_format::fastq_gzip:
+      return config.compression_level <= MAX_ISAL_LEVEL;
+    default:
+      AR_FAIL("invalid output format");
+  }
 }
 
 } // namespace
@@ -474,7 +480,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
     stream.flush = FULL_FLUSH;
     stream.end_of_stream = input_chunk.eof;
 
-    stream.level = isal_level(m_config.gzip_level);
+    stream.level = isal_level(m_config.compression_level);
     stream.level_buf_size = isal_buffer_size(stream.level);
     buffer level_buffer(stream.level_buf_size);
     stream.level_buf = level_buffer.get();
@@ -502,7 +508,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
 
     compressed_size = stream.total_out;
   } else {
-    auto* compressor = libdeflate_alloc_compressor(m_config.gzip_level);
+    auto* compressor = libdeflate_alloc_compressor(m_config.compression_level);
     compressed_size = libdeflate_gzip_compress(compressor,
                                                input_buffer.get(),
                                                input_buffer.size(),
@@ -532,7 +538,7 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
   , m_isal_enabled(isal_enabled(config, filename))
 {
   if (m_isal_enabled) {
-    buffer level_buf(isal_buffer_size(config.gzip_level));
+    buffer level_buf(isal_buffer_size(config.compression_level));
     buffer output_buf(OUTPUT_BLOCK_SIZE);
 
     struct isal_zstream stream = {};
@@ -542,7 +548,7 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
     isal_deflate_init(&stream);
     stream.avail_in = 0;
     stream.flush = NO_FLUSH;
-    stream.level = isal_level(config.gzip_level);
+    stream.level = isal_level(config.compression_level);
     stream.level_buf = level_buf.get();
     stream.level_buf_size = level_buf.size();
     stream.gzip_flag = IGZIP_GZIP_NO_HDR;

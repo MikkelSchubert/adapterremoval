@@ -185,6 +185,21 @@ parse_head(const std::string& sink, uint64_t& out)
 }
 
 bool
+parse_file_format(const std::string& filename, output_format& sink)
+{
+  const std::string value = "." + to_lower(filename);
+  if (ends_with(value, ".fq.gz") || ends_with(value, ".fastq.gz")) {
+    sink = output_format::fastq_gzip;
+    return true;
+  } else if (ends_with(value, ".fq") || ends_with(value, ".fastq")) {
+    sink = output_format::fastq;
+    return true;
+  }
+
+  return false;
+}
+
+bool
 check_no_clobber(const std::string& label,
                  const string_vec& in_files,
                  const std::string& out_file)
@@ -590,14 +605,32 @@ userconfig::userconfig()
     .bind_bool(&interleaved);
 
   //////////////////////////////////////////////////////////////////////////////
-  argparser.add_header("OUTPUT COMPRESSION:");
+  argparser.add_header("OUTPUT FORMAT:");
 
-  argparser.add("--gzip").help("Enable gzip-compression.").bind_bool(&gzip);
-  argparser.add("--gzip-level", "N")
-    .help("GZip compression level, 0 - 9. For compression levels 4 - 9, output "
-          "consist of concatenated GZip blocks, which may cause compatibility "
-          "problems in some rare cases")
-    .bind_uint(&gzip_level)
+  argparser.add("--gzip")
+    .hidden()
+    .deprecated()
+    .conflicts_with("--out-format")
+    .conflicts_with("--stdout-format");
+  argparser.add("--out-format", "X")
+    .help("Selects the output format; either 'fastq' for uncompressed FASTQ "
+          "reads or 'fastq.gz' for gzip compressed FASTQ reads")
+    .bind_str(nullptr)
+    .with_choices({ "fastq", "fastq.gz" })
+    .with_default("fastq.gz");
+  argparser.add("--stdout-format", "X")
+    .help("Selects the output format for data written to STDOUT; choices are "
+          "the same as --out-format")
+    .bind_str(nullptr)
+    .with_choices({ "fastq", "fastq.gz" })
+    .with_default("fastq");
+  argparser.add("--compression-level", "N")
+    .help(
+      "Sets the compression level for compressed output. Valid values are 0 to "
+      "9. For compression levels 4 - 9, output consist of concatenated gzip "
+      "blocks, which may cause compatibility problems in some rare cases")
+    .deprecated_alias("--gzip-level")
+    .bind_uint(&compression_level)
     .with_default(6);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -715,6 +748,7 @@ userconfig::userconfig()
     .with_max_values(2);
 
   argparser.add_separator();
+  // FIXME: Rename to --quality-trimming
   argparser.add("--trim-strategy", "X")
     .help("Strategy for trimming low quality bases: 'mott' for the modified "
           "Mott's algorithm; 'window' for window based trimming; 'per-base' "
@@ -1063,9 +1097,9 @@ userconfig::parse_args(const string_vec& argvec)
   // The actual max depends on the presence of libdeflate, but it does not seem
   // justified to blow up even if the user specifies a level above that
   // supported by isa-l.
-  if (gzip_level > 9) {
-    log::error() << "--gzip-level must be in the range 0 to 9, not "
-                 << gzip_level;
+  if (compression_level > 9) {
+    log::error() << "--compression-level must be in the range 0 to 9, not "
+                 << compression_level;
     return argparse::parse_result::error;
   }
 
@@ -1109,6 +1143,21 @@ userconfig::parse_args(const string_vec& argvec)
 
       return argparse::parse_result::error;
     }
+  }
+
+  if (argparser.is_set("--gzip")) {
+    out_file_format = output_format::fastq_gzip;
+    out_stdout_format = output_format::fastq_gzip;
+  } else if (!parse_file_format(argparser.value("--out-format"),
+                                out_file_format)) {
+    log::error() << "Invalid output format "
+                 << log_escape(argparser.value("--out-format"));
+    return argparse::parse_result::error;
+  } else if (!parse_file_format(argparser.value("--stdout-format"),
+                                out_stdout_format)) {
+    log::error() << "Invalid output format "
+                 << log_escape(argparser.value("--stdout-format"));
+    return argparse::parse_result::error;
   }
 
   // An empty basename or directory would results in the creation of dot-files
@@ -1219,6 +1268,20 @@ userconfig::can_merge_alignment(const alignment_info& alignment) const
   return alignment.length - alignment.n_ambiguous >= merge_threshold;
 }
 
+output_format
+userconfig::infer_output_format(const std::string& filename) const
+{
+  if (filename == "/dev/stdout") {
+    return out_stdout_format;
+  }
+
+  output_format result = out_file_format;
+  // Parse failures are ignored here; default to --output-format
+  parse_file_format(filename, result);
+
+  return result;
+}
+
 output_files
 userconfig::get_output_filenames() const
 {
@@ -1227,7 +1290,18 @@ userconfig::get_output_filenames() const
   files.settings_json = new_filename("--out-json", { ".json" });
   files.settings_html = new_filename("--out-html", { ".html" });
 
-  const std::string ext = gzip ? ".fastq.gz" : ".fastq";
+  std::string ext;
+  switch (out_file_format) {
+    case output_format::fastq:
+      ext = ".fastq";
+      break;
+    case output_format::fastq_gzip:
+      ext = ".fastq.gz";
+      break;
+    default:
+      AR_FAIL("invalid output format");
+  }
+
   const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
   const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
 
