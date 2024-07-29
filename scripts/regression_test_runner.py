@@ -754,11 +754,10 @@ class TestMutator:
             if it.kind in _INPUT_FILES_FQ:
                 assert isinstance(it, TestTextFile)
 
-                # Ensure exactly one trailing newline
+                # Remove any trailing newlines
                 lines = it.text.splitlines(keepends=True)
                 while lines and not lines[-1].rstrip():
                     lines.pop()
-                lines.append("\n")
 
                 input_files.setdefault(it.kind, []).append(lines)
             elif it.kind == "json":
@@ -768,14 +767,16 @@ class TestMutator:
                 other_files.append(it)
 
         if len(input_files) == 2:
-            files_1, files_2 = input_files.values()
+            files_1 = input_files["input_1"]
+            files_2 = input_files["input_2"]
 
             n_lines_1 = sum(map(len, files_1))
-            n_lines_2 = sum(map(len, files_2))
+            n_lines_2 = sum(map(len, files_1))
+
             if n_lines_1 == n_lines_2 and n_lines_1 % 4 == 0:
-                for idx, (lines_1, lines_2) in enumerate(zip(files_1, files_2)):
-                    records_1 = cls._lines_to_records(lines_1)
-                    records_2 = cls._lines_to_records(lines_2)
+                for idx, (file_1, file_2) in enumerate(zip(files_1, files_2)):
+                    records_1 = cls._lines_to_records(file_1)
+                    records_2 = cls._lines_to_records(file_2)
 
                     data: list[str] = []
                     for record_1, record_2 in zip(records_1, records_2):
@@ -795,6 +796,8 @@ class TestMutator:
                     files=other_files,
                     arguments=(*test.arguments, "--interleaved-input"),
                 )
+            else:
+                print_warn("Could not interleave input files in", test.path)
 
     @staticmethod
     def _lines_to_records(lines: list[str]) -> Iterator[list[str]]:
