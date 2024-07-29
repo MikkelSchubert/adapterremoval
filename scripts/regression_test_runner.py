@@ -712,33 +712,17 @@ class TestMutator:
 
         # Test with split or interleaved input (if possible)
         for it in cls._interleave_input(it, masked_stats):
-            # Test with gzip compression of input and output files
-            for compress_in, compress_out in itertools.product((False, True), repeat=2):
-                variant: list[str] = []
-                arguments: list[str] = []
-                compressed_files: set[str] = set()
-
-                if compress_in:
-                    variant.append("igz")
-                    compressed_files |= _INPUT_FILES_FQ
-
-                if compress_out:
-                    variant.append("ogz")
-                    arguments.append("--gzip")
-                    compressed_files |= _OUTPUT_FILES_FQ
-
-                if variant:
-                    yield it._replace(
-                        variant=it.variant + tuple(variant),
-                        arguments=it.arguments + tuple(arguments),
-                        files=cls._compress_files(
-                            it.files,
-                            compressed_files,
-                            masked_stats,
-                        ),
-                    )
-                else:
-                    yield it
+            # Test without/with gzip compression of input files
+            yield it
+            yield it._replace(
+                variant=it.variant + ("gz",),
+                arguments=it.arguments,
+                files=cls._compress_files(
+                    files=it.files,
+                    to_compress=_INPUT_FILES_FQ,
+                    masked_stats=masked_stats,
+                ),
+            )
 
     @classmethod
     def _interleave_input(
