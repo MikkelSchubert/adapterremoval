@@ -211,8 +211,11 @@ throw_invalid_score(const quality_encoding encoding, const char raw_score)
     case quality_encoding::solexa:
       throw_invalid_solexa(raw_score);
 
-    default:
+    case quality_encoding::sam:
       AR_FAIL("This case should have been handled by initial check");
+
+    default:
+      AR_FAIL("Invalid quality encoding");
   }
 }
 

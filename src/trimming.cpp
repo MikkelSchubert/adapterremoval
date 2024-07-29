@@ -179,6 +179,13 @@ post_trim_read_termini(const userconfig& config,
       trim_3p = config.post_trim_fixed_5p.second;
       break;
 
+    case read_type::singleton:
+    case read_type::discarded:
+    case read_type::unidentified_1:
+    case read_type::unidentified_2:
+      AR_FAIL("unsupported read type in post_trim_read_termini");
+
+    case read_type::max:
     default:
       AR_FAIL("invalid read type in post_trim_read_termini");
   }

@@ -78,6 +78,9 @@ level_color(level l)
       return color::yellow;
     case level::error:
       return color::red;
+    case level::cerr:
+    case level::none:
+      AR_FAIL("unsupported logging level");
     default:
       AR_FAIL("invalid logging level");
   }
@@ -96,6 +99,9 @@ operator<<(std::ostream& out, level l)
       return out << "WARNING";
     case level::error:
       return out << "ERROR";
+    case level::cerr:
+    case level::none:
+      AR_FAIL("unsupported logging level");
     default:
       AR_FAIL("invalid logging level");
   }

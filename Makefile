@@ -105,7 +105,7 @@ CXXFLAGS := ${CXXFLAGS} -g -DDEBUG \
 	-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
 	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
 	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=2 \
-	-Wswitch-default -Wundef -Weffc++ -Wdeprecated
+	-Wswitch-default -Wswitch-enum -Wundef -Weffc++ -Wdeprecated
 
 ifneq ($(strip ${COVERAGE}), yes)
 BUILD_NAME := debug
