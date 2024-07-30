@@ -1,6 +1,5 @@
 {
   "inherit_from": "test_defaults.json",
-  "exhaustive": true,
   "arguments": [
     "--basename",
     "your_output",

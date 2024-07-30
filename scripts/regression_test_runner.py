@@ -24,7 +24,6 @@ import argparse
 import difflib
 import errno
 import gzip
-import itertools
 import json
 import math
 import multiprocessing
@@ -599,6 +598,13 @@ class TestConfig(NamedTuple):
             if inherit_from is not None:
                 _, template = read_json(filepath.parent / inherit_from)
                 assert isinstance(template, dict)
+                for key, value in data.items():
+                    if key in template and template[key] == value:
+                        print_warn(
+                            f"{{Key: value}} pair {{{key!r}: {value!r}}} in "
+                            f"{quote(filepath)} is redundant"
+                        )
+
                 template.update(data)
                 data = template
             else:
