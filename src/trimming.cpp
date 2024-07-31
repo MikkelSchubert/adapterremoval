@@ -358,7 +358,7 @@ se_reads_processor::process(chunk_ptr chunk)
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
   stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
-  const auto aligner = sequence_aligner(m_adapters, m_config.simd);
+  auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
   for (auto& read : read_chunk.reads_1) {
     const size_t in_length = read.length();
@@ -460,7 +460,7 @@ pe_reads_processor::process(chunk_ptr chunk)
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
 
-  const auto aligner = sequence_aligner(m_adapters, m_config.simd);
+  auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
   auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
   trimmed_reads chunks(m_output, read_chunk.eof);
@@ -491,7 +491,7 @@ pe_reads_processor::process(chunk_ptr chunk)
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
 
-    const alignment_info alignment =
+    const auto alignment =
       aligner.align_paired_end(read_1, read_2, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {

@@ -419,7 +419,7 @@ private:
   const userconfig& m_config;
   const fastq_vec& m_reads;
   const fastq_pair_vec m_adapters;
-  const sequence_aligner m_aligner;
+  sequence_aligner m_aligner;
 };
 
 /** Benchmarking of PE alignments */

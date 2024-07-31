@@ -153,35 +153,26 @@ sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters,
   : m_adapters(adapters)
   , m_compare_func(simd::get_compare_subsequences_func(is))
   , m_padding(simd::padding(is))
-  , m_max_adapter_len_1()
-  , m_max_adapter_len_2()
 {
-  for (const auto& it : m_adapters) {
-    m_max_adapter_len_1 = std::max(m_max_adapter_len_1, it.first.length());
-    m_max_adapter_len_2 = std::max(m_max_adapter_len_2, it.second.length());
-  }
 }
 
 alignment_info
-sequence_aligner::align_single_end(const fastq& read, int max_shift) const
+sequence_aligner::align_single_end(const fastq& read, int max_shift)
 {
   int adapter_id = 0;
   alignment_info alignment;
 
-  std::string buffer;
-  buffer.reserve(m_max_adapter_len_1 + read.length() + 2 * m_padding);
-
   for (const auto& adapter_pair : m_adapters) {
     const auto& adapter = adapter_pair.first.sequence();
 
-    buffer.clear();
-    buffer += read.sequence();
-    buffer.resize(buffer.size() + m_padding, 'N');
-    buffer += adapter;
-    buffer.resize(buffer.size() + m_padding, 'N');
+    m_buffer.clear();
+    m_buffer += read.sequence();
+    m_buffer.append(m_padding, 'N');
+    m_buffer += adapter;
+    m_buffer.append(m_padding, 'N');
 
-    const char* read_data = buffer.data();
-    const char* adapter_data = buffer.data() + read.length() + m_padding;
+    const char* read_data = m_buffer.data();
+    const char* adapter_data = m_buffer.data() + read.length() + m_padding;
 
     if (pairwise_align_sequences(alignment,
                                  read_data,
@@ -201,30 +192,26 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift) const
 alignment_info
 sequence_aligner::align_paired_end(const fastq& read1,
                                    const fastq& read2,
-                                   int max_shift) const
+                                   int max_shift)
 {
   int adapter_id = 0;
   alignment_info alignment;
-
-  std::string buffer;
-  buffer.reserve(m_max_adapter_len_2 + read1.length() + m_padding +
-                 m_max_adapter_len_1 + read2.length() + m_padding);
 
   for (const auto& adapter_pair : m_adapters) {
     const fastq& adapter1 = adapter_pair.first;
     const fastq& adapter2 = adapter_pair.second;
 
-    buffer.clear();
-    buffer += adapter2.sequence();
-    buffer += read1.sequence();
-    buffer.append(m_padding, 'N');
-    buffer += read2.sequence();
-    buffer += adapter1.sequence();
-    buffer.append(m_padding, 'N');
+    m_buffer.clear();
+    m_buffer += adapter2.sequence();
+    m_buffer += read1.sequence();
+    m_buffer.append(m_padding, 'N');
+    m_buffer += read2.sequence();
+    m_buffer += adapter1.sequence();
+    m_buffer.append(m_padding, 'N');
 
-    const char* sequence1 = buffer.data();
+    const char* sequence1 = m_buffer.data();
     const size_t sequence1_len = adapter2.length() + read1.length();
-    const char* sequence2 = buffer.data() + sequence1_len + m_padding;
+    const char* sequence2 = m_buffer.data() + sequence1_len + m_padding;
     const size_t sequence2_len = adapter1.length() + read2.length();
 
     // Only consider alignments where at least one nucleotide from each read

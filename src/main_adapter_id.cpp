@@ -69,7 +69,7 @@ public:
     fastq_pair_vec adapters;
     adapters.emplace_back(empty_adapter, empty_adapter);
 
-    const auto aligner = sequence_aligner(adapters, m_config.simd);
+    auto aligner = sequence_aligner(adapters, m_config.simd);
 
     auto stats_id = m_stats_id.acquire();
     auto stats_ins = m_stats_ins.acquire();

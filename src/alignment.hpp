@@ -144,7 +144,7 @@ public:
    *
    * The best alignment is selected using alignment_info::is_better_than.
    */
-  alignment_info align_single_end(const fastq& read, int max_shift) const;
+  alignment_info align_single_end(const fastq& read, int max_shift);
 
   /**
    * Attempts to align PE mates, along with any adapter pairs.
@@ -167,7 +167,7 @@ public:
    */
   alignment_info align_paired_end(const fastq& read1,
                                   const fastq& read2,
-                                  int max_shift) const;
+                                  int max_shift);
 
 private:
   /**
@@ -194,10 +194,8 @@ private:
   const simd::compare_subsequences_func m_compare_func;
   //! Padding required by chosen SIMD instructions
   const size_t m_padding;
-  //! Length of the longest adapter 1 sequence
-  size_t m_max_adapter_len_1;
-  //! Length of the longest adapter 2 sequence
-  size_t m_max_adapter_len_2;
+  //! Internal buffer used to combine adapters and reads
+  std::string m_buffer{};
 };
 
 /**
