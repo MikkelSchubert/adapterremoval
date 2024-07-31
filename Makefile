@@ -51,6 +51,10 @@ CXXFLAGS := ${CXXFLAGS} -std=c++17 -O3
 LDLIBS := -pthread -lisal -ldeflate ${LDLIBS}
 LDFLAGS := ${LDFLAGS}
 
+# Name of podman container for static compilation
+CONTAINER := ar3static
+
+
 ifeq ($(strip ${VERBOSE}),no)
 QUIET := @
 endif
@@ -197,7 +201,7 @@ TEST_OBJS := \
 
 ################################################################################
 
-.PHONY: all clean coverage docs man everything examples install regression test
+.PHONY: all clean coverage docs everything examples install man regression static static-container test
 
 all: $(EXECUTABLE)
 
@@ -270,6 +274,24 @@ endif
 else
 	$(MAKE) coverage COVERAGE=yes
 endif
+
+static:
+	@echo $(COLOR_GREEN)"Building static binary"$(COLOR_END)
+	$(QUIET)mkdir -p "$(BUILD_DIR)"
+	$(QUIET)podman run --rm -it \
+		--mount "type=bind,src=$(shell pwd)/,dst=/root/adapterremoval/" \
+		--mount "type=bind,src=$(BUILD_DIR)/,dst=/root/build" \
+		$(CONTAINER) \
+		"BUILD_DIR=/root/build" \
+		"DESTDIR=/root/build/install" \
+		"VERBOSE=yes" \
+		"COLOR=no" \
+		"STATIC=yes"
+	@echo $(COLOR_GREEN)"Static binary installed into "$(COLOR_END)
+
+static-container:
+	@echo $(COLOR_GREEN)"Building static compilation container"$(COLOR_END)
+	podman build -t $(CONTAINER) .
 
 $(EXECUTABLE): $(CORE_OBJS) $(EXEC_OBJS)
 	@echo $(COLOR_GREEN)"Linking executable $@"$(COLOR_END)

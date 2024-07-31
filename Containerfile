@@ -1,13 +1,6 @@
 #
 # This container is designed to simplify creation of statically linked
-# AdapterRemoval executables:
-#
-#   $ git clone https://github.com/MikkelSchubert/adapterremoval.git
-#   $ cd adapterremoval/
-#   $ podman build -t ar3builder .
-#   $ podman run --rm -it -v${PWD}/:/root/adapterremoval/ ar3builder
-#
-# This installs AdapterRemoval in build/install/
+# AdapterRemoval executables. See `make static-container` and `make static`.
 #
 FROM alpine:3.20.1
 
@@ -48,6 +41,6 @@ RUN make -C "mimalloc-${MIMALLOC}/out/release" -j4 install
 
 ENV LDLIBS="-lmimalloc"
 ENV LDFLAGS="-L/usr/local/lib/mimalloc-2.1/"
-ENTRYPOINT [ "make", "-C", "/root/adapterremoval/", "CXX=g++", "COLOR=no", "STATIC=yes", "DESTDIR=build/install" ]
+ENTRYPOINT [ "make", "-C", "/root/adapterremoval/" ]
 
 CMD ["-j4", "regression", "examples", "test", "install"]
