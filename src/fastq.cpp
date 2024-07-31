@@ -25,6 +25,7 @@
 #include <cmath>          // for log10, pow
 #include <numeric>        // for accumulate
 #include <sstream>        // for ostringstream
+#include <string_view>    // for string_view
 
 namespace adapterremoval {
 
@@ -65,7 +66,7 @@ enum class read_mate
 
 struct mate_info
 {
-  std::string desc() const
+  std::string_view desc() const
   {
     switch (mate) {
       case read_mate::unknown:
@@ -80,7 +81,7 @@ struct mate_info
   }
 
   //! Read name without mate number or meta-data
-  std::string name{};
+  std::string_view name{};
   //! Which mate in a pair, if identified
   read_mate mate = read_mate::unknown;
   //! Position of the separator character in the header (if any)
@@ -90,7 +91,7 @@ struct mate_info
 mate_info
 get_mate_info(const fastq& read, char mate_separator)
 {
-  const std::string& header = read.header();
+  const std::string_view header = read.header();
 
   size_t pos = header.find_first_of(' ');
   if (pos == std::string::npos) {
