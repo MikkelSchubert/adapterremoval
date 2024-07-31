@@ -9,9 +9,6 @@ PREFIX := /usr/local
 # Generate statically linked binary
 STATIC := no
 
-# Use libdeflate for block compression
-LIBDEFLATE := yes
-
 # Show individual commands during build; otherwise shows summaries instead.
 VERBOSE := no
 
@@ -84,7 +81,6 @@ $(info Building static AdapterRemoval binary: yes)
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58909
 LDFLAGS := $(LDFLAGS) -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -static
 OBJS_DIR := $(BUILD_DIR)/static
-EXECUTABLE := $(BUILD_DIR)/$(EXEC_MAIN).static
 BUILD_NAME_PREFIX := static-
 else
 $(info Building static AdapterRemoval binary: no)
