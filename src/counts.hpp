@@ -178,7 +178,7 @@ public:
   indexed_count() = default;
 
   /** Returns the number of values. */
-  inline size_t size() const { return I::size; }
+  inline size_t size() const { return I::indices; }
 
   /** Increment the specified value. */
   template<typename V>
@@ -223,7 +223,7 @@ public:
   }
 
 private:
-  std::array<T, I::size> m_counts = {};
+  std::array<T, I::indices> m_counts = {};
 };
 
 /**
@@ -261,6 +261,16 @@ public:
     static_assert(std::is_same<V, value_type>::value, "probably a mistake");
 
     m_counts.at(offset).inc(index, count);
+  }
+
+  /** Increment the specified value for a given index (unchecked). */
+  template<typename V>
+  inline void inc_unsafe(V index, size_t offset, T count = 1)
+  {
+    // Assert to catch help mixups of arguments, pending stronger typed solution
+    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+
+    m_counts[offset].inc(index, count);
   }
 
   /** Returns the count for n for a given index. */
@@ -330,7 +340,7 @@ public:
   }
 
 private:
-  static_assert(sizeof(indexed_count<I, T>) == I::size * sizeof(T),
+  static_assert(sizeof(indexed_count<I, T>) == I::indices * sizeof(T),
                 "assuming no padding");
 
   std::vector<indexed_count<I, T>> m_counts;

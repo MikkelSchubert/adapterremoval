@@ -169,13 +169,7 @@ public:
   /** Like `read`, but post-processing must be manually called afterwards */
   bool read_unsafe(line_reader_base& reader);
 
-  /**
-   * Converts a FASTQ record to a string ending with a newline.
-   *
-   * Only the phred_33 and phred_64 encodings are supported. For phred_64,
-   * quality bases are truncated to 0 .. 40, while phred_33 supports quality
-   * scores in the range 0 .. 41.
-   */
+  /** Converts a FASTQ record to a string ending with a newline */
   void into_string(std::string& dst) const;
 
   /** Converts an error-probability to a Phred+33 encoded quality score. **/
@@ -236,10 +230,10 @@ struct ACGT
 {
   using value_type = char;
 
-  //! The number of nucleotides
-  static const size_t size = 4;
+  //! The number of possible index values
+  static constexpr size_t indices = 4;
   //! Nucleotides supported by hashing function
-  static const std::array<value_type, size> values;
+  static constexpr std::array<value_type, 4> values{ 'A', 'C', 'G', 'T' };
 
   /**
    * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
@@ -258,25 +252,22 @@ struct ACGTN
 {
   using value_type = char;
 
-  //! The number of nucleotides
-  static const size_t size = 5;
+  //! The number of possible index values
+  static constexpr size_t indices = 8;
   //! Nucleotides supported by hashing function
-  static const std::array<value_type, size> values;
+  static constexpr std::array<value_type, 5> values{ 'A', 'C', 'G', 'T', 'N' };
 
   /**
    * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
    * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
    * only) will result in hash collisions.
    */
-  static constexpr auto to_index(value_type nt)
-  {
-    return ((nt >> 1) + 1) & 0x7;
-  }
+  static constexpr auto to_index(value_type nt) { return nt & 0x7; }
 
   /**
    * Inverse of to_index. Only values in the range 0 to 4 are allowed.
    */
-  static constexpr value_type to_value(size_t idx) { return "NACTG"[idx]; }
+  static constexpr value_type to_value(size_t idx) { return "-A-CT-NG"[idx]; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

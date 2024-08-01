@@ -29,6 +29,7 @@
 #include <cstdlib>        // for size_t
 #include <memory>         // for make_shared, __shared_ptr_access, __shared_...
 #include <string>         // for basic_string, string
+#include <string_view>    // for string_view
 
 namespace adapterremoval {
 
@@ -257,18 +258,18 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
 
     m_number_of_sampled_reads++;
 
-    const std::string& sequence = read.sequence();
-    const std::string& qualities = read.qualities();
+    const std::string_view sequence = read.sequence();
+    const std::string_view qualities = read.qualities();
 
     indexed_count<ACGTN> nucls;
-    for (size_t i = 0; i < sequence.length(); ++i) {
-      const auto nuc = sequence.at(i);
+    for (size_t i = 0; i < sequence_len; ++i) {
+      const auto nuc = sequence[i];
 
       nucls.inc(nuc);
-      m_nucleotide_pos.inc(nuc, i);
+      m_nucleotide_pos.inc_unsafe(nuc, i);
 
-      const auto quality = qualities.at(i) - PHRED_OFFSET_MIN;
-      m_quality_pos.inc(nuc, i, quality);
+      const auto quality = qualities[i] - PHRED_OFFSET_MIN;
+      m_quality_pos.inc_unsafe(nuc, i, quality);
       m_quality_dist.inc(quality);
     }
 

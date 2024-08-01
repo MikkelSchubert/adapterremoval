@@ -18,7 +18,7 @@
 \*************************************************************************/
 #include "counts.hpp"  // for counts, indexed_counts, counts_tmpl, indexed_c...
 #include "errors.hpp"  // for assert_failed
-#include "fastq.hpp"   // for ACGT, ACGTN, ACGT::size
+#include "fastq.hpp"   // for ACGT, ACGTN, ACGT::indices
 #include "testing.hpp" // for catch.hpp, StringMaker
 #include <array>       // for array
 #include <cmath>       // for isnan
@@ -292,7 +292,7 @@ TEST_CASE("counts operator==")
 TEST_CASE("indexed_count<ACGT> constructors")
 {
   indexed_count<ACGT> c;
-  REQUIRE(c.size() == ACGT::size);
+  REQUIRE(c.size() == ACGT::indices);
   REQUIRE(c.get('A') == 0);
   REQUIRE(c.get('C') == 0);
   REQUIRE(c.get('G') == 0);

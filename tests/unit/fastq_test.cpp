@@ -69,11 +69,11 @@ TEST_CASE("ACGT::to_value", "[fastq::*]")
 TEST_CASE("ACGTN::to_index", "[fastq::*]")
 {
   // The exact encoding is unimportant, but it must be unique in the range 0-4
-  REQUIRE(ACGTN::to_index('A') <= 4);
-  REQUIRE(ACGTN::to_index('C') <= 4);
-  REQUIRE(ACGTN::to_index('G') <= 4);
-  REQUIRE(ACGTN::to_index('T') <= 4);
-  REQUIRE(ACGTN::to_index('N') <= 4);
+  REQUIRE(ACGTN::to_index('A') <= 8);
+  REQUIRE(ACGTN::to_index('C') <= 8);
+  REQUIRE(ACGTN::to_index('G') <= 8);
+  REQUIRE(ACGTN::to_index('T') <= 8);
+  REQUIRE(ACGTN::to_index('N') <= 8);
 
   REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('C'));
   REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('G'));

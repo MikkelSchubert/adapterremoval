@@ -21,7 +21,7 @@
 #include "alignment.hpp" // for alignment_info
 #include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
 #include "errors.hpp"    // for fastq_error
-#include "fastq.hpp"     // for ACGT, ACGT::size, ACGT::values
+#include "fastq.hpp"     // for ACGT, ACGT::indices, ACGT::values
 #include "licenses.hpp"  // for LICENSES
 #include "logging.hpp"   // for log_stream, error, set_level, set_colors, info
 #include "main.hpp"      // for HELPTEXT, NAME, VERSION
@@ -104,7 +104,7 @@ parse_poly_x_option(const std::string& key,
     return true;
   }
 
-  std::array<bool, ACGT::size> enabled = {};
+  std::array<bool, ACGT::indices> enabled = {};
   for (const auto& value : values) {
     for (const auto nuc : to_upper(value)) {
       switch (nuc) {

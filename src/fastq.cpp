@@ -29,19 +29,6 @@
 
 namespace adapterremoval {
 
-const size_t ACGT::size;
-const std::array<ACGT::value_type, ACGT::size> ACGT::values = { 'A',
-                                                                'C',
-                                                                'G',
-                                                                'T' };
-
-const size_t ACGTN::size;
-const std::array<ACGTN::value_type, ACGTN::size> ACGTN::values = { 'A',
-                                                                   'C',
-                                                                   'G',
-                                                                   'T',
-                                                                   'N' };
-
 namespace {
 
 std::vector<double>
