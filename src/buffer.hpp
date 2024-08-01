@@ -22,60 +22,76 @@
 #include <algorithm> // for max
 #include <cstddef>   // for size_t
 #include <cstdint>   // for uint32_t
+#include <string>    // for string
 #include <vector>    // for vector
 
 namespace adapterremoval {
 
 class buffer
 {
+  struct no_init;
+
 public:
   /** Creates a buffer of the specified size, if non-zero */
   explicit buffer(size_t size = 0) { m_buffer.resize(size); }
 
   /** Returns pointer to the buffer, if any */
-  unsigned char* get()
+  [[nodiscard]] inline unsigned char* data()
   {
     return reinterpret_cast<unsigned char*>(m_buffer.data());
   }
 
   /** Returns pointer to the buffer, if any */
-  const unsigned char* get() const
+  [[nodiscard]] inline const unsigned char* data() const
   {
     return reinterpret_cast<const unsigned char*>(m_buffer.data());
   }
 
-  /** Returns pointer to the buffer, if any */
-  char* get_signed() { return reinterpret_cast<char*>(get()); }
-
-  /** Returns pointer to the buffer, if any */
-  const char* get_signed() const
-  {
-    return reinterpret_cast<const char*>(get());
-  }
-
   /** Returns the current size of the buffer */
-  size_t size() const { return m_buffer.size(); }
+  [[nodiscard]] inline size_t size() const { return m_buffer.size(); }
 
   /** Returns the capacity of the buffer */
-  size_t capacity() const { return m_buffer.capacity(); }
+  [[nodiscard]] inline size_t capacity() const { return m_buffer.capacity(); }
 
   /** Changes the reported size of the buffer; must be 0 <= x <= capacity. */
-  void resize(size_t size)
+  inline void resize(size_t size)
   {
     AR_REQUIRE(size <= capacity());
     m_buffer.resize(size);
   }
 
-  /** Copies uint32 into buffer */
-  void write_u32(size_t offset, uint32_t value)
-  {
-    AR_REQUIRE(offset + 4 <= size());
+  /** Reserve additional space in the buffer */
+  inline void reserve(size_t size) { m_buffer.reserve(size); }
 
-    unsigned char* dst = get() + offset;
-    dst[0] = value & 0xFFU;
-    dst[1] = (value >> 8U) & 0xFFU;
-    dst[2] = (value >> 16U) & 0xFFU;
-    dst[3] = (value >> 24U) & 0xFFU;
+  /** Append a string to the buffer */
+  inline void append(const std::string& data)
+  {
+    append(data.data(), data.size());
+  }
+
+  /** Append data to the buffer */
+  inline void append(const char* data, size_t length)
+  {
+    append(reinterpret_cast<const unsigned char*>(data), length);
+  }
+
+  /** Append data to the buffer */
+  inline void append(const unsigned char* data, size_t length)
+  {
+    const auto* ptr = reinterpret_cast<const no_init*>(data);
+    m_buffer.insert(m_buffer.end(), ptr, ptr + length);
+  }
+
+  /** Append a byte to the buffer */
+  inline void append_u8(uint8_t value) { m_buffer.push_back({ value }); }
+
+  /** Copies uint32 into buffer */
+  inline void append_u32(uint32_t value)
+  {
+    append_u8(value & 0xFFU);
+    append_u8((value >> 8U) & 0xFFU);
+    append_u8((value >> 16U) & 0xFFU);
+    append_u8((value >> 24U) & 0xFFU);
   }
 
   buffer(buffer&& other) noexcept = default;

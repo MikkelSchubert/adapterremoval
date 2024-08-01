@@ -376,46 +376,42 @@ split_fastq::process(chunk_ptr chunk)
   const auto& src = chunk->reads;
   for (size_t src_offset = 0; src_offset < src.size();) {
     const auto n =
-      std::min(src.size() - src_offset, m_buffer.size() - m_offset);
-    std::memcpy(m_buffer.get() + m_offset, src.data() + src_offset, n);
+      std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_buffer.size());
+    m_buffer.append(src.data() + src_offset, n);
 
     src_offset += n;
-    m_offset += n;
 
-    if (m_offset == m_buffer.size()) {
+    if (m_buffer.size() == GZIP_BLOCK_SIZE) {
       auto block = std::make_unique<analytical_chunk>();
 
       if (m_isal_enabled) {
         m_isal_crc32 =
-          crc32_gzip_refl(m_isal_crc32, m_buffer.get(), m_buffer.size());
+          crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
       }
 
-      block->uncompressed_size = m_offset;
+      block->uncompressed_size = m_buffer.size();
       block->buffers.emplace_back(std::move(m_buffer));
 
       chunks.emplace_back(m_next_step, std::move(block));
 
-      m_buffer = buffer(GZIP_BLOCK_SIZE);
-      m_offset = 0;
+      m_buffer = buffer();
+      m_buffer.reserve(GZIP_BLOCK_SIZE);
     }
   }
 
   if (m_eof) {
     auto block = std::make_unique<analytical_chunk>(true);
 
-    m_buffer.resize(m_offset);
     if (m_isal_enabled) {
       m_isal_crc32 =
-        crc32_gzip_refl(m_isal_crc32, m_buffer.get(), m_buffer.size());
+        crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
     }
 
     block->crc32 = m_isal_crc32;
-    block->uncompressed_size = m_offset;
+    block->uncompressed_size = m_buffer.size();
     block->buffers.emplace_back(std::move(m_buffer));
 
     chunks.emplace_back(m_next_step, std::move(block));
-
-    m_offset = 0;
   }
 
   return chunks;
@@ -440,10 +436,8 @@ gzip_split_fastq::process(chunk_ptr chunk)
   AR_REQUIRE(chunk);
   AR_REQUIRE(chunk->buffers.size() == 1);
 
-  // Enable re-use of the analytical_chunks
-  buffer& output_buffer = chunk->buffers.front();
-  buffer input_buffer(GZIP_BLOCK_SIZE);
-  std::swap(input_buffer, output_buffer);
+  buffer& input_buffer = chunk->buffers.front();
+  buffer output_buffer{ GZIP_BLOCK_SIZE };
 
   size_t compressed_size = 0;
 
@@ -456,12 +450,12 @@ gzip_split_fastq::process(chunk_ptr chunk)
 
     stream.level = isal_level(m_config.compression_level);
     stream.level_buf_size = isal_buffer_size(stream.level);
-    buffer level_buffer(stream.level_buf_size);
-    stream.level_buf = level_buffer.get();
+    buffer level_buffer{ stream.level_buf_size };
+    stream.level_buf = level_buffer.data();
 
     stream.avail_in = input_buffer.size();
-    stream.next_in = input_buffer.get();
-    stream.next_out = output_buffer.get();
+    stream.next_in = input_buffer.data();
+    stream.next_out = output_buffer.data();
     stream.avail_out = output_buffer.size();
 
     switch (isal_deflate_stateless(&stream)) {
@@ -484,9 +478,9 @@ gzip_split_fastq::process(chunk_ptr chunk)
   } else {
     auto* compressor = libdeflate_alloc_compressor(m_config.compression_level);
     compressed_size = libdeflate_gzip_compress(compressor,
-                                               input_buffer.get(),
+                                               input_buffer.data(),
                                                input_buffer.size(),
-                                               output_buffer.get(),
+                                               output_buffer.data(),
                                                output_buffer.size());
     libdeflate_free_compressor(compressor);
 
@@ -494,7 +488,9 @@ gzip_split_fastq::process(chunk_ptr chunk)
     AR_REQUIRE(compressed_size);
   }
 
+  // Enable re-use of the analytical_chunks
   output_buffer.resize(compressed_size);
+  std::swap(input_buffer, output_buffer);
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
@@ -523,10 +519,10 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
     stream.avail_in = 0;
     stream.flush = NO_FLUSH;
     stream.level = isal_level(config.compression_level);
-    stream.level_buf = level_buf.get();
+    stream.level_buf = level_buf.data();
     stream.level_buf_size = level_buf.size();
     stream.gzip_flag = IGZIP_GZIP_NO_HDR;
-    stream.next_out = output_buf.get();
+    stream.next_out = output_buf.data();
     stream.avail_out = output_buf.size();
 
     const auto ret = isal_write_gzip_header(&stream, &header);
@@ -560,9 +556,9 @@ write_fastq::process(chunk_ptr chunk)
     }
 
     if (m_eof && m_isal_enabled) {
-      buffer trailer(8);
-      trailer.write_u32(0, chunk->crc32);
-      trailer.write_u32(4, m_uncompressed_bytes);
+      buffer trailer;
+      trailer.append_u32(chunk->crc32);
+      trailer.append_u32(m_uncompressed_bytes);
 
       m_output.write(trailer, flush::on);
     }

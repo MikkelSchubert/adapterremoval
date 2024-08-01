@@ -30,8 +30,7 @@ TEST_CASE("buffer defaults to empty/nullptr")
 
   REQUIRE(buf.size() == 0);
   REQUIRE(buf.capacity() == 0);
-  REQUIRE(buf.get() == nullptr);
-  REQUIRE(buf.get_signed() == nullptr);
+  REQUIRE(buf.data() == nullptr);
 }
 
 TEST_CASE("buffer with size allocates")
@@ -40,12 +39,8 @@ TEST_CASE("buffer with size allocates")
 
   REQUIRE(buf.size() == 7);
   REQUIRE(buf.capacity() == 7);
-  REQUIRE(buf.get() != nullptr);
-  REQUIRE(buf.get() == static_cast<const buffer&>(buf).get());
-  REQUIRE(buf.get_signed() != nullptr);
-  REQUIRE(buf.get_signed() == static_cast<const buffer&>(buf).get_signed());
-  REQUIRE(static_cast<void*>(buf.get()) ==
-          static_cast<void*>(buf.get_signed()));
+  REQUIRE(buf.data() != nullptr);
+  REQUIRE(buf.data() == static_cast<const buffer&>(buf).data());
 }
 
 TEST_CASE("buffer resize changes only apparent size")
@@ -78,46 +73,40 @@ TEST_CASE("buffer resizing up is allowed")
 TEST_CASE("buffer move constructor clears source")
 {
   buffer src(7);
-  auto* src_ptr = src.get();
-  auto* src_signed_ptr = src.get_signed();
+  auto* src_ptr = src.data();
   buffer dst(std::move(src));
 
   REQUIRE(src.size() == 0);
   REQUIRE(src.capacity() == 0);
-  REQUIRE(src.get() == nullptr);
-  REQUIRE(src.get_signed() == nullptr);
+  REQUIRE(src.data() == nullptr);
 
   REQUIRE(dst.size() == 7);
   REQUIRE(dst.capacity() == 7);
-  REQUIRE(dst.get() == src_ptr);
-  REQUIRE(dst.get_signed() == src_signed_ptr);
+  REQUIRE(dst.data() == src_ptr);
 }
 
 TEST_CASE("buffer move assignment clears source")
 {
   buffer src(7);
-  auto* src_ptr = src.get();
-  auto* src_signed_ptr = src.get_signed();
+  auto* src_ptr = src.data();
   buffer dst(7);
 
   dst = std::move(src);
 
   REQUIRE(src.size() == 0);
   REQUIRE(src.capacity() == 0);
-  REQUIRE(src.get() == nullptr);
-  REQUIRE(src.get_signed() == nullptr);
+  REQUIRE(src.data() == nullptr);
 
   REQUIRE(dst.size() == 7);
   REQUIRE(dst.capacity() == 7);
-  REQUIRE(dst.get() == src_ptr);
-  REQUIRE(dst.get_signed() == src_signed_ptr);
+  REQUIRE(dst.data() == src_ptr);
 }
 
 TEST_CASE("buffer write_u32 is le")
 {
-  buffer buf(4);
-  buf.write_u32(0, 0xDEADBEEF);
-  auto* ptr = buf.get();
+  buffer buf;
+  buf.append_u32(0xDEADBEEF);
+  const auto* ptr = buf.data();
 
   REQUIRE(ptr[3] == 0xDE);
   REQUIRE(ptr[2] == 0xAD);
@@ -127,40 +116,20 @@ TEST_CASE("buffer write_u32 is le")
 
 TEST_CASE("buffer write_u32 with offset")
 {
-  buffer buf(6);
-  auto* ptr = buf.get();
-  std::memset(ptr, 0, buf.size());
+  buffer buf;
+  buf.append_u8(0);
+  buf.append_u32(0xDEADBEEF);
+  buf.append_u8(0);
 
-  buf.write_u32(1, 0xDEADBEEF);
+  REQUIRE(buf.size() == 6);
 
+  const auto* ptr = buf.data();
   REQUIRE(ptr[5] == 0);
   REQUIRE(ptr[4] == 0xDE);
   REQUIRE(ptr[3] == 0xAD);
   REQUIRE(ptr[2] == 0xBE);
   REQUIRE(ptr[1] == 0xEF);
   REQUIRE(ptr[0] == 0);
-}
-
-TEST_CASE("buffer write_u32 requires space")
-{
-  SECTION("capacity must be sufficient")
-  {
-    buffer buf(3);
-    REQUIRE_THROWS_AS(buf.write_u32(0, 0xDEADBEEF), assert_failed);
-  }
-
-  SECTION("size must be sufficient")
-  {
-    buffer buf(4);
-    buf.resize(3);
-    REQUIRE_THROWS_AS(buf.write_u32(0, 0xDEADBEEF), assert_failed);
-  }
-
-  SECTION("size from offset must be sufficient")
-  {
-    buffer buf(4);
-    REQUIRE_THROWS_AS(buf.write_u32(1, 0xDEADBEEF), assert_failed);
-  }
 }
 
 } // namespace adapterremoval

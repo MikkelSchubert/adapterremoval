@@ -330,7 +330,7 @@ managed_writer::write(const buffer& buf, const flush mode)
   if (buf.size() || mode == flush::on) {
     writer_lock writer{ this };
 
-    writer.write(buf.get_signed(), buf.size());
+    writer.write(buf.data(), buf.size());
 
     if (mode == flush::on) {
       writer.flush();
@@ -345,7 +345,7 @@ managed_writer::write(const buffer_vec& buffers, const flush mode)
     writer_lock writer{ this };
 
     for (const auto& buf : buffers) {
-      writer.write(buf.get_signed(), buf.size());
+      writer.write(buf.data(), buf.size());
     }
 
     if (mode == flush::on) {

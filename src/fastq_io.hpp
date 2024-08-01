@@ -174,9 +174,7 @@ private:
   //! The analytical step following this step
   const size_t m_next_step;
   //! Buffer used to store partial blocks
-  buffer m_buffer{ GZIP_BLOCK_SIZE };
-  //! Offset in current buffer
-  size_t m_offset = 0;
+  buffer m_buffer{};
 
   //! Set if compression is carried out using isa-l
   bool m_isal_enabled = false;
