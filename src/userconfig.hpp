@@ -175,7 +175,9 @@ public:
   fastq_encoding io_encoding = FASTQ_ENCODING_33;
 
   //! Fixed number of bases to trim from 5' for mate 1 and mate 2 reads
+#ifdef PRE_TRIM_5P
   std::pair<unsigned, unsigned> pre_trim_fixed_5p{};
+#endif
   std::pair<unsigned, unsigned> pre_trim_fixed_3p{};
   std::pair<unsigned, unsigned> post_trim_fixed_5p{};
   std::pair<unsigned, unsigned> post_trim_fixed_3p{};
@@ -303,7 +305,9 @@ private:
   bool interleaved = false;
 
   //! Sinks for --pre-trim5p/--pre-trimp3p
+#ifdef PRE_TRIM_5P
   string_vec pre_trim5p{};
+#endif
   string_vec pre_trim3p{};
   //! Sinks for --post-trim5p/--post-trim3p
   string_vec post_trim5p{};

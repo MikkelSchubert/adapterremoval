@@ -722,6 +722,7 @@ userconfig::userconfig()
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("QUALITY TRIMMING:");
 
+#ifdef PRE_TRIM_5P
   argparser.add("--pre-trim5p", "N")
     .help("Trim the 5' of reads by a fixed amount after demultiplexing (if "
           "enabled) but before trimming adapters and low quality bases. "
@@ -730,20 +731,26 @@ userconfig::userconfig()
           "amount [default: no trimming]")
     .bind_vec(&pre_trim5p)
     .with_max_values(2);
+#endif
   argparser.add("--pre-trim3p", "N")
-    .help("Trim the 3' by a fixed amount [default: no trimming]")
+    .help("Trim the 3' of reads by a fixed amount after demultiplexing (if "
+          "enabled) but before trimming adapters and low quality bases. "
+          "Specify one value to trim mate 1 and mate 2 reads the same amount, "
+          "or two values separated by a space to trim each mate a different "
+          "amount [default: no trimming]")
     .bind_vec(&pre_trim3p)
     .with_max_values(2);
 
   argparser.add("--post-trim5p", "N")
     .help("Trim the 5' by a fixed amount after removing adapters, but before "
-          "carrying out quality based trimming. [default: no trimming]")
+          "carrying out quality based trimming [default: no trimming]")
     .deprecated_alias("--trim5p")
     .bind_vec(&post_trim5p)
     .with_max_values(2);
   argparser.add("--post-trim3p", "N")
     .deprecated_alias("--trim3p")
-    .help("Trim the 3' by a fixed amount [default: no trimming]")
+    .help("Trim the 3' by a fixed amount after removing adapters, but before "
+          "carrying out quality based trimming [default: no trimming]")
     .bind_vec(&post_trim3p)
     .with_max_values(2);
 
@@ -1126,7 +1133,9 @@ userconfig::parse_args(const string_vec& argvec)
     std::tuple<const char*, const string_vec&, std::pair<unsigned, unsigned>&>;
 
   const std::vector<fixed_trimming> fixed_trimming_options = {
+#ifdef PRE_TRIM_5P
     { "--pre-trim5p", pre_trim5p, pre_trim_fixed_5p },
+#endif
     { "--pre-trim3p", pre_trim3p, pre_trim_fixed_3p },
     { "--post-trim5p", post_trim5p, post_trim_fixed_5p },
     { "--post-trim3p", post_trim3p, post_trim_fixed_3p },
@@ -1440,8 +1449,11 @@ userconfig::is_low_quality_trimming_enabled() const
 bool
 userconfig::is_terminal_base_pre_trimming_enabled() const
 {
-  return pre_trim_fixed_5p.first || pre_trim_fixed_5p.second ||
-         pre_trim_fixed_3p.first || pre_trim_fixed_3p.second;
+  return
+#ifdef PRE_TRIM_5P
+    pre_trim_fixed_5p.first || pre_trim_fixed_5p.second ||
+#endif
+    pre_trim_fixed_3p.first || pre_trim_fixed_3p.second;
 }
 
 bool

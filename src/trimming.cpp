@@ -139,10 +139,14 @@ pre_trim_read_termini(const userconfig& config,
   size_t trim_3p = 0;
 
   if (type == read_type::mate_1) {
+#ifdef PRE_TRIM_5P
     trim_5p = config.pre_trim_fixed_5p.first;
+#endif
     trim_3p = config.pre_trim_fixed_3p.first;
   } else if (type == read_type::mate_2) {
+#ifdef PRE_TRIM_5P
     trim_5p = config.pre_trim_fixed_5p.second;
+#endif
     trim_3p = config.pre_trim_fixed_3p.second;
   } else {
     AR_FAIL("invalid read type in pre_trim_read_termini");

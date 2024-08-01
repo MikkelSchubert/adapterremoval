@@ -176,21 +176,17 @@ FASTQ processing options
 Quality trimming options
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. option:: --pre-trim5p n [n]
-
-	Trim the 5' of reads by a fixed amount after demultiplexing but before removing adapters. Specify one value to trim mate 1 and mate 2 reads the same amount, or two values separated by a space to trim each mate different amounts. Off by default.
-
 .. option:: --pre-trim3p n [n]
 
-	Trim the 3' of reads by a fixed amount after demultiplexing but before removing adapters. See ``--pre-trim5p``.
+	Trim the 3' of reads by a fixed amount after demultiplexing but before removing adapters. Specify one value to trim mate 1 and mate 2 reads the same amount, or two values separated by a space to trim each mate different amounts. Off by default.
 
 .. option:: --post-trim5p n [n]
 
-	Trim the 5' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim5p``.
+	Trim the 5' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim3p``.
 
 .. option:: --post-trim3p n [n]
 
-	Trim the 3' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim5p``.
+	Trim the 3' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim3p``.
 
 .. option:: --trim-strategy name
 

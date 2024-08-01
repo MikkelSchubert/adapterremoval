@@ -24,7 +24,7 @@ If the `--demultiplex-only` option is set, the trimming steps are skipped and ou
 3. Read processing
 ------------------
 
-If the `--pre-trim5p` or `--pre-trim3p` options are specified, the reads are trimmed by the specified amounts of bases. Next poly-X tails are trimmed if the `--pre-trim-polyx` option is specified.
+If the `--pre-trim3p` option is specified, the reads are trimmed by the specified amounts of bases. Next poly-X tails are trimmed if the `--pre-trim-polyx` option is specified.
 
 The reads and adapters (single end mode) or reads + adapters (paired end mode) are aligned, using the adapter sequences specified with `--adapter1` and `--adapter2`, with a maximum error rate defined by `-mm`. The alignment is performed as follows, for single end and paired end reads expectively:
 
