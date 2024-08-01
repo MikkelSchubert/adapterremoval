@@ -247,13 +247,13 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
   m_number_of_input_reads += num_input_reads;
   m_number_of_output_reads++;
 
-  m_max_sequence_len = read.length();
-  m_length_dist.resize_up_to(m_max_sequence_len + 1);
-  m_length_dist.inc(m_max_sequence_len);
+  const auto sequence_len = read.length();
+  m_length_dist.resize_up_to(sequence_len + 1);
+  m_length_dist.inc(sequence_len);
 
   if (std::generate_canonical<float, 32>(m_rng) <= m_sample_rate) {
-    m_nucleotide_pos.resize_up_to(m_max_sequence_len);
-    m_quality_pos.resize_up_to(m_max_sequence_len);
+    m_nucleotide_pos.resize_up_to(sequence_len);
+    m_quality_pos.resize_up_to(sequence_len);
 
     m_number_of_sampled_reads++;
 

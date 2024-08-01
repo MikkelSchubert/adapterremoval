@@ -217,13 +217,10 @@ private:
   /** GC content distribution. */
   rates m_gc_content_dist{};
 
-  /** Per position nucleotide counts indexed using ACGTN_TO_IDX. */
+  /** Per position nucleotide counts indexed using ACGTN::to_index. */
   indexed_counts<ACGTN> m_nucleotide_pos{};
-  /** Per position quality score sums indexed using ACGTN_TO_IDX. */
+  /** Per position quality score sums indexed using ACGTN::to_index. */
   indexed_counts<ACGTN> m_quality_pos{};
-
-  //! Maximum size of read processed; used to resize counters as needed
-  size_t m_max_sequence_len = 0;
 
   //! Optional duplication statistics
   duplication_stats_ptr m_duplication{};
