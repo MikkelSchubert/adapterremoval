@@ -121,9 +121,6 @@ public:
   //! Lines read from the mate 2 files
   std::vector<fastq> reads_2{};
 
-  //! Encoded FASTQ reads
-  std::string reads{};
-
   //! Buffers of (compressed) FASTQ reads
   std::vector<buffer> buffers{};
 

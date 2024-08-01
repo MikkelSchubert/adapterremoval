@@ -1256,19 +1256,23 @@ TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
 TEST_CASE("Writing_to_stream_phred_33", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  std::string str;
-  record.into_string(str);
+  buffer buf;
+  record.into_buffer(buf);
 
-  REQUIRE(str == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
+  REQUIRE(
+    std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
+    "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
 }
 
 TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  std::string str;
-  record.into_string(str);
+  buffer buf;
+  record.into_buffer(buf);
 
-  REQUIRE(str == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
+  REQUIRE(
+    std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
+    "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

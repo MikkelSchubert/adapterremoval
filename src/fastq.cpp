@@ -538,15 +538,15 @@ fastq::read_unsafe(line_reader_base& reader)
 }
 
 void
-fastq::into_string(std::string& dst) const
+fastq::into_buffer(buffer& dst) const
 {
-  dst.push_back('@');
+  dst.append_u8('@');
   dst.append(m_header);
-  dst.push_back('\n');
+  dst.append_u8('\n');
   dst.append(m_sequence);
   dst.append("\n+\n", 3);
   dst.append(m_qualities);
-  dst.push_back('\n');
+  dst.append_u8('\n');
 }
 
 ///////////////////////////////////////////////////////////////////////////////

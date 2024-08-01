@@ -365,7 +365,7 @@ split_fastq::finalize()
 }
 
 chunk_vec
-split_fastq::process(chunk_ptr chunk)
+split_fastq::process(const chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
@@ -373,29 +373,30 @@ split_fastq::process(chunk_ptr chunk)
   m_eof = chunk->eof;
 
   chunk_vec chunks;
-  const auto& src = chunk->reads;
-  for (size_t src_offset = 0; src_offset < src.size();) {
-    const auto n =
-      std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_buffer.size());
-    m_buffer.append(src.data() + src_offset, n);
+  for (const auto& src : chunk->buffers) {
+    for (size_t src_offset = 0; src_offset < src.size();) {
+      const auto n =
+        std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_buffer.size());
+      m_buffer.append(src.data() + src_offset, n);
 
-    src_offset += n;
+      src_offset += n;
 
-    if (m_buffer.size() == GZIP_BLOCK_SIZE) {
-      auto block = std::make_unique<analytical_chunk>();
+      if (m_buffer.size() == GZIP_BLOCK_SIZE) {
+        auto block = std::make_unique<analytical_chunk>();
 
-      if (m_isal_enabled) {
-        m_isal_crc32 =
-          crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
+        if (m_isal_enabled) {
+          m_isal_crc32 =
+            crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
+        }
+
+        block->uncompressed_size = m_buffer.size();
+        block->buffers.emplace_back(std::move(m_buffer));
+
+        chunks.emplace_back(m_next_step, std::move(block));
+
+        m_buffer = buffer();
+        m_buffer.reserve(GZIP_BLOCK_SIZE);
       }
-
-      block->uncompressed_size = m_buffer.size();
-      block->buffers.emplace_back(std::move(m_buffer));
-
-      chunks.emplace_back(m_next_step, std::move(block));
-
-      m_buffer = buffer();
-      m_buffer.reserve(GZIP_BLOCK_SIZE);
     }
   }
 
@@ -547,13 +548,7 @@ write_fastq::process(chunk_ptr chunk)
 
     const auto mode = (m_eof && !m_isal_enabled) ? flush::on : flush::off;
 
-    if (chunk->buffers.empty()) {
-      m_output.write(chunk->reads, mode);
-    } else {
-      AR_REQUIRE(chunk->reads.empty());
-
-      m_output.write(chunk->buffers, mode);
-    }
+    m_output.write(chunk->buffers, mode);
 
     if (m_eof && m_isal_enabled) {
       buffer trailer;
