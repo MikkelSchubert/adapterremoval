@@ -20,7 +20,7 @@
 #include "alignment.hpp"  // for extract_adapter_sequences, sequence_aligner
 #include "debug.hpp"      // for AR_REQUIRE
 #include "fastq.hpp"      // for ACGTN, fastq, fastq_pair_vec, ACGT, ACGT:...
-#include "fastq_io.hpp"   // for read_fastq, fastq_read_chunk
+#include "fastq_io.hpp"   // for read_fastq, read_chunk
 #include "reports.hpp"    // for write_html_report, write_json_report
 #include "scheduler.hpp"  // for threadstate, scheduler, analytical_step
 #include "userconfig.hpp" // for userconfig
@@ -63,7 +63,6 @@ public:
   chunk_vec process(chunk_ptr chunk) override
   {
     AR_REQUIRE(chunk);
-    auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
 
     const fastq empty_adapter("dummy", "", "");
     fastq_pair_vec adapters;
@@ -74,11 +73,11 @@ public:
     auto stats_id = m_stats_id.acquire();
     auto stats_ins = m_stats_ins.acquire();
 
-    AR_REQUIRE(file_chunk.reads_1.size() == file_chunk.reads_2.size());
-    auto it_1 = file_chunk.reads_1.begin();
-    auto it_2 = file_chunk.reads_2.begin();
+    AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
+    auto it_1 = chunk->reads_1.begin();
+    auto it_2 = chunk->reads_2.begin();
 
-    for (; it_1 != file_chunk.reads_1.end(); ++it_1, ++it_2) {
+    for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
       auto& read_1 = *it_1;
       auto& read_2 = *it_2;
 

@@ -16,8 +16,9 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "scheduler.hpp"
+#include "buffer.hpp"   // for buffer
 #include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
+#include "fastq.hpp"    // for fastq
 #include "logging.hpp"  // for error, log_stream, debug
 #include "strutils.hpp" // for indent_lines
 #include <algorithm>    // for max
@@ -26,6 +27,8 @@
 #include <memory>       // for __shared_ptr_access, operator<, unique...
 #include <system_error> // for system_error
 #include <thread>       // for thread
+
+#include "scheduler.hpp"
 
 namespace adapterremoval {
 
@@ -37,6 +40,16 @@ enum class threadtype
   //! Pure IO threads; compute work must be minimized
   io
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// analytical_chunk
+
+void
+analytical_chunk::add(const fastq& read)
+{
+  nucleotides += read.length();
+  read.into_string(reads);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_step

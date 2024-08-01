@@ -20,7 +20,7 @@
 #include "demultiplexing.hpp"
 #include "adapterset.hpp" // for adapter_set
 #include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "fastq_io.hpp"   // for fastq_read_chunk, output_chunk_ptr, fastq...
+#include "fastq_io.hpp"   // for chunk_ptr, fastq...
 #include "simd.hpp"       // for size_t
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demul...
 #include <cstddef>        // for size_t
@@ -67,18 +67,18 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   AR_REQUIRE(m_statistics->barcodes.size() == m_barcodes.size());
 
   if (m_steps.unidentified_1 != post_demux_steps::disabled) {
-    m_unidentified_1 = std::make_unique<fastq_output_chunk>();
+    m_unidentified_1 = std::make_unique<analytical_chunk>();
   }
 
   if (m_steps.unidentified_2 != post_demux_steps::disabled &&
       m_steps.unidentified_1 != m_steps.unidentified_2) {
-    m_unidentified_2 = std::make_unique<fastq_output_chunk>();
+    m_unidentified_2 = std::make_unique<analytical_chunk>();
   }
 
   for (const auto next_step : m_steps.samples) {
     AR_REQUIRE(next_step != post_demux_steps::disabled);
 
-    m_cache.push_back(std::make_unique<fastq_read_chunk>());
+    m_cache.push_back(std::make_unique<analytical_chunk>());
   }
 }
 
@@ -114,10 +114,9 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
 chunk_vec
 demultiplex_se_reads::process(chunk_ptr chunk)
 {
+  AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
-  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-
-  for (auto& read : read_chunk.reads_1) {
+  for (auto& read : chunk->reads_1) {
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
@@ -141,16 +140,16 @@ demultiplex_se_reads::process(chunk_ptr chunk)
         read.add_prefix_to_name(m_config.prefix_read_1);
       }
 
-      const read_chunk_ptr& dst = m_cache.at(best_barcode);
+      auto& dst = *m_cache.at(best_barcode);
       read.truncate(m_barcodes.at(best_barcode).first.length());
-      dst->nucleotides += read.length();
-      dst->reads_1.push_back(read);
+      dst.nucleotides += read.length();
+      dst.reads_1.push_back(read);
 
       m_statistics->barcodes.at(best_barcode) += 1;
     }
   }
 
-  return flush_cache(read_chunk.eof);
+  return flush_cache(chunk->eof);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,13 +164,13 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
 chunk_vec
 demultiplex_pe_reads::process(chunk_ptr chunk)
 {
+  AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
-  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
+  AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
-  auto it_1 = read_chunk.reads_1.begin();
-  auto it_2 = read_chunk.reads_2.begin();
-  for (; it_1 != read_chunk.reads_1.end(); ++it_1, ++it_2) {
+  auto it_1 = chunk->reads_1.begin();
+  auto it_2 = chunk->reads_2.begin();
+  for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 
     if (best_barcode < 0) {
@@ -206,7 +205,7 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
         it_2->add_prefix_to_name(m_config.prefix_read_2);
       }
 
-      const read_chunk_ptr& dst = m_cache.at(best_barcode);
+      const chunk_ptr& dst = m_cache.at(best_barcode);
 
       it_1->truncate(m_barcodes.at(best_barcode).first.length());
       dst->nucleotides += it_1->length();
@@ -219,7 +218,7 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
     }
   }
 
-  return flush_cache(read_chunk.eof);
+  return flush_cache(chunk->eof);
 }
 
 } // namespace adapterremoval

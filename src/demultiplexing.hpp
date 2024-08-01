@@ -21,7 +21,7 @@
 
 #include "barcode_table.hpp" // for barcode_table
 #include "fastq.hpp"         // for fastq_pair_vec
-#include "fastq_io.hpp"      // for read_chunk_ptr, output_chunk_ptr
+#include "fastq_io.hpp"      // for chunk_ptr
 #include "scheduler.hpp"     // for chunk_vec, chunk_ptr, analytical_step
 #include "statistics.hpp"    // for demux_stats_ptr
 #include <algorithm>         // for max
@@ -85,16 +85,16 @@ protected:
   //! chunks are set to true.
   chunk_vec flush_cache(bool eof = false);
 
-  using demultiplexed_cache = std::vector<read_chunk_ptr>;
+  using demultiplexed_cache = std::vector<chunk_ptr>;
 
   //! Cache of demultiplex reads; used to reduce the number of output chunks
   //! generated from each processed chunk, which would otherwise increase
   //! linearly with the number of barcodes.
   demultiplexed_cache m_cache{};
   //! Cache of unidentified mate 1 reads
-  output_chunk_ptr m_unidentified_1{};
+  chunk_ptr m_unidentified_1{};
   //! Cache of unidentified mate 2 reads
-  output_chunk_ptr m_unidentified_2{};
+  chunk_ptr m_unidentified_2{};
 
   //! Map of steps for output chunks;
   post_demux_steps m_steps{};

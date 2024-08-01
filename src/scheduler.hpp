@@ -18,6 +18,7 @@
 \*************************************************************************/
 #pragma once
 
+#include "debug.hpp"          // for AR_REQUIRE
 #include <algorithm>          // for copy, max, copy_backward
 #include <atomic>             // for atomic_bool
 #include <condition_variable> // for condition_variable
@@ -32,6 +33,8 @@
 
 namespace adapterremoval {
 
+class buffer;
+class fastq;
 class scheduler_step;
 enum class threadtype;
 
@@ -94,10 +97,41 @@ class analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  analytical_chunk() = default;
+  explicit analytical_chunk(bool eof_ = false)
+    : eof(eof_)
+  {
+  }
 
   /** Destructor; does nothing. */
-  virtual ~analytical_chunk() = default;
+  ~analytical_chunk() = default;
+
+  void add(const fastq& read);
+
+  //! Indicates that EOF has been reached.
+  bool eof = false;
+
+  //! Total number of nucleotides in this chunk
+  size_t nucleotides = 0;
+
+  //! Original mate separator for (paired) reads
+  char mate_separator = '\0';
+
+  //! Lines read from the mate 1 files
+  std::vector<fastq> reads_1{};
+  //! Lines read from the mate 2 files
+  std::vector<fastq> reads_2{};
+
+  //! Encoded FASTQ reads
+  std::string reads{};
+
+  //! Buffers of (compressed) FASTQ reads
+  std::vector<buffer> buffers{};
+
+  //! CRC32 of (uncompressed) data; only set if eof is true
+  uint32_t crc32 = 0;
+
+  //! Size of (uncompressed) data in buffers;
+  size_t uncompressed_size = 0;
 
   analytical_chunk(const analytical_chunk&) = delete;
   analytical_chunk(analytical_chunk&&) = delete;

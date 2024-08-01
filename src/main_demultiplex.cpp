@@ -22,7 +22,7 @@
 #include "debug.hpp"          // for AR_REQUIRE
 #include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq.hpp"          // for fastq
-#include "fastq_io.hpp"       // for fastq_read_chunk, post_process_fastq
+#include "fastq_io.hpp"       // for read_chunk, post_process_fastq
 #include "reports.hpp"        // for write_html_report, write_json_report
 #include "scheduler.hpp"      // for scheduler, threadstate, analytical_chunk
 #include "simd.hpp"           // for size_t
@@ -59,12 +59,11 @@ public:
 
   chunk_vec process(chunk_ptr chunk) override
   {
-    auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-
+    AR_REQUIRE(chunk);
     auto stats = m_stats.acquire();
-    trimmed_reads chunks(m_output, read_chunk.eof);
+    trimmed_reads chunks(m_output, chunk->eof);
 
-    for (auto& read : read_chunk.reads_1) {
+    for (auto& read : chunk->reads_1) {
       stats->read_1->process(read);
       chunks.add(read, read_type::mate_1);
     }
@@ -95,15 +94,15 @@ public:
 
   chunk_vec process(chunk_ptr chunk) override
   {
-    auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-    AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
+    AR_REQUIRE(chunk);
+    AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
     auto stats = m_stats.acquire();
-    trimmed_reads chunks(m_output, read_chunk.eof);
+    trimmed_reads chunks(m_output, chunk->eof);
 
-    auto it_1 = read_chunk.reads_1.begin();
-    auto it_2 = read_chunk.reads_2.begin();
-    while (it_1 != read_chunk.reads_1.end()) {
+    auto it_1 = chunk->reads_1.begin();
+    auto it_2 = chunk->reads_2.begin();
+    while (it_1 != chunk->reads_1.end()) {
       fastq& read_1 = *it_1++;
       fastq& read_2 = *it_2++;
 

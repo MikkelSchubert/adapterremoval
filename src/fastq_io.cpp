@@ -84,30 +84,6 @@ isal_enabled(const userconfig& config, const std::string& filename)
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'fastq_read_chunk'
-
-fastq_read_chunk::fastq_read_chunk(bool eof_)
-  : eof(eof_)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'fastq_output_chunk'
-
-fastq_output_chunk::fastq_output_chunk(bool eof_, uint32_t crc32_)
-  : eof(eof_)
-  , crc32(crc32_)
-{
-}
-
-void
-fastq_output_chunk::add(const fastq& read)
-{
-  nucleotides += read.length();
-  read.into_string(reads);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'read_fastq'
 
 enum class read_fastq::file_type
@@ -220,14 +196,13 @@ read_fastq::process(chunk_ptr chunk)
       return {};
     }
 
-    chunk = std::make_unique<fastq_read_chunk>();
+    chunk = std::make_unique<analytical_chunk>();
   } else {
     AR_REQUIRE(!m_eof && chunk);
   }
 
-  auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  auto& reads_1 = file_chunk.reads_1;
-  auto& reads_2 = file_chunk.reads_2;
+  auto& reads_1 = chunk->reads_1;
+  auto& reads_2 = chunk->reads_2;
 
   if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
     if (m_mode == file_type::read_1) {
@@ -255,8 +230,8 @@ read_fastq::process(chunk_ptr chunk)
 
   // Head must be checked after the first loop, to produce at least one chunk
   m_eof |= !m_head;
-  file_chunk.eof = m_eof;
-  file_chunk.mate_separator = m_mate_separator;
+  chunk->eof = m_eof;
+  chunk->mate_separator = m_mate_separator;
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
@@ -316,9 +291,9 @@ post_process_fastq::post_process_fastq(const userconfig& config,
 chunk_vec
 post_process_fastq::process(chunk_ptr chunk)
 {
-  auto& file_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  auto& reads_1 = file_chunk.reads_1;
-  auto& reads_2 = file_chunk.reads_2;
+  AR_REQUIRE(chunk);
+  auto& reads_1 = chunk->reads_1;
+  auto& reads_2 = chunk->reads_2;
 
   auto stats_1 = m_stats_1.acquire();
   auto stats_2 = m_stats_2.acquire();
@@ -333,7 +308,7 @@ post_process_fastq::process(chunk_ptr chunk)
     auto it_1 = reads_1.begin();
     auto it_2 = reads_2.begin();
     for (; it_1 != reads_1.end(); ++it_1, ++it_2) {
-      fastq::normalize_paired_reads(*it_1, *it_2, file_chunk.mate_separator);
+      fastq::normalize_paired_reads(*it_1, *it_2, chunk->mate_separator);
 
       it_1->post_process(m_encoding);
       stats_1->process(*it_1);
@@ -392,14 +367,13 @@ split_fastq::finalize()
 chunk_vec
 split_fastq::process(chunk_ptr chunk)
 {
-  auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
-
+  AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
-  m_eof = file_chunk.eof;
+  m_eof = chunk->eof;
 
   chunk_vec chunks;
-  const auto& src = file_chunk.reads;
+  const auto& src = chunk->reads;
   for (size_t src_offset = 0; src_offset < src.size();) {
     const auto n =
       std::min(src.size() - src_offset, m_buffer.size() - m_offset);
@@ -409,7 +383,7 @@ split_fastq::process(chunk_ptr chunk)
     m_offset += n;
 
     if (m_offset == m_buffer.size()) {
-      auto block = std::make_unique<fastq_output_chunk>();
+      auto block = std::make_unique<analytical_chunk>();
 
       if (m_isal_enabled) {
         m_isal_crc32 =
@@ -427,7 +401,7 @@ split_fastq::process(chunk_ptr chunk)
   }
 
   if (m_eof) {
-    auto block = std::make_unique<fastq_output_chunk>(true);
+    auto block = std::make_unique<analytical_chunk>(true);
 
     m_buffer.resize(m_offset);
     if (m_isal_enabled) {
@@ -463,11 +437,11 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config,
 chunk_vec
 gzip_split_fastq::process(chunk_ptr chunk)
 {
-  auto& input_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
-  AR_REQUIRE(input_chunk.buffers.size() == 1);
+  AR_REQUIRE(chunk);
+  AR_REQUIRE(chunk->buffers.size() == 1);
 
-  // Enable re-use of the fastq_output_chunk
-  buffer& output_buffer = input_chunk.buffers.front();
+  // Enable re-use of the analytical_chunks
+  buffer& output_buffer = chunk->buffers.front();
   buffer input_buffer(GZIP_BLOCK_SIZE);
   std::swap(input_buffer, output_buffer);
 
@@ -478,7 +452,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
     isal_deflate_stateless_init(&stream);
 
     stream.flush = FULL_FLUSH;
-    stream.end_of_stream = input_chunk.eof;
+    stream.end_of_stream = chunk->eof;
 
     stream.level = isal_level(m_config.compression_level);
     stream.level_buf_size = isal_buffer_size(stream.level);
@@ -567,28 +541,27 @@ write_fastq::write_fastq(const userconfig& config, const std::string& filename)
 chunk_vec
 write_fastq::process(chunk_ptr chunk)
 {
-  auto& file_chunk = dynamic_cast<fastq_output_chunk&>(*chunk);
-
+  AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
 
   try {
-    m_eof = file_chunk.eof;
-    m_uncompressed_bytes += file_chunk.uncompressed_size;
+    m_eof = chunk->eof;
+    m_uncompressed_bytes += chunk->uncompressed_size;
 
     const auto mode = (m_eof && !m_isal_enabled) ? flush::on : flush::off;
 
-    if (file_chunk.buffers.empty()) {
-      m_output.write(file_chunk.reads, mode);
+    if (chunk->buffers.empty()) {
+      m_output.write(chunk->reads, mode);
     } else {
-      AR_REQUIRE(file_chunk.reads.empty());
+      AR_REQUIRE(chunk->reads.empty());
 
-      m_output.write(file_chunk.buffers, mode);
+      m_output.write(chunk->buffers, mode);
     }
 
     if (m_eof && m_isal_enabled) {
       buffer trailer(8);
-      trailer.write_u32(0, file_chunk.crc32);
+      trailer.write_u32(0, chunk->crc32);
       trailer.write_u32(4, m_uncompressed_bytes);
 
       m_output.write(trailer, flush::on);

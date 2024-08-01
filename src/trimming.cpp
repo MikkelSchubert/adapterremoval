@@ -23,7 +23,7 @@
 #include "commontypes.hpp" // for read_type, trimming_strategy, merge_strategy
 #include "counts.hpp"      // for counts, indexed_count
 #include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
-#include "fastq_io.hpp"    // for output_chunk_ptr, fastq_read_chunk, fastq_...
+#include "fastq_io.hpp"    // for chunk_ptr, fastq_...
 #include "simd.hpp"        // for size_t
 #include "statistics.hpp"  // for trimming_statistics, reads_and_bases, fast...
 #include "userconfig.hpp"  // for userconfig, output_sample_files, output_sa...
@@ -290,7 +290,7 @@ trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
   AR_REQUIRE(filenames.size() == pipeline_steps.size());
 
   for (size_t i = 0; i < pipeline_steps.size(); ++i) {
-    m_chunks.emplace_back(std::make_unique<fastq_output_chunk>(eof));
+    m_chunks.emplace_back(std::make_unique<analytical_chunk>(eof));
   }
 }
 
@@ -355,8 +355,8 @@ se_reads_processor::se_reads_processor(const userconfig& config,
 chunk_vec
 se_reads_processor::process(chunk_ptr chunk)
 {
-  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  trimmed_reads chunks(m_output, read_chunk.eof);
+  AR_REQUIRE(chunk);
+  trimmed_reads chunks(m_output, chunk->eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
@@ -364,7 +364,7 @@ se_reads_processor::process(chunk_ptr chunk)
 
   auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
-  for (auto& read : read_chunk.reads_1) {
+  for (auto& read : chunk->reads_1) {
     const size_t in_length = read.length();
 
     // Trim fixed number of bases from 5' and/or 3' termini
@@ -460,24 +460,24 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
 chunk_vec
 pe_reads_processor::process(chunk_ptr chunk)
 {
+  AR_REQUIRE(chunk);
   sequence_merger merger;
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
 
   auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
-  auto& read_chunk = dynamic_cast<fastq_read_chunk&>(*chunk);
-  trimmed_reads chunks(m_output, read_chunk.eof);
+  trimmed_reads chunks(m_output, chunk->eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
   stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
 
-  AR_REQUIRE(read_chunk.reads_1.size() == read_chunk.reads_2.size());
+  AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
-  auto it_1 = read_chunk.reads_1.begin();
-  auto it_2 = read_chunk.reads_2.begin();
-  while (it_1 != read_chunk.reads_1.end()) {
+  auto it_1 = chunk->reads_1.begin();
+  auto it_2 = chunk->reads_2.begin();
+  while (it_1 != chunk->reads_1.end()) {
     fastq& read_1 = *it_1++;
     fastq& read_2 = *it_2++;
 

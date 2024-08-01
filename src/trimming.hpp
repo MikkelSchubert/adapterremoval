@@ -20,7 +20,6 @@
 #pragma once
 
 #include "fastq.hpp"      // for fastq_pair_vec
-#include "fastq_io.hpp"   // for output_chunk_ptr
 #include "scheduler.hpp"  // for chunk_vec, chunk_ptr, threadstate, analyt...
 #include "statistics.hpp" // for trimming_statistics, trim_stats_ptr
 #include <cstddef>        // for size_t
@@ -53,7 +52,7 @@ private:
   const output_sample_files& m_map;
 
   //! A set output chunks being created; typically fewer than read_type::max.
-  std::vector<output_chunk_ptr> m_chunks{};
+  std::vector<chunk_ptr> m_chunks{};
 };
 
 class reads_processor : public analytical_step

@@ -36,12 +36,10 @@
 
 namespace adapterremoval {
 
-class fastq_output_chunk;
-class fastq_read_chunk;
+class analytical_chunk;
 class userconfig;
 
-using output_chunk_ptr = std::unique_ptr<fastq_output_chunk>;
-using read_chunk_ptr = std::unique_ptr<fastq_read_chunk>;
+using chunk_ptr = std::unique_ptr<analytical_chunk>;
 
 //! Rough number of nucleotides to read every cycle
 const size_t INPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
@@ -49,74 +47,6 @@ const size_t INPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 const size_t GZIP_BLOCK_SIZE = 1LLU * 64 * 1024;
 //! Size of blocks to generate before writing to output
 const size_t OUTPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
-
-/**
- * Container object for (demultiplexed) reads.
- */
-class fastq_read_chunk : public analytical_chunk
-{
-public:
-  /** Create chunk representing lines starting at line offset (1-based). */
-  explicit fastq_read_chunk(bool eof_ = false);
-
-  ~fastq_read_chunk() override = default;
-
-  //! Indicates that EOF has been reached.
-  bool eof = false;
-
-  //! Total number of nucleotides in this chunk
-  size_t nucleotides = 0;
-
-  //! Original mate separator for (paired) reads
-  char mate_separator = MATE_SEPARATOR;
-
-  //! Lines read from the mate 1 files
-  fastq_vec reads_1{};
-  //! Lines read from the mate 2 files
-  fastq_vec reads_2{};
-
-  fastq_read_chunk(const fastq_read_chunk&) = delete;
-  fastq_read_chunk(fastq_read_chunk&&) = delete;
-  fastq_read_chunk& operator=(const fastq_read_chunk&) = delete;
-  fastq_read_chunk& operator=(fastq_read_chunk&&) = delete;
-};
-
-/**
- * Container object for processed reads.
- */
-class fastq_output_chunk : public analytical_chunk
-{
-public:
-  /** Constructor; does nothing. */
-  explicit fastq_output_chunk(bool eof_ = false, uint32_t crc32 = 0);
-
-  ~fastq_output_chunk() override = default;
-
-  /** Add FASTQ read to output buffer. */
-  void add(const fastq& read);
-
-  //! Indicates that EOF has been reached.
-  bool eof = false;
-  //! CRC32 of (uncompressed) data; only set if eof is true
-  uint32_t crc32 = 0;
-
-  //! Total number of nucleotides in this chunk
-  size_t nucleotides = 0;
-
-  //! Encoded FASTQ reads
-  std::string reads{};
-
-  //! Buffers of (compressed) FASTQ reads
-  buffer_vec buffers{};
-
-  //! Size of (uncompressed) data in buffers;
-  size_t uncompressed_size = 0;
-
-  fastq_output_chunk(const fastq_output_chunk&) = delete;
-  fastq_output_chunk(fastq_output_chunk&&) = delete;
-  fastq_output_chunk& operator=(const fastq_output_chunk&) = delete;
-  fastq_output_chunk& operator=(fastq_output_chunk&&) = delete;
-};
 
 /**
  * Simple file reading step.
