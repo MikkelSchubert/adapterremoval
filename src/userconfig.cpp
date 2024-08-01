@@ -1179,7 +1179,7 @@ userconfig::parse_args(const string_vec& argvec)
                  << shell_escape(out_basename);
 
     return argparse::parse_result::error;
-  } else if (out_basename == DEV_NULL) {
+  } else if (out_basename == DEV_NULL && run_type != ar_command::benchmark) {
     // Relevant output options depend on input files and other settings
     const std::vector<std::pair<std::string, bool>> output_keys = {
       { "--out-file1",
