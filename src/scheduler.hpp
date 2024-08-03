@@ -97,17 +97,14 @@ class analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  explicit analytical_chunk(bool eof_ = false)
-    : eof(eof_)
-  {
-  }
+  analytical_chunk() = default;
 
   /** Destructor; does nothing. */
   ~analytical_chunk() = default;
 
-  void add(const fastq& read);
-
-  //! Indicates that EOF has been reached.
+  //! Indicates that this is the first chunk
+  bool first = false;
+  //! Indicates that this is the last chunk/that EOF has been reached
   bool eof = false;
 
   //! Total number of nucleotides in this chunk

@@ -1251,31 +1251,6 @@ TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Writing to stream
-
-TEST_CASE("Writing_to_stream_phred_33", "[fastq::fastq]")
-{
-  const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  buffer buf;
-  record.into_buffer(buf);
-
-  REQUIRE(
-    std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
-    "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
-}
-
-TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
-{
-  const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
-  buffer buf;
-  record.into_buffer(buf);
-
-  REQUIRE(
-    std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
-    "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n");
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Guessing the mate separator
 
 TEST_CASE("guess_mate_separator__empty_lists", "[fastq::guess_mate_separator]")

@@ -25,6 +25,7 @@
 #include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
 #include "fastq_io.hpp"    // for chunk_ptr, fastq_...
 #include "output.hpp"      // for sample_output_files, processed_reads
+#include "serializer.hpp"  // for fastq_flags
 #include "simd.hpp"        // for size_t
 #include "statistics.hpp"  // for trimming_statistics, reads_and_bases, fast...
 #include "userconfig.hpp"  // for userconfig
@@ -320,7 +321,7 @@ chunk_vec
 se_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
-  processed_reads chunks(m_output, chunk->eof);
+  processed_reads chunks{ m_output, chunk->first };
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
@@ -363,16 +364,16 @@ se_reads_processor::process(chunk_ptr chunk)
 
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
-      chunks.add(read, read_type::mate_1);
+      chunks.add(read, read_type::mate_1, fastq_flags::se);
     } else {
       stats->discarded->process(read);
-      chunks.add(read, read_type::discarded);
+      chunks.add(read, read_type::discarded, fastq_flags::se_fail);
     }
   }
 
   m_stats.release(stats);
 
-  return chunks.finalize();
+  return chunks.finalize(chunk->eof);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -431,7 +432,7 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
-  processed_reads chunks(m_output, chunk->eof);
+  processed_reads chunks{ m_output, chunk->first };
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
@@ -507,10 +508,10 @@ pe_reads_processor::process(chunk_ptr chunk)
 
         if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
-          chunks.add(read_1, read_type::merged);
+          chunks.add(read_1, read_type::merged, fastq_flags::se);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(read_1, read_type::discarded);
+          chunks.add(read_1, read_type::discarded, fastq_flags::se_fail);
         }
 
         continue;
@@ -566,9 +567,12 @@ pe_reads_processor::process(chunk_ptr chunk)
     stats->total_trimmed.inc_bases((in_length_1 - read_1.length()) +
                                    (in_length_2 - read_2.length()));
 
+    const auto flags_1 = is_ok_1 ? fastq_flags::pe_1 : fastq_flags::pe_1_fail;
+    const auto flags_2 = is_ok_2 ? fastq_flags::pe_2 : fastq_flags::pe_2_fail;
+
     // Queue reads last, since this result in modifications to lengths
-    chunks.add(read_1, type_1);
-    chunks.add(read_2, type_2);
+    chunks.add(read_1, type_1, flags_1);
+    chunks.add(read_2, type_2, flags_2);
   }
 
   // Track amount of overlapping bases "lost" due to read merging
@@ -577,7 +581,7 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   m_stats.release(stats);
 
-  return chunks.finalize();
+  return chunks.finalize(chunk->eof);
 }
 
 } // namespace adapterremoval

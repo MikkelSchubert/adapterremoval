@@ -171,9 +171,6 @@ public:
   /** Like `read`, but post-processing must be manually called afterwards */
   bool read_unsafe(line_reader_base& reader);
 
-  /** Converts a FASTQ record to a string ending with a newline */
-  void into_buffer(buffer& dst) const;
-
   /** Converts an error-probability to a Phred+33 encoded quality score. **/
   static char p_to_phred_33(double p);
 

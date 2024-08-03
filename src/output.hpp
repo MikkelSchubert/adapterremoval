@@ -33,6 +33,7 @@ class buffer;
 class scheduler;
 class userconfig;
 class analytical_chunk;
+enum class fastq_flags;
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
 using chunk_ptr_vec = std::vector<chunk_ptr>;
@@ -82,6 +83,12 @@ public:
 
   /** Returns the offset to the pipeline step/filename for a given read type. */
   [[nodiscard]] size_t offset(read_type value) const;
+
+  /** Returns the format for a given offset */
+  [[nodiscard]] output_format format(size_t offset) const
+  {
+    return m_files.at(offset).format;
+  }
 
   /** Returns the filename for a given offset */
   [[nodiscard]] const std::string& filename(size_t offset) const
@@ -151,13 +158,13 @@ private:
 class processed_reads
 {
 public:
-  processed_reads(const sample_output_files& map, bool eof);
+  explicit processed_reads(const sample_output_files& map, bool first);
 
   /** Adds a read of the given type to be processed */
-  void add(const fastq& read, read_type type);
+  void add(const fastq& read, read_type type, fastq_flags flags);
 
   /** Returns a chunk for each generated type of processed reads. */
-  chunk_vec finalize();
+  chunk_vec finalize(bool eof);
 
 private:
   const sample_output_files& m_map;
@@ -194,8 +201,8 @@ class demultiplexed_reads
 public:
   explicit demultiplexed_reads(const post_demux_steps& steps);
 
-  void add_unidentified_1(const fastq& read);
-  void add_unidentified_2(const fastq& read);
+  void add_unidentified_1(const fastq& read, fastq_flags flags);
+  void add_unidentified_2(const fastq& read, fastq_flags flags);
   void add_read_1(fastq&& read, size_t sample);
   void add_read_2(fastq&& read, size_t sample);
 
@@ -211,8 +218,12 @@ private:
   chunk_ptr_vec m_samples{};
   //! Cache of unidentified mate 1 reads
   chunk_ptr m_unidentified_1{};
+  //! Format of unidentified 1 reads
+  const output_format m_unidentified_1_format;
   //! Cache of unidentified mate 2 reads
   chunk_ptr m_unidentified_2{};
+  //! Format of unidentified 1 reads
+  const output_format m_unidentified_2_format;
 };
 
 } // namespace adapterremoval

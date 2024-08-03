@@ -16,18 +16,50 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "output.hpp"    // declarations
-#include "buffer.hpp"    // for buffer
-#include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
-#include "fastq.hpp"     // for fastq
-#include "fastq_io.hpp"  // for write_fastq, split_fastq, gzip_split_fastq
-#include "scheduler.hpp" // for analytical_chunk
-#include "strutils.hpp"  // for ends_with
-#include <limits>        // for numeric_limits
+#include "output.hpp"     // declarations
+#include "buffer.hpp"     // for buffer
+#include "debug.hpp"      // for AR_REQUIRE, AR_FAIL
+#include "fastq.hpp"      // for fastq
+#include "fastq_io.hpp"   // for write_fastq, split_fastq, gzip_split_fastq
+#include "scheduler.hpp"  // for analytical_chunk
+#include "serializer.hpp" // for fastq_serialzier
+#include "strutils.hpp"   // for ends_with
+#include <limits>         // for numeric_limits
 
 namespace adapterremoval {
 
 class userconfig;
+
+namespace {
+
+buffer&
+get_buffer(chunk_ptr& chunk)
+{
+  AR_REQUIRE(chunk);
+  if (chunk->buffers.empty()) {
+    chunk->buffers.emplace_back();
+  }
+
+  return chunk->buffers.back();
+}
+
+void
+serialize_header(chunk_ptr& chunk, const output_format format)
+{
+  fastq_serializer::header(get_buffer(chunk), format);
+}
+
+void
+serialize_record(chunk_ptr& chunk,
+                 const fastq& record,
+                 const output_format format,
+                 const fastq_flags flags)
+{
+  fastq_serializer::record(get_buffer(chunk), record, format, flags);
+  chunk->nucleotides += record.length();
+}
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `sample_output_files`
@@ -44,8 +76,10 @@ add_write_step(scheduler& sch,
 
   switch (file.format) {
     case output_format::fastq:
+    case output_format::sam:
       break;
-    case output_format::fastq_gzip: {
+    case output_format::fastq_gzip:
+    case output_format::sam_gzip: {
       step_id = sch.add<gzip_split_fastq>(config, file, step_id);
       step_id = sch.add<split_fastq>(config, file, step_id);
       break;
@@ -108,13 +142,17 @@ output_files::parse_extension(const std::string& filename, output_format& sink)
   const std::string value = "." + to_lower(filename);
   if (ends_with(value, ".fq.gz") || ends_with(value, ".fastq.gz")) {
     sink = output_format::fastq_gzip;
-    return true;
   } else if (ends_with(value, ".fq") || ends_with(value, ".fastq")) {
     sink = output_format::fastq;
-    return true;
+  } else if (ends_with(value, ".sam.gz")) {
+    sink = output_format::sam_gzip;
+  } else if (ends_with(value, ".sam")) {
+    sink = output_format::sam;
+  } else {
+    return false;
   }
 
-  return false;
+  return true;
 }
 
 std::string_view
@@ -123,10 +161,12 @@ output_files::file_extension(const output_format format)
   switch (format) {
     case output_format::fastq:
       return ".fastq";
-      break;
     case output_format::fastq_gzip:
       return ".fastq.gz";
-      break;
+    case output_format::sam:
+      return ".sam";
+    case output_format::sam_gzip:
+      return ".sam.gz";
     default:
       AR_FAIL("invalid output format");
   }
@@ -156,34 +196,42 @@ output_files::add_write_steps(scheduler& sch, const userconfig& config)
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `processed_reads`
 
-processed_reads::processed_reads(const sample_output_files& map, const bool eof)
+processed_reads::processed_reads(const sample_output_files& map, bool first)
   : m_map(map)
 {
   const auto pipeline_steps = map.pipeline_steps().size();
   AR_REQUIRE(map.files().size() == pipeline_steps);
 
   for (size_t i = 0; i < pipeline_steps; ++i) {
-    m_chunks.emplace_back(std::make_unique<analytical_chunk>(eof));
+    m_chunks.emplace_back(std::make_unique<analytical_chunk>());
+    if (first) {
+      serialize_header(m_chunks.back(), m_map.format(i));
+    }
   }
 }
 
 void
-processed_reads::add(const fastq& read, const read_type type)
+processed_reads::add(const fastq& read,
+                     const read_type type,
+                     const fastq_flags flags)
 {
   const size_t offset = m_map.offset(type);
   if (offset != sample_output_files::disabled) {
-    m_chunks.at(offset)->add(read);
+    serialize_record(m_chunks.at(offset), read, m_map.format(offset), flags);
   }
 }
 
 chunk_vec
-processed_reads::finalize()
+processed_reads::finalize(bool eof)
 {
   chunk_vec chunks;
 
   for (size_t i = 0; i < m_chunks.size(); ++i) {
-    chunks.emplace_back(m_map.pipeline_steps().at(i),
-                        std::move(m_chunks.at(i)));
+    const auto next_step = m_map.pipeline_steps().at(i);
+    auto& chunk = m_chunks.at(i);
+    chunk->eof = eof;
+
+    chunks.emplace_back(next_step, std::move(chunk));
   }
 
   return chunks;
@@ -222,14 +270,18 @@ flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
 
 demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
   : m_steps(steps)
+  , m_unidentified_1_format(steps.unidentified_1_format)
+  , m_unidentified_2_format(steps.unidentified_2_format)
 {
   if (m_steps.unidentified_1 != post_demux_steps::disabled) {
     m_unidentified_1 = std::make_unique<analytical_chunk>();
+    serialize_header(m_unidentified_1, m_unidentified_1_format);
   }
 
   if (m_steps.unidentified_2 != post_demux_steps::disabled &&
       m_steps.unidentified_1 != m_steps.unidentified_2) {
     m_unidentified_2 = std::make_unique<analytical_chunk>();
+    serialize_header(m_unidentified_2, m_unidentified_2_format);
   }
 
   for (const auto next_step : m_steps.samples) {
@@ -240,21 +292,23 @@ demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
 }
 
 void
-demultiplexed_reads::add_unidentified_1(const fastq& read)
+demultiplexed_reads::add_unidentified_1(const fastq& read,
+                                        const fastq_flags flags)
 {
   if (m_unidentified_1) {
-    m_unidentified_1->add(read);
+    serialize_record(m_unidentified_1, read, m_unidentified_1_format, flags);
   }
 }
 
 void
-demultiplexed_reads::add_unidentified_2(const fastq& read)
+demultiplexed_reads::add_unidentified_2(const fastq& read,
+                                        const fastq_flags flags)
 {
   if (m_unidentified_2) {
-    m_unidentified_2->add(read);
+    serialize_record(m_unidentified_2, read, m_unidentified_1_format, flags);
   } else if (m_steps.unidentified_1 == m_steps.unidentified_2) {
     if (m_unidentified_1) {
-      m_unidentified_1->add(read);
+      serialize_record(m_unidentified_1, read, m_unidentified_2_format, flags);
     }
   }
 }

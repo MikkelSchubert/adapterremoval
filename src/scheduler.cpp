@@ -42,20 +42,6 @@ enum class threadtype
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// analytical_chunk
-
-void
-analytical_chunk::add(const fastq& read)
-{
-  if (buffers.empty()) {
-    buffers.emplace_back();
-  }
-
-  nucleotides += read.length();
-  read.into_buffer(buffers.back());
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
 analytical_step::analytical_step(processing_order step_order, std::string name)

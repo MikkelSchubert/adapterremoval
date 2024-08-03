@@ -93,6 +93,8 @@ private:
 
   //! The kind of data read by the reader (SE, PE, interleaved)
   file_type m_mode;
+  //! Used to track whether the first block has been read
+  bool m_first = true;
   //! Used to track whether an EOF block has been received.
   bool m_eof = false;
   //! Number of reads to process

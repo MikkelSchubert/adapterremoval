@@ -549,18 +549,6 @@ fastq::read_unsafe(line_reader_base& reader)
   return true;
 }
 
-void
-fastq::into_buffer(buffer& dst) const
-{
-  dst.append_u8('@');
-  dst.append(m_header);
-  dst.append_u8('\n');
-  dst.append(m_sequence);
-  dst.append("\n+\n", 3);
-  dst.append(m_qualities);
-  dst.append_u8('\n');
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Public helper functions
 

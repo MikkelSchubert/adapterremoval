@@ -62,12 +62,14 @@ enum class output_format
 {
   //! Uncompressed FASTQ reads
   fastq,
-  //! Gzipped FASTQ reads
+  //! Gzip compressed FASTQ reads
   fastq_gzip,
+  //! Unaligned SAM (Sequence Alignment Map) records
+  sam,
+  //! Gzip compressed unaligned SAM (Sequence Alignment Map) records
+  sam_gzip,
 
   // TODO:
-  //! Unaligned SAM (Sequence Alignment Map) records
-  // sam,
   //! Unaligned BAM (Binary Alignment Map) records
   // bam,
   //! Uncompressed, unaligned BAM (Binary Alignment Map) records

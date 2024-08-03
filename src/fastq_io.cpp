@@ -74,8 +74,10 @@ isal_enabled(const userconfig& config, const output_file file)
 {
   switch (file.format) {
     case output_format::fastq:
+    case output_format::sam:
       return false;
     case output_format::fastq_gzip:
+    case output_format::sam_gzip:
       return config.compression_level <= MAX_ISAL_LEVEL;
     default:
       AR_FAIL("invalid output format");
@@ -233,6 +235,8 @@ read_fastq::process(chunk_ptr chunk)
   m_eof |= !m_head;
   chunk->eof = m_eof;
   chunk->mate_separator = m_mate_separator;
+  chunk->first = m_first;
+  m_first = false;
 
   chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
@@ -402,7 +406,8 @@ split_fastq::process(const chunk_ptr chunk)
   }
 
   if (m_eof) {
-    auto block = std::make_unique<analytical_chunk>(true);
+    auto block = std::make_unique<analytical_chunk>();
+    block->eof = true;
 
     if (m_isal_enabled) {
       m_isal_crc32 =

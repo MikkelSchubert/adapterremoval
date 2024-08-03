@@ -150,6 +150,7 @@ CORE_OBJS := \
 	$(OBJS_DIR)/logging.o \
 	$(OBJS_DIR)/managed_io.o \
 	$(OBJS_DIR)/mathutils.o \
+	$(OBJS_DIR)/serializer.o \
 	$(OBJS_DIR)/simd_avx2.o \
 	$(OBJS_DIR)/simd_avx512bw.o \
 	$(OBJS_DIR)/simd_sse2.o \
@@ -197,6 +198,7 @@ TEST_OBJS := \
 	$(OBJS_DIR)/logging_test.o \
 	$(OBJS_DIR)/main_test.o \
 	$(OBJS_DIR)/mathutils_test.o \
+	$(OBJS_DIR)/serializer_test.o \
 	$(OBJS_DIR)/strutils_test.o \
 	$(OBJS_DIR)/utilities_test.o
 

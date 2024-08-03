@@ -22,7 +22,7 @@
 #include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "fastq_io.hpp"   // for chunk_ptr, fastq...
 #include "output.hpp"     // for output_files
-#include "simd.hpp"       // for size_t
+#include "serializer.hpp" // for fastq_flags
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demul...
 #include <cstddef>        // for size_t
 #include <memory>         // for make_unique, unique_ptr
@@ -81,7 +81,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
       }
 
       m_statistics->unidentified_stats_1->process(read);
-      m_cache.add_unidentified_1(read);
+      m_cache.add_unidentified_1(read, fastq_flags::se);
     } else {
       read.truncate(m_barcodes.at(best_barcode).first.length());
 
@@ -133,8 +133,8 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
       m_statistics->unidentified_stats_1->process(*it_1);
       m_statistics->unidentified_stats_2->process(*it_2);
 
-      m_cache.add_unidentified_1(*it_1);
-      m_cache.add_unidentified_2(*it_2);
+      m_cache.add_unidentified_1(*it_1, fastq_flags::pe_1);
+      m_cache.add_unidentified_2(*it_2, fastq_flags::pe_2);
     } else {
       // Prefixing with user supplied prefixes is also done during trimming
       if (m_config.run_type == ar_command::demultiplex_only) {

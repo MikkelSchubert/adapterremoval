@@ -26,6 +26,7 @@
 #include "output.hpp"         // for output_files, processed reads
 #include "reports.hpp"        // for write_html_report, write_json_report
 #include "scheduler.hpp"      // for scheduler, threadstate, analytical_chunk
+#include "serializer.hpp"     // for fastq_flags
 #include "simd.hpp"           // for size_t
 #include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
 #include "trimming.hpp"       // for  reads_processor
@@ -56,16 +57,16 @@ public:
   {
     AR_REQUIRE(chunk);
     auto stats = m_stats.acquire();
-    processed_reads chunks(m_output, chunk->eof);
+    processed_reads chunks{ m_output, chunk->first };
 
     for (auto& read : chunk->reads_1) {
       stats->read_1->process(read);
-      chunks.add(read, read_type::mate_1);
+      chunks.add(read, read_type::mate_1, fastq_flags::se);
     }
 
     m_stats.release(stats);
 
-    return chunks.finalize();
+    return chunks.finalize(chunk->eof);
   }
 
   se_demuxed_processor(const se_demuxed_processor&) = delete;
@@ -93,7 +94,7 @@ public:
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
     auto stats = m_stats.acquire();
-    processed_reads chunks(m_output, chunk->eof);
+    processed_reads chunks{ m_output, chunk->first };
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();
@@ -104,13 +105,13 @@ public:
       stats->read_1->process(read_1);
       stats->read_2->process(read_2);
 
-      chunks.add(read_1, read_type::mate_1);
-      chunks.add(read_2, read_type::mate_2);
+      chunks.add(read_1, read_type::mate_1, fastq_flags::pe_1);
+      chunks.add(read_2, read_type::mate_2, fastq_flags::pe_2);
     }
 
     m_stats.release(stats);
 
-    return chunks.finalize();
+    return chunks.finalize(chunk->eof);
   }
 
   pe_demuxed_processor(const pe_demuxed_processor&) = delete;
