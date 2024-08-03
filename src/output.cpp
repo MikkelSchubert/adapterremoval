@@ -146,8 +146,9 @@ output_files::add_write_steps(scheduler& sch, const userconfig& config)
     unidentified_1_step = add_write_step(sch, config, unidentified_1);
   }
 
-  if (unidentified_1.name != unidentified_2.name &&
-      unidentified_2.name != DEV_NULL) {
+  if (unidentified_1.name == unidentified_2.name) {
+    unidentified_2_step = unidentified_1_step;
+  } else if (unidentified_2.name != DEV_NULL) {
     unidentified_2_step = add_write_step(sch, config, unidentified_2);
   }
 }
@@ -186,6 +187,108 @@ processed_reads::finalize()
   }
 
   return chunks;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for `post_demux_steps`
+
+const size_t post_demux_steps::disabled = output_files::disabled;
+
+post_demux_steps::post_demux_steps(const output_files& output)
+  : unidentified_1(output.unidentified_1_step)
+  , unidentified_1_format(output.unidentified_1.format)
+  , unidentified_2(output.unidentified_2_step)
+  , unidentified_2_format(output.unidentified_2.format)
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for `demultiplexed_reads`
+
+namespace {
+
+template<typename T>
+void
+flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
+{
+  if (eof || ptr->nucleotides >= INPUT_BLOCK_SIZE) {
+    ptr->eof = eof;
+    output.push_back(chunk_pair(step, std::move(ptr)));
+    ptr = std::make_unique<T>();
+  }
+}
+
+} // namespace
+
+demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
+  : m_steps(steps)
+{
+  if (m_steps.unidentified_1 != post_demux_steps::disabled) {
+    m_unidentified_1 = std::make_unique<analytical_chunk>();
+  }
+
+  if (m_steps.unidentified_2 != post_demux_steps::disabled &&
+      m_steps.unidentified_1 != m_steps.unidentified_2) {
+    m_unidentified_2 = std::make_unique<analytical_chunk>();
+  }
+
+  for (const auto next_step : m_steps.samples) {
+    AR_REQUIRE(next_step != post_demux_steps::disabled);
+
+    m_samples.push_back(std::make_unique<analytical_chunk>());
+  }
+}
+
+void
+demultiplexed_reads::add_unidentified_1(const fastq& read)
+{
+  if (m_unidentified_1) {
+    m_unidentified_1->add(read);
+  }
+}
+
+void
+demultiplexed_reads::add_unidentified_2(const fastq& read)
+{
+  if (m_unidentified_2) {
+    m_unidentified_2->add(read);
+  } else if (m_steps.unidentified_1 == m_steps.unidentified_2) {
+    if (m_unidentified_1) {
+      m_unidentified_1->add(read);
+    }
+  }
+}
+
+void
+demultiplexed_reads::add_read_1(fastq&& read, size_t sample)
+{
+  m_samples.at(sample)->reads_1.push_back(std::move(read));
+}
+
+void
+demultiplexed_reads::add_read_2(fastq&& read, size_t sample)
+{
+  m_samples.at(sample)->reads_2.push_back(std::move(read));
+}
+
+chunk_vec
+demultiplexed_reads::flush(bool eof)
+{
+  chunk_vec output;
+
+  if (m_unidentified_1) {
+    flush_chunk(output, m_unidentified_1, m_steps.unidentified_1, eof);
+  }
+
+  if (m_unidentified_2) {
+    flush_chunk(output, m_unidentified_2, m_steps.unidentified_2, eof);
+  }
+
+  for (size_t nth = 0; nth < m_samples.size(); ++nth) {
+    flush_chunk(output, m_samples.at(nth), m_steps.samples.at(nth), eof);
+  }
+
+  return output;
 }
 
 } // namespace adapterremoval

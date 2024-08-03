@@ -54,7 +54,6 @@ remove_adapter_sequences(const userconfig& config)
   output.add_write_steps(sch, config);
 
   post_demux_steps steps{ output };
-  size_t processing_step = std::numeric_limits<size_t>::max();
 
   // Step 4 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < output.samples().size(); ++nth) {
@@ -70,6 +69,7 @@ remove_adapter_sequences(const userconfig& config)
   }
 
   // Step 3: Parse and demultiplex reads based on single or double indices
+  size_t processing_step = std::numeric_limits<size_t>::max();
   if (config.is_demultiplexing_enabled()) {
     if (config.paired_ended_mode) {
       processing_step =

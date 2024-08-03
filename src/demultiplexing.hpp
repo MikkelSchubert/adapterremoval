@@ -22,6 +22,7 @@
 #include "barcode_table.hpp" // for barcode_table
 #include "fastq.hpp"         // for fastq_pair_vec
 #include "fastq_io.hpp"      // for chunk_ptr
+#include "output.hpp"        // for demultiplexed_reads
 #include "scheduler.hpp"     // for chunk_vec, chunk_ptr, analytical_step
 #include "statistics.hpp"    // for demux_stats_ptr
 #include <algorithm>         // for max
@@ -33,24 +34,7 @@ namespace adapterremoval {
 
 class userconfig;
 class output_files;
-
-/** Map of samples to downstream FASTQ processing/writing steps. */
-class post_demux_steps
-{
-public:
-  explicit post_demux_steps(const output_files& output);
-
-  /* Step used to write unidentified mate 1 reads. */
-  const size_t unidentified_1;
-  /* Step used to write unidentified mate 2 reads; may be disabled. */
-  const size_t unidentified_2;
-
-  /* Processing step for each sample. */
-  std::vector<size_t> samples{};
-
-  /** Constant indicating that a step has been disabled. */
-  static const size_t disabled;
-};
+class post_demux_steps;
 
 /**
  * Base-class for demultiplexing of reads; responsible for building the
@@ -62,7 +46,7 @@ class demultiplex_reads : public analytical_step
 public:
   /** Setup demultiplexer; keeps reference to config object. */
   demultiplex_reads(const userconfig& config,
-                    post_demux_steps steps,
+                    const post_demux_steps& steps,
                     demux_stats_ptr stats);
 
   /** Frees any unflushed caches. */
@@ -80,25 +64,11 @@ protected:
   const barcode_table m_barcode_table;
   //! Pointer to user settings used for output format for unidentified reads
   const userconfig& m_config;
-
-  //! Returns a chunk-list with any set of reads exceeding the max cache size
-  //! If 'eof' is true, all chunks are returned, and the 'eof' values in the
-  //! chunks are set to true.
-  chunk_vec flush_cache(bool eof = false);
-
-  using demultiplexed_cache = std::vector<chunk_ptr>;
-
-  //! Cache of demultiplex reads; used to reduce the number of output chunks
-  //! generated from each processed chunk, which would otherwise increase
-  //! linearly with the number of barcodes.
-  demultiplexed_cache m_cache{};
-  //! Cache of unidentified mate 1 reads
-  chunk_ptr m_unidentified_1{};
-  //! Cache of unidentified mate 2 reads
-  chunk_ptr m_unidentified_2{};
-
   //! Map of steps for output chunks;
-  post_demux_steps m_steps;
+  const post_demux_steps& m_steps;
+
+  //! Cache of reads used to buffer chunks for downstream processing
+  demultiplexed_reads m_cache;
 
   //! Sink for demultiplexing statistics; used by subclasses.
   demux_stats_ptr m_statistics{};

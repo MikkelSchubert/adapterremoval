@@ -35,6 +35,7 @@ class userconfig;
 class analytical_chunk;
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
+using chunk_ptr_vec = std::vector<chunk_ptr>;
 using chunk_pair = std::pair<size_t, chunk_ptr>;
 using chunk_vec = std::vector<chunk_pair>;
 
@@ -152,12 +153,7 @@ class processed_reads
 public:
   processed_reads(const sample_output_files& map, bool eof);
 
-  /**
-   * Adds a read of the given type.
-   *
-   * @param read A read to be distributed in the pipeline; may be modified.
-   * @param type The read type to store the read as.
-   */
+  /** Adds a read of the given type to be processed */
   void add(const fastq& read, read_type type);
 
   /** Returns a chunk for each generated type of processed reads. */
@@ -167,7 +163,56 @@ private:
   const sample_output_files& m_map;
 
   //! A set output chunks being created; typically fewer than read_type::max.
-  std::vector<chunk_ptr> m_chunks{};
+  chunk_ptr_vec m_chunks{};
+};
+
+/** Map of samples to downstream FASTQ processing/writing steps. */
+class post_demux_steps
+{
+public:
+  explicit post_demux_steps(const output_files& output);
+
+  //! Step used to write unidentified mate 1 reads
+  const size_t unidentified_1;
+  //! Format of unidentified 1 reads
+  const output_format unidentified_1_format;
+  //! Step used to write unidentified mate 2 reads; may be disabled
+  const size_t unidentified_2;
+  //! Format of unidentified 1 reads
+  const output_format unidentified_2_format;
+
+  /* Processing step for each sample. */
+  std::vector<size_t> samples{};
+
+  /** Constant indicating that a step has been disabled. */
+  static const size_t disabled;
+};
+
+/** Helper class used to generate per file-type chunks for processed reads . */
+class demultiplexed_reads
+{
+public:
+  explicit demultiplexed_reads(const post_demux_steps& steps);
+
+  void add_unidentified_1(const fastq& read);
+  void add_unidentified_2(const fastq& read);
+  void add_read_1(fastq&& read, size_t sample);
+  void add_read_2(fastq&& read, size_t sample);
+
+  /** Returns a chunk for each generated type of processed reads. */
+  chunk_vec flush(bool eof);
+
+private:
+  const post_demux_steps& m_steps;
+
+  //! Cache of demultiplex reads; used to reduce the number of output chunks
+  //! generated from each processed chunk, which would otherwise increase
+  //! linearly with the number of barcodes.
+  chunk_ptr_vec m_samples{};
+  //! Cache of unidentified mate 1 reads
+  chunk_ptr m_unidentified_1{};
+  //! Cache of unidentified mate 2 reads
+  chunk_ptr m_unidentified_2{};
 };
 
 } // namespace adapterremoval
