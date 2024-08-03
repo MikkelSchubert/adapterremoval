@@ -29,13 +29,14 @@
 #include "statistics.hpp"        // for fastq_stats_ptr
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint32_t, uint64_t
-#include <limits>
-#include <memory> // for unique_ptr
-#include <mutex>  // for mutex
-#include <string> // for string
+#include <limits>                // for numeric_limits
+#include <memory>                // for unique_ptr
+#include <mutex>                 // for mutex
+#include <string>                // for string
 
 namespace adapterremoval {
 
+class output_file;
 class analytical_chunk;
 class userconfig;
 
@@ -157,7 +158,7 @@ class split_fastq : public analytical_step
 public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
   split_fastq(const userconfig& config,
-              const std::string& filename,
+              const output_file& file,
               size_t next_step);
 
   ~split_fastq() override = default;
@@ -196,7 +197,7 @@ class gzip_split_fastq : public analytical_step
 public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
   gzip_split_fastq(const userconfig& config,
-                   const std::string& filename,
+                   const output_file& file,
                    size_t next_step);
 
   ~gzip_split_fastq() override = default;
@@ -228,7 +229,7 @@ class write_fastq : public analytical_step
 {
 public:
   /** Opens the specified file for writing using a managed writer */
-  write_fastq(const userconfig& config, const std::string& filename);
+  write_fastq(const userconfig& config, const output_file& file);
 
   /** Writes the reads of the type specified in the constructor. */
   chunk_vec process(chunk_ptr chunk) override;

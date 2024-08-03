@@ -32,17 +32,18 @@
 namespace adapterremoval {
 
 class userconfig;
+class output_files;
 
 /** Map of samples to downstream FASTQ processing/writing steps. */
 class post_demux_steps
 {
 public:
-  post_demux_steps() = default;
+  explicit post_demux_steps(const output_files& output);
 
   /* Step used to write unidentified mate 1 reads. */
-  size_t unidentified_1 = post_demux_steps::disabled;
+  const size_t unidentified_1;
   /* Step used to write unidentified mate 2 reads; may be disabled. */
-  size_t unidentified_2 = post_demux_steps::disabled;
+  const size_t unidentified_2;
 
   /* Processing step for each sample. */
   std::vector<size_t> samples{};
@@ -97,7 +98,7 @@ protected:
   chunk_ptr m_unidentified_2{};
 
   //! Map of steps for output chunks;
-  post_demux_steps m_steps{};
+  post_demux_steps m_steps;
 
   //! Sink for demultiplexing statistics; used by subclasses.
   demux_stats_ptr m_statistics{};

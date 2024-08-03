@@ -34,11 +34,10 @@
 
 namespace adapterremoval {
 
+class output_file;
+class output_files;
 struct alignment_info;
 enum class progress_type;
-
-//! Path used to indicate that a file is not needed
-const std::string DEV_NULL = "/dev/null";
 
 enum class ar_command
 {
@@ -46,57 +45,6 @@ enum class ar_command
   demultiplex_only,
   report_only,
   benchmark,
-};
-
-/** Per sample output filenames / steps  */
-class output_sample_files
-{
-public:
-  output_sample_files();
-
-  /** Sets the output filename for a given read type. */
-  void set_filename(read_type rtype, const std::string& filename);
-  /** Pushes a pipeline step for a given output filename. There can  */
-  void push_pipeline_step(size_t step);
-
-  /** Unique output filenames, indexed using `offset` */
-  const string_vec& filenames() const { return m_filenames; }
-
-  /** Unique pipeline steps, indexed using `offset` */
-  const std::vector<size_t>& pipeline_steps() const { return m_pipeline_steps; }
-
-  /** Returns the offset to the pipeline step/filename for a given read type. */
-  size_t offset(read_type value) const;
-
-  //! Constant used to represent disabled output files/steps.
-  static const size_t disabled;
-
-private:
-  //! Unique output filenames. Multiple read types may be mapped to a filename
-  string_vec m_filenames{};
-  //! Unique pipeline steps IDs. Multiple read types may be mapped to a step
-  std::vector<size_t> m_pipeline_steps{};
-  //! Mapping of read types to filenames/steps.
-  std::array<size_t, static_cast<size_t>(read_type::max)> m_offsets{};
-};
-
-/** Class used to organize filenames of output files. */
-class output_files
-{
-public:
-  output_files() = default;
-
-  //! JSON file containing settings / statistics
-  std::string settings_json{};
-  //! HTML file containing settings / statistics / plots
-  std::string settings_html{};
-
-  //! Filename for unidentified mate 1 reads (demultiplexing)
-  std::string unidentified_1{};
-  //! Filename for unidentified mate 1 reads (demultiplexing)
-  std::string unidentified_2{};
-
-  std::vector<output_sample_files> samples{};
 };
 
 /**
@@ -122,9 +70,6 @@ public:
 
   /** Returns runtime in seconds. */
   double runtime() const { return m_runtime.duration(); }
-
-  /** Returns the file format in which to write the give file */
-  output_format infer_output_format(const std::string& filename) const;
 
   //! Command-line arguments
   string_vec args{};
@@ -281,8 +226,12 @@ private:
   /** Sets up adapter sequences based on user settings. */
   bool setup_adapter_sequences();
 
-  std::string new_filename(const std::string& key,
-                           const string_vec& values) const;
+  /** Returns the file format in which to write the give file */
+  [[nodiscard]] output_format infer_output_format(
+    const std::string& filename) const;
+
+  [[nodiscard]] output_file new_output_file(const std::string& key,
+                                            const string_vec& values) const;
 
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser{};

@@ -24,9 +24,10 @@
 #include "counts.hpp"      // for counts, indexed_count
 #include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
 #include "fastq_io.hpp"    // for chunk_ptr, fastq_...
+#include "output.hpp"      // for sample_output_files, processed_reads
 #include "simd.hpp"        // for size_t
 #include "statistics.hpp"  // for trimming_statistics, reads_and_bases, fast...
-#include "userconfig.hpp"  // for userconfig, output_sample_files, output_sa...
+#include "userconfig.hpp"  // for userconfig
 #include <algorithm>       // for max
 #include <cstddef>         // for size_t
 #include <memory>          // for unique_ptr, __shared_ptr_access, make_unique
@@ -280,47 +281,10 @@ is_acceptable_read(const userconfig& config,
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
-// Implementations for `trimmed_reads`
-
-trimmed_reads::trimmed_reads(const output_sample_files& map, const bool eof)
-  : m_map(map)
-{
-  const auto& filenames = map.filenames();
-  const auto& pipeline_steps = map.pipeline_steps();
-  AR_REQUIRE(filenames.size() == pipeline_steps.size());
-
-  for (size_t i = 0; i < pipeline_steps.size(); ++i) {
-    m_chunks.emplace_back(std::make_unique<analytical_chunk>(eof));
-  }
-}
-
-void
-trimmed_reads::add(const fastq& read, const read_type type)
-{
-  const size_t offset = m_map.offset(type);
-  if (offset != output_sample_files::disabled) {
-    m_chunks.at(offset)->add(read);
-  }
-}
-
-chunk_vec
-trimmed_reads::finalize()
-{
-  chunk_vec chunks;
-
-  for (size_t i = 0; i < m_chunks.size(); ++i) {
-    chunks.emplace_back(m_map.pipeline_steps().at(i),
-                        std::move(m_chunks.at(i)));
-  }
-
-  return chunks;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Implementations for `reads_processor`
 
 reads_processor::reads_processor(const userconfig& config,
-                                 const output_sample_files& output,
+                                 const sample_output_files& output,
                                  const size_t nth,
                                  trim_stats_ptr sink)
   : analytical_step(processing_order::unordered, "reads_processor")
@@ -345,7 +309,7 @@ reads_processor::finalize()
 // Implementations for `se_reads_processor`
 
 se_reads_processor::se_reads_processor(const userconfig& config,
-                                       const output_sample_files& output,
+                                       const sample_output_files& output,
                                        const size_t nth,
                                        trim_stats_ptr sink)
   : reads_processor(config, output, nth, sink)
@@ -356,7 +320,7 @@ chunk_vec
 se_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
-  trimmed_reads chunks(m_output, chunk->eof);
+  processed_reads chunks(m_output, chunk->eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
@@ -450,7 +414,7 @@ add_pe_statistics(const trimming_statistics& stats,
 }
 
 pe_reads_processor::pe_reads_processor(const userconfig& config,
-                                       const output_sample_files& output,
+                                       const sample_output_files& output,
                                        const size_t nth,
                                        trim_stats_ptr sink)
   : reads_processor(config, output, nth, sink)
@@ -467,7 +431,7 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
-  trimmed_reads chunks(m_output, chunk->eof);
+  processed_reads chunks(m_output, chunk->eof);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());

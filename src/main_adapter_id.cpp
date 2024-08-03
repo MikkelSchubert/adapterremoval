@@ -21,6 +21,7 @@
 #include "debug.hpp"      // for AR_REQUIRE
 #include "fastq.hpp"      // for ACGTN, fastq, fastq_pair_vec, ACGT, ACGT:...
 #include "fastq_io.hpp"   // for read_fastq, read_chunk
+#include "output.hpp"     // for output_files
 #include "reports.hpp"    // for write_html_report, write_json_report
 #include "scheduler.hpp"  // for threadstate, scheduler, analytical_step
 #include "userconfig.hpp" // for userconfig

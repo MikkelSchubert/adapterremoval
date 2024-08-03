@@ -23,11 +23,12 @@
 #include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq.hpp"          // for fastq
 #include "fastq_io.hpp"       // for read_chunk, post_process_fastq
+#include "output.hpp"         // for output_files, processed reads
 #include "reports.hpp"        // for write_html_report, write_json_report
 #include "scheduler.hpp"      // for scheduler, threadstate, analytical_chunk
 #include "simd.hpp"           // for size_t
 #include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
-#include "trimming.hpp"       // for trimmed_reads, reads_processor
+#include "trimming.hpp"       // for  reads_processor
 #include "userconfig.hpp"     // for userconfig, output_files, DEV_NULL
 #include <algorithm>          // for max
 #include <cstring>            // for size_t
@@ -38,17 +39,11 @@
 
 namespace adapterremoval {
 
-//! Implemented in main_adapter_rm.cpp
-size_t
-add_write_step(scheduler& sch,
-               const userconfig& config,
-               const std::string& filename);
-
 class se_demuxed_processor : public reads_processor
 {
 public:
   se_demuxed_processor(const userconfig& config,
-                       const output_sample_files& output,
+                       const sample_output_files& output,
                        const size_t nth,
                        trim_stats_ptr sink)
     : reads_processor(config, output, nth, sink)
@@ -61,7 +56,7 @@ public:
   {
     AR_REQUIRE(chunk);
     auto stats = m_stats.acquire();
-    trimmed_reads chunks(m_output, chunk->eof);
+    processed_reads chunks(m_output, chunk->eof);
 
     for (auto& read : chunk->reads_1) {
       stats->read_1->process(read);
@@ -83,7 +78,7 @@ class pe_demuxed_processor : public reads_processor
 {
 public:
   pe_demuxed_processor(const userconfig& config,
-                       const output_sample_files& output,
+                       const sample_output_files& output,
                        const size_t nth,
                        trim_stats_ptr sink)
     : reads_processor(config, output, nth, sink)
@@ -98,7 +93,7 @@ public:
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
     auto stats = m_stats.acquire();
-    trimmed_reads chunks(m_output, chunk->eof);
+    processed_reads chunks(m_output, chunk->eof);
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();
@@ -135,42 +130,28 @@ demultiplex_sequences(const userconfig& config)
                        .demultiplexing(config.adapters.barcode_count())
                        .initialize();
 
-  auto out_files = config.get_output_filenames();
+  auto output = config.get_output_filenames();
+  output.add_write_steps(sch, config);
 
-  post_demux_steps steps;
+  post_demux_steps steps{ output };
 
   // Step 4 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
-    auto& mapping = out_files.samples.at(nth);
-    for (const auto& filename : mapping.filenames()) {
-      mapping.push_pipeline_step(add_write_step(sch, config, filename));
-    }
-
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
+
     if (config.paired_ended_mode) {
       steps.samples.push_back(sch.add<pe_demuxed_processor>(
-        config, mapping, nth, stats.trimming.back()));
+        config, output.get_sample(nth), nth, stats.trimming.back()));
     } else {
       steps.samples.push_back(sch.add<se_demuxed_processor>(
-        config, mapping, nth, stats.trimming.back()));
+        config, output.get_sample(nth), nth, stats.trimming.back()));
     }
   }
 
   size_t processing_step = std::numeric_limits<size_t>::max();
 
   // Step 3: Parse and demultiplex reads based on single or double indices
-  if (config.adapters.barcode_count()) {
-    if (out_files.unidentified_1 != DEV_NULL) {
-      steps.unidentified_1 =
-        add_write_step(sch, config, out_files.unidentified_1);
-    }
-
-    if (config.paired_ended_mode && !config.interleaved_output &&
-        out_files.unidentified_2 != DEV_NULL) {
-      steps.unidentified_2 =
-        add_write_step(sch, config, out_files.unidentified_2);
-    }
-
+  if (config.is_demultiplexing_enabled()) {
     if (config.paired_ended_mode) {
       processing_step =
         sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
@@ -194,11 +175,11 @@ demultiplex_sequences(const userconfig& config)
     return 1;
   }
 
-  if (!write_json_report(config, stats, out_files.settings_json)) {
+  if (!write_json_report(config, stats, output.settings_json)) {
     return 1;
   }
 
-  return !write_html_report(config, stats, out_files.settings_html);
+  return !write_html_report(config, stats, output.settings_html);
 }
 
 } // namespace adapterremoval

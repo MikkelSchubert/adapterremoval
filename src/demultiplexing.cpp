@@ -21,6 +21,7 @@
 #include "adapterset.hpp" // for adapter_set
 #include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "fastq_io.hpp"   // for chunk_ptr, fastq...
+#include "output.hpp"     // for output_files
 #include "simd.hpp"       // for size_t
 #include "userconfig.hpp" // for userconfig, ar_command, ar_command::demul...
 #include <cstddef>        // for size_t
@@ -28,6 +29,8 @@
 #include <utility>        // for move
 
 namespace adapterremoval {
+
+namespace {
 
 template<typename T>
 void
@@ -40,10 +43,18 @@ flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
   }
 }
 
+} // namespace
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `post_demux_steps`
 
-const size_t post_demux_steps::disabled = static_cast<size_t>(-1);
+const size_t post_demux_steps::disabled = output_files::disabled;
+
+post_demux_steps::post_demux_steps(const output_files& output)
+  : unidentified_1(output.unidentified_1_step)
+  , unidentified_2(output.unidentified_2_step)
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `demultiplex_reads`
@@ -70,8 +81,7 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
     m_unidentified_1 = std::make_unique<analytical_chunk>();
   }
 
-  if (m_steps.unidentified_2 != post_demux_steps::disabled &&
-      m_steps.unidentified_1 != m_steps.unidentified_2) {
+  if (m_steps.unidentified_2 != post_demux_steps::disabled) {
     m_unidentified_2 = std::make_unique<analytical_chunk>();
   }
 

@@ -28,38 +28,14 @@
 namespace adapterremoval {
 
 enum class read_type : size_t;
-class output_sample_files;
+class sample_output_files;
 class userconfig;
-
-/** Helper class used to generate per file-type chunks for processed reads . */
-class trimmed_reads
-{
-public:
-  trimmed_reads(const output_sample_files& map, bool eof);
-
-  /**
-   * Adds a read of the given type.
-   *
-   * @param read A read to be distributed in the pipeline; may be modified.
-   * @param type The read type to store the read as.
-   */
-  void add(const fastq& read, read_type type);
-
-  /** Returns a chunk for each generated type of processed reads. */
-  chunk_vec finalize();
-
-private:
-  const output_sample_files& m_map;
-
-  //! A set output chunks being created; typically fewer than read_type::max.
-  std::vector<chunk_ptr> m_chunks{};
-};
 
 class reads_processor : public analytical_step
 {
 public:
   reads_processor(const userconfig& config,
-                  const output_sample_files& output,
+                  const sample_output_files& output,
                   size_t nth,
                   trim_stats_ptr sink);
 
@@ -68,7 +44,7 @@ public:
 protected:
   const userconfig& m_config;
   const fastq_pair_vec m_adapters;
-  const output_sample_files& m_output;
+  const sample_output_files& m_output;
   const size_t m_nth;
 
   threadstate<trimming_statistics> m_stats{};
@@ -79,7 +55,7 @@ class se_reads_processor : public reads_processor
 {
 public:
   se_reads_processor(const userconfig& config,
-                     const output_sample_files& output,
+                     const sample_output_files& output,
                      size_t nth,
                      trim_stats_ptr sink);
 
@@ -90,7 +66,7 @@ class pe_reads_processor : public reads_processor
 {
 public:
   pe_reads_processor(const userconfig& config,
-                     const output_sample_files& output,
+                     const sample_output_files& output,
                      size_t nth,
                      trim_stats_ptr sink);
 

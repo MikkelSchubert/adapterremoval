@@ -16,15 +16,16 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapter_id.hpp" // for adapter_id_statistics
-#include "adapterset.hpp" // for adapter_set
-#include "counts.hpp"     // for counts, indexed_count, counts_tmpl
-#include "debug.hpp"      // for AR_REQUIRE
-#include "fastq.hpp"      // for ACGT, ACGT::values, fastq, ACGTN
-#include "json.hpp"       // for json_dict, json_list, json_ptr
-#include "logging.hpp"    // for log_stream, error
-#include "main.hpp"       // for VERSION, NAME
-#include "managed_io.hpp"
+#include "adapter_id.hpp"            // for adapter_id_statistics
+#include "adapterset.hpp"            // for adapter_set
+#include "counts.hpp"                // for counts, indexed_count, counts_tmpl
+#include "debug.hpp"                 // for AR_REQUIRE
+#include "fastq.hpp"                 // for ACGT, ACGT::values, fastq, ACGTN
+#include "json.hpp"                  // for json_dict, json_list, json_ptr
+#include "logging.hpp"               // for log_stream, error
+#include "main.hpp"                  // for VERSION, NAME
+#include "managed_io.hpp"            // for managed_io
+#include "output.hpp"                // for DEV_NULL, output_files
 #include "reports.hpp"               // for write_html_report
 #include "reports_template_html.hpp" // for html_line_plot, html_demultiple...
 #include "simd.hpp"                  // for size_t

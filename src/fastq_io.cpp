@@ -22,6 +22,7 @@
 #include "errors.hpp"        // for io_error, gzip_error, fastq_error
 #include "fastq.hpp"         // for fastq
 #include "fastq_enc.hpp"     // for MATE_SEPARATOR
+#include "output.hpp"        // for output_file
 #include "simd.hpp"          // for size_t
 #include "statistics.hpp"    // for fastq_statistics, fastq_stats_ptr, stat...
 #include "strutils.hpp"      // for shell_escape, string_vec, ends_with
@@ -69,9 +70,9 @@ isal_buffer_size(size_t level)
 }
 
 bool
-isal_enabled(const userconfig& config, const std::string& filename)
+isal_enabled(const userconfig& config, const output_file file)
 {
-  switch (config.infer_output_format(filename)) {
+  switch (file.format) {
     case output_format::fastq:
       return false;
     case output_format::fastq_gzip:
@@ -347,11 +348,11 @@ post_process_fastq::finalize()
 // Implementations for 'split_fastq'
 
 split_fastq::split_fastq(const userconfig& config,
-                         const std::string& filename,
+                         const output_file& file,
                          size_t next_step)
   : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
-  , m_isal_enabled(isal_enabled(config, filename))
+  , m_isal_enabled(isal_enabled(config, file))
 {
 }
 
@@ -422,11 +423,11 @@ split_fastq::process(const chunk_ptr chunk)
 // Implementations for 'gzip_split_fastq'
 
 gzip_split_fastq::gzip_split_fastq(const userconfig& config,
-                                   const std::string& filename,
+                                   const output_file& file,
                                    size_t next_step)
   : analytical_step(processing_order::unordered, "gzip_split_fastq")
   , m_config(config)
-  , m_isal_enabled(isal_enabled(config, filename))
+  , m_isal_enabled(isal_enabled(config, file))
   , m_next_step(next_step)
 {
 }
@@ -502,11 +503,11 @@ gzip_split_fastq::process(chunk_ptr chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'write_fastq'
 
-write_fastq::write_fastq(const userconfig& config, const std::string& filename)
+write_fastq::write_fastq(const userconfig& config, const output_file& file)
   // Allow disk IO and writing to STDOUT at the same time
   : analytical_step(processing_order::ordered_io, "write_fastq")
-  , m_output(filename)
-  , m_isal_enabled(isal_enabled(config, filename))
+  , m_output(file.name)
+  , m_isal_enabled(isal_enabled(config, file))
 {
   if (m_isal_enabled) {
     buffer level_buf(isal_buffer_size(config.compression_level));

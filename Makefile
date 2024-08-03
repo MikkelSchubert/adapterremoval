@@ -171,14 +171,15 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/main_benchmark.o \
 	$(OBJS_DIR)/main_demultiplex.o \
 	$(OBJS_DIR)/main.o \
+	$(OBJS_DIR)/output.o \
+	$(OBJS_DIR)/progress.o \
 	$(OBJS_DIR)/reports_html.o \
 	$(OBJS_DIR)/reports_json.o \
-	$(OBJS_DIR)/reports_terminal.o \
 	$(OBJS_DIR)/reports_template_html.o \
+	$(OBJS_DIR)/reports_terminal.o \
 	$(OBJS_DIR)/scheduler.o \
 	$(OBJS_DIR)/statistics.o \
 	$(OBJS_DIR)/timer.o \
-	$(OBJS_DIR)/progress.o \
 	$(OBJS_DIR)/trimming.o \
 	$(OBJS_DIR)/userconfig.o
 

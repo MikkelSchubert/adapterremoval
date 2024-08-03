@@ -26,6 +26,7 @@
 #include "logging.hpp"     // for log_stream, error
 #include "main.hpp"        // for NAME, VERSION
 #include "managed_io.hpp"  // for managed_writer
+#include "output.hpp"      // for sample_output_files
 #include "reports.hpp"     // for write_json_report
 #include "simd.hpp"        // for size_t
 #include "statistics.hpp"  // for fastq_stats_ptr, trimming_statistics
@@ -307,12 +308,12 @@ struct io_section
 {
   io_section(read_type rtype,
              const fastq_stats_ptr& stats,
-             const output_sample_files& sample_files)
+             const sample_output_files& sample_files)
     : io_section(rtype, stats, string_vec())
   {
     const auto offset = sample_files.offset(rtype);
-    if (offset != output_sample_files::disabled) {
-      m_filenames.push_back(sample_files.filenames().at(offset));
+    if (offset != sample_output_files::disabled) {
+      m_filenames.push_back(sample_files.filename(offset));
     }
   }
 
@@ -477,7 +478,7 @@ write_report_demultiplexing(const userconfig& config,
     for (size_t i = 0; i < demux.barcodes.size(); ++i) {
       const auto sample = samples->dict(config.adapters.get_sample_name(i));
       const auto& stats = *sample_stats.trimming.at(i);
-      const auto& files = out_files.samples.at(i);
+      const auto& files = out_files.get_sample(i);
 
       sample->u64("reads", demux.barcodes.at(i));
 
@@ -512,10 +513,10 @@ collect_files(const output_files& files, read_type rtype)
 {
   string_vec filenames;
 
-  for (const auto& sample_files : files.samples) {
+  for (const auto& sample_files : files.samples()) {
     const auto offset = sample_files.offset(rtype);
-    if (offset != output_sample_files::disabled) {
-      filenames.push_back(sample_files.filenames().at(offset));
+    if (offset != sample_output_files::disabled) {
+      filenames.push_back(sample_files.filename(offset));
     }
   }
 
@@ -565,11 +566,11 @@ write_report_output(const userconfig& config,
 
   io_section(read_type::unidentified_1,
              stats.demultiplexing->unidentified_stats_1,
-             { out_files.unidentified_1 })
+             { out_files.unidentified_1.name })
     .write_to_if(output, config.adapters.barcode_count());
   io_section(read_type::unidentified_2,
              stats.demultiplexing->unidentified_stats_2,
-             { out_files.unidentified_2 })
+             { out_files.unidentified_2.name })
     .write_to_if(output,
                  config.adapters.barcode_count() && config.paired_ended_mode);
 

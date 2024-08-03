@@ -25,6 +25,7 @@
 #include "licenses.hpp"  // for LICENSES
 #include "logging.hpp"   // for log_stream, error, set_level, set_colors, info
 #include "main.hpp"      // for HELPTEXT, NAME, VERSION
+#include "output.hpp"    // for DEV_NULL, output_files, output_file
 #include "progress.hpp"  // for progress_type, progress_type::simple, progr...
 #include "simd.hpp"      // for size_t, name, supported, instruction_set
 #include "strutils.hpp"  // for string_vec, shell_escape, str_to_unsigned
@@ -40,8 +41,6 @@
 #include <unistd.h>      // for access, isatty, R_OK, STDERR_FILENO
 
 namespace adapterremoval {
-
-const size_t output_sample_files::disabled = std::numeric_limits<size_t>::max();
 
 namespace {
 
@@ -185,27 +184,12 @@ parse_head(const std::string& sink, uint64_t& out)
 }
 
 bool
-parse_file_format(const std::string& filename, output_format& sink)
-{
-  const std::string value = "." + to_lower(filename);
-  if (ends_with(value, ".fq.gz") || ends_with(value, ".fastq.gz")) {
-    sink = output_format::fastq_gzip;
-    return true;
-  } else if (ends_with(value, ".fq") || ends_with(value, ".fastq")) {
-    sink = output_format::fastq;
-    return true;
-  }
-
-  return false;
-}
-
-bool
 check_no_clobber(const std::string& label,
                  const string_vec& in_files,
-                 const std::string& out_file)
+                 const output_file& out_file)
 {
   for (const auto& in_file : in_files) {
-    if (in_file == out_file && in_file != DEV_NULL) {
+    if (in_file == out_file.name && in_file != DEV_NULL) {
       log::error() << "Input file would be overwritten: " << label << " "
                    << in_file;
       return false;
@@ -255,8 +239,8 @@ check_input_and_output(const std::string& label,
     return false;
   }
 
-  for (const auto& sample : output_files.samples) {
-    for (const auto& out_file : sample.filenames()) {
+  for (const auto& sample : output_files.samples()) {
+    for (const auto& out_file : sample.files()) {
       if (!check_no_clobber(label, filenames, out_file)) {
         return false;
       }
@@ -267,49 +251,6 @@ check_input_and_output(const std::string& label,
 }
 
 } // namespace
-
-////////////////////////////////////////////////////////////////////////////////
-// Implementations for `output_files`
-
-output_sample_files::output_sample_files()
-{
-  m_offsets.fill(output_sample_files::disabled);
-}
-
-void
-output_sample_files::set_filename(const read_type rtype,
-                                  const std::string& filename)
-{
-  const auto index = static_cast<size_t>(rtype);
-  AR_REQUIRE(m_offsets.at(index) == output_sample_files::disabled);
-
-  // If the file type isn't being saved, then there is no need to process the
-  // reads. This saves time especially when output compression is enabled.
-  if (filename != DEV_NULL) {
-    // FIXME: This assumes that filesystem is case sensitive
-    auto it = std::find(m_filenames.begin(), m_filenames.end(), filename);
-    if (it == m_filenames.end()) {
-      m_filenames.push_back(filename);
-
-      m_offsets.at(index) = m_filenames.size() - 1;
-    } else {
-      m_offsets.at(index) = it - m_filenames.begin();
-    }
-  }
-}
-
-void
-output_sample_files::push_pipeline_step(size_t step)
-{
-  AR_REQUIRE(m_pipeline_steps.size() < m_filenames.size());
-  m_pipeline_steps.push_back(step);
-}
-
-size_t
-output_sample_files::offset(read_type value) const
-{
-  return m_offsets.at(static_cast<size_t>(value));
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -616,7 +557,7 @@ userconfig::userconfig()
     .help("Selects the output format; either 'fastq' for uncompressed FASTQ "
           "reads or 'fastq.gz' for gzip compressed FASTQ reads")
     .bind_str(nullptr)
-    .with_choices({ "fastq", "fastq.gz" })
+    .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz" })
     .with_default("fastq.gz");
   argparser.add("--stdout-format", "X")
     .help("Selects the output format for data written to STDOUT; choices are "
@@ -1157,13 +1098,13 @@ userconfig::parse_args(const string_vec& argvec)
   if (argparser.is_set("--gzip")) {
     out_file_format = output_format::fastq_gzip;
     out_stdout_format = output_format::fastq_gzip;
-  } else if (!parse_file_format(argparser.value("--out-format"),
-                                out_file_format)) {
+  } else if (!output_files::parse_extension(argparser.value("--out-format"),
+                                            out_file_format)) {
     log::error() << "Invalid output format "
                  << log_escape(argparser.value("--out-format"));
     return argparse::parse_result::error;
-  } else if (!parse_file_format(argparser.value("--stdout-format"),
-                                out_stdout_format)) {
+  } else if (!output_files::parse_extension(argparser.value("--stdout-format"),
+                                            out_stdout_format)) {
     log::error() << "Invalid output format "
                  << log_escape(argparser.value("--stdout-format"));
     return argparse::parse_result::error;
@@ -1285,8 +1226,8 @@ userconfig::infer_output_format(const std::string& filename) const
   }
 
   output_format result = out_file_format;
-  // Parse failures are ignored here; default to --output-format
-  parse_file_format(filename, result);
+  // Parse failures are ignored here; default to --out-format
+  output_files::parse_extension(filename, result);
 
   return result;
 }
@@ -1296,86 +1237,87 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings_json = new_filename("--out-json", { ".json" });
-  files.settings_html = new_filename("--out-html", { ".html" });
+  files.settings_json = new_output_file("--out-json", { ".json" }).name;
+  files.settings_html = new_output_file("--out-html", { ".html" }).name;
 
-  std::string ext;
-  switch (out_file_format) {
-    case output_format::fastq:
-      ext = ".fastq";
-      break;
-    case output_format::fastq_gzip:
-      ext = ".fastq.gz";
-      break;
-    default:
-      AR_FAIL("invalid output format");
-  }
-
+  const std::string ext{ output_files::file_extension(out_file_format) };
   const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
   const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
 
-  files.unidentified_1 =
-    new_filename("--out-unidentified1", { ".unidentified", out1 });
-  files.unidentified_2 =
-    new_filename("--out-unidentified2", { ".unidentified", out2 });
-
-  files.samples.resize(adapters.adapter_set_count());
-
-  for (size_t i = 0; i < files.samples.size(); ++i) {
-    const auto sample =
-      is_demultiplexing_enabled() ? adapters.get_sample_name(i) : "";
-    auto& map = files.samples.at(i);
-
-    const auto mate_1_filename = new_filename("--out-file1", { sample, out1 });
-    map.set_filename(read_type::mate_1, mate_1_filename);
+  if (is_demultiplexing_enabled()) {
+    files.unidentified_1 =
+      new_output_file("--out-unidentified1", { ".unidentified", out1 });
 
     if (paired_ended_mode) {
       if (interleaved_output) {
-        map.set_filename(read_type::mate_2, mate_1_filename);
+        files.unidentified_2 = files.unidentified_1;
       } else {
-        map.set_filename(read_type::mate_2,
-                         new_filename("--out-file2", { sample, out2 }));
+        files.unidentified_2 =
+          new_output_file("--out-unidentified2", { ".unidentified", out2 });
+      }
+    }
+  }
+
+  for (size_t i = 0; i < adapters.adapter_set_count(); ++i) {
+    const auto sample =
+      is_demultiplexing_enabled() ? adapters.get_sample_name(i) : "";
+    sample_output_files map;
+
+    const auto mate_1 = new_output_file("--out-file1", { sample, out1 });
+    map.set_file(read_type::mate_1, mate_1);
+
+    if (paired_ended_mode) {
+      if (interleaved_output) {
+        map.set_file(read_type::mate_2, mate_1);
+      } else {
+        map.set_file(read_type::mate_2,
+                     new_output_file("--out-file2", { sample, out2 }));
       }
     }
 
     if (run_type == ar_command::trim_adapters) {
       if (is_any_filtering_enabled()) {
-        map.set_filename(
+        map.set_file(
           read_type::discarded,
-          new_filename("--out-discarded", { sample, ".discarded", ext }));
+          new_output_file("--out-discarded", { sample, ".discarded", ext }));
       }
 
       if (paired_ended_mode) {
         if (is_any_filtering_enabled()) {
-          map.set_filename(
+          map.set_file(
             read_type::singleton,
-            new_filename("--out-singleton", { sample, ".singleton", ext }));
+            new_output_file("--out-singleton", { sample, ".singleton", ext }));
         }
 
         if (is_read_merging_enabled()) {
-          map.set_filename(
+          map.set_file(
             read_type::merged,
-            new_filename("--out-merged", { sample, ".merged", ext }));
+            new_output_file("--out-merged", { sample, ".merged", ext }));
         }
       }
     }
+
+    files.add_sample(std::move(map));
   }
 
   return files;
 }
 
-std::string
-userconfig::new_filename(const std::string& key, const string_vec& values) const
+output_file
+userconfig::new_output_file(const std::string& key,
+                            const string_vec& values) const
 {
   std::string out;
   if (argparser.is_set(key)) {
     if (!is_demultiplexing_enabled()) {
-      return argparser.value(key);
+      const auto filename = argparser.value(key);
+
+      return { filename, infer_output_format(filename) };
     }
 
     out = argparser.value(key);
   } else if (out_basename == DEV_NULL || key == "--out-discarded") {
-    return DEV_NULL;
+    return { DEV_NULL, output_format::fastq };
   } else {
     out = out_basename;
   }
@@ -1388,7 +1330,7 @@ userconfig::new_filename(const std::string& key, const string_vec& values) const
     out.append(value);
   }
 
-  return out;
+  return output_file{ out, infer_output_format(out) };
 }
 
 bool
