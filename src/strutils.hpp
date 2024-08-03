@@ -18,12 +18,13 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstddef> // for size_t
-#include <cstdint> // for uint64_t
-#include <ostream> // for ostream
-#include <sstream> // for ostringstream
-#include <string>  // for string
-#include <vector>  // for vector
+#include <cstddef>     // for size_t
+#include <cstdint>     // for uint64_t
+#include <ostream>     // for ostream
+#include <sstream>     // for ostringstream
+#include <string>      // for string
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -34,7 +35,7 @@ const size_t DEFAULT_INDENTATION = 4;
 
 /** Computes the Levenshtein distance between two strings. */
 size_t
-levenshtein(const std::string& s, const std::string& t);
+levenshtein(std::string_view s, std::string_view t);
 
 /**
  * Returns a timestamp in the specified format, see
@@ -62,7 +63,7 @@ to_lower(char c)
 
 /** Lowercases letters in the range a-z */
 std::string
-to_lower(const std::string& str);
+to_lower(std::string str);
 
 /** Uppercase letters in the range a-z */
 constexpr char
@@ -73,20 +74,19 @@ to_upper(char c)
 
 /** Uppercase letters in the range a-z */
 std::string
-to_upper(const std::string& str);
+to_upper(std::string str);
 
 /** Returns true if str1 ends with str2 (case sensitive) */
 bool
-ends_with(const std::string& str1, const std::string& str2);
+ends_with(std::string_view str1, std::string_view str2);
 
 /** Split text by newlines */
 string_vec
-split_lines(const std::string& text);
+split_lines(std::string_view text);
 
 /** Split text by newlines and add fixed indentation following newlines. */
 std::string
-indent_lines(const std::string& lines,
-             size_t indentation = DEFAULT_INDENTATION);
+indent_lines(std::string_view lines, size_t indentation = DEFAULT_INDENTATION);
 
 /**
  * Formats text into fixed-width columns.
@@ -107,8 +107,8 @@ wrap_text(const std::string& value,
 template<typename T>
 std::string
 join_text(const std::vector<T>& values,
-          const std::string& sep,
-          const std::string& final_sep)
+          std::string_view sep,
+          std::string_view final_sep)
 {
   std::ostringstream stream;
   for (auto it = values.begin(); it != values.end(); ++it) {
@@ -128,7 +128,7 @@ join_text(const std::vector<T>& values,
 
 template<typename T>
 std::string
-join_text(const std::vector<T>& values, const std::string& sep)
+join_text(const std::vector<T>& values, std::string_view sep)
 {
   return join_text(values, sep, sep);
 }
@@ -157,7 +157,7 @@ public:
   cli_formatter& set_indent(size_t value);
 
   /** Formats string using the current settings. */
-  std::string format(const std::string& value) const;
+  std::string format(std::string_view value) const;
 
 private:
   //! Specifies whether or not to indent the first line of output.
@@ -172,14 +172,14 @@ private:
 
 /** Escapes a string to make it safe to use in copy/pasted commands */
 std::string
-shell_escape(const std::string& s);
+shell_escape(std::string_view s);
 
 /**
  * Escapes a string for use in logging; this is equivalent to shell_escape
  * except that strings are always quoted for readability.
  */
 std::string
-log_escape(const std::string& s);
+log_escape(std::string_view s);
 
 /** Escapes a full shell command using shell_escape */
 std::string

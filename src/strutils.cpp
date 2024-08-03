@@ -50,7 +50,7 @@ indent(string_vec lines, size_t n_indent, bool indent_first)
 } // namespace
 
 size_t
-levenshtein(const std::string& s, const std::string& t)
+levenshtein(const std::string_view s, const std::string_view t)
 {
   std::vector<size_t> v0(t.size() + 1, 0);
   std::vector<size_t> v1(t.size() + 1, 0);
@@ -122,30 +122,28 @@ str_to_unsigned(const std::string& s)
 }
 
 std::string
-to_lower(const std::string& str)
+to_lower(std::string str)
 {
-  std::string lowercase = str;
-  for (auto& current : lowercase) {
+  for (auto& current : str) {
     current = to_lower(current);
   }
 
-  return lowercase;
+  return str;
 }
 
 std::string
-to_upper(const std::string& str)
+to_upper(std::string str)
 {
-  std::string uppercase = str;
-  for (auto& current : uppercase) {
+  for (auto& current : str) {
     current = to_upper(current);
   }
 
-  return uppercase;
+  return str;
 }
 
 /** Returns true if str1 ends with str2 (case sensitive) */
 bool
-ends_with(const std::string& str1, const std::string& str2)
+ends_with(const std::string_view str1, const std::string_view str2)
 {
   if (str1.size() < str2.size()) {
     return false;
@@ -163,7 +161,7 @@ ends_with(const std::string& str1, const std::string& str2)
 }
 
 string_vec
-split_lines(const std::string& text)
+split_lines(const std::string_view text)
 {
   string_vec lines;
 
@@ -172,7 +170,7 @@ split_lines(const std::string& text)
   do {
     end = text.find('\n', start);
 
-    lines.push_back(text.substr(start, end - start));
+    lines.push_back(std::string{ text.substr(start, end - start) });
 
     start = end + 1;
   } while (end != std::string::npos);
@@ -181,7 +179,7 @@ split_lines(const std::string& text)
 }
 
 std::string
-indent_lines(const std::string& lines, size_t indentation)
+indent_lines(const std::string_view lines, size_t indentation)
 {
   return join_text(indent(split_lines(lines), indentation, true), "\n");
 }
@@ -260,7 +258,7 @@ cli_formatter::set_indent_first_line(bool value)
 }
 
 std::string
-cli_formatter::format(const std::string& value) const
+cli_formatter::format(const std::string_view value) const
 {
   std::ostringstream lines_out;
 
@@ -274,7 +272,7 @@ cli_formatter::format(const std::string& value) const
 }
 
 std::string
-shell_escape(const std::string& s)
+shell_escape(const std::string_view s)
 {
   if (s.empty()) {
     return "''";
@@ -287,11 +285,11 @@ shell_escape(const std::string& s)
     }
   }
 
-  return s;
+  return std::string{ s };
 }
 
 std::string
-log_escape(const std::string& s)
+log_escape(const std::string_view s)
 {
   std::string out;
   out.push_back('\'');

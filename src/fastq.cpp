@@ -200,6 +200,18 @@ fastq::operator==(const fastq& other) const
          (m_qualities == other.m_qualities);
 }
 
+std::string_view
+fastq::name() const
+{
+  std::string_view header = m_header;
+  const size_t pos = header.find_first_of(' ');
+  if (pos != std::string::npos) {
+    return header.substr(0, pos);
+  }
+
+  return header;
+}
+
 size_t
 fastq::count_ns() const
 {

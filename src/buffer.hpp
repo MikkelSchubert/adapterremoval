@@ -18,12 +18,13 @@
 \*************************************************************************/
 #pragma once
 
-#include "debug.hpp" // for AR_REQUIRE
-#include <algorithm> // for max
-#include <cstddef>   // for size_t
-#include <cstdint>   // for uint32_t
-#include <string>    // for string
-#include <vector>    // for vector
+#include "debug.hpp"   // for AR_REQUIRE
+#include <algorithm>   // for max
+#include <cstddef>     // for size_t
+#include <cstdint>     // for uint32_t
+#include <string>      // for string
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -64,7 +65,7 @@ public:
   inline void reserve(size_t size) { m_buffer.reserve(size); }
 
   /** Append a string to the buffer */
-  inline void append(const std::string& data)
+  inline void append(std::string_view data)
   {
     append(data.data(), data.size());
   }

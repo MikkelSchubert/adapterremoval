@@ -23,6 +23,7 @@
 #include <array>         // for array
 #include <cstddef>       // for size_t
 #include <string>        // for string
+#include <string_view>   // for string_view
 #include <utility>       // for pair
 #include <vector>        // for vector
 
@@ -82,7 +83,7 @@ public:
   const std::string& qualities() const { return m_qualities; }
 
   /** Returns the name (excluding the @ and other fields) of the header. **/
-  std::string name() const;
+  [[nodiscard]] std::string_view name() const;
 
   /** Returns the length of the sequence. */
   size_t length() const { return m_sequence.length(); }
@@ -275,18 +276,5 @@ struct ACGTN
 
 using fastq_pair = std::pair<fastq, fastq>;
 using fastq_pair_vec = std::vector<fastq_pair>;
-
-///////////////////////////////////////////////////////////////////////////////
-
-inline std::string
-fastq::name() const
-{
-  const size_t pos = m_header.find_first_of(' ');
-  if (pos != std::string::npos) {
-    return m_header.substr(0, pos);
-  }
-
-  return m_header;
-}
 
 } // namespace adapterremoval
