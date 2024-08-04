@@ -307,9 +307,10 @@ write_report_summary(const userconfig& config,
 struct io_section
 {
   io_section(read_type rtype,
-             const fastq_stats_ptr& stats,
+             std::string name,
+             fastq_stats_ptr stats,
              const sample_output_files& sample_files)
-    : io_section(rtype, stats, string_vec())
+    : io_section(std::move(name), std::move(stats), {})
   {
     const auto offset = sample_files.offset(rtype);
     if (offset != sample_output_files::disabled) {
@@ -317,45 +318,21 @@ struct io_section
     }
   }
 
-  io_section(read_type rtype, fastq_stats_ptr stats, string_vec filenames)
-    : m_read_type(rtype)
-    , m_stats(std::move(stats))
+  io_section(std::string name, fastq_stats_ptr stats, string_vec filenames)
+    : m_stats(std::move(stats))
+    , m_name(std::move(name))
     , m_filenames(std::move(filenames))
   {
-  }
-
-  const char* name() const
-  {
-    switch (m_read_type) {
-      case read_type::mate_1:
-        return "read1";
-      case read_type::mate_2:
-        return "read2";
-      case read_type::merged:
-        return "merged";
-      case read_type::singleton:
-        return "singleton";
-      case read_type::discarded:
-        return "discarded";
-      case read_type::unidentified_1:
-        return "unidentified_1";
-      case read_type::unidentified_2:
-        return "unidentified_2";
-      case read_type::max:
-        AR_FAIL("unsupported read type");
-      default:
-        AR_FAIL("invalid read type");
-    }
   }
 
   void write_to_if(const json_dict_ptr& json, bool enabled = true) const
   {
     if (!enabled) {
-      json->null(name());
+      json->null(m_name);
       return;
     }
 
-    const auto section = json->dict(name());
+    const auto section = json->dict(m_name);
     if (m_filenames.empty()) {
       section->null("filenames");
     } else {
@@ -432,9 +409,10 @@ struct io_section
   }
 
 private:
-  const read_type m_read_type;
-
   const fastq_stats_ptr m_stats;
+  //! Name of the section
+  const std::string m_name;
+  //! Filenames (if any) generated for this file type
   string_vec m_filenames;
 };
 
@@ -447,9 +425,8 @@ write_report_input(const userconfig& config,
   const auto mate_2_filenames =
     config.interleaved_input ? config.input_files_1 : config.input_files_2;
 
-  io_section(read_type::mate_1, stats.input_1, config.input_files_1)
-    .write_to_if(input);
-  io_section(read_type::mate_2, stats.input_2, mate_2_filenames)
+  io_section("read1", stats.input_1, config.input_files_1).write_to_if(input);
+  io_section("read2", stats.input_2, mate_2_filenames)
     .write_to_if(input, config.paired_ended_mode);
 }
 
@@ -486,21 +463,21 @@ write_report_demultiplexing(const userconfig& config,
         config, sample, stats, config.adapters.get_adapter_set(i));
 
       const auto output = sample->dict("output");
-      io_section(read_type::mate_1, stats.read_1, files)
+      io_section(read_type::mate_1, "read1", stats.read_1, files)
         .write_to_if(output, true);
 
-      io_section(read_type::mate_2, stats.read_2, files)
+      io_section(read_type::mate_2, "read2", stats.read_2, files)
         .write_to_if(output, config.paired_ended_mode);
 
-      io_section(read_type::singleton, stats.singleton, files)
+      io_section(read_type::singleton, "singleton", stats.singleton, files)
         .write_to_if(output,
                      config.paired_ended_mode && !demux_only &&
                        config.is_any_filtering_enabled());
 
-      io_section(read_type::merged, stats.merged, files)
+      io_section(read_type::merged, "merged", stats.merged, files)
         .write_to_if(output, config.is_read_merging_enabled());
 
-      io_section(read_type::discarded, stats.discarded, files)
+      io_section(read_type::discarded, "discarded", stats.discarded, files)
         .write_to_if(output, !demux_only && config.is_any_filtering_enabled());
     }
   } else {
@@ -557,29 +534,28 @@ write_report_output(const userconfig& config,
   const bool demux_only = config.run_type == ar_command::demultiplex_only;
 
   const auto output = report.dict("output");
-  io_section(read_type::mate_1, output_1, mate_1_files)
-    .write_to_if(output, true);
-  io_section(read_type::mate_2, output_2, mate_2_files)
+  io_section("read1", output_1, mate_1_files).write_to_if(output, true);
+  io_section("read2", output_2, mate_2_files)
     .write_to_if(output, config.paired_ended_mode);
-  io_section(read_type::merged, merged, merged_files)
+  io_section("merged", merged, merged_files)
     .write_to_if(output, config.is_read_merging_enabled());
 
-  io_section(read_type::unidentified_1,
+  io_section("unidentified_1",
              stats.demultiplexing->unidentified_stats_1,
              { out_files.unidentified_1.name })
     .write_to_if(output, config.adapters.barcode_count());
-  io_section(read_type::unidentified_2,
+  io_section("unidentified_2",
              stats.demultiplexing->unidentified_stats_2,
              { out_files.unidentified_2.name })
     .write_to_if(output,
                  config.adapters.barcode_count() && config.paired_ended_mode);
 
-  io_section(read_type::singleton, singleton, singleton_files)
+  io_section("singleton", singleton, singleton_files)
     .write_to_if(output,
                  config.paired_ended_mode && !demux_only &&
                    config.is_any_filtering_enabled());
 
-  io_section(read_type::discarded, discarded, discarded_files)
+  io_section("discarded", discarded, discarded_files)
     .write_to_if(output, !demux_only && config.is_any_filtering_enabled());
 }
 

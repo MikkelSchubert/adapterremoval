@@ -53,7 +53,7 @@ remove_adapter_sequences(const userconfig& config)
   // Add write steps for demultiplexed and per-samples output
   output.add_write_steps(sch, config);
 
-  post_demux_steps steps{ output };
+  post_demux_steps steps;
 
   // Step 4 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < output.samples().size(); ++nth) {
@@ -71,6 +71,10 @@ remove_adapter_sequences(const userconfig& config)
   // Step 3: Parse and demultiplex reads based on single or double indices
   size_t processing_step = std::numeric_limits<size_t>::max();
   if (config.is_demultiplexing_enabled()) {
+    // Statistics and serialization of unidentified reads
+    steps.unidentified =
+      sch.add<processes_unidentified>(config, output, stats.demultiplexing);
+
     if (config.paired_ended_mode) {
       processing_step =
         sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);

@@ -46,15 +46,9 @@ enum class read_type : size_t
   singleton,
   /** Discarded reads; e.g. too short reads. */
   discarded,
+
   //! End value; not to be used as an argument.
   max,
-
-  //! The following types are normally not handled along with the above
-
-  //! Demultiplexed mate 1 reads that could not be assigned to a sample
-  unidentified_1,
-  //! Demultiplexed mate 2 reads that could not be assigned to a sample
-  unidentified_2,
 };
 
 /** Enum describing the user-requested output format for processed reads */

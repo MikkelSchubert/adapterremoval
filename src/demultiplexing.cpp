@@ -1,7 +1,7 @@
 /*************************************************************************\
  * AdapterRemoval - cleaning next-generation sequencing reads            *
  *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
+ * Copyright (C) 2021 by Stinus Lindgreen - stinus@binf.ku.dk            *
  * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
  *                                                                       *
  * This program is free software: you can redistribute it and/or modify  *
@@ -80,8 +80,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
         m_statistics->ambiguous += 1;
       }
 
-      m_statistics->unidentified_stats_1->process(read);
-      m_cache.add_unidentified_1(read, fastq_flags::se);
+      m_cache.add_unidentified_1(std::move(read));
     } else {
       read.truncate(m_barcodes.at(best_barcode).first.length());
 
@@ -130,11 +129,8 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
         m_statistics->ambiguous += 2;
       }
 
-      m_statistics->unidentified_stats_1->process(*it_1);
-      m_statistics->unidentified_stats_2->process(*it_2);
-
-      m_cache.add_unidentified_1(*it_1, fastq_flags::pe_1);
-      m_cache.add_unidentified_2(*it_2, fastq_flags::pe_2);
+      m_cache.add_unidentified_1(std::move(*it_1));
+      m_cache.add_unidentified_2(std::move(*it_2));
     } else {
       // Prefixing with user supplied prefixes is also done during trimming
       if (m_config.run_type == ar_command::demultiplex_only) {
@@ -153,6 +149,67 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
   }
 
   return m_cache.flush(chunk->eof);
+}
+
+processes_unidentified::processes_unidentified(const userconfig& config,
+                                               const output_files& output,
+                                               demux_stats_ptr stats)
+  : analytical_step(processing_order::unordered, "processes_unidentified")
+  , m_config(config)
+  , m_statistics(std::move(stats))
+{
+  m_output.set_file(read_type::mate_1, output.unidentified_1);
+  m_output.set_file(read_type::mate_2, output.unidentified_2);
+
+  m_output.set_step(read_type::mate_1, output.unidentified_1_step);
+  if (output.unidentified_1_step != output.unidentified_2_step &&
+      output.unidentified_2_step != output_files::disabled) {
+    m_output.set_step(read_type::mate_2, output.unidentified_2_step);
+  }
+
+  m_stats_1.emplace_back_n(m_config.max_threads);
+  m_stats_2.emplace_back_n(m_config.max_threads);
+}
+
+chunk_vec
+processes_unidentified::process(chunk_ptr chunk)
+{
+  AR_REQUIRE(chunk);
+  processed_reads chunks{ m_output, chunk->first };
+
+  auto stats_1 = m_stats_1.acquire();
+  auto stats_2 = m_stats_2.acquire();
+
+  if (chunk->reads_2.empty()) {
+    for (const auto& read : chunk->reads_1) {
+      stats_1->process(read);
+      chunks.add(read, read_type::mate_1, fastq_flags::se);
+    }
+  } else {
+    AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
+    auto it_1 = chunk->reads_1.begin();
+    auto it_2 = chunk->reads_2.begin();
+
+    for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
+      stats_1->process(*it_1);
+      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1);
+
+      stats_2->process(*it_2);
+      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2);
+    }
+  }
+
+  m_stats_1.release(stats_1);
+  m_stats_2.release(stats_2);
+
+  return chunks.finalize(chunk->eof);
+}
+
+void
+processes_unidentified::finalize()
+{
+  m_stats_1.merge_into(*m_statistics->unidentified_stats_1);
+  m_stats_2.merge_into(*m_statistics->unidentified_stats_2);
 }
 
 } // namespace adapterremoval

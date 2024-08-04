@@ -187,8 +187,6 @@ post_trim_read_termini(const userconfig& config,
 
     case read_type::singleton:
     case read_type::discarded:
-    case read_type::unidentified_1:
-    case read_type::unidentified_2:
       AR_FAIL("unsupported read type in post_trim_read_termini");
 
     case read_type::max:
@@ -405,8 +403,6 @@ add_pe_statistics(const trimming_statistics& stats,
       break;
 
     case read_type::max:
-    case read_type::unidentified_1:
-    case read_type::unidentified_2:
       AR_FAIL("unhandled read type");
 
     default:

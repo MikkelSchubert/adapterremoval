@@ -134,9 +134,9 @@ demultiplex_sequences(const userconfig& config)
   auto output = config.get_output_filenames();
   output.add_write_steps(sch, config);
 
-  post_demux_steps steps{ output };
+  post_demux_steps steps;
 
-  // Step 4 - N: Trim and write (demultiplexed) reads
+  // Step 5 - N: Statistics and serialization of sample reads
   for (size_t nth = 0; nth < config.adapters.adapter_set_count(); ++nth) {
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
@@ -149,19 +149,18 @@ demultiplex_sequences(const userconfig& config)
     }
   }
 
+  // Step 4: Statistics and serialization of unidentified reads
+  steps.unidentified =
+    sch.add<processes_unidentified>(config, output, stats.demultiplexing);
+
   // Step 3: Parse and demultiplex reads based on single or double indices
   size_t processing_step = std::numeric_limits<size_t>::max();
-  if (config.is_demultiplexing_enabled()) {
-    if (config.paired_ended_mode) {
-      processing_step =
-        sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
-
-    } else {
-      processing_step =
-        sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
-    }
+  if (config.paired_ended_mode) {
+    processing_step =
+      sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
   } else {
-    processing_step = steps.samples.back();
+    processing_step =
+      sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
   }
 
   // Step 2: Post-process, validate, and collect statistics on FASTQ reads

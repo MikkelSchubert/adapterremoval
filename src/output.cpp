@@ -124,6 +124,17 @@ sample_output_files::set_file(const read_type rtype, output_file file)
   }
 }
 
+void
+sample_output_files::set_step(read_type rtype, size_t step)
+{
+  const auto index = static_cast<size_t>(rtype);
+  const auto offset = m_offsets.at(index);
+  AR_REQUIRE(offset != disabled);
+
+  AR_REQUIRE(m_output.at(offset).step == disabled);
+  m_output.at(offset).step = step;
+}
+
 size_t
 sample_output_files::offset(read_type value) const
 {
@@ -240,14 +251,6 @@ processed_reads::finalize(bool eof)
 
 const size_t post_demux_steps::disabled = output_files::disabled;
 
-post_demux_steps::post_demux_steps(const output_files& output)
-  : unidentified_1(output.unidentified_1_step)
-  , unidentified_1_format(output.unidentified_1.format)
-  , unidentified_2(output.unidentified_2_step)
-  , unidentified_2_format(output.unidentified_2.format)
-{
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `demultiplexed_reads`
 
@@ -268,59 +271,39 @@ flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
 
 demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
   : m_steps(steps)
-  , m_unidentified_1_format(steps.unidentified_1_format)
-  , m_unidentified_2_format(steps.unidentified_2_format)
 {
-  if (m_steps.unidentified_1 != post_demux_steps::disabled) {
-    m_unidentified_1 = std::make_unique<analytical_chunk>();
-    serialize_header(m_unidentified_1, m_unidentified_1_format);
-  }
-
-  if (m_steps.unidentified_2 != post_demux_steps::disabled &&
-      m_steps.unidentified_1 != m_steps.unidentified_2) {
-    m_unidentified_2 = std::make_unique<analytical_chunk>();
-    serialize_header(m_unidentified_2, m_unidentified_2_format);
-  }
+  // Position 0 is used for unidentified reads
+  m_cache.push_back(std::make_unique<analytical_chunk>());
 
   for (const auto next_step : m_steps.samples) {
     AR_REQUIRE(next_step != post_demux_steps::disabled);
 
-    m_samples.push_back(std::make_unique<analytical_chunk>());
+    m_cache.push_back(std::make_unique<analytical_chunk>());
   }
 }
 
 void
-demultiplexed_reads::add_unidentified_1(const fastq& read,
-                                        const fastq_flags flags)
+demultiplexed_reads::add_unidentified_1(fastq&& read)
 {
-  if (m_unidentified_1) {
-    serialize_record(m_unidentified_1, read, m_unidentified_1_format, flags);
-  }
+  m_cache.at(0)->reads_1.push_back(std::move(read));
 }
 
 void
-demultiplexed_reads::add_unidentified_2(const fastq& read,
-                                        const fastq_flags flags)
+demultiplexed_reads::add_unidentified_2(fastq&& read)
 {
-  if (m_unidentified_2) {
-    serialize_record(m_unidentified_2, read, m_unidentified_1_format, flags);
-  } else if (m_steps.unidentified_1 == m_steps.unidentified_2) {
-    if (m_unidentified_1) {
-      serialize_record(m_unidentified_1, read, m_unidentified_2_format, flags);
-    }
-  }
+  m_cache.at(0)->reads_2.push_back(std::move(read));
 }
 
 void
 demultiplexed_reads::add_read_1(fastq&& read, size_t sample)
 {
-  m_samples.at(sample)->reads_1.push_back(std::move(read));
+  m_cache.at(sample + 1)->reads_1.push_back(std::move(read));
 }
 
 void
 demultiplexed_reads::add_read_2(fastq&& read, size_t sample)
 {
-  m_samples.at(sample)->reads_2.push_back(std::move(read));
+  m_cache.at(sample + 1)->reads_2.push_back(std::move(read));
 }
 
 chunk_vec
@@ -328,16 +311,11 @@ demultiplexed_reads::flush(bool eof)
 {
   chunk_vec output;
 
-  if (m_unidentified_1) {
-    flush_chunk(output, m_unidentified_1, m_steps.unidentified_1, eof);
-  }
+  // Unidentified reads; these are treated as a pseudo-sample for simplicity
+  flush_chunk(output, m_cache.at(0), m_steps.unidentified, eof);
 
-  if (m_unidentified_2) {
-    flush_chunk(output, m_unidentified_2, m_steps.unidentified_2, eof);
-  }
-
-  for (size_t nth = 0; nth < m_samples.size(); ++nth) {
-    flush_chunk(output, m_samples.at(nth), m_steps.samples.at(nth), eof);
+  for (size_t i = 1; i < m_cache.size(); ++i) {
+    flush_chunk(output, m_cache.at(i), m_steps.samples.at(i - 1), eof);
   }
 
   return output;

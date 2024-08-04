@@ -112,4 +112,31 @@ public:
   chunk_vec process(chunk_ptr chunk) override;
 };
 
+/** Collects statistics for and serializes unidentified reads */
+class processes_unidentified : public analytical_step
+{
+public:
+  /** Setup step; keeps reference to config object. */
+  processes_unidentified(const userconfig& config,
+                         const output_files& output,
+                         demux_stats_ptr stats);
+
+  /** Collect statistics and serialize (if kept) unidentified reads */
+  chunk_vec process(chunk_ptr chunk) override;
+
+  void finalize() override;
+
+protected:
+  //! Pointer to user settings used for output format for unidentified reads
+  const userconfig& m_config;
+  //! Mapping of output files; unidentified reads are treated as a pseudo-sample
+  sample_output_files m_output{};
+  //! Sink for demultiplexing statistics
+  demux_stats_ptr m_statistics{};
+
+  //! Per thread statistics collected from unidentified mate 1 reads
+  threadstate<fastq_statistics> m_stats_1{};
+  //! Per thread statistics collected from unidentified mate 2 reads
+  threadstate<fastq_statistics> m_stats_2{};
+};
 } // namespace adapterremoval

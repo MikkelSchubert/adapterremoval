@@ -68,6 +68,8 @@ public:
 
   /** Sets the output file for a given read type. */
   void set_file(read_type rtype, output_file file);
+  /** Sets the pipeline step for a given read type. */
+  void set_step(read_type rtype, size_t step);
 
   [[nodiscard]] size_t size() const { return m_output.size(); }
 
@@ -176,7 +178,7 @@ public:
 private:
   const sample_output_files& m_map;
 
-  //! A set output chunks being created; typically fewer than read_type::max.
+  //! A set of output chunks being created; typically fewer than read_type::max.
   chunk_ptr_vec m_chunks{};
 };
 
@@ -184,22 +186,14 @@ private:
 class post_demux_steps
 {
 public:
-  explicit post_demux_steps(const output_files& output);
+  /** Constant indicating that a step has been disabled. */
+  static const size_t disabled;
 
-  //! Step used to write unidentified mate 1 reads
-  const size_t unidentified_1;
-  //! Format of unidentified 1 reads
-  const output_format unidentified_1_format;
-  //! Step used to write unidentified mate 2 reads; may be disabled
-  const size_t unidentified_2;
-  //! Format of unidentified 1 reads
-  const output_format unidentified_2_format;
+  //! Step used to process unidentified reads
+  size_t unidentified = disabled;
 
   /* Processing step for each sample. */
   std::vector<size_t> samples{};
-
-  /** Constant indicating that a step has been disabled. */
-  static const size_t disabled;
 };
 
 /** Helper class used to generate per file-type chunks for processed reads . */
@@ -208,8 +202,8 @@ class demultiplexed_reads
 public:
   explicit demultiplexed_reads(const post_demux_steps& steps);
 
-  void add_unidentified_1(const fastq& read, fastq_flags flags);
-  void add_unidentified_2(const fastq& read, fastq_flags flags);
+  void add_unidentified_1(fastq&& read);
+  void add_unidentified_2(fastq&& read);
   void add_read_1(fastq&& read, size_t sample);
   void add_read_2(fastq&& read, size_t sample);
 
@@ -219,18 +213,8 @@ public:
 private:
   const post_demux_steps& m_steps;
 
-  //! Cache of demultiplex reads; used to reduce the number of output chunks
-  //! generated from each processed chunk, which would otherwise increase
-  //! linearly with the number of barcodes.
-  chunk_ptr_vec m_samples{};
-  //! Cache of unidentified mate 1 reads
-  chunk_ptr m_unidentified_1{};
-  //! Format of unidentified 1 reads
-  const output_format m_unidentified_1_format;
-  //! Cache of unidentified mate 2 reads
-  chunk_ptr m_unidentified_2{};
-  //! Format of unidentified 1 reads
-  const output_format m_unidentified_2_format;
+  //! Cache of demultiplex reads, including unidentified reads
+  chunk_ptr_vec m_cache{};
 };
 
 } // namespace adapterremoval
