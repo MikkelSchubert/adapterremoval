@@ -115,8 +115,8 @@
     },
     "read2": null,
     "merged": null,
-    "unidentified_1": null,
-    "unidentified_2": null,
+    "unidentified1": null,
+    "unidentified2": null,
     "singleton": null,
     "discarded": {
       "filenames": null,

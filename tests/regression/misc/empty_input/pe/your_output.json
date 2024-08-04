@@ -111,8 +111,8 @@
       "gc_content": null
     },
     "merged": null,
-    "unidentified_1": null,
-    "unidentified_2": null,
+    "unidentified1": null,
+    "unidentified2": null,
     "singleton": {
       "filenames": ["your_output.singleton.fastq.gz"],
       "input_reads": 0,

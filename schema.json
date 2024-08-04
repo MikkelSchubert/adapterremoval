@@ -283,11 +283,11 @@
                             "description": "Detailed sequence statistics for merged reads, if running in paried-end mode and merging is enabled",
                             "$ref": "#/definitions/optional-detailed-sequence-statistics"
                         },
-                        "unidentified_1": {
+                        "unidentified1": {
                             "description": "Detailed sequence statistics for mate 1 reads that could not be mapped to a sample, if demultiplexing is enabled",
                             "$ref": "#/definitions/optional-detailed-sequence-statistics"
                         },
-                        "unidentified_2": {
+                        "unidentified2": {
                             "description": "Detailed sequence statistics for mate 2 reads that could not be mapped to a sample, if running in paired-end mode and demultiplexing is enabled",
                             "$ref": "#/definitions/optional-detailed-sequence-statistics"
                         },
@@ -304,8 +304,8 @@
                         "read1",
                         "read2",
                         "merged",
-                        "unidentified_1",
-                        "unidentified_2",
+                        "unidentified1",
+                        "unidentified2",
                         "singleton",
                         "discarded"
                     ]

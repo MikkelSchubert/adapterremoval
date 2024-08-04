@@ -540,11 +540,11 @@ write_report_output(const userconfig& config,
   io_section("merged", merged, merged_files)
     .write_to_if(output, config.is_read_merging_enabled());
 
-  io_section("unidentified_1",
+  io_section("unidentified1",
              stats.demultiplexing->unidentified_stats_1,
              { out_files.unidentified_1.name })
     .write_to_if(output, config.adapters.barcode_count());
-  io_section("unidentified_2",
+  io_section("unidentified2",
              stats.demultiplexing->unidentified_stats_2,
              { out_files.unidentified_2.name })
     .write_to_if(output,

@@ -260,7 +260,7 @@
     },
     "read2": null,
     "merged": null,
-    "unidentified_1": {
+    "unidentified1": {
       "filenames": ["your_output.unidentified.r1.fastq.gz"],
       "input_reads": 0,
       "output_reads": 0,
@@ -271,7 +271,7 @@
       "quality_scores": null,
       "gc_content": null
     },
-    "unidentified_2": null,
+    "unidentified2": null,
     "singleton": null,
     "discarded": {
       "filenames": ["your_output.sample_1.discarded.fastq.gz", "your_output.sample_2.discarded.fastq.gz"],
