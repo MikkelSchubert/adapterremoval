@@ -141,23 +141,6 @@ select_filenames(const userconfig& config, const read_fastq::file_type mode)
   }
 }
 
-char
-identify_mate_separators(const fastq_vec& reads_1, const fastq_vec& reads_2)
-{
-  AR_REQUIRE(reads_1.size() == reads_2.size());
-
-  // Attempt to determine the mate separator character
-  char mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
-
-  if (!mate_separator) {
-    // Fall back to the default so that a human-readable error will be thrown
-    // during normalization below.
-    mate_separator = MATE_SEPARATOR;
-  }
-
-  return mate_separator;
-}
-
 } // namespace
 
 read_fastq::read_fastq(const userconfig& config,
@@ -169,6 +152,7 @@ read_fastq::read_fastq(const userconfig& config,
   , m_mode(mode)
   , m_head(config.head)
   , m_mate_separator(config.mate_separator)
+  , m_mate_separator_identified(config.mate_separator)
 {
 }
 
@@ -224,10 +208,14 @@ read_fastq::process(chunk_ptr chunk)
       throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
                         "input files may be truncated. Please fix before "
                         "continuing.");
-    } else if (!m_mate_separator) {
+    } else if (!m_mate_separator_identified) {
+      AR_REQUIRE(reads_1.size() == reads_2.size());
       // Mate separators are identified using the first block, in order to
       // reduce the need for locking in the post-processing step
-      m_mate_separator = identify_mate_separators(reads_1, reads_2);
+
+      // Attempt to determine the mate separator character
+      m_mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
+      m_mate_separator_identified = true;
     }
   }
 

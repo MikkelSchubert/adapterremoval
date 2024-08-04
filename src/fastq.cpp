@@ -637,9 +637,15 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
     if (info1.mate == read_mate::unknown || info2.mate == read_mate::unknown) {
       error << "\n\nNote that AdapterRemoval by determines the mate "
                "numbers as the digit found at the end of the read name, "
-               "if this is preceded by the character '"
-            << mate_separator
-            << "'; if these data makes use of a different character to "
+               "if this is preceded by";
+
+      if (mate_separator) {
+        error << "the character '" << mate_separator << "'";
+      } else {
+        error << "a character such as '/'";
+      }
+
+      error << "; if these data makes use of a different character to "
                "separate the mate number from the read name, then you "
                "will need to set the --mate-separator command-line "
                "option to the appropriate character.";

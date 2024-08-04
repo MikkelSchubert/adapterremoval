@@ -101,6 +101,8 @@ private:
   uint64_t m_head = std::numeric_limits<uint64_t>::max();
   //! Character used to join read-names with mate numbers, e.g. '/'
   char m_mate_separator;
+  //! Indicates if the mate separator is known / has been attempted identififed
+  bool m_mate_separator_identified;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock{};
