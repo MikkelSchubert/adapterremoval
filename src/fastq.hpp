@@ -83,7 +83,7 @@ public:
   const std::string& qualities() const { return m_qualities; }
 
   /** Returns the name (excluding the @ and other fields) of the header. **/
-  [[nodiscard]] std::string_view name() const;
+  [[nodiscard]] std::string_view name(char mate_separator = '\0') const;
 
   /** Returns the length of the sequence. */
   size_t length() const { return m_sequence.length(); }

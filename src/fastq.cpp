@@ -201,12 +201,18 @@ fastq::operator==(const fastq& other) const
 }
 
 std::string_view
-fastq::name() const
+fastq::name(const char mate_separator) const
 {
   std::string_view header = m_header;
   const size_t pos = header.find_first_of(' ');
   if (pos != std::string::npos) {
-    return header.substr(0, pos);
+    header = header.substr(0, pos);
+  }
+
+  if (mate_separator && header.size() > 1 &&
+      (header.back() == '1' || header.back() == '2') &&
+      header.at(header.length() - 2) == mate_separator) {
+    header = header.substr(0, header.length() - 2);
   }
 
   return header;

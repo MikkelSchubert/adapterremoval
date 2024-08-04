@@ -298,6 +298,21 @@ TEST_CASE("name", "[fastq::fastq]")
   REQUIRE(fastq("name meta more", "", "").name() == "name");
 }
 
+TEST_CASE("name with mate identifier", "[fastq::fastq]")
+{
+  REQUIRE(fastq("name/1", "", "").name() == "name/1");
+  REQUIRE(fastq("name/2", "", "").name() == "name/2");
+  REQUIRE(fastq("name/3", "", "").name() == "name/3");
+
+  REQUIRE(fastq("name/1", "", "").name(':') == "name/1");
+  REQUIRE(fastq("name/2", "", "").name(':') == "name/2");
+  REQUIRE(fastq("name/3", "", "").name(':') == "name/3");
+
+  REQUIRE(fastq("name/1", "", "").name('/') == "name");
+  REQUIRE(fastq("name/2", "", "").name('/') == "name");
+  REQUIRE(fastq("name/3", "", "").name('/') == "name/3");
+}
+
 TEST_CASE("length", "[fastq::fastq]")
 {
   REQUIRE(fastq("record_1", "", "").length() == 0);
