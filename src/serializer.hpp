@@ -50,7 +50,8 @@ public:
   static void record(buffer& buf,
                      const fastq& record,
                      output_format format,
-                     fastq_flags flags);
+                     fastq_flags flags,
+                     char mate_separator);
 };
 
 } // namespace adapterremoval

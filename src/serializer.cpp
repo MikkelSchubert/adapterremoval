@@ -73,9 +73,28 @@ write_fastq_record(buffer& buf, const fastq& record)
 }
 
 void
-write_sam_record(buffer& buf, const fastq& record, fastq_flags flags)
+write_sam_record(buffer& buf,
+                 const fastq& record,
+                 const fastq_flags flags,
+                 char mate_separator)
 {
-  buf.append(record.name()); // 1. QNAME
+  if (mate_separator) {
+    switch (flags) {
+      case fastq_flags::se:
+      case fastq_flags::se_fail:
+        mate_separator = '\0';
+        break;
+      case fastq_flags::pe_1:
+      case fastq_flags::pe_1_fail:
+      case fastq_flags::pe_2:
+      case fastq_flags::pe_2_fail:
+        break;
+      default:
+        AR_FAIL("invalid fastq flags");
+    }
+  }
+
+  buf.append(record.name(mate_separator)); // 1. QNAME
   buf.append_u8('\t');
   buf.append(flags_to_sam(flags)); // 2. FLAG
   buf.append("\t"
@@ -124,7 +143,8 @@ void
 fastq_serializer::record(buffer& buf,
                          const fastq& record,
                          const output_format format,
-                         fastq_flags flags)
+                         const fastq_flags flags,
+                         const char mate_separator)
 {
   switch (format) {
     case output_format::fastq:
@@ -132,7 +152,7 @@ fastq_serializer::record(buffer& buf,
       return write_fastq_record(buf, record);
     case output_format::sam:
     case output_format::sam_gzip:
-      return write_sam_record(buf, record, flags);
+      return write_sam_record(buf, record, flags, mate_separator);
     default:
       AR_FAIL("invalid output format");
   }

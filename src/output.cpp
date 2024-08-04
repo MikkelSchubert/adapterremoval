@@ -43,22 +43,6 @@ get_buffer(chunk_ptr& chunk)
   return chunk->buffers.back();
 }
 
-void
-serialize_header(chunk_ptr& chunk, const output_format format)
-{
-  fastq_serializer::header(get_buffer(chunk), format);
-}
-
-void
-serialize_record(chunk_ptr& chunk,
-                 const fastq& record,
-                 const output_format format,
-                 const fastq_flags flags)
-{
-  fastq_serializer::record(get_buffer(chunk), record, format, flags);
-  chunk->nucleotides += record.length();
-}
-
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,7 +199,7 @@ processed_reads::processed_reads(const sample_output_files& map, bool first)
   for (size_t i = 0; i < map.size(); ++i) {
     m_chunks.emplace_back(std::make_unique<analytical_chunk>());
     if (first) {
-      serialize_header(m_chunks.back(), m_map.format(i));
+      fastq_serializer::header(get_buffer(m_chunks.back()), m_map.format(i));
     }
   }
 }
@@ -227,7 +211,12 @@ processed_reads::add(const fastq& read,
 {
   const size_t offset = m_map.offset(type);
   if (offset != sample_output_files::disabled) {
-    serialize_record(m_chunks.at(offset), read, m_map.format(offset), flags);
+    m_chunks.at(offset)->nucleotides += read.length();
+    fastq_serializer::record(get_buffer(m_chunks.at(offset)),
+                             read,
+                             m_map.format(offset),
+                             flags,
+                             m_mate_separator);
   }
 }
 
@@ -238,6 +227,7 @@ processed_reads::finalize(bool eof)
 
   for (size_t i = 0; i < m_chunks.size(); ++i) {
     auto& chunk = m_chunks.at(i);
+    chunk->mate_separator = m_mate_separator;
     chunk->eof = eof;
 
     chunks.emplace_back(m_map.step(i), std::move(chunk));
@@ -256,14 +246,18 @@ const size_t post_demux_steps::disabled = output_files::disabled;
 
 namespace {
 
-template<typename T>
 void
-flush_chunk(chunk_vec& output, std::unique_ptr<T>& ptr, size_t step, bool eof)
+flush_chunk(chunk_vec& output,
+            chunk_ptr& ptr,
+            size_t step,
+            const bool eof,
+            const char mate_separator)
 {
   if (eof || ptr->nucleotides >= INPUT_BLOCK_SIZE) {
     ptr->eof = eof;
+    ptr->mate_separator = mate_separator;
     output.push_back(chunk_pair(step, std::move(ptr)));
-    ptr = std::make_unique<T>();
+    ptr = std::make_unique<analytical_chunk>();
   }
 }
 
@@ -307,15 +301,16 @@ demultiplexed_reads::add_read_2(fastq&& read, size_t sample)
 }
 
 chunk_vec
-demultiplexed_reads::flush(bool eof)
+demultiplexed_reads::flush(bool eof, char mate_separator)
 {
   chunk_vec output;
 
   // Unidentified reads; these are treated as a pseudo-sample for simplicity
-  flush_chunk(output, m_cache.at(0), m_steps.unidentified, eof);
+  flush_chunk(output, m_cache.at(0), m_steps.unidentified, eof, mate_separator);
 
   for (size_t i = 1; i < m_cache.size(); ++i) {
-    flush_chunk(output, m_cache.at(i), m_steps.samples.at(i - 1), eof);
+    flush_chunk(
+      output, m_cache.at(i), m_steps.samples.at(i - 1), eof, mate_separator);
   }
 
   return output;

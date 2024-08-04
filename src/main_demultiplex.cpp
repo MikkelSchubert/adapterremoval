@@ -95,6 +95,7 @@ public:
 
     auto stats = m_stats.acquire();
     processed_reads chunks{ m_output, chunk->first };
+    chunks.set_mate_separator(chunk->mate_separator);
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();

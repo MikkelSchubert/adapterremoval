@@ -94,7 +94,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
     }
   }
 
-  return m_cache.flush(chunk->eof);
+  return m_cache.flush(chunk->eof, chunk->mate_separator);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
     }
   }
 
-  return m_cache.flush(chunk->eof);
+  return m_cache.flush(chunk->eof, chunk->mate_separator);
 }
 
 processes_unidentified::processes_unidentified(const userconfig& config,
@@ -176,6 +176,7 @@ processes_unidentified::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output, chunk->first };
+  chunks.set_mate_separator(chunk->mate_separator);
 
   auto stats_1 = m_stats_1.acquire();
   auto stats_2 = m_stats_2.acquire();

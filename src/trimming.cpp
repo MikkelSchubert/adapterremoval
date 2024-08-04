@@ -429,6 +429,7 @@ pe_reads_processor::process(chunk_ptr chunk)
   auto aligner = sequence_aligner(m_adapters, m_config.simd);
 
   processed_reads chunks{ m_output, chunk->first };
+  chunks.set_mate_separator(chunk->mate_separator);
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());

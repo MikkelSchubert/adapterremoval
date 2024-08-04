@@ -169,6 +169,9 @@ class processed_reads
 public:
   explicit processed_reads(const sample_output_files& map, bool first);
 
+  /** Set the mate separator; used to trim mate information for some formats */
+  void set_mate_separator(char value) { m_mate_separator = value; }
+
   /** Adds a read of the given type to be processed */
   void add(const fastq& read, read_type type, fastq_flags flags);
 
@@ -178,6 +181,8 @@ public:
 private:
   const sample_output_files& m_map;
 
+  //! Mate separator found in reads
+  char m_mate_separator = '\0';
   //! A set of output chunks being created; typically fewer than read_type::max.
   chunk_ptr_vec m_chunks{};
 };
@@ -208,7 +213,7 @@ public:
   void add_read_2(fastq&& read, size_t sample);
 
   /** Returns a chunk for each generated type of processed reads. */
-  chunk_vec flush(bool eof);
+  chunk_vec flush(bool eof, char mate_separator);
 
 private:
   const post_demux_steps& m_steps;
