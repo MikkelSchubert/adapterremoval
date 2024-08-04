@@ -240,8 +240,8 @@ check_input_and_output(const std::string& label,
   }
 
   for (const auto& sample : output_files.samples()) {
-    for (const auto& out_file : sample.files()) {
-      if (!check_no_clobber(label, filenames, out_file)) {
+    for (size_t i = 0; i < sample.size(); ++i) {
+      if (!check_no_clobber(label, filenames, sample.file(i))) {
         return false;
       }
     }

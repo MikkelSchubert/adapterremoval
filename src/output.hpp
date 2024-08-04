@@ -69,31 +69,33 @@ public:
   /** Sets the output file for a given read type. */
   void set_file(read_type rtype, output_file file);
 
-  /** Unique output filenames, indexed using `offset` */
-  [[nodiscard]] const std::vector<output_file>& files() const
-  {
-    return m_files;
-  }
-
-  /** Unique pipeline steps, indexed using `offset` */
-  [[nodiscard]] const std::vector<size_t>& pipeline_steps() const
-  {
-    return m_pipeline_steps;
-  }
+  [[nodiscard]] size_t size() const { return m_output.size(); }
 
   /** Returns the offset to the pipeline step/filename for a given read type. */
   [[nodiscard]] size_t offset(read_type value) const;
 
-  /** Returns the format for a given offset */
-  [[nodiscard]] output_format format(size_t offset) const
+  /** Returns the filename for a given offset */
+  [[nodiscard]] const output_file& file(size_t offset) const
   {
-    return m_files.at(offset).format;
+    return m_output.at(offset).file;
   }
 
   /** Returns the filename for a given offset */
   [[nodiscard]] const std::string& filename(size_t offset) const
   {
-    return m_files.at(offset).name;
+    return file(offset).name;
+  }
+
+  /** Returns the format for a given offset */
+  [[nodiscard]] output_format format(size_t offset) const
+  {
+    return file(offset).format;
+  }
+
+  /** Unique pipeline step indexed using `offset` */
+  [[nodiscard]] size_t step(size_t offset) const
+  {
+    return m_output.at(offset).step;
   }
 
   //! Constant used to represent disabled output files/steps.
@@ -102,10 +104,15 @@ public:
 private:
   friend class output_files;
 
-  //! Unique output files. Multiple read types may be mapped to a file
-  std::vector<output_file> m_files{};
-  //! Unique pipeline steps IDs. Multiple read types may be mapped to a step
-  std::vector<size_t> m_pipeline_steps{};
+  struct file_and_step
+  {
+    //! Unique output filename; may be shared by multiple read types
+    output_file file;
+    //! The pipeline step responsible for processing/writing this output
+    size_t step = disabled;
+  };
+
+  std::vector<file_and_step> m_output{};
   //! Mapping of read types to filenames/steps.
   std::array<size_t, static_cast<size_t>(read_type::max)> m_offsets{};
 };

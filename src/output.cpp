@@ -106,20 +106,19 @@ sample_output_files::set_file(const read_type rtype, output_file file)
   // reads. This saves time especially when output compression is enabled.
   if (file.name != DEV_NULL) {
     // FIXME: This assumes that filesystem is case sensitive
-    auto it = m_files.begin();
-    for (; it != m_files.end(); ++it) {
-      if (file.name == it->name) {
+    auto it = m_output.begin();
+    for (; it != m_output.end(); ++it) {
+      if (file.name == it->file.name) {
         break;
       }
     }
 
-    if (it == m_files.end()) {
-      m_files.push_back(std::move(file));
-
-      m_offsets.at(index) = m_files.size() - 1;
+    if (it == m_output.end()) {
+      m_output.push_back({ std::move(file), disabled });
+      m_offsets.at(index) = m_output.size() - 1;
     } else {
-      AR_REQUIRE(file == *it);
-      const auto existing_index = it - m_files.begin();
+      AR_REQUIRE(file == it->file);
+      const auto existing_index = it - m_output.begin();
       m_offsets.at(index) = existing_index;
     }
   }
@@ -175,10 +174,13 @@ output_files::file_extension(const output_format format)
 void
 output_files::add_write_steps(scheduler& sch, const userconfig& config)
 {
+  AR_REQUIRE(unidentified_1_step == disabled &&
+             unidentified_2_step == disabled);
+
   for (auto& sample : m_samples) {
-    AR_REQUIRE(sample.m_pipeline_steps.empty());
-    for (const auto& file : sample.m_files) {
-      sample.m_pipeline_steps.push_back(add_write_step(sch, config, file));
+    for (auto& it : sample.m_output) {
+      AR_REQUIRE(it.step == disabled);
+      it.step = add_write_step(sch, config, it.file);
     }
   }
 
@@ -199,10 +201,7 @@ output_files::add_write_steps(scheduler& sch, const userconfig& config)
 processed_reads::processed_reads(const sample_output_files& map, bool first)
   : m_map(map)
 {
-  const auto pipeline_steps = map.pipeline_steps().size();
-  AR_REQUIRE(map.files().size() == pipeline_steps);
-
-  for (size_t i = 0; i < pipeline_steps; ++i) {
+  for (size_t i = 0; i < map.size(); ++i) {
     m_chunks.emplace_back(std::make_unique<analytical_chunk>());
     if (first) {
       serialize_header(m_chunks.back(), m_map.format(i));
@@ -227,11 +226,10 @@ processed_reads::finalize(bool eof)
   chunk_vec chunks;
 
   for (size_t i = 0; i < m_chunks.size(); ++i) {
-    const auto next_step = m_map.pipeline_steps().at(i);
     auto& chunk = m_chunks.at(i);
     chunk->eof = eof;
 
-    chunks.emplace_back(next_step, std::move(chunk));
+    chunks.emplace_back(m_map.step(i), std::move(chunk));
   }
 
   return chunks;
