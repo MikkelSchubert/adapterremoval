@@ -21,6 +21,12 @@
 #include <cstddef> // for size_t
 #include <vector>  // for vector
 
+#if __GNUC__ >= 11 || (defined(__clang_major__) && __clang_major__ >= 8)
+#define define AR_SUPPORTS_AVX512 1
+#else
+#pragma GCC warning "AVX512 support requires GCC >= 11.0 or Clang >= 8.0"
+#endif
+
 namespace adapterremoval {
 
 using std::size_t;
@@ -32,7 +38,9 @@ enum class instruction_set
   none,
   sse2,
   avx2,
+#ifdef AR_SUPPORTS_AVX512
   avx512,
+#endif
 };
 
 /** Returns vector of supports instruction sets */
