@@ -89,6 +89,7 @@ main(int argc, char* argv[])
 
   auto returncode = 0;
   switch (config.run_type) {
+    case ar_command::demultiplex_only:
     case ar_command::trim_adapters: {
       returncode = remove_adapter_sequences(config);
       break;
@@ -96,11 +97,6 @@ main(int argc, char* argv[])
 
     case ar_command::benchmark: {
       returncode = benchmark(config);
-      break;
-    }
-
-    case ar_command::demultiplex_only: {
-      returncode = demultiplex_sequences(config);
       break;
     }
 

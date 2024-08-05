@@ -71,9 +71,6 @@ demultiplex_se_reads::process(chunk_ptr chunk)
     const int best_barcode = m_barcode_table.identify(read);
 
     if (best_barcode < 0) {
-      // Always add prefix since unidentified reads are not processed further
-      read.add_prefix_to_name(m_config.prefix_read_1);
-
       if (best_barcode == -1) {
         m_statistics->unidentified += 1;
       } else {
@@ -83,11 +80,6 @@ demultiplex_se_reads::process(chunk_ptr chunk)
       m_cache.add_unidentified_1(std::move(read));
     } else {
       read.truncate(m_barcodes.at(best_barcode).first.length());
-
-      // Prefixing with user supplied prefixes is also done during trimming
-      if (m_config.run_type == ar_command::demultiplex_only) {
-        read.add_prefix_to_name(m_config.prefix_read_1);
-      }
 
       m_statistics->barcodes.at(best_barcode) += 1;
       m_cache.add_read_1(std::move(read), best_barcode);
@@ -119,10 +111,6 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
     const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
 
     if (best_barcode < 0) {
-      // Always add prefix since unidentified reads are not processed further
-      it_1->add_prefix_to_name(m_config.prefix_read_1);
-      it_2->add_prefix_to_name(m_config.prefix_read_2);
-
       if (best_barcode == -1) {
         m_statistics->unidentified += 2;
       } else {
@@ -132,12 +120,6 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
       m_cache.add_unidentified_1(std::move(*it_1));
       m_cache.add_unidentified_2(std::move(*it_2));
     } else {
-      // Prefixing with user supplied prefixes is also done during trimming
-      if (m_config.run_type == ar_command::demultiplex_only) {
-        it_1->add_prefix_to_name(m_config.prefix_read_1);
-        it_2->add_prefix_to_name(m_config.prefix_read_2);
-      }
-
       it_1->truncate(m_barcodes.at(best_barcode).first.length());
       m_cache.add_read_1(std::move(*it_1), best_barcode);
 
@@ -150,6 +132,63 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
 
   return m_cache.flush(chunk->eof, chunk->mate_separator);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+process_demultiplexed::process_demultiplexed(const userconfig& config,
+                                             const sample_output_files& output,
+                                             trim_stats_ptr sink)
+  : analytical_step(processing_order::unordered, "process_demultiplexed")
+  , m_config(config)
+  , m_output(output)
+  , m_stats_sink(std::move(sink))
+{
+  m_stats.emplace_back_n(m_config.max_threads, m_config.report_sample_rate);
+}
+
+chunk_vec
+process_demultiplexed::process(chunk_ptr chunk)
+{
+  AR_REQUIRE(chunk);
+  auto stats = m_stats.acquire();
+  processed_reads chunks{ m_output, chunk->first };
+
+  if (m_config.paired_ended_mode) {
+    AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
+    chunks.set_mate_separator(chunk->mate_separator);
+
+    auto it_1 = chunk->reads_1.begin();
+    auto it_2 = chunk->reads_2.begin();
+    for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
+      it_1->add_prefix_to_name(m_config.prefix_read_1);
+      stats->read_1->process(*it_1);
+      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1);
+
+      it_2->add_prefix_to_name(m_config.prefix_read_2);
+      stats->read_2->process(*it_2);
+      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2);
+    }
+  } else {
+    for (auto& read : chunk->reads_1) {
+      read.add_prefix_to_name(m_config.prefix_read_1);
+
+      stats->read_1->process(read);
+      chunks.add(read, read_type::mate_1, fastq_flags::se);
+    }
+  }
+
+  m_stats.release(stats);
+
+  return chunks.finalize(chunk->eof);
+}
+
+void
+process_demultiplexed::finalize()
+{
+  m_stats.merge_into(*m_stats_sink);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 processes_unidentified::processes_unidentified(const userconfig& config,
                                                const output_files& output,
@@ -167,8 +206,8 @@ processes_unidentified::processes_unidentified(const userconfig& config,
     m_output.set_step(read_type::mate_2, output.unidentified_2_step);
   }
 
-  m_stats_1.emplace_back_n(m_config.max_threads);
-  m_stats_2.emplace_back_n(m_config.max_threads);
+  m_stats_1.emplace_back_n(m_config.max_threads, config.report_sample_rate);
+  m_stats_2.emplace_back_n(m_config.max_threads, config.report_sample_rate);
 }
 
 chunk_vec
@@ -176,27 +215,32 @@ processes_unidentified::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output, chunk->first };
-  chunks.set_mate_separator(chunk->mate_separator);
 
   auto stats_1 = m_stats_1.acquire();
   auto stats_2 = m_stats_2.acquire();
 
-  if (chunk->reads_2.empty()) {
-    for (const auto& read : chunk->reads_1) {
-      stats_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se);
-    }
-  } else {
+  if (m_config.paired_ended_mode) {
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
+    chunks.set_mate_separator(chunk->mate_separator);
+
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();
 
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
+      it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats_1->process(*it_1);
       chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1);
 
+      it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats_2->process(*it_2);
       chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2);
+    }
+  } else {
+    for (auto& read : chunk->reads_1) {
+      read.add_prefix_to_name(m_config.prefix_read_1);
+
+      stats_1->process(read);
+      chunks.add(read, read_type::mate_1, fastq_flags::se);
     }
   }
 

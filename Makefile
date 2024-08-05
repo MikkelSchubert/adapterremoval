@@ -170,7 +170,6 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/main_adapter_id.o \
 	$(OBJS_DIR)/main_adapter_rm.o \
 	$(OBJS_DIR)/main_benchmark.o \
-	$(OBJS_DIR)/main_demultiplex.o \
 	$(OBJS_DIR)/main.o \
 	$(OBJS_DIR)/output.o \
 	$(OBJS_DIR)/progress.o \

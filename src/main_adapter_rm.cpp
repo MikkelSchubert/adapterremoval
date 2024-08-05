@@ -59,7 +59,10 @@ remove_adapter_sequences(const userconfig& config)
   for (size_t nth = 0; nth < output.samples().size(); ++nth) {
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
-    if (config.paired_ended_mode) {
+    if (!config.is_adapter_trimming_enabled()) {
+      steps.samples.push_back(sch.add<process_demultiplexed>(
+        config, output.get_sample(nth), stats.trimming.back()));
+    } else if (config.paired_ended_mode) {
       steps.samples.push_back(sch.add<pe_reads_processor>(
         config, output.get_sample(nth), nth, stats.trimming.back()));
     } else {

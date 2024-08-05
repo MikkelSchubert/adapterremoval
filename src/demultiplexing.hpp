@@ -49,14 +49,6 @@ public:
                     const post_demux_steps& steps,
                     demux_stats_ptr stats);
 
-  /** Frees any unflushed caches. */
-  ~demultiplex_reads() override = default;
-
-  demultiplex_reads(const demultiplex_reads&) = delete;
-  demultiplex_reads(demultiplex_reads&&) = delete;
-  demultiplex_reads& operator=(const demultiplex_reads&) = delete;
-  demultiplex_reads& operator=(demultiplex_reads&&) = delete;
-
 protected:
   //! List of barcode (pairs) supplied by caller
   const fastq_pair_vec& m_barcodes;
@@ -110,6 +102,25 @@ public:
    * and ai_write_unidentified_2.
    */
   chunk_vec process(chunk_ptr chunk) override;
+};
+
+class process_demultiplexed : public analytical_step
+{
+public:
+  process_demultiplexed(const userconfig& config,
+                        const sample_output_files& output,
+                        trim_stats_ptr sink);
+
+  chunk_vec process(chunk_ptr chunk) override;
+
+  void finalize() override;
+
+private:
+  const userconfig& m_config;
+  const sample_output_files& m_output;
+
+  threadstate<trimming_statistics> m_stats{};
+  trim_stats_ptr m_stats_sink{};
 };
 
 /** Collects statistics for and serializes unidentified reads */
