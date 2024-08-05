@@ -34,10 +34,10 @@
 
 namespace adapterremoval {
 
-class output_file;
+enum class progress_type;
 class output_files;
 struct alignment_info;
-enum class progress_type;
+struct output_file;
 
 enum class ar_command
 {

@@ -36,9 +36,9 @@
 
 namespace adapterremoval {
 
-class output_file;
 class analytical_chunk;
 class userconfig;
+struct output_file;
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
 
