@@ -21,6 +21,7 @@
 #include "errors.hpp"     // for io_error
 #include "logging.hpp"    // for log::warn
 #include "strutils.hpp"   // for log_escape
+#include <algorithm>      // for any_of
 #include <cerrno>         // for EMFILE, errno
 #include <cstddef>        // for size_t
 #include <cstdio>         // for fopen, fread, fwrite, ...
@@ -251,6 +252,7 @@ managed_reader::close()
 size_t
 managed_reader::read(void* buffer, size_t size)
 {
+  AR_REQUIRE(buffer);
   const auto nread = ::fread(buffer, 1, size, m_file);
   if (ferror(m_file)) {
     throw io_error("error reading " + log_escape(m_filename), errno);
@@ -286,11 +288,14 @@ public:
 
   void write(const void* buffer, size_t size)
   {
+    AR_REQUIRE(buffer || size == 0);
     AR_REQUIRE(m_writer && m_writer->m_file);
-    const auto ret = ::fwrite(buffer, 1, size, m_writer->m_file);
-    if (ret != size) {
-      throw io_error("error writing to " + log_escape(m_writer->m_filename),
-                     errno);
+    if (size) {
+      const auto ret = ::fwrite(buffer, 1, size, m_writer->m_file);
+      if (ret != size) {
+        throw io_error("error writing to " + log_escape(m_writer->m_filename),
+                       errno);
+      }
     }
   }
 
@@ -313,6 +318,18 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+bool
+any_nonempty_buffers(const buffer_vec& buffers)
+{
+  return std::any_of(buffers.begin(), buffers.end(), [](const auto& it) {
+    return it.size() != 0;
+  });
+}
+
+} // namespace
 
 managed_writer::managed_writer(std::string filename)
   : m_filename(std::move(filename))
@@ -341,7 +358,7 @@ managed_writer::write(const buffer& buf, const flush mode)
 void
 managed_writer::write(const buffer_vec& buffers, const flush mode)
 {
-  if (!buffers.empty() || mode == flush::on) {
+  if (mode == flush::on || any_nonempty_buffers(buffers)) {
     writer_lock writer{ this };
 
     for (const auto& buf : buffers) {
