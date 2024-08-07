@@ -213,14 +213,19 @@ output_files::add_write_steps(scheduler& sch, const userconfig& config)
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `processed_reads`
 
-processed_reads::processed_reads(const sample_output_files& map, bool first)
+processed_reads::processed_reads(const sample_output_files& map)
   : m_map(map)
 {
   for (size_t i = 0; i < map.size(); ++i) {
     m_chunks.emplace_back(std::make_unique<analytical_chunk>());
-    if (first) {
-      fastq_serializer::header(get_buffer(m_chunks.back()), m_map.format(i));
-    }
+  }
+}
+
+void
+processed_reads::write_headers(const string_vec& args)
+{
+  for (size_t i = 0; i < m_chunks.size(); ++i) {
+    fastq_serializer::header(get_buffer(m_chunks.at(i)), m_map.format(i), args);
   }
 }
 

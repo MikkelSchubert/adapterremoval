@@ -18,7 +18,8 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstddef> // for size_t
+#include "commontypes.hpp" // for string_vec
+#include <cstddef>         // for size_t
 
 namespace adapterremoval {
 
@@ -46,7 +47,7 @@ enum class fastq_flags
 class fastq_serializer
 {
 public:
-  static void header(buffer& buf, output_format format);
+  static void header(buffer& buf, output_format format, const string_vec& args);
   static void record(buffer& buf,
                      const fastq& record,
                      output_format format,

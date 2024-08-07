@@ -22,6 +22,8 @@
 #include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
 #include "fastq.hpp"       // for fastq
 #include "fastq_enc.hpp"   // for PHRED_OFFSET_MIN
+#include "main.hpp"        // for VERSION
+#include "strutils.hpp"    // for join_text
 #include <string_view>     // for string_view
 
 namespace adapterremoval {
@@ -29,6 +31,11 @@ namespace adapterremoval {
 class userconfig;
 
 namespace {
+
+//! Standard header for BAM files prior to compression
+constexpr std::string_view BAM_HEADER{ "BAM\1", 4 };
+//! Standard header for SAM/BAM files
+constexpr std::string_view SAM_HEADER = "@HD\tVN:1.6\tSO:unsorted\n";
 
 /**
  * Flags mapping onto SAM/BAM flags
@@ -125,6 +132,30 @@ write_fastq_record(buffer& buf, const fastq& record)
   buf.append_u8('\n');
 }
 
+std::string
+create_sam_header(const string_vec& args)
+{
+  std::string header{ SAM_HEADER };
+  header.append("@PG\tID:adapterremoval\tPN:adapterremoval\tCL:");
+  header.append(join_text(args, " "));
+  header.append("\tVN:");
+  header.append(VERSION.substr(1)); // version without leading v
+  header.append("\n");
+
+  return header;
+}
+
+void
+write_bam_header(buffer& buf, const string_vec& args)
+{
+  const auto sam_header = create_sam_header(args);
+
+  buf.append(BAM_HEADER);            // magic
+  buf.append_u32(sam_header.size()); // l_text
+  buf.append(sam_header);            // terminating NUL not required
+  buf.append_u32(0);                 // n_ref
+}
+
 void
 write_sam_record(buffer& buf,
                  const fastq& record,
@@ -163,12 +194,13 @@ write_sam_record(buffer& buf,
     buf.append(record.sequence()); // 10. SEQ
     buf.append_u8('\t');
     buf.append(record.qualities()); // 11. QUAL
-    buf.append_u8('\n');
   } else {
     buf.append("*\t" // 10. SEQ
-               "*\n" // 11. QUAL
+               "*"   // 11. QUAL
     );
   }
+
+  buf.append("\tPG:Z:adapterremoval\n");
 }
 
 void
@@ -200,6 +232,10 @@ write_bam_record(buffer& buf,
   sequence_to_bam(buf, record.sequence());
   qualities_to_bam(buf, record.qualities());
 
+  // PG:Z:adapterremoval tag
+  buf.append("PGZadapterremoval");
+  buf.append_u8(0); // NUL
+
   const size_t block_size = buf.size() - block_size_pos - 4;
   buf.put_u32(block_size_pos, block_size); // block size (final)
 }
@@ -209,11 +245,10 @@ write_bam_record(buffer& buf,
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `fastq_serializer`
 
-constexpr std::string_view BAM_HEADER{ "BAM\1", 4 };
-constexpr std::string_view SAM_HEADER = "@HD\tVN:1.6\tSO:unsorted\n";
-
 void
-fastq_serializer::header(buffer& buf, const output_format format)
+fastq_serializer::header(buffer& buf,
+                         const output_format format,
+                         const string_vec& args)
 {
   switch (format) {
     case output_format::fastq:
@@ -221,14 +256,11 @@ fastq_serializer::header(buffer& buf, const output_format format)
       break;
     case output_format::sam:
     case output_format::sam_gzip:
-      buf.append(SAM_HEADER);
+      buf.append(create_sam_header(args));
       break;
     case output_format::bam:
     case output_format::ubam:
-      buf.append(BAM_HEADER);            // magic
-      buf.append_i32(SAM_HEADER.size()); // l_text
-      buf.append(SAM_HEADER);
-      buf.append_u32(0); // n_ref
+      write_bam_header(buf, args);
       break;
     default:
       AR_FAIL("invalid output format");

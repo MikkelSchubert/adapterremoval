@@ -150,8 +150,12 @@ chunk_vec
 process_demultiplexed::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
+  processed_reads chunks{ m_output };
+  if (chunk->first) {
+    chunks.write_headers(m_config.args);
+  }
+
   auto stats = m_stats.acquire();
-  processed_reads chunks{ m_output, chunk->first };
 
   if (m_config.paired_ended_mode) {
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
@@ -214,7 +218,10 @@ chunk_vec
 processes_unidentified::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
-  processed_reads chunks{ m_output, chunk->first };
+  processed_reads chunks{ m_output };
+  if (chunk->first) {
+    chunks.write_headers(m_config.args);
+  }
 
   auto stats_1 = m_stats_1.acquire();
   auto stats_2 = m_stats_2.acquire();

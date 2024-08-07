@@ -168,10 +168,13 @@ private:
 class processed_reads
 {
 public:
-  explicit processed_reads(const sample_output_files& map, bool first);
+  explicit processed_reads(const sample_output_files& map);
 
   /** Set the mate separator; used to trim mate information for some formats */
   void set_mate_separator(char value) { m_mate_separator = value; }
+
+  /** Writes any headers required by the output format  */
+  void write_headers(const string_vec& args);
 
   /** Adds a read of the given type to be processed */
   void add(const fastq& read, read_type type, fastq_flags flags);
