@@ -114,28 +114,13 @@ align_paired_ended_sequences(const fastq& read1,
 }
 
 void
-truncate_single_ended_sequence(const alignment_info& alignment, fastq& read)
-{
-  alignment.truncate_single_end(read);
-}
-
-size_t
-truncate_paired_ended_sequences(const alignment_info& alignment,
-                                fastq& read1,
-                                fastq& read2)
-{
-  return alignment.truncate_paired_end(read1, read2);
-}
-
-void
 REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
                                   const fastq& record1,
                                   const fastq& record2)
 {
   fastq tmp_record1 = record1;
   fastq tmp_record2 = record2;
-  REQUIRE(
-    truncate_paired_ended_sequences(alignment, tmp_record1, tmp_record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(tmp_record1, tmp_record2) == 0);
   REQUIRE(tmp_record1 == record1);
   REQUIRE(tmp_record2 == record2);
 }
@@ -198,7 +183,7 @@ TEST_CASE("SE: Partial alignment between ends", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACGT", "1234"));
 }
 
@@ -214,7 +199,7 @@ TEST_CASE("SE: Partial alignment with mismatches between ends",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACGT", "1234"));
 }
 
@@ -230,7 +215,7 @@ TEST_CASE("SE: Partial alignment with ambiguous between ends",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACGT", "1234"));
 }
 
@@ -250,7 +235,7 @@ TEST_CASE("SE: Completely overlapping sequences", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -266,7 +251,7 @@ TEST_CASE("SE: Completely overlapping sequences with mismatches",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -282,7 +267,7 @@ TEST_CASE("SE: Completely overlapping sequences with mismatches and ambiguous",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -303,7 +288,7 @@ TEST_CASE("Complete adapter inside sequence", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACG", "ABC"));
 }
 
@@ -319,7 +304,7 @@ TEST_CASE("Complete adapter inside sequence with mismatch",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACG", "ABC"));
 }
 
@@ -335,7 +320,7 @@ TEST_CASE("Complete adapter inside sequence with ambiguous",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACG", "ABC"));
 }
 
@@ -350,7 +335,7 @@ TEST_CASE("Complete sequence inside adapter", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -365,7 +350,7 @@ TEST_CASE("Complete sequence inside adapter with mismatches",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -381,7 +366,7 @@ TEST_CASE("Complete sequence inside adapter with ambiguous",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -401,7 +386,7 @@ TEST_CASE("Sequence extends past adapter", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "ACGT", "0123"));
 }
 
@@ -416,7 +401,7 @@ TEST_CASE("Sequence extends past adapter, no shift", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "CGT", "#!%"));
 }
 
@@ -431,7 +416,7 @@ TEST_CASE("Sequence extends past adapter, shift 1", "[alignment::single_end]")
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -453,7 +438,7 @@ TEST_CASE("Sequence and adapter extends past each other",
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
-  truncate_single_ended_sequence(result, tmp_record);
+  result.truncate_single_end(tmp_record);
   REQUIRE(tmp_record == fastq("Rec", "", ""));
 }
 
@@ -677,8 +662,7 @@ TEST_CASE("Sequence A extends past sequence B", "[alignment::paired_end]")
 
   fastq tmp_record1 = record1;
   fastq tmp_record2 = record2;
-  REQUIRE(truncate_paired_ended_sequences(result, tmp_record1, tmp_record2) ==
-          1);
+  REQUIRE(result.truncate_paired_end(tmp_record1, tmp_record2) == 1);
   REQUIRE(tmp_record1 == fastq("Rec1", "ACGTAGTA", "!!!!!!!!"));
   REQUIRE(tmp_record2 == fastq("Rec2", "AGTA", "!!!!"));
 }
@@ -696,8 +680,7 @@ TEST_CASE("Sequence B extends past sequence A", "[alignment::paired_end]")
 
   fastq tmp_record1 = record1;
   fastq tmp_record2 = record2;
-  REQUIRE(truncate_paired_ended_sequences(result, tmp_record1, tmp_record2) ==
-          1);
+  REQUIRE(result.truncate_paired_end(tmp_record1, tmp_record2) == 1);
   REQUIRE(tmp_record1 == fastq("Rec1", "CGTA", "!!!!"));
   REQUIRE(tmp_record2 == fastq("Rec2", "CGTAGTAT", "!!!!!!!!"));
 }
@@ -721,8 +704,7 @@ TEST_CASE("Sequences extends past each other", "[alignment::paired_end]")
 
   fastq tmp_record1 = record1;
   fastq tmp_record2 = record2;
-  REQUIRE(truncate_paired_ended_sequences(result, tmp_record1, tmp_record2) ==
-          2);
+  REQUIRE(result.truncate_paired_end(tmp_record1, tmp_record2) == 2);
   REQUIRE(tmp_record1 == fastq("Rec1", "ACGTAGTATA", "!!!!!!!!!!"));
   REQUIRE(tmp_record2 == fastq("Rec2", "ACGTAGTATA", "!!!!!!!!!!"));
 }
@@ -778,9 +760,8 @@ TEST_CASE("Invalid alignment", "[alignment::paired_end]")
   fastq record2("Rec", "", "");
   const alignment_info alignment = ALN().offset(1);
 
-  REQUIRE_THROWS_AS(
-    truncate_paired_ended_sequences(alignment, record1, record2),
-    assert_failed);
+  REQUIRE_THROWS_AS(alignment.truncate_paired_end(record1, record2),
+                    assert_failed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -793,7 +774,7 @@ TEST_CASE("Merge partial overlap [additive]")
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ATATTATAACGT", "01234567EFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -806,7 +787,7 @@ TEST_CASE("Merge complete overlap [additive]")
   fastq record1("Rec1", "ATATTATAA", "JJJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 2);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 2);
   const fastq expected =
     fastq("Rec1", "ATATTATA", "ssssssss", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
@@ -820,7 +801,7 @@ TEST_CASE("Merge complete overlap for mate 1 [additive]")
   fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
   fastq record2("Rec2", "ATATTATA", "JJJJJJJJ");
   const alignment_info alignment = ALN();
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 1);
   const fastq expected =
     fastq("Rec1", "ATATTATA", "ssssssss", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
@@ -834,7 +815,7 @@ TEST_CASE("Merge complete overlap for mate 2 [additive]")
   fastq record1("Rec1", "ATATTATA", "JJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 1);
   const fastq expected =
     fastq("Rec1", "ATATTATA", "ssssssss", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
@@ -848,7 +829,7 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter [additive]")
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(3);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -862,7 +843,7 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past "
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
   const alignment_info alignment = ALN().offset(-2);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 1);
   const fastq expected = fastq("Rec1", "ATANACGT", "012DEFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -875,7 +856,7 @@ TEST_CASE("Unequal sequence lengths, mate 2 shorter [additive]")
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "ACG", "EFG");
   const alignment_info alignment = ALN().offset(8);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -888,7 +869,7 @@ TEST_CASE("Ambiguous sites are filled from mate [additive]")
   fastq record1("Rec1", "NNNNNNTATA", "0123456789");
   fastq record2("Rec2", "ACGTNNNNNN", "ABCDEFGHIJ");
   const alignment_info alignment;
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ACGTNNTATA", "ABCD!!6789");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -901,7 +882,7 @@ TEST_CASE("Identical nucleotides gets higher qualities [additive]")
   fastq record1("Rec1", "GCATGATATA", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected =
     fastq("Rec1", "GCATGATATATACAAC", "012345(B?_EFGHIJ", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
@@ -917,7 +898,7 @@ TEST_CASE("Identical nucleotides gets higher qualities, no more than 41 "
   fastq record1("Rec1", "GCATGATATA", "0123456789");
   fastq record2("Rec2", "TATATACAAC", "ABCDEFGHIJ");
   const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected =
     fastq("Rec1", "GCATGATATATACAAC", "012345JJJJEFGHIJ", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
@@ -931,7 +912,7 @@ TEST_CASE("Higher quality nucleotide is selected [additive]")
   fastq record1("Rec1", "GCATGAGCAT", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected =
     fastq("Rec1", "GCATGATAATTACAAC", "012345($5#EFGHIJ", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
@@ -1024,7 +1005,7 @@ TEST_CASE("Merge partial overlap")
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(4);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ATATTATAACGT", "01234567EFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1036,7 +1017,7 @@ TEST_CASE("Merge complete overlap")
   fastq record1("Rec1", "ATATTATAA", "JJJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 2);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 2);
   const fastq expected = fastq("Rec1", "ATATTATA", "JJJJJJJJ");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1048,7 +1029,7 @@ TEST_CASE("Merge complete overlap for mate 1")
   fastq record1("Rec1", "ATATTATAG", "JJJJJJJJJ");
   fastq record2("Rec2", "ATATTATA", "JJJJJJJJ");
   const alignment_info alignment = ALN();
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 1);
   const fastq expected = fastq("Rec1", "ATATTATA", "JJJJJJJJ");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1060,7 +1041,7 @@ TEST_CASE("Merge complete overlap for mate 2")
   fastq record1("Rec1", "ATATTATA", "JJJJJJJJ");
   fastq record2("Rec2", "AATATTATA", "JJJJJJJJJ");
   const alignment_info alignment = ALN().offset(-1);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 1);
   const fastq expected = fastq("Rec1", "ATATTATA", "JJJJJJJJ");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1072,7 +1053,7 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter")
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
   const alignment_info alignment = ALN().offset(3);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1084,7 +1065,7 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter, mate 2 extends past")
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "AANNNNACGT", "90ABCDEFGH");
   const alignment_info alignment = ALN().offset(-2);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 1);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 1);
   const fastq expected = fastq("Rec1", "ATANACGT", "012DEFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1096,7 +1077,7 @@ TEST_CASE("Unequal sequence lengths, mate 2 shorter")
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "ACG", "EFG");
   const alignment_info alignment = ALN().offset(8);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1108,7 +1089,7 @@ TEST_CASE("Ambiguous sites are filled from mate")
   fastq record1("Rec1", "NNNNNNTATA", "0123456789");
   fastq record2("Rec2", "ACGTNNNNNN", "ABCDEFGHIJ");
   const alignment_info alignment;
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "ACGTNNTATA", "ABCD!!6789");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1120,7 +1101,7 @@ TEST_CASE("Identical nucleotides gets higher qualities")
   fastq record1("Rec1", "GCATGATATA", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "GCATGATATATACAAC", "012345(3:AEFGHIJ");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1132,7 +1113,7 @@ TEST_CASE("Higher quality nucleotide is selected")
   fastq record1("Rec1", "GCATGAGCAT", "012345!0:A");
   fastq record2("Rec2", "TATATACAAC", "(3&?EFGHIJ");
   const alignment_info alignment = ALN().offset(6);
-  REQUIRE(truncate_paired_ended_sequences(alignment, record1, record2) == 0);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
   const fastq expected = fastq("Rec1", "GCATGATAATTACAAC", "012345($5#EFGHIJ");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
@@ -1390,6 +1371,16 @@ rotate_nucleotide(char c)
   }
 }
 
+TEST_CASE("rotate nucleotide")
+{
+  REQUIRE(rotate_nucleotide('A') == 'C');
+  REQUIRE(rotate_nucleotide('C') == 'G');
+  REQUIRE(rotate_nucleotide('G') == 'T');
+  REQUIRE(rotate_nucleotide('T') == 'A');
+  REQUIRE(rotate_nucleotide('T') == 'A');
+  REQUIRE_THROWS_AS(rotate_nucleotide('X'), assert_failed);
+}
+
 void
 compare(simd::compare_subsequences_func func,
         const std::string& seq_1,
@@ -1540,6 +1531,40 @@ StringMaker<adapterremoval::MMNs, void>::convert(
   stream << "{MMs = " << value.mismatches << ", Ns = " << value.ambiguous
          << "}";
   return stream.str();
+}
+
+TEST_CASE("stringmaker for empty alignment_info")
+{
+  alignment_info info;
+
+  REQUIRE(StringMaker<alignment_info>::convert(info) ==
+          "alignment_info(adapter_id = -1)");
+}
+
+TEST_CASE("stringmaker for alignment_info")
+{
+  alignment_info info;
+  info.adapter_id = 1;
+  info.offset = 2;
+  info.length = 3;
+  info.n_mismatches = 4;
+  info.n_ambiguous = 5;
+
+  REQUIRE(StringMaker<alignment_info>::convert(info) ==
+          "alignment_info(score = -10, offset = 2, length = 3, n_mismatches "
+          "= 4, n_ambiguous = 5, adapter_id = 1)");
+}
+
+TEST_CASE("stringmaker for ALN")
+{
+  REQUIRE(StringMaker<ALN>::convert(ALN()) ==
+          "alignment_info(adapter_id = -1)");
+}
+
+TEST_CASE("stringmaker for MMNs")
+{
+  REQUIRE(StringMaker<adapterremoval::MMNs>::convert(MMNs{ 1, 2 }) ==
+          "{MMs = 1, Ns = 2}");
 }
 
 } // namespace Catch

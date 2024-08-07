@@ -43,7 +43,7 @@ namespace {
 /** Unoptimized to prevent calculations from being elided by the compiler */
 template<typename T>
 void NO_OPTIMIZE_GCC
-blackbox(const T& /* unused */) NO_OPTIMIZE_CLANG
+blackbox(T& /* unused */) NO_OPTIMIZE_CLANG
 {
 }
 
