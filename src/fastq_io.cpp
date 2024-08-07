@@ -60,33 +60,18 @@ constexpr size_t BGZF_META = BGZF_HEADER.size() + 4 + 4;
 
 namespace {
 
-//! Supported ISAL compression level; used rather than ISAL_DEF_MAX_LEVEL since
-//! the ISAL source code implies that may be increased
-const uint32_t MAX_ISAL_LEVEL = 3;
+//! The compression level used for block/stream compression with isa-l
+constexpr size_t ISAL_COMPRESSION_LEVEL = 1;
+//! The default buffer size for compression at level ISAL_COMPRESSION_LEVEL
+constexpr size_t ISAL_BUFFER_SIZE = ISAL_DEF_LVL1_DEFAULT;
 
-uint32_t
-isal_level(uint32_t compression_level)
-{
-  return std::min<uint32_t>(compression_level, MAX_ISAL_LEVEL);
-}
-
-size_t
-isal_buffer_size(size_t level)
-{
-  switch (level) {
-    default:
-      return ISAL_DEF_LVL3_DEFAULT;
-    case 2:
-      return ISAL_DEF_LVL2_DEFAULT;
-    case 1:
-      return ISAL_DEF_LVL1_DEFAULT;
-    case 0:
-      return ISAL_DEF_LVL0_DEFAULT;
-  }
-}
-
+/**
+ * ISA-l streaming is enabled only at compression level 1, since little
+ * difference was observed between levels 1 to 3. However, it still offers a
+ * faster compression (with a lower ratio) than libdeflate level 1.
+ */
 bool
-isal_enabled(const userconfig& config, const output_file file)
+is_isal_streaming_enabled(const output_file file, unsigned compression_level)
 {
   switch (file.format) {
     case output_format::fastq:
@@ -96,7 +81,7 @@ isal_enabled(const userconfig& config, const output_file file)
       return false;
     case output_format::fastq_gzip:
     case output_format::sam_gzip:
-      return config.compression_level <= MAX_ISAL_LEVEL;
+      return compression_level == ISAL_COMPRESSION_LEVEL;
     default:
       AR_FAIL("invalid output format");
   }
@@ -362,7 +347,7 @@ split_fastq::split_fastq(const userconfig& config,
                          size_t next_step)
   : analytical_step(processing_order::ordered, "split_fastq")
   , m_next_step(next_step)
-  , m_isal_enabled(isal_enabled(config, file))
+  , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
 {
 }
 
@@ -395,7 +380,7 @@ split_fastq::process(const chunk_ptr chunk)
       if (m_buffer.size() == BGZF_BLOCK_SIZE) {
         auto block = std::make_unique<analytical_chunk>();
 
-        if (m_isal_enabled) {
+        if (m_isal_stream) {
           m_isal_crc32 =
             crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
         }
@@ -415,7 +400,7 @@ split_fastq::process(const chunk_ptr chunk)
     auto block = std::make_unique<analytical_chunk>();
     block->eof = true;
 
-    if (m_isal_enabled) {
+    if (m_isal_stream) {
       m_isal_crc32 =
         crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
     }
@@ -433,12 +418,57 @@ split_fastq::process(const chunk_ptr chunk)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_split_fastq'
 
+namespace {
+
+size_t
+isal_deflate_block(buffer& input_buffer,
+                   buffer& output_buffer,
+                   const size_t output_offset,
+                   const bool eof)
+{
+  isal_zstream stream{};
+  isal_deflate_stateless_init(&stream);
+
+  stream.flush = FULL_FLUSH;
+  stream.end_of_stream = eof;
+
+  stream.level = ISAL_COMPRESSION_LEVEL;
+  stream.level_buf_size = ISAL_BUFFER_SIZE;
+  buffer level_buffer{ stream.level_buf_size };
+  stream.level_buf = level_buffer.data();
+
+  stream.avail_in = input_buffer.size();
+  stream.next_in = input_buffer.data();
+  stream.next_out = output_buffer.data() + output_offset;
+  stream.avail_out = output_buffer.size() - output_offset;
+
+  switch (isal_deflate_stateless(&stream)) {
+    case COMP_OK:
+      break;
+    case INVALID_FLUSH:
+      throw gzip_error("isal_deflate_stateless: invalid flush");
+    case ISAL_INVALID_LEVEL:
+      throw gzip_error("isal_deflate_stateless: invalid level");
+    case ISAL_INVALID_LEVEL_BUF:
+      throw gzip_error("isal_deflate_stateless: invalid buffer size");
+    default:
+      throw gzip_error("isal_deflate_stateless: unexpected error");
+  }
+
+  // The easily compressible input should fit in a single output block
+  AR_REQUIRE(stream.avail_in == 0);
+
+  return stream.total_out;
+}
+
+} // namespace
+
 gzip_split_fastq::gzip_split_fastq(const userconfig& config,
                                    const output_file& file,
                                    size_t next_step)
   : analytical_step(processing_order::unordered, "gzip_split_fastq")
   , m_config(config)
-  , m_isal_enabled(isal_enabled(config, file))
+  , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
   , m_format(file.format)
   , m_next_step(next_step)
 {
@@ -453,42 +483,11 @@ gzip_split_fastq::process(chunk_ptr chunk)
   buffer& input_buffer = chunk->buffers.front();
   buffer output_buffer;
 
-  if (m_isal_enabled) {
-    output_buffer.resize(input_buffer.size() + BGZF_META);
-
-    isal_zstream stream{};
-    isal_deflate_stateless_init(&stream);
-
-    stream.flush = FULL_FLUSH;
-    stream.end_of_stream = chunk->eof;
-
-    stream.level = isal_level(m_config.compression_level);
-    stream.level_buf_size = isal_buffer_size(stream.level);
-    buffer level_buffer{ stream.level_buf_size };
-    stream.level_buf = level_buffer.data();
-
-    stream.avail_in = input_buffer.size();
-    stream.next_in = input_buffer.data();
-    stream.next_out = output_buffer.data();
-    stream.avail_out = output_buffer.size();
-
-    switch (isal_deflate_stateless(&stream)) {
-      case COMP_OK:
-        break;
-      case INVALID_FLUSH:
-        throw gzip_error("isal_deflate_stateless: invalid flush");
-      case ISAL_INVALID_LEVEL:
-        throw gzip_error("isal_deflate_stateless: invalid level");
-      case ISAL_INVALID_LEVEL_BUF:
-        throw gzip_error("isal_deflate_stateless: invalid buffer size");
-      default:
-        throw gzip_error("isal_deflate_stateless: unexpected error");
-    }
-
-    // The easily compressible input should fit in a single output block
-    AR_REQUIRE(stream.avail_in == 0);
-
-    output_buffer.resize(stream.total_out);
+  if (m_isal_stream) {
+    output_buffer.resize(input_buffer.size());
+    const auto output_size =
+      isal_deflate_block(input_buffer, output_buffer, 0, chunk->eof);
+    output_buffer.resize(output_size);
   } else {
     if (m_format == output_format::ubam || m_config.compression_level == 0) {
       output_buffer.reserve(input_buffer.size() + BGZF_META);
@@ -497,9 +496,22 @@ gzip_split_fastq::process(chunk_ptr chunk)
       output_buffer.append_u16(input_buffer.size());
       output_buffer.append_u16(~input_buffer.size());
       output_buffer.append(input_buffer);
+    } else if (m_config.compression_level == ISAL_COMPRESSION_LEVEL) {
+      output_buffer.reserve(input_buffer.size());
+      output_buffer.append(BGZF_HEADER);
+      output_buffer.resize(output_buffer.capacity());
+
+      const auto output_size = isal_deflate_block(
+        input_buffer, output_buffer, BGZF_HEADER.size(), true);
+
+      // Resize the buffer to the actually used size
+      output_buffer.resize(output_size + BGZF_HEADER.size());
     } else {
+      // Libdeflate compression levels 1 to 12 are mapped onto 2 to 13
+      AR_REQUIRE(m_config.compression_level >= 2 &&
+                 m_config.compression_level <= 13);
       auto* compressor =
-        libdeflate_alloc_compressor(m_config.compression_level);
+        libdeflate_alloc_compressor(m_config.compression_level - 1);
       const auto output_bound =
         libdeflate_deflate_compress_bound(compressor, input_buffer.size());
 
@@ -551,10 +563,10 @@ write_fastq::write_fastq(const userconfig& config, const output_file& file)
   // Allow disk IO and writing to STDOUT at the same time
   : analytical_step(processing_order::ordered_io, "write_fastq")
   , m_output(file.name)
-  , m_isal_enabled(isal_enabled(config, file))
+  , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
 {
-  if (m_isal_enabled) {
-    buffer level_buf(isal_buffer_size(config.compression_level));
+  if (m_isal_stream) {
+    buffer level_buf(ISAL_BUFFER_SIZE);
     buffer output_buf(OUTPUT_BLOCK_SIZE);
 
     struct isal_zstream stream = {};
@@ -564,7 +576,7 @@ write_fastq::write_fastq(const userconfig& config, const output_file& file)
     isal_deflate_init(&stream);
     stream.avail_in = 0;
     stream.flush = NO_FLUSH;
-    stream.level = isal_level(config.compression_level);
+    stream.level = ISAL_COMPRESSION_LEVEL;
     stream.level_buf = level_buf.data();
     stream.level_buf_size = level_buf.size();
     stream.gzip_flag = IGZIP_GZIP_NO_HDR;
@@ -591,11 +603,11 @@ write_fastq::process(chunk_ptr chunk)
     m_eof = chunk->eof;
     m_uncompressed_bytes += chunk->uncompressed_size;
 
-    const auto mode = (m_eof && !m_isal_enabled) ? flush::on : flush::off;
+    const auto mode = (m_eof && !m_isal_stream) ? flush::on : flush::off;
 
     m_output.write(chunk->buffers, mode);
 
-    if (m_eof && m_isal_enabled) {
+    if (m_eof && m_isal_stream) {
       buffer trailer;
       trailer.append_u32(chunk->crc32);
       trailer.append_u32(m_uncompressed_bytes);

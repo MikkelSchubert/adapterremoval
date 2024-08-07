@@ -183,8 +183,8 @@ private:
   //! Buffer used to store partial blocks
   buffer m_buffer{};
 
-  //! Set if compression is carried out using isa-l
-  bool m_isal_enabled = false;
+  //! Set if streaming compression is carried out using isa-l
+  const bool m_isal_stream;
   //! CRC32 calculated across all input data (if using isa-l)
   uint32_t m_isal_crc32 = 0;
 
@@ -218,8 +218,8 @@ public:
 
 private:
   const userconfig& m_config;
-  //! Set if compression is carried out using isa-l
-  const bool m_isal_enabled;
+  //! Set if streaming compression is carried out using isa-l
+  const bool m_isal_stream;
   //! Format of file being compressed
   const output_format m_format;
   //! The analytical step following this step
@@ -249,8 +249,8 @@ private:
   //! Lazily opened / automatically closed handle
   managed_writer m_output;
 
-  //! Set if compression is carried out using isa-l
-  bool m_isal_enabled = false;
+  //! Set if streaming compression is carried out using isa-l
+  const bool m_isal_stream;
   //! Used to track the total number of (uncompressed) bytes written
   size_t m_uncompressed_bytes = 0;
   //! Used to track whether an EOF block has been received.

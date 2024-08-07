@@ -568,11 +568,12 @@ userconfig::userconfig()
   argparser.add("--compression-level", "N")
     .help(
       "Sets the compression level for compressed output. Valid values are 0 to "
-      "9. For compression levels 4 - 9, output consist of concatenated gzip "
-      "blocks, which may cause compatibility problems in some rare cases")
+      "13: Level 0 is uncompressed but includes gzip headers/checksums, level "
+      "1 is streamed for SAM/FASTQ output (this may be required in rare cases "
+      "for compatibility), and levels 2 to 13 are block compressed using BGZF")
     .deprecated_alias("--gzip-level")
     .bind_uint(&compression_level)
-    .with_default(6);
+    .with_default(5);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("PROCESSING:");
@@ -1042,11 +1043,8 @@ userconfig::parse_args(const string_vec& argvec)
     }
   }
 
-  // The actual max depends on the presence of libdeflate, but it does not seem
-  // justified to blow up even if the user specifies a level above that
-  // supported by isa-l.
-  if (compression_level > 9) {
-    log::error() << "--compression-level must be in the range 0 to 9, not "
+  if (compression_level > 13) {
+    log::error() << "--compression-level must be in the range 0 to 13, not "
                  << compression_level;
     return argparse::parse_result::error;
   }
