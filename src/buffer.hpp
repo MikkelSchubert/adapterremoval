@@ -34,7 +34,7 @@ class buffer
 
 public:
   /** Creates a buffer of the specified size, if non-zero */
-  explicit buffer(size_t size = 0) { m_buffer.resize(size); }
+  explicit buffer(size_t size = 0) { resize(size); }
 
   /** Returns pointer to the buffer, if any */
   [[nodiscard]] inline unsigned char* data()
@@ -48,6 +48,9 @@ public:
     return reinterpret_cast<const unsigned char*>(m_buffer.data());
   }
 
+  /** Returns the nth value in the buffer */
+  [[nodiscard]] uint8_t at(size_t n) const { return m_buffer.at(n).value; }
+
   /** Returns the current size of the buffer */
   [[nodiscard]] inline size_t size() const { return m_buffer.size(); }
 
@@ -55,11 +58,7 @@ public:
   [[nodiscard]] inline size_t capacity() const { return m_buffer.capacity(); }
 
   /** Changes the reported size of the buffer; must be 0 <= x <= capacity. */
-  inline void resize(size_t size)
-  {
-    AR_REQUIRE(size <= capacity());
-    m_buffer.resize(size);
-  }
+  inline void resize(size_t size) { m_buffer.resize(size); }
 
   /** Reserve additional space in the buffer */
   inline void reserve(size_t size) { m_buffer.reserve(size); }
@@ -69,6 +68,9 @@ public:
   {
     append(data.data(), data.size());
   }
+
+  /** Append a string to the buffer */
+  inline void append(const buffer& data) { append(data.data(), data.size()); }
 
   /** Append data to the buffer */
   inline void append(const char* data, size_t length)
@@ -86,13 +88,48 @@ public:
   /** Append a byte to the buffer */
   inline void append_u8(uint8_t value) { m_buffer.push_back({ value }); }
 
-  /** Copies uint32 into buffer */
+  /** Append 16 bit integer to buffer in LE orientation */
+  inline void append_u16(uint16_t value)
+  {
+    append_u8(value & 0xFFU);
+    append_u8((value >> 8U) & 0xFFU);
+  }
+
+  /** Append 32 bit integer to buffer in LE orientation */
   inline void append_u32(uint32_t value)
   {
     append_u8(value & 0xFFU);
     append_u8((value >> 8U) & 0xFFU);
     append_u8((value >> 16U) & 0xFFU);
     append_u8((value >> 24U) & 0xFFU);
+  }
+
+  /** Append signed 32 bit integer to buffer in LE orientation */
+  inline void append_i32(int32_t value)
+  {
+    append_u32(static_cast<uint32_t>(value));
+  }
+
+  /** Insert 16 bit integer into buffer in LE orientation at offset */
+  inline void put_u16(size_t offset, uint16_t value)
+  {
+    AR_REQUIRE(offset + 2 <= size());
+
+    auto* ptr = data() + offset;
+    ptr[0] = value & 0xFFU;
+    ptr[1] = (value >> 8U) & 0xFFU;
+  }
+
+  /** Insert 32 bit integer into buffer in LE orientation at offset */
+  inline void put_u32(size_t offset, uint32_t value)
+  {
+    AR_REQUIRE(offset + 4 <= size());
+
+    auto* ptr = data() + offset;
+    ptr[0] = value & 0xFFU;
+    ptr[1] = (value >> 8U) & 0xFFU;
+    ptr[2] = (value >> 16U) & 0xFFU;
+    ptr[3] = (value >> 24U) & 0xFFU;
   }
 
   buffer(buffer&& other) noexcept = default;
@@ -107,7 +144,7 @@ private:
   /** Construction intentionally omitted, to prevent default initialization */
   struct no_init
   {
-    unsigned char value;
+    uint8_t value;
   };
 
   static_assert(sizeof(no_init) == sizeof(decltype(no_init::value)),
