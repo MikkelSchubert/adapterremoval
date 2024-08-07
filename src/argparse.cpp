@@ -35,6 +35,7 @@ namespace argparse {
 namespace {
 
 const size_t parsing_failed = static_cast<size_t>(-1);
+const size_t invalid_choice = static_cast<size_t>(-2);
 
 /** Detect similar arguments based on prefixes or max edit distance. */
 bool
@@ -642,12 +643,38 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
     return parsing_failed;
   }
 
-  const auto result = m_sink->consume(start + 1, end_of_values);
+  size_t result = parsing_failed;
+  std::string error_message;
+
+  try {
+    result = m_sink->consume(start + 1, end_of_values);
+  } catch (const std::invalid_argument& error) {
+    error_message = error.what();
+  }
+
   if (result == parsing_failed) {
-    log::error() << "Invalid value for " << *start << ": "
-                 << shell_escape(*(start + 1));
+    auto error = log::error();
+
+    error << "Invalid command-line argument " << *start;
+    for (auto it = start + 1; it != end_of_values; ++it) {
+      error << " " << shell_escape(*it);
+    }
+
+    if (!error_message.empty()) {
+      error << ": " << error_message;
+    }
 
     return result;
+  } else if (result == invalid_choice) {
+    auto error = log::error();
+
+    error << "Invalid command-line argument " << *start;
+    for (auto it = start + 1; it != end_of_values; ++it) {
+      error << " " << shell_escape(*it);
+    }
+
+    error << ". Valid values for " << *start << " are "
+          << join_text(m_sink->choices(), ", ", ", and ");
   }
 
   m_times_set++;
@@ -755,13 +782,9 @@ uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(end - start == 1);
 
-  try {
-    *m_sink = str_to_unsigned(preprocess(*start));
+  *m_sink = str_to_unsigned(preprocess(*start));
 
-    return 1;
-  } catch (const std::invalid_argument&) {
-    return parsing_failed;
-  }
+  return 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -818,8 +841,14 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
   AR_REQUIRE(end - start == 1);
 
   double value = 0;
-  if (!to_double(preprocess(*start), value)) {
-    return parsing_failed;
+  std::istringstream stream(*start);
+  if (!(stream >> value)) {
+    throw std::invalid_argument("not a valid number");
+  }
+
+  char trailing = 0;
+  if (stream >> trailing) {
+    throw std::invalid_argument("number contains trailing text");
   }
 
   *m_sink = value;
@@ -895,7 +924,7 @@ str_sink::consume(string_vec_citer start, const string_vec_citer& end)
       }
     }
 
-    return parsing_failed;
+    return invalid_choice;
   }
 }
 

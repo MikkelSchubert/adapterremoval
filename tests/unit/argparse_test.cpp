@@ -24,6 +24,7 @@
 #include "strutils.hpp" // for string_vec
 #include "testing.hpp"  // for catch.hpp, StringMaker
 #include <cstddef>      // for size_t
+#include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string, allocator
 #include <vector>       // for vector, operator==
 
@@ -31,7 +32,7 @@ namespace adapterremoval {
 
 using argparse::argument_ptr;
 
-const size_t parsing_failed = static_cast<size_t>(-1);
+const size_t invalid_choice = static_cast<size_t>(-2);
 
 using Catch::Matchers::Contains;
 
@@ -156,7 +157,8 @@ TEST_CASE("uint requires valid integer value", "[argparse::uint_sink]")
   unsigned value = 0;
   argparse::uint_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
+                    std::invalid_argument);
   REQUIRE(value == 0);
 }
 
@@ -166,7 +168,8 @@ TEST_CASE("uint requires positive integer value", "[argparse::uint_sink]")
   argparse::uint_sink sink(&value);
 
   string_vec values{ "-123" };
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
+                    std::invalid_argument);
   REQUIRE(value == 0);
 }
 
@@ -197,7 +200,8 @@ TEST_CASE("uint rejects past unsigned upper bound", "[argparse::uint_sink]")
   argparse::uint_sink sink(&value);
 
   string_vec values{ "4294967296" };
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
+                    std::invalid_argument);
   REQUIRE(value == 0);
 }
 
@@ -208,7 +212,8 @@ TEST_CASE("uint disallows trailing garbage", "[argparse::uint_sink]")
   unsigned value = 0;
   argparse::uint_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
+                    std::invalid_argument);
   REQUIRE(value == 0);
 }
 
@@ -293,7 +298,8 @@ TEST_CASE("double requires valid double #1", "[argparse::double_sink]")
   double value = 0;
   argparse::double_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
+                    std::invalid_argument);
   REQUIRE(value == 0);
 }
 
@@ -304,7 +310,8 @@ TEST_CASE("double requires valid double #2", "[argparse::double_sink]")
   double value = 0;
   argparse::double_sink sink(&value);
 
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
+                    std::invalid_argument);
   REQUIRE(value == 0);
 }
 
@@ -438,7 +445,7 @@ TEST_CASE("str sink rejects values not in choices", "[argparse::str_sink]")
   sink.with_choices({ "abc", "def", "ghi" });
 
   string_vec values{ "foo" };
-  REQUIRE(sink.consume(values.begin(), values.end()) == parsing_failed);
+  REQUIRE(sink.consume(values.begin(), values.end()) == invalid_choice);
   REQUIRE(value.empty());
 }
 
@@ -1208,7 +1215,9 @@ TEST_CASE("invalid value", "[argparse::parser]")
 
   REQUIRE(p.parse_args({ "exe", "--foo", "one" }) ==
           argparse::parse_result::error);
-  REQUIRE_POSTFIX(ss.str(), "[ERROR] Invalid value for --foo: one\n");
+  REQUIRE_POSTFIX(ss.str(),
+                  "[ERROR] Invalid command-line argument --foo one: value is "
+                  "not a valid number\n");
 }
 
 TEST_CASE("help with finite max number of values", "[argparse::parser]")
