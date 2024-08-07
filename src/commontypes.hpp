@@ -62,12 +62,10 @@ enum class output_format
   sam,
   //! Gzip compressed unaligned SAM (Sequence Alignment Map) records
   sam_gzip,
-
-  // TODO:
   //! Unaligned BAM (Binary Alignment Map) records
-  // bam,
+  bam,
   //! Uncompressed, unaligned BAM (Binary Alignment Map) records
-  // ubam,
+  ubam,
 };
 
 /** Strategy used when merging reads */

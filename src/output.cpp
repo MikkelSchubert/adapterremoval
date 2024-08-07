@@ -63,7 +63,9 @@ add_write_step(scheduler& sch,
     case output_format::sam:
       break;
     case output_format::fastq_gzip:
-    case output_format::sam_gzip: {
+    case output_format::sam_gzip:
+    case output_format::bam:
+    case output_format::ubam: {
       step_id = sch.add<gzip_split_fastq>(config, file, step_id);
       step_id = sch.add<split_fastq>(config, file, step_id);
       break;
@@ -142,6 +144,10 @@ output_files::parse_extension(const std::string& filename, output_format& sink)
     sink = output_format::sam_gzip;
   } else if (ends_with(value, ".sam")) {
     sink = output_format::sam;
+  } else if (ends_with(value, ".bam")) {
+    sink = output_format::bam;
+  } else if (ends_with(value, ".ubam")) {
+    sink = output_format::ubam;
   } else {
     return false;
   }
@@ -161,6 +167,9 @@ output_files::file_extension(const output_format format)
       return ".sam";
     case output_format::sam_gzip:
       return ".sam.gz";
+    case output_format::bam:
+    case output_format::ubam:
+      return ".bam";
     default:
       AR_FAIL("invalid output format");
   }

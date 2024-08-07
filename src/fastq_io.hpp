@@ -45,7 +45,9 @@ using chunk_ptr = std::unique_ptr<analytical_chunk>;
 //! Rough number of nucleotides to read every cycle
 const size_t INPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 //! Size of chunks of when performing block compression
-const size_t GZIP_BLOCK_SIZE = 1LLU * 64 * 1024;
+const size_t BGZF_BLOCK_SIZE = 0xff00;
+//! Maximum size of BGZF blocks including header and tail
+const size_t BGZF_MAX_BLOCK_SIZE = 0x10000;
 //! Size of blocks to generate before writing to output
 const size_t OUTPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 
@@ -217,7 +219,9 @@ public:
 private:
   const userconfig& m_config;
   //! Set if compression is carried out using isa-l
-  bool m_isal_enabled;
+  const bool m_isal_enabled;
+  //! Format of file being compressed
+  const output_format m_format;
   //! The analytical step following this step
   const size_t m_next_step;
 };

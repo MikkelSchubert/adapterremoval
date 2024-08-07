@@ -39,6 +39,22 @@
 
 namespace adapterremoval {
 
+// Default bgzip header, as described in the SAM spec. v1.6 section 4.1.
+// Includes 2 trailing placeholder bytes for total block size (BSIZE)
+constexpr std::string_view BGZF_HEADER = {
+  "\37\213\10\4\0\0\0\0\0\377\6\0\102\103\2\0\0\0",
+  18
+};
+
+// Eof of file marker for bgzip files; see SAM spec. v1.6 section 4.1.2
+constexpr std::string_view BGZF_EOF = {
+  "\37\213\10\4\0\0\0\0\0\377\6\0\102\103\2\0\33\0\3\0\0\0\0\0\0\0\0\0",
+  28,
+};
+
+//! Roughly how much extra space is needed for headers, CRC32, and ISIZE
+constexpr size_t BGZF_META = BGZF_HEADER.size() + 4 + 4;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helper function for isa-l
 
@@ -75,6 +91,8 @@ isal_enabled(const userconfig& config, const output_file file)
   switch (file.format) {
     case output_format::fastq:
     case output_format::sam:
+    case output_format::bam:
+    case output_format::ubam:
       return false;
     case output_format::fastq_gzip:
     case output_format::sam_gzip:
@@ -369,12 +387,12 @@ split_fastq::process(const chunk_ptr chunk)
   for (const auto& src : chunk->buffers) {
     for (size_t src_offset = 0; src_offset < src.size();) {
       const auto n =
-        std::min(src.size() - src_offset, GZIP_BLOCK_SIZE - m_buffer.size());
+        std::min(src.size() - src_offset, BGZF_BLOCK_SIZE - m_buffer.size());
       m_buffer.append(src.data() + src_offset, n);
 
       src_offset += n;
 
-      if (m_buffer.size() == GZIP_BLOCK_SIZE) {
+      if (m_buffer.size() == BGZF_BLOCK_SIZE) {
         auto block = std::make_unique<analytical_chunk>();
 
         if (m_isal_enabled) {
@@ -388,7 +406,7 @@ split_fastq::process(const chunk_ptr chunk)
         chunks.emplace_back(m_next_step, std::move(block));
 
         m_buffer = buffer();
-        m_buffer.reserve(GZIP_BLOCK_SIZE);
+        m_buffer.reserve(BGZF_BLOCK_SIZE);
       }
     }
   }
@@ -421,6 +439,7 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config,
   : analytical_step(processing_order::unordered, "gzip_split_fastq")
   , m_config(config)
   , m_isal_enabled(isal_enabled(config, file))
+  , m_format(file.format)
   , m_next_step(next_step)
 {
 }
@@ -432,11 +451,11 @@ gzip_split_fastq::process(chunk_ptr chunk)
   AR_REQUIRE(chunk->buffers.size() == 1);
 
   buffer& input_buffer = chunk->buffers.front();
-  buffer output_buffer{ GZIP_BLOCK_SIZE };
-
-  size_t compressed_size = 0;
+  buffer output_buffer;
 
   if (m_isal_enabled) {
+    output_buffer.resize(input_buffer.size() + BGZF_META);
+
     isal_zstream stream{};
     isal_deflate_stateless_init(&stream);
 
@@ -469,22 +488,54 @@ gzip_split_fastq::process(chunk_ptr chunk)
     // The easily compressible input should fit in a single output block
     AR_REQUIRE(stream.avail_in == 0);
 
-    compressed_size = stream.total_out;
+    output_buffer.resize(stream.total_out);
   } else {
-    auto* compressor = libdeflate_alloc_compressor(m_config.compression_level);
-    compressed_size = libdeflate_gzip_compress(compressor,
-                                               input_buffer.data(),
-                                               input_buffer.size(),
-                                               output_buffer.data(),
-                                               output_buffer.size());
-    libdeflate_free_compressor(compressor);
+    if (m_format == output_format::ubam || m_config.compression_level == 0) {
+      output_buffer.reserve(input_buffer.size() + BGZF_META);
+      output_buffer.append(BGZF_HEADER);
+      output_buffer.append_u8(1); // BFINAL=1, BTYPE=00; see RFC1951
+      output_buffer.append_u16(input_buffer.size());
+      output_buffer.append_u16(~input_buffer.size());
+      output_buffer.append(input_buffer);
+    } else {
+      auto* compressor =
+        libdeflate_alloc_compressor(m_config.compression_level);
+      const auto output_bound =
+        libdeflate_deflate_compress_bound(compressor, input_buffer.size());
 
-    // The easily compressible input should fit in a single output block
-    AR_REQUIRE(compressed_size);
+      output_buffer.reserve(output_bound + BGZF_META);
+      output_buffer.append(BGZF_HEADER);
+      output_buffer.resize(output_buffer.capacity());
+
+      const auto output_size =
+        libdeflate_deflate_compress(compressor,
+                                    input_buffer.data(),
+                                    input_buffer.size(),
+                                    output_buffer.data() + BGZF_HEADER.size(),
+                                    output_buffer.size() - BGZF_HEADER.size());
+      libdeflate_free_compressor(compressor);
+      // The easily compressible input should fit in a single output block
+      AR_REQUIRE(output_size);
+
+      // Resize the buffer to the actually used size
+      output_buffer.resize(output_size + BGZF_HEADER.size());
+    }
+
+    const auto input_crc32 =
+      libdeflate_crc32(0, input_buffer.data(), input_buffer.size());
+    output_buffer.append_u32(input_crc32);         // checksum of data
+    output_buffer.append_u32(input_buffer.size()); // size of data
+
+    AR_REQUIRE(output_buffer.size() <= BGZF_MAX_BLOCK_SIZE);
+    // Write the final block size; -1 to fit 65536 in 16 bit
+    output_buffer.put_u16(16, output_buffer.size() - 1);
+
+    if (chunk->eof) {
+      output_buffer.append(BGZF_EOF);
+    }
   }
 
   // Enable re-use of the analytical_chunks
-  output_buffer.resize(compressed_size);
   std::swap(input_buffer, output_buffer);
 
   chunk_vec chunks;

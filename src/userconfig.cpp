@@ -557,13 +557,13 @@ userconfig::userconfig()
     .help("Selects the output format; either 'fastq' for uncompressed FASTQ "
           "reads or 'fastq.gz' for gzip compressed FASTQ reads")
     .bind_str(nullptr)
-    .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz" })
+    .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" })
     .with_default("fastq.gz");
   argparser.add("--stdout-format", "X")
     .help("Selects the output format for data written to STDOUT; choices are "
           "the same as --out-format")
     .bind_str(nullptr)
-    .with_choices({ "fastq", "fastq.gz" })
+    .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" })
     .with_default("fastq");
   argparser.add("--compression-level", "N")
     .help(

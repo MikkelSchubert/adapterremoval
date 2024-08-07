@@ -21,6 +21,8 @@
 #include "commontypes.hpp" // for output_format
 #include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
 #include "fastq.hpp"       // for fastq
+#include "fastq_enc.hpp"   // for PHRED_OFFSET_MIN
+#include <string_view>     // for string_view
 
 namespace adapterremoval {
 
@@ -57,6 +59,57 @@ flags_to_sam(fastq_flags flags)
       return "653";
     default:
       AR_FAIL("invalid fastq flags");
+  }
+}
+
+uint16_t
+flags_to_bam(fastq_flags flags)
+{
+  switch (flags) {
+    case fastq_flags::se:
+      return 4;
+    case fastq_flags::se_fail:
+      return 516;
+    case fastq_flags::pe_1:
+      return 77;
+    case fastq_flags::pe_1_fail:
+      return 589;
+    case fastq_flags::pe_2:
+      return 141;
+    case fastq_flags::pe_2_fail:
+      return 653;
+    default:
+      AR_FAIL("invalid fastq flags");
+  }
+}
+
+void
+sequence_to_bam(buffer& buf, const std::string& seq)
+{
+  const auto size = buf.size();
+
+  uint8_t pair = 0;
+  for (size_t i = 0; i < seq.length(); ++i) {
+    pair = (pair << 4) | "\0\1\0\2\10\0\20\4"[seq[i] & 0x7];
+
+    if (i % 2) {
+      buf.append_u8(pair);
+      pair = 0;
+    }
+  }
+
+  if (seq.length() % 2) {
+    buf.append_u8(pair << 4);
+  }
+
+  AR_REQUIRE(buf.size() - size == (seq.length() + 1) / 2);
+}
+
+void
+qualities_to_bam(buffer& buf, const std::string& quals)
+{
+  for (const auto c : quals) {
+    buf.append_u8(c - PHRED_OFFSET_MIN);
   }
 }
 
@@ -118,10 +171,46 @@ write_sam_record(buffer& buf,
   }
 }
 
+void
+write_bam_record(buffer& buf,
+                 const fastq& record,
+                 const fastq_flags flags,
+                 char mate_separator)
+{
+  const size_t block_size_pos = buf.size();
+  buf.append_u32(0);  // block size (preliminary)
+  buf.append_i32(-1); // refID
+  buf.append_i32(-1); // pos
+
+  const auto name = record.name(mate_separator).substr(0, 255);
+  buf.append_u8(name.length() + 1);    // l_read_name
+  buf.append_u8(0xFF);                 // mapq
+  buf.append_u16(4680);                // bin (c.f. specification 4.2.1)
+  buf.append_u16(0);                   // n_cigar
+  buf.append_u16(flags_to_bam(flags)); // flags
+
+  buf.append_u32(record.length()); // l_seq
+  buf.append_i32(-1);              // next_refID
+  buf.append_i32(-1);              // next_pos
+  buf.append_i32(0);               // tlen
+
+  buf.append(name); // read_name + NUL terminator
+  buf.append_u8(0);
+  // no cigar operations
+  sequence_to_bam(buf, record.sequence());
+  qualities_to_bam(buf, record.qualities());
+
+  const size_t block_size = buf.size() - block_size_pos - 4;
+  buf.put_u32(block_size_pos, block_size); // block size (final)
+}
+
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `fastq_serializer`
+
+constexpr std::string_view BAM_HEADER{ "BAM\1", 4 };
+constexpr std::string_view SAM_HEADER = "@HD\tVN:1.6\tSO:unsorted\n";
 
 void
 fastq_serializer::header(buffer& buf, const output_format format)
@@ -132,7 +221,14 @@ fastq_serializer::header(buffer& buf, const output_format format)
       break;
     case output_format::sam:
     case output_format::sam_gzip:
-      buf.append("@HD\tVN:1.6\tSO:unsorted\n");
+      buf.append(SAM_HEADER);
+      break;
+    case output_format::bam:
+    case output_format::ubam:
+      buf.append(BAM_HEADER);            // magic
+      buf.append_i32(SAM_HEADER.size()); // l_text
+      buf.append(SAM_HEADER);
+      buf.append_u32(0); // n_ref
       break;
     default:
       AR_FAIL("invalid output format");
@@ -153,6 +249,9 @@ fastq_serializer::record(buffer& buf,
     case output_format::sam:
     case output_format::sam_gzip:
       return write_sam_record(buf, record, flags, mate_separator);
+    case output_format::bam:
+    case output_format::ubam:
+      return write_bam_record(buf, record, flags, mate_separator);
     default:
       AR_FAIL("invalid output format");
   }
