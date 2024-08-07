@@ -25,6 +25,7 @@
 #include <cerrno>         // for EMFILE, errno
 #include <cstddef>        // for size_t
 #include <cstdio>         // for fopen, fread, fwrite, ...
+#include <fcntl.h>        // for posix_fadvise
 #include <mutex>          // for mutex, lock_guard
 #include <string>         // for string
 #include <sys/stat.h>     // for fstat
@@ -42,6 +43,11 @@ public:
       reader->m_file = stdin;
     } else if (reader->filename() != "-") {
       reader->m_file = io_manager::fopen(reader->filename(), "rb");
+
+#if _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
+      posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_WILLNEED);
+      posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_SEQUENTIAL);
+#endif
     } else {
       // Merged I/O depends on filenames being identical
       AR_FAIL("unhandled STDIN marker");
