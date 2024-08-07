@@ -125,7 +125,8 @@ class output_files
 public:
   output_files() = default;
 
-  static bool parse_extension(const std::string& filename, output_format& sink);
+  static bool parse_format(std::string_view filename, output_format& sink);
+  static bool parse_extension(std::string_view filename, output_format& sink);
   static std::string_view file_extension(output_format format);
 
   /** Constant indicating that a step has been disabled. */

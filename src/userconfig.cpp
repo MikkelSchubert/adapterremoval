@@ -1098,13 +1098,13 @@ userconfig::parse_args(const string_vec& argvec)
   if (argparser.is_set("--gzip")) {
     out_file_format = output_format::fastq_gzip;
     out_stdout_format = output_format::fastq_gzip;
-  } else if (!output_files::parse_extension(argparser.value("--out-format"),
-                                            out_file_format)) {
+  } else if (!output_files::parse_format(argparser.value("--out-format"),
+                                         out_file_format)) {
     log::error() << "Invalid output format "
                  << log_escape(argparser.value("--out-format"));
     return argparse::parse_result::error;
-  } else if (!output_files::parse_extension(argparser.value("--stdout-format"),
-                                            out_stdout_format)) {
+  } else if (!output_files::parse_format(argparser.value("--stdout-format"),
+                                         out_stdout_format)) {
     log::error() << "Invalid output format "
                  << log_escape(argparser.value("--stdout-format"));
     return argparse::parse_result::error;
