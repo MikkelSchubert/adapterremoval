@@ -312,6 +312,11 @@ post_process_fastq::process(chunk_ptr chunk)
       it_2->post_process(m_encoding);
       stats_2->process(*it_2);
     }
+
+    // fastq::normalize_paired_reads replaces the mate separator if present
+    if (chunk->mate_separator) {
+      chunk->mate_separator = MATE_SEPARATOR;
+    }
   }
 
   m_stats_1.release(stats_1);
