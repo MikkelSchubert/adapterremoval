@@ -354,7 +354,7 @@ bam_serializer::record(buffer& buf,
 
   const auto name = record.name(mate_separator).substr(0, 255);
   buf.append_u8(name.length() + 1);    // l_read_name
-  buf.append_u8(0xFF);                 // mapq
+  buf.append_u8(0);                    // mapq
   buf.append_u16(4680);                // bin (c.f. specification 4.2.1)
   buf.append_u16(0);                   // n_cigar
   buf.append_u16(flags_to_bam(flags)); // flags
