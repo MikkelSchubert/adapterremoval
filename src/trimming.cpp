@@ -320,6 +320,9 @@ se_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
+  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_mate_separator(chunk->mate_separator);
+
   if (chunk->first) {
     chunks.write_headers(m_config.args);
   }
@@ -425,17 +428,19 @@ chunk_vec
 pe_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
+  processed_reads chunks{ m_output };
+  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_mate_separator(chunk->mate_separator);
+
+  if (chunk->first) {
+    chunks.write_headers(m_config.args);
+  }
+
   sequence_merger merger;
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
 
   auto aligner = sequence_aligner(m_adapters, m_config.simd);
-
-  processed_reads chunks{ m_output };
-  chunks.set_mate_separator(chunk->mate_separator);
-  if (chunk->first) {
-    chunks.write_headers(m_config.args);
-  }
 
   auto stats = m_stats.acquire();
   stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());

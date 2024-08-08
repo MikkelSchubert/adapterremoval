@@ -250,10 +250,6 @@ check_input_and_output(const std::string& label,
   return true;
 }
 
-} // namespace
-
-////////////////////////////////////////////////////////////////////////////////
-
 /**
  * Tries to parse a simple command-line argument while ignoring the validity
  * of the overall command-line. This is only intended to make pre-configured
@@ -370,6 +366,8 @@ configure_encoding(const std::string& value)
 
   AR_FAIL("unhandled qualitybase value");
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `userconfig`
@@ -565,6 +563,12 @@ userconfig::userconfig()
     .bind_str(nullptr)
     .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" })
     .with_default("fastq");
+  argparser.add("--read-group", "RG")
+    .help("Add read-group (RG) information to SAM/BAM output. The value is "
+          "expected to be a valid set of read-group tags separated by tabs, "
+          "for example \"ID:DS-1\\tSM:TK-421\\tPL:ILLUMINA\". If the ID tag is "
+          "not provided, the default ID \"1\" will be used")
+    .bind_str(nullptr);
   argparser.add("--compression-level", "N")
     .help(
       "Sets the compression level for compressed output. Valid values are 0 to "
@@ -1105,6 +1109,16 @@ userconfig::parse_args(const string_vec& argvec)
                                          out_stdout_format)) {
     log::error() << "Invalid output format "
                  << log_escape(argparser.value("--stdout-format"));
+    return argparse::parse_result::error;
+  }
+
+  try {
+    output_read_group = read_group(argparser.value("--read-group"));
+  } catch (const std::invalid_argument& error) {
+    log::error() << "Invalid argument --read-group "
+                 << log_escape(argparser.value("--read-group")) << ": "
+                 << error.what();
+
     return argparse::parse_result::error;
   }
 

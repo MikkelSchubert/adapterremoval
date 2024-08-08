@@ -151,6 +151,9 @@ process_demultiplexed::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
+  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_mate_separator(chunk->mate_separator);
+
   if (chunk->first) {
     chunks.write_headers(m_config.args);
   }
@@ -159,7 +162,6 @@ process_demultiplexed::process(chunk_ptr chunk)
 
   if (m_config.paired_ended_mode) {
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
-    chunks.set_mate_separator(chunk->mate_separator);
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();
@@ -219,6 +221,9 @@ processes_unidentified::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
+  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_mate_separator(chunk->mate_separator);
+
   if (chunk->first) {
     chunks.write_headers(m_config.args);
   }
@@ -228,7 +233,6 @@ processes_unidentified::process(chunk_ptr chunk)
 
   if (m_config.paired_ended_mode) {
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
-    chunks.set_mate_separator(chunk->mate_separator);
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();

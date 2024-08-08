@@ -23,6 +23,7 @@
 #include "argparse.hpp"    // for parse_result, parser
 #include "commontypes.hpp" // for string_vec, read_type, merge_strategy
 #include "fastq_enc.hpp"   // for fastq_encoding
+#include "serializer.hpp"  // for read_group
 #include "simd.hpp"        // for size_t, instruction_set
 #include "timer.hpp"       // for monotonic_timer
 #include <array>           // for array
@@ -178,6 +179,8 @@ public:
   output_format out_stdout_format = output_format::fastq;
   //! Compression level used for output reads where appropriate
   unsigned int compression_level{};
+  //! Read group for SAM/BAM output
+  read_group output_read_group{};
 
   //! Maximum number of mismatches (considering both barcodes for PE)
   unsigned barcode_mm{};

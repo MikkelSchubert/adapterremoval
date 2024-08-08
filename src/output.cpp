@@ -218,6 +218,24 @@ processed_reads::processed_reads(const sample_output_files& map)
 {
   for (size_t i = 0; i < map.size(); ++i) {
     m_chunks.emplace_back(std::make_unique<analytical_chunk>());
+    m_serializers.emplace_back(map.format(i));
+  }
+}
+
+void
+processed_reads::set_read_group(const read_group& value)
+{
+  for (auto& ser : m_serializers) {
+    ser.set_read_group(value);
+  }
+}
+
+void
+processed_reads::set_mate_separator(char value)
+{
+  m_mate_separator = value;
+  for (auto& ser : m_serializers) {
+    ser.set_mate_separator(value);
   }
 }
 
@@ -225,7 +243,7 @@ void
 processed_reads::write_headers(const string_vec& args)
 {
   for (size_t i = 0; i < m_chunks.size(); ++i) {
-    fastq_serializer::header(get_buffer(m_chunks.at(i)), m_map.format(i), args);
+    m_serializers.at(i).header(get_buffer(m_chunks.at(i)), args);
   }
 }
 
@@ -236,12 +254,9 @@ processed_reads::add(const fastq& read,
 {
   const size_t offset = m_map.offset(type);
   if (offset != sample_output_files::disabled) {
+    auto& buffer = get_buffer(m_chunks.at(offset));
+    m_serializers.at(offset).record(buffer, read, flags);
     m_chunks.at(offset)->nucleotides += read.length();
-    fastq_serializer::record(get_buffer(m_chunks.at(offset)),
-                             read,
-                             m_map.format(offset),
-                             flags,
-                             m_mate_separator);
   }
 }
 

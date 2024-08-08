@@ -120,8 +120,155 @@ qualities_to_bam(buffer& buf, const std::string& quals)
   }
 }
 
+std::string
+create_sam_header(const string_vec& args, const read_group& rg)
+{
+  std::string header{ SAM_HEADER };
+
+  // @RG
+  header.append(rg.header());
+  header.append("\n");
+
+  // @PG
+  header.append("@PG\tID:adapterremoval\tPN:adapterremoval\tCL:");
+  header.append(join_text(args, " "));
+  header.append("\tVN:");
+  header.append(VERSION.substr(1)); // version without leading v
+  header.append("\n");
+
+  return header;
+}
+
+/** Unescapes the escape sequences "\\" and "\t" in a read-group string */
+std::string
+unescape_read_group(std::string_view value)
+{
+  std::string result;
+
+  bool in_escape = false;
+  for (auto c : value) {
+    if (in_escape) {
+      if (c == '\\') {
+        result.push_back('\\');
+      } else if (c == 't') {
+        result.push_back('\t');
+      } else {
+        throw std::invalid_argument("invalid escape sequence " +
+                                    log_escape(std::string("\\") + c));
+      }
+
+      in_escape = false;
+    } else if (c == '\\') {
+      in_escape = true;
+    } else {
+      result.push_back(c);
+    }
+  }
+
+  if (in_escape) {
+    throw std::invalid_argument("incomplete escape sequence at end of string");
+  }
+
+  return result;
+}
+
+constexpr bool
+is_ascii_alpha(const char c)
+{
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+constexpr bool
+is_ascii_alphanum(const char c)
+{
+  return is_ascii_alpha(c) || (c >= '0' && c <= '9');
+}
+
+} // namespace
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for `read_group`
+
+read_group::read_group()
+  : m_header{ "@RG\tID:1\tPG:adapterremoval" }
+  , m_id{ "ID:1" }
+{
+}
+
+read_group::read_group(std::string_view value_)
+  : m_header{ "@RG" }
+{
+  using invalid = std::invalid_argument;
+  auto value = unescape_read_group(value_);
+
+  // It's not unreasonable to except users to try to specify a full @RG line
+  if (starts_with(value, "@RG\t")) {
+    value = value.substr(4);
+  }
+
+  std::string program{ "PG:adapterremoval" };
+
+  if (!value.empty()) {
+    for (const auto& field : split_text(value, '\t')) {
+      for (const auto c : field) {
+        if (c < ' ' || c > '~') {
+          throw invalid("only characters in the range ' ' to '~' are allowed");
+        }
+      }
+
+      if (field.size() < 4) {
+        throw invalid("tags must be at least 4 characters long");
+      } else if (!is_ascii_alpha(field.at(0))) {
+        throw invalid("first character in tag name must be a letter");
+      } else if (!is_ascii_alphanum(field.at(1))) {
+        throw invalid(
+          "second character in tag name must be a letter or number");
+      } else if (field.at(2) != ':') {
+        throw invalid("third character in tag must be a colon");
+      } else if (starts_with(field, "ID:")) {
+        if (!m_id.empty()) {
+          throw invalid("multiple ID tags found");
+        }
+
+        m_id = field.substr(3);
+      } else if (starts_with(field, "PG:")) {
+        // Allow the user to override the PG field, just in case
+        program = field;
+      }
+    }
+  }
+
+  // Generic read-group key if the user did not supply one
+  if (m_id.empty()) {
+    m_id = "1";
+    m_header += "\tID:1";
+  }
+
+  if (!value.empty()) {
+    m_header += "\t";
+    m_header += value;
+  }
+
+  m_header.append("\t");
+  m_header.append(program);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for `fastq_serializer`
+
 void
-write_fastq_record(buffer& buf, const fastq& record)
+fastq_serializer::header(buffer& /* buf */,
+                         const string_vec& /* args */,
+                         const read_group& /* rg */)
+{
+}
+
+void
+fastq_serializer::record(buffer& buf,
+                         const fastq& record,
+                         fastq_flags /* flags */,
+                         char /* mate_separator */,
+                         const read_group& /* rg */)
 {
   buf.append_u8('@');
   buf.append(record.header());
@@ -132,52 +279,24 @@ write_fastq_record(buffer& buf, const fastq& record)
   buf.append_u8('\n');
 }
 
-std::string
-create_sam_header(const string_vec& args)
-{
-  std::string header{ SAM_HEADER };
-  header.append("@PG\tID:adapterremoval\tPN:adapterremoval\tCL:");
-  header.append(join_text(args, " "));
-  header.append("\tVN:");
-  header.append(VERSION.substr(1)); // version without leading v
-  header.append("\n");
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for `sam_serializer`
 
-  return header;
+void
+sam_serializer::header(buffer& buf,
+                       const string_vec& args,
+                       const read_group& rg)
+{
+  buf.append(create_sam_header(args, rg));
 }
 
 void
-write_bam_header(buffer& buf, const string_vec& args)
+sam_serializer::record(buffer& buf,
+                       const fastq& record,
+                       fastq_flags flags,
+                       char mate_separator,
+                       const read_group& rg)
 {
-  const auto sam_header = create_sam_header(args);
-
-  buf.append(BAM_HEADER);            // magic
-  buf.append_u32(sam_header.size()); // l_text
-  buf.append(sam_header);            // terminating NUL not required
-  buf.append_u32(0);                 // n_ref
-}
-
-void
-write_sam_record(buffer& buf,
-                 const fastq& record,
-                 const fastq_flags flags,
-                 char mate_separator)
-{
-  if (mate_separator) {
-    switch (flags) {
-      case fastq_flags::se:
-      case fastq_flags::se_fail:
-        mate_separator = '\0';
-        break;
-      case fastq_flags::pe_1:
-      case fastq_flags::pe_1_fail:
-      case fastq_flags::pe_2:
-      case fastq_flags::pe_2_fail:
-        break;
-      default:
-        AR_FAIL("invalid fastq flags");
-    }
-  }
-
   buf.append(record.name(mate_separator)); // 1. QNAME
   buf.append_u8('\t');
   buf.append(flags_to_sam(flags)); // 2. FLAG
@@ -200,14 +319,33 @@ write_sam_record(buffer& buf,
     );
   }
 
+  buf.append("\tRG:Z:");
+  buf.append(rg.id());
   buf.append("\tPG:Z:adapterremoval\n");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for `bam_serializer`
+
 void
-write_bam_record(buffer& buf,
-                 const fastq& record,
-                 const fastq_flags flags,
-                 char mate_separator)
+bam_serializer::header(buffer& buf,
+                       const string_vec& args,
+                       const read_group& rg)
+{
+  const auto sam_header = create_sam_header(args, rg);
+
+  buf.append(BAM_HEADER);            // magic
+  buf.append_u32(sam_header.size()); // l_text
+  buf.append(sam_header);            // terminating NUL not required
+  buf.append_u32(0);                 // n_ref
+}
+
+void
+bam_serializer::record(buffer& buf,
+                       const fastq& record,
+                       fastq_flags flags,
+                       char mate_separator,
+                       const read_group& rg)
 {
   const size_t block_size_pos = buf.size();
   buf.append_u32(0);  // block size (preliminary)
@@ -233,6 +371,11 @@ write_bam_record(buffer& buf,
   qualities_to_bam(buf, record.qualities());
 
   // PG:Z:adapterremoval tag
+  buf.append("RGZ");
+  buf.append(rg.id());
+  buf.append_u8(0); // NUL
+
+  // PG:Z:adapterremoval tag
   buf.append("PGZadapterremoval");
   buf.append_u8(0); // NUL
 
@@ -240,27 +383,26 @@ write_bam_record(buffer& buf,
   buf.put_u32(block_size_pos, block_size); // block size (final)
 }
 
-} // namespace
-
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for `fastq_serializer`
+// Implementations for `serializer`
 
-void
-fastq_serializer::header(buffer& buf,
-                         const output_format format,
-                         const string_vec& args)
+serializer::serializer(output_format format)
 {
   switch (format) {
     case output_format::fastq:
     case output_format::fastq_gzip:
+      m_header = fastq_serializer::header;
+      m_record = fastq_serializer::record;
       break;
     case output_format::sam:
     case output_format::sam_gzip:
-      buf.append(create_sam_header(args));
+      m_header = sam_serializer::header;
+      m_record = sam_serializer::record;
       break;
     case output_format::bam:
     case output_format::ubam:
-      write_bam_header(buf, args);
+      m_header = bam_serializer::header;
+      m_record = bam_serializer::record;
       break;
     default:
       AR_FAIL("invalid output format");
@@ -268,25 +410,17 @@ fastq_serializer::header(buffer& buf,
 }
 
 void
-fastq_serializer::record(buffer& buf,
-                         const fastq& record,
-                         const output_format format,
-                         const fastq_flags flags,
-                         const char mate_separator)
+serializer::header(buffer& buf, const string_vec& args) const
 {
-  switch (format) {
-    case output_format::fastq:
-    case output_format::fastq_gzip:
-      return write_fastq_record(buf, record);
-    case output_format::sam:
-    case output_format::sam_gzip:
-      return write_sam_record(buf, record, flags, mate_separator);
-    case output_format::bam:
-    case output_format::ubam:
-      return write_bam_record(buf, record, flags, mate_separator);
-    default:
-      AR_FAIL("invalid output format");
-  }
+  m_header(buf, args, m_read_group);
+}
+
+void
+serializer::record(buffer& buf,
+                   const fastq& record,
+                   const fastq_flags flags) const
+{
+  m_record(buf, record, flags, m_mate_separator, m_read_group);
 }
 
 } // namespace adapterremoval

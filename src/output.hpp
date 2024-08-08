@@ -28,11 +28,13 @@
 
 namespace adapterremoval {
 
-class fastq;
-class buffer;
-class scheduler;
-class userconfig;
 class analytical_chunk;
+class buffer;
+class fastq;
+class read_group;
+class scheduler;
+class serializer;
+class userconfig;
 enum class fastq_flags;
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
@@ -170,8 +172,11 @@ class processed_reads
 public:
   explicit processed_reads(const sample_output_files& map);
 
+  /** Set the read group; used to serialize header/records for SAM/BAM */
+  void set_read_group(const read_group& value);
+
   /** Set the mate separator; used to trim mate information for some formats */
-  void set_mate_separator(char value) { m_mate_separator = value; }
+  void set_mate_separator(char value);
 
   /** Writes any headers required by the output format  */
   void write_headers(const string_vec& args);
@@ -189,6 +194,8 @@ private:
   char m_mate_separator = '\0';
   //! A set of output chunks being created; typically fewer than read_type::max.
   chunk_ptr_vec m_chunks{};
+  //! The serializer used for each chunk
+  std::vector<serializer> m_serializers{};
 };
 
 /** Map of samples to downstream FASTQ processing/writing steps. */
