@@ -141,7 +141,16 @@ to_upper(std::string str)
   return str;
 }
 
-/** Returns true if str1 ends with str2 (case sensitive) */
+bool
+starts_with(const std::string_view str1, const std::string_view str2)
+{
+  if (str1.size() < str2.size()) {
+    return false;
+  }
+
+  return str1.substr(0, str2.size()) == str2;
+}
+
 bool
 ends_with(const std::string_view str1, const std::string_view str2)
 {
@@ -149,26 +158,18 @@ ends_with(const std::string_view str1, const std::string_view str2)
     return false;
   }
 
-  auto it1 = str1.rbegin();
-  auto it2 = str2.rbegin();
-  for (; it2 != str2.rend(); ++it1, ++it2) {
-    if (*it1 != *it2) {
-      return false;
-    }
-  }
-
-  return true;
+  return str1.substr(str1.size() - str2.size()) == str2;
 }
 
 string_vec
-split_lines(const std::string_view text)
+split_text(const std::string_view text, const char separator)
 {
   string_vec lines;
 
   size_t start = 0;
   size_t end = std::string::npos;
   do {
-    end = text.find('\n', start);
+    end = text.find(separator, start);
 
     lines.push_back(std::string{ text.substr(start, end - start) });
 

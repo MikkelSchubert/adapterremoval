@@ -66,6 +66,27 @@ TEST_CASE("ASCII letters are uppercased", "[strutils::to_upper]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for 'starts_with'
+
+TEST_CASE("starts_with")
+{
+  REQUIRE(starts_with("", ""));
+  REQUIRE(starts_with("morb", ""));
+  REQUIRE(starts_with("morb", "m"));
+  REQUIRE(starts_with("morb", "mo"));
+  REQUIRE(starts_with("morb", "mor"));
+  REQUIRE(starts_with("morb", "morb"));
+
+  REQUIRE_FALSE(starts_with("", "x"));
+  REQUIRE_FALSE(starts_with("morb", "x"));
+  REQUIRE_FALSE(starts_with("morb", "mx"));
+  REQUIRE_FALSE(starts_with("morb", "mox"));
+  REQUIRE_FALSE(starts_with("morb", "morx"));
+  REQUIRE_FALSE(starts_with("morb", "morbx"));
+  REQUIRE_FALSE(starts_with("morb", "MORB"));
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for 'ends_with'
 
 TEST_CASE("ends_with")
@@ -84,6 +105,31 @@ TEST_CASE("ends_with")
   REQUIRE_FALSE(ends_with("morb", "xorb"));
   REQUIRE_FALSE(ends_with("morb", "xmorb"));
   REQUIRE_FALSE(ends_with("morb", "MORB"));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'split_text' / 'split_lines'
+
+TEST_CASE("split_text")
+{
+  REQUIRE(split_text("", ':') == string_vec{ "" });
+  REQUIRE(split_text("x", ':') == string_vec{ "x" });
+  REQUIRE(split_text(":", ':') == string_vec{ "", "" });
+  REQUIRE(split_text("x:", ':') == string_vec{ "x", "" });
+  REQUIRE(split_text(":x", ':') == string_vec{ "", "x" });
+  REQUIRE(split_text("::", ':') == string_vec{ "", "", "" });
+  REQUIRE(split_text("a:bc:d", ':') == string_vec{ "a", "bc", "d" });
+}
+
+TEST_CASE("split_lines")
+{
+  REQUIRE(split_lines("") == string_vec{ "" });
+  REQUIRE(split_lines("x") == string_vec{ "x" });
+  REQUIRE(split_lines("\n") == string_vec{ "", "" });
+  REQUIRE(split_lines("x\n") == string_vec{ "x", "" });
+  REQUIRE(split_lines("\nx") == string_vec{ "", "x" });
+  REQUIRE(split_lines("\n\n") == string_vec{ "", "", "" });
+  REQUIRE(split_lines("a\nbc\nd") == string_vec{ "a", "bc", "d" });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

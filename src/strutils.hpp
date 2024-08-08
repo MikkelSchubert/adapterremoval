@@ -78,11 +78,21 @@ to_upper(std::string str);
 
 /** Returns true if str1 ends with str2 (case sensitive) */
 bool
+starts_with(std::string_view str1, std::string_view str2);
+
+/** Returns true if str1 ends with str2 (case sensitive) */
+bool
 ends_with(std::string_view str1, std::string_view str2);
 
-/** Split text by newlines */
 string_vec
-split_lines(std::string_view text);
+split_text(std::string_view text, char separator);
+
+/** Split text by newlines */
+inline string_vec
+split_lines(std::string_view text)
+{
+  return split_text(text, '\n');
+}
 
 /** Split text by newlines and add fixed indentation following newlines. */
 std::string
