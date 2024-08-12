@@ -63,7 +63,7 @@ namespace {
 //! The compression level used for block/stream compression with isa-l
 constexpr size_t ISAL_COMPRESSION_LEVEL = 1;
 //! The default buffer size for compression at level ISAL_COMPRESSION_LEVEL
-constexpr size_t ISAL_BUFFER_SIZE = ISAL_DEF_LVL1_DEFAULT;
+constexpr size_t ISAL_BUFFER_SIZE = ISAL_DEF_LVL1_SMALL;
 
 /**
  * ISA-l streaming is enabled only at compression level 1, since little
