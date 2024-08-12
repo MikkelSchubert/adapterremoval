@@ -22,7 +22,7 @@
 #include <vector>  // for vector
 
 #if __GNUC__ >= 11 || (defined(__clang_major__) && __clang_major__ >= 8)
-#define define AR_SUPPORTS_AVX512 1
+#define AR_SUPPORTS_AVX512 1
 #else
 #pragma GCC warning "AVX512 support requires GCC >= 11.0 or Clang >= 8.0"
 #endif
