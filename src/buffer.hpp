@@ -22,7 +22,7 @@
 #include <algorithm>   // for max
 #include <cstddef>     // for size_t
 #include <cstdint>     // for uint32_t
-#include <string>      // for string
+#include <cstring>     // for memcpy
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
@@ -36,32 +36,68 @@ public:
   /** Creates a buffer of the specified size, if non-zero */
   explicit buffer(size_t size = 0) { resize(size); }
 
-  /** Returns pointer to the buffer, if any */
-  [[nodiscard]] inline unsigned char* data()
+  buffer(buffer&& other) noexcept
   {
-    return reinterpret_cast<unsigned char*>(m_buffer.data());
+    free();
+    std::swap(m_data, other.m_data);
+    std::swap(m_capacity, other.m_capacity);
+    std::swap(m_size, other.m_size);
   }
 
-  /** Returns pointer to the buffer, if any */
-  [[nodiscard]] inline const unsigned char* data() const
+  buffer& operator=(buffer&& other) noexcept
   {
-    return reinterpret_cast<const unsigned char*>(m_buffer.data());
+    free();
+    std::swap(m_data, other.m_data);
+    std::swap(m_capacity, other.m_capacity);
+    std::swap(m_size, other.m_size);
+    return *this;
   }
+
+  ~buffer() { free(); }
+
+  /** Returns pointer to the buffer, if any */
+  [[nodiscard]] inline uint8_t* data() { return m_data; }
+
+  /** Returns pointer to the buffer, if any */
+  [[nodiscard]] inline const uint8_t* data() const { return m_data; }
 
   /** Returns the nth value in the buffer */
-  [[nodiscard]] uint8_t at(size_t n) const { return m_buffer.at(n).value; }
+  [[nodiscard]] uint8_t at(size_t n) const
+  {
+    AR_REQUIRE(n < m_size);
+    return m_data[n];
+  }
 
   /** Returns the current size of the buffer */
-  [[nodiscard]] inline size_t size() const { return m_buffer.size(); }
+  [[nodiscard]] inline size_t size() const { return m_size; }
 
   /** Returns the capacity of the buffer */
-  [[nodiscard]] inline size_t capacity() const { return m_buffer.capacity(); }
+  [[nodiscard]] inline size_t capacity() const { return m_capacity; }
 
-  /** Changes the reported size of the buffer; must be 0 <= x <= capacity. */
-  inline void resize(size_t size) { m_buffer.resize(size); }
+  /** Changes the reported size of the buffer */
+  inline void resize(size_t n)
+  {
+    if (n > m_capacity) {
+      reserve(n);
+    }
+
+    m_size = n;
+  }
 
   /** Reserve additional space in the buffer */
-  inline void reserve(size_t size) { m_buffer.reserve(size); }
+  inline void reserve(size_t n)
+  {
+    if (n > m_capacity) {
+      if (m_data) {
+        m_data = reinterpret_cast<uint8_t*>(std::realloc(m_data, n));
+      } else {
+        m_data = reinterpret_cast<uint8_t*>(std::malloc(n));
+      }
+
+      AR_REQUIRE(m_data);
+      m_capacity = n;
+    }
+  }
 
   /** Append a string to the buffer */
   inline void append(std::string_view data)
@@ -75,33 +111,42 @@ public:
   /** Append data to the buffer */
   inline void append(const char* data, size_t length)
   {
-    append(reinterpret_cast<const unsigned char*>(data), length);
+    append(reinterpret_cast<const uint8_t*>(data), length);
   }
 
   /** Append data to the buffer */
-  inline void append(const unsigned char* data, size_t length)
+  inline void append(const uint8_t* data, size_t length)
   {
-    const auto* ptr = reinterpret_cast<const no_init*>(data);
-    m_buffer.insert(m_buffer.end(), ptr, ptr + length);
+    grow_to_fit(m_size + length);
+    std::memcpy(m_data + m_size, data, length);
+    m_size += length;
   }
 
   /** Append a byte to the buffer */
-  inline void append_u8(uint8_t value) { m_buffer.push_back({ value }); }
+  inline void append_u8(uint8_t value)
+  {
+    grow_to_fit(m_size + 1);
+    m_data[m_size++] = value;
+  }
 
   /** Append 16 bit integer to buffer in LE orientation */
   inline void append_u16(uint16_t value)
   {
-    append_u8(value & 0xFFU);
-    append_u8((value >> 8U) & 0xFFU);
+    grow_to_fit(m_size + 2);
+    m_data[m_size + 0] = value & 0xFFU;
+    m_data[m_size + 1] = (value >> 8U) & 0xFFU;
+    m_size += 2;
   }
 
   /** Append 32 bit integer to buffer in LE orientation */
   inline void append_u32(uint32_t value)
   {
-    append_u8(value & 0xFFU);
-    append_u8((value >> 8U) & 0xFFU);
-    append_u8((value >> 16U) & 0xFFU);
-    append_u8((value >> 24U) & 0xFFU);
+    grow_to_fit(m_size + 4);
+    m_data[m_size + 0] = value & 0xFFU;
+    m_data[m_size + 1] = (value >> 8U) & 0xFFU;
+    m_data[m_size + 2] = (value >> 16U) & 0xFFU;
+    m_data[m_size + 3] = (value >> 24U) & 0xFFU;
+    m_size += 4;
   }
 
   /** Append signed 32 bit integer to buffer in LE orientation */
@@ -114,46 +159,52 @@ public:
   inline void put_u16(size_t offset, uint16_t value)
   {
     AR_REQUIRE(offset + 2 <= size());
-
-    auto* ptr = data() + offset;
-    ptr[0] = value & 0xFFU;
-    ptr[1] = (value >> 8U) & 0xFFU;
+    m_data[offset + 0] = value & 0xFFU;
+    m_data[offset + 1] = (value >> 8U) & 0xFFU;
   }
 
   /** Insert 32 bit integer into buffer in LE orientation at offset */
   inline void put_u32(size_t offset, uint32_t value)
   {
     AR_REQUIRE(offset + 4 <= size());
-
-    auto* ptr = data() + offset;
-    ptr[0] = value & 0xFFU;
-    ptr[1] = (value >> 8U) & 0xFFU;
-    ptr[2] = (value >> 16U) & 0xFFU;
-    ptr[3] = (value >> 24U) & 0xFFU;
+    m_data[offset + 0] = value & 0xFFU;
+    m_data[offset + 1] = (value >> 8U) & 0xFFU;
+    m_data[offset + 2] = (value >> 16U) & 0xFFU;
+    m_data[offset + 3] = (value >> 24U) & 0xFFU;
   }
-
-  buffer(buffer&& other) noexcept = default;
-  buffer& operator=(buffer&& other) noexcept = default;
 
   buffer(const buffer& other) = delete;
   buffer& operator=(const buffer& other) = delete;
 
-  ~buffer() = default;
-
 private:
-  /** Construction intentionally omitted, to prevent default initialization */
-  struct no_init
+  inline void free()
   {
-    uint8_t value;
-  };
+    if (m_data) {
+      std::free(m_data);
+      m_data = nullptr;
+      m_capacity = 0;
+      m_size = 0;
+    }
+  }
 
-  static_assert(sizeof(no_init) == sizeof(decltype(no_init::value)),
-                "unexpected size of buffer::no_init");
-  static_assert(alignof(no_init) == alignof(decltype(no_init::value)),
-                "unexpected alignment of buffer::no_init");
+  inline void grow_to_fit(size_t n)
+  {
+    if (n > m_capacity) {
+      size_t increase_to = std::max<size_t>(1, m_capacity);
+      while (n > increase_to) {
+        increase_to *= 2;
+      }
+
+      reserve(increase_to);
+    }
+  }
 
   //! Backing buffer
-  std::vector<no_init> m_buffer{};
+  uint8_t* m_data = nullptr;
+  //! Capacity of backing buffer
+  size_t m_capacity = 0;
+  //! Size of backing buffer sized
+  size_t m_size = 0;
 };
 
 using buffer_vec = std::vector<buffer>;
