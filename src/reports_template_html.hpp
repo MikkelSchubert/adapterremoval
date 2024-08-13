@@ -541,22 +541,22 @@ private:
   std::string m_sub_title{};
 };
 
-class html_line_plot : public html_template
+class html_frequency_plot : public html_template
 {
 public:
-  html_line_plot() = default;
-  ~html_line_plot() override;
+  html_frequency_plot() = default;
+  ~html_frequency_plot() override;
 
-  html_line_plot(const html_line_plot&) = delete;
-  html_line_plot(html_line_plot&&) = delete;
-  html_line_plot& operator=(const html_line_plot&) = delete;
-  html_line_plot& operator=(html_line_plot&&) = delete;
+  html_frequency_plot(const html_frequency_plot&) = delete;
+  html_frequency_plot(html_frequency_plot&&) = delete;
+  html_frequency_plot& operator=(const html_frequency_plot&) = delete;
+  html_frequency_plot& operator=(html_frequency_plot&&) = delete;
 
-  html_line_plot& set_legend(const std::string& value);
-  html_line_plot& set_values(const std::string& value);
-  html_line_plot& set_width(const std::string& value);
-  html_line_plot& set_x_axis(const std::string& value);
-  html_line_plot& set_y_axis(const std::string& value);
+  html_frequency_plot& set_legend(const std::string& value);
+  html_frequency_plot& set_values(const std::string& value);
+  html_frequency_plot& set_width(const std::string& value);
+  html_frequency_plot& set_x_axis(const std::string& value);
+  html_frequency_plot& set_y_axis(const std::string& value);
 
   void write(std::ostream& out) override;
 

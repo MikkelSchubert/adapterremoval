@@ -384,7 +384,7 @@
             <!-- TEMPLATE: PLOT_SUB_TITLE -->
             <div class="note">{{SUB_TITLE}}</div>
 
-            <!-- TEMPLATE: LINE_PLOT -->
+            <!-- TEMPLATE: FREQUENCY_PLOT -->
 
             <div id="vis_{{ID}}"></div>
 
@@ -453,6 +453,8 @@
                         { "flatten": ["y"] },
                         { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
                         { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
+                        { "joinaggregate": [{ "op": "sum", "field": "y", "as": "sum_y" }] },
+                        { "calculate": "datum.y / max(1, datum.sum_y)", "as": "y" },
                     ],
                     "data": {
                         "values": JS_TEMPLATE_VALUES

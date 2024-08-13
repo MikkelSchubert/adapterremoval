@@ -1218,50 +1218,50 @@ html_plot_sub_title::write(std::ostream& out)
   m_written = true;
 }
 
-html_line_plot::~html_line_plot()
+html_frequency_plot::~html_frequency_plot()
 {
   AR_REQUIRE(m_written);
 }
 
-html_line_plot&
-html_line_plot::set_legend(const std::string& value)
+html_frequency_plot&
+html_frequency_plot::set_legend(const std::string& value)
 {
   m_legend = value;
   return *this;
 }
 
-html_line_plot&
-html_line_plot::set_values(const std::string& value)
+html_frequency_plot&
+html_frequency_plot::set_values(const std::string& value)
 {
   m_values = value;
   m_values_is_set = true;
   return *this;
 }
 
-html_line_plot&
-html_line_plot::set_width(const std::string& value)
+html_frequency_plot&
+html_frequency_plot::set_width(const std::string& value)
 {
   m_width = value;
   m_width_is_set = true;
   return *this;
 }
 
-html_line_plot&
-html_line_plot::set_x_axis(const std::string& value)
+html_frequency_plot&
+html_frequency_plot::set_x_axis(const std::string& value)
 {
   m_x_axis = value;
   return *this;
 }
 
-html_line_plot&
-html_line_plot::set_y_axis(const std::string& value)
+html_frequency_plot&
+html_frequency_plot::set_y_axis(const std::string& value)
 {
   m_y_axis = value;
   return *this;
 }
 
 void
-html_line_plot::write(std::ostream& out)
+html_frequency_plot::write(std::ostream& out)
 {
   AR_REQUIRE(!m_written);
   AR_REQUIRE(m_values_is_set);
@@ -1336,6 +1336,8 @@ html_line_plot::write(std::ostream& out)
   out << "                        { \"flatten\": [\"y\"] },\n";
   out << "                        { \"window\": [{ \"op\": \"row_number\", \"as\": \"x\" }], \"groupby\": [\"read\", \"group\"] },\n";
   out << "                        { \"calculate\": \"datum.x - 1 + (datum.offset)\", \"as\": \"x\" },\n";
+  out << "                        { \"joinaggregate\": [{ \"op\": \"sum\", \"field\": \"y\", \"as\": \"sum_y\" }] },\n";
+  out << "                        { \"calculate\": \"datum.y / max(1, datum.sum_y)\", \"as\": \"y\" },\n";
   out << "                    ],\n";
   out << "                    \"data\": {\n";
   out << "                        \"values\": " << m_values << "\n";
@@ -1768,7 +1770,7 @@ html_body_end::write(std::ostream& out)
   out << "    </div>\n";
   out << "</body>\n";
   out << "\n";
-  out << "</html>\n";
+  out << "</html>";
   // clang-format on
   m_written = true;
 }

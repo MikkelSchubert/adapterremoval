@@ -27,7 +27,7 @@
 #include "managed_io.hpp"            // for managed_io
 #include "output.hpp"                // for DEV_NULL, output_files
 #include "reports.hpp"               // for write_html_report
-#include "reports_template_html.hpp" // for html_line_plot, html_demultiple...
+#include "reports_template_html.hpp" // for html_frequency_plot, html_demultiple...
 #include "simd.hpp"                  // for size_t
 #include "statistics.hpp"            // for fastq_stats_ptr, fastq_statistics
 #include "strutils.hpp"              // for format_percentage, format_rough...
@@ -235,7 +235,7 @@ build_quality_distribution(const fastq_stats_vec& reads,
     const auto m = data.dict();
     m->str("group", names.at(i));
     m->i64("offset", 0);
-    m->f64_vec("y", count.normalize());
+    m->i64_vec("y", count);
   }
 
   return data.to_string();
@@ -742,7 +742,7 @@ write_html_io_section(const userconfig& config,
     .set_href(to_lower(title) + "-quality-scores")
     .set_title("Quality score distribution")
     .write(output);
-  html_line_plot()
+  html_frequency_plot()
     .set_x_axis("Phred score"_json)
     .set_y_axis("Frequency"_json)
     .set_width(FIGURE_WIDTH)
@@ -756,14 +756,14 @@ write_html_io_section(const userconfig& config,
       const auto m = data.dict();
       m->str("group", names.at(i));
       m->i64("offset", 0);
-      m->f64_vec("y", statistics.at(i)->gc_content().normalize());
+      m->f64_vec("y", statistics.at(i)->gc_content());
     }
 
     html_plot_title()
       .set_href(to_lower(title) + "-gc-content")
       .set_title("GC Content")
       .write(output);
-    html_line_plot()
+    html_frequency_plot()
       .set_x_axis("%GC"_json)
       .set_y_axis("Frequency"_json)
       .set_width(FIGURE_WIDTH)
@@ -807,7 +807,7 @@ write_html_analyses_section(const userconfig& config,
     const auto sample = samples.dict();
     sample->str("group", "insert_sizes");
     sample->i64("offset", 0);
-    sample->f64_vec("y", insert_sizes.normalize());
+    sample->i64_vec("y", insert_sizes);
 
     // FIXME: Specify "identified reads" when in demultiplexing mode and
     // correct format_percentage to merged / n_identified.
@@ -822,7 +822,7 @@ write_html_analyses_section(const userconfig& config,
       .set_title("Insert-size distribution")
       .write(output);
     html_plot_sub_title().set_sub_title(ss.str()).write(output);
-    html_line_plot()
+    html_frequency_plot()
       .set_x_axis("Insert size"_json)
       .set_y_axis("Frequency"_json)
       .set_legend("null")
