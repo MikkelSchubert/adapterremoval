@@ -25,9 +25,10 @@
 #include <array>         // for array
 #include <cmath>         // for log10, pow, round
 #include <sstream>       // for ostringstream
-#include <stdexcept>     // for invalid_argument
 
 namespace adapterremoval {
+
+namespace {
 
 //! Offset used by Phred+33 and SAM encodings
 const int PHRED_33_OFFSET_MIN = '!';
@@ -219,13 +220,148 @@ throw_invalid_score(const quality_encoding encoding, const char raw_score)
   }
 }
 
+[[noreturn]] void
+throw_invalid_base(char c)
+{
+  std::ostringstream stream;
+
+  switch (c) {
+    case 'B': // C / G / T
+    case 'D': // A / G / T
+    case 'H': // A / C / T
+    case 'K': // G / T
+    case 'M': // A / C
+    case 'R': // A / G
+    case 'S': // C / G
+    case 'V': // A / C / G
+    case 'W': // A / T
+    case 'Y': // C / T
+      stream << "found degenerate base '" << c << "' in FASTQ sequence, but "
+             << "only bases A, C, G, T and N are supported. Use the option "
+                "--mask-degenerate-bases to convert degenerate bases to N";
+      break;
+
+    case 'U': // Uracils
+      stream << "found uracil (U) in FASTQ sequence, but only bases A, C, G, "
+                "T and N are supported. Use the option --convert-uracils to "
+                "convert uracils (U) to thymine (T)";
+      break;
+
+    default:
+      stream << "invalid character " << log_escape(std::string(1, c))
+             << " found in FASTQ sequence";
+      break;
+  }
+
+  throw fastq_error(stream.str());
+}
+
+void
+process_nucleotides_strict(std::string& nucleotides)
+{
+  for (char& nuc : nucleotides) {
+    // Fast ASCII letter uppercase
+    const auto upper_case = nuc & 0xDF;
+    switch (upper_case) {
+      case 'A':
+      case 'C':
+      case 'G':
+      case 'T':
+      case 'N':
+        nuc = upper_case;
+        break;
+
+      default:
+        throw_invalid_base(nuc);
+    }
+  }
+}
+
+void
+process_nucleotides_lenient(std::string& nucleotides,
+                            const bool convert_uracil,
+                            const bool mask_degenerate)
+{
+  for (char& nuc : nucleotides) {
+    // Fast ASCII letter uppercase
+    const auto upper_case = nuc & 0xDF;
+    switch (upper_case) {
+      case 'A':
+      case 'C':
+      case 'G':
+      case 'T':
+      case 'N':
+        nuc = upper_case;
+        break;
+
+      // Uracils
+      case 'U':
+        if (convert_uracil) {
+          nuc = 'T';
+          break;
+        } else {
+          throw_invalid_base(nuc);
+        }
+
+      // IUPAC encoded degenerate bases
+      case 'B': // C / G / T
+      case 'D': // A / G / T
+      case 'H': // A / C / T
+      case 'K': // G / T
+      case 'M': // A / C
+      case 'R': // A / G
+      case 'S': // C / G
+      case 'V': // A / C / G
+      case 'W': // A / T
+      case 'Y': // C / T
+        if (mask_degenerate) {
+          nuc = 'N';
+          break;
+        } else {
+          throw_invalid_base(nuc);
+        }
+
+      default:
+        throw_invalid_base(nuc);
+    }
+  }
+}
+
+} // namespace
+
 ///////////////////////////////////////////////////////////////////////////////
 
-fastq_encoding::fastq_encoding(quality_encoding encoding) noexcept
-  : m_encoding(encoding)
+fastq_encoding::fastq_encoding(quality_encoding encoding,
+                               degenerate_encoding degenerate,
+                               uracil_encoding uracils) noexcept
+  : m_mask_degenerate()
+  , m_convert_uracil()
+  , m_encoding(encoding)
   , m_offset_min()
   , m_offset_max()
 {
+  switch (degenerate) {
+    case degenerate_encoding::reject:
+      m_mask_degenerate = false;
+      break;
+    case degenerate_encoding::mask:
+      m_mask_degenerate = true;
+      break;
+    default:
+      AR_FAIL("invalid degenerate encoding value");
+  }
+
+  switch (uracils) {
+    case uracil_encoding::convert:
+      m_convert_uracil = true;
+      break;
+    case uracil_encoding::reject:
+      m_convert_uracil = false;
+      break;
+    default:
+      AR_FAIL("invalid uracil encoding value");
+  }
+
   switch (encoding) {
     case quality_encoding::phred_33:
       m_offset_min = PHRED_33_OFFSET_MIN;
@@ -248,12 +384,22 @@ fastq_encoding::fastq_encoding(quality_encoding encoding) noexcept
       break;
 
     default:
-      AR_FAIL("unknown encoding");
+      AR_FAIL("unknown quality encoding");
   }
 }
 
 void
-fastq_encoding::decode(std::string& qualities) const
+fastq_encoding::process_nucleotides(std::string& sequence) const
+{
+  if (m_mask_degenerate || m_convert_uracil) {
+    process_nucleotides_lenient(sequence, m_convert_uracil, m_mask_degenerate);
+  } else {
+    process_nucleotides_strict(sequence);
+  }
+}
+
+void
+fastq_encoding::process_qualities(std::string& qualities) const
 {
   if (m_encoding == quality_encoding::solexa) {
     for (auto& quality : qualities) {

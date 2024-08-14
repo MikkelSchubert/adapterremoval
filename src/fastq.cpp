@@ -677,23 +677,8 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 void
 fastq::post_process(const fastq_encoding& encoding)
 {
-  for (char& nuc : m_sequence) {
-    // Fast ASCII letter uppercase
-    switch (nuc &= 0xDF) {
-      case 'A':
-      case 'C':
-      case 'G':
-      case 'T':
-      case 'N':
-        break;
-
-      default:
-        throw fastq_error("invalid character in FASTQ sequence; "
-                          "only A, C, G, T and N are expected!");
-    }
-  }
-
-  encoding.decode(m_qualities);
+  encoding.process_nucleotides(m_sequence);
+  encoding.process_qualities(m_qualities);
 }
 
 fastq::ntrimmed

@@ -25,7 +25,6 @@
 #include "strutils.hpp"          // for to_lower
 #include "userconfig.hpp"        // for userconfig
 #include <cstdint>               // for size_t
-#include <sstream>               // for ostringstream
 #include <vector>                // for vector
 
 namespace adapterremoval {
@@ -130,14 +129,14 @@ protected:
     fastq record;
     {
       vec_reader reader_1(m_lines_1);
-      while (record.read(reader_1)) {
+      while (record.read(reader_1, FASTQ_ENCODING_33)) {
         m_records_1.push_back(record);
       }
     }
 
     {
       vec_reader reader_2(m_lines_2);
-      while (record.read(reader_2)) {
+      while (record.read(reader_2, FASTQ_ENCODING_33)) {
         m_records_2.push_back(record);
       }
     }

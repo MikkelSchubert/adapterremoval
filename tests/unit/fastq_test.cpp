@@ -18,7 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "commontypes.hpp" // for fastq_vec
-#include "debug.hpp"       // for assert_failed
 #include "errors.hpp"      // for fastq_error
 #include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
 #include "fastq_enc.hpp"   // for FASTQ_ENCODING_33
@@ -1120,7 +1119,7 @@ TEST_CASE("eof_when_starting_to_read_record", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  CHECK(!record.read(reader));
+  CHECK(!record.read(reader, FASTQ_ENCODING_33));
 }
 
 TEST_CASE("eof_after_header", "[fastq::fastq]")
@@ -1130,7 +1129,7 @@ TEST_CASE("eof_after_header", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("eof_after_sequence_1", "[fastq::fastq]")
@@ -1141,7 +1140,7 @@ TEST_CASE("eof_after_sequence_1", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("eof_after_sequence_2", "[fastq::fastq]")
@@ -1153,7 +1152,7 @@ TEST_CASE("eof_after_sequence_2", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("eof_after_sep_1", "[fastq::fastq]")
@@ -1165,7 +1164,7 @@ TEST_CASE("eof_after_sep_1", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("eof_after_sep_2", "[fastq::fastq]")
@@ -1178,7 +1177,7 @@ TEST_CASE("eof_after_sep_2", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("eof_after_qualities_following_previous_read_1", "[fastq::fastq]")
@@ -1194,8 +1193,8 @@ TEST_CASE("eof_after_qualities_following_previous_read_1", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_NOTHROW(record.read(reader));
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_NOTHROW(record.read(reader, FASTQ_ENCODING_33));
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
@@ -1212,8 +1211,8 @@ TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_NOTHROW(record.read(reader));
-  REQUIRE_THROWS_AS(record.read(reader), fastq_error);
+  REQUIRE_NOTHROW(record.read(reader, FASTQ_ENCODING_33));
+  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
 }
 
 TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
@@ -1233,7 +1232,7 @@ TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
   REQUIRE(record.header() == "record_1");
   REQUIRE(record.sequence() == "ACGTA");
   REQUIRE(record.qualities() == "!!!!!");
-  REQUIRE_NOTHROW(!record.read(reader));
+  REQUIRE_NOTHROW(!record.read(reader, FASTQ_ENCODING_33));
 }
 
 TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")

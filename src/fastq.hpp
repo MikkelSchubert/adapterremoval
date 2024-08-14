@@ -165,8 +165,7 @@ public:
    * empty headers, or sequences / qualities, as this typically indicates
    * a problem with the source file.
    */
-  bool read(line_reader_base& reader,
-            const fastq_encoding& encoding = FASTQ_ENCODING_33);
+  bool read(line_reader_base& reader, const fastq_encoding& encoding);
 
   /** Like `read`, but post-processing must be manually called afterwards */
   bool read_unsafe(line_reader_base& reader);

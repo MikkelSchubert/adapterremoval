@@ -65,7 +65,7 @@ public:
   {
     AR_REQUIRE(chunk);
 
-    const fastq empty_adapter("dummy", "", "");
+    const fastq empty_adapter;
     fastq_pair_vec adapters;
     adapters.emplace_back(empty_adapter, empty_adapter);
 

@@ -19,8 +19,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <stdexcept> // for runtime_error
-#include <string>    // for string
+#include <string> // for string
 
 namespace adapterremoval {
 
@@ -44,6 +43,24 @@ enum class quality_encoding
   sam,
 };
 
+//! How to handle degenerate bases (IUPAC notation)
+enum class degenerate_encoding
+{
+  //! Replace any degenerate bases with 'N'
+  mask,
+  //! Report an error if any degenerate bases are observed
+  reject,
+};
+
+//! How to handle uracil ('U')
+enum class uracil_encoding
+{
+  //! Replace any degenerate bases with 'N'
+  convert,
+  //! Report an error if a uracil is observed
+  reject,
+};
+
 class fastq_encoding
 {
 public:
@@ -52,12 +69,22 @@ public:
    * quality-scores up to a given value (0 - N). Input with higher scores
    * is rejected, and output is truncated to this score.
    */
-  explicit fastq_encoding(quality_encoding encoding) noexcept;
+  explicit fastq_encoding(
+    quality_encoding encoding,
+    degenerate_encoding degenerate = degenerate_encoding::reject,
+    uracil_encoding uracils = uracil_encoding::reject) noexcept;
 
-  /** Decodes a string of ASCII values in-place. */
-  void decode(std::string& qualities) const;
+  /** Validates/normalizes a string of nucleotides in-place. */
+  void process_nucleotides(std::string& sequence) const;
+
+  /** Validates/converts a string of ASCII encoded PHRED values in-place */
+  void process_qualities(std::string& qualities) const;
 
 private:
+  //! Mask or reject degenerate bases
+  bool m_mask_degenerate;
+  //! Convert or reject uracil
+  bool m_convert_uracil;
   //! Quality score encoding expected when decoding data
   quality_encoding m_encoding;
   //! Offset of the lowest ASCII value used by the given encoding
@@ -66,9 +93,9 @@ private:
   char m_offset_max;
 };
 
-static const fastq_encoding FASTQ_ENCODING_33(quality_encoding::phred_33);
-static const fastq_encoding FASTQ_ENCODING_64(quality_encoding::phred_64);
-static const fastq_encoding FASTQ_ENCODING_SAM(quality_encoding::sam);
-static const fastq_encoding FASTQ_ENCODING_SOLEXA(quality_encoding::solexa);
+static const fastq_encoding FASTQ_ENCODING_33{ quality_encoding::phred_33 };
+static const fastq_encoding FASTQ_ENCODING_64{ quality_encoding::phred_64 };
+static const fastq_encoding FASTQ_ENCODING_SAM{ quality_encoding::sam };
+static const fastq_encoding FASTQ_ENCODING_SOLEXA{ quality_encoding::solexa };
 
 } // namespace adapterremoval

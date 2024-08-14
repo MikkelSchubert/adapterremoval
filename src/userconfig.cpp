@@ -351,16 +351,18 @@ configure_log_progress(const std::string& progress)
 }
 
 fastq_encoding
-configure_encoding(const std::string& value)
+configure_encoding(const std::string& value,
+                   degenerate_encoding degenerate,
+                   uracil_encoding uracils)
 {
   if (value == "33") {
-    return FASTQ_ENCODING_33;
+    return fastq_encoding{ quality_encoding::phred_33, degenerate, uracils };
   } else if (value == "64") {
-    return FASTQ_ENCODING_64;
+    return fastq_encoding{ quality_encoding::phred_64, degenerate, uracils };
   } else if (value == "solexa") {
-    return FASTQ_ENCODING_SOLEXA;
+    return fastq_encoding{ quality_encoding::solexa, degenerate, uracils };
   } else if (value == "sam") {
-    return FASTQ_ENCODING_SAM;
+    return fastq_encoding{ quality_encoding::sam, degenerate, uracils };
   }
 
   AR_FAIL("unhandled qualitybase value");
@@ -544,6 +546,14 @@ userconfig::userconfig()
     .conflicts_with("--in-file2")
     .conflicts_with("--out-file2")
     .bind_bool(&interleaved);
+
+  argparser.add("--mask-degenerate-bases")
+    .help("Mask degenerate/ambiguous bases (B/D/H/K/M/N/R/S/V/W/Y) in the "
+          "input by replacing them with an 'N'; if this option is not used, "
+          "AdapterRemoval will abort upon encountering degenerate bases.");
+  argparser.add("--convert-uracils")
+    .help("Convert uracils (U) to thymine (T) in input reads; if this option "
+          "is not used, AdapterRemoval will abort upon encountering uracils.");
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("OUTPUT FORMAT:");
@@ -926,7 +936,17 @@ userconfig::parse_args(const string_vec& argvec)
   configure_log_colors(log_color);
   configure_log_levels(log_level);
   log_progress = configure_log_progress(argparser.value("--log-progress"));
-  io_encoding = configure_encoding(quality_input_base);
+
+  {
+    const auto degenerate = argparser.is_set("--mask-degenerate-bases")
+                              ? degenerate_encoding::mask
+                              : degenerate_encoding::reject;
+    const auto uracils = argparser.is_set("--convert-uracils")
+                           ? uracil_encoding::convert
+                           : uracil_encoding::reject;
+
+    io_encoding = configure_encoding(quality_input_base, degenerate, uracils);
+  }
 
   if (argparser.is_set("--mate-separator")) {
     if (mate_separator_str.size() != 1) {
