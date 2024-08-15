@@ -21,10 +21,8 @@
       "your_output.r2.fastq.gz",
       "your_output.singleton.fastq.gz"
     ],
-    "json": [
-      "your_output.json"
-    ],
-    "html": [
+    "ignore": [
+      "your_output.json",
       "your_output.html"
     ]
   }
