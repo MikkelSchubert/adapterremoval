@@ -607,7 +607,7 @@ userconfig::userconfig()
   argparser.add("--mm", "X")
     .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
           "error-rate is set to 1 / X; if < 0, the defaults are used, "
-          "otherwise the user-supplied value is used directly [default: 1/3 "
+          "otherwise the user-supplied value is used directly [default: 1/6 "
           "for trimming; 1/10 when identifying adapters]")
     .bind_double(&mismatch_threshold)
     .with_default(-1.0);
@@ -1042,8 +1042,8 @@ userconfig::parse_args(const string_vec& argvec)
     if (run_type == ar_command::report_only) {
       mismatch_threshold = 1.0 / 10.0;
     } else {
-      // Defaults for PE / SE trimming (changed in v2)
-      mismatch_threshold = 1.0 / 3.0;
+      // Defaults for PE / SE trimming (changed in v3)
+      mismatch_threshold = 1.0 / 6.0;
     }
   }
 
