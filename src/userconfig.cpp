@@ -448,14 +448,14 @@ userconfig::userconfig()
           "in demultiplexing mode overrides --out-prefix for this file")
     .deprecated_alias("--output1")
     .bind_str(nullptr)
-    .with_default("{basename}[.sample].r1.fastq")
+    .with_default("{prefix}[.sample].r1.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-file2", "FILE")
     .help("Output file containing trimmed mate 2 reads. Setting this value in "
           "in demultiplexing mode overrides --out-prefix for this file")
     .deprecated_alias("--output2")
     .bind_str(nullptr)
-    .with_default("{basename}[.sample].r2.fastq")
+    .with_default("{prefix}[.sample].r2.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-merged", "FILE")
     .help("Output file that, if --merge is set, contains overlapping "
@@ -464,16 +464,16 @@ userconfig::userconfig()
           "for this file")
     .deprecated_alias("--outputcollapsed")
     .bind_str(nullptr)
-    .with_default("{basename}[.sample].merged.fastq")
+    .with_default("{prefix}[.sample].merged.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-singleton", "FILE")
     .help("Output file containing paired reads for which the mate "
           "has been discarded. This file is only created if filtering is "
           "enabled. Setting this value in demultiplexing mode overrides "
-          "-- for this filebasename")
+          "--out-prefix for this file")
     .deprecated_alias("--singleton")
     .bind_str(nullptr)
-    .with_default("{basename}[.sample].singleton.fastq")
+    .with_default("{prefix}[.sample].singleton.fastq")
     .with_preprocessor(normalize_output_file);
 
   argparser.add_separator();
@@ -481,13 +481,13 @@ userconfig::userconfig()
     .help("In demultiplexing mode, contains mate 1 reads that could not be "
           "assigned to a single sample")
     .bind_str(nullptr)
-    .with_default("{basename}.unidentified.r1.fastq")
+    .with_default("{prefix}.unidentified.r1.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-unidentified2", "FILE")
     .help("In demultiplexing mode, contains mate 2 reads that could not be "
           "assigned to a single sample")
     .bind_str(nullptr)
-    .with_default("{basename}.unidentified.r2.fastq")
+    .with_default("{prefix}.unidentified.r2.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-discarded", "FILE")
     .help("Output file containing filtered reads. Setting this value in "
@@ -502,13 +502,13 @@ userconfig::userconfig()
     .help("Output file containing statistics about input files, trimming, "
           "merging, and more in JSON format")
     .bind_str(nullptr)
-    .with_default("{basename}.json")
+    .with_default("{prefix}.json")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-html", "FILE")
     .help("Output file containing statistics about input files, trimming, "
           "merging, and more in HTML format")
     .bind_str(nullptr)
-    .with_default("{basename}.html")
+    .with_default("{prefix}.html")
     .with_preprocessor(normalize_output_file);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -578,7 +578,8 @@ userconfig::userconfig()
       "Sets the compression level for compressed output. Valid values are 0 to "
       "13: Level 0 is uncompressed but includes gzip headers/checksums, level "
       "1 is streamed for SAM/FASTQ output (this may be required in rare cases "
-      "for compatibility), and levels 2 to 13 are block compressed using BGZF")
+      "for compatibility), and levels 2 to 13 are block compressed using the "
+      "BGZF format")
     .deprecated_alias("--gzip-level")
     .bind_uint(&compression_level)
     .with_default(5);
@@ -627,7 +628,7 @@ userconfig::userconfig()
   argparser.add("--merge")
     .help("When set, paired ended read alignments of --merge-threshold or "
           "more bases are merged into a single consensus sequence. Merged "
-          "reads are written to basename.merged by default. Has no effect "
+          "reads are written to prefix.merged by default. Has no effect "
           "in single-end mode")
     .deprecated_alias("--collapse");
   argparser.add("--merge-threshold", "N")
@@ -1131,7 +1132,7 @@ userconfig::parse_args(const string_vec& argvec)
     return argparse::parse_result::error;
   }
 
-  // An empty basename or directory would results in the creation of dot-files
+  // An empty prefix or directory would results in the creation of dot-files
   if (out_prefix.empty()) {
     log::error() << "--out-prefix must be a non-empty value.";
 

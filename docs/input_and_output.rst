@@ -27,19 +27,19 @@ Output files
 
 The default filenames for single end mode are as follows:
 
- * `{basename}[.{sample}].fastq`
- * `{basename}[.{sample}].discarded.fastq`
- * `{basename}.unidentified.fastq`, if demultiplexing is enabled
+ * `{prefix}[.{sample}].fastq`
+ * `{prefix}[.{sample}].discarded.fastq`
+ * `{prefix}.unidentified.fastq`, if demultiplexing is enabled
 
 The default filenames for paired end mode are as follows:
 
- * `{basename}[.{sample}].r1.fastq`
- * `{basename}[.{sample}].r2.fastq`
- * `{basename}[.{sample}].merged.fastq`, if merging is enabled
- * `{basename}[.{sample}].discarded.fastq`
- * `{basename}[.{sample}].singleton.fastq`
- * `{basename}.unidentified.r1.fastq`, if demultiplexing is enabled
- * `{basename}.unidentified.r2.fastq`, if demultiplexing is enabled
+ * `{prefix}[.{sample}].r1.fastq`
+ * `{prefix}[.{sample}].r2.fastq`
+ * `{prefix}[.{sample}].merged.fastq`, if merging is enabled
+ * `{prefix}[.{sample}].discarded.fastq`
+ * `{prefix}[.{sample}].singleton.fastq`
+ * `{prefix}.unidentified.r1.fastq`, if demultiplexing is enabled
+ * `{prefix}.unidentified.r2.fastq`, if demultiplexing is enabled
 
 The `{sample}` field is only added if demultiplexing is enabled.
 
