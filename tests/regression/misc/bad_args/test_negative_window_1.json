@@ -1,7 +1,7 @@
 {
   "exhaustive": false,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--trim-strategy",
     "window",

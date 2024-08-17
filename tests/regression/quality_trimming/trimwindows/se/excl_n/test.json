@@ -1,12 +1,12 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--trim-strategy",
     "window",
-    "--trimwindows",
+    "--trim-windows",
     "4",
-    "--minquality",
+    "--trim-min-quality",
     "20"
   ],
   "files": {

@@ -1,9 +1,9 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--merge",
-    "--minlength",
+    "--min-length",
     "0"
   ],
   "files": {

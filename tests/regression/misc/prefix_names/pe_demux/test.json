@@ -3,7 +3,7 @@
   "arguments": [
     "--barcode-list",
     "barcodes.txt",
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--prefix-read1",
     "R1_",

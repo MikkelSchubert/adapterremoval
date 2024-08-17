@@ -2,8 +2,8 @@
   "arguments": [
     "--trim-strategy",
     "per-base",
-    "--trimns",
-    "--basename",
+    "--trim-ns",
+    "--out-prefix",
     "output_1"
   ],
   "files": {

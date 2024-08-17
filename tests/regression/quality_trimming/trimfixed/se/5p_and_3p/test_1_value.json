@@ -1,11 +1,11 @@
 {
   "description": "Trimming 5p and 3p ends of SE reads",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
-    "--trim5p",
+    "--post-trim5p",
     "4",
-    "--trim3p",
+    "--post-trim3p",
     "5"
   ],
   "files": {

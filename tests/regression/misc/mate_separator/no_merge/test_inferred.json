@@ -2,7 +2,7 @@
   "description": "Processing PE reads using inferred non-standard mate separator",
   "inherit_from": "test_specified.json",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output"
   ]
 }

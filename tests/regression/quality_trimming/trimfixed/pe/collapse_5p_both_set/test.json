@@ -1,9 +1,9 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--merge",
-    "--trim5p",
+    "--post-trim5p",
     "6",
     "8"
   ],

@@ -10,32 +10,32 @@ The following examples all make use of the data included in the 'examples' folde
 Basic usage
 -----------
 
-To trim single-end data, simplify specify one or more files using the --file1 option::
+To trim single-end data, simplify specify one or more files using the --in-file1 option::
 
-    adapterremoval3 --file1 reads_1.fastq --basename output_single --gzip
+    adapterremoval3 --in-file1 reads_1.fastq --out-prefix output_single --gzip
 
-To trim paired-end FASTQ reads, instead specify two input files using the ``--file1`` and ``--file2`` options::
+To trim paired-end FASTQ reads, instead specify two input files using the ``--in-file1`` and ``--in-file2`` options::
 
-    adapterremoval3 --file1 reads_1.fastq --file2 reads_2.fastq --basename output_paired --gzip --merge
+    adapterremoval3 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_paired --gzip --merge
 
-The ``--basename`` option ensure that all output files start with the specified prefix, while the ``--gzip`` options enables gzip compression for all FASTQ files written by AdapterRemoval. For the paired reads, the ``-merge`` option enables merging of reads overlapping at least 11bp (per default).
+The ``--out-prefix`` option ensure that all output files start with the specified prefix, while the ``--gzip`` options enables gzip compression for all FASTQ files written by AdapterRemoval. For the paired reads, the ``-merge`` option enables merging of reads overlapping at least 11bp (per default).
 
 
 Multiple input FASTQ files
 --------------------------
 
-More than one input file may be specified listed after the ``--file1`` and ``--file2`` options. Files are processed in the specified order, as if they had been concatenated using ``cat``or ```zcat``::
+More than one input file may be specified listed after the ``--in-file1`` and ``--in-file2`` options. Files are processed in the specified order, as if they had been concatenated using ``cat``or ```zcat``::
 
-    adapterremoval3 --file1 reads_1a.fastq reads_1b.fastq reads_1c.fastq
-    adapterremoval3 --file1 reads_1a.fastq reads_1b.fastq reads_1c.fastq --file2 reads_2a.fastq reads_2b.fastq reads_2c.fastq
+    adapterremoval3 --in-file1 reads_1a.fastq reads_1b.fastq reads_1c.fastq
+    adapterremoval3 --in-file1 reads_1a.fastq reads_1b.fastq reads_1c.fastq --in-file2 reads_2a.fastq reads_2b.fastq reads_2c.fastq
 
 
 Interleaved FASTQ reads
 -----------------------
 
-AdapterRemoval is able to read and write paired-end reads stored in a single, so-called interleaved FASTQ file (one pair at a time, first mate 1, then mate 2). This is accomplished by specifying the location of the file using ``--file1`` and *also* setting the ``--interleaved`` command-line option::
+AdapterRemoval is able to read and write paired-end reads stored in a single, so-called interleaved FASTQ file (one pair at a time, first mate 1, then mate 2). This is accomplished by specifying the location of the file using ``--in-file1`` and *also* setting the ``--interleaved`` command-line option::
 
-    adapterremoval3 --interleaved --file1 interleaved.fastq --basename output_interleaved
+    adapterremoval3 --interleaved --in-file1 interleaved.fastq --out-prefix output_interleaved
 
 Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'pair1' and a 'pair2' file, but instead these are instead written to a single file. The location of this file is controlled using the ``--output1`` option. Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the ``--interleaved-input`` and ``--interleaved-output`` options, both of which are enabled by the ``--interleaved`` option.
 
@@ -51,7 +51,7 @@ Different quality score encodings
 
 By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred+33 encoded, meaning that the error probabilities are encoded as ``(char)('!' - 10 * log10(p))``. Most data will be encoded using Phred+33, but Phred+64 and 'Solexa' encoded quality scores are also supported. These are selected by specifying the ``--quality-format`` command-line option (specifying either '33', '64', or 'solexa')::
 
-    adapterremoval3 --quality-format 64 --file1 reads_q64.fastq --basename output_phred_64
+    adapterremoval3 --quality-format 64 --in-file1 reads_q64.fastq --out-prefix output_phred_64
 
 Output is always saved as Phred+33. See `this Wikipedia article`_ for a detailed overview of Phred encoding schemes currently and previously in use.
 
@@ -70,7 +70,7 @@ It is possible to trim data that contains multiple adapter pairs, by providing a
 
 This table is then specified using the ``--adapter-list`` option::
 
-    adapterremoval3 --file1 reads_1.fastq --file2 reads_2.fastq --basename output_multi --merge --adapter-list adapters.txt
+    adapterremoval3 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_multi --merge --adapter-list adapters.txt
 
 AdapterRemoval uses the exact pairs of adapters listed in the table. The resulting reports contains overviews of how frequently each adapter (pair) was used.
 
@@ -82,7 +82,7 @@ If we did not know the adapter sequences for the ``reads_*.fastq`` files, Adapte
 
 In the following example, the identified adapters corresponds to the default adapter sequences with a poly-A tail resulting from sequencing past the end of the insert + templates. It is not necessary to specify this tail when using the ``--adapter1`` or ``--adapter2`` command-line options. The characters shown under each of the consensus sequences represented the Phred-encoded fraction of bases identical to the consensus base::
 
-    adapterremoval3 --identify-adapters --file1 reads_1.fastq --file2 reads_2.fastq
+    adapterremoval3 --identify-adapters --in-file1 reads_1.fastq --in-file2 reads_2.fastq
 
     Attemping to identify adapter sequences ...
     Processed a total of 1,000 reads in 0.0s; 129,000 reads per second on average ...
@@ -134,9 +134,9 @@ For example, a table of barcodes from a double-indexed run might be as follows (
 
 AdapterRemoval is invoked with the ``--barcode-list`` option, specifying the path to this table::
 
-    adapterremoval3 --file1 demux_1.fastq --file2 demux_2.fastq --basename output_demux --barcode-list barcodes.txt
+    adapterremoval3 --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_demux --barcode-list barcodes.txt
 
-This generates a set of output files for each sample specified in the barcode table, using the basename (``--basename``) as the prefix, followed by a dot and the sample name, followed by a dot and the default name for a given file type. The reports generated by AdapterRemoval contains information about the number of reads identified for each sample and (in the JSON file) detailed per-sample quality metrics.
+This generates a set of output files for each sample specified in the barcode table, using the basename (``--out-prefix``) as the prefix, followed by a dot and the sample name, followed by a dot and the default name for a given file type. The reports generated by AdapterRemoval contains information about the number of reads identified for each sample and (in the JSON file) detailed per-sample quality metrics.
 
 The maximum number of mismatches allowed when comparing barcodes is controlled using the options ``--barcode-mm``, ``--barcode-mm-r1``, and ``--barcode-mm-r2``, which specify the maximum number of mismatches total, and the maximum number of mismatches for the mate 1 and mate 2 barcodes respectively. Thus, if mm_1(i) and mm_2(i) represents the number of mismatches observed for barcode-pair i for a given pair of reads, these options require that
 
@@ -147,7 +147,7 @@ The maximum number of mismatches allowed when comparing barcodes is controlled u
 
 If the ``--demultiplex-only`` option is used, then no trimming/processing is performed after the demultiplexing step::
 
-    adapterremoval3 --file1 demux_1.fastq --file2 demux_2.fastq --basename output_only_demux --barcode-list barcodes.txt --demultiplex-only
+    adapterremoval3 --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_only_demux --barcode-list barcodes.txt --demultiplex-only
 
 These reads will still contain adapters, and for paired reads/double indexed data these adapters will be prefixed by the barcode sequence(s). The adapter plus barcode sequences are reported for each sample in the `JSON` report file.
 

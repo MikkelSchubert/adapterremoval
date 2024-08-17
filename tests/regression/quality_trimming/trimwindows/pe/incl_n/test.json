@@ -1,16 +1,16 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq",
     "--trim-strategy",
     "window",
-    "--trimwindows",
+    "--trim-windows",
     "4",
-    "--minquality",
+    "--trim-min-quality",
     "20",
-    "--trimns"
+    "--trim-ns"
   ],
   "files": {
     "input_1": [

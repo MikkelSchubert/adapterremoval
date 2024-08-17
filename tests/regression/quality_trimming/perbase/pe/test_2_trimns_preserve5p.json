@@ -2,9 +2,9 @@
   "arguments": [
     "--trim-strategy",
     "per-base",
-    "--trimns",
+    "--trim-ns",
     "--preserve5p",
-    "--basename",
+    "--out-prefix",
     "output_2"
   ],
   "files": {

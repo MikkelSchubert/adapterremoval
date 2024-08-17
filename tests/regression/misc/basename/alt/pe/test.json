@@ -2,7 +2,7 @@
   "exhaustive": true,
   "arguments": [
     "--merge",
-    "--basename",
+    "--out-prefix",
     "alternative"
   ],
   "files": {

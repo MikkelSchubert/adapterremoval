@@ -1,7 +1,7 @@
 {
   "exhaustive": true,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "alternative"
   ],
   "files": {

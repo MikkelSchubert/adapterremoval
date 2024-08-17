@@ -2,12 +2,12 @@
   "description": "Basename must not be empty, to prevent the creation of dot files",
   "exhaustive": false,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     ""
   ],
   "return_code": 1,
   "stderr": [
-    "[ERROR] --basename must be a non-empty value."
+    "[ERROR] --out-prefix must be a non-empty value."
   ],
   "files": {
     "input_1": [

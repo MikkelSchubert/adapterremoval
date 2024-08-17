@@ -677,10 +677,10 @@ class TestConfig(NamedTuple):
                 raise NotImplementedError(it.kind)
 
         if input_1:
-            command += ["--file1", *input_1]
+            command += ["--in-file1", *input_1]
 
         if input_2:
-            command += ["--file2", *input_2]
+            command += ["--in-file2", *input_2]
 
         return command
 

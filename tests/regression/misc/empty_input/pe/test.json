@@ -2,7 +2,7 @@
   "description": "Trimming of empty FASTQ files (SE)",
   "exhaustive": true,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output"
   ],
   "files": {

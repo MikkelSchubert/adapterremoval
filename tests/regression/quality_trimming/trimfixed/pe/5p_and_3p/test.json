@@ -1,10 +1,10 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
-    "--trim5p",
+    "--post-trim5p",
     "1",
-    "--trim3p",
+    "--post-trim3p",
     "4"
   ],
   "files": {

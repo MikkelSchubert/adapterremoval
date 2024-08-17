@@ -1,7 +1,7 @@
 {
   "description": "Demultiplexing of PE reads without adapter-trimming/post-processing",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--barcode-list",
     "barcodes.txt",

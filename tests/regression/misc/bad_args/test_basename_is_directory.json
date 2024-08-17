@@ -2,12 +2,12 @@
   "description": "Basename must not be a directory, to prevent the creation of dot files",
   "exhaustive": false,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "./foo/"
   ],
   "return_code": 1,
   "stderr": [
-    "[ERROR] --basename must not be a directory: ./foo/"
+    "[ERROR] --out-prefix must not be a directory: ./foo/"
   ],
   "files": {
     "input_1": [

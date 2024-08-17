@@ -1,12 +1,12 @@
 {
   "exhaustive": false,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output"
   ],
   "return_code": 1,
   "stderr": [
-    "[ERROR] Different number of files specified for --file1 and --file2."
+    "[ERROR] Different number of files specified for --in-file1 and --in-file2."
   ],
   "files": {
     "input_2": [

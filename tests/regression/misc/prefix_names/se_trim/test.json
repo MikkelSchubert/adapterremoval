@@ -1,12 +1,12 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq",
     "--prefix-read1",
     "R1_",
-    "--minlength",
+    "--min-length",
     "30"
   ],
   "files": {

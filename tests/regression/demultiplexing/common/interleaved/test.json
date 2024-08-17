@@ -1,7 +1,7 @@
 {
   "description": "Demultiplexing of PE reads with interleaved output",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output",

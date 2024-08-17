@@ -60,10 +60,10 @@ const char* HELPTEXT =
   "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n"
   "\n"
   "Use the filename '-' to read from STDIN or to write to STDOUT. If the same\n"
-  "filenames are used for --file1 and --file2 then those files are read in\n"
-  "interleaved mode. If the same filename is used for two or more of the\n"
+  "filenames are used for --in-file1 and --in-file2 then those files are read\n"
+  "in interleaved mode. If the same filename is used for two or more of the\n"
   "--out options (excluding --out-json and --out-html), then output is\n"
-  "written to that file in interleaved mode.";
+  "written to that file in interleaved mode.\n";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -416,13 +416,15 @@ userconfig::userconfig()
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("INPUT FILES:");
 
-  argparser.add("--file1", "FILE")
+  argparser.add("--in-file1", "FILE")
     .help("One or more input files containing mate 1 reads [REQUIRED]")
+    .deprecated_alias("--file1")
     .bind_vec(&input_files_1)
     .with_preprocessor(normalize_input_file);
-  argparser.add("--file2", "FILE")
+  argparser.add("--in-file2", "FILE")
     .help("Input files containing mate 2 reads; if used, then the same number "
-          "of files as --file1 must be listed [OPTIONAL]")
+          "of files as --in-file1 must be listed [OPTIONAL]")
+    .deprecated_alias("--file2")
     .bind_vec(&input_files_2)
     .with_preprocessor(normalize_input_file);
   argparser.add("--head", "N")
@@ -434,23 +436,24 @@ userconfig::userconfig()
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("OUTPUT FILES:");
 
-  argparser.add("--basename", "PREFIX")
+  argparser.add("--out-prefix", "PREFIX")
     .help("Prefix for output files for which the corresponding --out option "
           "was not set [default: not set]")
-    .bind_str(&out_basename)
+    .deprecated_alias("--basename")
+    .bind_str(&out_prefix)
     .with_default("/dev/null");
 
   argparser.add_separator();
   argparser.add("--out-file1", "FILE")
     .help("Output file containing trimmed mate 1 reads. Setting this value in "
-          "in demultiplexing mode overrides --basename for this file")
+          "in demultiplexing mode overrides --out-prefix for this file")
     .deprecated_alias("--output1")
     .bind_str(nullptr)
     .with_default("{basename}[.sample].r1.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-file2", "FILE")
     .help("Output file containing trimmed mate 2 reads. Setting this value in "
-          "in demultiplexing mode overrides --basename for this file")
+          "in demultiplexing mode overrides --out-prefix for this file")
     .deprecated_alias("--output2")
     .bind_str(nullptr)
     .with_default("{basename}[.sample].r2.fastq")
@@ -458,8 +461,8 @@ userconfig::userconfig()
   argparser.add("--out-merged", "FILE")
     .help("Output file that, if --merge is set, contains overlapping "
           "read-pairs that have been merged into a single read (PE mode only). "
-          "Setting this value in demultiplexing mode overrides --basename for "
-          "this file")
+          "Setting this value in demultiplexing mode overrides --out-prefix "
+          "for this file")
     .deprecated_alias("--outputcollapsed")
     .bind_str(nullptr)
     .with_default("{basename}[.sample].merged.fastq")
@@ -489,7 +492,7 @@ userconfig::userconfig()
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-discarded", "FILE")
     .help("Output file containing filtered reads. Setting this value in "
-          "demultiplexing mode overrides --basename for this file [default: "
+          "demultiplexing mode overrides --out-prefix for this file [default: "
           "not saved]")
     .deprecated_alias("--discarded")
     .bind_str(nullptr)
@@ -528,7 +531,7 @@ userconfig::userconfig()
           "2 reads, one pair after the other, with one mate 1 reads followed "
           "by one mate 2 read. This option is implied by the --interleaved "
           "option")
-    .conflicts_with("--file2")
+    .conflicts_with("--in-file2")
     .bind_bool(&interleaved_input);
   argparser.add("--interleaved-output")
     .help("If set, trimmed paired-end reads are written to a single file "
@@ -539,7 +542,7 @@ userconfig::userconfig()
   argparser.add("--interleaved")
     .help("This option enables both the --interleaved-input option and the "
           "--interleaved-output option")
-    .conflicts_with("--file2")
+    .conflicts_with("--in-file2")
     .conflicts_with("--out-file2")
     .bind_bool(&interleaved);
 
@@ -598,17 +601,19 @@ userconfig::userconfig()
     .bind_str(&adapter_list);
 
   argparser.add_separator();
-  argparser.add("--minadapteroverlap", "N")
+  argparser.add("--min-adapter-overlap", "N")
     .help("In single-end mode, reads are only trimmed if the overlap between "
           "read and the adapter is at least X bases long, not counting "
           "ambiguous nucleotides (Ns)")
+    .deprecated_alias("--minadapteroverlap")
     .bind_uint(&min_adapter_overlap)
     .with_default(0);
-  argparser.add("--mm", "X")
+  argparser.add("--mismatch-rate", "X")
     .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
           "error-rate is set to 1 / X; if < 0, the defaults are used, "
           "otherwise the user-supplied value is used directly [default: 1/6 "
           "for trimming; 1/10 when identifying adapters]")
+    .deprecated_alias("--mm")
     .bind_double(&mismatch_threshold)
     .with_default(-1.0);
   argparser.add("--shift", "N")
@@ -787,19 +792,22 @@ userconfig::userconfig()
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("FILTERING:");
 
-  argparser.add("--maxns", "N")
+  argparser.add("--max-ns", "N")
     .help("Reads containing more ambiguous bases (N) than this number after "
           "trimming are discarded [default: no maximum]")
+    .deprecated_alias("--maxns")
     .bind_uint(&max_ambiguous_bases)
     .with_default(std::numeric_limits<unsigned>::max());
 
-  argparser.add("--minlength", "N")
+  argparser.add("--min-length", "N")
     .help("Reads shorter than this length are discarded following trimming")
+    .deprecated_alias("--minlength")
     .bind_uint(&min_genomic_length)
     .with_default(15);
-  argparser.add("--maxlength", "N")
+  argparser.add("--max-length", "N")
     .help("Reads longer than this length are discarded following trimming "
           "[default: no maximum]")
+    .deprecated_alias("--maxlength")
     .bind_uint(&max_genomic_length)
     .with_default(std::numeric_limits<unsigned>::max());
 
@@ -986,14 +994,14 @@ userconfig::parse_args(const string_vec& argvec)
   // Check for invalid combinations of settings
   if (input_files_1.empty() && input_files_2.empty()) {
     log::error()
-      << "No input files (--file1 / --file2) specified.\n"
-      << "Please specify at least one input file using --file1 FILENAME.";
+      << "No input files (--in-file1 / --in-file2) specified.\n"
+      << "Please specify at least one input file using --in-file1 FILENAME.";
 
     return argparse::parse_result::error;
   } else if (!input_files_2.empty() &&
              (input_files_1.size() != input_files_2.size())) {
     log::error()
-      << "Different number of files specified for --file1 and --file2.";
+      << "Different number of files specified for --in-file1 and --in-file2.";
 
     return argparse::parse_result::error;
   } else if (!input_files_2.empty()) {
@@ -1123,16 +1131,16 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   // An empty basename or directory would results in the creation of dot-files
-  if (out_basename.empty()) {
-    log::error() << "--basename must be a non-empty value.";
+  if (out_prefix.empty()) {
+    log::error() << "--out-prefix must be a non-empty value.";
 
     return argparse::parse_result::error;
-  } else if (out_basename.back() == '/') {
-    log::error() << "--basename must not be a directory: "
-                 << shell_escape(out_basename);
+  } else if (out_prefix.back() == '/') {
+    log::error() << "--out-prefix must not be a directory: "
+                 << shell_escape(out_prefix);
 
     return argparse::parse_result::error;
-  } else if (out_basename == DEV_NULL && run_type != ar_command::benchmark) {
+  } else if (out_prefix == DEV_NULL && run_type != ar_command::benchmark) {
     // Relevant output options depend on input files and other settings
     const std::vector<std::pair<std::string, bool>> output_keys = {
       { "--out-file1",
@@ -1146,7 +1154,7 @@ userconfig::parse_args(const string_vec& argvec)
       { "--out-unidentified2", is_demultiplexing_enabled() },
       { "--out-json", true },
       { "--out-html", true },
-      { "--basename", true },
+      { "--out-prefix", true },
     };
 
     string_vec required_keys;
@@ -1161,8 +1169,8 @@ userconfig::parse_args(const string_vec& argvec)
       auto error = log::error();
       error << "No output would be generated; at least one of the options "
             << join_text(required_keys, ", ", ", or ")
-            << " must be used. The --basename option automatically enables all "
-               "relevant --out options.";
+            << " must be used. The --out-prefix option automatically enables "
+               "all relevant --out options.";
 
       return argparse::parse_result::error;
     }
@@ -1185,8 +1193,8 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   if (!min_genomic_length) {
-    log::warn() << "--minlength is set to 0. This may produce FASTQ files that "
-                   "are incompatible with some tools!";
+    log::warn() << "--min-length is set to 0. This may produce FASTQ files "
+                   "that are incompatible with some tools!";
   }
 
   if (!parse_head(argparser.value("--head"), head)) {
@@ -1328,10 +1336,10 @@ userconfig::new_output_file(const std::string& key,
     }
 
     out = argparser.value(key);
-  } else if (out_basename == DEV_NULL || key == "--out-discarded") {
+  } else if (out_prefix == DEV_NULL || key == "--out-discarded") {
     return { DEV_NULL, output_format::fastq };
   } else {
-    out = out_basename;
+    out = out_prefix;
   }
 
   for (const auto& value : values) {
@@ -1526,8 +1534,8 @@ userconfig::setup_adapter_sequences()
 
   const auto& output_files = get_output_filenames();
 
-  return check_input_and_output("--file1", input_files_1, output_files) &&
-         check_input_and_output("--file2", input_files_2, output_files);
+  return check_input_and_output("--in-file1", input_files_1, output_files) &&
+         check_input_and_output("--in-file2", input_files_2, output_files);
 }
 
 } // namespace adapterremoval

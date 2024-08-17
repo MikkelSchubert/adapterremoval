@@ -1,8 +1,8 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
-    "--trim3p",
+    "--post-trim3p",
     "6"
   ],
   "files": {

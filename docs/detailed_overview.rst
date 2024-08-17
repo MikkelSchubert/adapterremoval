@@ -6,7 +6,7 @@ The following page describes the data-flow in AdapterRemoval3, and list command-
 1. Reading FASTQ files
 ----------------------
 
-FASTQ data is read from one or more files specified with `--file1` and (optionally) `--file2`. If either the `--interleaved` or the `--interleaved-input` options are specified, the files specified with `--file1` are expected to contain sequential pairs of FASTQ reads.
+FASTQ data is read from one or more files specified with `--in-file1` and (optionally) `--in-file2`. If either the `--interleaved` or the `--interleaved-input` options are specified, the files specified with `--in-file1` are expected to contain sequential pairs of FASTQ reads.
 
 The quality is expected to be `Phred+33`_ by default, but this can be changed using the `--quality-format` option. By default AdapterRemoval3 will attempt to infer the mate-number separator (the character before the 1/2 mate number in read names), but this can be overridden using the `--mate-separator` option.
 
@@ -38,7 +38,7 @@ The reads and adapters (single end mode) or reads + adapters (paired end mode) a
 
 Note that adapter 2 and read 2 are both reverse complemented in the above. If multiple adapters are specified using `--adapter-list`, then alignment is carried out with each adapter or adapter pair to find the best alignment.
 
-If the best alignment covers at least `--merge-threshold` bases, then the sequences are considered to be overlapping. For paired end reads the inferred adapter sequences are always trimmed, while for single end reads the overlap must be at least `--minadapteroverlap` bases before the sequence is trimmed (if specified). If the `--merge` option is set and the best alignment is at least `--merge-threshold` long, then the two reads are merged into a single sequence (paired end mode only).
+If the best alignment covers at least `--merge-threshold` bases, then the sequences are considered to be overlapping. For paired end reads the inferred adapter sequences are always trimmed, while for single end reads the overlap must be at least `--min-adapter-overlap` bases before the sequence is trimmed (if specified). If the `--merge` option is set and the best alignment is at least `--merge-threshold` long, then the two reads are merged into a single sequence (paired end mode only).
 
 If the `--post-trim5p` or `--post-trim3p` options are specified, the reads are trimmed by the specified amounts of bases and poly-X tails are trimmed if the `--post-trim-polyx` option is specified. Only trimming with the `--post-trim5p` is performed on merged reads, since the 3p ends are typically located inside the reads or correspond to the 5p of the other mate.
 
@@ -49,18 +49,18 @@ If the `--prefix-read1`, `--prefix-read2`, and `--prefix-merged` options are set
 1. Read filtering
 -----------------
 
-Reads with more than `--maxns` ambiguous bases (Ns), that are shorter than `--minlength`, that are longer than `--maxlength`, or that have a complexity score less than `--min-complexity` are discarded. If one read in a pair is filtered, then the remaining read is classified as a "singleton" read.
+Reads with more than `--max-ns` ambiguous bases (Ns), that are shorter than `--min-length`, that are longer than `--max-length`, or that have a complexity score less than `--min-complexity` are discarded. If one read in a pair is filtered, then the remaining read is classified as a "singleton" read.
 
 5. Output
 ---------
 
-Reads are written to the files specified using `--basename` and/or the individual `--out-*` options, with the `--out-*` options taking priority. If multiple `--out-*` options point to the same file, then all of those reads are written to that file. Interleaved output can also be obtained by using the `--interleaved` or the `--interleaved-output` options, in which case mate 1 and mate 2 reads are both written to the file specified with `--file1` or `{basename}.fastq` if `--basename` is used.
+Reads are written to the files specified using `--out-prefix` and/or the individual `--out-*` options, with the `--out-*` options taking priority. If multiple `--out-*` options point to the same file, then all of those reads are written to that file. Interleaved output can also be obtained by using the `--interleaved` or the `--interleaved-output` options, in which case mate 1 and mate 2 reads are both written to the file specified with `--in-file1` or `{prefix}.fastq` if `--out-prefix` is used.
 
-If demultiplexing is enabled, the reads that did not match any barcodes will be written to `{basename}.unidentified.fastq` in single-end mode and to `{basename}.unidentified.r1.fastq` and `{basename}.unidentified.r2.fastq` in paired end mode.
+If demultiplexing is enabled, the reads that did not match any barcodes will be written to `{prefix}.unidentified.fastq` in single-end mode and to `{prefix}.unidentified.r1.fastq` and `{prefix}.unidentified.r2.fastq` in paired end mode.
 
 Gzip compression may be enabled using either the `--gzip` option for all files, or per file using the `--out-*` options by specifying a filename ending with a `.gz` extension. The `--gzip-level` option specifies the compression level used, with block-based compression using `libdeflate` used for compression levels above 3 and `isa-l` compression used for levels 3 and below.
 
-The special filename `/dev/null` may be used with output options to signal that the corresponding reads should not be saved. Statistics are still collected for these reads, but compression/writing is not performed. Either `--basename` or at least one `--out-*` option must be specified, but one can perform a dry run by for example using `--basename /dev/null`.
+The special filename `/dev/null` may be used with output options to signal that the corresponding reads should not be saved. Statistics are still collected for these reads, but compression/writing is not performed. Either `--out-prefix` or at least one `--out-*` option must be specified, but one can perform a dry run by for example using `--prefix /dev/null`.
 
 Basic statistics are collected for all output data, and detailed per-nucleotide statistics are collected from a random selection of reads determined by the `--report-sample-rate` option.
 

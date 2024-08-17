@@ -1,8 +1,8 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
-    "--trim5p",
+    "--post-trim5p",
     "5",
     "7"
   ],

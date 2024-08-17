@@ -1,7 +1,7 @@
 {
   "description": "Processing PE reads using explicitly specified non-standard mate separator",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--mate-separator",
     "."

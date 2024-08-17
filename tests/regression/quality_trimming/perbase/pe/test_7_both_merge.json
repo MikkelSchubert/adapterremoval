@@ -2,10 +2,10 @@
   "arguments": [
     "--trim-strategy",
     "per-base",
-    "--trimns",
-    "--trimqualities",
+    "--trim-ns",
+    "--trim-qualities",
     "--merge",
-    "--basename",
+    "--out-prefix",
     "output_7"
   ],
   "files": {

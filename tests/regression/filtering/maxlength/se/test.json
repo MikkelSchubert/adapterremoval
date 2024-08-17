@@ -1,10 +1,10 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq.gz",
-    "--maxlength",
+    "--max-length",
     "13"
   ],
   "files": {

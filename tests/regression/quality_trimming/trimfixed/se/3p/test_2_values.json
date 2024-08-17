@@ -1,9 +1,9 @@
 {
   "inherit_from": "test_1_value.json",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
-    "--trim3p",
+    "--post-trim3p",
     "5",
     "20"
   ]

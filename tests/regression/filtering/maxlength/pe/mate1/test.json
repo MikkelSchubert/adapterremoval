@@ -1,11 +1,11 @@
 {
   "description": "Filtering reads by maximum length, generating orphan mate 2 read",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq.gz",
-    "--maxlength",
+    "--max-length",
     "49"
   ],
   "files": {

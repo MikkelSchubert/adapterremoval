@@ -3,13 +3,13 @@
   "arguments": [
     "--barcode-list",
     "barcodes.txt",
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output",
     "--prefix-read1",
     "R1_",
-    "--minlength",
+    "--min-length",
     "30"
   ],
   "files": {

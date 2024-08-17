@@ -1,6 +1,6 @@
 {
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--preserve5p"
   ],

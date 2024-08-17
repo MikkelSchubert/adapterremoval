@@ -3,7 +3,7 @@
   "arguments": [
     "--barcode-list",
     "barcodes.txt",
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output",
@@ -14,7 +14,7 @@
     "--prefix-merged",
     "M_",
     "--merge",
-    "--minlength",
+    "--min-length",
     "30"
   ],
   "files": {

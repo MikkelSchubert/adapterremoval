@@ -1,11 +1,11 @@
 {
   "description": "Filtering reads by maximum length excluding both mate reads",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq",
-    "--maxlength",
+    "--max-length",
     "49"
   ],
   "files": {

@@ -2,7 +2,7 @@
   "description": "Demultiplexing, trimming, and merging of PE reads",
   "exhaustive": true,
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output",

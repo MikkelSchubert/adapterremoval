@@ -83,7 +83,7 @@ public:
   //! Path to input file containing mate 2 reads (for PE reads)
   string_vec input_files_2{};
   //! Prefix used for output files for which no filename was explicitly set
-  std::string out_basename{};
+  std::string out_prefix{};
 
   //! Name prefix for mate 1 reads
   std::string prefix_read_1{};
@@ -92,7 +92,7 @@ public:
   //! Name prefix for merged reads
   std::string prefix_merged{};
 
-  //! Set to true if both --input1 and --input2 are set, or if either of
+  //! Set to true if both --in-file1 and --in-file2 are set, or if either of
   //! --interleaved or --interleaved-input are set.
   bool paired_ended_mode = false;
   //! Set to true if --interleaved or --interleaved-input is set.

@@ -4,7 +4,7 @@ AdapterRemoval manpage
 Synopsis
 --------
 
-**adapterremoval3** [*options*...] --file1 <*filenames*> [--file2 <*filenames*>]
+**adapterremoval3** [*options*...] --in-file1 <*filenames*> [--in-file2 <*filenames*>]
 
 
 Description
@@ -49,21 +49,21 @@ Options
 Input files
 ~~~~~~~~~~~
 
-.. option:: --file1 filename [filenames...]
+.. option:: --in-file1 filename [filenames...]
 
 	Read FASTQ reads from one or more files, either uncompressed or gzip compressed. The ``--interleaved`` and ``--interleaved-input``  options may be used to enable reading of interleaved reads from these files.
 
-.. option:: --file2 filename [filenames...]
+.. option:: --in-file2 filename [filenames...]
 
-	Read one or more FASTQ files containing mate 2 reads for a paired-end run. If specified, ``--file1`` must also be set.
+	Read one or more FASTQ files containing mate 2 reads for a paired-end run. If specified, ``--in-file1`` must also be set.
 
 
 Output file options
 ~~~~~~~~~~~~~~~~~~~
 
-Output files for adapterremoval may be specified either via the ``--basename`` option, which assigns default filenames, and/or via the individual ``--out-*`` to set or override the output filename for a given output read type. The same destination file may be used for multiple types of FASTQ reads, in which case the reads are written in input order.
+Output files for adapterremoval may be specified either via the ``--out-prefix`` option, which assigns default filenames, and/or via the individual ``--out-*`` to set or override the output filename for a given output read type. The same destination file may be used for multiple types of FASTQ reads, in which case the reads are written in input order.
 
-.. option:: --basename filename
+.. option:: --out-prefix path
 
 	Prefix for the output files for which no filename was set using the corresponding options below.
 
@@ -82,7 +82,7 @@ Output files for adapterremoval may be specified either via the ``--basename`` o
 
 .. option:: --out-discarded filename
 
-	Contains reads discarded due to the --minlength, --maxlength or --maxns options.
+	Contains reads discarded due to the --min-length, --max-length or --max-ns options.
 
 .. option:: --out-json filename
 .. option:: --out-html filename
@@ -102,7 +102,7 @@ FASTQ options
 
 .. option:: --interleaved-input
 
-	Enable reading of interleaved FASTQ reads from the files specified with ``--file1``. Defaults to off.
+	Enable reading of interleaved FASTQ reads from the files specified with ``--in-file1``. Defaults to off.
 
 .. option:: --interleaved-ouput
 
@@ -118,7 +118,7 @@ Output compression options
 
 .. option:: --gzip
 
-	If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using ``--gzip-level``. If ``--basename`` is used then the ".gz" extension added to files for which no filename was specified. Gzip compression may also be enabled by manually specifying a ".gz" extension for a output files. Defaults to off.
+	If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using ``--gzip-level``. If ``--out-prefix`` is used then the ".gz" extension added to files for which no filename was specified. Gzip compression may also be enabled by manually specifying a ".gz" extension for a output files. Defaults to off.
 
 .. option:: --gzip-level level
 
@@ -140,11 +140,11 @@ FASTQ processing options
 
 	Read one or more adapter sequences from a table. The first two columns (separated by whitespace) of each line in the file are expected to correspond to values passed to --adapter1 and --adapter2. In single-end mode, only column one is required. Lines starting with '#' are ignored. When multiple rows are found in the table, AdapterRemoval will try each adapter (pair), and select the best aligning adapters for each FASTQ read processed.
 
-.. option:: --minadapteroverlap length
+.. option:: --min-adapter-overlap length
 
 	In single-end mode, reads are only trimmed if the overlap between read and the adapter is at least X bases long, not counting ambiguous nucleotides (N). Defaults to 0.
 
-.. option:: --mm mismatchrate
+.. option:: --mismatch-rate rate
 
 	The allowed fraction of mismatches allowed in the aligned region. If the value is less than 1, then the value is used directly. If ```--mismatchrate`` is greater than 1, the rate is set to 1 / ``--mismatchrate``. The default setting is 3 when trimming adapters, corresponding to a maximum mismatch rate of 1/3, and 10 when using ``--identify-adapters``.
 
@@ -154,7 +154,7 @@ FASTQ processing options
 
 .. option:: --merge
 
-	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. The overlap needs to be at least ``--merge-threshold`` nucleotides, with a maximum number of mismatches determined by ``--mm``. This option has no effect in single-end mode.
+	In paired-end mode, merge overlapping mates into a single and recalculate the quality scores. The overlap needs to be at least ``--merge-threshold`` nucleotides, with a maximum number of mismatches determined by ``--mismatch-mate``. This option has no effect in single-end mode.
 
 .. option:: --merge-threshold length
 
@@ -204,7 +204,7 @@ Quality trimming options
 
 	Inclusive minimum quality used when trimming low-quality bases with --trimming-strategy 'window' and 'per-base'. Applies when window based or per-base trimming is enabled. Default is 2.
 
-.. option:: --trimqualities
+.. option:: --trim-qualities
 
 	Trim consecutive stretches of low quality bases (threshold set by ``--trim-min-quality``) from the 5' and 3' termini. If trimming of Ns is also enabled (``--trim-ns``), then stretches of mixed low-quality bases and Ns are trimmed. Applies when per-base trimming is enabled.
 
@@ -228,16 +228,16 @@ Quality trimming options
 Filtering options
 ~~~~~~~~~~~~~~~~~
 
-.. option:: --maxns n
+.. option:: --max-ns n
 
 	Discard reads containing more than ``--max`` ambiguous bases ('N') after trimming. Default is no maximum.
 
 
-.. option:: --minlength length
+.. option:: --min-length length
 
 	Reads shorter than this length are discarded following trimming. Defaults to 15.
 
-.. option:: --maxlength length
+.. option:: --max-length length
 
 	Reads longer than this length are discarded following trimming. Defaults to no maximum.
 

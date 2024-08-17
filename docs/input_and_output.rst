@@ -7,7 +7,7 @@ Input files
 FASTQ files
 ^^^^^^^^^^^
 
-AdapterRemoval v3 expected standard FASTQ files as input specified using the `--file1` and `--file2` options. DNA sequences and quality scores are expected to be written on a single line, and DNA sequences are expected to contain only standard bases A, C, G, T, and N (ambiguous bases). AdapterRemoval v3 supports reading of FASTQ files with Phred+33, Phred+64, and Solexa encoded `quality scores`_. Input may optionally be gzip compressed.
+AdapterRemoval v3 expected standard FASTQ files as input specified using the `--in-file1` and `--in-file2` options. DNA sequences and quality scores are expected to be written on a single line, and DNA sequences are expected to contain only standard bases A, C, G, T, and N (ambiguous bases). AdapterRemoval v3 supports reading of FASTQ files with Phred+33, Phred+64, and Solexa encoded `quality scores`_. Input may optionally be gzip compressed.
 
 When specifying paired reads, the FASTQ record names are expected to be identical excepting for the last two characters. The last two characters typically indicate the mate number, and consist of a matching separator character followed by either `1` or `2`. Examples include `/1` and `/2`, and `.1` and `.2`.
 

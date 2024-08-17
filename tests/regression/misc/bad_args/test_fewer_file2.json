@@ -1,10 +1,10 @@
 {
-  "description": "The same number of input files must be specified for both --file1 and --file2",
+  "description": "The same number of input files must be specified for both --in-file1 and --in-file2",
   "exhaustive": false,
   "arguments": [],
   "return_code": 1,
   "stderr": [
-    "[ERROR] Different number of files specified for --file1 and --file2."
+    "[ERROR] Different number of files specified for --in-file1 and --in-file2."
   ],
   "files": {
     "input_1": [

@@ -1,7 +1,7 @@
 {
   "description": "Trimming list of adapters containing single adapter pair",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--adapter-list",
     "adapters.txt"

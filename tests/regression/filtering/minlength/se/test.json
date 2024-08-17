@@ -1,11 +1,11 @@
 {
   "description": "Filtering by minimum length, all reads excluded",
   "arguments": [
-    "--basename",
+    "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq",
-    "--minlength",
+    "--min-length",
     "999"
   ],
   "files": {
