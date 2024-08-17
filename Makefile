@@ -203,7 +203,7 @@ TEST_OBJS := \
 
 ################################################################################
 
-.PHONY: all clean coverage docs everything examples install man regression static static-container test
+.PHONY: all clean coverage docs everything examples install man regression static static-container test update-regression
 
 all: $(EXECUTABLE)
 
@@ -250,6 +250,14 @@ regression: $(EXECUTABLE)
 	$(QUIET) python3 scripts/regression_test_runner.py $(REGRESSION_DIR) $(REGRESSION_TESTS) \
 		--json-schema "schema.json" \
 		--executable $(EXECUTABLE)
+
+update-regression:
+	@echo $(COLOR_GREEN)"Updating regression tests"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(REGRESSION_DIR)
+	$(QUIET) python3 scripts/regression_test_runner.py $(REGRESSION_DIR)/updated $(REGRESSION_TESTS) \
+		--json-schema "schema.json" \
+		--executable $(EXECUTABLE) \
+		--create-updated-reference
 
 test: $(TEST_RUNNER)
 	@echo $(COLOR_GREEN)"Running unit tests"$(COLOR_END)

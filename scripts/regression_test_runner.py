@@ -1029,27 +1029,23 @@ class TestUpdater:
                     if error.errno != errno.ENOENT:
                         raise
             elif it.kind == "json":
-                metadata: list[tuple[bytes, bytes]] = [
-                    (b'    "version":', b' "...str",\n'),
-                    (b'    "command":', b' "...[str]",\n'),
-                    (b'    "runtime":', b' "...float",\n'),
-                    (b'    "timestamp":', b' "...str"\n'),
-                ]
+                assert isinstance(it, TestJsonFile)
+                proc = subprocess.Popen(
+                    [
+                        sys.executable,
+                        Path(__file__).parent / "update_regression_test.py",
+                        "/dev/stdin",
+                        filename,
+                        "--save",
+                    ],
+                    stdin=subprocess.PIPE,
+                    close_fds=True,
+                    preexec_fn=os.setsid,
+                )
 
-                lines: list[bytes] = []
-                with filename.open("rb") as handle:
-                    for line in handle:
-                        for key, value in list(metadata):
-                            if line.startswith(key):
-                                metadata.remove((key, value))
-                                line = key + value
-                                break
-
-                        lines.append(line)
-
-                with filename.open("wb") as handle:
-                    handle.writelines(lines)
-
+                proc.communicate(it.text.encode())
+                if proc.returncode != 0:
+                    raise TestError(f"error dating test {self.path}")
             else:
                 # Some files may intentionally be written compressed
                 data = read_file(filename, "rb")
