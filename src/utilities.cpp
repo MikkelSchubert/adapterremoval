@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include <chrono> // for duration, high_resolution_clock, system_clock::tim...
+#include <mutex>  // for mutex
 #include <random> // for mt19937
 
 #include "utilities.hpp"
@@ -26,8 +27,11 @@ namespace adapterremoval {
 uint32_t
 prng_seed()
 {
-  static std::mt19937 rng(
-    std::chrono::high_resolution_clock::now().time_since_epoch().count());
+  static std::mutex lock;
+  std::unique_lock<std::mutex> guard(lock);
+
+  using clock = std::chrono::high_resolution_clock;
+  static std::mt19937 rng(clock::now().time_since_epoch().count());
 
   return rng();
 }
