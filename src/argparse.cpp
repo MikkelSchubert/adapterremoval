@@ -217,7 +217,19 @@ parser::print_help() const
 
   auto cerr = log::cerr();
   if (!m_preamble.empty()) {
-    cerr << "\n" << m_preamble;
+    cli_formatter fmt;
+    fmt.set_indent(0);
+    fmt.set_indent_first_line(false);
+    fmt.set_column_width(m_terminal_width);
+
+    cerr << "\n";
+    for (auto line : split_lines(m_preamble)) {
+      if (starts_with(line, " ")) {
+        cerr << line << "\n";
+      } else {
+        cerr << fmt.format(line) << "\n";
+      }
+    }
   }
 
   string_vec signatures;

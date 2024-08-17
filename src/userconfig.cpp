@@ -45,24 +45,23 @@ namespace adapterremoval {
 namespace {
 
 const char* HELPTEXT =
-  "This program searches for and removes remnant adapter sequences, poly-X\n"
-  "tails and low-quality base from FASTQ reads. For detailed explanation of\n"
-  "the parameters, please refer to the man page. For comments, suggestions\n"
+  "This program searches for and removes remnant adapter sequences, poly-X "
+  "tails and low-quality base from FASTQ reads. For detailed explanation of "
+  "the parameters, please refer to the man page. For comments, suggestions "
   "and feedback please use\n"
+  "\n"
   "  https://github.com/MikkelSchubert/adapterremoval/issues/new\n"
   "\n"
-  "If you use the program, please cite the paper:\n"
+  "If you use the program, please cite the paper\n"
+  "\n"
   "  Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
-  "  adapter trimming, identification, and read merging.\n"
-  "  BMC Research Notes, 12;9(1):88.\n"
+  "  adapter trimming, identification, and read merging. BMC Research\n"
+  "  Notes, 12;9(1):88. https://doi.org/10.1186/s13104-016-1900-2\n"
   "\n"
-  "    "
-  "http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2\n"
-  "\n"
-  "Use the filename '-' to read from STDIN or to write to STDOUT. If the same\n"
-  "filenames are used for --in-file1 and --in-file2 then those files are read\n"
-  "in interleaved mode. If the same filename is used for two or more of the\n"
-  "--out options (excluding --out-json and --out-html), then output is\n"
+  "Use the filename '-' to read from STDIN or to write to STDOUT. If the same "
+  "filenames are used for --in-file1 and --in-file2 then those files are read "
+  "in interleaved mode. If the same filename is used for two or more of the "
+  "--out options (excluding --out-json and --out-html), then output is "
   "written to that file in interleaved mode.\n";
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -555,8 +554,10 @@ userconfig::userconfig()
     .conflicts_with("--out-format")
     .conflicts_with("--stdout-format");
   argparser.add("--out-format", "X")
-    .help("Selects the output format; either 'fastq' for uncompressed FASTQ "
-          "reads or 'fastq.gz' for gzip compressed FASTQ reads")
+    .help("Selects the default output format; either 'fastq' for uncompressed "
+          "FASTQ reads or 'fastq.gz' for gzip compressed FASTQ reads. The "
+          "default can be overridden on a per-file basis by specifying one of "
+          "these file extension (except ubam)")
     .bind_str(nullptr)
     .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" })
     .with_default("fastq.gz");

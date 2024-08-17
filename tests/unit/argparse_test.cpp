@@ -888,7 +888,7 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 
 const char* HELP_HEADER =
   "My App v1234\n\n"
-  "basic help\n"
+  "basic help\n\n"
   "OPTIONS:\n"
   "   -h, --help      Display this message.\n"
   "   -v, --version   Print the version string.\n"
@@ -1081,7 +1081,7 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
   p.print_help();
 
   REQUIRE(ss.str() == "My App v1234\n\n"
-                      "basic help\n"
+                      "basic help\n\n"
                       "OPTIONS:\n"
                       "   -h, --help      Display this message.\n"
                       "   -v, --version   Print the version string.\n"
@@ -1107,7 +1107,7 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 
   REQUIRE(ss.str() ==
           "My App v1234\n\n"
-          "basic help\n"
+          "basic help\n\n"
           "OPTIONS:\n"
           "   -h, --help      Display this message.\n"
           "   -v, --version   Print the version string.\n"
@@ -1137,7 +1137,7 @@ TEST_CASE("help with default value", "[argparse::parser]")
 
   REQUIRE(ss.str() ==
           "My App v1234\n\n"
-          "basic help\n"
+          "basic help\n\n"
           "OPTIONS:\n"
           "   -h, --help      Display this message.\n"
           "   -v, --version   Print the version string.\n"
