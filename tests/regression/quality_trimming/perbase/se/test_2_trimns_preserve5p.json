@@ -1,6 +1,6 @@
 {
   "arguments": [
-    "--trim-strategy",
+    "--quality-trimming",
     "per-base",
     "--trim-ns",
     "--preserve5p",

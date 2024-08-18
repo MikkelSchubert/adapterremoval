@@ -3,7 +3,7 @@
   "arguments": [
     "--out-prefix",
     "your_output",
-    "--trim-strategy",
+    "--quality-trimming",
     "window",
     "--trim-windows",
     "-1"

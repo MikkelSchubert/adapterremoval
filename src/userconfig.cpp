@@ -708,8 +708,7 @@ userconfig::userconfig()
     .with_max_values(2);
 
   argparser.add_separator();
-  // FIXME: Rename to --quality-trimming
-  argparser.add("--trim-strategy", "X")
+  argparser.add("--quality-trimming", "method")
     .help("Strategy for trimming low quality bases: 'mott' for the modified "
           "Mott's algorithm; 'window' for window based trimming; 'per-base' "
           "for a per-base trimming of low quality base; and 'none' for no "
@@ -730,11 +729,11 @@ userconfig::userconfig()
     .bind_double(&trim_mott_rate)
     .with_default(0.05);
   argparser.add("--trim-windows", "X")
-    .help("Specifies the size of the window used for --trim-strategy 'window': "
-          "If >= 1, this value will be used as the window size; if the value "
-          "is < 1, window size is the read length times this value. If the "
-          "resulting window size is 0 or larger than the read length, the read "
-          "length is used as the window size")
+    .help("Specifies the size of the window used for '--quality-trimming "
+          "window': If >= 1, this value will be used as the window size; if "
+          "the value is < 1, window size is the read length times this value. "
+          "If the resulting window size is 0 or larger than the read length, "
+          "the read length is used as the window size")
     .deprecated_alias("--trimwindows")
     .conflicts_with("--trim-mott-rate")
     .conflicts_with("--trim-qualities")
@@ -742,7 +741,7 @@ userconfig::userconfig()
     .with_default(0.1);
   argparser.add("--trim-min-quality", "N")
     .help("Inclusive minimum quality used when trimming low-quality bases with "
-          "--trim-strategy 'window' and 'per-base'")
+          "--quality-trimming options 'window' and 'per-base'")
     .deprecated_alias("--minquality")
     .conflicts_with("--trim-mott-rate")
     .bind_uint(&trim_quality_score)
@@ -961,7 +960,7 @@ userconfig::parse_args(const string_vec& argvec)
                  << "not " << trim_window_length;
     return argparse::parse_result::error;
   } else {
-    const auto strategy = argparser.value("--trim-strategy");
+    const auto strategy = argparser.value("--quality-trimming");
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
 

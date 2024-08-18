@@ -1,7 +1,7 @@
 {
   "exhaustive": false,
   "arguments": [
-    "--trim-strategy",
+    "--quality-trimming",
     "per-base"
   ],
   "return_code": 1,

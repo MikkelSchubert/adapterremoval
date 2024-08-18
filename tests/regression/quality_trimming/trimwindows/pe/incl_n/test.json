@@ -4,7 +4,7 @@
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq",
-    "--trim-strategy",
+    "--quality-trimming",
     "window",
     "--trim-windows",
     "4",

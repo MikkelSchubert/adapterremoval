@@ -188,9 +188,9 @@ Quality trimming options
 
 	Trim the 3' of reads by a fixed amount after removing adapters, but before carrying out quality based trimming. See ``--pre-trim3p``.
 
-.. option:: --trim-strategy name
+.. option:: --quality-trimming method
 
-	The strategy used for performing quality trimming; 'mott' to enable trimming using the modified Mott's algorithm, 'window' to perform window based quality trimming, and 'per-base' to perform base-by-base trimming of low-quality bases and Ns (if enabled). Defaults to Mott's algorithm.
+	The method used for performing quality trimming; 'none' to disable quality trimming, 'mott' to enable trimming using the modified Mott's algorithm, 'window' to perform window based quality trimming, and 'per-base' to perform base-by-base trimming of low-quality bases and Ns (if enabled). Defaults to Mott's algorithm.
 
 .. option:: --trim-mott-rate rate
 

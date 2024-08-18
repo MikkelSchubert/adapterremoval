@@ -1,6 +1,6 @@
 {
   "arguments": [
-    "--trim-strategy",
+    "--quality-trimming",
     "per-base",
     "--trim-qualities",
     "--out-prefix",

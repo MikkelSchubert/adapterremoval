@@ -51,7 +51,7 @@ Feedback is very welcome in the mean time.
 - [**BREAKING**] The trimming options `--trimwindows`, `--trimns`,
   `--trimqualities`, and `--minquality` have been deprecated in favor of a new
   the modified Mott's algorithm, which is enabled by default. The trimming
-  algorithm used may be changed using new `--trim-strategy` option.
+  algorithm used may be changed using new `--quality-trimming` option.
 - [**BREAKING**] Merging now defaults to using the conservative algorithm,
   meaning that matching quality scores are assigned `Q_match = max(Q_a, Q_b)`
   instead of `Q_match ~= Q_a + Q_b`, and that same-quality mismatches are
