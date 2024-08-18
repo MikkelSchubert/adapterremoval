@@ -1,0 +1,20 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--convert-uracils",
+    "--mask-degenerate-bases"
+  ],
+  "files": {
+    "input_1": [
+      "input_both_1.fastq"
+    ],
+    "output": [
+      "your_output.r1.fastq.gz"
+    ],
+    "ignore": [
+      "your_output.json",
+      "your_output.html"
+    ]
+  }
+}

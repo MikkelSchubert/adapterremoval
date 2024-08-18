@@ -1,0 +1,16 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--convert-uracils"
+  ],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] found degenerate base 'Y' in FASTQ sequence, but only bases A, C, G, T and N are supported."
+  ],
+  "files": {
+    "input_1": [
+      "input_both_1.fastq"
+    ]
+  }
+}

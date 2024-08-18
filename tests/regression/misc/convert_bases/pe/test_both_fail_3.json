@@ -1,0 +1,19 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--mask-degenerate-bases"
+  ],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] found uracil (U) in FASTQ sequence, but only bases A, C, G, T and N are supported"
+  ],
+  "files": {
+    "input_1": [
+      "input_both_1.fastq"
+    ],
+    "input_2": [
+      "input_both_2.fastq"
+    ]
+  }
+}

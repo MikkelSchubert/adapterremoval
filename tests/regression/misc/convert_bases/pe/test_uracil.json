@@ -1,0 +1,24 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--convert-uracils"
+  ],
+  "files": {
+    "input_1": [
+      "input_uracil_1.fastq"
+    ],
+    "input_2": [
+      "input_uracil_2.fastq"
+    ],
+    "output": [
+      "your_output.r1.fastq.gz",
+      "your_output.r2.fastq.gz",
+      "your_output.singleton.fastq.gz"
+    ],
+    "ignore": [
+      "your_output.json",
+      "your_output.html"
+    ]
+  }
+}
