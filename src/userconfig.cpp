@@ -19,26 +19,27 @@
 \*************************************************************************/
 #include "userconfig.hpp"
 #include "alignment.hpp" // for alignment_info
-#include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
-#include "errors.hpp"    // for fastq_error
-#include "fastq.hpp"     // for ACGT, ACGT::indices, ACGT::values
-#include "licenses.hpp"  // for LICENSES
-#include "logging.hpp"   // for log_stream, error, set_level, set_colors, info
-#include "main.hpp"      // for HELPTEXT, NAME, VERSION
-#include "output.hpp"    // for DEV_NULL, output_files, output_file
-#include "progress.hpp"  // for progress_type, progress_type::simple, progr...
-#include "simd.hpp"      // for size_t, name, supported, instruction_set
-#include "strutils.hpp"  // for string_vec, shell_escape, str_to_unsigned
-#include <algorithm>     // for find, max, min
-#include <cerrno>        // for errno
-#include <cmath>         // for pow
-#include <cstdlib>       // for getenv
-#include <cstring>       // for size_t, strerror, strcmp
-#include <limits>        // for numeric_limits
-#include <stdexcept>     // for invalid_argument
-#include <string>        // for string, basic_string, operator==, operator+
-#include <tuple>         // for get, tuple
-#include <unistd.h>      // for access, isatty, R_OK, STDERR_FILENO
+#include "commontypes.hpp"
+#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"   // for fastq_error
+#include "fastq.hpp"    // for ACGT, ACGT::indices, ACGT::values
+#include "licenses.hpp" // for LICENSES
+#include "logging.hpp"  // for log_stream, error, set_level, set_colors, info
+#include "main.hpp"     // for HELPTEXT, NAME, VERSION
+#include "output.hpp"   // for DEV_NULL, output_files, output_file
+#include "progress.hpp" // for progress_type, progress_type::simple, progr...
+#include "simd.hpp"     // for size_t, name, supported, instruction_set
+#include "strutils.hpp" // for string_vec, shell_escape, str_to_unsigned
+#include <algorithm>    // for find, max, min
+#include <cerrno>       // for errno
+#include <cmath>        // for pow
+#include <cstdlib>      // for getenv
+#include <cstring>      // for size_t, strerror, strcmp
+#include <limits>       // for numeric_limits
+#include <stdexcept>    // for invalid_argument
+#include <string>       // for string, basic_string, operator==, operator+
+#include <tuple>        // for get, tuple
+#include <unistd.h>     // for access, isatty, R_OK, STDERR_FILENO
 
 namespace adapterremoval {
 
@@ -368,6 +369,51 @@ configure_encoding(const std::string& value,
   AR_FAIL("unhandled qualitybase value");
 }
 
+bool
+parse_output_formats(const argparse::parser& argparser,
+                     output_format& file_format,
+                     output_format& stdout_format)
+{
+  if (argparser.is_set("--gzip")) {
+    file_format = stdout_format = output_format::fastq_gzip;
+    return true;
+  }
+
+  auto format_s = argparser.value("--out-format");
+  if (!output_files::parse_format(format_s, file_format)) {
+    log::error() << "Invalid output format " + log_escape(format_s);
+    return false;
+  }
+
+  // Default to writing uncompressed output to STDOUT
+  if (!argparser.is_set("--stdout-format")) {
+    switch (file_format) {
+      case output_format::fastq:
+      case output_format::fastq_gzip:
+        stdout_format = output_format::fastq;
+        return true;
+      case output_format::sam:
+      case output_format::sam_gzip:
+        stdout_format = output_format::sam;
+        return true;
+      case output_format::bam:
+      case output_format::ubam:
+        stdout_format = output_format::ubam;
+        return true;
+      default:
+        AR_FAIL("invalid output format");
+    }
+  }
+
+  format_s = argparser.value("--stdout-format");
+  if (!output_files::parse_format(format_s, stdout_format)) {
+    log::error() << "Invalid output format " + log_escape(format_s);
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -565,18 +611,20 @@ userconfig::userconfig()
     .conflicts_with("--stdout-format");
   argparser.add("--out-format", "X")
     .help("Selects the default output format; either 'fastq' for uncompressed "
-          "FASTQ reads or 'fastq.gz' for gzip compressed FASTQ reads. The "
-          "default can be overridden on a per-file basis by specifying one of "
-          "these file extension (except ubam)")
+          "FASTQ reads, 'fastq.gz' for gzip compressed FASTQ reads, 'sam' for "
+          "uncompressed SAM records, 'sam.gz' for gzip compressed SAM records, "
+          "'bam' for BGZF compressed BAM records, and 'ubam' for uncompressed "
+          "BAM records. Setting an `--out-*` option overrides this option "
+          "based on the filename used (except .ubam)")
     .bind_str(nullptr)
     .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" })
     .with_default("fastq.gz");
   argparser.add("--stdout-format", "X")
     .help("Selects the output format for data written to STDOUT; choices are "
-          "the same as --out-format")
+          "the same as for --out-format [default: the same format as "
+          "--out-format, but uncompressed]")
     .bind_str(nullptr)
-    .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" })
-    .with_default("fastq");
+    .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" });
   argparser.add("--read-group", "RG")
     .help("Add read-group (RG) information to SAM/BAM output. The value is "
           "expected to be a valid set of read-group tags separated by tabs, "
@@ -1126,18 +1174,7 @@ userconfig::parse_args(const string_vec& argvec)
     }
   }
 
-  if (argparser.is_set("--gzip")) {
-    out_file_format = output_format::fastq_gzip;
-    out_stdout_format = output_format::fastq_gzip;
-  } else if (!output_files::parse_format(argparser.value("--out-format"),
-                                         out_file_format)) {
-    log::error() << "Invalid output format "
-                 << log_escape(argparser.value("--out-format"));
-    return argparse::parse_result::error;
-  } else if (!output_files::parse_format(argparser.value("--stdout-format"),
-                                         out_stdout_format)) {
-    log::error() << "Invalid output format "
-                 << log_escape(argparser.value("--stdout-format"));
+  if (!parse_output_formats(argparser, out_file_format, out_stdout_format)) {
     return argparse::parse_result::error;
   }
 
