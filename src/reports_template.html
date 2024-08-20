@@ -451,9 +451,9 @@
                     ],
                     "transform": [
                         { "flatten": ["y"] },
-                        { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
+                        { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["group"] },
                         { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
-                        { "joinaggregate": [{ "op": "sum", "field": "y", "as": "sum_y" }] },
+                        { "joinaggregate": [{ "op": "sum", "field": "y", "as": "sum_y" }], "groupby": ["group"] },
                         { "calculate": "datum.y / max(1, datum.sum_y)", "as": "y" },
                     ],
                     "data": {

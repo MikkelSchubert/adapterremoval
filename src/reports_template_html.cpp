@@ -1334,9 +1334,9 @@ html_frequency_plot::write(std::ostream& out)
   out << "                    ],\n";
   out << "                    \"transform\": [\n";
   out << "                        { \"flatten\": [\"y\"] },\n";
-  out << "                        { \"window\": [{ \"op\": \"row_number\", \"as\": \"x\" }], \"groupby\": [\"read\", \"group\"] },\n";
+  out << "                        { \"window\": [{ \"op\": \"row_number\", \"as\": \"x\" }], \"groupby\": [\"group\"] },\n";
   out << "                        { \"calculate\": \"datum.x - 1 + (datum.offset)\", \"as\": \"x\" },\n";
-  out << "                        { \"joinaggregate\": [{ \"op\": \"sum\", \"field\": \"y\", \"as\": \"sum_y\" }] },\n";
+  out << "                        { \"joinaggregate\": [{ \"op\": \"sum\", \"field\": \"y\", \"as\": \"sum_y\" }], \"groupby\": [\"group\"] },\n";
   out << "                        { \"calculate\": \"datum.y / max(1, datum.sum_y)\", \"as\": \"y\" },\n";
   out << "                    ],\n";
   out << "                    \"data\": {\n";
