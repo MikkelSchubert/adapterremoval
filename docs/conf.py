@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 # General information about the project.
-project = "AdapterRemoval"
+project = "AdapterRemoval3"
 copyright = "2017, Mikkel Schubert; Stinus Lindgreen"
 author = "Mikkel Schubert; Stinus Lindgreen"
 
