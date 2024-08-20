@@ -50,6 +50,7 @@ jobs:
       - name: make regression
         run: |
           export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
+          python3 -m pip install jsonschema
           make -j ${NPROCS} regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=no
 
       - name: sphinx
@@ -63,7 +64,7 @@ jobs:
         if: ${{ matrix.coverage == 'yes' }}
         run: |
           python3 -m pip install cpp-coveralls
-          coveralls --exclude tests --build-root "${PWD}" --gcov-options '\-lpbc' 
+          coveralls --exclude tests --build-root "${PWD}" --gcov-options '\-lpbc'
 
       - name: examples
         run: make -C examples EXE=${PWD}/install/bin/adapterremoval3
