@@ -345,6 +345,7 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   filtered_min_length += other.filtered_min_length;
   filtered_max_length += other.filtered_max_length;
   filtered_ambiguous += other.filtered_ambiguous;
+  filtered_mean_quality += other.filtered_mean_quality;
   filtered_low_complexity += other.filtered_low_complexity;
 
   return *this;

@@ -664,6 +664,12 @@ write_html_processing_section(const userconfig& config,
                        totals.filtered_ambiguous });
   trimming.push_back({ step_id++,
                        "Filtering",
+                       "Mean quality",
+                       "-",
+                       config.is_mean_quality_filtering_enabled(),
+                       totals.filtered_mean_quality });
+  trimming.push_back({ step_id++,
+                       "Filtering",
                        "Low complexity reads",
                        "-",
                        config.is_low_complexity_filtering_enabled(),

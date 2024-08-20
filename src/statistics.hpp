@@ -283,6 +283,8 @@ public:
   reads_and_bases filtered_max_length{};
   //! Number of reads filtered due to too many Ns
   reads_and_bases filtered_ambiguous{};
+  //! Number of reads filtered due to low mean quality
+  reads_and_bases filtered_mean_quality{};
   //! Number of reads filtered due to low complexity
   reads_and_bases filtered_low_complexity{};
 

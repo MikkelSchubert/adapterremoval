@@ -268,6 +268,13 @@ is_acceptable_read(const userconfig& config,
     return false;
   }
 
+  if (length > 0 && config.min_mean_quality > 0.0 &&
+      seq.mean_quality() < config.min_mean_quality) {
+    stats.filtered_mean_quality.inc_reads(n_reads);
+    stats.filtered_mean_quality.inc_bases(length);
+    return false;
+  }
+
   if (config.min_complexity > 0.0 && seq.complexity() < config.min_complexity) {
     stats.filtered_low_complexity.inc_reads(n_reads);
     stats.filtered_low_complexity.inc_bases(length);

@@ -859,22 +859,29 @@ userconfig::userconfig()
     .with_default(std::numeric_limits<unsigned>::max());
 
   argparser.add("--min-length", "N")
-    .help("Reads shorter than this length are discarded following trimming")
+    .help("Reads shorter than this length following trimming are discarded")
     .deprecated_alias("--minlength")
     .bind_uint(&min_genomic_length)
     .with_default(15);
   argparser.add("--max-length", "N")
-    .help("Reads longer than this length are discarded following trimming "
+    .help("Reads longer than this length following trimming are discarded "
           "[default: no maximum]")
     .deprecated_alias("--maxlength")
     .bind_uint(&max_genomic_length)
     .with_default(std::numeric_limits<unsigned>::max());
 
+  argparser.add("--min-mean-quality", "N")
+    .help("Reads with a mean Phred encoded quality score (typically 0 to 42) "
+          "less than this value following trimming are discarded [default: no "
+          "minimum]")
+    .bind_double(&min_mean_quality)
+    .with_default(0.0);
+
   argparser.add("--min-complexity", "X")
     .help(
       "Filter reads with a complexity score less than this value. Complexity "
       "is measured as the fraction of positions that differ from the previous "
-      "position. A suggested value is 0.3")
+      "position. A suggested value is 0.3 [default: no minimum]")
     .bind_double(&min_complexity)
     .with_default(0);
 
@@ -942,14 +949,14 @@ userconfig::userconfig()
   argparser.add_header("LOGGING:");
 
   argparser.add("--log-level", "X")
-    .help("The minimum severity of messages to be written to stderr")
+    .help("The minimum severity of messages to be written to STDERR")
     .bind_str(&log_level)
     .with_choices({ "debug", "info", "warning", "error" })
     .with_default("info");
 
   argparser.add("--log-colors", "X")
     .help("Enable/disable the use of colors when writing log messages. If set "
-          "to auto, colors will only be enabled if STDOUT is a terminal and "
+          "to auto, colors will only be enabled if STDERR is a terminal and "
           "the NO_COLORS is environmental variable is not set")
     .bind_str(&log_color)
     .with_choices({ "auto", "always", "never" })
@@ -1502,6 +1509,7 @@ userconfig::is_any_filtering_enabled() const
          (is_short_read_filtering_enabled() ||
           is_long_read_filtering_enabled() ||
           is_ambiguous_base_filtering_enabled() ||
+          is_mean_quality_filtering_enabled() ||
           is_low_complexity_filtering_enabled());
 }
 
@@ -1521,6 +1529,12 @@ bool
 userconfig::is_ambiguous_base_filtering_enabled() const
 {
   return max_ambiguous_bases != std::numeric_limits<unsigned>::max();
+}
+
+bool
+userconfig::is_mean_quality_filtering_enabled() const
+{
+  return min_mean_quality > 0;
 }
 
 bool

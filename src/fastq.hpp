@@ -94,6 +94,9 @@ public:
   /** Returns a measure of sequence complexity in the range [0; 1]. **/
   double complexity() const;
 
+  /** Returns the mean Phred score of bases in a (non-empty) sequence */
+  [[nodiscard]] double mean_quality() const;
+
   /** The number of bases trimmed from the 5p and 3p end respectively. **/
   using ntrimmed = std::pair<size_t, size_t>;
 

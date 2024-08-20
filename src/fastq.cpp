@@ -299,6 +299,18 @@ fastq::complexity() const
   return std::max(0.0, score / static_cast<double>(m_sequence.length() - 1));
 }
 
+double
+fastq::mean_quality() const
+{
+  int64_t total = 0;
+  AR_REQUIRE(!m_qualities.empty());
+  for (const auto c : m_qualities) {
+    total += c - PHRED_OFFSET_MIN;
+  }
+
+  return static_cast<double>(total) / static_cast<double>(m_qualities.length());
+}
+
 fastq::ntrimmed
 fastq::trim_trailing_bases(const bool trim_ns,
                            char low_quality,

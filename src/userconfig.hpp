@@ -151,6 +151,8 @@ public:
   //! The maximum number of ambiguous bases (N) in an read; reads exceeding
   //! this number following trimming (optionally) are discarded.
   unsigned max_ambiguous_bases{};
+  //! The minimum average phred score of non-empty reads
+  double min_mean_quality = 0.0;
   //! The minimum complexity score for FASTQ reads (see FASTQ::complexity()).
   double min_complexity{};
 
@@ -218,6 +220,7 @@ public:
   bool is_short_read_filtering_enabled() const;
   bool is_long_read_filtering_enabled() const;
   bool is_ambiguous_base_filtering_enabled() const;
+  bool is_mean_quality_filtering_enabled() const;
   bool is_low_complexity_filtering_enabled() const;
 
   userconfig(const userconfig&) = delete;
