@@ -1,5 +1,50 @@
 # Changelog
 
+## [3.0.0-alpha2] - 2024-08-20
+
+This is the second alpha release of AdapterRemoval v3. It is the intention that a third alpha release, or the final 3.0 release, will follow within the next couple of months.
+
+In addition to changes listed below, this release includes increased throughput thanks to improved parallelization of various steps in internal pipeline, support for AVX512 and general improvements to the SIMD alignment algorithms, loop unrolling of non-SIMD alignments to significantly increase throughput when SIMD is not available, and a significant decrease in the number of allocations to decrease overhead.
+
+This release requires a compiler with support for c++17 and libdeflate is now a mandatory dependency.
+
+### Added
+
+- Added support for converting (U)racils in input data to T(hymine) via the `--convert-uracils` flag.
+- Added support for replacing IUPAC-encoded degenerate bases with Ns via the `--mask-degenerate-bases` flag.
+- Added support for writing output in SAM/BAM formats, with optional user-supplied read-group information.
+- Added support for alignments using AVX512 instructions. AVX512 support only available when AdapterRemoval is compiled with GCC v11+ or Clang v8+.
+- Added support selecting output file formats via the file extension and via the `--out-format` option. A corresponding option, `--stdout-format` was added to select the format for data written to STDOUT.
+- Added support for reading from STDIN or writing to STDOUT when '-' is used as the filename, as an alternative to using `/dev/stdin` or `/dev/stdout`.
+- Added dedicated threads solely for writing output data. This allows compute threads to work at full capacity, as long as the destination can consume written data fast enough. This may result in CPU utilization exceeding `--threads` by a couple of percent.
+- Added support for setting DESTDIR when running `make install`.
+- Added `--licenses` flag for displaying licenses of 3rd party code used by/incorporated into AdapterRemoval.
+- Added `--simd` option allowing the user to select the specific SIMD instruction set they wish to use.
+- Added `Containerfile` for building static binaries using alpine/musl.
+
+### Changed
+
+- [**BREAKING**] Changed the default `--mm`/`--mismatch-rate` from 1/3 to 1/6, in order to decrease the false positive rate, in particular for read merging.
+- [**BREAKING**] Default to writing gzip-compressed FASTQ files; output written to STDOUT is uncompressed by default.
+- [**BREAKING**] Discarded reads are no longer saved by default.
+- [**BREAKING**] Output files for discarded reads and singleton (orphan) paired-end reads are only created if filtering is enabled.
+- [**BREAKING**] The `--basename` / `--out-prefix` no longer defaults to `your_output`. Instead the user is required to set at least one `--out-*` option.
+- [**BREAKING**] Merged `--identify-adapters` and `--report-only` commands. The adapter sequence is presently only reported in the HTML report, but will be added to the JSON report following some planned changes.
+- [**BREAKING**] Reverted `--min-complexity` being enabled by default.
+- Increased the default ``--threads`` value to 2.
+- A number of command-line options were renamed for consistency; use of the old names is still supported, but will trigger a warning message.
+- Re-organized compression: level 1 is streamed using isa-l, while levels 2-13 correspond to libdeflate levels 1 to 12.
+- Changed the default compression level to 5 on the new scale (libdeflate level 4); this results in a ~40% increase in throughput at the cost of roughly ~3% larger output files.
+- Setting an `--out-*` option in demultiplexing mode overrides the basename/prefix for that specific output type.
+- Add smoothing to GC values calculated for the GC content curve, to account for the fact that possible GC% values are unevenly distributed depending on the read length.
+
+### Removed
+
+The following changes are all [**BREAKING**] as described above:
+
+- Removed support for original merging algorithm has been removed. The `--merge-strategy additive` method produces very similar, but slightly more conservative scores.
+- Removed the ability to randomly sample a base if no best base could be selected in case of mismatches. Such bases are now changed to `N`, while both methods assign a Phred score of 0 (`!`).
+
 ## [3.0.0-alpha1] - 2022-11-07
 
 This is the first alpha release of AdapterRemoval v3. This is a major revision
@@ -51,7 +96,7 @@ Feedback is very welcome in the mean time.
 - [**BREAKING**] The trimming options `--trimwindows`, `--trimns`,
   `--trimqualities`, and `--minquality` have been deprecated in favor of a new
   the modified Mott's algorithm, which is enabled by default. The trimming
-  algorithm used may be changed using new `--quality-trimming` option.
+  algorithm used may be changed using the new `--trim-strategy` option.
 - [**BREAKING**] Merging now defaults to using the conservative algorithm,
   meaning that matching quality scores are assigned `Q_match = max(Q_a, Q_b)`
   instead of `Q_match ~= Q_a + Q_b`, and that same-quality mismatches are
