@@ -426,6 +426,16 @@
                 "$ref": "#/definitions/non-empty-string"
             }
         },
+        "optional-array-of-non-empty-strings": {
+            "oneOf": [
+                {
+                    "type": "null"
+                },
+                {
+                    "$ref": "#/definitions/array-of-non-empty-strings"
+                }
+            ]
+        },
         "non-empty-array-of-non-empty-strings": {
             "$ref": "#/definitions/array-of-non-empty-strings",
             "minItems": 1
@@ -665,7 +675,7 @@
             "properties": {
                 "filenames": {
                     "description": "List of input files read from/output files written to",
-                    "$ref": "#/definitions/array-of-non-empty-strings"
+                    "$ref": "#/definitions/optional-array-of-non-empty-strings"
                 },
                 "input_reads": {
                     "description": "The number reads that went into producing the output, merged reads are counted as two reads",
