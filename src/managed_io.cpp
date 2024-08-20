@@ -25,6 +25,7 @@
 #include <cerrno>         // for EMFILE, errno
 #include <cstddef>        // for size_t
 #include <cstdio>         // for fopen, fread, fwrite, ...
+#include <exception>      // for std::exception
 #include <fcntl.h>        // for posix_fadvise
 #include <mutex>          // for mutex, lock_guard
 #include <string>         // for string
@@ -344,7 +345,11 @@ managed_writer::managed_writer(std::string filename)
 
 managed_writer::~managed_writer()
 {
-  AR_REQUIRE(!m_file);
+  try {
+    close();
+  } catch (const std::exception&) {
+    AR_FAIL("unhandled exception");
+  }
 }
 
 void
