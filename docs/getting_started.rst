@@ -43,7 +43,7 @@ Adapter sequences are specified in the read orientation when using the ``--adapt
 
 For paired-end data, the ``--identify-adapters`` mode may be used to verify the choice of adapters, by attempting to reconstruct the adapter sequence directly from the FASTQ reads. See the :doc:`examples` section for a demonstration of this functionality.
 
-An 'N' in an adapter sequence is treated as a wildcard. An N will align against any other base, including Ns, but do not affect the score of the resulting alignment and are not counted as for the purpose of filters such as `--min-adapter-overlap`.
+An 'N' in an adapter sequence is treated as a wildcard. An N will align against any other base, including Ns, but do not affect the score of the resulting alignment and are not counted as for the purpose of filters such as ``--min-adapter-overlap``.
 
 
 .. _Illumina TruSeq sequences: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html

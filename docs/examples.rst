@@ -12,39 +12,50 @@ Basic usage
 
 To trim single-end data, simplify specify one or more files using the --in-file1 option::
 
-    adapterremoval3 --in-file1 reads_1.fastq --out-prefix output_single --gzip
+    adapterremoval3 --in-file1 reads_1.fastq --out-prefix output_single
 
 To trim paired-end FASTQ reads, instead specify two input files using the ``--in-file1`` and ``--in-file2`` options::
 
-    adapterremoval3 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_paired --gzip --merge
+    adapterremoval3 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_paired --merge
 
-The ``--out-prefix`` option ensure that all output files start with the specified prefix, while the ``--gzip`` options enables gzip compression for all FASTQ files written by AdapterRemoval. For the paired reads, the ``-merge`` option enables merging of reads overlapping at least 11bp (per default).
+The ``--out-prefix`` option ensure that all output files start with the specified prefix. For the paired reads, the ``--merge`` option enables merging of reads overlapping at least 11bp (by default).
 
+Reading from STDIN and Writing to STDOUT
+----------------------------------------
+
+Reading from STDIN and writing to STDOUT can be accomplished *either* by using the special ``/dev/stdin`` and ``/dev/stdout`` files, *or* by using the filename ``-`` for either ``--in-file*`` or ``--out-*`` options::
+
+    some-command | adapterremoval3 --in-file1 - --out-file1 - | some-other-command
+
+Input from STDIN and output to STDOUT can freely be interleaved as described in the *Interleaved input and output* below.
 
 Multiple input FASTQ files
 --------------------------
 
-More than one input file may be specified listed after the ``--in-file1`` and ``--in-file2`` options. Files are processed in the specified order, as if they had been concatenated using ``cat``or ```zcat``::
+More than one input file may be specified listed after the ``--in-file1`` and ``--in-file2`` options. Files are processed in the specified order, as if they had been concatenated using ``cat`` or ``zcat``::
 
     adapterremoval3 --in-file1 reads_1a.fastq reads_1b.fastq reads_1c.fastq
     adapterremoval3 --in-file1 reads_1a.fastq reads_1b.fastq reads_1c.fastq --in-file2 reads_2a.fastq reads_2b.fastq reads_2c.fastq
 
 
-Interleaved FASTQ reads
------------------------
+Interleaved input and output
+----------------------------
 
 AdapterRemoval is able to read and write paired-end reads stored in a single, so-called interleaved FASTQ file (one pair at a time, first mate 1, then mate 2). This is accomplished by specifying the location of the file using ``--in-file1`` and *also* setting the ``--interleaved`` command-line option::
 
     adapterremoval3 --interleaved --in-file1 interleaved.fastq --out-prefix output_interleaved
 
-Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'pair1' and a 'pair2' file, but instead these are instead written to a single file. The location of this file is controlled using the ``--output1`` option. Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the ``--interleaved-input`` and ``--interleaved-output`` options, both of which are enabled by the ``--interleaved`` option.
+Other than taking just a single input file, this mode operates almost exactly like paired end trimming (as described above); the mode differs only in that paired reads are not written to a 'r1' and a 'r2' file, but instead these are instead written to a single file. The location of this file is controlled using the ``--out-file1`` option.
 
+Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the ``--interleaved-input`` and ``--interleaved-output`` options, both of which are enabled by the ``--interleaved`` option.
 
-Combining FASTQ output
-----------------------
+Alternatively, you can simply specify the same file for both ``--in-file1`` and ``--in-file2``::
 
-By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for merged reads. To combine multiple types of reads in a single output file, simply specify that output file multiple times. For example, interleaved reads can be obtained with ``--output1 interleaved.fastq --output2 interleaved.fastq``.
+    adapterremoval3 --in-file1 interleaved.fastq --in-file2 interleaved.fastq --out-file1 output_interleaved.fastq.gz --out-file2 output_interleaved.fastq.gz
 
+The ability to interleave input extends to all read types, and one could for example write discarded and singleton reads to the same file using the following command::
+
+   adapterremoval3 --in-file1 interleaved.fastq --in-file2 interleaved.fastq --out-prefix output_interleaved --out-discarded output_interleaved.discarded.fastq.gz --out-singleton output_interleaved.discarded.fastq.gz
 
 Different quality score encodings
 ---------------------------------
@@ -84,7 +95,7 @@ In the following example, the identified adapters corresponds to the default ada
 
     adapterremoval3 --identify-adapters --in-file1 reads_1.fastq --in-file2 reads_2.fastq
 
-    Attemping to identify adapter sequences ...
+    Attempting to identify adapter sequences ...
     Processed a total of 1,000 reads in 0.0s; 129,000 reads per second on average ...
        Found 394 overlapping pairs ...
        Of which 119 contained adapter sequence(s) ...
@@ -149,7 +160,7 @@ If the ``--demultiplex-only`` option is used, then no trimming/processing is per
 
     adapterremoval3 --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_only_demux --barcode-list barcodes.txt --demultiplex-only
 
-These reads will still contain adapters, and for paired reads/double indexed data these adapters will be prefixed by the barcode sequence(s). The adapter plus barcode sequences are reported for each sample in the `JSON` report file.
+These reads will still contain adapters, and for paired reads/double indexed data these adapters will be prefixed by the barcode sequence(s). The adapter plus barcode sequences are reported for each sample in the JSON report file.
 
 
 .. _this Wikipedia article: https://en.wikipedia.org/wiki/FASTQ_format#Encoding
