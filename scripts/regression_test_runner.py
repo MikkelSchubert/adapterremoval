@@ -49,6 +49,7 @@ from typing import (
     NamedTuple,
     NoReturn,
     Sequence,
+    Tuple,
     Union,
     cast,
     overload,
@@ -238,8 +239,23 @@ def cmd_to_s(cmd: list[str | Path]) -> str:
     return " ".join(quote(field) for field in cmd)
 
 
+def simplify_cmd(cmd: list[str | Path]) -> str:
+    cmd = list(cmd)
+    if cmd:
+        cmd[0] = Path(cmd[0]).name
+
+    return " ".join(quote(field) for field in cmd)
+
+
 def path_to_s(path: Iterable[str]) -> str:
     return ".".join(str(value) for value in path)
+
+
+def relative_to_cwd(path: Path) -> Path:
+    if path.is_absolute():
+        return path.relative_to(os.getcwd())
+
+    return path
 
 
 def classname(v: object) -> str:
@@ -1308,6 +1324,7 @@ def main(argv: list[str]) -> int:
     n_skipped = 0
     print("\nRunning tests:")
 
+    failures: List[Tuple[Union[TestRunner, TestUpdater], Exception]] = []
     with multiprocessing.Pool(args.threads) as pool:
         results = pool.imap(run_test, exhaustive_tests)
         grouped_results = groupby(results, lambda it: it[0].name)
@@ -1315,15 +1332,13 @@ def main(argv: list[str]) -> int:
         for idx, (name, test_results) in enumerate(grouped_results, start=1):
             print("  %i of %i: %s " % (idx, len(tests), name), end="")
 
-            last_test = None
             last_error = None
             test_skipped = False
             for test, error in test_results:
                 if error is not None:
                     print_err("X", end="")
-                    if last_error is None:
-                        last_error = error
-                        last_test = test
+                    failures.append((test, error))
+                    last_error = error
                 elif test.skip:
                     print_warn(".", end="")
                     test_skipped = True
@@ -1336,24 +1351,25 @@ def main(argv: list[str]) -> int:
                 print_warn(" [SKIPPED]")
                 n_skipped += 1
             elif last_error is None:
-                n_successes += 1
                 print_ok(" [OK]")
+                n_successes += 1
             else:
+                print_err(" [FAILED]")
                 n_failures += 1
-                assert last_test is not None
-                print_err(f"\nTest {last_test.name} failed:")
-                if last_test.description is not None:
-                    print_err(f"  Description   = {last_test.description}")
-                print_err(f"  Specification = {last_test.spec_path}")
-                print_err(f"  Directory     = {last_test.path}")
-                print_err(f"  Command       = {cmd_to_s(last_test.command)}")
-
-                error = "\n                  ".join(str(last_error).split("\n"))
-                print_err(f"  Error         = {error}")
-
                 if n_failures >= args.max_failures:
                     pool.terminate()
                     break
+
+    for test, error in failures:
+        print_err(f"\nTest {test.name} failed:")
+        if test.description is not None:
+            print_err("  Description   =", test.description)
+        print_err("  Specification =", relative_to_cwd(test.spec_path))
+        print_err("  Directory     =", relative_to_cwd(test.path))
+        print_err("  Command       =", simplify_cmd(test.command))
+
+        error = "\n                  ".join(str(error).split("\n"))
+        print_err("  Error         =", error)
 
     if not (n_failures or args.create_updated_reference):
         args.work_dir.rmdir()
