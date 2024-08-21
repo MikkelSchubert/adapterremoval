@@ -427,7 +427,11 @@ format_fraction(uint64_t num, uint64_t denom, size_t precision)
 std::string
 format_percentage(uint64_t num, uint64_t denom, size_t precision)
 {
-  return format_fraction(num * 100, denom, precision);
+  if (denom) {
+    return format_fraction(num * 100, denom, precision) + " %";
+  } else {
+    return "NA";
+  }
 }
 
 } // namespace adapterremoval

@@ -441,31 +441,31 @@ html_summary_io::write(std::ostream& out)
   out << "                    <tr>\n";
   out << "                        <td>Read length</td>\n";
   for (const auto& value : m_lengths) {
-    out << "                        <td>" << value << " bp</td>\n";
+    out << "                        <td>" << value << "</td>\n";
   }
   out << "                    </tr>\n";
   out << "                    <tr>\n";
   out << "                        <td>Q20</td>\n";
   for (const auto& value : m_q20) {
-    out << "                        <td>" << value << " %</td>\n";
+    out << "                        <td>" << value << "</td>\n";
   }
   out << "                    </tr>\n";
   out << "                    <tr>\n";
   out << "                        <td>Q30</td>\n";
   for (const auto& value : m_q30) {
-    out << "                        <td>" << value << " %</td>\n";
+    out << "                        <td>" << value << "</td>\n";
   }
   out << "                    </tr>\n";
   out << "                    <tr>\n";
   out << "                        <td>GC</td>\n";
   for (const auto& value : m_gc) {
-    out << "                        <td>" << value << " %</td>\n";
+    out << "                        <td>" << value << "</td>\n";
   }
   out << "                    </tr>\n";
   out << "                    <tr>\n";
   out << "                        <td>N</td>\n";
   for (const auto& value : m_ns) {
-    out << "                        <td>" << value << " %</td>\n";
+    out << "                        <td>" << value << "</td>\n";
   }
   out << "                    </tr>\n";
   out << "                </tbody>\n";
@@ -1705,7 +1705,7 @@ html_demultiplexing_row::write(std::ostream& out)
   out << "                            <td>" << m_pct << "</td>\n";
   out << "                            <td>" << m_reads << "</td>\n";
   out << "                            <td>" << m_bp << "</td>\n";
-  out << "                            <td>" << m_length << " bp</td>\n";
+  out << "                            <td>" << m_length << "</td>\n";
   out << "                            <td>" << m_gc << " %</td>\n";
   out << "                        </tr>\n";
   out << "\n";

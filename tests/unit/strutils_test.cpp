@@ -426,10 +426,10 @@ TEST_CASE("format_percentage")
 {
   REQUIRE(format_percentage(0, 0) == "NA");
   REQUIRE(format_percentage(1, 0) == "NA");
-  REQUIRE(format_percentage(55, 300) == "18.3");
-  REQUIRE(format_percentage(55, 300, 0) == "18");
-  REQUIRE(format_percentage(55, 300, 1) == "18.3");
-  REQUIRE(format_percentage(55, 300, 2) == "18.33");
+  REQUIRE(format_percentage(55, 300) == "18.3 %");
+  REQUIRE(format_percentage(55, 300, 0) == "18 %");
+  REQUIRE(format_percentage(55, 300, 1) == "18.3 %");
+  REQUIRE(format_percentage(55, 300, 2) == "18.33 %");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

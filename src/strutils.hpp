@@ -207,7 +207,7 @@ format_rough_number(size_t value, size_t out_digits = 3);
 std::string
 format_fraction(uint64_t num, uint64_t denom, size_t precision = 2);
 
-/** Formats a percentage, returning "NA" if denominator is 0 */
+/** Formats percentage and adds trailing " %". Returns "NA" if denom is 0 */
 std::string
 format_percentage(uint64_t num, uint64_t denom, size_t precision = 1);
 

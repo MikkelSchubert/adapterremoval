@@ -100,7 +100,7 @@ runtime_to_str(double seconds)
 }
 
 std::string
-mean_of_counts(const counts& count)
+mean_of_bp_counts(const counts& count)
 {
   auto reads = count.sum();
   auto bases = count.product();
@@ -110,12 +110,12 @@ mean_of_counts(const counts& count)
   }
 
   if (bases % reads == 0) {
-    return std::to_string(bases / reads);
+    return std::to_string(bases / reads) + " bp";
   }
 
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(1)
-     << (bases / static_cast<double>(reads));
+     << (bases / static_cast<double>(reads)) << " bp";
 
   return ss.str();
 }
@@ -138,7 +138,13 @@ require_values(counts_tmpl<T> r, T fallback = T())
 std::string
 format_average_bases(const reads_and_bases& counts)
 {
-  return format_fraction(counts.bases(), counts.reads(), 1);
+  const auto reads = counts.reads();
+
+  if (reads) {
+    return format_fraction(counts.bases(), reads, 1) + " bp";
+  } else {
+    return "NA";
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -172,7 +178,7 @@ public:
 
     m_writer.add_n_bases(format_rough_number(stats.length_dist().product()));
 
-    m_writer.add_lengths(mean_of_counts(stats.length_dist()));
+    m_writer.add_lengths(mean_of_bp_counts(stats.length_dist()));
 
     auto total = stats.quality_dist().sum();
     m_writer.add_q30(format_percentage(stats.quality_dist().sum(30), total));
@@ -977,7 +983,7 @@ write_html_demultiplexing_section(const userconfig& config,
       .set_pct(format_percentage(unidentified, input_reads, 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
-      .set_length(mean_of_counts(total.length_dist()))
+      .set_length(mean_of_bp_counts(total.length_dist()))
       .set_gc(format_percentage(total.nucleotides_gc_pos().sum(), output_bp))
       .write(output);
   }
@@ -1008,7 +1014,7 @@ write_html_demultiplexing_section(const userconfig& config,
         format_percentage(stats.demultiplexing->barcodes.at(i), input_reads, 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
-      .set_length(mean_of_counts(total.length_dist()))
+      .set_length(mean_of_bp_counts(total.length_dist()))
       .set_gc(format_percentage(total.nucleotides_gc_pos().sum(), output_bp))
       .write(output);
   }
