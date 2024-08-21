@@ -55,7 +55,7 @@ public:
    * The quality scores are expected to be in the range of 0 .. 40, unless
    * the format is Phred+33, in which case the range 0 .. 41 is accepted.
    */
-  fastq(std::string header,
+  fastq(std::string_view header,
         std::string sequence,
         std::string qualities,
         const fastq_encoding& encoding = FASTQ_ENCODING_33);
@@ -68,12 +68,12 @@ public:
    *
    * Works like the full constructor, except that qualities are all 0 ('!').
    */
-  fastq(std::string header, std::string sequence);
+  fastq(std::string_view header, std::string sequence);
 
   /** Returns true IFF all fields are identical. **/
   bool operator==(const fastq& other) const;
 
-  /** Returns the header (excluding the @) of the record. **/
+  /** Returns the header (including the @) of the record. **/
   const std::string& header() const { return m_header; }
 
   /** Returns the nucleotide sequence (ACGTN only) of the record. **/
@@ -214,7 +214,7 @@ private:
   ntrimmed trim_sequence_and_qualities(size_t left_inclusive,
                                        size_t right_exclusive);
 
-  //! Header excluding the @ sigil, but (possibly) including meta-info
+  //! Header including the @ sigil, but (possibly) including meta-info
   std::string m_header;
   //! Nucleotide sequence; contains only uppercase letters "ACGTN"
   std::string m_sequence;

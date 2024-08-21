@@ -163,20 +163,25 @@ count_poly_x_tail(const std::string& m_sequence,
 // fastq
 
 fastq::fastq()
-  : m_header()
+  : m_header("@")
   , m_sequence()
   , m_qualities()
 {
 }
 
-fastq::fastq(std::string header,
+fastq::fastq(std::string_view header,
              std::string sequence,
              std::string qualities,
              const fastq_encoding& encoding)
-  : m_header(std::move(header))
+  : m_header()
   , m_sequence(std::move(sequence))
   , m_qualities(std::move(qualities))
 {
+  if (header.empty() || header.front() != '@') {
+    m_header.push_back('@');
+  }
+
+  m_header.append(header);
   if (m_qualities.length() != m_sequence.length()) {
     throw fastq_error(
       "invalid FASTQ record; sequence/quality length does not match");
@@ -185,12 +190,9 @@ fastq::fastq(std::string header,
   post_process(encoding);
 }
 
-fastq::fastq(std::string header, std::string sequence)
-  : m_header(std::move(header))
-  , m_sequence(std::move(sequence))
-  , m_qualities(std::string(m_sequence.length(), '!'))
+fastq::fastq(std::string_view header, std::string sequence)
+  : fastq(header, sequence, std::string(sequence.length(), '!'))
 {
-  post_process(FASTQ_ENCODING_33);
 }
 
 bool
@@ -203,10 +205,14 @@ fastq::operator==(const fastq& other) const
 std::string_view
 fastq::name(const char mate_separator) const
 {
+  AR_REQUIRE(!m_header.empty() && m_header.front() == '@');
+
   std::string_view header = m_header;
   const size_t pos = header.find_first_of(' ');
   if (pos != std::string::npos) {
-    header = header.substr(0, pos);
+    header = header.substr(1, pos - 1);
+  } else {
+    header = header.substr(1);
   }
 
   if (mate_separator && header.size() > 1 &&
@@ -511,8 +517,9 @@ fastq::reverse_complement()
 void
 fastq::add_prefix_to_name(const std::string& prefix)
 {
+  AR_REQUIRE(!m_header.empty());
   if (!prefix.empty()) {
-    m_header.insert(0, prefix);
+    m_header.insert(1, prefix);
   }
 }
 
@@ -539,9 +546,6 @@ fastq::read_unsafe(line_reader_base& reader)
 
   if (m_header.size() < 2 || m_header.at(0) != '@') {
     throw fastq_error("Malformed or empty FASTQ header");
-  } else {
-    // FIXME: Erasing the '@' and then re-adding it later is pointless work
-    m_header.erase(0, 1);
   }
 
   if (!reader.getline(m_sequence)) {

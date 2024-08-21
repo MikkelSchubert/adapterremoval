@@ -270,7 +270,6 @@ fastq_serializer::record(buffer& buf,
                          char /* mate_separator */,
                          const read_group& /* rg */)
 {
-  buf.append_u8('@');
   buf.append(record.header());
   buf.append_u8('\n');
   buf.append(record.sequence());

@@ -101,7 +101,7 @@ TEST_CASE("ACGTN::to_value", "[fastq::*]")
 TEST_CASE("default_constructor", "[fastq::fastq]")
 {
   const fastq record;
-  REQUIRE(record.header().empty());
+  REQUIRE(record.header() == "@");
   REQUIRE(record.sequence().empty());
   REQUIRE(record.qualities().empty());
 }
@@ -109,10 +109,18 @@ TEST_CASE("default_constructor", "[fastq::fastq]")
 ///////////////////////////////////////////////////////////////////////////////
 // Primary constructor
 
-TEST_CASE("constructor_empty_fields", "[fastq::fastq]")
+TEST_CASE("constructor_empty_fields_1", "[fastq::fastq]")
 {
   const fastq record("", "", "");
-  REQUIRE(record.header().empty());
+  REQUIRE(record.header() == "@");
+  REQUIRE(record.sequence().empty());
+  REQUIRE(record.qualities().empty());
+}
+
+TEST_CASE("constructor_empty_fields_2", "[fastq::fastq]")
+{
+  const fastq record("@", "", "");
+  REQUIRE(record.header() == "@");
   REQUIRE(record.sequence().empty());
   REQUIRE(record.qualities().empty());
 }
@@ -120,7 +128,7 @@ TEST_CASE("constructor_empty_fields", "[fastq::fastq]")
 TEST_CASE("constructor_simple_record_phred_33_encoded", "[fastq::fastq]")
 {
   const fastq record("record_1", "ACGAGTCA", "!7BF8DGI");
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
 }
@@ -128,7 +136,7 @@ TEST_CASE("constructor_simple_record_phred_33_encoded", "[fastq::fastq]")
 TEST_CASE("constructor_simple_record_phred_64_encoded", "[fastq::fastq]")
 {
   const fastq record("record_2", "ACGAGTCA", "@VaeWcfh", FASTQ_ENCODING_64);
-  REQUIRE(record.header() == "record_2");
+  REQUIRE(record.header() == "@record_2");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
 }
@@ -137,7 +145,7 @@ TEST_CASE("constructor_simple_record_phred_solexa_encoded", "[fastq::fastq]")
 {
   const fastq record(
     "record_3", "AAACGAGTCA", ";h>S\\TCDUJ", FASTQ_ENCODING_SOLEXA);
-  REQUIRE(record.header() == "record_3");
+  REQUIRE(record.header() == "@record_3");
   REQUIRE(record.sequence() == "AAACGAGTCA");
   REQUIRE(record.qualities() == "\"I#4=5&&6+");
 }
@@ -239,7 +247,7 @@ TEST_CASE("constructor_invalid_nucleotides", "[fastq::fastq]")
 TEST_CASE("constructor_no_qualities", "[fastq::fastq]")
 {
   const fastq record("record_1", "ACGT");
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGT");
   REQUIRE(record.qualities() == "!!!!");
 }
@@ -247,7 +255,7 @@ TEST_CASE("constructor_no_qualities", "[fastq::fastq]")
 TEST_CASE("constructor_no_qualities_no_sequence", "[fastq::fastq]")
 {
   const fastq record("record_1", "");
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence().empty());
   REQUIRE(record.qualities().empty());
 }
@@ -264,7 +272,7 @@ TEST_CASE("move_constructor", "[fastq::fastq]")
   REQUIRE(record1.sequence().empty());
   REQUIRE(record1.qualities().empty());
 
-  REQUIRE(record2.header() == "record_1");
+  REQUIRE(record2.header() == "@record_1");
   REQUIRE(record2.sequence() == "ACGT");
   REQUIRE(record2.qualities() == "1234");
 }
@@ -278,11 +286,11 @@ TEST_CASE("assignment_operator", "[fastq::fastq]")
   fastq record2;
   record2 = record1;
 
-  REQUIRE(record1.header() == "record_1");
+  REQUIRE(record1.header() == "@record_1");
   REQUIRE(record1.sequence() == "ACGT");
   REQUIRE(record1.qualities() == "1234");
 
-  REQUIRE(record2.header() == "record_1");
+  REQUIRE(record2.header() == "@record_1");
   REQUIRE(record2.sequence() == "ACGT");
   REQUIRE(record2.qualities() == "1234");
 }
@@ -984,7 +992,7 @@ TEST_CASE("simple_fastq_record_1", "[fastq::fastq]")
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
 }
@@ -1004,11 +1012,11 @@ TEST_CASE("simple_fastq_record_2", "[fastq::fastq]")
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_2");
+  REQUIRE(record.header() == "@record_2");
   REQUIRE(record.sequence() == "GTCAGGAT");
   REQUIRE(record.qualities() == "D7BIG!F8");
   CHECK(!record.read(reader, FASTQ_ENCODING_33));
@@ -1025,7 +1033,7 @@ TEST_CASE("simple_fastq_record__with_extra_header_1", "[fastq::fastq]")
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_1 Extra header here");
+  REQUIRE(record.header() == "@record_1 Extra header here");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
   CHECK(!record.read(reader, FASTQ_ENCODING_33));
@@ -1042,7 +1050,7 @@ TEST_CASE("simple_fastq_record__with_extra_header_2", "[fastq::fastq]")
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
   CHECK(!record.read(reader, FASTQ_ENCODING_33));
@@ -1229,7 +1237,7 @@ TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGTA");
   REQUIRE(record.qualities() == "!!!!!");
   REQUIRE_NOTHROW(!record.read(reader, FASTQ_ENCODING_33));
@@ -1254,11 +1262,11 @@ TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_1");
+  REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGAGTCA");
   REQUIRE(record.qualities() == "!7BF8DGI");
   CHECK(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE(record.header() == "record_2");
+  REQUIRE(record.header() == "@record_2");
   REQUIRE(record.sequence() == "GTCAGGAT");
   REQUIRE(record.qualities() == "D7BIG!F8");
   CHECK(!record.read(reader, FASTQ_ENCODING_33));
@@ -1538,8 +1546,9 @@ TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
 
   fastq::normalize_paired_reads(mate1, mate2);
 
-  REQUIRE(mate1.header() == name);
-  REQUIRE(mate2.header() == name);
+  const auto name_s = std::string("@") + name;
+  REQUIRE(mate1.header() == name_s);
+  REQUIRE(mate2.header() == name_s);
 }
 
 template<typename A, typename B>
