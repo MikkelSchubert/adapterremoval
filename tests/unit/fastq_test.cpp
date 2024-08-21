@@ -338,6 +338,22 @@ TEST_CASE("count_ns", "[fastq::fastq]")
   REQUIRE(fastq("Rec", "NNNNN", "IJIJI").count_ns() == 5);
 }
 
+TEST_CASE("mean_quality", "[fastq::fastq]")
+{
+  REQUIRE_THROWS_AS(fastq().mean_quality(), assert_failed);
+
+  REQUIRE(fastq("read", "A", "!").mean_quality() == Approx(0.0));
+  REQUIRE(fastq("read", "AA", "!!").mean_quality() == Approx(0.0));
+  REQUIRE(fastq("read", "AAA", "!!!").mean_quality() == Approx(0.0));
+
+  REQUIRE(fastq("read", "A", "G").mean_quality() == Approx(38.0));
+  REQUIRE(fastq("read", "AA", "G6").mean_quality() == Approx(29.5));
+  REQUIRE(fastq("read", "AAA", "G6%").mean_quality() == Approx(21.0));
+
+  REQUIRE(fastq("read", std::string(1024, 'A'), std::string(1024, 'K'))
+            .mean_quality() == Approx(42.0));
+}
+
 TEST_CASE("complexity", "[fastq::fastq]")
 {
   using Catch::WithinAbs;

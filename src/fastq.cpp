@@ -308,13 +308,13 @@ fastq::complexity() const
 double
 fastq::mean_quality() const
 {
-  int64_t total = 0;
   AR_REQUIRE(!m_qualities.empty());
+  int64_t sum = -PHRED_OFFSET_MIN * static_cast<int64_t>(m_qualities.length());
   for (const auto c : m_qualities) {
-    total += c - PHRED_OFFSET_MIN;
+    sum += c;
   }
 
-  return static_cast<double>(total) / static_cast<double>(m_qualities.length());
+  return static_cast<double>(sum) / static_cast<double>(m_qualities.length());
 }
 
 fastq::ntrimmed
