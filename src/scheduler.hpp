@@ -326,7 +326,7 @@ typename statistics_sink<T>::pointer statistics_sink<T>::finalize()
         m_sinks.pop();
     }
 
-    return std::move(result);
+    return result;
 }
 
 

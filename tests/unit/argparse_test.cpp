@@ -406,7 +406,7 @@ TEST_CASE("Knob rejects past unsigned upper bound", "[argparse::knob]")
     consumer_autoptr ptr(new argparse::knob(&sink));
     arguments.push_back("4294967296");
     CHECK(!ptr->is_set());
-    REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == -1);
+    REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == static_cast<size_t>(-1));
     CHECK(!ptr->is_set());
 }
 
@@ -418,7 +418,7 @@ TEST_CASE("Knob rejects trailing garbage", "[argparse::knob]")
     consumer_autoptr ptr(new argparse::knob(&sink));
     arguments.push_back("7913w");
     CHECK(!ptr->is_set());
-    REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == -1);
+    REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == static_cast<size_t>(-1));
     CHECK(!ptr->is_set());
 }
 
@@ -500,7 +500,7 @@ TEST_CASE("Floaty knob rejects trailing garbage", "[argparse::floaty_knob]")
     arguments.push_back("-19.84wat");
     consumer_autoptr ptr(new argparse::floaty_knob(&sink));
     CHECK(!ptr->is_set());
-    REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == -1);
+    REQUIRE(ptr->consume(arguments.begin(), arguments.end()) == static_cast<size_t>(-1));
     CHECK(!ptr->is_set());
 }
 
