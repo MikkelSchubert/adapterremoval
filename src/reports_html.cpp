@@ -695,10 +695,10 @@ write_html_section_title(const std::string& title, std::ostream& output)
 
 void
 write_html_io_section(const userconfig& config,
-                      const std::string& title,
-                      const fastq_stats_vec& statistics,
-                      const string_vec& names,
                       std::ostream& output,
+                      const std::string& title,
+                      fastq_stats_vec statistics,
+                      string_vec names,
                       const fastq_stats_ptr& merged = fastq_stats_ptr())
 {
   AR_REQUIRE(statistics.size() == names.size());
@@ -748,6 +748,10 @@ write_html_io_section(const userconfig& config,
       .set_width(FIGURE_WIDTH)
       .set_values(build_base_content({ merged }, { "Merged" }))
       .write(output);
+
+    // Subsequent plots should include merged reads
+    names.push_back("Merged");
+    statistics.push_back(merged);
   }
 
   html_plot_title()
@@ -797,7 +801,8 @@ write_html_input_section(const userconfig& config,
     names.emplace_back("File 2");
   }
 
-  write_html_io_section(config, "Input", stats_vec, names, output);
+  write_html_io_section(
+    config, output, "Input", std::move(stats_vec), std::move(names));
 }
 
 void
@@ -1066,7 +1071,8 @@ write_html_output_section(const userconfig& config,
     }
   }
 
-  write_html_io_section(config, "Output", stats_vec, names, output, merged);
+  write_html_io_section(
+    config, output, "Output", std::move(stats_vec), std::move(names), merged);
 }
 
 } // namespace
