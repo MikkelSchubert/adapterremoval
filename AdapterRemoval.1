@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ADAPTERREMOVAL" "1" "Apr 15, 2022" "2.3.3" "AdapterRemoval"
+.TH "ADAPTERREMOVAL" "1" "Aug 22, 2024" "2.3.4" "AdapterRemoval"
 .SH NAME
 AdapterRemoval \- Fast short-read adapter trimming and processing
 .SH SYNOPSIS
@@ -42,14 +42,14 @@ If you use this program, please cite the paper:
 .INDENT 3.5
 Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid adapter trimming, identification, and read merging. BMC Research Notes, 12;9(1):88
 .sp
-\fI\%http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104\-016\-1900\-2\fP
+\X'tty: link http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2'\fI\%http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104\-016\-1900\-2\fP\X'tty: link'
 .UNINDENT
 .UNINDENT
 .sp
 For detailed documentation, please see
 .INDENT 0.0
 .INDENT 3.5
-\fI\%http://adapterremoval.readthedocs.io/en/v2.2.3/\fP
+\X'tty: link http://adapterremoval.readthedocs.io/'\fI\%http://adapterremoval.readthedocs.io/\fP\X'tty: link'
 .UNINDENT
 .UNINDENT
 .SH OPTIONS
@@ -169,7 +169,7 @@ Contains reads discarded due to the \-\-minlength, \-\-maxlength or \-\-maxns op
 .INDENT 0.0
 .TP
 .B \-\-gzip
-If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using \fB\-\-gzip\-level\fP\&. The extension ".gz" is added to files for which no filename was given on the command\-line. Defaults to off.
+If set, all FASTQ files written by AdapterRemoval will be gzip compressed using the compression level specified using \fB\-\-gzip\-level\fP\&. The extension \(dq.gz\(dq is added to files for which no filename was given on the command\-line. Defaults to off.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -179,7 +179,7 @@ Determines the compression level used when gzip\(aqing FASTQ files. Must be a va
 .INDENT 0.0
 .TP
 .B \-\-bzip2
-If set, all FASTQ files written by AdapterRemoval will be bzip2 compressed using the compression level specified using \fB\-\-bzip2\-level\fP\&. The extension ".bz2" is added to files for which no filename was given on the command\-line. Defaults to off.
+If set, all FASTQ files written by AdapterRemoval will be bzip2 compressed using the compression level specified using \fB\-\-bzip2\-level\fP\&. The extension \(dq.bz2\(dq is added to files for which no filename was given on the command\-line. Defaults to off.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -190,12 +190,12 @@ Determines the compression level used when bzip2\(aqing FASTQ files. Must be a v
 .INDENT 0.0
 .TP
 .B \-\-adapter1 adapter
-Adapter sequence expected to be found in mate 1 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG.
+Adapter sequence expected to be found in mate 1 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the \(dqAdapters\(dq section of the online documentation. Default is AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-adapter2 adapter
-Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT.
+Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the \(dqAdapters\(dq section of the online documentation. Default is AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -245,7 +245,7 @@ Trim consecutive stretches of low quality bases (threshold set by \fB\-\-minqual
 .INDENT 0.0
 .TP
 .B \-\-trimwindows window_size
-Trim low quality bases using a sliding window based approach inspired by \fBsickle\fP with the given window size. See the "Window based quality trimming" section of the manual page for a description of this algorithm.
+Trim low quality bases using a sliding window based approach inspired by \fBsickle\fP with the given window size. See the \(dqWindow based quality trimming\(dq section of the manual page for a description of this algorithm.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -271,7 +271,7 @@ Reads longer than this length are discarded following trimming. Defaults to 4294
 .INDENT 0.0
 .TP
 .B \-\-collapse
-In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. In single\-end mode, attempt to identify templates for which the entire sequence is available. In both cases, complete "collapsed" reads are written with a \(aqM_\(aq name prefix, and "collapsed" reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&.
+In paired\-end mode, merge overlapping mates into a single and recalculate the quality scores. In single\-end mode, attempt to identify templates for which the entire sequence is available. In both cases, complete \(dqcollapsed\(dq reads are written with a \(aqM_\(aq name prefix, and \(dqcollapsed\(dq reads which are trimmed due to quality settings are written with a \(aqMT_\(aq name prefix. The overlap needs to be at least \fB\-\-minalignmentlength\fP nucleotides, with a maximum number of mismatches determined by \fB\-\-mm\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -297,7 +297,7 @@ Alternative merging algorithm inspired by FASTQ\-join: For matching overlapping 
 .INDENT 0.0
 .TP
 .B \-\-barcode\-list filename
-Perform demultiplxing using table of one or two fixed\-length barcodes for SE or PE reads. The table is expected to contain 2 or 3 columns, the first of which represent the name of a given sample, and the second and third of which represent the mate 1 and (optionally) the mate 2 barcode sequence. For a detailed description, see the "Demultiplexing" section of the online documentation.
+Perform demultiplxing using table of one or two fixed\-length barcodes for SE or PE reads. The table is expected to contain 2 or 3 columns, the first of which represent the name of a given sample, and the second and third of which represent the mate 1 and (optionally) the mate 2 barcode sequence. For a detailed description, see the \(dqDemultiplexing\(dq section of the online documentation.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -344,7 +344,7 @@ AdapterRemoval exists with status 0 if the program ran succesfully, and with a n
 .sp
 Please report any bugs using the AdapterRemoval issue\-tracker:
 .sp
-\fI\%https://github.com/MikkelSchubert/adapterremoval/issues\fP
+\X'tty: link https://github.com/MikkelSchubert/adapterremoval/issues'\fI\%https://github.com/MikkelSchubert/adapterremoval/issues\fP\X'tty: link'
 .SH LICENSE
 .sp
 This program is free software; you can redistribute it and/or modify
@@ -358,7 +358,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 .sp
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <\fI\%http://www.gnu.org/licenses/\fP>.
+along with this program.  If not, see <\X'tty: link http://www.gnu.org/licenses/'\fI\%http://www.gnu.org/licenses/\fP\X'tty: link'>.
 .SH AUTHOR
 Mikkel Schubert; Stinus Lindgreen
 .SH COPYRIGHT

@@ -69,9 +69,9 @@ Installing AdapterRemoval from sources requires libz and libbz2.
 To compile AdapterRemoval, download the latest release, unpack the archive and
 then simply run "make" in the resulting folder:
 
-    wget -O adapterremoval-2.3.1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.1.tar.gz
-    tar xvzf adapterremoval-2.3.1.tar.gz
-    cd adapterremoval-2.3.1
+    wget -O adapterremoval-2.3.4.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.4.tar.gz
+    tar xvzf adapterremoval-2.3.4.tar.gz
+    cd adapterremoval-2.3.4
     make
 
 The resulting 'AdapterRemoval' executable is located in the 'build'

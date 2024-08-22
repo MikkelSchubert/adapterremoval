@@ -47,9 +47,9 @@ In addtion, a C++11 compatible compiler and basic build-tools are required. On D
 
 To compile AdapterRemoval, first download and unpack the newest release from GitHub, and then run the 'make' command::
 
-    wget -O adapterremoval-2.3.1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.1.tar.gz
-    tar xvzf adapterremoval-2.3.1.tar.gz
-    cd adapterremoval-2.3.1
+    wget -O adapterremoval-2.3.4.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.4.tar.gz
+    tar xvzf adapterremoval-2.3.4.tar.gz
+    cd adapterremoval-2.3.4
     make
 
 The resulting 'AdapterRemoval' executable is located in the 'build' subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command::
