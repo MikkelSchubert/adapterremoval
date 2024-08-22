@@ -398,7 +398,7 @@ userconfig::userconfig(const std::string& name,
             "one of two different overlapping bases if these have the same "
             "quality (otherwise it picks the highest quality base). With "
             "--collapse-deterministic, AdapterRemoval will instead set such "
-            "bases to N. Setting this option also sets--collapse "
+            "bases to N. Setting this option also sets --collapse "
             "[default: %default].");
     argparser["--collapse-conservatively"] =
         new argparse::flag(&collapse_conservatively,
