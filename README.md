@@ -1,4 +1,4 @@
-# AdapterRemoval [![Travis](https://img.shields.io/travis/MikkelSchubert/adapterremoval/master.svg)](https://travis-ci.org/MikkelSchubert/adapterremoval) [![Coveralls](https://img.shields.io/coveralls/MikkelSchubert/adapterremoval.svg)](https://coveralls.io/github/MikkelSchubert/adapterremoval)
+# AdapterRemoval [![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![coverage](https://coveralls.io/repos/github/MikkelSchubert/adapterremoval/badge.svg?branch=master)](https://coveralls.io/github/MikkelSchubert/adapterremoval) [![docs](https://readthedocs.org/projects/paleomix/badge/?version=stable)](https://paleomix.readthedocs.io/en/stable/)
 
 AdapterRemoval searches for and removes adapter sequences from High-Throughput
 Sequencing (HTS) data and (optionally) trims low quality bases from the 3' end
@@ -8,8 +8,10 @@ into (longer) consensus sequences. Additionally, AdapterRemoval can construct a
 consensus adapter sequence for paired-ended reads, if which this information is
 not available.
 
-For comments, suggestions  and feedback please contact Mikkel Schubert
-(MikkelSch@gmail.com) and Stinus Lindgreen (stinus@binf.ku.dk).
+For questions, bug reports, and/or suggestions, please use the
+[GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/).
+
+# AdapterRemoval v2
 
 If you use AdapterRemoval v2, then please cite the paper:
 
@@ -23,20 +25,18 @@ AdapterRemoval was originally published in Lindgreen 2012:
     Sequencing Reads, BMC Research Notes, 5:337
     http://www.biomedcentral.com/1756-0500/5/337/
 
-
 ## Overview of major features
 
- - Trimming of adapters sequences from single-end and paired-end FASTQ reads.
- - Trimming of multiple, different adapters or adapter pairs.
- - Demultiplexing of single or double indexed reads, with or without trimming
+- Trimming of adapters sequences from single-end and paired-end FASTQ reads.
+- Trimming of multiple, different adapters or adapter pairs.
+- Demultiplexing of single or double indexed reads, with or without trimming
    of adapter sequences.
- - Reconstruction of adapter sequences from paired-end reads, by the pairwise
+- Reconstruction of adapter sequences from paired-end reads, by the pairwise
    alignment of reads in the absence of a known adapter sequence.
- - Merging of overlapping read-pairs into higher-quality consensus sequences.
- - Multi-threading of all operations for increased throughput.
- - Reading and writing of gzip and bzip2 compressed files.
- - Reading and writing of interleaved FASTQ files.
-
+- Merging of overlapping read-pairs into higher-quality consensus sequences.
+- Multi-threading of all operations for increased throughput.
+- Reading and writing of gzip and bzip2 compressed files.
+- Reading and writing of interleaved FASTQ files.
 
 ## Documentation
 
@@ -45,7 +45,6 @@ the [online documentation](https://adapterremoval.readthedocs.io/). A summary
 of command-line options may also be found in the manual page, accessible via
 the command "man AdapterRemoval" once AdapterRemoval has been installed.
 
-
 ## Installation
 
 ### Installation with Conda
@@ -53,14 +52,6 @@ the command "man AdapterRemoval" once AdapterRemoval has been installed.
 If you have `Conda`_ installed on your system:
 
     conda install -c bioconda adapterremoval
-
-
-### Installing on OSX
-
-MacOSX users may install AdapterRemoval using [Homebrew](https://brew.sh/):
-
-    brew install homebrew/science/adapterremoval
-
 
 ### Installing from sources
 
@@ -79,19 +70,16 @@ subdirectory and may be installed by running "make install":
 
     sudo make install
 
-
 ## Getting started
 
 To run AdapterRemoval, specify the location of pair 1 and (optionally) pair 2
 FASTQ using the --file1 and --file2 command-line options:
 
-    AdapterRemoval --file1 myreads_1.fastq.gz --file2 myreads_2.fastq.gz
+    AdapterRemoval --file1 reads_1.fastq.gz --file2 reads_2.fastq.gz
 
 By default, AdapterRemoval will save the trimmed reads in the current working
-directly, using filenames starting with 'your_output'. 
-
+directly, using filenames starting with 'your_output'.
 
 More examples of common usage may be found in the
 [Examples](https://adapterremoval.readthedocs.io/en/latest/examples.html)
 section of the online documentation:
-
