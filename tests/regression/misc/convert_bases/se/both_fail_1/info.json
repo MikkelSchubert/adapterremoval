@@ -1,0 +1,5 @@
+{
+  "arguments": [],
+  "return_code": 1,
+  "stderr": ["found uracil \\(U\\) in FASTQ sequence"]
+}

@@ -1,0 +1,6 @@
+{
+	"arguments": ["--convert-uracils", "--mask-degenerate-bases"],
+	"return_code": 0,
+	"stderr": [
+	]
+}

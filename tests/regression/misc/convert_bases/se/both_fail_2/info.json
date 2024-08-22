@@ -1,0 +1,5 @@
+{
+  "arguments": ["--convert-uracils"],
+  "return_code": 1,
+  "stderr": ["found degenerate base 'Y' in FASTQ sequence"]
+}
