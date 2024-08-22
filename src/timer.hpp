@@ -67,6 +67,8 @@ private:
     std::string m_what;
     //! Total number of items processed
     size_t m_total;
+    //! Number of items triggering next report
+    size_t m_next_report;
     //! Starting time (in seconds) of the timer.
     double m_first_time;
     //! Counts for last N updates, for calculating running mean rate.

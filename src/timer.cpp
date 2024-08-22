@@ -99,6 +99,7 @@ std::string format_time(double seconds)
 timer::timer(const std::string& what)
   : m_what(what)
   , m_total(0)
+  , m_next_report(REPORT_EVERY)
   , m_first_time(get_current_time())
   , m_counts()
 {
@@ -111,7 +112,7 @@ void timer::increment(size_t inc)
     m_total += inc;
     m_counts.back().second += inc;
 
-    if (m_counts.back().second >= REPORT_EVERY) {
+    if (m_total >= m_next_report) {
         const double current_time = get_current_time();
         // Number of seconds since oldest block was created
         const double seconds = current_time - m_counts.front().first;
@@ -127,6 +128,8 @@ void timer::increment(size_t inc)
         while (m_counts.size() > AVG_BLOCKS) {
             m_counts.pop_front();
         }
+
+        m_next_report = (m_total / REPORT_EVERY + 1) * REPORT_EVERY;
     }
 }
 
