@@ -28,7 +28,7 @@
 namespace adapterremoval {
 
 std::string
-_escape(const std::string& value)
+_escape(std::string_view value)
 {
   std::ostringstream stream;
 
@@ -107,7 +107,7 @@ json_token::json_token(std::string value)
 }
 
 json_ptr
-json_token::from_str(const std::string& value)
+json_token::from_str(std::string_view value)
 {
   return std::make_shared<json_token>(_escape(value));
 }
@@ -231,22 +231,20 @@ json_list::dict()
 void
 json_dict::write(std::ostream& out, size_t indent_) const
 {
-  AR_REQUIRE(m_keys.size() == m_values.size());
   const auto indent = std::string(m_multi_line ? indent_ : 0, ' ');
   const char spacer = m_multi_line ? '\n' : ' ';
 
-  if (m_keys.empty()) {
+  if (m_items.empty()) {
     out << "{}";
   } else {
     out << "{" << spacer;
 
-    for (size_t i = 0; i < m_keys.size(); ++i) {
-      const auto it = m_values.find(m_keys.at(i));
-      AR_REQUIRE(it != m_values.end());
+    for (size_t i = 0; i < m_items.size(); ++i) {
+      const auto it = m_items.at(i);
 
-      out << indent << (m_multi_line ? "  " : "") << _escape(it->first) << ": ";
-      it->second->write(out, indent_ + 2);
-      if (i < m_keys.size() - 1) {
+      out << indent << (m_multi_line ? "  " : "") << _escape(it.first) << ": ";
+      it.second->write(out, indent_ + 2);
+      if (i + 1 < m_items.size()) {
         out << ",";
       }
 
@@ -258,7 +256,7 @@ json_dict::write(std::ostream& out, size_t indent_) const
 }
 
 json_dict_ptr
-json_dict::dict(const std::string& key)
+json_dict::dict(std::string_view key)
 {
   auto ptr = std::make_shared<json_dict>();
   ptr->m_multi_line = m_multi_line;
@@ -268,7 +266,7 @@ json_dict::dict(const std::string& key)
 }
 
 json_dict_ptr
-json_dict::inline_dict(const std::string& key)
+json_dict::inline_dict(std::string_view key)
 {
   auto ptr = dict(key);
   ptr->m_multi_line = false;
@@ -277,7 +275,7 @@ json_dict::inline_dict(const std::string& key)
 }
 
 json_list_ptr
-json_dict::list(const std::string& key)
+json_dict::list(std::string_view key)
 {
   auto ptr = std::make_shared<json_list>();
   _set(key, ptr);
@@ -286,68 +284,70 @@ json_dict::list(const std::string& key)
 }
 
 void
-json_dict::str(const std::string& key, const std::string& value)
+json_dict::str(std::string_view key, std::string_view value)
 {
   _set(key, json_token::from_str(value));
 }
 
 void
-json_dict::str_vec(const std::string& key, const string_vec& values)
+json_dict::str_vec(std::string_view key, const string_vec& values)
 {
   _set(key, json_token::from_str_vec(values));
 }
 
 void
-json_dict::i64(const std::string& key, const int64_t value)
+json_dict::i64(std::string_view key, const int64_t value)
 {
   _set(key, json_token::from_i64(value));
 }
 
 void
-json_dict::i64_vec(const std::string& key, const counts& values)
+json_dict::i64_vec(std::string_view key, const counts& values)
 {
   _set(key, json_token::from_i64_vec(values));
 }
 
 void
-json_dict::u64(const std::string& key, const uint64_t value)
+json_dict::u64(std::string_view key, const uint64_t value)
 {
   _set(key, json_token::from_u64(value));
 }
 
 void
-json_dict::f64(const std::string& key, const double value)
+json_dict::f64(std::string_view key, const double value)
 {
   _set(key, json_token::from_f64(value));
 }
 
 void
-json_dict::f64_vec(const std::string& key, const rates& values)
+json_dict::f64_vec(std::string_view key, const rates& values)
 {
   _set(key, json_token::from_f64_vec(values));
 }
 
 void
-json_dict::boolean(const std::string& key, const bool value)
+json_dict::boolean(std::string_view key, const bool value)
 {
   _set(key, json_token::from_boolean(value));
 }
 
 void
-json_dict::null(const std::string& key)
+json_dict::null(std::string_view key)
 {
   _set(key, json_token::from_null());
 }
 
 void
-json_dict::_set(const std::string& key, const json_ptr& ptr)
+json_dict::_set(std::string_view key, const json_ptr& ptr)
 {
-  const auto it = std::find(m_keys.begin(), m_keys.end(), key);
-  if (it == m_keys.end()) {
-    m_keys.push_back(key);
+  for (auto& it : m_items) {
+    if (it.first == key) {
+      it.second = ptr;
+      return;
+    }
   }
 
-  m_values[key] = ptr;
+  m_items.emplace_back(key, ptr);
 }
 
 } // namespace adapterremoval

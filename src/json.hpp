@@ -68,7 +68,7 @@ public:
   explicit json_token(std::string value);
 
   /** Create a JSON token from a string; special characters are escaped */
-  static json_ptr from_str(const std::string& value);
+  static json_ptr from_str(std::string_view value);
   /** Create a single-line JSON token representing a list strings */
   static json_ptr from_str_vec(const string_vec& values);
 
@@ -137,43 +137,41 @@ public:
   void write(std::ostream& out, size_t indent = 0) const override;
 
   /** Add and return a sub-dict with the specified key */
-  json_dict_ptr dict(const std::string& key);
+  json_dict_ptr dict(std::string_view key);
   /** Add and return an inline sub-dict with the specified key */
-  json_dict_ptr inline_dict(const std::string& key);
+  json_dict_ptr inline_dict(std::string_view key);
   /** Add and return a sub-list with the specified key */
-  json_list_ptr list(const std::string& key);
+  json_list_ptr list(std::string_view key);
 
   /** Set key with string value. */
-  void str(const std::string& key, const std::string& value);
+  void str(std::string_view key, std::string_view value);
   /** Assign string value array. */
-  void str_vec(const std::string& key, const string_vec& value);
+  void str_vec(std::string_view key, const string_vec& value);
 
   /** Assign integer value. */
-  void i64(const std::string& key, int64_t value);
+  void i64(std::string_view key, int64_t value);
   /** Assign integer value array. */
-  void i64_vec(const std::string& key, const counts& value);
+  void i64_vec(std::string_view key, const counts& value);
 
   /** Assign integer value. */
-  void u64(const std::string& key, uint64_t value);
+  void u64(std::string_view key, uint64_t value);
 
   /** Assign floating point value. */
-  void f64(const std::string& key, double value);
+  void f64(std::string_view key, double value);
   /** Assign float value array. */
-  void f64_vec(const std::string& key, const rates& value);
+  void f64_vec(std::string_view key, const rates& value);
 
   /** Assign boolean value (true/false). */
-  void boolean(const std::string& key, bool value);
+  void boolean(std::string_view key, bool value);
   /** Assign null value. */
-  void null(const std::string& key);
+  void null(std::string_view key);
 
 private:
   /** Assigns a JSON object to a given key and updates the list of keys */
-  void _set(const std::string& key, const json_ptr& ptr);
+  void _set(std::string_view key, const json_ptr& ptr);
 
   //! List of keys in insertion order
-  std::vector<std::string> m_keys{};
-  //! Map of unencoded keys to JSON objects
-  std::map<std::string, json_ptr, std::less<>> m_values{};
+  std::vector<std::pair<std::string, json_ptr>> m_items{};
   //! Multi-line or single (inline) dictionary
   bool m_multi_line = true;
 };
