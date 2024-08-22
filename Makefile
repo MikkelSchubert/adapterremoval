@@ -6,9 +6,6 @@ PREFIX := /usr/local
 
 ## Optional features; comment out or set to value other than 'yes' to disable
 
-# Generate statically linked binary
-STATIC := no
-
 # Show individual commands during build; otherwise shows summaries instead.
 VERBOSE := no
 
@@ -24,6 +21,9 @@ COVERAGE := no
 # Enable address and undefined behavior sanitation
 SANITIZE := no
 
+# Generate statically linked binary
+# It is recommended to use the included Containerfile to build the static binary
+STATIC := no
 
 ###############################################################################
 # Makefile internals. Normally you do not need to touch these.
@@ -216,7 +216,7 @@ everything: all test regression docs examples
 
 examples: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
-	$(QUIET) $(MAKE) -j1 -C examples EXE=$(CURDIR)/$(EXECUTABLE)
+	$(QUIET) $(MAKE) -j1 -C examples EXE=$(shell realpath $(EXECUTABLE))
 
 install: $(EXECUTABLE) $(MAN_PAGE)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
@@ -292,12 +292,13 @@ static:
 		--mount "type=bind,src=$(shell pwd)/,dst=/root/adapterremoval/" \
 		--mount "type=bind,src=$(BUILD_DIR)/,dst=/root/build" \
 		$(CONTAINER) \
+		regression examples test install \
 		"BUILD_DIR=/root/build" \
 		"DESTDIR=/root/build/install" \
 		"VERBOSE=yes" \
 		"COLOR=no" \
 		"STATIC=yes"
-	@echo $(COLOR_GREEN)"Static binary installed into "$(COLOR_END)
+	@echo $(COLOR_GREEN)"Static binary installed into $(BUILD_DIR)/"$(COLOR_END)
 
 static-container:
 	@echo $(COLOR_GREEN)"Building static compilation container"$(COLOR_END)
