@@ -237,8 +237,8 @@ public:
         fastq_vec::iterator it_1 = read_chunk->reads_1.begin();
         fastq_vec::iterator it_2 = read_chunk->reads_2.begin();
         while (it_1 != read_chunk->reads_1.end()) {
-            fastq read_1 = *it_1++;
-            fastq read_2 = *it_2++;
+            const fastq& read_1 = *it_1++;
+            const fastq& read_2 = *it_2++;
 
             encoded_reads_1->add(*m_config.quality_output_fmt, read_1);
 
