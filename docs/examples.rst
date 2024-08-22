@@ -61,6 +61,35 @@ Combining FASTQ output
 By default, AdapterRemoval will create one output file for each mate, one file for discarded reads, and (in PE mode) one file paired reads where one mate has been discarded, and (optionally) two files for collapsed reads. Alternatively, these files may be combined using the ``--combined-output``, in which case all output is directed to the mate 1 and (in PE mode) to the mate 2 file. In cases where reads are discarded due to trimming to due to being collapsed into a single sequence, the sequence and quality scores of the discarded read is replaced with a single 'N' with base-quality 0. This option may be combined with ``--interleaved`` / ``--interleaved-output``, to write a single, interleaved file in paired-end mode.
 
 
+Reading from STDIN and writing to STDOUT
+----------------------------------------
+
+AdapterRemoval does not provide specific command-line options for for reading data from STDIN or writing data to STDOUT, but files are opened/read only once and no data is written to STDOUT. The only exception is the ``--identify-adapters`` command, which prints the identification results to STDOUT, but this command does not produce FASTQ output.
+
+This means that it is possible to read data from STDIN simply by using the special files ``/dev/stdin`` and ``/dev/stdout``.
+
+For example, to read FASTQ reads from STDIN assuming that ``fastq-producer`` is a command that produces FASTQ output (compressed or uncompressed)::
+
+    $ fastq-producer | AdapterRemoval --file1 /dev/stdin
+
+Interleaved, paired-end reads are supported via the ``--interleaved-input`` and ``--interleaved`` options::
+
+    $ fastq-producer | AdapterRemoval --file1 /dev/stdin --interleaved-input
+
+Similarly, to write FASTQ to STDOUT for SE and PE data::
+
+    $ AdapterRemoval --file1 my_reads.fq.gz --output1 /dev/stdout | fastq-consumer
+    $ AdapterRemoval --file1 my_reads_1.fq.gz --file2 my_reads_2.fq.gz --interleaved-output --output1 /dev/stdout | fastq-consumer
+
+This can be combined to both read from STDIN and write to STDOUT, assuming that ``fastq-consumer`` is a command that consumes FASTQ input::
+
+    $ fastq-producer | AdapterRemoval --file1 /dev/stdin --output1 /dev/stdout | fastq-consumer
+    $ fastq-producer | AdapterRemoval --interleaved --file1 /dev/stdin --output1 /dev/stdout | fastq-consumer
+
+The ``--combined-output`` option can be used to write *all* reads (mate 1, mate 2, singleton, merged, and discarded) to a file or to STDOUT::
+
+    AdapterRemoval --file1 my_reads_1.fq.gz --file2 my_reads_2.fq.gz --combined-output --output1 /dev/stdout | fastq-consumer
+
 Different quality score encodings
 ---------------------------------
 
