@@ -110,21 +110,21 @@ clean: clean_tests clean_docs
 # Install
 install: build/$(PROG)
 	@echo $(COLOR_GREEN)"Installing AdapterRemoval .."$(COLOR_END)
-	@echo $(COLOR_GREEN)"  .. binary into ${PREFIX}/bin/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/bin/
-	$(QUIET) $(INSTALLEXE) build/$(PROG) ${PREFIX}/bin/
+	@echo $(COLOR_GREEN)"  .. binary into $(DESTDIR)${PREFIX}/bin/"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(DESTDIR)${PREFIX}/bin/
+	$(QUIET) $(INSTALLEXE) build/$(PROG) $(DESTDIR)${PREFIX}/bin/
 
-	@echo $(COLOR_GREEN)"  .. man-page into ${PREFIX}/share/man/man1/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/man/man1/
-	$(QUIET) $(INSTALLDOC) $(PROG).1 ${PREFIX}/share/man/man1/
+	@echo $(COLOR_GREEN)"  .. man-page into $(DESTDIR)${PREFIX}/share/man/man1/"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(DESTDIR)${PREFIX}/share/man/man1/
+	$(QUIET) $(INSTALLDOC) $(PROG).1 $(DESTDIR)${PREFIX}/share/man/man1/
 
-	@echo $(COLOR_GREEN)"  .. README into ${PREFIX}/share/adapterremoval/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/
-	$(QUIET) $(INSTALLDOC) README.md ${PREFIX}/share/adapterremoval/
+	@echo $(COLOR_GREEN)"  .. README into $(DESTDIR)${PREFIX}/share/adapterremoval/"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(DESTDIR)${PREFIX}/share/adapterremoval/
+	$(QUIET) $(INSTALLDOC) README.md $(DESTDIR)${PREFIX}/share/adapterremoval/
 
-	@echo $(COLOR_GREEN)"  .. examples into ${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
-	$(QUIET) $(MKDIR) ${PREFIX}/share/adapterremoval/examples/
-	$(QUIET) $(INSTALLDAT) examples/*.* ${PREFIX}/share/adapterremoval/examples/
+	@echo $(COLOR_GREEN)"  .. examples into $(DESTDIR)${PREFIX}/share/adapterremoval/examples/"$(COLOR_END)
+	$(QUIET) $(MKDIR) $(DESTDIR)${PREFIX}/share/adapterremoval/examples/
+	$(QUIET) $(INSTALLDAT) examples/*.* $(DESTDIR)${PREFIX}/share/adapterremoval/examples/
 
 static: build/$(LIBNAME).a
 
