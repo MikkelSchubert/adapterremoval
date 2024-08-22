@@ -225,9 +225,131 @@ const std::string g_phred_to_solexa = calc_phred_to_solexa();
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+[[noreturn]] void
+throw_invalid_base(char c)
+{
+  std::ostringstream stream;
+
+  switch (c) {
+    case 'B': // C / G / T
+    case 'D': // A / G / T
+    case 'H': // A / C / T
+    case 'K': // G / T
+    case 'M': // A / C
+    case 'R': // A / G
+    case 'S': // C / G
+    case 'V': // A / C / G
+    case 'W': // A / T
+    case 'Y': // C / T
+      stream << "found degenerate base '" << c << "' in FASTQ sequence, but "
+             << "only bases A, C, G, T and N are supported. Use the option "
+                "--mask-degenerate-bases to convert degenerate bases to N";
+      break;
+
+    case 'U': // Uracils
+      stream << "found uracil (U) in FASTQ sequence, but only bases A, C, G, "
+                "T and N are supported. Use the option --convert-uracils to "
+                "convert uracils (U) to thymine (T)";
+      break;
+
+    default:
+      stream << "invalid character " << std::string(1, c)
+             << " found in FASTQ sequence";
+      break;
+  }
+
+  throw fastq_error(stream.str());
+}
+
+void
+process_nucleotides_strict(std::string& nucleotides)
+{
+  for (char& nuc : nucleotides) {
+    // Fast ASCII letter uppercase
+    const auto upper_case = nuc & 0xDF;
+    switch (upper_case) {
+      case 'A':
+      case 'C':
+      case 'G':
+      case 'T':
+      case 'N':
+        nuc = upper_case;
+        break;
+
+      default:
+        if (nuc == '.') {
+            nuc = 'N';
+        } else {
+            throw_invalid_base(nuc);
+        }
+    }
+  }
+}
+
+void
+process_nucleotides_lenient(std::string& nucleotides,
+                            const bool convert_uracil,
+                            const bool mask_degenerate)
+{
+  for (char& nuc : nucleotides) {
+    // Fast ASCII letter uppercase
+    const auto upper_case = nuc & 0xDF;
+    switch (upper_case) {
+      case 'A':
+      case 'C':
+      case 'G':
+      case 'T':
+      case 'N':
+        nuc = upper_case;
+        break;
+
+      // Uracils
+      case 'U':
+        if (convert_uracil) {
+          nuc = 'T';
+          break;
+        } else {
+          throw_invalid_base(nuc);
+        }
+
+      // IUPAC encoded degenerate bases
+      case 'B': // C / G / T
+      case 'D': // A / G / T
+      case 'H': // A / C / T
+      case 'K': // G / T
+      case 'M': // A / C
+      case 'R': // A / G
+      case 'S': // C / G
+      case 'V': // A / C / G
+      case 'W': // A / T
+      case 'Y': // C / T
+        if (mask_degenerate) {
+          nuc = 'N';
+          break;
+        } else {
+          throw_invalid_base(nuc);
+        }
+
+      default:
+        if (nuc == '.') {
+            nuc = 'N';
+        } else {
+            throw_invalid_base(nuc);
+        }
+    }
+  }
+}
+
+}
+
+
 fastq_encoding::fastq_encoding(char offset, char max_score)
   : m_offset(offset)
   , m_max_score(std::min<size_t>('~' - offset, max_score))
+  , m_mask_degenerate(false)
+  , m_convert_uracil(false)
 {
     if (offset != 33 && offset != 64) {
         throw std::invalid_argument("Phred offset must be 33 or 64");
@@ -245,8 +367,18 @@ fastq_encoding::~fastq_encoding()
 }
 
 
-void fastq_encoding::encode(const std::string& qualities,
-                            std::string& dst) const
+void fastq_encoding::decode_nucleotides(std::string& sequence) const
+{
+  if (m_mask_degenerate || m_convert_uracil) {
+    process_nucleotides_lenient(sequence, m_convert_uracil, m_mask_degenerate);
+  } else {
+    process_nucleotides_strict(sequence);
+  }
+}
+
+
+void fastq_encoding::encode_qualities(const std::string& qualities,
+                                      std::string& dst) const
 {
     const char ascii_max = m_offset + m_max_score;
     const char offset = m_offset - '!';
@@ -257,7 +389,7 @@ void fastq_encoding::encode(const std::string& qualities,
 }
 
 
-void fastq_encoding::decode(std::string& qualities) const
+void fastq_encoding::decode_qualities(std::string& qualities) const
 {
     const char max_score = m_offset + m_max_score;
     const char offset = PHRED_OFFSET_33 - m_offset;
@@ -296,8 +428,8 @@ fastq_encoding_solexa::fastq_encoding_solexa(unsigned max_score)
 }
 
 
-void fastq_encoding_solexa::encode(const std::string& qualities,
-                                   std::string& dst) const
+void fastq_encoding_solexa::encode_qualities(const std::string& qualities,
+                                             std::string& dst) const
 {
     const char ascii_max = m_offset + m_max_score;
 
@@ -307,7 +439,7 @@ void fastq_encoding_solexa::encode(const std::string& qualities,
 }
 
 
-void fastq_encoding_solexa::decode(std::string& qualities) const
+void fastq_encoding_solexa::decode_qualities(std::string& qualities) const
 {
     const char max_score = m_offset + m_max_score;
     for (auto& quality : qualities) {

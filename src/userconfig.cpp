@@ -214,6 +214,16 @@ userconfig::userconfig(const std::string& name,
             "is not set). Discarded reads are replaced with a single 'N' with "
             "Phred score 0 [default: %default].");
 
+  argparser["--mask-degenerate-bases"] =
+        new argparse::flag(nullptr,
+             "Mask degenerate/ambiguous bases (B/D/H/K/M/N/R/S/V/W/Y) in "
+            "input by replacing them with an 'N'; if this option is not used, "
+            "AdapterRemoval will abort upon encountering degenerate bases.");
+  argparser["--convert-uracils"] =
+        new argparse::flag(nullptr,
+            "Convert uracils (U) to thymine (T) in input reads; if this option "
+            "is not used, AdapterRemoval will abort upon encountering uracils.");
+
     argparser.add_header("OUTPUT FILES:");
     argparser["--basename"] =
         new argparse::any(&basename, "BASENAME",
@@ -462,6 +472,9 @@ argparse::parse_result userconfig::parse_args(int argc, char *argv[])
     if (!quality_input_fmt.get()) {
         return argparse::parse_result::error;
     }
+
+    quality_input_fmt->mask_degenerate_bases(argparser.is_set("--mask-degenerate-bases"));
+    quality_input_fmt->convert_uracils(argparser.is_set("--convert-uracils"));
 
     if (argparser.is_set("--qualitybase-output")) {
         quality_output_fmt = select_encoding("--qualitybase-out", quality_output_base, quality_max);

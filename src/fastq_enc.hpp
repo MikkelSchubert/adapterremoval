@@ -85,10 +85,18 @@ public:
 
     virtual ~fastq_encoding();
 
-    /** Appends encoded Phred+33/66 quality-scores to dst. */
-    virtual void encode(const std::string& qualities, std::string& dst) const;
+    /** Replace degenerate bases with Ns */
+    void mask_degenerate_bases(bool value) { m_mask_degenerate = value; }
+    /** Convert Uracils to Thymine */
+    void convert_uracils(bool value) { m_convert_uracil = value; }
+
     /** Decodes a string of ASCII values in-place. */
-    virtual void decode(std::string& qualities) const;
+    virtual void decode_nucleotides(std::string& sequence) const;
+
+    /** Appends encoded Phred+33/66 quality-scores to dst. */
+    virtual void encode_qualities(const std::string& qualities, std::string& dst) const;
+    /** Decodes a string of ASCII values in-place. */
+    virtual void decode_qualities(std::string& qualities) const;
 
     /** Returns the standard name for this encoding. */
     virtual const char* name() const;
@@ -109,6 +117,10 @@ protected:
     const char m_offset;
     //! Maximum allowed score; used for checking input / truncating output
     const char m_max_score;
+    //! Mask or reject degenerate bases
+    bool m_mask_degenerate;
+    //! Convert or reject uracil
+    bool m_convert_uracil;
 };
 
 
@@ -132,9 +144,9 @@ public:
     fastq_encoding_solexa(unsigned max_score = MAX_PHRED_SCORE_DEFAULT);
 
     /** Appends encoded Phred+33/66 quality-scores to dst. */
-    virtual void encode(const std::string& qualities, std::string& dst) const override;
+    virtual void encode_qualities(const std::string& qualities, std::string& dst) const override;
     /** Decodes a string of ASCII values in-place. */
-    virtual void decode(std::string& qualities) const override;
+    virtual void decode_qualities(std::string& qualities) const override;
 
     /** Returns the standard name for this encoding. */
     virtual const char* name() const override;

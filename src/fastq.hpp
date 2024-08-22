@@ -191,14 +191,6 @@ public:
                                       char mate_separator = MATE_SEPARATOR);
 
 private:
-    /**
-     * Converting lower-case nucleotides to uppercase, '.' to N.
-     *
-     * If the sequence contains letters other than "acgtnACGTN.", a fastq_error
-     * is thrown.
-     **/
-    static void clean_sequence(std::string& sequence);
-
     /** Initializes record; used by constructor and read function. **/
     void process_record(const fastq_encoding& encoding);
 

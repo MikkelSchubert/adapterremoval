@@ -338,7 +338,7 @@ std::string fastq::to_str(const fastq_encoding& encoding) const
     result.push_back('\n');
     result.append(m_sequence);
     result.append("\n+\n", 3);
-    encoding.encode(m_qualities, result);
+    encoding.encode_qualities(m_qualities, result);
     result.push_back('\n');
 
     return result;
@@ -348,36 +348,6 @@ std::string fastq::to_str(const fastq_encoding& encoding) const
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public helper functions
-
-void fastq::clean_sequence(std::string& sequence)
-{
-    for (char& nuc : sequence) {
-        switch (nuc) {
-            case 'A':
-            case 'C':
-            case 'G':
-            case 'T':
-            case 'N':
-                break;
-
-            case 'a':
-            case 'c':
-            case 'g':
-            case 't':
-            case 'n':
-                nuc += 'A' - 'a';
-                break;
-
-            case '.':
-                nuc = 'N';
-                break;
-
-            default:
-                throw fastq_error("invalid character in FASTQ sequence; "
-                                  "only A, C, G, T and N are expected!");
-        }
-    }
-}
 
 
 char fastq::p_to_phred_33(double p)
@@ -441,8 +411,8 @@ void fastq::process_record(const fastq_encoding& encoding)
         throw fastq_error("invalid FASTQ record; sequence/quality length does not match");
     }
 
-    clean_sequence(m_sequence);
-    encoding.decode(m_qualities);
+    encoding.decode_nucleotides(m_sequence);
+    encoding.decode_qualities(m_qualities);
 }
 
 
