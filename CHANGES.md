@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.3.4] - 2024-08-24
+
+This release adds a new couple of command-line options for handling non-ACGTN
+bases input FASTQ data and back-ports a few minor fixes from the development
+branch.
+
+### Added
+
+- Added support for converting Uracils (U) in input data to Thymine (T) via the
+  `--convert-uracils` flag.
+- Added support for replacing IUPAC-encoded degenerate bases with Ns via the
+  `--mask-degenerate-bases` flag.
+- Added DESTDIR support to `make install`.
+
+### Fixed
+
+- Improved progress timer accuracy, so updates occur closer to every 1M reads.
+
+### Changed
+
+- Minor improvements to `--help` text and documentation.
+
 ## [3.0.0-alpha2] - 2024-08-20
 
 This is the second alpha release of AdapterRemoval v3. It is the intention that
@@ -22,7 +44,7 @@ mandatory dependency.
 
 ### Added
 
-- Added support for converting (U)racils in input data to T(hymine) via the
+- Added support for converting Uracils (U) in input data to Thymine (T) via the
   `--convert-uracils` flag.
 - Added support for replacing IUPAC-encoded degenerate bases with Ns via the
   `--mask-degenerate-bases` flag.
@@ -186,8 +208,6 @@ The following changes are all [**BREAKING**] as described above:
 - Dropped undocumented support for '.' as equivalent to 'N' in FASTQ reads.
 - Support for reading and writing of bzip2 files has been removed.
 
-### Fixed
-
 ## [2.3.3] - 2022-04-15
 
 ### Fixed
@@ -270,8 +290,8 @@ The following changes are all [**BREAKING**] as described above:
   Different values may be given for each mate: --trim5p N1 N2. Trimming is
   carried out after adapters have been removed and reads have been collapsed, if
   enabled, but before quality trimming (Ns and low qualities).
-- Added option for determistic read merging (--collapse-deterministic). In this
-  mode AdapterRemoval will set a merged base to 'N' with quality 0 if the
+- Added option for deterministic read merging (--collapse-deterministic). In
+  this mode AdapterRemoval will set a merged base to 'N' with quality 0 if the
   corresponding bases on the two mates differ, and if both have the same quality
   score. The default behavior is to select one of the two bases at random.
 - Added conda installation instructions, courtesy of Maxime Borry (maxibor).
@@ -424,7 +444,7 @@ The following changes are all [**BREAKING**] as described above:
 
 - Fixed bug which could occasionally result in failure when bzip2 compression
   was enabled, by attempting to compress empty buffer.
-- Fixed typos courtesey of Hannes Pétur Eggertsson
+- Fixed typos courtesy of Hannes Pétur Eggertsson
 
 ## [2.1.3] - 2015-12-25
 
@@ -563,13 +583,13 @@ versions of AdapterRemoval, and adding a few new features.
 - Replaced use of lower bits of rand() calls with random(), as the former
   generates low entropy bits in that range on some (non-Linux) platforms.
 - Seed is now initialized using a mix of seconds and microseconds, instead of
-  the current time in seconds, to reduce the risk of multiple instances spawed
+  the current time in seconds, to reduce the risk of multiple instances spawned
   within a short timespan from using the same seed.
 
 ### Fixed
 
 - Fixed underestimation of error-probabilities during sequence collapse.
-- Fixed (futher) underestimation of error-probabilities of bases during
+- Fixed (further) underestimation of error-probabilities of bases during
   collapsing, for conflicting base-calls with the same Phred score.
 - Fixed the maximum number of mismatches for alignments in the range of 6 .. 9
   bases always being 1, even if --mm was set to 0.
@@ -682,7 +702,9 @@ dramatic effects on the use of the program so please read these notes carefully
 
 - Initial release
 
-[3.0.0-alpha1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...HEAD
+[2.3.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...v2.3.4
+[3.0.0-alpha2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha1...3.0.0-alpha2
+[3.0.0-alpha1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...3.0.0-alpha1
 [2.3.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...v2.3.3
 [2.3.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.0...v2.3.1
