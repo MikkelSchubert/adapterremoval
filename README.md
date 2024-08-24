@@ -13,7 +13,7 @@ For questions, bug reports, and/or suggestions, please use the
 
 # AdapterRemoval v3 - Dang fast(Q) processing
 
-AdapterRemoval v3 is a major revision of AdapterRemoval, that aims to simplify usage by picking a sensible set of default settings, adding new features to handle a wider range of data, providing [human readable HTML reports](https://mikkelschubert.github.io/adapterremoval/examples/example.html) and machine [readable JSON files](https://mikkelschubert.github.io/adapterremoval/examples/example.json), as well as greatly improving overall throughput.
+AdapterRemoval v3 is a major revision of AdapterRemoval, that aims to simplify usage by picking a sensible set of default settings, adding new features to handle a wider range of data, providing [human readable HTML reports](https://mikkelschubert.github.io/adapterremoval/examples/example.html) and [machine readable JSON files](https://mikkelschubert.github.io/adapterremoval/examples/example.json), as well as greatly improving overall throughput.
 
 AdapterRemoval v3 is still a work in progress, but alpha release 2 is [available for download](https://github.com/MikkelSchubert/adapterremoval/releases/tag/v3.0.0-alpha2/). Documentation is available at [Read the Docs](https://adapterremoval.readthedocs.io/en/v3.0.0-alpha2/), including a guide on how to migrate from v2. Bug reports, feature requests, and other feedback is greatly appreciated.
 
@@ -68,9 +68,9 @@ Installing AdapterRemoval from sources requires libz and libbz2.
 To compile AdapterRemoval, download the latest release, unpack the archive and
 then simply run "make" in the resulting folder:
 
-    wget -O adapterremoval-2.3.1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.1.tar.gz
-    tar xvzf adapterremoval-2.3.1.tar.gz
-    cd adapterremoval-2.3.1
+    wget -O adapterremoval-2.3.4.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.4.tar.gz
+    tar xvzf adapterremoval-2.3.4.tar.gz
+    cd adapterremoval-2.3.4
     make
 
 The resulting 'AdapterRemoval' executable is located in the 'build'
@@ -83,7 +83,7 @@ subdirectory and may be installed by running "make install":
 To run AdapterRemoval, specify the location of pair 1 and (optionally) pair 2
 FASTQ using the --file1 and --file2 command-line options:
 
-    AdapterRemoval --file1 myreads_1.fastq.gz --file2 myreads_2.fastq.gz
+    AdapterRemoval --file1 reads_1.fastq.gz --file2 reads_2.fastq.gz
 
 By default, AdapterRemoval will save the trimmed reads in the current working
 directly, using filenames starting with 'your_output'.
