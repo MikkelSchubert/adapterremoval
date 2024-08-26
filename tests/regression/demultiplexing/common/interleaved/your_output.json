@@ -139,7 +139,7 @@
           "adapters": [
             {
               "sequence_1": "CTAAGGAGAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-              "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTTGTAACGC",
+              "sequence_2": "GCGTTACAAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
               "reads": 4,
               "bases": 218
             }
@@ -232,7 +232,7 @@
           "adapters": [
             {
               "sequence_1": "GCATATACAGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-              "sequence_2": "ACACTCTTTCCCTACACGACGCTCTTCCGATCTGGGGACTC",
+              "sequence_2": "GAGTCCCCAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
               "reads": 4,
               "bases": 218
             }

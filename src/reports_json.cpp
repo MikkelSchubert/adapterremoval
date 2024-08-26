@@ -462,8 +462,12 @@ write_report_demultiplexing(const userconfig& config,
 
       sample->u64("reads", demux.barcodes.at(i));
 
-      write_report_trimming(
-        config, sample, stats, config.adapters.get_adapter_set(i));
+      auto adapters = config.adapters.get_adapter_set(i);
+      for (auto& it : adapters) {
+        it.second.reverse_complement();
+      }
+
+      write_report_trimming(config, sample, stats, adapters);
 
       const auto output = sample->dict("output");
       io_section(read_type::mate_1, "read1", stats.read_1, files)
