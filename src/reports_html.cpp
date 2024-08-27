@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "adapter_id.hpp"            // for adapter_id_statistics
-#include "adapterset.hpp"            // for adapter_set
 #include "counts.hpp"                // for counts, indexed_count, counts_tmpl
 #include "debug.hpp"                 // for AR_REQUIRE
 #include "fastq.hpp"                 // for ACGT, ACGT::values, fastq, ACGTN
@@ -28,6 +27,7 @@
 #include "output.hpp"                // for DEV_NULL, output_files
 #include "reports.hpp"               // for write_html_report
 #include "reports_template_html.hpp" // for html_frequency_plot, html_demultiple...
+#include "sequence_sets.hpp"         // for adapter_set
 #include "simd.hpp"                  // for size_t
 #include "statistics.hpp"            // for fastq_stats_ptr, fastq_statistics
 #include "strutils.hpp"              // for format_percentage, format_rough...

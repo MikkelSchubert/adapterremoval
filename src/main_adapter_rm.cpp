@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapterset.hpp"     // for adapter_set
 #include "debug.hpp"          // for AR_REQUIRE
 #include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq_io.hpp"       // for gzip_split_fastq, post_process_fastq
 #include "output.hpp"         // for outpuT_file, DEV_NULL
 #include "reports.hpp"        // for write_html_report, write_json_report
 #include "scheduler.hpp"      // for scheduler
+#include "sequence_sets.hpp"  // for adapter_set
 #include "simd.hpp"           // for size_t
 #include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
 #include "strutils.hpp"       // for ends_with, to_lower, string_vec

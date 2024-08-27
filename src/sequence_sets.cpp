@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapterset.hpp"
+#include "sequence_sets.hpp"
 #include "debug.hpp"      // for AR_REQUIRE
 #include "errors.hpp"     // for fastq_error
 #include "linereader.hpp" // for line_reader

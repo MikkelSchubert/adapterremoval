@@ -17,30 +17,30 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapterset.hpp"  // for adapter_set
-#include "commontypes.hpp" // for read_type, read_type::mate_1, read_typ...
-#include "counts.hpp"      // for counts, counts_tmpl, indexed_count
-#include "debug.hpp"       // for AR_FAIL
-#include "fastq.hpp"       // for ACGT, fastq_pair_vec, fastq, ACGT::values
-#include "json.hpp"        // for json_dict, json_dict_ptr, json_list
-#include "logging.hpp"     // for log_stream, error
-#include "main.hpp"        // for NAME, VERSION
-#include "managed_io.hpp"  // for managed_writer
-#include "output.hpp"      // for sample_output_files
-#include "reports.hpp"     // for write_json_report
-#include "simd.hpp"        // for size_t
-#include "statistics.hpp"  // for fastq_stats_ptr, trimming_statistics
-#include "strutils.hpp"    // for string_vec, to_lower, indent_lines
-#include "userconfig.hpp"  // for userconfig, output_files, output_sampl...
-#include <algorithm>       // for max
-#include <array>           // for array
-#include <cerrno>          // for errno
-#include <cstring>         // for size_t, strerror
-#include <fstream>         // for ofstream, ios_base::failure, operator|
-#include <memory>          // for __shared_ptr_access, shared_ptr, make_...
-#include <string>          // for basic_string, string, operator+, char_...
-#include <utility>         // for pair
-#include <vector>          // for vector
+#include "commontypes.hpp"   // for read_type, read_type::mate_1, read_typ...
+#include "counts.hpp"        // for counts, counts_tmpl, indexed_count
+#include "debug.hpp"         // for AR_FAIL
+#include "fastq.hpp"         // for ACGT, fastq_pair_vec, fastq, ACGT::values
+#include "json.hpp"          // for json_dict, json_dict_ptr, json_list
+#include "logging.hpp"       // for log_stream, error
+#include "main.hpp"          // for NAME, VERSION
+#include "managed_io.hpp"    // for managed_writer
+#include "output.hpp"        // for sample_output_files
+#include "reports.hpp"       // for write_json_report
+#include "sequence_sets.hpp" // for adapter_set
+#include "simd.hpp"          // for size_t
+#include "statistics.hpp"    // for fastq_stats_ptr, trimming_statistics
+#include "strutils.hpp"      // for string_vec, to_lower, indent_lines
+#include "userconfig.hpp"    // for userconfig, output_files, output_sampl...
+#include <algorithm>         // for max
+#include <array>             // for array
+#include <cerrno>            // for errno
+#include <cstring>           // for size_t, strerror
+#include <fstream>           // for ofstream, ios_base::failure, operator|
+#include <memory>            // for __shared_ptr_access, shared_ptr, make_...
+#include <string>            // for basic_string, string, operator+, char_...
+#include <utility>           // for pair
+#include <vector>            // for vector
 
 namespace adapterremoval {
 

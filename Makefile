@@ -162,7 +162,6 @@ CORE_OBJS := \
 # Build objects used only by the executable
 EXEC_OBJS := \
 	$(OBJS_DIR)/adapter_id.o \
-	$(OBJS_DIR)/adapterset.o \
 	$(OBJS_DIR)/benchmarking.o \
 	$(OBJS_DIR)/demultiplexing.o \
 	$(OBJS_DIR)/fastq_io.o \
@@ -178,6 +177,7 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/reports_template_html.o \
 	$(OBJS_DIR)/reports_terminal.o \
 	$(OBJS_DIR)/scheduler.o \
+	$(OBJS_DIR)/sequence_sets.o \
 	$(OBJS_DIR)/statistics.o \
 	$(OBJS_DIR)/timer.o \
 	$(OBJS_DIR)/trimming.o \

@@ -18,22 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "trimming.hpp"
-#include "adapterset.hpp"  // for adapter_set
 #include "alignment.hpp"   // for alignment_info, sequence_merger, sequence_...
 #include "commontypes.hpp" // for read_type, trimming_strategy, merge_strategy
 #include "counts.hpp"      // for counts, indexed_count
 #include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
 #include "fastq_io.hpp"    // for chunk_ptr, fastq_...
 #include "output.hpp"      // for sample_output_files, processed_reads
-#include "serializer.hpp"  // for fastq_flags
-#include "simd.hpp"        // for size_t
-#include "statistics.hpp"  // for trimming_statistics, reads_and_bases, fast...
-#include "userconfig.hpp"  // for userconfig
-#include <algorithm>       // for max
-#include <cstddef>         // for size_t
-#include <memory>          // for unique_ptr, __shared_ptr_access, make_unique
-#include <string>          // for string
-#include <utility>         // for pair, move
+#include "sequence_sets.hpp" // for adapter_set
+#include "serializer.hpp"    // for fastq_flags
+#include "simd.hpp"          // for size_t
+#include "statistics.hpp" // for trimming_statistics, reads_and_bases, fast...
+#include "userconfig.hpp" // for userconfig
+#include <algorithm>      // for max
+#include <cstddef>        // for size_t
+#include <memory>         // for unique_ptr, __shared_ptr_access, make_unique
+#include <string>         // for string
+#include <utility>        // for pair, move
 
 namespace adapterremoval {
 

@@ -18,15 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "demultiplexing.hpp"
-#include "adapterset.hpp" // for adapter_set
-#include "debug.hpp"      // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "fastq_io.hpp"   // for chunk_ptr, fastq...
-#include "output.hpp"     // for output_files
-#include "serializer.hpp" // for fastq_flags
-#include "userconfig.hpp" // for userconfig, ar_command, ar_command::demul...
-#include <cstddef>        // for size_t
-#include <memory>         // for make_unique, unique_ptr
-#include <utility>        // for move
+#include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "fastq_io.hpp"      // for chunk_ptr, fastq...
+#include "output.hpp"        // for output_files
+#include "sequence_sets.hpp" // for adapter_set
+#include "serializer.hpp"    // for fastq_flags
+#include "userconfig.hpp"    // for userconfig, ar_command, ar_command::demul...
+#include <cstddef>           // for size_t
+#include <memory>            // for make_unique, unique_ptr
+#include <utility>           // for move
 
 namespace adapterremoval {
 
