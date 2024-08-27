@@ -65,7 +65,7 @@
 
         .io-table tr>td:not(:first-child) {
             text-align: right;
-            width: 100px;
+            min-width: 100px;
         }
 
         .trimming-table tr>td:nth-child(-n+3) {
@@ -95,17 +95,17 @@
         .trimming-table tr>td:nth-child(4),
         .trimming-table tr>td:nth-child(6),
         .trimming-table tr>td:nth-child(8) {
-            width: 80px;
+            min-width: 80px;
         }
 
         .trimming-table tr>td:nth-child(5),
         .trimming-table tr>td:nth-child(7) {
-            width: 40px;
+            min-width: 40px;
         }
 
         .trimming-table tr>td:nth-of-type(3) {
             text-align: center;
-            width: 25px;
+            min-width: 25px;
         }
 
         .fixed-height-table {
@@ -114,7 +114,7 @@
         }
 
         .fixed-height-table>table {
-            width: 100%;
+            min-width: 100%;
         }
 
         .fixed-height-table>table>thead>tr>th {
@@ -615,7 +615,7 @@
                             <td>{{READS}}</td>
                             <td>{{BP}}</td>
                             <td>{{LENGTH}}</td>
-                            <td>{{GC}} %</td>
+                            <td>{{GC}}</td>
                         </tr>
 
                         <!-- TEMPLATE: DEMULTIPLEXING_TAIL -->

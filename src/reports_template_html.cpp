@@ -119,7 +119,7 @@ html_head::write(std::ostream& out)
   out << "\n";
   out << "        .io-table tr>td:not(:first-child) {\n";
   out << "            text-align: right;\n";
-  out << "            width: 100px;\n";
+  out << "            min-width: 100px;\n";
   out << "        }\n";
   out << "\n";
   out << "        .trimming-table tr>td:nth-child(-n+3) {\n";
@@ -149,17 +149,17 @@ html_head::write(std::ostream& out)
   out << "        .trimming-table tr>td:nth-child(4),\n";
   out << "        .trimming-table tr>td:nth-child(6),\n";
   out << "        .trimming-table tr>td:nth-child(8) {\n";
-  out << "            width: 80px;\n";
+  out << "            min-width: 80px;\n";
   out << "        }\n";
   out << "\n";
   out << "        .trimming-table tr>td:nth-child(5),\n";
   out << "        .trimming-table tr>td:nth-child(7) {\n";
-  out << "            width: 40px;\n";
+  out << "            min-width: 40px;\n";
   out << "        }\n";
   out << "\n";
   out << "        .trimming-table tr>td:nth-of-type(3) {\n";
   out << "            text-align: center;\n";
-  out << "            width: 25px;\n";
+  out << "            min-width: 25px;\n";
   out << "        }\n";
   out << "\n";
   out << "        .fixed-height-table {\n";
@@ -168,7 +168,7 @@ html_head::write(std::ostream& out)
   out << "        }\n";
   out << "\n";
   out << "        .fixed-height-table>table {\n";
-  out << "            width: 100%;\n";
+  out << "            min-width: 100%;\n";
   out << "        }\n";
   out << "\n";
   out << "        .fixed-height-table>table>thead>tr>th {\n";
@@ -1706,7 +1706,7 @@ html_demultiplexing_row::write(std::ostream& out)
   out << "                            <td>" << m_reads << "</td>\n";
   out << "                            <td>" << m_bp << "</td>\n";
   out << "                            <td>" << m_length << "</td>\n";
-  out << "                            <td>" << m_gc << " %</td>\n";
+  out << "                            <td>" << m_gc << "</td>\n";
   out << "                        </tr>\n";
   out << "\n";
   // clang-format on
