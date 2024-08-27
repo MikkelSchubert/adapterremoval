@@ -16,17 +16,18 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "adapter_id.hpp" // for adapter_id_statistics
-#include "alignment.hpp"  // for extract_adapter_sequences, sequence_aligner
-#include "debug.hpp"      // for AR_REQUIRE
-#include "fastq.hpp"      // for ACGTN, fastq, fastq_pair_vec, ACGT, ACGT:...
-#include "fastq_io.hpp"   // for read_fastq, read_chunk
-#include "output.hpp"     // for output_files
-#include "reports.hpp"    // for write_html_report, write_json_report
-#include "scheduler.hpp"  // for threadstate, scheduler, analytical_step
-#include "userconfig.hpp" // for userconfig
-#include <cstddef>        // for size_t
-#include <string>         // for string, operator<<, char_traits
+#include "adapter_id.hpp"    // for adapter_id_statistics
+#include "alignment.hpp"     // for extract_adapter_sequences, sequence_aligner
+#include "debug.hpp"         // for AR_REQUIRE
+#include "fastq.hpp"         // for ACGTN, fastq, ACGT, ACGT:...
+#include "fastq_io.hpp"      // for read_fastq, read_chunk
+#include "output.hpp"        // for output_files
+#include "reports.hpp"       // for write_html_report, write_json_report
+#include "scheduler.hpp"     // for threadstate, scheduler, analytical_step
+#include "sequence_sets.hpp" // for adapter_set
+#include "userconfig.hpp"    // for userconfig
+#include <cstddef>           // for size_t
+#include <string>            // for string, operator<<, char_traits
 
 namespace adapterremoval {
 
@@ -65,9 +66,7 @@ public:
   {
     AR_REQUIRE(chunk);
 
-    const fastq empty_adapter;
-    fastq_pair_vec adapters;
-    adapters.emplace_back(empty_adapter, empty_adapter);
+    const adapter_set adapters = { { "", "" } };
 
     auto aligner = sequence_aligner(adapters, m_config.simd);
 

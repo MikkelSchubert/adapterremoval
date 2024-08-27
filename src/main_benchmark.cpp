@@ -21,6 +21,7 @@
 #include "fastq.hpp"             // for fastq
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "logging.hpp"           // for log
+#include "sequence_sets.hpp"     // for adapter_set
 #include "statistics.hpp"        // for fastq_statistics
 #include "strutils.hpp"          // for to_lower
 #include "userconfig.hpp"        // for userconfig
@@ -392,7 +393,7 @@ public:
     : alignment_benchmarker("se", is)
     , m_config(config)
     , m_reads(reads)
-    , m_adapters(config.adapters.get_adapter_set(0))
+    , m_adapters(config.adapters)
     , m_aligner(m_adapters, is)
   {
   }
@@ -417,7 +418,7 @@ protected:
 private:
   const userconfig& m_config;
   const fastq_vec& m_reads;
-  const fastq_pair_vec m_adapters;
+  const adapter_set m_adapters;
   sequence_aligner m_aligner;
 };
 
@@ -433,7 +434,7 @@ public:
     , m_config(config)
     , m_mate_1(mate_1)
     , m_mate_2(mate_2)
-    , m_adapters(config.adapters.get_adapter_set(0))
+    , m_adapters(config.adapters)
     , m_aligner(m_adapters, is)
   {
   }
@@ -479,7 +480,7 @@ private:
   const fastq_vec& m_mate_1;
   const fastq_vec& m_mate_2;
   fastq_vec m_mate_2_reversed{};
-  fastq_pair_vec m_adapters{};
+  adapter_set m_adapters;
   sequence_aligner m_aligner;
 };
 

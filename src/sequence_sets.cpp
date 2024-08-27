@@ -18,29 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "sequence_sets.hpp"
-#include "debug.hpp"      // for AR_REQUIRE
-#include "errors.hpp"     // for fastq_error
-#include "linereader.hpp" // for line_reader
-#include "logging.hpp"    // for error, log_stream
-#include "strutils.hpp"   // for string_vec, indent_lines
-#include <algorithm>      // for max, sort
-#include <sstream>        // for operator<<, basic_ostream, ostringstream
-#include <utility>        // for pair
-#include <vector>         // for vector, vector<>::const_iterator
+#include "commontypes.hpp" // for fastq_vec
+#include "debug.hpp"       // for AR_REQUIRE
+#include "errors.hpp"      // for fastq_error
+#include "fastq.hpp"       // for fastq
+#include "linereader.hpp"  // for line_reader
+#include "sequence.hpp"    // for dna_sequence
+#include "strutils.hpp"    // for string_vec, indent_lines
+#include <algorithm>       // for max, sort, find
+#include <sstream>         // for operator<<, basic_ostream, ostringstream
+#include <string_view>     // for string_view
+#include <utility>         // for pair
+#include <vector>          // for vector, vector<>::const_iterator
 
 namespace adapterremoval {
 
-using named_fastq_row = std::pair<std::string, fastq_vec>;
-using fastq_table = std::vector<named_fastq_row>;
-using fastq_table_citer = fastq_table::const_iterator;
-
-bool
-print_parse_error(const std::ostringstream& message)
-{
-  log::error() << "Error reading table:\n" << indent_lines(message.str());
-
-  return false;
-}
+namespace {
 
 std::string
 trim_comments(std::string line)
@@ -53,169 +46,192 @@ trim_comments(std::string line)
   return line;
 }
 
-bool
-read_table(const std::string& filename,
-           fastq_table& dst,
-           size_t min_col,
-           size_t max_col,
-           bool row_names = false)
+struct table_row
 {
-  AR_REQUIRE(min_col <= max_col);
-  AR_REQUIRE(min_col >= 1);
+  std::string name{};
+  dna_sequence sequence_1{};
+  dna_sequence sequence_2{};
+};
 
+std::vector<table_row>
+read_table(const std::string& filename,
+           const bool paired_required = false,
+           const bool row_names = false)
+{
   size_t last_row_size = 0;
   size_t line_num = 1;
-  size_t col_num = 1;
+  const size_t min_col = 1 + paired_required + row_names;
+  const size_t max_col = 2 + row_names;
+  std::vector<table_row> table;
+
   try {
     line_reader adapter_file(filename);
 
     for (std::string line; adapter_file.getline(line); ++line_num) {
-      fastq_vec row;
-      std::string name;
+      string_vec row;
       std::string field;
-      std::istringstream instream(trim_comments(line));
 
-      for (col_num = 1; instream >> field; ++col_num) {
-        if (col_num == 1 && row_names) {
-          name = field;
-        } else {
-          row.emplace_back("sequence", field);
-        }
+      std::istringstream instream(trim_comments(line));
+      while (instream >> field) {
+        row.push_back(field);
+        field.clear();
       }
 
-      if (name.empty() && row.empty()) {
+      if (row.empty()) {
         // Ignore empty lines, e.g. those containing only comments
         continue;
       } else if (row.size() < min_col) {
         std::ostringstream message;
-        message << "Expected at least " << min_col << " columns in "
-                << "table '" << filename << "' at line " << line_num
+        message << "Expected at least " << min_col << " columns in " << "table "
+                << log_escape(filename) << " at line " << line_num
                 << ", but only found " << row.size() << " column(s)!";
 
-        return print_parse_error(message);
+        throw parsing_error(message.str());
       } else if (row.size() > max_col) {
         std::ostringstream message;
-        message << "Expected at most " << min_col << " columns in "
-                << "table '" << filename << "' at line " << line_num
+        message << "Expected at most " << min_col << " columns in " << "table "
+                << log_escape(filename) << " at line " << line_num
                 << ", but found " << row.size() << " column(s)!";
 
-        return print_parse_error(message);
+        throw parsing_error(message.str());
       } else if (last_row_size && last_row_size != row.size()) {
         std::ostringstream message;
-        message << "Error reading '" << filename << "' at line " << line_num
-                << "; rows contain unequal number of "
+        message << "Error reading " << log_escape(filename) << " at line "
+                << line_num << "; rows contain unequal number of "
                 << "columns; last row contained " << last_row_size
                 << " column(s) but current row contains " << row.size()
                 << " column(s)!";
 
-        return print_parse_error(message);
+        throw parsing_error(message.str());
       } else {
         last_row_size = row.size();
       }
 
-      dst.emplace_back(name, row);
+      table_row record;
+      if (row_names) {
+        record.name = row.at(0);
+      }
+
+      record.sequence_1 = dna_sequence{ row.at(row_names) };
+      if (row.size() > row_names + 1U) {
+        record.sequence_2 = dna_sequence{ row.at(row_names + 1U) };
+      }
+
+      table.push_back(std::move(record));
     }
   } catch (const std::ios_base::failure& error) {
-    std::ostringstream message;
-    message << "IO error reading '" << filename << "' at line " << line_num
-            << ": " << error.what();
-
-    return print_parse_error(message);
+    throw parsing_error(error.what());
   } catch (const fastq_error& error) {
     std::ostringstream message;
-    message << "Failed to parse sequence in '" << filename << "' at line "
-            << line_num << ", column " << col_num << ": " << error.what();
+    message << "invalid DNA sequence on line " << line_num << ": "
+            << error.what();
 
-    return print_parse_error(message);
+    throw parsing_error(message.str());
   }
 
-  return true;
+  return table;
+}
+
+void
+validate_sample_name(std::string_view name)
+{
+  if (name.empty()) {
+    throw parsing_error("Sample names must not be empty");
+  } else if (name == "unidentified") {
+    throw parsing_error("The sample name 'unidentified' is a reserved "
+                        "name, and cannot be used!");
+  }
+
+  for (const char c : name) {
+    if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+          (c >= '0' && c <= '9') || (c == '_'))) {
+      std::ostringstream error;
+      error << "The sample name " << log_escape(name)
+            << " is not a valid sample name; only letters ('a' to 'z' and 'A' "
+               "to 'Z'), numbers (0 to 9) and underscores (_) are allowed.";
+
+      throw parsing_error(error.str());
+    }
+  }
+}
+
+void
+validate_barcode_sequence(const dna_sequence& sequence,
+                          const size_t expected_length,
+                          const int mate)
+{
+  std::string_view seq = sequence;
+
+  if (seq.find('N') != std::string::npos) {
+    std::ostringstream error;
+    error << "Degenerate base (N) found in mate " << mate << " barcode "
+          << "sequence " << log_escape(seq) << ". Degenerate bases are not "
+          << "supported for demultiplexing; please remove before continuing!";
+
+    throw parsing_error(error.str());
+  }
+
+  if (sequence.length() != expected_length) {
+    std::ostringstream error;
+    error << "Inconsistent mate " << mate << "barcode lengths found: Last "
+          << "barcode was " << expected_length << " base-pairs long, but "
+          << "barcode " << log_escape(seq) << " is " << seq.length() << " "
+          << "base-pairs long. Variable length barcodes are not supported";
+
+    throw parsing_error(error.str());
+  }
 }
 
 bool
-check_barcodes_sequences(const fastq_pair_vec& barcodes,
-                         const std::string& filename,
+check_barcodes_sequences(const std::vector<sample>& samples,
+                         const std::string& source,
                          bool paired_end = false)
 {
-  if (barcodes.empty()) {
-    return true;
-  }
+  auto mate_1_len = static_cast<size_t>(-1);
+  auto mate_2_len = static_cast<size_t>(-1);
 
-  const size_t mate_1_len = barcodes.front().first.length();
-  const size_t mate_2_len = barcodes.front().second.length();
+  std::vector<std::pair<std::string_view, std::string_view>> sequences;
+  for (const auto& it : samples) {
+    validate_sample_name(it.name());
 
-  string_pair_vec sequences;
-  for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
-    const std::string& mate_1 = it->first.sequence();
-    const std::string& mate_2 = it->second.sequence();
+    for (const auto& barcode : it) {
+      if (mate_1_len == static_cast<size_t>(-1)) {
+        mate_1_len = barcode.first.length();
+        mate_2_len = barcode.second.length();
+      }
 
-    if (mate_1.find('N') != std::string::npos) {
-      std::ostringstream error;
-      error << "Degenerate base (N) found in mate 1 barcode sequence '"
-            << mate_1 << "'. Degenerate bases are not supported for "
-            << "demultiplexing; please remove before continuing!";
+      validate_barcode_sequence(barcode.first, mate_1_len, 1);
+      validate_barcode_sequence(barcode.second, mate_2_len, 2);
 
-      return print_parse_error(error);
-    } else if (mate_2.find('N') != std::string::npos) {
-      std::ostringstream error;
-      error << "Degenerate base (N) found in mate 2 barcode sequence '"
-            << mate_2 << "'. Degenerate bases are not supported for "
-            << "demultiplexing; please remove before continuing!";
-
-      return print_parse_error(error);
-    } else if (mate_1.length() != mate_1_len) {
-      std::ostringstream error;
-      error << "Inconsistent mate 1 barcode lengths found; last barcode "
-               "was "
-            << mate_1_len << " base-pairs long, but barcode "
-            << (it - barcodes.begin()) + 1 << " mate 1 sequence is "
-            << mate_1.length()
-            << " base-pairs long! Variable length "
-               "barcodes are not supported!";
-
-      return print_parse_error(error);
-    } else if (mate_2.length() != mate_2_len) {
-      std::ostringstream error;
-      error << "Inconsistent mate 2 barcode lengths found; last barcode "
-               "was "
-            << mate_2_len << " base-pairs long, but barcode "
-            << (it - barcodes.begin()) + 1 << " mate 2 sequence is "
-            << mate_2.length()
-            << " base-pairs long! Variable length "
-               "barcodes are not supported!";
-
-      return print_parse_error(error);
+      if (paired_end) {
+        sequences.emplace_back(barcode.first, barcode.second);
+      } else {
+        sequences.emplace_back(barcode.first, dna_sequence{});
+      }
     }
-
-    sequences.emplace_back(it->first.sequence(), it->second.sequence());
   }
 
   std::sort(sequences.begin(), sequences.end());
-  string_pair_vec::const_iterator prev = sequences.begin();
+  for (size_t i = 1; i < sequences.size(); ++i) {
+    if (sequences.at(i - 1) == sequences.at(i)) {
+      const auto& it = sequences.at(i);
 
-  for (auto curr = prev + 1; curr != sequences.end(); ++prev, ++curr) {
-    if (prev->first == curr->first) {
       if (paired_end) {
-        if (prev->second == curr->second) {
-          std::ostringstream error;
-          error << "Duplicate barcode pairs found in '" << filename
-                << "' with barcodes " << prev->first << " and " << prev->second
-                << ". please verify "
-                   "correctness of the barcode table and remove any "
-                   "duplicate entries!";
+        std::ostringstream error;
+        error << "Duplicate barcode pairs found in " << log_escape(source)
+              << " with barcodes " << log_escape(it.first) << " and "
+              << log_escape(it.second) << ". please verify correctness of "
+              << "the barcode table and remove any duplicate entries!";
 
-          return print_parse_error(error);
-        }
+        throw parsing_error(error.str());
       } else {
         std::ostringstream error;
-        error << "Duplicate mate 1 barcodes found in '" << filename
-              << "': " << prev->first
-              << ". Even if these "
-                 "are associated with different mate 2 barcodes, it "
-                 "is not possible to distinguish between these in "
-                 "single-end mode!";
+        error << "Duplicate mate 1 barcodes found in " << log_escape(source)
+              << ": " << log_escape(it.first) << ". Even if these are "
+              << "associated with different mate 2 barcodes, it is not "
+                 "possible to distinguish between these in single-end mode!";
 
-        return print_parse_error(error);
+        throw parsing_error(error.str());
       }
     }
   }
@@ -223,183 +239,175 @@ check_barcodes_sequences(const fastq_pair_vec& barcodes,
   return true;
 }
 
-bool
-valid_sample_name(const std::string& name)
-{
-  for (const char c : name) {
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-        (c >= '0' && c <= '9') || (c == '_')) {
-      continue;
-    }
-
-    std::ostringstream error;
-    error << "The sample name '" << name
-          << "' is not a valid sample "
-             "name; only letters ('a' to 'z' and 'A' to 'Z'), numbers (0 "
-             "to 9) and underscores (_) are allowed.";
-
-    return print_parse_error(error);
-  }
-
-  if (name == "unidentified") {
-    std::ostringstream error;
-    error << "The sample name '" << name
-          << "' is a reserved name, and "
-             "cannot be used!";
-
-    return print_parse_error(error);
-  }
-
-  return true;
-}
-
-bool
-check_sample_names(const string_vec& names)
-{
-  if (names.empty()) {
-    return true;
-  }
-
-  for (const auto& name : names) {
-    if (!valid_sample_name(name)) {
-      return false;
-    }
-  }
-
-  string_vec sorted_names = names;
-  std::sort(sorted_names.begin(), sorted_names.end());
-
-  string_vec::const_iterator prev = sorted_names.begin();
-  for (auto curr = prev + 1; curr != sorted_names.end(); ++prev, ++curr) {
-    if (*prev == *curr) {
-      std::ostringstream error;
-      error << "Duplicate sample name '" << *prev
-            << "'; combining "
-               "different barcodes for one sample is not supported. "
-               "Please ensure that all sample names are unique!";
-
-      return print_parse_error(error);
-    }
-  }
-
-  return true;
-}
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'adapters' class
 
-adapter_set::adapter_set()
+adapter_set::adapter_set(std::initializer_list<string_view_pair> args)
 {
-  // Default name if no barcodes are used
-  m_samples.emplace_back("main");
+  for (const auto& pair : args) {
+    add(std::string{ pair.first }, std::string{ pair.second });
+  }
 }
 
 void
-adapter_set::add_adapters(const std::string& adapter1,
-                          const std::string& adapter2)
+adapter_set::add(dna_sequence adapter1, dna_sequence adapter2)
 {
-  fastq adapter1_fq("adapter1", adapter1);
-  fastq adapter2_fq("adapter2", adapter2);
-  adapter2_fq.reverse_complement();
-
-  m_adapters.emplace_back(adapter1_fq, adapter2_fq);
+  m_adapters.emplace_back(adapter1, adapter2.reverse_complement());
 }
 
-bool
-adapter_set::load_adapters(const std::string& filename, bool paired_end)
+void
+adapter_set::add(std::string adapter1, const std::string adapter2)
 {
-  fastq_table raw_adapters;
-  if (!read_table(filename, raw_adapters, paired_end ? 2 : 1, 2)) {
-    return false;
+  add(dna_sequence{ adapter1 }, dna_sequence{ adapter2 });
+}
+
+adapter_set
+adapter_set::add_barcodes(const dna_sequence& barcode1,
+                          const dna_sequence& barcode2) const
+{
+  adapter_set adapters;
+  for (const auto& it : m_adapters) {
+    // Add sequences directly in alignment orientation
+    adapters.m_adapters.emplace_back(barcode2.reverse_complement() + it.first,
+                                     it.second + barcode1);
   }
 
-  for (const auto& row : raw_adapters) {
-    fastq adapter_5p = row.second.at(0);
-    fastq adapter_3p;
+  return adapters;
+}
 
-    if (row.second.size() > 1) {
-      adapter_3p = row.second.at(1);
-      adapter_3p.reverse_complement();
+void
+adapter_set::load(const std::string& filename, bool paired_end)
+{
+  auto table = read_table(filename, paired_end);
+
+  for (auto& row : table) {
+    // Convert from read to alignment orientation
+    m_adapters.emplace_back(row.sequence_1,
+                            row.sequence_2.reverse_complement());
+  }
+}
+
+sequence_pair_vec
+adapter_set::to_read_orientation() const
+{
+  sequence_pair_vec adapters;
+  for (const auto& it : m_adapters) {
+    adapters.emplace_back(it.first, it.second.reverse_complement());
+  }
+
+  return adapters;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'sample' class
+
+void
+sample::add(dna_sequence adapter1, dna_sequence adapter2)
+{
+  m_barcodes.emplace_back(std::move(adapter1), std::move(adapter2));
+}
+
+void
+sample::add(std::string barcode1, std::string barcode2)
+{
+  add(dna_sequence(barcode1), dna_sequence(barcode2));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'barcode_set' class
+
+void
+barcode_set::add(std::string name, std::string barcode1, std::string barcode2)
+{
+  validate_sample_name(name);
+
+  bool found = false;
+  // Iterate in reverse order to optimize for ordered insertions
+  for (auto it = m_samples.rbegin(); it != m_samples.rend(); ++it) {
+    if (it->name() == name) {
+      if (!m_allow_multiple_barcodes) {
+        std::ostringstream error;
+        error << "Duplicate sample name " << log_escape(name)
+              << "; combining different barcodes for one sample is not "
+                 "supported. Please ensure that all sample names are unique!";
+
+        throw parsing_error(error.str());
+      }
+
+      it->add(barcode1, barcode2);
+      found = true;
+      break;
     }
-
-    m_adapters.emplace_back(adapter_5p, adapter_3p);
   }
 
-  return true;
+  if (!found) {
+    m_samples.emplace_back(name, barcode1, barcode2);
+  }
+
+  check_barcodes_sequences(m_samples, "barcode_set::add");
 }
 
-bool
-adapter_set::load_barcodes(const std::string& filename, bool paired_end)
+void
+barcode_set::add_default_sample()
 {
-  fastq_table raw_barcodes;
-  if (!read_table(filename, raw_barcodes, 1, 2, true)) {
-    return false;
+  AR_REQUIRE(m_samples.empty());
+  m_samples.emplace_back("", "", "");
+}
+
+void
+barcode_set::add_reversed_barcodes()
+{
+  AR_REQUIRE(m_paired_end_mode);
+
+  for (auto& sample : m_samples) {
+    // Original number of barcodes
+    const size_t count = sample.size();
+
+    for (size_t i = 0; i < count; ++i) {
+      std::pair<dna_sequence, dna_sequence> barcode{
+        sample.at(i).second.reverse_complement(),
+        sample.at(i).first.reverse_complement(),
+      };
+
+      if (std::find(sample.begin(), sample.begin() + count, barcode) ==
+          sample.end()) {
+        sample.add(std::move(barcode.first), std::move(barcode.second));
+      }
+    }
   }
+
+  check_barcodes_sequences(m_samples, "barcode_set::add_reversed_barcodes");
+}
+
+void
+barcode_set::load(const std::string& filename)
+{
+  AR_REQUIRE(m_samples.empty());
+
+  auto barcodes = read_table(filename, false, true);
+  std::sort(barcodes.begin(), barcodes.end(), [](const auto& a, const auto& b) {
+    return a.name < b.name;
+  });
 
   m_samples.clear();
-  m_barcodes.clear();
+  for (const auto& row : barcodes) {
+    if (m_samples.empty() || m_samples.back().name() != row.name) {
+      m_samples.emplace_back(row.name, row.sequence_1, row.sequence_2);
+    } else if (m_allow_multiple_barcodes) {
+      m_samples.back().add(row.sequence_1, row.sequence_2);
+    } else {
+      std::ostringstream error;
+      error << "Duplicate sample name " << log_escape(row.name)
+            << "; combining different barcodes for one sample is not "
+               "supported. Please ensure that all sample names are unique!";
 
-  for (const auto& row : raw_barcodes) {
-    fastq barcode_5p = row.second.at(0);
-    fastq barcode_3p;
-
-    if (row.second.size() > 1) {
-      barcode_3p = row.second.at(1);
+      throw parsing_error(error.str());
     }
-
-    m_samples.push_back(row.first);
-    m_barcodes.emplace_back(barcode_5p, barcode_3p);
   }
 
-  return check_barcodes_sequences(m_barcodes, filename, paired_end) &&
-         check_sample_names(m_samples);
-}
-
-size_t
-adapter_set::adapter_set_count() const
-{
-  if (m_barcodes.empty()) {
-    return 1;
-  } else {
-    return barcode_count();
-  }
-}
-
-fastq_pair_vec
-adapter_set::get_adapter_set(size_t nth) const
-{
-  AR_REQUIRE(nth == 0 || !m_barcodes.empty(),
-             "tried to get non-existing adapter set");
-
-  if (m_barcodes.empty()) {
-    return m_adapters;
-  }
-
-  fastq_pair barcodes = m_barcodes.at(nth);
-  barcodes.second.reverse_complement();
-
-  fastq_pair_vec adapters;
-  for (const auto& adapter_pair : m_adapters) {
-    fastq adapter_1("adapter_1",
-                    barcodes.second.sequence() + adapter_pair.first.sequence());
-    fastq adapter_2("adapter_2",
-                    adapter_pair.second.sequence() + barcodes.first.sequence());
-
-    adapters.emplace_back(adapter_1, adapter_2);
-  }
-
-  return adapters;
-}
-
-fastq_pair_vec
-adapter_set::get_raw_adapters() const
-{
-  auto adapters = m_adapters;
-  for (auto& it : adapters) {
-    it.second.reverse_complement();
-  }
-
-  return adapters;
+  check_barcodes_sequences(m_samples, filename, m_paired_end_mode);
 }
 
 } // namespace adapterremoval

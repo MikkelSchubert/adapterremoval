@@ -17,20 +17,21 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "alignment.hpp"   // for alignment_info, sequence_merger, extract_...
-#include "commontypes.hpp" // for merge_strategy, merge_strategy::determini...
-#include "debug.hpp"       // for assert_failed
-#include "errors.hpp"      // for assert_failed
-#include "fastq.hpp"       // for fastq, fastq_pair_vec, fastq_pair
-#include "fastq_enc.hpp"   // for FASTQ_ENCODING_SAM
-#include "simd.hpp"        // for size_t, instruction_set, supported, get_c...
-#include "testing.hpp"     // for catch.hpp, StringMaker
-#include <algorithm>       // for min
-#include <cstddef>         // for size_t
-#include <cstdint>         // for int64_t
-#include <sstream>         // for operator<<, ostream, basic_ostream, char_...
-#include <string>          // for string, basic_string, operator<<
-#include <vector>          // for vector
+#include "alignment.hpp"     // for alignment_info, sequence_merger, extract_...
+#include "commontypes.hpp"   // for merge_strategy, merge_strategy::determini...
+#include "debug.hpp"         // for assert_failed
+#include "errors.hpp"        // for assert_failed
+#include "fastq.hpp"         // for fastq
+#include "fastq_enc.hpp"     // for FASTQ_ENCODING_SAM
+#include "sequence.hpp"      // for dna_sequence
+#include "sequence_sets.hpp" // for adapter_set
+#include "simd.hpp"          // for size_t, instruction_set, supported, get_c...
+#include "testing.hpp"       // for catch.hpp, StringMaker
+#include <cstddef>           // for size_t
+#include <cstdint>           // for int64_t
+#include <sstream>           // for operator<<, ostream, basic_ostream, char_...
+#include <string>            // for string, basic_string, operator<<
+#include <vector>            // for vector
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g
@@ -86,17 +87,9 @@ operator==(const alignment_info& first, const ALN& second)
   return first == second.info;
 }
 
-fastq_pair_vec
-create_adapter_vec(const fastq& adapter1, const fastq& adapter2 = fastq())
-{
-  fastq_pair_vec adapters;
-  adapters.push_back(fastq_pair(adapter1, adapter2));
-  return adapters;
-}
-
 alignment_info
 align_single_ended_sequence(const fastq& read,
-                            const fastq_pair_vec& adapters,
+                            const adapter_set& adapters,
                             int max_shift)
 {
   return sequence_aligner(adapters, PARAMETERIZE_IS)
@@ -106,7 +99,7 @@ align_single_ended_sequence(const fastq& read,
 alignment_info
 align_paired_ended_sequences(const fastq& read1,
                              const fastq& read2,
-                             const fastq_pair_vec& adapters,
+                             const adapter_set& adapters,
                              int max_shift)
 {
   return sequence_aligner(adapters, PARAMETERIZE_IS)
@@ -150,8 +143,7 @@ TEST_CASE("SE: Unalignable sequence yields default alignment",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "AAAA", "!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Rec", "TTTT", "!!!!"));
+  const adapter_set adapters = { { dna_sequence{ "TTTT" }, "" } };
 
   REQUIRE(align_single_ended_sequence(record, adapters, 0) == ALN());
 }
@@ -160,8 +152,7 @@ TEST_CASE("SE: Random sequences yields suboptimal alignment",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Rec", "TGAGACGGT", "!!!!!!!!!"));
+  const adapter_set adapters = { { "TGAGACGGT", "" } };
 
   REQUIRE(align_single_ended_sequence(record, adapters, 0) ==
           ALN().offset(6).length(2).n_mismatches(1));
@@ -175,8 +166,7 @@ TEST_CASE("SE: Random sequences yields suboptimal alignment",
 TEST_CASE("SE: Partial alignment between ends", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTAA", "123457890");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Rec", "AGTAAGGT", "!!!!!!!!"));
+  const adapter_set adapters = { { "AGTAAGGT", "" } };
   const alignment_info expected = ALN().offset(4).length(5);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -191,8 +181,7 @@ TEST_CASE("SE: Partial alignment with mismatches between ends",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTAA", "123457890");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Rec", "AGGAAGGT", "!!!!!!!!"));
+  const adapter_set adapters = { { "AGGAAGGT", "" } };
   const alignment_info expected = ALN().offset(4).length(5).n_mismatches(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -207,8 +196,7 @@ TEST_CASE("SE: Partial alignment with ambiguous between ends",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTAA", "123457890");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Rec", "AGNAAGGT", "!!!!!!!!"));
+  const adapter_set adapters = { { "AGNAAGGT", "" } };
   const alignment_info expected = ALN().offset(4).length(5).n_ambiguous(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -228,7 +216,7 @@ TEST_CASE("SE: Partial alignment with ambiguous between ends",
 TEST_CASE("SE: Completely overlapping sequences", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(record);
+  const adapter_set adapters = { { { record.sequence() }, "" } };
   const alignment_info expected = ALN().length(8);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -243,8 +231,7 @@ TEST_CASE("SE: Completely overlapping sequences with mismatches",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Rec", "GCGTAGTA", "!!!!!!!!"));
+  const adapter_set adapters = { { "GCGTAGTA", "" } };
   const alignment_info expected = ALN().length(8).n_mismatches(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -259,11 +246,11 @@ TEST_CASE("SE: Completely overlapping sequences with mismatches and ambiguous",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
-  const fastq_pair_vec adapter =
-    create_adapter_vec(fastq("Rec", "GCGTAGTN", "!!!!!!!!"));
+  const adapter_set adapters = { { "GCGTAGTN", "" } };
   const alignment_info expected =
     ALN().length(8).n_mismatches(1).n_ambiguous(1);
-  const alignment_info result = align_single_ended_sequence(record, adapter, 0);
+  const alignment_info result =
+    align_single_ended_sequence(record, adapters, 0);
   REQUIRE(result == expected);
 
   fastq tmp_record = record;
@@ -280,8 +267,7 @@ TEST_CASE("SE: Completely overlapping sequences with mismatches and ambiguous",
 TEST_CASE("Complete adapter inside sequence", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "ABCDEFGH");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "TAGTA", "!!!!!"));
+  const adapter_set adapters = { { "TAGTA", "" } };
   const alignment_info expected = ALN().offset(3).length(5);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -296,8 +282,7 @@ TEST_CASE("Complete adapter inside sequence with mismatch",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "ABCDEFGH");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "TATTA", "!!!!!"));
+  const adapter_set adapters = { { "TATTA", "" } };
   const alignment_info expected = ALN().offset(3).length(5).n_mismatches(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -312,8 +297,7 @@ TEST_CASE("Complete adapter inside sequence with ambiguous",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "ABCDEFGH");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "TAGNA", "!!!!!"));
+  const adapter_set adapters = { { "TAGNA", "" } };
   const alignment_info expected = ALN().offset(3).length(5).n_ambiguous(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -327,8 +311,7 @@ TEST_CASE("Complete adapter inside sequence with ambiguous",
 TEST_CASE("Complete sequence inside adapter", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGT", "!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "ACGTAGTA", "!!!!!!!!"));
+  const adapter_set adapters = { { "ACGTAGTA", "" } };
   const alignment_info expected = ALN().length(4);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -343,8 +326,7 @@ TEST_CASE("Complete sequence inside adapter with mismatches",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGT", "!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "GCGTAGTA", "!!!!!!!!"));
+  const adapter_set adapters = { { "GCGTAGTA", "" } };
   const alignment_info expected = ALN().length(4).n_mismatches(1);
   const auto result = align_single_ended_sequence(record, adapters, 0);
   REQUIRE(result == expected);
@@ -358,8 +340,7 @@ TEST_CASE("Complete sequence inside adapter with ambiguous",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGT", "!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "ACGNAGTA", "!!!!!!!!"));
+  const adapter_set adapters = { { "ACGNAGTA", "" } };
   const alignment_info expected = ALN().length(4).n_ambiguous(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -378,8 +359,7 @@ TEST_CASE("Complete sequence inside adapter with ambiguous",
 TEST_CASE("Sequence extends past adapter", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTATA", "0123456789");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "AGTA", "!!!!"));
+  const adapter_set adapters = { { "AGTA", "" } };
   const alignment_info expected = ALN().offset(4).length(4);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -393,8 +373,7 @@ TEST_CASE("Sequence extends past adapter", "[alignment::single_end]")
 TEST_CASE("Sequence extends past adapter, no shift", "[alignment::single_end]")
 {
   const fastq record("Rec", "CGTA", "#!%%");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "ACGTAGTATA", "!!!!!!!!!!"));
+  const adapter_set adapters = { { "ACGTAGTATA", "" } };
   const alignment_info expected = ALN().offset(3).length(1);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -408,8 +387,7 @@ TEST_CASE("Sequence extends past adapter, no shift", "[alignment::single_end]")
 TEST_CASE("Sequence extends past adapter, shift 1", "[alignment::single_end]")
 {
   const fastq record("Rec", "CGTA", "#!%%");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "ACGTAGTATA", "!!!!!!!!!!"));
+  const adapter_set adapters = { { "ACGTAGTATA", "" } };
   const alignment_info expected = ALN().offset(-1).length(4);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 1);
@@ -430,8 +408,7 @@ TEST_CASE("Sequence and adapter extends past each other",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTATATAGT", "!!!!!!!!!!!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "CCGAACGTAGTATA", "!!!!!!!!!!!!!!"));
+  const adapter_set adapters = { { "CCGAACGTAGTATA", "" } };
   const alignment_info expected = ALN().offset(-4).length(10);
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 4);
@@ -448,8 +425,7 @@ TEST_CASE("Sequence and adapter extends past each other",
 TEST_CASE("Empty sequence alignment", "[alignment::single_end]")
 {
   const fastq record;
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "CCGAACGTAGTATA", "!!!!!!!!!!!!!!"));
+  const adapter_set adapters = { { "CCGAACGTAGTATA", "" } };
   const alignment_info expected;
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -459,7 +435,7 @@ TEST_CASE("Empty sequence alignment", "[alignment::single_end]")
 TEST_CASE("Empty adapter alignment", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTATATAGT", "!!!!!!!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(fastq());
+  const adapter_set adapters = { { "", "" } };
   const alignment_info expected;
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);
@@ -472,7 +448,7 @@ TEST_CASE("Empty adapter alignment", "[alignment::single_end]")
 TEST_CASE("Longest valid alignment is returned", "[alignment::single_end]")
 {
   const fastq record("Rec", "AAATAAAAA");
-  const auto adapters = create_adapter_vec(fastq("Rec", "AAAAAAAAA"));
+  const adapter_set adapters = { { "AAAAAAAAA", "" } };
 
   sequence_aligner aligner(adapters, PARAMETERIZE_IS);
   const auto result = aligner.align_single_end(record, 0);
@@ -487,8 +463,7 @@ TEST_CASE("Longest valid alignment is returned", "[alignment::single_end]")
 TEST_CASE("Lower than possible shift is allowed", "[alignment::single_end]")
 {
   const fastq record("Rec", "AAAA", "!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("Adp", "TTTT", "!!!!"));
+  const adapter_set adapters = { { "TTTT", "" } };
   const alignment_info expected;
   const alignment_info result =
     align_single_ended_sequence(record, adapters, -10);
@@ -497,8 +472,7 @@ TEST_CASE("Lower than possible shift is allowed", "[alignment::single_end]")
 
 TEST_CASE("Only adapter 1 is used", "[alignment::single_end]")
 {
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("barcode", "AAA", "JJJ"), fastq("barcode", "TTTAAA", "JJJJJJ"));
+  const adapter_set adapters = { { "AAA", "TTTAAA" } };
   const fastq record("Rec", "CCCCTTTAAA", "0987654321");
   const alignment_info expected = ALN().offset(7).length(3);
   const alignment_info result =
@@ -508,10 +482,10 @@ TEST_CASE("Only adapter 1 is used", "[alignment::single_end]")
 
 TEST_CASE("Best matching adapter is returned: First", "[alignment::single_end]")
 {
-  fastq_pair_vec adapters;
-  adapters.push_back(fastq_pair(fastq("adapter", "TGCTGC", "JJJJJJ"), fastq()));
-  adapters.push_back(fastq_pair(fastq("adapter", "TGCTGA", "JJJJJJ"), fastq()));
-
+  const adapter_set adapters = {
+    { "TGCTGC", "" },
+    { "TGCTGA", "" },
+  };
   const fastq record("Read", "TAGTCGCTATGCTGC", "!!!!!!!!!103459");
   const alignment_info expected = ALN().offset(9).length(6);
   const alignment_info result =
@@ -521,9 +495,10 @@ TEST_CASE("Best matching adapter is returned: First", "[alignment::single_end]")
 
 TEST_CASE("Best matching adapter returned: Second", "[alignment::single_end]")
 {
-  fastq_pair_vec adapters;
-  adapters.push_back(fastq_pair(fastq("adapter", "TGCTGA", "JJJJJJ"), fastq()));
-  adapters.push_back(fastq_pair(fastq("adapter", "TGCTGC", "JJJJJJ"), fastq()));
+  const adapter_set adapters = {
+    { "TGCTGA", "" },
+    { "TGCTGC", "" },
+  };
 
   const fastq record("Read", "TAGTCGCTATGCTGC", "!!!!!!!!!103459");
   const alignment_info expected = ALN().offset(9).length(6).adapter_id(1);
@@ -534,9 +509,10 @@ TEST_CASE("Best matching adapter returned: Second", "[alignment::single_end]")
 
 TEST_CASE("Best matching adapter returned: Neither", "[alignment::single_end]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("barcode", "AAAAAA", "JJJJJJ"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("barcode", "CCCCCC", "JJJJJJ"), fastq()));
+  const adapter_set barcodes = {
+    { "AAAAAA", "" },
+    { "CCCCCC", "" },
+  };
 
   const fastq record = fastq("Read", "AACTGTACGTAGTT", "!!!!!!10345923");
   const alignment_info result =
@@ -554,8 +530,7 @@ TEST_CASE("Unalignable sequence pair", "[alignment::paired_end]")
 {
   const fastq record1("Rec", "AAAA", "!!!!");
   const fastq record2("Rec", "TTTT", "!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected;
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -567,8 +542,7 @@ TEST_CASE("No overlap in sequence pair", "[alignment::paired_end]")
 {
   const fastq record1("Rec", "ACGTAGTA", "!!!!!!!!");
   const fastq record2("Rec", "TGAGACGGT", "!!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().offset(6).length(2).n_mismatches(1);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -586,8 +560,7 @@ TEST_CASE("Partial overlap in sequence pair", "[alignment::paired_end]")
 {
   const fastq record1("Rec", "ACGTAGTAA", "!!!!!!!!!");
   const fastq record2("Rec", "AGTAAGGT", "!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().offset(4).length(5);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -604,8 +577,7 @@ TEST_CASE("Partial overlap in sequence pair", "[alignment::paired_end]")
 TEST_CASE("Completely overlapping sequence pair", "[alignment::paired_end]")
 {
   const fastq record1("Rec", "ACGTAGTA", "!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().length(8);
   const alignment_info result =
     align_paired_ended_sequences(record1, record1, adapters, 0);
@@ -623,8 +595,7 @@ TEST_CASE("Sequence A contains sequence B", "[alignment::paired_end]")
 {
   const fastq record1("Rec1", "ACGTAGTA", "!!!!!!!!");
   const fastq record2("Rec2", "TAGTA", "!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().offset(3).length(5);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -636,8 +607,7 @@ TEST_CASE("Sequence B contains sequence A", "[alignment::paired_end]")
 {
   const fastq record1("Rec1", "ACGT", "!!!!");
   const fastq record2("Rec2", "ACGTAGTA", "!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().length(4);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -653,8 +623,7 @@ TEST_CASE("Sequence A extends past sequence B", "[alignment::paired_end]")
 {
   const fastq record1("Rec1", "ACGTAGTACG", "!!!!!!!!!!");
   const fastq record2("Rec2", "AGTA", "!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().offset(4).length(6);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -671,8 +640,7 @@ TEST_CASE("Sequence B extends past sequence A", "[alignment::paired_end]")
 {
   const fastq record1("Rec1", "CGTA", "!!!!");
   const fastq record2("Rec2", "ACCGTAGTAT", "!!!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().offset(-2).length(6);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -695,8 +663,7 @@ TEST_CASE("Sequences extends past each other", "[alignment::paired_end]")
 {
   const fastq record1("Rec1", "ACGTAGTATACGCT", "!!!!!!!!!!!!!!");
   const fastq record2("Rec2", "GTACACGTAGTATA", "!!!!!!!!!!!!!!");
-  const fastq_pair_vec adapters = create_adapter_vec(
-    fastq("PCR1", "CGCTGA", "!!!!!!"), fastq("PCR2", "TGTAC", "!!!!!"));
+  const adapter_set adapters = { { "CGCTGA", "GTACA" } };
   const alignment_info expected = ALN().offset(-4).length(18);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -713,9 +680,7 @@ TEST_CASE("Adapter only sequences", "[alignment::paired_end]")
 {
   const fastq record1("Rec1", "CCCGAC", "!!!!!!");
   const fastq record2("Rec2", "ATGCCTT", "!!!!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("PCR1", "CCCGACCCGT", "!!!!!!!!!!"),
-                       fastq("PCR2", "AAGATGCCTT", "!!!!!!!!!!"));
+  const adapter_set adapters = { { "CCCGACCCGT", "AAGGCATCTT" } };
   const alignment_info expected = ALN().offset(-7).length(13);
   const alignment_info result =
     align_paired_ended_sequences(record1, record2, adapters, 0);
@@ -731,9 +696,7 @@ TEST_CASE("Adapter only sequences, with missing base",
   // missing bases may cause some alignments to be missed.
   const fastq record1("Rec1", "CCGACC", "!!!!!!");
   const fastq record2("Rec2", "ATGCCT", "!!!!!!");
-  const fastq_pair_vec adapters =
-    create_adapter_vec(fastq("PCR1", "CCCGACCCGT", "!!!!!!!!!!"),
-                       fastq("PCR2", "AAGATGCCTT", "!!!!!!!!!!"));
+  const adapter_set adapters = { { "CCCGACCCGT", "AAGGCATCTT" } };
 
   // Sub-optimal alignment:
   //   aagatgccttCCGACC

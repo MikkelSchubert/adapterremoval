@@ -26,17 +26,16 @@
 #include "serializer.hpp"    // for read_group
 #include "simd.hpp"          // for size_t, instruction_set
 #include "timer.hpp"         // for monotonic_timer
-#include <array>             // for array
 #include <cstddef>           // for size_t
 #include <cstdint>           // for uint64_t
 #include <string>            // for string
 #include <utility>           // for pair
-#include <vector>            // for vector
 
 namespace adapterremoval {
 
 enum class progress_type;
 class output_files;
+class sample_output_files;
 struct alignment_info;
 struct output_file;
 
@@ -191,7 +190,10 @@ public:
   //! Maximum number of mismatches (considering both barcodes for PE)
   unsigned barcode_mm_r2{};
 
+  //! Adapter sequences expected to be found in the input (without barcodes)
   adapter_set adapters{};
+  //! Sample names and barcodes for demultiplexing
+  barcode_set samples{};
 
   //! Fraction of reads used for quality/content curves, etc.
   double report_sample_rate{};
@@ -231,6 +233,8 @@ public:
 private:
   /** Sets up adapter sequences based on user settings. */
   bool setup_adapter_sequences();
+  /** Sets up demultiplexing settings: Mismatch, samples, and barcodes */
+  bool setup_demultiplexing();
 
   /** Returns the file format in which to write the give file */
   [[nodiscard]] output_format infer_output_format(

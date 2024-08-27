@@ -295,12 +295,15 @@ reads_processor::reads_processor(const userconfig& config,
                                  trim_stats_ptr sink)
   : analytical_step(processing_order::unordered, "reads_processor")
   , m_config(config)
-  , m_adapters(config.adapters.get_adapter_set(nth))
   , m_output(output)
-  , m_nth(nth)
   , m_stats_sink(std::move(sink))
 {
   AR_REQUIRE(m_stats_sink);
+
+  // Generate appropriate "adapters" for each barcode / pair of barcodes
+  for (const auto& it : config.samples.at(nth)) {
+    m_adapters.push_back(config.adapters.add_barcodes(it.first, it.second));
+  }
 
   m_stats.emplace_back_n(m_config.max_threads, m_config.report_sample_rate);
 }
@@ -335,10 +338,20 @@ se_reads_processor::process(chunk_ptr chunk)
   }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
-  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
+  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.size());
+  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.size());
 
-  auto aligner = sequence_aligner(m_adapters, m_config.simd);
+  // A sequence aligner per barcode (pair)
+  std::vector<sequence_aligner> aligners;
+  for (const auto& adapters : m_adapters) {
+    aligners.emplace_back(adapters, m_config.simd);
+  }
+
+  AR_REQUIRE(chunk->barcodes.empty() ||
+             chunk->barcodes.size() == chunk->reads_1.size());
+
+  auto barcode_it = chunk->barcodes.begin();
+  const auto barcode_end = chunk->barcodes.end();
 
   for (auto& read : chunk->reads_1) {
     const size_t in_length = read.length();
@@ -348,6 +361,8 @@ se_reads_processor::process(chunk_ptr chunk)
     // Trim poly-X tails for zero or more X
     pre_trim_poly_x_tail(m_config, *stats, read);
 
+    auto& aligner =
+      aligners.at((barcode_it == barcode_end) ? 0 : *barcode_it++);
     const alignment_info alignment =
       aligner.align_single_end(read, m_config.shift);
 
@@ -447,13 +462,22 @@ pe_reads_processor::process(chunk_ptr chunk)
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
 
-  auto aligner = sequence_aligner(m_adapters, m_config.simd);
+  // A sequence aligner per barcode (pair)
+  std::vector<sequence_aligner> aligners;
+  for (const auto& adapters : m_adapters) {
+    aligners.emplace_back(adapters, m_config.simd);
+  }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.adapter_count());
-  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.adapter_count());
+  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.size());
+  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.size());
 
   AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
+  AR_REQUIRE(chunk->barcodes.empty() ||
+             chunk->barcodes.size() == chunk->reads_1.size());
+
+  auto barcode_it = chunk->barcodes.begin();
+  const auto barcode_end = chunk->barcodes.end();
 
   auto it_1 = chunk->reads_1.begin();
   auto it_2 = chunk->reads_2.begin();
@@ -475,6 +499,8 @@ pe_reads_processor::process(chunk_ptr chunk)
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
 
+    auto& aligner =
+      aligners.at((barcode_it == barcode_end) ? 0 : *barcode_it++);
     const auto alignment =
       aligner.align_paired_end(read_1, read_2, m_config.shift);
 

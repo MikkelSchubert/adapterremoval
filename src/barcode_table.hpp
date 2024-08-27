@@ -19,16 +19,16 @@
 \*************************************************************************/
 #pragma once
 
-#include "fastq.hpp" // for fastq_pair_vec
-#include <array>     // for array
-#include <cstddef>   // for size_t
-#include <cstdint>   // for int32_t
-#include <stdexcept> // for runtime_error
-#include <string>    // for string
-#include <vector>    // for vector
+#include "sequence.hpp" // for sequence_pair_vec
+#include <array>        // for array
+#include <cstddef>      // for size_t
+#include <cstdint>      // for int32_t
+#include <vector>       // for vector
 
 namespace adapterremoval {
 
+class barcode_set;
+class fastq;
 struct next_subsequence;
 
 /**
@@ -52,7 +52,12 @@ using demux_node_vec = std::vector<demultiplexer_node>;
 class barcode_table
 {
 public:
-  barcode_table(const fastq_pair_vec& barcodes,
+  barcode_table(const barcode_set& samples,
+                size_t max_mm,
+                size_t max_mm_r1,
+                size_t max_mm_r2);
+
+  barcode_table(const sequence_pair_vec& barcodes,
                 size_t max_mm,
                 size_t max_mm_r1,
                 size_t max_mm_r2);
@@ -60,8 +65,12 @@ public:
   int identify(const fastq& read_r1) const;
   int identify(const fastq& read_r1, const fastq& read_r2) const;
 
-  static const int no_match = -1;
-  static const int ambiguous = -2;
+  [[nodiscard]] size_t length_1() const { return m_barcode_1_len; }
+
+  [[nodiscard]] size_t length_2() const { return m_barcode_2_len; }
+
+  constexpr static const int no_match = -1;
+  constexpr static const int ambiguous = -2;
 
 private:
   struct candidate

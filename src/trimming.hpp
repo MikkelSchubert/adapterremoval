@@ -19,11 +19,11 @@
 \*************************************************************************/
 #pragma once
 
-#include "fastq.hpp"      // for fastq_pair_vec
-#include "scheduler.hpp"  // for chunk_vec, chunk_ptr, threadstate, analyt...
-#include "statistics.hpp" // for trimming_statistics, trim_stats_ptr
-#include <cstddef>        // for size_t
-#include <vector>         // for vector
+#include "scheduler.hpp"     // for chunk_vec, chunk_ptr, threadstate, analyt...
+#include "sequence_sets.hpp" // for adapter_set
+#include "statistics.hpp"    // for trimming_statistics, trim_stats_ptr
+#include <cstddef>           // for size_t
+#include <vector>            // for vector
 
 namespace adapterremoval {
 
@@ -43,12 +43,11 @@ public:
 
 protected:
   const userconfig& m_config;
-  const fastq_pair_vec m_adapters;
   const sample_output_files& m_output;
-  const size_t m_nth;
+  std::vector<adapter_set> m_adapters{};
 
   threadstate<trimming_statistics> m_stats{};
-  trim_stats_ptr m_stats_sink{};
+  trim_stats_ptr m_stats_sink;
 };
 
 class se_reads_processor : public reads_processor

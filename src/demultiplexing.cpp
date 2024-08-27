@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "demultiplexing.hpp"
+#include "barcode_table.hpp" // for barcode_table
 #include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "fastq_io.hpp"      // for chunk_ptr, fastq...
 #include "output.hpp"        // for output_files
@@ -37,8 +38,8 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
                                      demux_stats_ptr stats)
   : analytical_step(processing_order::ordered, "demultiplex_reads")
-  , m_barcodes(config.adapters.get_barcodes())
-  , m_barcode_table(m_barcodes,
+  , m_samples(config.samples)
+  , m_barcode_table(m_samples,
                     config.barcode_mm,
                     config.barcode_mm_r1,
                     config.barcode_mm_r2)
@@ -47,10 +48,18 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   , m_cache(steps)
   , m_statistics(std::move(stats))
 {
-  AR_REQUIRE(!m_barcodes.empty());
-  AR_REQUIRE(m_barcodes.size() == m_steps.samples.size());
+  AR_REQUIRE(m_samples.size());
+  AR_REQUIRE(m_samples.size() == m_steps.samples.size());
   AR_REQUIRE(m_statistics);
-  AR_REQUIRE(m_statistics->barcodes.size() == m_barcodes.size());
+  AR_REQUIRE(m_statistics->samples.size() == m_samples.size());
+
+  // Map global barcode offsets to sample and relative barcode offsets
+  for (size_t i = 0; i < m_samples.size(); ++i) {
+    const size_t barcodes = m_samples.at(i).size();
+    for (size_t j = 0; j < barcodes; ++j) {
+      m_barcodes.emplace_back(i, j);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,21 +77,28 @@ demultiplex_se_reads::process(chunk_ptr chunk)
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   for (auto& read : chunk->reads_1) {
-    const int best_barcode = m_barcode_table.identify(read);
+    const auto match = m_barcode_table.identify(read);
 
-    if (best_barcode < 0) {
-      if (best_barcode == -1) {
-        m_statistics->unidentified += 1;
-      } else {
-        m_statistics->ambiguous += 1;
+    if (match < 0) {
+      switch (match) {
+        case barcode_table::no_match:
+          m_statistics->unidentified += 1;
+          break;
+        case barcode_table::ambiguous:
+          m_statistics->ambiguous += 1;
+          break;
+        default:
+          AR_FAIL("invalid barcode match sample");
       }
 
       m_cache.add_unidentified_1(std::move(read));
     } else {
-      read.truncate(m_barcodes.at(best_barcode).first.length());
+      const auto [sample, barcode] = m_barcodes.at(match);
 
-      m_statistics->barcodes.at(best_barcode) += 1;
-      m_cache.add_read_1(std::move(read), best_barcode);
+      read.truncate(m_barcode_table.length_1());
+
+      m_statistics->samples.at(sample) += 1;
+      m_cache.add_read_1(std::move(read), sample, barcode);
     }
   }
 
@@ -108,25 +124,32 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
   auto it_1 = chunk->reads_1.begin();
   auto it_2 = chunk->reads_2.begin();
   for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
-    const int best_barcode = m_barcode_table.identify(*it_1, *it_2);
+    const auto match = m_barcode_table.identify(*it_1, *it_2);
 
-    if (best_barcode < 0) {
-      if (best_barcode == -1) {
-        m_statistics->unidentified += 2;
-      } else {
-        m_statistics->ambiguous += 2;
+    if (match < 0) {
+      switch (match) {
+        case barcode_table::no_match:
+          m_statistics->unidentified += 2;
+          break;
+        case barcode_table::ambiguous:
+          m_statistics->ambiguous += 2;
+          break;
+        default:
+          AR_FAIL("invalid barcode match sample");
       }
 
       m_cache.add_unidentified_1(std::move(*it_1));
       m_cache.add_unidentified_2(std::move(*it_2));
     } else {
-      it_1->truncate(m_barcodes.at(best_barcode).first.length());
-      m_cache.add_read_1(std::move(*it_1), best_barcode);
+      const auto [sample, barcode] = m_barcodes.at(match);
 
-      it_2->truncate(m_barcodes.at(best_barcode).second.length());
-      m_cache.add_read_2(std::move(*it_2), best_barcode);
+      it_1->truncate(m_barcode_table.length_1());
+      m_cache.add_read_1(std::move(*it_1), sample, barcode);
 
-      m_statistics->barcodes.at(best_barcode) += 2;
+      it_2->truncate(m_barcode_table.length_2());
+      m_cache.add_read_2(std::move(*it_2), sample);
+
+      m_statistics->samples.at(sample) += 2;
     }
   }
 

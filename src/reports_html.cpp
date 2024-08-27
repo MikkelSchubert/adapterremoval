@@ -33,13 +33,11 @@
 #include "strutils.hpp"              // for format_percentage, format_rough...
 #include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
 #include <algorithm>                 // for max
-#include <array>                     // for array
 #include <cctype>                    // for toupper
 #include <cerrno>                    // for errno
 #include <cmath>                     // for fmod
 #include <cstdint>                   // for uint64_t
 #include <cstring>                   // for size_t, strerror
-#include <fstream>                   // for operator<<, ofstream, basic_ost...
 #include <iomanip>                   // for operator<<, setprecision, setw
 #include <memory>                    // for __shared_ptr_access, shared_ptr
 #include <sstream>                   // for ostringstream
@@ -71,7 +69,8 @@ json_encode(const std::string& s)
 }
 
 /** JSON escaped string */
-std::string operator""_json(const char* s, size_t length)
+std::string
+operator""_json(const char* s, size_t length)
 {
   return json_encode(std::string(s, length));
 }
@@ -581,7 +580,7 @@ write_html_processing_section(const userconfig& config,
   uint64_t adapter_reads = 0;
   uint64_t adapter_bases = 0;
 
-  for (size_t i = 0; i < config.adapters.adapter_count(); ++i) {
+  for (size_t i = 0; i < config.adapters.size(); ++i) {
     adapter_reads += totals.adapter_trimmed_reads.get(i);
     adapter_bases += totals.adapter_trimmed_bases.get(i);
   }
@@ -865,9 +864,9 @@ write_html_analyses_section(const userconfig& config,
     // Consensus adapter sequences
     {
       const auto reference_adapters =
-        config.adapters.get_raw_adapters().front();
-      const auto& reference_adapter_1 = reference_adapters.first.sequence();
-      const auto& reference_adapter_2 = reference_adapters.second.sequence();
+        config.adapters.to_read_orientation().front();
+      std::string reference_adapter_1{ reference_adapters.first };
+      std::string reference_adapter_2{ reference_adapters.second };
 
       html_consensus_adapter_head()
         .set_overlapping_pairs(
@@ -933,6 +932,23 @@ write_html_analyses_section(const userconfig& config,
   }
 }
 
+std::pair<std::string, std::string>
+join_barcodes(const sample& s)
+{
+  string_vec mate_1;
+  string_vec mate_2;
+
+  for (const auto& barcode : s) {
+    mate_1.emplace_back(barcode.first);
+    mate_2.emplace_back(barcode.second);
+  }
+
+  return {
+    join_text(mate_1, "<br/>"),
+    join_text(mate_2, "<br/>"),
+  };
+}
+
 void
 write_html_demultiplexing_section(const userconfig& config,
                                   const statistics& stats,
@@ -946,12 +962,12 @@ write_html_demultiplexing_section(const userconfig& config,
   const size_t input_reads = stats.input_1->number_of_input_reads() +
                              stats.input_2->number_of_input_reads();
 
-  for (size_t i = 0; i < config.adapters.barcode_count(); ++i) {
+  for (size_t i = 0; i < config.samples.size(); ++i) {
     auto m = data.dict();
-    m->str("x", config.adapters.get_sample_name(i));
+    m->str("x", config.samples.at(i).name());
 
     if (input_reads) {
-      m->f64("y", (100.0 * stats.demultiplexing->barcodes.at(i)) / input_reads);
+      m->f64("y", (100.0 * stats.demultiplexing->samples.at(i)) / input_reads);
     } else {
       m->null("y");
     }
@@ -993,30 +1009,30 @@ write_html_demultiplexing_section(const userconfig& config,
       .write(output);
   }
 
-  const auto barcodes = config.adapters.get_barcodes();
-
-  for (size_t i = 0; i < config.adapters.barcode_count(); ++i) {
-    const auto& sample = *stats.trimming.at(i);
+  size_t sample_idx = 0;
+  for (const auto& sample : config.samples) {
+    const auto& sample_stats = *stats.trimming.at(sample_idx);
 
     fastq_statistics total;
 
-    total += *sample.read_1;
-    total += *sample.read_2;
-    total += *sample.merged;
-    total += *sample.singleton;
+    total += *sample_stats.read_1;
+    total += *sample_stats.read_2;
+    total += *sample_stats.merged;
+    total += *sample_stats.singleton;
     // Not included in overview:
     // total += *sample.discarded;
 
     const auto output_reads = total.length_dist().sum();
     const auto output_bp = total.nucleotides_pos().sum();
+    const auto barcodes = join_barcodes(sample);
 
     html_demultiplexing_row()
-      .set_n(std::to_string(i + 1))
-      .set_barcode_1(barcodes.at(i).first.sequence())
-      .set_barcode_2(barcodes.at(i).second.sequence())
-      .set_name(config.adapters.get_sample_name(i))
-      .set_pct(
-        format_percentage(stats.demultiplexing->barcodes.at(i), input_reads, 2))
+      .set_n(std::to_string(sample_idx + 1))
+      .set_barcode_1(barcodes.first)
+      .set_barcode_2(barcodes.second)
+      .set_name(sample.name())
+      .set_pct(format_percentage(
+        stats.demultiplexing->samples.at(sample_idx), input_reads, 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
@@ -1104,7 +1120,7 @@ write_html_report(const userconfig& config,
     write_html_analyses_section(config, stats, output);
   }
 
-  if (config.adapters.barcode_count()) {
+  if (config.is_demultiplexing_enabled()) {
     write_html_demultiplexing_section(config, stats, output);
   }
 

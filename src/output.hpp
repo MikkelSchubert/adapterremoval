@@ -220,7 +220,7 @@ public:
 
   void add_unidentified_1(fastq&& read);
   void add_unidentified_2(fastq&& read);
-  void add_read_1(fastq&& read, size_t sample);
+  void add_read_1(fastq&& read, size_t sample, size_t barcode);
   void add_read_2(fastq&& read, size_t sample);
 
   /** Returns a chunk for each generated type of processed reads. */

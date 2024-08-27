@@ -329,9 +329,11 @@ demultiplexed_reads::add_unidentified_2(fastq&& read)
 }
 
 void
-demultiplexed_reads::add_read_1(fastq&& read, size_t sample)
+demultiplexed_reads::add_read_1(fastq&& read, size_t sample, size_t barcode)
 {
-  m_cache.at(sample + 1)->reads_1.push_back(std::move(read));
+  auto& chunk = *m_cache.at(sample + 1);
+  chunk.reads_1.push_back(std::move(read));
+  chunk.barcodes.push_back(barcode);
 }
 
 void

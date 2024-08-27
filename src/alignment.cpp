@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "alignment.hpp"   // declarations
-#include "commontypes.hpp" // for merge_strategy
-#include "debug.hpp"       // for AR_REQUIRE
-#include "fastq.hpp"       // for fastq, fastq_pair_vec
-#include "simd.hpp"        // for size_t, get_compare_subsequences_func
-#include <algorithm>       // for max, min
-#include <array>           // for array
-#include <string>          // for string, operator+
-#include <utility>         // for swap, pair
-#include <vector>          // for vector
+#include "alignment.hpp"     // declarations
+#include "commontypes.hpp"   // for merge_strategy
+#include "debug.hpp"         // for AR_REQUIRE
+#include "fastq.hpp"         // for fastq
+#include "sequence_sets.hpp" // for adapter_set
+#include "simd.hpp"          // for size_t, get_compare_subsequences_func
+#include <algorithm>         // for max, min
+#include <string>            // for string, operator+
+#include <utility>           // for swap, pair
 
 namespace adapterremoval {
 
@@ -148,7 +147,7 @@ alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `sequence_aligner`
 
-sequence_aligner::sequence_aligner(const fastq_pair_vec& adapters,
+sequence_aligner::sequence_aligner(const adapter_set& adapters,
                                    simd::instruction_set is)
   : m_adapters(adapters)
   , m_compare_func(simd::get_compare_subsequences_func(is))
@@ -163,7 +162,7 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift)
   alignment_info alignment;
 
   for (const auto& adapter_pair : m_adapters) {
-    const auto& adapter = adapter_pair.first.sequence();
+    const std::string_view adapter = adapter_pair.first;
 
     m_buffer.clear();
     m_buffer += read.sequence();
@@ -198,15 +197,15 @@ sequence_aligner::align_paired_end(const fastq& read1,
   alignment_info alignment;
 
   for (const auto& adapter_pair : m_adapters) {
-    const fastq& adapter1 = adapter_pair.first;
-    const fastq& adapter2 = adapter_pair.second;
+    const std::string_view adapter1 = adapter_pair.first;
+    const std::string_view adapter2 = adapter_pair.second;
 
     m_buffer.clear();
-    m_buffer += adapter2.sequence();
+    m_buffer += adapter2;
     m_buffer += read1.sequence();
     m_buffer.append(m_padding, 'N');
     m_buffer += read2.sequence();
-    m_buffer += adapter1.sequence();
+    m_buffer += adapter1;
     m_buffer.append(m_padding, 'N');
 
     const char* sequence1 = m_buffer.data();

@@ -361,7 +361,7 @@ size_t
 demux_statistics::total() const
 {
   size_t total = unidentified + ambiguous;
-  for (const auto count : barcodes) {
+  for (const auto count : samples) {
     total += count;
   }
 
@@ -376,7 +376,7 @@ statistics::statistics(double sample_rate)
 }
 
 statistics_builder::statistics_builder()
-  : m_barcode_count(0)
+  : m_sample_count(0)
   , m_sample_rate(1.0)
   , m_max_unique(0)
   , m_adapter_id(0)
@@ -392,9 +392,9 @@ statistics_builder::sample_rate(double rate)
 }
 
 statistics_builder&
-statistics_builder::demultiplexing(size_t barcodes)
+statistics_builder::demultiplexing(size_t samples)
 {
-  m_barcode_count = barcodes;
+  m_sample_count = samples;
 
   return *this;
 }
@@ -420,8 +420,8 @@ statistics
 statistics_builder::initialize() const
 {
   statistics stats(m_sample_rate);
-  if (m_barcode_count) {
-    stats.demultiplexing->barcodes.resize(m_barcode_count);
+  if (m_sample_count) {
+    stats.demultiplexing->samples.resize(m_sample_count);
   }
 
   stats.input_1->init_duplication_stats(m_max_unique);

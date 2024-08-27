@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "debug.hpp"          // for AR_REQUIRE
 #include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq_io.hpp"       // for gzip_split_fastq, post_process_fastq
 #include "output.hpp"         // for outpuT_file, DEV_NULL
@@ -26,10 +25,8 @@
 #include "sequence_sets.hpp"  // for adapter_set
 #include "simd.hpp"           // for size_t
 #include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
-#include "strutils.hpp"       // for ends_with, to_lower, string_vec
 #include "trimming.hpp"       // for pe_reads_processor, se_reads_processor
 #include "userconfig.hpp"     // for userconfig, output_files, DEV_NULL
-#include <algorithm>          // for max
 #include <cstring>            // for size_t
 #include <limits>             // for numeric_limits
 #include <memory>             // for make_shared
@@ -46,7 +43,7 @@ remove_adapter_sequences(const userconfig& config)
   statistics stats = statistics_builder()
                        .sample_rate(config.report_sample_rate)
                        .estimate_duplication(config.report_duplication)
-                       .demultiplexing(config.adapters.barcode_count())
+                       .demultiplexing(config.samples.size())
                        .initialize();
 
   auto output = config.get_output_filenames();

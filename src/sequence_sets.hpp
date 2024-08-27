@@ -24,83 +24,174 @@
 \*************************************************************************/
 #pragma once
 
-#include "commontypes.hpp" // for string_vec
-#include "fastq.hpp"       // for fastq_pair_vec
-#include <cstddef>         // for size_t
-#include <string>          // for string
+#include "barcode_table.hpp"
+#include "sequence.hpp"     // for for dna_sequence
+#include <cstddef>          // for size_t
+#include <initializer_list> // for initializer_list
+#include <string>           // for string
+#include <string_view>      // for string_view
+#include <vector>           // for vector
 
 namespace adapterremoval {
 
+using string_view_pair = std::pair<std::string_view, std::string_view>;
+
 /**
- * Class for reading sets of adapters and barcodes, and for generating
- * per-barcode sets of adapter sequences as needed. The class further checks
- * for the correctness of these sequences, and detects duplicate barcode
- * sequences / pairs of sequences.
+ * Class for loading/handling adapter adapter sequences.
+ *
+ * Adapter sequences are found in one of two orientations:
+ *  - Read orientation, corresponding to the sequence in input fastq reads
+ *  - Alignment orientation, corresponding to the orientation used during
+ *    sequence alignment. For the mate 1 adapter, this is read orientation,
+ *    but for the mate 2 adapter this is the reverse complement.
  */
 class adapter_set
 {
 public:
   /** Initialize empty adapter list. */
-  adapter_set();
+  adapter_set() = default;
+
+  /** Initializes with adapters in read orientation */
+  adapter_set(std::initializer_list<string_view_pair> args);
+
+  /** Adds a pair of adapters to the set in read orientation */
+  void add(dna_sequence adapter1, dna_sequence adapter2);
+
+  /** Adds a pair of adapters to the set in read orientation */
+  void add(std::string adapter1, std::string adapter2);
+
+  /** Generate new adapter set with these barcodes (in read orientation) */
+  [[nodiscard]] adapter_set add_barcodes(const dna_sequence& barcode1,
+                                         const dna_sequence& barcode2) const;
 
   /**
-   * Adds a pair of adapters to the set; it is assumed that the adapter 2
-   * sequence is in read orientation (e.g. can be found as is in the raw mate
-   * 2 reads.
+   * Loads adapters in read orientation from a TSV file, throwing on failure.
+   * Two adapter sequences are expected if 'paired_end_mode' is set.
    */
-  void add_adapters(const std::string& adapter1, const std::string& adapter2);
+  void load(const std::string& filename, bool paired_end_mode);
 
-  /**
-   * Loads barcodes from a table, returning true on success. The value of
-   * 'paired_end_mode' is used to set the expected number of values.
-   */
-  bool load_adapters(const std::string& filename, bool paired_end_mode);
+  /** Returns the number of adapters/adapter pairs added/loaded */
+  [[nodiscard]] size_t size() const { return m_adapters.size(); }
 
-  /**
-   * Loads barcodes from a table, returning true on success. The value of
-   * 'paired_end_mode' to correctly identify duplicate sequences.
-   */
-  bool load_barcodes(const std::string& filename, bool paired_end_mode);
+  /** Iterator over adapter sequences in alignment orientation */
+  [[nodiscard]] auto begin() const { return m_adapters.begin(); }
 
-  /** Returns the number of adapters per set. */
-  size_t adapter_count() const { return m_adapters.size(); }
+  /** Terminal iterator over adapter sequences in alignment orientation */
+  [[nodiscard]] auto end() const { return m_adapters.end(); }
 
-  /** Returns the number of adapter sets; namely 1 or barcode_count() */
-  size_t adapter_set_count() const;
+  [[nodiscard]] const auto& at(size_t n) const { return m_adapters.at(n); }
 
-  /** Returns the number of barcodes. */
-  size_t barcode_count() const { return m_barcodes.size(); }
-
-  /**
-   * Returns the nth set of adapters; when barcodes are specified, the
-   * raw adapters are merged with the 'nth' barcodes. Only the zeroth
-   * set is available if no barcodes were provided. Adapter 2 is converted to
-   * alignment orientation.
-   */
-  fastq_pair_vec get_adapter_set(size_t nth) const;
-
-  /**
-   * Returns the user-supplied adapter sequences absent of any barcodes, with
-   * the adapter 2 sequence in input orientation.
-   **/
-  fastq_pair_vec get_raw_adapters() const;
-
-  /** Returns the (pairs of) barcodes. */
-  const fastq_pair_vec& get_barcodes() const { return m_barcodes; }
-
-  /** Returns the name associated with the nth set of barcodes. */
-  const std::string& get_sample_name(size_t nth) const
-  {
-    return m_samples.at(nth);
-  }
+  /** Returns the adapters in read orientation */
+  [[nodiscard]] sequence_pair_vec to_read_orientation() const;
 
 private:
-  //! Names associated with barcodes
-  string_vec m_samples{};
-  //! User-supplied barcodes
-  fastq_pair_vec m_barcodes{};
-  //! User-supplied adapter sequences, without barcodes added
-  fastq_pair_vec m_adapters{};
+  //! Adapter sequences in alignment orientation
+  sequence_pair_vec m_adapters{};
+};
+
+/** Represents a demultiplexing sample with one or more barcodes */
+class sample
+{
+public:
+  explicit sample(std::string name,
+                  dna_sequence barcode1,
+                  dna_sequence barcode2)
+    : m_name(std::move(name))
+    , m_barcodes()
+  {
+    add(std::move(barcode1), std::move(barcode2));
+  };
+
+  explicit sample(std::string name, std::string barcode1, std::string barcode2)
+    : sample(name, dna_sequence{ barcode1 }, dna_sequence{ barcode2 }){};
+
+  /** Adds a pair of barcodes in read orientation */
+  void add(dna_sequence adapter1, dna_sequence adapter2);
+
+  /** Adds barcodes in read orientation */
+  void add(std::string barcode1, std::string barcode2);
+
+  /** Returns the unique name of this sample */
+  [[nodiscard]] const auto& name() const { return m_name; }
+
+  /** Returns the number of barcode sequences loaded */
+  [[nodiscard]] size_t size() const { return m_barcodes.size(); }
+
+  /** Iterator over adapter sequences in alignment orientation */
+  [[nodiscard]] auto begin() const { return m_barcodes.begin(); }
+
+  /** Terminal iterator over adapter sequences in alignment orientation */
+  [[nodiscard]] auto end() const { return m_barcodes.end(); }
+
+  /** Returns the nth barcode / pair of barcodes */
+  [[nodiscard]] const auto& at(size_t n) const { return m_barcodes.at(n); }
+
+private:
+  //! Unique name associated with this sample
+  std::string m_name;
+  //! Barcodes identifying this sample
+  sequence_pair_vec m_barcodes;
+};
+
+/**
+ * Class for handling samples for  demultiplexing. The class further checks for
+ * the correctness of these sequences, and detects duplicate barcode sequences /
+ * pairs of sequences.
+ */
+class barcode_set
+{
+public:
+  barcode_set() = default;
+
+  /**
+   * In SE mode the first barcode must be unique, in PE mode the individual
+   * sequences may be non-unique as long as the combination is unique
+   */
+  void set_paired_end_mode(bool b) { m_paired_end_mode = b; }
+
+  /** Enable or disable support for multiple barcodes for the same sample */
+  void set_allow_multiple_barcodes(bool b) { m_allow_multiple_barcodes = b; }
+
+  /** Adds a unnamed sample with empty barcodes */
+  void add_default_sample();
+
+  /**
+   * Adds a pair of barcodes for the given sample; intended for small / test
+   * tables as the table is fully validated after each addition
+   **/
+  void add(std::string name, std::string barcode1, std::string barcode2);
+
+  /**
+   * Adds reverse (complemented) barcodes for barcode for each sample; if the
+   * reverse (complemented) barcode is already present for a sample, then it is
+   * ignored. Duplicates across samples trigger an exception.
+   */
+  void add_reversed_barcodes();
+
+  /** Loads barcodes from a TSV file, throwing on error */
+  void load(const std::string& filename);
+
+  /** Returns the number of (demultiplexing) samples */
+  [[nodiscard]] size_t size() const { return m_samples.size(); }
+
+  /** Iterator over (demultiplexing) samples */
+  [[nodiscard]] auto begin() const { return m_samples.begin(); }
+
+  /** Terminal iterator over (demultiplexing) samples */
+  [[nodiscard]] auto end() const { return m_samples.end(); }
+
+  /** Returns the nth (demultiplexing) sample */
+  [[nodiscard]] const auto& at(size_t n) const { return m_samples.at(n); }
+
+private:
+  //! Demultiplexing samples. Names and barcode pairs are both unique
+  std::vector<sample> m_samples{};
+  //! Whether running in paired or single end mode; is used to determine whether
+  //! or not b can be uniquely identified from the barcodes provided
+  bool m_paired_end_mode = false;
+  //! cates whether or not multiple barcodes/barcode pairs can bused b
+  //! identify the same sample.
+  bool m_allow_multiple_barcodes = false;
 };
 
 } // namespace adapterremoval

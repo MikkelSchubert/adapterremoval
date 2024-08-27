@@ -19,7 +19,8 @@
 \*************************************************************************/
 #include "barcode_table.hpp" // for barcode_table
 #include "errors.hpp"        // for parsing_error
-#include "fastq.hpp"         // for fastq, fastq_pair_vec, fastq_pair
+#include "fastq.hpp"         // for fastq, sequence_pair_vec, fastq_pair
+#include "sequence.hpp"      // for dna_sequence
 #include "testing.hpp"       // for catch.hpp, StringMaker
 #include <string>            // for basic_string, operator==, string
 
@@ -46,88 +47,93 @@ TEST_CASE("copy constructor", "[barcodes::errors]")
 
 TEST_CASE("Empty barcode-table is OK", "[barcodes::constructor]")
 {
-  const fastq_pair_vec barcodes;
+  const sequence_pair_vec barcodes;
 
   barcode_table table(barcodes, 0, 0, 0);
 }
 
 TEST_CASE("Overlapping SE barcodes fail", "[barcodes::constructor]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "ACGT"), fastq()));
+  const sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGT" }, dna_sequence{} },
+    { dna_sequence{ "ACGT" }, dna_sequence{} }
+  };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Overlapping PE barcodes fail", "[barcodes::constructor]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
-  barcodes.push_back(fastq_pair(fastq("2", "ACGT"), fastq("4", "CGTG")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } },
+    { dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } },
+  };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
-  barcodes.push_back(fastq_pair(fastq("2", "CGTG"), fastq("4", "ACGT")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } },
+    { dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } },
+  };
 
   barcode_table table(barcodes, 0, 0, 0);
 }
 
 TEST_CASE("Variable length SE barcodes fail #1", "[barcodes::construction]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "TGCTA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACGT" }, dna_sequence{} },
+                                 { dna_sequence{ "TGCTA" }, dna_sequence{} } };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length SE barcodes fail #2", "[barcodes::construction]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "TGCTA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACGT" }, dna_sequence{} },
+                                 { dna_sequence{ "TGCTA" }, dna_sequence{} } };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #1", "[barcodes::construction]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGTT"), fastq("3", "CGTG")));
-  barcodes.push_back(fastq_pair(fastq("2", "CGTG"), fastq("4", "ACGT")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGTT" }, dna_sequence{ "CGTG" } },
+    { dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } },
+  };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #2", "[barcodes::construction]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTGT")));
-  barcodes.push_back(fastq_pair(fastq("2", "CGTG"), fastq("4", "ACGT")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGT" }, dna_sequence{ "CGTGT" } },
+    { dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } },
+  };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #3", "[barcodes::construction]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
-  barcodes.push_back(fastq_pair(fastq("2", "CGTGA"), fastq("4", "ACGT")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } },
+    { dna_sequence{ "CGTGA" }, dna_sequence{ "ACGT" } },
+  };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
 
 TEST_CASE("Variable length PE barcodes fail #4", "[barcodes::construction]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACGT"), fastq("3", "CGTG")));
-  barcodes.push_back(fastq_pair(fastq("2", "CGTGA"), fastq("4", "ACGTA")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } },
+    { dna_sequence{ "CGTGA" }, dna_sequence{ "ACGTA" } },
+  };
 
   REQUIRE_THROWS_AS(barcode_table(barcodes, 0, 0, 0), parsing_error);
 }
@@ -138,10 +144,9 @@ TEST_CASE("Variable length PE barcodes fail #4", "[barcodes::construction]")
 TEST_CASE("Exact match among different SE barcodes for SE reads",
           "[barcodes::exact]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "CACAC"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "AATTC"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "CACAC" }, dna_sequence{} },
+                                 { dna_sequence{ "AATTC" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -153,10 +158,9 @@ TEST_CASE("Exact match among different SE barcodes for SE reads",
 TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 5p",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "AGCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "TCCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "AGCCA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -168,10 +172,9 @@ TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 5p",
 TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 3p",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "ACCCT"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "ACCTA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "ACCCT" }, dna_sequence{} },
+                                 { dna_sequence{ "ACCTA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -183,8 +186,7 @@ TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for SE barcodes and SE reads",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} } };
   const barcode_table table(barcodes, 0, 0, 0);
 
   REQUIRE(table.identify(fastq("A", "ACCC")) == -1);
@@ -198,10 +200,11 @@ TEST_CASE("Shorter and longer reads for SE barcodes and SE reads",
 TEST_CASE("Exact match among different PE barcodes for SE reads",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "CACAC"), fastq("5", "GATGC")));
-  barcodes.push_back(fastq_pair(fastq("3", "AATTC"), fastq("6", "TGCGG")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "CACAC" }, dna_sequence{ "GATGC" } },
+    { dna_sequence{ "AATTC" }, dna_sequence{ "TGCGG" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -213,10 +216,11 @@ TEST_CASE("Exact match among different PE barcodes for SE reads",
 TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 5p",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCCA"), fastq("5", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("3", "AGCCA"), fastq("6", "ATTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "TCCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "AGCCA" }, dna_sequence{ "ATTTC" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -228,10 +232,11 @@ TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 5p",
 TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 3p",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "ACCCT"), fastq("5", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("3", "AGCCA"), fastq("6", "GTTTA")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "ACCCT" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "AGCCA" }, dna_sequence{ "GTTTA" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -243,8 +248,8 @@ TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for PE barcodes and SE reads",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "TGATA")));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" },
+                                   dna_sequence{ "TGATA" } } };
   const barcode_table table(barcodes, 0, 0, 0);
 
   REQUIRE(table.identify(fastq("A", "ACCC")) == -1);
@@ -256,10 +261,11 @@ TEST_CASE(
   "Exact match among different PE barcodes for SE reads with ambiguous results",
   "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "AATTC"), fastq("5", "GATGC")));
-  barcodes.push_back(fastq_pair(fastq("3", "AATTC"), fastq("6", "TGCGG")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "AATTC" }, dna_sequence{ "GATGC" } },
+    { dna_sequence{ "AATTC" }, dna_sequence{ "TGCGG" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -273,10 +279,9 @@ TEST_CASE(
 TEST_CASE("Exact match among different SE barcodes for PE reads",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "CACAC"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "AATTC"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "CACAC" }, dna_sequence{} },
+                                 { dna_sequence{ "AATTC" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -288,10 +293,9 @@ TEST_CASE("Exact match among different SE barcodes for PE reads",
 TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 5p",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "ATCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "TCCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "ATCCA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -303,10 +307,9 @@ TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 5p",
 TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 3p",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "ACCCT"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "ACCGA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "ACCCT" }, dna_sequence{} },
+                                 { dna_sequence{ "ACCGA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -318,8 +321,7 @@ TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for SE barcodes and PE reads",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} } };
   const barcode_table table(barcodes, 0, 0, 0);
 
   REQUIRE(table.identify(fastq("A", "ACCC"), fastq("B", "TGATGA")) == -1);
@@ -333,10 +335,11 @@ TEST_CASE("Shorter and longer reads for SE barcodes and PE reads",
 TEST_CASE("Exact match among different PE barcodes for PE reads",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "CACAC"), fastq("5", "GATGC")));
-  barcodes.push_back(fastq_pair(fastq("3", "AATTC"), fastq("6", "TGCGG")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "CACAC" }, dna_sequence{ "GATGC" } },
+    { dna_sequence{ "AATTC" }, dna_sequence{ "TGCGG" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -348,10 +351,11 @@ TEST_CASE("Exact match among different PE barcodes for PE reads",
 TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 5p",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCCA"), fastq("5", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("3", "ACCCA"), fastq("6", "ATTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "TCCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "ATTTC" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -363,10 +367,11 @@ TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 5p",
 TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 3p",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("2", "ACCCT"), fastq("5", "GTTTC")));
-  barcodes.push_back(fastq_pair(fastq("3", "ACCCA"), fastq("6", "GTTTA")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "ACCCT" }, dna_sequence{ "GTTTC" } },
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTA" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
 
@@ -378,8 +383,8 @@ TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for PE barcodes and PE reads",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "TGATGA")));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" },
+                                   dna_sequence{ "TGATGA" } } };
   const barcode_table table(barcodes, 0, 0, 0);
 
   REQUIRE(table.identify(fastq("A", "ACCC"), fastq("B", "TGATG")) == -1);
@@ -401,8 +406,7 @@ TEST_CASE("Shorter and longer reads for PE barcodes and PE reads",
 TEST_CASE("Exact matching reads with mismatches for SE barcodes",
           "[barcodes::exact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 0, 0);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
@@ -425,8 +429,9 @@ TEST_CASE("Exact matching reads with mismatches for SE barcodes",
 TEST_CASE("Exact matching reads with mismatches for PE barcodes",
           "[barcodes::exact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("B", "GTTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  };
 
   const barcode_table table(barcodes, 0, 0, 0);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
@@ -451,8 +456,7 @@ TEST_CASE("Exact matching reads with mismatches for PE barcodes",
 TEST_CASE("Global limits override local limits for SE barcodes",
           "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 0, 1, 1);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
@@ -466,8 +470,9 @@ TEST_CASE("Global limits override local limits for SE barcodes",
 TEST_CASE("Global limits override local limits for PE barcodes",
           "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "GTTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  };
 
   const barcode_table table(barcodes, 0, 1, 1);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
@@ -483,8 +488,7 @@ TEST_CASE("Global limits override local limits for PE barcodes",
 
 TEST_CASE("Mismatches in R1 only with SE table", "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 1, 1, 0);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
@@ -503,8 +507,9 @@ TEST_CASE("Mismatches in R1 only with SE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Mismatches in R1 only with PE table", "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "GTTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  };
 
   const barcode_table table(barcodes, 1, 1, 0);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);
@@ -523,8 +528,7 @@ TEST_CASE("Mismatches in R1 only with PE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Mismatches in R2 only with SE table", "[barcodes::inexact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 1, 0, 1);
   REQUIRE(table.identify(fastq("A", "ACCCT"), fastq("B", "GTTTC")) == -1);
@@ -536,8 +540,9 @@ TEST_CASE("Mismatches in R2 only with SE table", "[barcodes::inexact::pe]")
 
 TEST_CASE("Mismatches in R2 only with PE table", "[barcodes::inexact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "GTTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  };
 
   const barcode_table table(barcodes, 1, 0, 1);
   REQUIRE(table.identify(fastq("A", "ACCCT"), fastq("B", "GTTTC")) == -1);
@@ -551,8 +556,9 @@ TEST_CASE("Mismatches in R2 only with PE table", "[barcodes::inexact::pe]")
 
 TEST_CASE("Mismatches in R1/R2 with PE table", "[barcodes::inexact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "GTTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  };
 
   const barcode_table table(barcodes, 1, 1, 1);
   REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
@@ -569,8 +575,9 @@ TEST_CASE("Mismatches in R1/R2 with PE table", "[barcodes::inexact::pe]")
 TEST_CASE("Multiple mismatches in R1/R2 with PE table",
           "[barcodes::inexact::pe]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("2", "GTTTC")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  };
 
   const barcode_table table(barcodes, 2, 2, 2);
   REQUIRE(table.identify(fastq("A", "ACCCA"), fastq("B", "GTTTC")) == 0);
@@ -587,10 +594,9 @@ TEST_CASE("Multiple mismatches in R1/R2 with PE table",
 
 TEST_CASE("Ambiguous matches in R1 for SE table", "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCCA"), fastq()));
-  barcodes.push_back(fastq_pair(fastq("3", "ACCCG"), fastq()));
+  sequence_pair_vec barcodes = { { dna_sequence{ "ACCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "TCCCA" }, dna_sequence{} },
+                                 { dna_sequence{ "ACCCG" }, dna_sequence{} } };
 
   const barcode_table table(barcodes, 1, 1, 1);
   REQUIRE(table.identify(fastq("A", "TCCCA")) == 1);
@@ -601,10 +607,11 @@ TEST_CASE("Ambiguous matches in R1 for SE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Ambiguous matches in SE R1 for PE table", "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "TGCGT")));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCCA"), fastq("5", "AAGTT")));
-  barcodes.push_back(fastq_pair(fastq("3", "ACCCG"), fastq("6", "CGGCA")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "TGCGT" } },
+    { dna_sequence{ "TCCCA" }, dna_sequence{ "AAGTT" } },
+    { dna_sequence{ "ACCCG" }, dna_sequence{ "CGGCA" } },
+  };
 
   const barcode_table table(barcodes, 1, 1, 1);
   REQUIRE(table.identify(fastq("A", "TCCCA")) == 1);
@@ -615,9 +622,10 @@ TEST_CASE("Ambiguous matches in SE R1 for PE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Mismatch resulting in apparent match", "[barcodes::inexact::se]")
 {
-  fastq_pair_vec barcodes;
-  barcodes.push_back(fastq_pair(fastq("1", "ACCCA"), fastq("4", "TGCGT")));
-  barcodes.push_back(fastq_pair(fastq("2", "TCCTT"), fastq("5", "AAGTT")));
+  sequence_pair_vec barcodes = {
+    { dna_sequence{ "ACCCA" }, dna_sequence{ "TGCGT" } },
+    { dna_sequence{ "TCCTT" }, dna_sequence{ "AAGTT" } },
+  };
 
   const barcode_table table(barcodes, 1, 1, 1);
   REQUIRE(table.identify(fastq("A", "ACCCA")) == 0);

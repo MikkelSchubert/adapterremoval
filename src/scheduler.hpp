@@ -113,10 +113,13 @@ public:
   //! Original mate separator for (paired) reads
   char mate_separator = '\0';
 
-  //! Lines read from the mate 1 files
+  //! FASTQ records read from the mate 1 files
   std::vector<fastq> reads_1{};
-  //! Lines read from the mate 2 files
+  //! FASTQ records read from the mate 2 files
   std::vector<fastq> reads_2{};
+
+  //! Barcode identified for the corresponding read (pair)
+  std::vector<uint32_t> barcodes{};
 
   //! Buffers of (compressed) FASTQ reads
   std::vector<buffer> buffers{};

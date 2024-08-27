@@ -18,15 +18,15 @@
 \*************************************************************************/
 #pragma once
 
-#include "fastq.hpp"     // for fastq_pair_vec
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
-#include <cstddef>       // for size_t
 #include <string>        // for string
 
 namespace adapterremoval {
 
 enum class merge_strategy;
+class adapter_set;
+class fastq;
 
 /**
  * Summarizes an alignment.
@@ -131,7 +131,7 @@ struct alignment_info
 class sequence_aligner
 {
 public:
-  explicit sequence_aligner(const fastq_pair_vec& adapters,
+  explicit sequence_aligner(const adapter_set& adapters,
                             simd::instruction_set is);
 
   /**
@@ -189,7 +189,7 @@ private:
                                 int min_offset) const;
 
   //! Adapter sequences against which to align the sequences
-  const fastq_pair_vec& m_adapters;
+  const adapter_set& m_adapters;
   //! SIMD instruction set to use for sequence comparisons
   const simd::compare_subsequences_func m_compare_func;
   //! Padding required by chosen SIMD instructions

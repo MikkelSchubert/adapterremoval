@@ -20,21 +20,20 @@
 #pragma once
 
 #include "barcode_table.hpp" // for barcode_table
-#include "fastq.hpp"         // for fastq_pair_vec
 #include "fastq_io.hpp"      // for chunk_ptr
 #include "output.hpp"        // for demultiplexed_reads
 #include "scheduler.hpp"     // for chunk_vec, chunk_ptr, analytical_step
 #include "statistics.hpp"    // for demux_stats_ptr
-#include <algorithm>         // for max
 #include <cstddef>           // for size_t
 #include <mutex>             // for mutex
 #include <vector>            // for vector
 
 namespace adapterremoval {
 
-class userconfig;
+class barcode_set;
 class output_files;
 class post_demux_steps;
+class userconfig;
 
 /**
  * Base-class for demultiplexing of reads; responsible for building the
@@ -51,7 +50,7 @@ public:
 
 protected:
   //! List of barcode (pairs) supplied by caller
-  const fastq_pair_vec& m_barcodes;
+  const barcode_set& m_samples;
   //! Quad-tree representing all mate 1 adapters; for search with n mismatches
   const barcode_table m_barcode_table;
   //! Pointer to user settings used for output format for unidentified reads
@@ -59,6 +58,8 @@ protected:
   //! Map of steps for output chunks;
   const post_demux_steps& m_steps;
 
+  //! Mapping of barcode global offsets to sample and sample barcode offsets
+  std::vector<std::pair<size_t, size_t>> m_barcodes{};
   //! Cache of reads used to buffer chunks for downstream processing
   demultiplexed_reads m_cache;
 

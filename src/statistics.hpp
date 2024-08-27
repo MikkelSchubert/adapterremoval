@@ -307,7 +307,7 @@ public:
   size_t total() const;
 
   //! Number of reads identified for for each barcode (pair)
-  std::vector<size_t> barcodes{};
+  std::vector<size_t> samples{};
   //! Number of reads with no hits
   size_t unidentified = 0;
   //! Number of reads with no single best hit
@@ -350,7 +350,7 @@ public:
   statistics_builder();
 
   /** The number of barcodes used for demultiplexing (0 if disabled). */
-  statistics_builder& demultiplexing(size_t barcodes);
+  statistics_builder& demultiplexing(size_t samples);
   /** Sampling rate of sequences used for sequence composition statistics. */
   statistics_builder& sample_rate(double rate);
   /** Estimate duplication rate using the algorithm implemented in FastQC. */
@@ -361,8 +361,8 @@ public:
   statistics initialize() const;
 
 private:
-  //! Number of demultiplexing barcodes
-  size_t m_barcode_count;
+  //! Number of demultiplexing samples
+  size_t m_sample_count;
   //! Fraction of reads sampled for costly statistics (quality distrib., etc.).
   double m_sample_rate;
   //! The max number of unique sequences counted when estimating duplication.

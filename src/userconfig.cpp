@@ -1119,6 +1119,11 @@ userconfig::parse_args(const string_vec& argvec)
     return argparse::parse_result::error;
   }
 
+  // (Optionally) read barcodes from file and validate
+  if (!setup_demultiplexing()) {
+    return argparse::parse_result::error;
+  }
+
   // Set mismatch threshold
   if (mismatch_threshold > 1) {
     mismatch_threshold = 1.0 / mismatch_threshold;
@@ -1343,12 +1348,11 @@ userconfig::get_output_filenames() const
     }
   }
 
-  for (size_t i = 0; i < adapters.adapter_set_count(); ++i) {
-    const auto sample =
-      is_demultiplexing_enabled() ? adapters.get_sample_name(i) : "";
+  for (const auto& sample : samples) {
+    const auto& name = sample.name();
     sample_output_files map;
 
-    const auto mate_1 = new_output_file("--out-file1", { sample, out1 });
+    const auto mate_1 = new_output_file("--out-file1", { name, out1 });
     map.set_file(read_type::mate_1, mate_1);
 
     if (paired_ended_mode) {
@@ -1356,7 +1360,7 @@ userconfig::get_output_filenames() const
         map.set_file(read_type::mate_2, mate_1);
       } else {
         map.set_file(read_type::mate_2,
-                     new_output_file("--out-file2", { sample, out2 }));
+                     new_output_file("--out-file2", { name, out2 }));
       }
     }
 
@@ -1364,20 +1368,20 @@ userconfig::get_output_filenames() const
       if (is_any_filtering_enabled()) {
         map.set_file(
           read_type::discarded,
-          new_output_file("--out-discarded", { sample, ".discarded", ext }));
+          new_output_file("--out-discarded", { name, ".discarded", ext }));
       }
 
       if (paired_ended_mode) {
         if (is_any_filtering_enabled()) {
           map.set_file(
             read_type::singleton,
-            new_output_file("--out-singleton", { sample, ".singleton", ext }));
+            new_output_file("--out-singleton", { name, ".singleton", ext }));
         }
 
         if (is_read_merging_enabled()) {
           map.set_file(
             read_type::merged,
-            new_output_file("--out-merged", { sample, ".merged", ext }));
+            new_output_file("--out-merged", { name, ".merged", ext }));
         }
       }
     }
@@ -1447,7 +1451,7 @@ userconfig::is_adapter_trimming_enabled() const
 bool
 userconfig::is_demultiplexing_enabled() const
 {
-  return adapters.barcode_count();
+  return !barcode_list.empty();
 }
 
 bool
@@ -1558,10 +1562,16 @@ userconfig::setup_adapter_sequences()
   }
 
   if (adapter_list_is_set) {
-    if (!adapters.load_adapters(adapter_list, paired_ended_mode)) {
+    try {
+      adapters.load(adapter_list, paired_ended_mode);
+    } catch (const std::exception& error) {
+      log::error() << "Error reading adapters from " << log_escape(adapter_list)
+                   << ": " << error.what();
       return false;
-    } else if (adapters.adapter_count()) {
-      log::info() << "Read " << adapters.adapter_count()
+    }
+
+    if (adapters.size()) {
+      log::info() << "Read " << adapters.size()
                   << " adapters / adapter pairs from '" << adapter_list << "'";
     } else {
       log::error() << "No adapter sequences found in table!";
@@ -1569,7 +1579,7 @@ userconfig::setup_adapter_sequences()
     }
   } else {
     try {
-      adapters.add_adapters(adapter_1, adapter_2);
+      adapters.add(adapter_1, adapter_2);
     } catch (const fastq_error& error) {
       log::error() << "Error parsing adapter sequence(s):\n"
                    << "   " << error.what();
@@ -1578,6 +1588,12 @@ userconfig::setup_adapter_sequences()
     }
   }
 
+  return true;
+}
+
+bool
+userconfig::setup_demultiplexing()
+{
   if (!argparser.is_set("--barcode-mm")) {
     barcode_mm = barcode_mm_r1 + barcode_mm_r2;
   }
@@ -1592,16 +1608,26 @@ userconfig::setup_adapter_sequences()
     return false;
   }
 
+  samples.set_paired_end_mode(paired_ended_mode);
+
   if (argparser.is_set("--barcode-list")) {
-    if (!adapters.load_barcodes(barcode_list, paired_ended_mode)) {
+    try {
+      samples.load(barcode_list);
+    } catch (const std::exception& error) {
+      log::error() << "Error reading barcodes from " << log_escape(barcode_list)
+                   << ": " << error.what();
       return false;
-    } else if (adapters.adapter_count()) {
-      log::info() << "Read " << adapters.barcode_count()
-                  << " sets of barcodes from " << shell_escape(barcode_list);
+    }
+
+    if (samples.size()) {
+      log::info() << "Read " << samples.size() << " sets of barcodes from "
+                  << shell_escape(barcode_list);
     } else {
       log::error() << "No barcodes sequences found in table!";
       return false;
     }
+  } else {
+    samples.add_default_sample();
   }
 
   const auto& output_files = get_output_filenames();

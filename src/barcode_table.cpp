@@ -18,10 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "barcode_table.hpp"
-#include "debug.hpp"  // for AR_REQUIRE
-#include "errors.hpp" // for parsing_error
-#include <algorithm>  // for min, max, sort
-#include <utility>    // for pair
+#include "debug.hpp"         // for AR_REQUIRE
+#include "errors.hpp"        // for parsing_error
+#include "fastq.hpp"         // for fastq
+#include "sequence_sets.hpp" // for barcode_set
+#include <algorithm>         // for min, max, sort
+#include <utility>           // for pair
 
 namespace adapterremoval {
 
@@ -58,29 +60,31 @@ barcode_table::candidate::candidate(int barcode_, size_t mismatches_)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
 /**
  * Returns a lexicographically sorted list of merged barcodes, each paired with
  * the 0-based index of corresponding barcode in the source vector.
  */
 barcode_vec
-sort_barcodes(const fastq_pair_vec& barcodes)
+sort_barcodes(const sequence_pair_vec& barcodes)
 {
   AR_REQUIRE(!barcodes.empty());
   barcode_vec sorted_barcodes;
 
-  const size_t max_key_1_len = barcodes.front().first.length();
-  const size_t max_key_2_len = barcodes.front().second.length();
+  const size_t key_1_len = barcodes.front().first.length();
+  const size_t key_2_len = barcodes.front().second.length();
   for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
-    if (it->first.length() != max_key_1_len) {
+    if (it->first.length() != key_1_len) {
       throw parsing_error("mate 1 barcodes do not have the same length");
-    } else if (it->second.length() != max_key_2_len) {
+    } else if (it->second.length() != key_2_len) {
       throw parsing_error("mate 2 barcodes do not have the same length");
     }
 
     std::string barcode;
-    barcode.reserve(max_key_1_len + max_key_2_len);
-    barcode.append(it->first.sequence());
-    barcode.append(it->second.sequence());
+    barcode.reserve(key_1_len + key_2_len);
+    barcode.append(it->first);
+    barcode.append(it->second);
 
     sorted_barcodes.emplace_back(barcode, it - barcodes.begin());
   }
@@ -116,7 +120,7 @@ add_sequence_to_tree(demux_node_vec& tree,
       // similar barcodes will be placed in mostly contiguous runs
       // of the vector representation.
       child = node.children[nuc_idx] = tree.size();
-      tree.push_back(demultiplexer_node());
+      tree.emplace_back();
     }
 
     node_idx = child;
@@ -135,7 +139,7 @@ add_sequence_to_tree(demux_node_vec& tree,
  * these, since all hits will be considered ambiguous.
  */
 demux_node_vec
-build_demux_tree(const fastq_pair_vec& barcodes)
+build_demux_tree(const sequence_pair_vec& barcodes)
 {
   // Step 1: Construct list of merged, sorted barcodes barcodes;
   //         this allows construction of the sparse tree in one pass.
@@ -144,7 +148,7 @@ build_demux_tree(const fastq_pair_vec& barcodes)
   // Step 2: Create empty tree containing just the root node; creating
   //         the root here simplifies the 'add_sequence_to_tree' function.
   demux_node_vec tree;
-  tree.push_back(demultiplexer_node());
+  tree.emplace_back();
 
   // Step 3: Add each barcode to the tree, in sorted order
   for (const auto& pair : sorted_barcodes) {
@@ -154,12 +158,31 @@ build_demux_tree(const fastq_pair_vec& barcodes)
   return tree;
 }
 
+/** Converts sample set to list of barcodes in input order */
+sequence_pair_vec
+build_barcode_table(const barcode_set& samples)
+{
+  sequence_pair_vec barcodes;
+  for (const auto& sample : samples) {
+    barcodes.insert(barcodes.end(), sample.begin(), sample.end());
+  }
+
+  return barcodes;
+}
+
+} // namespace
+
 ///////////////////////////////////////////////////////////////////////////////
 
-const int barcode_table::no_match;
-const int barcode_table::ambiguous;
+barcode_table::barcode_table(const barcode_set& samples,
+                             size_t max_mm,
+                             size_t max_mm_r1,
+                             size_t max_mm_r2)
+  : barcode_table(build_barcode_table(samples), max_mm, max_mm_r1, max_mm_r2)
+{
+}
 
-barcode_table::barcode_table(const fastq_pair_vec& barcodes,
+barcode_table::barcode_table(const sequence_pair_vec& barcodes,
                              size_t max_mm,
                              size_t max_mm_r1,
                              size_t max_mm_r2)

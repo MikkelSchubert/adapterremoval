@@ -10,7 +10,6 @@
   ],
   "return_code": 1,
   "stderr": [
-    "[ERROR] Error reading table",
-    "failed to open file"
+    "[ERROR] Error reading barcodes from 'not_found.txt': failed to open file "
   ]
 }

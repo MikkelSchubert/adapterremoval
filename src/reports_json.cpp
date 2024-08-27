@@ -19,8 +19,7 @@
 \*************************************************************************/
 #include "commontypes.hpp"   // for read_type, read_type::mate_1, read_typ...
 #include "counts.hpp"        // for counts, counts_tmpl, indexed_count
-#include "debug.hpp"         // for AR_FAIL
-#include "fastq.hpp"         // for ACGT, fastq_pair_vec, fastq, ACGT::values
+#include "fastq.hpp"         // for ACGT, fastq, ACGT::values
 #include "json.hpp"          // for json_dict, json_dict_ptr, json_list
 #include "logging.hpp"       // for log_stream, error
 #include "main.hpp"          // for NAME, VERSION
@@ -32,11 +31,8 @@
 #include "statistics.hpp"    // for fastq_stats_ptr, trimming_statistics
 #include "strutils.hpp"      // for string_vec, to_lower, indent_lines
 #include "userconfig.hpp"    // for userconfig, output_files, output_sampl...
-#include <algorithm>         // for max
-#include <array>             // for array
 #include <cerrno>            // for errno
 #include <cstring>           // for size_t, strerror
-#include <fstream>           // for ofstream, ios_base::failure, operator|
 #include <memory>            // for __shared_ptr_access, shared_ptr, make_...
 #include <string>            // for basic_string, string, operator+, char_...
 #include <utility>           // for pair
@@ -159,7 +155,7 @@ void
 write_report_trimming(const userconfig& config,
                       const json_dict_ptr& json,
                       const trimming_statistics& totals,
-                      const fastq_pair_vec& adapters)
+                      const sequence_pair_vec& adapters)
 {
   if (!config.is_adapter_trimming_enabled()) {
     json->null("adapter_trimming");
@@ -176,8 +172,8 @@ write_report_trimming(const userconfig& config,
     for (size_t i = 0; i < adapters.size(); ++i) {
       const auto adapter = adapter_list->dict();
 
-      adapter->str("sequence_1", adapters.at(i).first.sequence());
-      adapter->str("sequence_2", adapters.at(i).second.sequence());
+      adapter->str("sequence_1", adapters.at(i).first);
+      adapter->str("sequence_2", adapters.at(i).second);
       adapter->i64("reads", totals.adapter_trimmed_reads.get(i));
       adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
     }
@@ -241,7 +237,7 @@ write_report_summary(const userconfig& config,
   write_report_summary_stats(summary->dict("input"),
                              { stats.input_1, stats.input_2 });
 
-  if (config.adapters.barcode_count()) {
+  if (config.is_demultiplexing_enabled()) {
     const auto summary_demux = summary->dict("demultiplexing");
     const auto& demux = *stats.demultiplexing;
     const auto total = demux.total();
@@ -253,8 +249,8 @@ write_report_summary(const userconfig& config,
     summary_demux->u64("unassigned_reads", demux.unidentified);
 
     const auto samples = summary_demux->dict("samples");
-    for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-      samples->u64(config.adapters.get_sample_name(i), demux.barcodes.at(i));
+    for (size_t i = 0; i < demux.samples.size(); ++i) {
+      samples->u64(config.samples.at(i).name(), demux.samples.at(i));
     }
   } else {
     summary->null("demultiplexing");
@@ -267,7 +263,7 @@ write_report_summary(const userconfig& config,
     }
 
     write_report_trimming(
-      config, summary, totals, config.adapters.get_raw_adapters());
+      config, summary, totals, config.adapters.to_read_orientation());
   }
 
   if (config.run_type == ar_command::report_only) {
@@ -284,7 +280,7 @@ write_report_summary(const userconfig& config,
 
     write_report_summary_stats(output->dict("passed"), passed);
 
-    if (config.adapters.barcode_count()) {
+    if (config.is_demultiplexing_enabled()) {
       write_report_summary_stats(
         output->dict("unidentified"),
         { stats.demultiplexing->unidentified_stats_1,
@@ -441,12 +437,12 @@ write_report_demultiplexing(const userconfig& config,
   const bool demux_only = config.run_type == ar_command::demultiplex_only;
   const auto out_files = config.get_output_filenames();
 
-  if (config.adapters.barcode_count()) {
+  if (config.is_demultiplexing_enabled()) {
     const auto demultiplexing = report.dict("demultiplexing");
 
     const auto& demux = *sample_stats.demultiplexing;
     size_t assigned_reads = 0;
-    for (size_t it : demux.barcodes) {
+    for (size_t it : demux.samples) {
       assigned_reads += it;
     }
 
@@ -455,18 +451,19 @@ write_report_demultiplexing(const userconfig& config,
     demultiplexing->u64("unassigned_reads", demux.unidentified);
 
     const auto samples = demultiplexing->dict("samples");
-    for (size_t i = 0; i < demux.barcodes.size(); ++i) {
-      const auto sample = samples->dict(config.adapters.get_sample_name(i));
+    for (size_t i = 0; i < demux.samples.size(); ++i) {
+      const auto sample = samples->dict(config.samples.at(i).name());
       const auto& stats = *sample_stats.trimming.at(i);
       const auto& files = out_files.get_sample(i);
 
-      sample->u64("reads", demux.barcodes.at(i));
+      sample->u64("reads", demux.samples.at(i));
 
-      auto adapters = config.adapters.get_adapter_set(i);
-      for (auto& it : adapters) {
-        it.second.reverse_complement();
-      }
+      const auto& barcodes = config.samples.at(i).at(0);
+      auto adapters =
+        config.adapters.add_barcodes(barcodes.first, barcodes.second)
+          .to_read_orientation();
 
+      // TODO: Support multiple barcodes
       write_report_trimming(config, sample, stats, adapters);
 
       const auto output = sample->dict("output");
@@ -550,12 +547,12 @@ write_report_output(const userconfig& config,
   io_section("unidentified1",
              stats.demultiplexing->unidentified_stats_1,
              { out_files.unidentified_1.name })
-    .write_to_if(output, config.adapters.barcode_count());
+    .write_to_if(output, config.is_demultiplexing_enabled());
   io_section("unidentified2",
              stats.demultiplexing->unidentified_stats_2,
              { out_files.unidentified_2.name })
-    .write_to_if(output,
-                 config.adapters.barcode_count() && config.paired_ended_mode);
+    .write_to_if(
+      output, config.is_demultiplexing_enabled() && config.paired_ended_mode);
 
   io_section("singleton", singleton, singleton_files)
     .write_to_if(output,
