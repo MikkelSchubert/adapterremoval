@@ -314,6 +314,11 @@ demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
 
     m_cache.push_back(std::make_unique<analytical_chunk>());
   }
+
+  // The first chunks should have headers written depending on format
+  for (auto& it : m_cache) {
+    it->first = true;
+  }
 }
 
 void
