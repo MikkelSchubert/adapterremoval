@@ -263,7 +263,7 @@ write_report_summary(const userconfig& config,
     }
 
     write_report_trimming(
-      config, summary, totals, config.adapters.to_read_orientation());
+      config, summary, totals, config.samples.adapters().to_read_orientation());
   }
 
   if (config.run_type == ar_command::report_only) {
@@ -458,12 +458,9 @@ write_report_demultiplexing(const userconfig& config,
 
       sample->u64("reads", demux.samples.at(i));
 
-      const auto& barcodes = config.samples.at(i).at(0);
-      auto adapters =
-        config.adapters.add_barcodes(barcodes.first, barcodes.second)
-          .to_read_orientation();
-
       // TODO: Support multiple barcodes
+      auto adapters =
+        config.samples.get_sequences(i, 0).adapters.to_read_orientation();
       write_report_trimming(config, sample, stats, adapters);
 
       const auto output = sample->dict("output");

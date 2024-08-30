@@ -223,10 +223,10 @@ processed_reads::processed_reads(const sample_output_files& map)
 }
 
 void
-processed_reads::set_read_group(const read_group& value)
+processed_reads::set_sample(const sample& value)
 {
   for (auto& ser : m_serializers) {
-    ser.set_read_group(value);
+    ser.set_sample(value);
   }
 }
 
@@ -250,12 +250,13 @@ processed_reads::write_headers(const string_vec& args)
 void
 processed_reads::add(const fastq& read,
                      const read_type type,
-                     const fastq_flags flags)
+                     const fastq_flags flags,
+                     const size_t barcode)
 {
   const size_t offset = m_map.offset(type);
   if (offset != sample_output_files::disabled) {
     auto& buffer = get_buffer(m_chunks.at(offset));
-    m_serializers.at(offset).record(buffer, read, flags);
+    m_serializers.at(offset).record(buffer, read, flags, barcode);
     m_chunks.at(offset)->nucleotides += read.length();
   }
 }

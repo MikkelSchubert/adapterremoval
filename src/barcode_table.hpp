@@ -27,7 +27,7 @@
 
 namespace adapterremoval {
 
-class barcode_set;
+class sample_set;
 class fastq;
 struct next_subsequence;
 
@@ -52,7 +52,7 @@ using demux_node_vec = std::vector<demultiplexer_node>;
 class barcode_table
 {
 public:
-  barcode_table(const barcode_set& samples,
+  barcode_table(const sample_set& samples,
                 size_t max_mm,
                 size_t max_mm_r1,
                 size_t max_mm_r2);

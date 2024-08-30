@@ -127,15 +127,35 @@ private:
   sequence_pair_vec m_adapters{};
 };
 
+/** Represents sequences used for identifying/processing a sample */
+struct sample_sequences
+{
+  sample_sequences(dna_sequence barcode1, dna_sequence barcode2)
+    : barcode_1(std::move(barcode1))
+    , barcode_2(std::move(barcode2))
+  {
+  }
+
+  //! Read-group for this sample/barcode combination
+  read_group info{};
+  //! Barcode expected to be found in mate 1 reads, if any (read orientation)
+  dna_sequence barcode_1{};
+  //! Barcode expected to be found in mate 2 reads, if any (read orientation)
+  dna_sequence barcode_2{};
+  //! Adapter set with the above barcodes added
+  adapter_set adapters{};
+};
+
 /** Represents a demultiplexing sample with one or more barcodes */
 class sample
 {
 public:
+  sample() { add(dna_sequence{}, dna_sequence{}); }
+
   explicit sample(std::string name,
                   dna_sequence barcode1,
                   dna_sequence barcode2)
     : m_name(std::move(name))
-    , m_barcodes()
   {
     add(std::move(barcode1), std::move(barcode2));
   };
@@ -144,10 +164,16 @@ public:
     : sample(name, dna_sequence{ barcode1 }, dna_sequence{ barcode2 }){};
 
   /** Adds a pair of barcodes in read orientation */
-  void add(dna_sequence adapter1, dna_sequence adapter2);
+  void add(dna_sequence barcode1, dna_sequence barcode2);
 
   /** Adds barcodes in read orientation */
   void add(std::string barcode1, std::string barcode2);
+
+  /** Assigns adapter sequences for each pair of barcodes */
+  void set_adapters(const adapter_set& adapters);
+
+  /** Assigns read groups for each pair of barcodes */
+  void set_read_group(const read_group& info);
 
   /** Returns the unique name of this sample */
   [[nodiscard]] const auto& name() const { return m_name; }
@@ -166,48 +192,50 @@ public:
 
 private:
   //! Unique name associated with this sample
-  std::string m_name;
+  std::string m_name{};
   //! Barcodes identifying this sample
-  sequence_pair_vec m_barcodes;
+  std::vector<sample_sequences> m_barcodes{};
 };
 
 /**
- * Class for handling samples for  demultiplexing. The class further checks for
+ * Class for handling samples for demultiplexing. The class further checks for
  * the correctness of these sequences, and detects duplicate barcode sequences /
  * pairs of sequences.
  */
-class barcode_set
+class sample_set
 {
 public:
-  barcode_set() = default;
+  /** Creates barcode set with single unnamed sample with empty barcodes */
+  sample_set();
 
   /**
-   * In SE mode the first barcode must be unique, in PE mode the individual
-   * sequences may be non-unique as long as the combination is unique
+   * If PE mode is enabled, barcode 1 and 2 together must be unique, otherwise
+   * barcode 1 sequences alone must be unique to allow unambiguous
+   * identification of samples
    */
   void set_paired_end_mode(bool b) { m_paired_end_mode = b; }
+
+  /** Specifies if barcodes are expected in both orientations */
+  void set_unidirectional_barcodes(bool b) { m_unidirectional_barcodes = b; }
 
   /** Enable or disable support for multiple barcodes for the same sample */
   void set_allow_multiple_barcodes(bool b) { m_allow_multiple_barcodes = b; }
 
-  /** Adds a unnamed sample with empty barcodes */
-  void add_default_sample();
+  /** Sets adapter sequences for all samples */
+  void set_adapters(adapter_set adapters);
 
-  /**
-   * Adds a pair of barcodes for the given sample; intended for small / test
-   * tables as the table is fully validated after each addition
-   **/
-  void add(std::string name, std::string barcode1, std::string barcode2);
+  /** Sets read group for samples using information parsed using `read_group` */
+  void set_read_group(std::string_view value);
 
-  /**
-   * Adds reverse (complemented) barcodes for barcode for each sample; if the
-   * reverse (complemented) barcode is already present for a sample, then it is
-   * ignored. Duplicates across samples trigger an exception.
-   */
-  void add_reversed_barcodes();
-
-  /** Loads barcodes from a TSV file, throwing on error */
+  /** Clears existing samples and loads barcodes from a TSV file */
   void load(const std::string& filename);
+
+  /** Convenience function to get sequences for sample / barcode pair */
+  [[nodiscard]] const auto& get_sequences(const size_t sample,
+                                          const size_t barcodes) const
+  {
+    return m_samples.at(sample).at(barcodes);
+  }
 
   /** Returns the number of (demultiplexing) samples */
   [[nodiscard]] size_t size() const { return m_samples.size(); }
@@ -221,15 +249,31 @@ public:
   /** Returns the nth (demultiplexing) sample */
   [[nodiscard]] const auto& at(size_t n) const { return m_samples.at(n); }
 
+  /** Returns the original, user-supplied adapter sequences */
+  [[nodiscard]] const adapter_set& adapters() const { return m_adapters; }
+
+  /** Returns special sample representing uidentified reads */
+  [[nodiscard]] const auto& unidentified() const { return m_unidentified; }
+
 private:
+  /** Adds the reverse complement of barcodes for all samples, if missing */
+  void add_reversed_barcodes();
+
   //! Demultiplexing samples. Names and barcode pairs are both unique
   std::vector<sample> m_samples{};
+  //! Special sample representing unidentified samples;
+  sample m_unidentified;
+  //! User-supplied read group used to generate per-sample read-groups
+  read_group m_read_group{};
+  //! User-supplied adapter sequences used to generate per-barcode adapters
+  adapter_set m_adapters{};
   //! Whether running in paired or single end mode; is used to determine whether
-  //! or not b can be uniquely identified from the barcodes provided
+  //! or not samples can be uniquely identified from the barcodes provided
   bool m_paired_end_mode = false;
-  //! cates whether or not multiple barcodes/barcode pairs can bused b
-  //! identify the same sample.
+  //! Indicates if multiple barcodes/barcode pairs are allowed per sample
   bool m_allow_multiple_barcodes = false;
+  //! Indicates if barcode pairs are annealed in both orientations
+  bool m_unidirectional_barcodes = false;
 };
 
 } // namespace adapterremoval

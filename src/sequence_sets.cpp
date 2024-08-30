@@ -21,7 +21,6 @@
 #include "commontypes.hpp" // for fastq_vec
 #include "debug.hpp"       // for AR_REQUIRE
 #include "errors.hpp"      // for fastq_error
-#include "fastq.hpp"       // for fastq
 #include "linereader.hpp"  // for line_reader
 #include "sequence.hpp"    // for dna_sequence
 #include "strutils.hpp"    // for string_vec, indent_lines
@@ -194,19 +193,19 @@ check_barcodes_sequences(const std::vector<sample>& samples,
   for (const auto& it : samples) {
     validate_sample_name(it.name());
 
-    for (const auto& barcode : it) {
+    for (const auto& it : it) {
       if (mate_1_len == static_cast<size_t>(-1)) {
-        mate_1_len = barcode.first.length();
-        mate_2_len = barcode.second.length();
+        mate_1_len = it.barcode_1.length();
+        mate_2_len = it.barcode_2.length();
       }
 
-      validate_barcode_sequence(barcode.first, mate_1_len, 1);
-      validate_barcode_sequence(barcode.second, mate_2_len, 2);
+      validate_barcode_sequence(it.barcode_1, mate_1_len, 1);
+      validate_barcode_sequence(it.barcode_2, mate_2_len, 2);
 
       if (paired_end) {
-        sequences.emplace_back(barcode.first, barcode.second);
+        sequences.emplace_back(it.barcode_1, it.barcode_2);
       } else {
-        sequences.emplace_back(barcode.first, dna_sequence{});
+        sequences.emplace_back(it.barcode_1, dna_sequence{});
       }
     }
   }
@@ -446,9 +445,9 @@ adapter_set::to_read_orientation() const
 // Implementations for 'sample' class
 
 void
-sample::add(dna_sequence adapter1, dna_sequence adapter2)
+sample::add(dna_sequence barcode1, dna_sequence barcode2)
 {
-  m_barcodes.emplace_back(std::move(adapter1), std::move(adapter2));
+  m_barcodes.emplace_back(std::move(barcode1), std::move(barcode2));
 }
 
 void
@@ -457,77 +456,79 @@ sample::add(std::string barcode1, std::string barcode2)
   add(dna_sequence(barcode1), dna_sequence(barcode2));
 }
 
+void
+sample::set_adapters(const adapter_set& adapters)
+{
+  for (auto& it : m_barcodes) {
+    it.adapters = adapters.add_barcodes(it.barcode_1, it.barcode_2);
+  }
+}
+
+void
+sample::set_read_group(const read_group& info)
+{
+  for (auto it = m_barcodes.begin(); it != m_barcodes.end(); ++it) {
+    it->info = info;
+
+    if (!m_name.empty()) {
+      it->info.set_sample(m_name);
+
+      if (m_barcodes.size() > 1) {
+        std::string id = m_name;
+        id.push_back('.');
+        id.append(std::to_string((it - m_barcodes.begin()) + 1));
+
+        it->info.set_id(id);
+      } else {
+        it->info.set_id(m_name);
+      }
+    }
+
+    if (it->barcode_1.length() || it->barcode_2.length()) {
+      std::string barcodes;
+      barcodes.append(it->barcode_1);
+      barcodes.push_back('-');
+      barcodes.append(it->barcode_2);
+
+      it->info.set_barcodes(barcodes);
+    }
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'barcode_set' class
+// Implementations for 'sample_set' class
 
-void
-barcode_set::add(std::string name, std::string barcode1, std::string barcode2)
+sample_set::sample_set()
+  : m_samples{ sample{} }
+  , m_unidentified("unidentified", dna_sequence{}, dna_sequence{})
 {
-  validate_sample_name(name);
-
-  bool found = false;
-  // Iterate in reverse order to optimize for ordered insertions
-  for (auto it = m_samples.rbegin(); it != m_samples.rend(); ++it) {
-    if (it->name() == name) {
-      if (!m_allow_multiple_barcodes) {
-        std::ostringstream error;
-        error << "Duplicate sample name " << log_escape(name)
-              << "; combining different barcodes for one sample is not "
-                 "supported. Please ensure that all sample names are unique!";
-
-        throw parsing_error(error.str());
-      }
-
-      it->add(barcode1, barcode2);
-      found = true;
-      break;
-    }
-  }
-
-  if (!found) {
-    m_samples.emplace_back(name, barcode1, barcode2);
-  }
-
-  check_barcodes_sequences(m_samples, "barcode_set::add");
 }
 
 void
-barcode_set::add_default_sample()
+sample_set::set_adapters(adapter_set adapters)
 {
-  AR_REQUIRE(m_samples.empty());
-  m_samples.emplace_back("", "", "");
-}
-
-void
-barcode_set::add_reversed_barcodes()
-{
-  AR_REQUIRE(m_paired_end_mode);
-
+  m_adapters = std::move(adapters);
   for (auto& sample : m_samples) {
-    // Original number of barcodes
-    const size_t count = sample.size();
-
-    for (size_t i = 0; i < count; ++i) {
-      std::pair<dna_sequence, dna_sequence> barcode{
-        sample.at(i).second.reverse_complement(),
-        sample.at(i).first.reverse_complement(),
-      };
-
-      if (std::find(sample.begin(), sample.begin() + count, barcode) ==
-          sample.end()) {
-        sample.add(std::move(barcode.first), std::move(barcode.second));
-      }
-    }
+    sample.set_adapters(m_adapters);
   }
 
-  check_barcodes_sequences(m_samples, "barcode_set::add_reversed_barcodes");
+  m_unidentified.set_adapters(m_adapters);
 }
 
 void
-barcode_set::load(const std::string& filename)
+sample_set::set_read_group(std::string_view value)
 {
-  AR_REQUIRE(m_samples.empty());
+  m_read_group = read_group(value);
+  for (auto& sample : m_samples) {
+    sample.set_read_group(m_read_group);
+  }
 
+  m_unidentified.set_read_group(m_read_group);
+}
+
+void
+sample_set::load(const std::string& filename)
+{
   auto barcodes = read_table(filename, false, true);
   std::sort(barcodes.begin(), barcodes.end(), [](const auto& a, const auto& b) {
     return a.name < b.name;
@@ -536,7 +537,11 @@ barcode_set::load(const std::string& filename)
   m_samples.clear();
   for (const auto& row : barcodes) {
     if (m_samples.empty() || m_samples.back().name() != row.name) {
-      m_samples.emplace_back(row.name, row.sequence_1, row.sequence_2);
+      sample s{ row.name, row.sequence_1, row.sequence_2 };
+      s.set_adapters(m_adapters);
+      s.set_read_group(m_read_group);
+
+      m_samples.push_back(std::move(s));
     } else if (m_allow_multiple_barcodes) {
       m_samples.back().add(row.sequence_1, row.sequence_2);
     } else {
@@ -549,7 +554,43 @@ barcode_set::load(const std::string& filename)
     }
   }
 
+  // Check before adding reversed barcodes, to prevent misleading error messages
   check_barcodes_sequences(m_samples, filename, m_paired_end_mode);
+
+  if (m_unidirectional_barcodes) {
+    add_reversed_barcodes();
+  }
+}
+
+void
+sample_set::add_reversed_barcodes()
+{
+  AR_REQUIRE(m_paired_end_mode);
+
+  for (auto& sample : m_samples) {
+    // Original number of barcodes
+    const size_t count = sample.size();
+
+    for (size_t i = 0; i < count; ++i) {
+      const auto& sequences = sample.at(i);
+      auto barcode_1 = sequences.barcode_2.reverse_complement();
+      auto barcode_2 = sequences.barcode_1.reverse_complement();
+      bool reverse_found = false;
+
+      for (const auto& it : sample) {
+        if (it.barcode_1 == barcode_1 && it.barcode_2 == barcode_2) {
+          reverse_found = true;
+          break;
+        }
+      }
+
+      if (!reverse_found) {
+        sample.add(std::move(barcode_1), std::move(barcode_2));
+      }
+    }
+  }
+
+  check_barcodes_sequences(m_samples, "reversed barcodes", m_paired_end_mode);
 }
 
 } // namespace adapterremoval

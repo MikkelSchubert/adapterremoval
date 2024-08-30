@@ -30,7 +30,7 @@
 
 namespace adapterremoval {
 
-class barcode_set;
+class sample_set;
 class output_files;
 class post_demux_steps;
 class userconfig;
@@ -49,8 +49,8 @@ public:
                     demux_stats_ptr stats);
 
 protected:
-  //! List of barcode (pairs) supplied by caller
-  const barcode_set& m_samples;
+  //! Set of samples to be demultiplexed
+  const sample_set& m_samples;
   //! Quad-tree representing all mate 1 adapters; for search with n mismatches
   const barcode_table m_barcode_table;
   //! Pointer to user settings used for output format for unidentified reads
@@ -110,6 +110,7 @@ class process_demultiplexed : public analytical_step
 public:
   process_demultiplexed(const userconfig& config,
                         const sample_output_files& output,
+                        size_t sample,
                         trim_stats_ptr sink);
 
   chunk_vec process(chunk_ptr chunk) override;
@@ -119,6 +120,10 @@ public:
 private:
   const userconfig& m_config;
   const sample_output_files& m_output;
+  //! Set of samples to be demultiplexed
+  const sample_set& m_samples;
+  //! The sample processed by this step
+  const size_t m_sample;
 
   threadstate<trimming_statistics> m_stats{};
   trim_stats_ptr m_stats_sink{};

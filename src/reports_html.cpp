@@ -580,7 +580,7 @@ write_html_processing_section(const userconfig& config,
   uint64_t adapter_reads = 0;
   uint64_t adapter_bases = 0;
 
-  for (size_t i = 0; i < config.adapters.size(); ++i) {
+  for (size_t i = 0; i < config.samples.adapters().size(); ++i) {
     adapter_reads += totals.adapter_trimmed_reads.get(i);
     adapter_bases += totals.adapter_trimmed_bases.get(i);
   }
@@ -864,7 +864,7 @@ write_html_analyses_section(const userconfig& config,
     // Consensus adapter sequences
     {
       const auto reference_adapters =
-        config.adapters.to_read_orientation().front();
+        config.samples.adapters().to_read_orientation().front();
       std::string reference_adapter_1{ reference_adapters.first };
       std::string reference_adapter_2{ reference_adapters.second };
 
@@ -939,8 +939,8 @@ join_barcodes(const sample& s)
   string_vec mate_2;
 
   for (const auto& barcode : s) {
-    mate_1.emplace_back(barcode.first);
-    mate_2.emplace_back(barcode.second);
+    mate_1.emplace_back(barcode.barcode_1);
+    mate_2.emplace_back(barcode.barcode_2);
   }
 
   return {

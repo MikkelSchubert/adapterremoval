@@ -44,7 +44,7 @@ public:
 protected:
   const userconfig& m_config;
   const sample_output_files& m_output;
-  std::vector<adapter_set> m_adapters{};
+  const size_t m_sample;
 
   threadstate<trimming_statistics> m_stats{};
   trim_stats_ptr m_stats_sink;

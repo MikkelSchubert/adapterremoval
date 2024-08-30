@@ -31,7 +31,7 @@ namespace adapterremoval {
 class analytical_chunk;
 class buffer;
 class fastq;
-class read_group;
+class sample;
 class scheduler;
 class serializer;
 class userconfig;
@@ -172,8 +172,8 @@ class processed_reads
 public:
   explicit processed_reads(const sample_output_files& map);
 
-  /** Set the read group; used to serialize header/records for SAM/BAM */
-  void set_read_group(const read_group& value);
+  /** Set the sample; used to serialize header/records for SAM/BAM */
+  void set_sample(const sample& value);
 
   /** Set the mate separator; used to trim mate information for some formats */
   void set_mate_separator(char value);
@@ -182,7 +182,10 @@ public:
   void write_headers(const string_vec& args);
 
   /** Adds a read of the given type to be processed */
-  void add(const fastq& read, read_type type, fastq_flags flags);
+  void add(const fastq& read,
+           read_type type,
+           fastq_flags flags,
+           size_t barcode);
 
   /** Returns a chunk for each generated type of processed reads. */
   chunk_vec finalize(bool eof);

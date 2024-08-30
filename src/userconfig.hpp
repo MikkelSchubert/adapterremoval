@@ -22,7 +22,7 @@
 #include "argparse.hpp"      // for parse_result, parser
 #include "commontypes.hpp"   // for string_vec, read_type, merge_strategy
 #include "fastq_enc.hpp"     // for fastq_encoding
-#include "sequence_sets.hpp" // for adapter_set
+#include "sequence_sets.hpp" // for sample_set
 #include "serializer.hpp"    // for read_group
 #include "simd.hpp"          // for size_t, instruction_set
 #include "timer.hpp"         // for monotonic_timer
@@ -180,8 +180,6 @@ public:
   output_format out_stdout_format = output_format::fastq;
   //! Compression level used for output reads where appropriate
   unsigned int compression_level{};
-  //! Read group for SAM/BAM output
-  read_group output_read_group{};
 
   //! Maximum number of mismatches (considering both barcodes for PE)
   unsigned barcode_mm{};
@@ -190,10 +188,9 @@ public:
   //! Maximum number of mismatches (considering both barcodes for PE)
   unsigned barcode_mm_r2{};
 
-  //! Adapter sequences expected to be found in the input (without barcodes)
-  adapter_set adapters{};
-  //! Sample names and barcodes for demultiplexing
-  barcode_set samples{};
+  //! Sample specific barcodes and adapters. In non-demultiplexing mode this
+  //! set contains a single unnamed sample with empty barcodes
+  sample_set samples{};
 
   //! Fraction of reads used for quality/content curves, etc.
   double report_sample_rate{};

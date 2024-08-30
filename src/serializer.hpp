@@ -19,7 +19,7 @@
 #pragma once
 
 #include "commontypes.hpp"   // for string_vec
-#include "sequence_sets.hpp" // for read_group
+#include "sequence_sets.hpp" // for sample
 #include <cstddef>           // for size_t
 #include <functional>        // for function
 
@@ -50,7 +50,7 @@ enum class fastq_flags
 class fastq_serializer
 {
 public:
-  static void header(buffer& buf, const string_vec& args, const read_group& rg);
+  static void header(buffer& buf, const string_vec& args, const sample& s);
   static void record(buffer& buf,
                      const fastq& record,
                      fastq_flags flags,
@@ -61,7 +61,7 @@ public:
 class sam_serializer
 {
 public:
-  static void header(buffer& buf, const string_vec& args, const read_group& rg);
+  static void header(buffer& buf, const string_vec& args, const sample& s);
   static void record(buffer& buf,
                      const fastq& record,
                      fastq_flags flags,
@@ -72,7 +72,7 @@ public:
 class bam_serializer
 {
 public:
-  static void header(buffer& buf, const string_vec& args, const read_group& rg);
+  static void header(buffer& buf, const string_vec& args, const sample& s);
   static void record(buffer& buf,
                      const fastq& record,
                      fastq_flags flags,
@@ -85,18 +85,21 @@ class serializer
 public:
   explicit serializer(output_format format);
 
-  /** Set the read group; used to write headers/record for SAM/BAM */
-  void set_read_group(const read_group& rg) { m_read_group = rg; }
+  /** Set the sample; used to write headers/records for SAM/BAM */
+  void set_sample(const sample& s) { m_sample = s; }
 
   /** Set the mate separator; used to trim mate information for SAM/BAM */
   void set_mate_separator(char value) { m_mate_separator = value; }
 
   void header(buffer& buf, const string_vec& args) const;
-  void record(buffer& buf, const fastq& record, fastq_flags flags) const;
+  void record(buffer& buf,
+              const fastq& record,
+              fastq_flags flags,
+              size_t barcode) const;
 
 private:
-  //! Read group information to be added to SAM/BAM records
-  read_group m_read_group{};
+  //! Sample information to be added to SAM/BAM records
+  sample m_sample{};
   //! Mate separator in processed reads
   char m_mate_separator = '\0';
   //! Function used to serialize file headers for processed reads

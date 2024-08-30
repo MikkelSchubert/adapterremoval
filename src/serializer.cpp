@@ -121,13 +121,15 @@ qualities_to_bam(buffer& buf, const std::string& quals)
 }
 
 std::string
-create_sam_header(const string_vec& args, const read_group& rg)
+create_sam_header(const string_vec& args, const sample& s)
 {
   std::string header{ SAM_HEADER };
 
   // @RG
-  header.append(rg.header());
-  header.append("\n");
+  for (const auto& it : s) {
+    header.append(it.info.header());
+    header.append("\n");
+  }
 
   // @PG
   header.append("@PG\tID:adapterremoval\tPN:adapterremoval\tCL:");
@@ -147,7 +149,7 @@ create_sam_header(const string_vec& args, const read_group& rg)
 void
 fastq_serializer::header(buffer& /* buf */,
                          const string_vec& /* args */,
-                         const read_group& /* rg */)
+                         const sample& /* s */)
 {
 }
 
@@ -170,11 +172,9 @@ fastq_serializer::record(buffer& buf,
 // Implementations for `sam_serializer`
 
 void
-sam_serializer::header(buffer& buf,
-                       const string_vec& args,
-                       const read_group& rg)
+sam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
 {
-  buf.append(create_sam_header(args, rg));
+  buf.append(create_sam_header(args, s));
 }
 
 void
@@ -215,11 +215,9 @@ sam_serializer::record(buffer& buf,
 // Implementations for `bam_serializer`
 
 void
-bam_serializer::header(buffer& buf,
-                       const string_vec& args,
-                       const read_group& rg)
+bam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
 {
-  const auto sam_header = create_sam_header(args, rg);
+  const auto sam_header = create_sam_header(args, s);
 
   buf.append(BAM_HEADER);            // magic
   buf.append_u32(sam_header.size()); // l_text
@@ -299,15 +297,16 @@ serializer::serializer(output_format format)
 void
 serializer::header(buffer& buf, const string_vec& args) const
 {
-  m_header(buf, args, m_read_group);
+  m_header(buf, args, m_sample);
 }
 
 void
 serializer::record(buffer& buf,
                    const fastq& record,
-                   const fastq_flags flags) const
+                   const fastq_flags flags,
+                   const size_t barcode) const
 {
-  m_record(buf, record, flags, m_mate_separator, m_read_group);
+  m_record(buf, record, flags, m_mate_separator, m_sample.at(barcode).info);
 }
 
 } // namespace adapterremoval

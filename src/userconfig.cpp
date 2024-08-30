@@ -1124,6 +1124,16 @@ userconfig::parse_args(const string_vec& argvec)
     return argparse::parse_result::error;
   }
 
+  try {
+    samples.set_read_group(argparser.value("--read-group"));
+  } catch (const std::invalid_argument& error) {
+    log::error() << "Invalid argument --read-group "
+                 << log_escape(argparser.value("--read-group")) << ": "
+                 << error.what();
+
+    return argparse::parse_result::error;
+  }
+
   // Set mismatch threshold
   if (mismatch_threshold > 1) {
     mismatch_threshold = 1.0 / mismatch_threshold;
@@ -1187,16 +1197,6 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   if (!parse_output_formats(argparser, out_file_format, out_stdout_format)) {
-    return argparse::parse_result::error;
-  }
-
-  try {
-    output_read_group = read_group(argparser.value("--read-group"));
-  } catch (const std::invalid_argument& error) {
-    log::error() << "Invalid argument --read-group "
-                 << log_escape(argparser.value("--read-group")) << ": "
-                 << error.what();
-
     return argparse::parse_result::error;
   }
 
@@ -1561,6 +1561,7 @@ userconfig::setup_adapter_sequences()
     return false;
   }
 
+  adapter_set adapters;
   if (adapter_list_is_set) {
     try {
       adapters.load(adapter_list, paired_ended_mode);
@@ -1587,6 +1588,8 @@ userconfig::setup_adapter_sequences()
       return false;
     }
   }
+
+  samples.set_adapters(std::move(adapters));
 
   return true;
 }
@@ -1626,8 +1629,6 @@ userconfig::setup_demultiplexing()
       log::error() << "No barcodes sequences found in table!";
       return false;
     }
-  } else {
-    samples.add_default_sample();
   }
 
   const auto& output_files = get_output_filenames();

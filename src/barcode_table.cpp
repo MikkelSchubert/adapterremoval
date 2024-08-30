@@ -21,7 +21,7 @@
 #include "debug.hpp"         // for AR_REQUIRE
 #include "errors.hpp"        // for parsing_error
 #include "fastq.hpp"         // for fastq
-#include "sequence_sets.hpp" // for barcode_set
+#include "sequence_sets.hpp" // for sample_set
 #include <algorithm>         // for min, max, sort
 #include <utility>           // for pair
 
@@ -160,11 +160,13 @@ build_demux_tree(const sequence_pair_vec& barcodes)
 
 /** Converts sample set to list of barcodes in input order */
 sequence_pair_vec
-build_barcode_table(const barcode_set& samples)
+build_barcode_table(const sample_set& samples)
 {
   sequence_pair_vec barcodes;
   for (const auto& sample : samples) {
-    barcodes.insert(barcodes.end(), sample.begin(), sample.end());
+    for (const auto& it : sample) {
+      barcodes.emplace_back(it.barcode_1, it.barcode_2);
+    }
   }
 
   return barcodes;
@@ -174,7 +176,7 @@ build_barcode_table(const barcode_set& samples)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-barcode_table::barcode_table(const barcode_set& samples,
+barcode_table::barcode_table(const sample_set& samples,
                              size_t max_mm,
                              size_t max_mm_r1,
                              size_t max_mm_r2)

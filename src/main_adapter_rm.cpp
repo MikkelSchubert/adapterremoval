@@ -58,7 +58,7 @@ remove_adapter_sequences(const userconfig& config)
 
     if (!config.is_adapter_trimming_enabled()) {
       steps.samples.push_back(sch.add<process_demultiplexed>(
-        config, output.get_sample(nth), stats.trimming.back()));
+        config, output.get_sample(nth), nth, stats.trimming.back()));
     } else if (config.paired_ended_mode) {
       steps.samples.push_back(sch.add<pe_reads_processor>(
         config, output.get_sample(nth), nth, stats.trimming.back()));

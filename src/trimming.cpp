@@ -29,7 +29,6 @@
 #include "simd.hpp"          // for size_t
 #include "statistics.hpp" // for trimming_statistics, reads_and_bases, fast...
 #include "userconfig.hpp" // for userconfig
-#include <algorithm>      // for max
 #include <cstddef>        // for size_t
 #include <memory>         // for unique_ptr, __shared_ptr_access, make_unique
 #include <string>         // for string
@@ -296,14 +295,10 @@ reads_processor::reads_processor(const userconfig& config,
   : analytical_step(processing_order::unordered, "reads_processor")
   , m_config(config)
   , m_output(output)
+  , m_sample(nth)
   , m_stats_sink(std::move(sink))
 {
   AR_REQUIRE(m_stats_sink);
-
-  // Generate appropriate "adapters" for each barcode / pair of barcodes
-  for (const auto& it : config.samples.at(nth)) {
-    m_adapters.push_back(config.adapters.add_barcodes(it.first, it.second));
-  }
 
   m_stats.emplace_back_n(m_config.max_threads, m_config.report_sample_rate);
 }
@@ -330,7 +325,7 @@ se_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_sample(m_config.samples.at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -338,15 +333,16 @@ se_reads_processor::process(chunk_ptr chunk)
   }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.size());
-  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.size());
+  stats->adapter_trimmed_reads.resize_up_to(m_config.samples.adapters().size());
+  stats->adapter_trimmed_bases.resize_up_to(m_config.samples.adapters().size());
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  for (const auto& adapters : m_adapters) {
-    aligners.emplace_back(adapters, m_config.simd);
+  for (const auto& it : m_config.samples.at(m_sample)) {
+    aligners.emplace_back(it.adapters, m_config.simd);
   }
 
+  AR_REQUIRE(!aligners.empty());
   AR_REQUIRE(chunk->barcodes.empty() ||
              chunk->barcodes.size() == chunk->reads_1.size());
 
@@ -361,10 +357,9 @@ se_reads_processor::process(chunk_ptr chunk)
     // Trim poly-X tails for zero or more X
     pre_trim_poly_x_tail(m_config, *stats, read);
 
-    auto& aligner =
-      aligners.at((barcode_it == barcode_end) ? 0 : *barcode_it++);
-    const alignment_info alignment =
-      aligner.align_single_end(read, m_config.shift);
+    const auto barcode = (barcode_it == barcode_end) ? 0 : *barcode_it++;
+    const auto alignment =
+      aligners.at(barcode).align_single_end(read, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
       const auto length = read.length();
@@ -390,10 +385,10 @@ se_reads_processor::process(chunk_ptr chunk)
 
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se);
+      chunks.add(read, read_type::mate_1, fastq_flags::se, barcode);
     } else {
       stats->discarded->process(read);
-      chunks.add(read, read_type::discarded, fastq_flags::se_fail);
+      chunks.add(read, read_type::discarded, fastq_flags::se_fail, barcode);
     }
   }
 
@@ -451,7 +446,7 @@ pe_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_sample(m_config.samples.at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -464,14 +459,15 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  for (const auto& adapters : m_adapters) {
-    aligners.emplace_back(adapters, m_config.simd);
+  for (const auto& it : m_config.samples.at(m_sample)) {
+    aligners.emplace_back(it.adapters, m_config.simd);
   }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(m_config.adapters.size());
-  stats->adapter_trimmed_bases.resize_up_to(m_config.adapters.size());
+  stats->adapter_trimmed_reads.resize_up_to(m_config.samples.adapters().size());
+  stats->adapter_trimmed_bases.resize_up_to(m_config.samples.adapters().size());
 
+  AR_REQUIRE(!aligners.empty());
   AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
   AR_REQUIRE(chunk->barcodes.empty() ||
              chunk->barcodes.size() == chunk->reads_1.size());
@@ -499,10 +495,9 @@ pe_reads_processor::process(chunk_ptr chunk)
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
 
-    auto& aligner =
-      aligners.at((barcode_it == barcode_end) ? 0 : *barcode_it++);
+    const auto barcode = (barcode_it == barcode_end) ? 0 : *barcode_it++;
     const auto alignment =
-      aligner.align_paired_end(read_1, read_2, m_config.shift);
+      aligners.at(barcode).align_paired_end(read_1, read_2, m_config.shift);
 
     if (m_config.is_good_alignment(alignment)) {
       const size_t insert_size = alignment.insert_size(read_1, read_2);
@@ -549,10 +544,11 @@ pe_reads_processor::process(chunk_ptr chunk)
 
         if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
-          chunks.add(read_1, read_type::merged, fastq_flags::se);
+          chunks.add(read_1, read_type::merged, fastq_flags::se, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(read_1, read_type::discarded, fastq_flags::se_fail);
+          chunks.add(
+            read_1, read_type::discarded, fastq_flags::se_fail, barcode);
         }
 
         continue;
@@ -612,8 +608,8 @@ pe_reads_processor::process(chunk_ptr chunk)
     const auto flags_2 = is_ok_2 ? fastq_flags::pe_2 : fastq_flags::pe_2_fail;
 
     // Queue reads last, since this result in modifications to lengths
-    chunks.add(read_1, type_1, flags_1);
-    chunks.add(read_2, type_2, flags_2);
+    chunks.add(read_1, type_1, flags_1, barcode);
+    chunks.add(read_2, type_2, flags_2, barcode);
   }
 
   // Track amount of overlapping bases "lost" due to read merging

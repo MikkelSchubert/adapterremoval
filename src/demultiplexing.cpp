@@ -160,10 +160,13 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
 
 process_demultiplexed::process_demultiplexed(const userconfig& config,
                                              const sample_output_files& output,
+                                             const size_t sample,
                                              trim_stats_ptr sink)
   : analytical_step(processing_order::unordered, "process_demultiplexed")
   , m_config(config)
   , m_output(output)
+  , m_samples(config.samples)
+  , m_sample(sample)
   , m_stats_sink(std::move(sink))
 {
   m_stats.emplace_back_n(m_config.max_threads, m_config.report_sample_rate);
@@ -174,7 +177,7 @@ process_demultiplexed::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_sample(m_samples.at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -183,26 +186,29 @@ process_demultiplexed::process(chunk_ptr chunk)
 
   auto stats = m_stats.acquire();
 
+  AR_REQUIRE(chunk->reads_1.size() == chunk->barcodes.size());
+  auto barcode = chunk->barcodes.begin();
+
   if (m_config.paired_ended_mode) {
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();
-    for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
+    for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2, ++barcode) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats->read_1->process(*it_1);
-      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1);
+      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1, *barcode);
 
       it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats->read_2->process(*it_2);
-      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2);
+      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2, *barcode);
     }
   } else {
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats->read_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se);
+      chunks.add(read, read_type::mate_1, fastq_flags::se, *barcode++);
     }
   }
 
@@ -244,7 +250,7 @@ processes_unidentified::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_read_group(m_config.output_read_group);
+  chunks.set_sample(m_config.samples.unidentified());
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -263,18 +269,18 @@ processes_unidentified::process(chunk_ptr chunk)
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats_1->process(*it_1);
-      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1);
+      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1, 0);
 
       it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats_2->process(*it_2);
-      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2);
+      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2, 0);
     }
   } else {
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se);
+      chunks.add(read, read_type::mate_1, fastq_flags::se, 0);
     }
   }
 
