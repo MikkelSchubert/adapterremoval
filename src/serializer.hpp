@@ -18,14 +18,16 @@
 \*************************************************************************/
 #pragma once
 
-#include "commontypes.hpp" // for string_vec
-#include <cstddef>         // for size_t
-#include <functional>      // for function
+#include "commontypes.hpp"   // for string_vec
+#include "sequence_sets.hpp" // for read_group
+#include <cstddef>           // for size_t
+#include <functional>        // for function
 
 namespace adapterremoval {
 
-class fastq;
 class buffer;
+class fastq;
+class read_group;
 enum class output_format;
 
 enum class fastq_flags
@@ -43,32 +45,6 @@ enum class fastq_flags
   //! Mate 1 read that failed QC
   pe_2_fail,
 
-};
-
-/** Contains SAM/BAM read-group information */
-class read_group
-{
-public:
-  read_group();
-
-  /**
-   * Parses a read-group string in the form "ID:1\tSM:sample" (optionally
-   * including a leading "@RG\t"). Throws std::invalid_argument if the value
-   * is invalid.
-   */
-  explicit read_group(std::string_view value);
-
-  /** Returns the read-group ID for use in per-read 'RG' tags */
-  [[nodiscard]] std::string_view id() const { return m_id; }
-
-  /** Returns the full @RG header, not including a trailing new-line */
-  [[nodiscard]] std::string_view header() const { return m_header; }
-
-private:
-  //! The full read_group header, including leading `@RG\t`
-  std::string m_header{};
-  //! Value mapping reads (via `RG:Z:${ID}`) to the @RG header
-  std::string m_id{};
 };
 
 class fastq_serializer

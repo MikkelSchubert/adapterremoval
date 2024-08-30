@@ -178,7 +178,6 @@ EXEC_OBJS := \
 	$(OBJS_DIR)/reports_template_html.o \
 	$(OBJS_DIR)/reports_terminal.o \
 	$(OBJS_DIR)/scheduler.o \
-	$(OBJS_DIR)/sequence_sets.o \
 	$(OBJS_DIR)/statistics.o \
 	$(OBJS_DIR)/timer.o \
 	$(OBJS_DIR)/trimming.o \
@@ -198,6 +197,7 @@ TEST_OBJS := \
 	$(OBJS_DIR)/logging_test.o \
 	$(OBJS_DIR)/main_test.o \
 	$(OBJS_DIR)/mathutils_test.o \
+	$(OBJS_DIR)/sequence_sets_test.o \
 	$(OBJS_DIR)/serializer_test.o \
 	$(OBJS_DIR)/strutils_test.o \
 	$(OBJS_DIR)/utilities_test.o
