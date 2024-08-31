@@ -658,6 +658,8 @@ userconfig::userconfig()
           "first column was supplied to --adapter1, and the second column was "
           "supplied to --adapter2; only the first adapter in each pair is "
           "required single-end trimming")
+    .conflicts_with("--adapter1")
+    .conflicts_with("--adapter2")
     .bind_str(&adapter_list);
 
   argparser.add_separator();
@@ -1561,19 +1563,8 @@ userconfig::is_low_complexity_filtering_enabled() const
 bool
 userconfig::setup_adapter_sequences()
 {
-  const bool adapters_is_set =
-    argparser.is_set("--adapter1") || argparser.is_set("--adapter2");
-  const bool adapter_list_is_set = argparser.is_set("--adapter-list");
-
-  if (adapters_is_set && adapter_list_is_set) {
-    log::error() << "Use either --adapter1 and --adapter2, or "
-                 << "--adapter-list, not both!";
-
-    return false;
-  }
-
   adapter_set adapters;
-  if (adapter_list_is_set) {
+  if (argparser.is_set("--adapter-list")) {
     try {
       adapters.load(adapter_list, paired_ended_mode);
     } catch (const std::exception& error) {
