@@ -179,6 +179,7 @@ process_demultiplexed::process(chunk_ptr chunk)
   processed_reads chunks{ m_output };
   chunks.set_sample(m_samples.at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
+  chunks.set_demultiplexing_only(true);
 
   if (chunk->first) {
     chunks.write_headers(m_config.args);

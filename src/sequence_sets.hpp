@@ -130,6 +130,8 @@ private:
 /** Represents sequences used for identifying/processing a sample */
 struct sample_sequences
 {
+  sample_sequences() = default;
+
   sample_sequences(dna_sequence barcode1, dna_sequence barcode2)
     : barcode_1(std::move(barcode1))
     , barcode_2(std::move(barcode2))

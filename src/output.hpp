@@ -178,6 +178,9 @@ public:
   /** Set the mate separator; used to trim mate information for some formats */
   void set_mate_separator(char value);
 
+  /** In demultiplexing only mode, barcodes must always be recorded in output */
+  void set_demultiplexing_only(bool value);
+
   /** Writes any headers required by the output format  */
   void write_headers(const string_vec& args);
 

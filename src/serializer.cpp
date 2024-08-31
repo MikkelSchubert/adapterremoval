@@ -156,11 +156,18 @@ fastq_serializer::header(buffer& /* buf */,
 void
 fastq_serializer::record(buffer& buf,
                          const fastq& record,
-                         fastq_flags /* flags */,
-                         char /* mate_separator */,
-                         const read_group& /* rg */)
+                         const sample_sequences& sequences,
+                         const serializer_settings& settings)
 {
   buf.append(record.header());
+  if (settings.demultiplexing_only) {
+    buf.append(" BC:");
+    buf.append(sequences.barcode_1);
+    if (sequences.barcode_2.length()) {
+      buf.append_u8('-');
+      buf.append(sequences.barcode_2);
+    }
+  }
   buf.append_u8('\n');
   buf.append(record.sequence());
   buf.append("\n+\n", 3);
@@ -180,13 +187,12 @@ sam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
 void
 sam_serializer::record(buffer& buf,
                        const fastq& record,
-                       fastq_flags flags,
-                       char mate_separator,
-                       const read_group& rg)
+                       const sample_sequences& sequences,
+                       const serializer_settings& settings)
 {
-  buf.append(record.name(mate_separator)); // 1. QNAME
+  buf.append(record.name(settings.mate_separator)); // 1. QNAME
   buf.append_u8('\t');
-  buf.append(flags_to_sam(flags)); // 2. FLAG
+  buf.append(flags_to_sam(settings.flags)); // 2. FLAG
   buf.append("\t"
              "*\t" // 3. RNAME
              "0\t" // 4. POS
@@ -207,7 +213,7 @@ sam_serializer::record(buffer& buf,
   }
 
   buf.append("\tRG:Z:");
-  buf.append(rg.id());
+  buf.append(sequences.info.id());
   buf.append("\tPG:Z:adapterremoval\n");
 }
 
@@ -228,21 +234,20 @@ bam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
 void
 bam_serializer::record(buffer& buf,
                        const fastq& record,
-                       fastq_flags flags,
-                       char mate_separator,
-                       const read_group& rg)
+                       const sample_sequences& sequences,
+                       const serializer_settings& settings)
 {
   const size_t block_size_pos = buf.size();
   buf.append_u32(0);  // block size (preliminary)
   buf.append_i32(-1); // refID
   buf.append_i32(-1); // pos
 
-  const auto name = record.name(mate_separator).substr(0, 255);
-  buf.append_u8(name.length() + 1);    // l_read_name
-  buf.append_u8(0);                    // mapq
-  buf.append_u16(4680);                // bin (c.f. specification 4.2.1)
-  buf.append_u16(0);                   // n_cigar
-  buf.append_u16(flags_to_bam(flags)); // flags
+  const auto name = record.name(settings.mate_separator).substr(0, 255);
+  buf.append_u8(name.length() + 1); // l_read_name
+  buf.append_u8(0);                 // mapq
+  buf.append_u16(4680);             // bin (c.f. specification 4.2.1)
+  buf.append_u16(0);                // n_cigar
+  buf.append_u16(flags_to_bam(settings.flags)); // flags
 
   buf.append_u32(record.length()); // l_seq
   buf.append_i32(-1);              // next_refID
@@ -257,7 +262,7 @@ bam_serializer::record(buffer& buf,
 
   // PG:Z:adapterremoval tag
   buf.append("RGZ");
-  buf.append(rg.id());
+  buf.append(sequences.info.id());
   buf.append_u8(0); // NUL
 
   // PG:Z:adapterremoval tag
@@ -306,7 +311,11 @@ serializer::record(buffer& buf,
                    const fastq_flags flags,
                    const size_t barcode) const
 {
-  m_record(buf, record, flags, m_mate_separator, m_sample.at(barcode).info);
+  m_record(
+    buf,
+    record,
+    m_sample.at(barcode),
+    serializer_settings{ flags, m_mate_separator, m_demultiplexing_only });
 }
 
 } // namespace adapterremoval

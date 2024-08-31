@@ -240,6 +240,14 @@ processed_reads::set_mate_separator(char value)
 }
 
 void
+processed_reads::set_demultiplexing_only(bool value)
+{
+  for (auto& ser : m_serializers) {
+    ser.set_demultiplexing_only(value);
+  }
+}
+
+void
 processed_reads::write_headers(const string_vec& args)
 {
   for (size_t i = 0; i < m_chunks.size(); ++i) {

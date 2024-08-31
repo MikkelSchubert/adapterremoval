@@ -487,8 +487,10 @@ sample::set_read_group(const read_group& info)
     if (it->barcode_1.length() || it->barcode_2.length()) {
       std::string barcodes;
       barcodes.append(it->barcode_1);
-      barcodes.push_back('-');
-      barcodes.append(it->barcode_2);
+      if (it->barcode_2.length()) {
+        barcodes.push_back('-');
+        barcodes.append(it->barcode_2);
+      }
 
       it->info.set_barcodes(barcodes);
     }

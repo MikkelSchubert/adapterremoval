@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "buffer.hpp"      // for buffer
-#include "commontypes.hpp" // for fastq_vec
-#include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
-#include "serializer.hpp"  // for fastq_serializer
-#include "testing.hpp"     // for catch.hpp, StringMaker
+#include "buffer.hpp"        // for buffer
+#include "commontypes.hpp"   // for fastq_vec
+#include "fastq.hpp"         // for fastq, fastq::ntrimmed, ACGTN, ACGT
+#include "sequence_sets.hpp" // sample_seequences
+#include "serializer.hpp"    // for fastq_serializer
+#include "testing.hpp"       // for catch.hpp, StringMaker
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g
@@ -37,7 +38,8 @@ TEST_CASE("Writing_to_stream_phred_33", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
   buffer buf;
-  fastq_serializer::record(buf, record, fastq_flags::se, '\0', read_group());
+  fastq_serializer::record(
+    buf, record, sample_sequences{}, serializer_settings{});
 
   REQUIRE(
     std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
@@ -48,7 +50,8 @@ TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
   buffer buf;
-  fastq_serializer::record(buf, record, fastq_flags::se, '\0', read_group());
+  fastq_serializer::record(
+    buf, record, sample_sequences{}, serializer_settings{});
 
   REQUIRE(
     std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
