@@ -199,6 +199,49 @@ private:
   std::vector<sample_sequences> m_barcodes{};
 };
 
+/** Configuration for loading of barcode tables */
+class barcode_config
+{
+public:
+  barcode_config() = default;
+
+  /**
+   * If PE mode is enabled, barcode 1 and 2 together must be unique, otherwise
+   * barcode 1 sequences alone must be unique to allow unambiguous
+   * identification of samples
+   */
+  auto& paired_end_mode(bool value)
+  {
+    m_paired_end_mode = value;
+    return *this;
+  }
+
+  /** Specifies if barcodes are expected in one or both orientations */
+  auto& unidirectional_barcodes(bool value)
+  {
+    m_unidirectional_barcodes = value;
+    return *this;
+  }
+
+  /** Enable or disable support for multiple barcodes for the same sample */
+  auto& allow_multiple_barcodes(bool value)
+  {
+    m_allow_multiple_barcodes = value;
+    return *this;
+  }
+
+private:
+  friend class sample_set;
+
+  //! Whether running in paired or single end mode; is used to determine whether
+  //! or not samples can be uniquely identified from the barcodes provided
+  bool m_paired_end_mode = false;
+  //! Indicates if multiple barcodes/barcode pairs are allowed per sample
+  bool m_allow_multiple_barcodes = false;
+  //! Indicates if barcode pairs can be annealed in both orientations
+  bool m_unidirectional_barcodes = true;
+};
+
 /**
  * Class for handling samples for demultiplexing. The class further checks for
  * the correctness of these sequences, and detects duplicate barcode sequences /
@@ -210,19 +253,6 @@ public:
   /** Creates barcode set with single unnamed sample with empty barcodes */
   sample_set();
 
-  /**
-   * If PE mode is enabled, barcode 1 and 2 together must be unique, otherwise
-   * barcode 1 sequences alone must be unique to allow unambiguous
-   * identification of samples
-   */
-  void set_paired_end_mode(bool b) { m_paired_end_mode = b; }
-
-  /** Specifies if barcodes are expected in both orientations */
-  void set_unidirectional_barcodes(bool b) { m_unidirectional_barcodes = b; }
-
-  /** Enable or disable support for multiple barcodes for the same sample */
-  void set_allow_multiple_barcodes(bool b) { m_allow_multiple_barcodes = b; }
-
   /** Sets adapter sequences for all samples */
   void set_adapters(adapter_set adapters);
 
@@ -230,7 +260,7 @@ public:
   void set_read_group(std::string_view value);
 
   /** Clears existing samples and loads barcodes from a TSV file */
-  void load(const std::string& filename);
+  void load(const std::string& filename, const barcode_config& config);
 
   /** Convenience function to get sequences for sample / barcode pair */
   [[nodiscard]] const auto& get_sequences(const size_t sample,
@@ -259,23 +289,16 @@ public:
 
 private:
   /** Adds the reverse complement of barcodes for all samples, if missing */
-  void add_reversed_barcodes();
+  void add_reversed_barcodes(const barcode_config& config);
 
   //! Demultiplexing samples. Names and barcode pairs are both unique
   std::vector<sample> m_samples{};
   //! Special sample representing unidentified samples;
-  sample m_unidentified;
+  sample m_unidentified{};
   //! User-supplied read group used to generate per-sample read-groups
   read_group m_read_group{};
   //! User-supplied adapter sequences used to generate per-barcode adapters
   adapter_set m_adapters{};
-  //! Whether running in paired or single end mode; is used to determine whether
-  //! or not samples can be uniquely identified from the barcodes provided
-  bool m_paired_end_mode = false;
-  //! Indicates if multiple barcodes/barcode pairs are allowed per sample
-  bool m_allow_multiple_barcodes = false;
-  //! Indicates if barcode pairs are annealed in both orientations
-  bool m_unidirectional_barcodes = false;
 };
 
 } // namespace adapterremoval

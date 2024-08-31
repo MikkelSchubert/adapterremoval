@@ -1614,8 +1614,13 @@ userconfig::setup_demultiplexing()
   samples.set_paired_end_mode(paired_ended_mode);
 
   if (argparser.is_set("--barcode-list")) {
+    const auto config = barcode_config()
+                          .paired_end_mode(paired_ended_mode)
+                          .allow_multiple_barcodes(false)
+                          .unidirectional_barcodes(true);
+
     try {
-      samples.load(barcode_list);
+      samples.load(barcode_list, config);
     } catch (const std::exception& error) {
       log::error() << "Error reading barcodes from " << log_escape(barcode_list)
                    << ": " << error.what();
