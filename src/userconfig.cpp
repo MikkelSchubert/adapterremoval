@@ -895,6 +895,17 @@ userconfig::userconfig()
           "multiplexing was used, in order to ensure that the demultiplexed "
           "reads can be trimmed correctly")
     .bind_str(&barcode_list);
+  argparser.add("--multiple-barcodes")
+    .help("Allow for more than one barcode (pair) for each sample. If this "
+          "option is not specified, AdapterRemoval will abort if "
+          "barcodes/barcode pairs do not to unique samples");
+  argparser.add("--reversible-barcodes")
+    .help("If set, it is assumed that barcodes can be sequences in both the "
+          "barcode1-insert-barcode2 orientation and barcode2'-insert-barcode1' "
+          "orientation, where ' indicates reverse complementation. This option "
+          "requires two barcodes per sample (double-indexing)");
+
+  argparser.add_separator();
   argparser.add("--barcode-mm", "N")
     .help("Maximum number of mismatches allowed when counting mismatches in "
           "both the mate 1 and the mate 2 barcode for paired reads")
@@ -1611,13 +1622,12 @@ userconfig::setup_demultiplexing()
     return false;
   }
 
-  samples.set_paired_end_mode(paired_ended_mode);
-
   if (argparser.is_set("--barcode-list")) {
-    const auto config = barcode_config()
-                          .paired_end_mode(paired_ended_mode)
-                          .allow_multiple_barcodes(false)
-                          .unidirectional_barcodes(true);
+    const auto config =
+      barcode_config()
+        .paired_end_mode(paired_ended_mode)
+        .allow_multiple_barcodes(argparser.is_set("--multiple-barcodes"))
+        .unidirectional_barcodes(!argparser.is_set("--reversible-barcodes"));
 
     try {
       samples.load(barcode_list, config);
