@@ -57,15 +57,29 @@ public:
     }
   }
 
+  /** Attempt to acquire ownership of a value. **/
+  pointer try_acquire()
+  {
+    {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      if (!m_values.empty()) {
+        pointer value = std::move(m_values.back());
+        m_values.pop_back();
+        return value;
+      }
+    }
+
+    return pointer{};
+  }
+
   /** Acquire ownership of a value. **/
   pointer acquire()
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    AR_REQUIRE(!m_values.empty());
+    if (auto value = try_acquire()) {
+      return value;
+    }
 
-    pointer value = std::move(m_values.back());
-    m_values.pop_back();
-    return value;
+    AR_FAIL("could not aquare thread state");
   }
 
   /** Release ownership of a value. **/
@@ -79,6 +93,7 @@ public:
 
   void merge_into(T& value)
   {
+    std::lock_guard<std::mutex> lock(m_mutex);
     while (!m_values.empty()) {
       value += *m_values.back();
       m_values.pop_back();
@@ -86,7 +101,7 @@ public:
   }
 
 private:
-  mutable std::mutex m_mutex{};
+  std::mutex m_mutex{};
   std::vector<pointer> m_values{};
 };
 

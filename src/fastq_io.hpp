@@ -137,10 +137,21 @@ public:
   post_process_fastq& operator=(post_process_fastq&&) = delete;
 
 private:
+  /** Linked mate 1/2 statistics to synchronize sampling of reads */
+  struct stats_pair
+  {
+    stats_pair(double sample_rate, uint32_t seed)
+      : stats_1(sample_rate, seed)
+      , stats_2(sample_rate, seed)
+    {
+    }
+
+    fastq_statistics stats_1;
+    fastq_statistics stats_2;
+  };
+
   //! Per thread statistics collected from raw reads
-  threadstate<fastq_statistics> m_stats_1{};
-  //! Per thread statistics collected from raw mate 2 reads
-  threadstate<fastq_statistics> m_stats_2{};
+  threadstate<stats_pair> m_stats{};
   //! Destination for statistics collected from raw mate 1 reads
   fastq_stats_ptr m_statistics_1;
   //! Destination for statistics collected from raw mate 2 reads

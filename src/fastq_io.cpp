@@ -276,11 +276,7 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   AR_REQUIRE(m_statistics_1 && m_statistics_2);
 
   for (size_t i = 0; i < config.max_threads; ++i) {
-    // Synchronize sampling of mate 1 and mate 2 reads
-    const auto seed = prng_seed();
-
-    m_stats_1.emplace_back_n(1, config.report_sample_rate, seed);
-    m_stats_2.emplace_back_n(1, config.report_sample_rate, seed);
+    m_stats.emplace_back_n(1, config.report_sample_rate, prng_seed());
   }
 }
 
@@ -291,14 +287,13 @@ post_process_fastq::process(chunk_ptr chunk)
   auto& reads_1 = chunk->reads_1;
   auto& reads_2 = chunk->reads_2;
 
-  auto stats_1 = m_stats_1.acquire();
-  auto stats_2 = m_stats_2.acquire();
+  auto stats = m_stats.acquire();
 
   AR_REQUIRE((reads_1.size() == reads_2.size()) || reads_2.empty());
   if (reads_2.empty()) {
     for (auto& read_1 : reads_1) {
       read_1.post_process(m_encoding);
-      stats_1->process(read_1);
+      stats->stats_1.process(read_1);
     }
   } else {
     auto it_1 = reads_1.begin();
@@ -307,10 +302,10 @@ post_process_fastq::process(chunk_ptr chunk)
       fastq::normalize_paired_reads(*it_1, *it_2, chunk->mate_separator);
 
       it_1->post_process(m_encoding);
-      stats_1->process(*it_1);
+      stats->stats_1.process(*it_1);
 
       it_2->post_process(m_encoding);
-      stats_2->process(*it_2);
+      stats->stats_2.process(*it_2);
     }
 
     // fastq::normalize_paired_reads replaces the mate separator if present
@@ -319,8 +314,7 @@ post_process_fastq::process(chunk_ptr chunk)
     }
   }
 
-  m_stats_1.release(stats_1);
-  m_stats_2.release(stats_2);
+  m_stats.release(stats);
 
   {
     std::unique_lock<std::mutex> lock(m_timer_lock);
@@ -338,8 +332,10 @@ post_process_fastq::finalize()
 {
   AR_REQUIRE_SINGLE_THREAD(m_timer_lock);
 
-  m_stats_1.merge_into(*m_statistics_1);
-  m_stats_2.merge_into(*m_statistics_2);
+  while (auto it = m_stats.try_acquire()) {
+    *m_statistics_1 += it->stats_1;
+    *m_statistics_2 += it->stats_2;
+  }
 
   m_timer.finalize();
 }
