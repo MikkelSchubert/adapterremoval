@@ -21,6 +21,9 @@ COVERAGE := no
 # Enable address and undefined behavior sanitation
 SANITIZE := no
 
+# Enable hardening flags
+HARDEN := no
+
 # Generate statically linked binary
 # It is recommended to use the included Containerfile to build the static binary
 STATIC := no
@@ -101,11 +104,11 @@ endif
 
 ifeq ($(strip ${DEBUG}), yes)
 $(info Building AdapterRemoval with debug information: yes)
-CXXFLAGS := ${CXXFLAGS} -g -DDEBUG \
+CXXFLAGS := ${CXXFLAGS} -g -DDEBUG -Wfatal-errors \
 	-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
 	-Wdisabled-optimization -Wformat=2 -Winit-self -Wold-style-cast \
 	-Woverloaded-virtual -Wredundant-decls -Wsign-promo -Wstrict-overflow=2 \
-	-Wswitch-default -Wswitch-enum -Wundef -Weffc++ -Wdeprecated
+	-Wswitch-default -Wswitch-enum -Wundef -Weffc++ -Wdeprecated -Wdate-time
 
 ifneq ($(strip ${COVERAGE}), yes)
 BUILD_NAME := debug
@@ -113,6 +116,17 @@ endif
 else
 $(info Building AdapterRemoval with debug information: no)
 endif
+
+ifeq ($(strip ${HARDEN}), yes)
+$(info Building AdapterRemoval with hardening options: yes)
+CXXFLAGS := ${CXXFLAGS} -D_FORTIFY_SOURCE=2 -fPIE -fstack-protector-all \
+	-fstack-clash-protection
+LDFLAGS := ${LDFLAGS} -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack
+BUILD_NAME_POSTFIX := ${BUILD_NAME_POSTFIX}-harden
+else
+$(info Building AdapterRemoval with hardening options: no)
+endif
+
 
 ifeq ($(strip ${SANITIZE}), yes)
 $(info Building AdapterRemoval with sanitizers: yes)
