@@ -6,6 +6,10 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
+        "$schema": {
+            "description": "The location of this schema",
+            "$ref": "#/definitions/non-empty-string"
+        },
         "meta": {
             "description": "Meta-data about the AdapterRemoval run that produced this JSON file",
             "type": "object",

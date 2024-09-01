@@ -1,4 +1,5 @@
 {
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/v3.0.0-alpha3.json",
   "meta": {
     "version": "...str",
     "command": "...[str]",

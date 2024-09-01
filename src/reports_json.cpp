@@ -574,6 +574,10 @@ write_json_report(const userconfig& config,
 
   {
     json_dict report;
+    report.str("$schema",
+               "https://MikkelSchubert.github.io/adapterremoval/schemas/" +
+                 VERSION + ".json");
+
     write_report_meta(config, report);
     write_report_summary(config, report, stats);
     write_report_input(config, report, stats);
