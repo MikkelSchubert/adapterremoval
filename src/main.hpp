@@ -28,6 +28,6 @@
 namespace adapterremoval {
 
 const std::string NAME = "AdapterRemoval";
-const std::string VERSION = "v3.0.0-alpha2";
+const std::string VERSION = "v3.0.0-alpha3";
 
 } // namespace adapterremoval
