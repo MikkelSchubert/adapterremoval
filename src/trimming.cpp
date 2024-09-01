@@ -506,7 +506,6 @@ pe_reads_processor::process(chunk_ptr chunk)
         // Insert size calculated from untrimmed reads
         stats->insert_sizes.resize_up_to(insert_size + 1);
         stats->insert_sizes.inc(insert_size);
-        stats->overlapping_reads += 2;
       }
 
       const size_t pre_trimmed_bp = read_1.length() + read_2.length();

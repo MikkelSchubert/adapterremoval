@@ -93,7 +93,6 @@ public:
           const size_t insert_size = alignment.insert_size(read_1, read_2);
           stats_ins->insert_sizes.resize_up_to(insert_size + 1);
           stats_ins->insert_sizes.inc(insert_size);
-          stats_ins->overlapping_reads += 2;
 
           if (extract_adapter_sequences(alignment, read_1, read_2)) {
             stats_id->pairs_with_adapters++;

@@ -332,7 +332,6 @@ trimming_statistics::operator+=(const trimming_statistics& other)
   insert_sizes += other.insert_sizes;
   adapter_trimmed_reads += other.adapter_trimmed_reads;
   adapter_trimmed_bases += other.adapter_trimmed_bases;
-  overlapping_reads += other.overlapping_reads;
   reads_merged += other.reads_merged;
   terminal_pre_trimmed += other.terminal_pre_trimmed;
   terminal_post_trimmed += other.terminal_post_trimmed;

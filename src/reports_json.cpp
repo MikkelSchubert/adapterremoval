@@ -178,7 +178,6 @@ write_report_trimming(const userconfig& config,
       adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
     }
 
-    trimming->u64("overlapping_reads", totals.overlapping_reads);
     if (config.paired_ended_mode) {
       trimming->i64_vec("insert_sizes", totals.insert_sizes);
     } else {

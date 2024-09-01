@@ -252,9 +252,6 @@ public:
   //! Number of bases trimmed for a given adapter (pair)
   counts adapter_trimmed_bases{};
 
-  //! Number of reads that overlap/can be merged
-  size_t overlapping_reads = 0;
-
   //! Total number of reads/bases merged
   reads_and_bases reads_merged{};
 
