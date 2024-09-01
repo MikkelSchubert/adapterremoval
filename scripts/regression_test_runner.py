@@ -318,10 +318,9 @@ def diff_json(
             elif key not in observed:
                 yield _err("unexpected key", "in observation", key)
             else:
-                if not JSON_PATH.match(key):
-                    key = repr(key)
+                key_s = key if JSON_PATH.match(key) else repr(key)
 
-                yield from diff_json(reference[key], observed[key], (*path, key))
+                yield from diff_json(reference[key], observed[key], (*path, key_s))
     elif isinstance(reference, float):
         assert isinstance(observed, float)
 
