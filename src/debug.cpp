@@ -18,7 +18,6 @@
 \*************************************************************************/
 #include "debug.hpp"
 #include <sstream> // for operator<<, basic_ostream, ostringstream
-#include <string>  // for char_traits, operator<<, string
 
 namespace adapterremoval {
 
@@ -28,7 +27,7 @@ terminate(const std::string& message);
 void
 debug_raise_assert(const char* funcname,
                    const char* filename,
-                   size_t lineno,
+                   unsigned lineno,
                    const std::string& test,
                    const std::string& msg)
 {

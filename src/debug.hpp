@@ -18,9 +18,7 @@
 \*************************************************************************/
 #pragma once
 
-#include <cstddef>   // for size_t
-#include <stdexcept> // for logic_error
-#include <string>    // for string
+#include <string> // for string
 
 namespace adapterremoval {
 
@@ -31,15 +29,26 @@ namespace adapterremoval {
 [[noreturn]] void
 debug_raise_assert(const char* funcname,
                    const char* filename,
-                   size_t lineno,
+                   unsigned lineno,
                    const std::string& test,
                    const std::string& msg);
 
-/** Custom assert which prints various information on failure; always enabled.
- */
+#ifdef __has_builtin
+#if __has_builtin(__builtin_expect)
+#define AR_LIKELY(condition) __builtin_expect(!!(condition), 1)
+#define AR_UNLIKELY(condition) __builtin_expect(!!(condition), 0)
+#endif
+#endif
+
+#ifndef AR_LIKELY
+#define AR_LIKELY(condition) (!!(condition))
+#define AR_UNLIKELY(condition) (!!(condition))
+#endif
+
+/** Custom assert which prints various information on failure; always enabled */
 #define AR_REQUIRE_2_(test, msg)                                               \
   do {                                                                         \
-    if (!(test)) {                                                             \
+    if (AR_UNLIKELY(!(test))) {                                                \
       debug_raise_assert(static_cast<const char*>(__FUNCTION__),               \
                          static_cast<const char*>(__FILE__),                   \
                          __LINE__,                                             \
@@ -70,7 +79,7 @@ debug_raise_assert(const char* funcname,
   std::unique_lock<std::mutex> AR_MERGE_(locker, __LINE__)(lock,               \
                                                            std::defer_lock);   \
   do {                                                                         \
-    if (!AR_MERGE_(locker, __LINE__).try_lock()) {                             \
+    if (AR_UNLIKELY(!AR_MERGE_(locker, __LINE__).try_lock())) {                \
       AR_FAIL("race condition detected");                                      \
     }                                                                          \
   } while (0)
