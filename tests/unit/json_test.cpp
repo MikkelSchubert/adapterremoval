@@ -508,6 +508,19 @@ TEST_CASE("complex json_list ")
 ])");
 }
 
+TEST_CASE("json_list with inline dicts")
+{
+  json_list l;
+  l.inline_dict();
+  auto d = l.inline_dict();
+  d->str("foo", "bar");
+
+  REQUIRE(l.to_string() == R"([
+  {},
+  { "foo": "bar" }
+])");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // inline dictionaries
 

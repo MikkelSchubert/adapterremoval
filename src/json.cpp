@@ -226,6 +226,16 @@ json_list::dict()
   return ptr;
 }
 
+json_dict_ptr
+json_list::inline_dict()
+{
+  auto ptr = std::make_shared<json_dict>();
+  ptr->m_multi_line = false;
+  m_values.push_back(ptr);
+
+  return ptr;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void

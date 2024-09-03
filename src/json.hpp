@@ -117,6 +117,9 @@ public:
   /** Appends an empty JSON dictionary to the list and returns it */
   json_dict_ptr dict();
 
+  /** Appends an empty inline JSON dictionary to the list and returns it */
+  json_dict_ptr inline_dict();
+
 private:
   //! Items in the list
   std::vector<json_ptr> m_values{};
@@ -167,6 +170,8 @@ public:
   void null(std::string_view key);
 
 private:
+  friend class json_list;
+
   /** Assigns a JSON object to a given key and updates the list of keys */
   void _set(std::string_view key, const json_ptr& ptr);
 
