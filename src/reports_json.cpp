@@ -59,7 +59,7 @@ write_report_meta(const userconfig& config, json_dict& report)
   meta->str("version", NAME + " " + VERSION);
   meta->str_vec("command", config.args);
   meta->f64("runtime", config.runtime());
-  meta->str("timestamp", timestamp("%FT%T%z"));
+  meta->str("timestamp", userconfig::start_time);
 }
 
 void

@@ -47,6 +47,8 @@
 
 namespace adapterremoval {
 
+namespace {
+
 using fastq_stats_vec = std::vector<fastq_stats_ptr>;
 using template_ptr = std::unique_ptr<html_template>;
 
@@ -58,8 +60,6 @@ const char* const FACET_WIDTH_2 = "351";
 const char* const FACET_WIDTH_1 = FIGURE_WIDTH;
 
 ////////////////////////////////////////////////////////////////////////////////
-
-namespace {
 
 /** Escapes a string that needs to be embedded in a JS */
 std::string
@@ -314,7 +314,7 @@ write_html_summary_section(const userconfig& config,
   // Basic information about the executable / call
   {
     html_summary()
-      .set_date_and_time(timestamp("%F %T"))
+      .set_date_and_time(userconfig::start_time)
       .set_version(VERSION)
       .set_command(shell_escape_command(config.args))
       .set_runtime(runtime_to_str(config.runtime()))

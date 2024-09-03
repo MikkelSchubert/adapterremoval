@@ -28,7 +28,7 @@
                     "$ref": "#/definitions/non-empty-string"
                 },
                 "timestamp": {
-                    "description": "Timestamp indicating when the program execution completed",
+                    "description": "Timestamp indicating when the program execution started",
                     "$ref": "#/definitions/non-empty-string"
                 }
             },

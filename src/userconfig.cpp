@@ -419,6 +419,8 @@ parse_output_formats(const argparse::parser& argparser,
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `userconfig`
 
+std::string userconfig::start_time = timestamp("%FT%T%z");
+
 userconfig::userconfig()
 {
   argparser.set_name(NAME);
