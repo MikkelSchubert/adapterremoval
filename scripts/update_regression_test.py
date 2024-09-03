@@ -57,8 +57,8 @@ class JSONValue:
     def update(self, other: JSONValue) -> JSONValue:
         token = "".join(other.token).strip()
         # Preserve current whitespace
-        leading_whitespace = list(takewhile(str.isspace, other.token))
-        trailing_whitespace = list(takewhile(str.isspace, reversed(other.token)))
+        leading_whitespace = list(takewhile(str.isspace, self.token))
+        trailing_whitespace = list(takewhile(str.isspace, reversed(self.token)))
 
         return JSONValue(
             token=leading_whitespace + [token] + trailing_whitespace[::-1],
