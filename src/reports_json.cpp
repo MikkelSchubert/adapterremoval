@@ -17,8 +17,10 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "adapter_id.hpp"    // for consensus_adapter_stats
 #include "commontypes.hpp"   // for read_type, read_type::mate_1, read_typ...
 #include "counts.hpp"        // for counts, counts_tmpl, indexed_count
+#include "debug.hpp"         // for AR_REQUIRE
 #include "fastq.hpp"         // for ACGT, fastq, ACGT::values
 #include "json.hpp"          // for json_dict, json_dict_ptr, json_list
 #include "logging.hpp"       // for log_stream, error
@@ -40,16 +42,10 @@
 
 namespace adapterremoval {
 
-//! Trimming statistics
-struct feature_stats
-{
-  //! Processing stage name
-  std::string key;
-  //! Whether or not this step is enabled by command-line options
-  bool enabled;
-  //! Number of reads/bases trimmed/filtered
-  reads_and_bases count;
-};
+namespace {
+
+////////////////////////////////////////////////////////////////////////////////
+// Meta data
 
 void
 write_report_meta(const userconfig& config, json_dict& report)
@@ -61,6 +57,9 @@ write_report_meta(const userconfig& config, json_dict& report)
   meta->f64("runtime", config.runtime());
   meta->str("timestamp", userconfig::start_time);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Summary statistics
 
 void
 write_report_summary_stats(const json_dict_ptr& json,
@@ -109,161 +108,14 @@ write_report_summary_stats(const json_dict_ptr& json,
 }
 
 void
-write_report_counts(const json_dict_ptr& json,
-                    const std::vector<feature_stats>& stats)
-{
-  for (const auto& it : stats) {
-    if (it.enabled) {
-      const auto dict = json->inline_dict(it.key);
-
-      dict->u64("reads", it.count.reads());
-      dict->u64("bases", it.count.bases());
-    }
-  }
-}
-
-//! Poly-X trimming statistics
-struct poly_x_stats
-{
-  //! Processing stage name
-  std::string key;
-  //! X trimmed
-  std::string nucleotides;
-  //! Number of reads trimmed
-  indexed_count<ACGT> reads;
-  //! Number of bases trimmed
-  indexed_count<ACGT> bases;
-};
-
-void
-write_report_poly_x(const json_dict_ptr& json,
-                    const std::vector<poly_x_stats>& stats)
-{
-  for (const auto& it : stats) {
-    if (!it.nucleotides.empty()) {
-      const auto dict = json->dict(it.key);
-      for (const auto nuc : it.nucleotides) {
-        const auto nuc_stats = dict->inline_dict(to_lower(std::string(1, nuc)));
-        nuc_stats->i64("reads", it.reads.get(nuc));
-        nuc_stats->i64("bases", it.bases.get(nuc));
-      }
-    }
-  }
-}
-
-void
-write_report_trimming(const userconfig& config,
-                      const json_dict_ptr& json,
-                      const trimming_statistics& totals,
-                      const sequence_pair_vec& adapters)
-{
-  if (!config.is_adapter_trimming_enabled()) {
-    json->null("adapter_trimming");
-    json->null("quality_trimming");
-    json->null("poly_x_trimming");
-    json->null("filtering");
-    return;
-  }
-
-  {
-    const auto trimming = json->dict("adapter_trimming");
-    const auto adapter_list = trimming->list("adapters");
-
-    for (size_t i = 0; i < adapters.size(); ++i) {
-      const auto adapter = adapter_list->dict();
-
-      adapter->str("sequence_1", adapters.at(i).first);
-      adapter->str("sequence_2", adapters.at(i).second);
-      adapter->i64("reads", totals.adapter_trimmed_reads.get(i));
-      adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
-    }
-
-    if (config.paired_ended_mode) {
-      trimming->i64_vec("insert_sizes", totals.insert_sizes);
-    } else {
-      trimming->null("insert_sizes");
-    }
-  }
-
-  write_report_counts(json->dict("quality_trimming"),
-                      { { "terminal_pre",
-                          config.is_terminal_base_pre_trimming_enabled(),
-                          totals.terminal_pre_trimmed },
-                        { "terminal_post",
-                          config.is_terminal_base_post_trimming_enabled(),
-                          totals.terminal_post_trimmed },
-                        { "low_quality",
-                          config.is_low_quality_trimming_enabled(),
-                          totals.low_quality_trimmed } });
-
-  write_report_poly_x(json->dict("poly_x_trimming"),
-                      { { "pre",
-                          config.pre_trim_poly_x,
-                          totals.poly_x_pre_trimmed_reads,
-                          totals.poly_x_pre_trimmed_bases },
-                        { "post",
-                          config.post_trim_poly_x,
-                          totals.poly_x_post_trimmed_reads,
-                          totals.poly_x_post_trimmed_bases } });
-
-  write_report_counts(json->dict("filtering"),
-                      { { "min_length",
-                          config.is_short_read_filtering_enabled(),
-                          totals.filtered_min_length },
-                        { "max_length",
-                          config.is_long_read_filtering_enabled(),
-                          totals.filtered_max_length },
-                        { "ambiguous_bases",
-                          config.is_ambiguous_base_filtering_enabled(),
-                          totals.filtered_ambiguous },
-                        { "mean_quality",
-                          config.is_ambiguous_base_filtering_enabled(),
-                          totals.filtered_mean_quality },
-                        { "low_complexity",
-                          config.is_low_complexity_filtering_enabled(),
-                          totals.filtered_low_complexity } });
-}
-
-void
 write_report_summary(const userconfig& config,
                      json_dict& report,
                      const statistics& stats)
 {
-  const bool demux_only = config.run_type == ar_command::demultiplex_only;
-
   const auto summary = report.dict("summary");
 
   write_report_summary_stats(summary->dict("input"),
                              { stats.input_1, stats.input_2 });
-
-  if (config.is_demultiplexing_enabled()) {
-    const auto summary_demux = summary->dict("demultiplexing");
-    const auto& demux = *stats.demultiplexing;
-    const auto total = demux.total();
-
-    summary_demux->u64("total_reads", total);
-    summary_demux->u64("assigned_reads",
-                       total - demux.unidentified - demux.ambiguous);
-    summary_demux->u64("ambiguous_reads", demux.ambiguous);
-    summary_demux->u64("unassigned_reads", demux.unidentified);
-
-    const auto samples = summary_demux->dict("samples");
-    for (size_t i = 0; i < demux.samples.size(); ++i) {
-      samples->u64(config.samples.at(i).name(), demux.samples.at(i));
-    }
-  } else {
-    summary->null("demultiplexing");
-  }
-
-  {
-    trimming_statistics totals;
-    for (const auto& it : stats.trimming) {
-      totals += *it;
-    }
-
-    write_report_trimming(
-      config, summary, totals, config.samples.adapters().to_read_orientation());
-  }
 
   if (config.run_type == ar_command::report_only) {
     summary->null("output");
@@ -275,31 +127,18 @@ write_report_summary(const userconfig& config,
       passed.push_back(it->read_1);
       passed.push_back(it->read_2);
       passed.push_back(it->merged);
+      // FIXME: Should singleton be included?
+      // passed.push_back(it->singleton);
+
+      // Discarded reads are excluded, even if saved
     }
 
-    write_report_summary_stats(output->dict("passed"), passed);
-
-    if (config.is_demultiplexing_enabled()) {
-      write_report_summary_stats(
-        output->dict("unidentified"),
-        { stats.demultiplexing->unidentified_stats_1,
-          stats.demultiplexing->unidentified_stats_2 });
-    } else {
-      output->null("unidentified");
-    }
-
-    if (demux_only || !config.is_any_filtering_enabled()) {
-      output->null("discarded");
-    } else {
-      std::vector<fastq_stats_ptr> discarded;
-      for (const auto& it : stats.trimming) {
-        discarded.push_back(it->discarded);
-      }
-
-      write_report_summary_stats(output->dict("discarded"), discarded);
-    }
+    write_report_summary_stats(summary->dict("output"), passed);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Input
 
 /** Helper struct used to simplify writing of multiple io sections. */
 struct io_section
@@ -366,6 +205,7 @@ struct io_section
         for (const auto nuc : ACGTN::values) {
           const auto bases = m_stats->nucleotides_pos(nuc);
 
+          // FIXME: Should be raw counts instead of fractions
           content_curves->f64_vec(std::string(1, to_lower(nuc)),
                                   bases / total_bases);
         }
@@ -374,35 +214,11 @@ struct io_section
       const auto quality_dist = m_stats->quality_dist().trim();
       section->i64_vec("quality_scores", quality_dist);
       section->f64_vec("gc_content", m_stats->gc_content());
-
-      // Currently only for input 1/2
-      const auto dup_stats = m_stats->duplication();
-
-      if (dup_stats) {
-        // Must be enabled, but key is always written for applicable files
-        if (dup_stats->max_unique()) {
-          const auto duplication = section->dict("duplication");
-
-          const auto summary = dup_stats->summarize();
-          duplication->str_vec("labels", summary.labels);
-          duplication->f64_vec("unique_sequences", summary.unique_sequences);
-          duplication->f64_vec("total_sequences", summary.total_sequences);
-          duplication->f64("unique_frac", summary.unique_frac);
-        } else {
-          section->null("duplication");
-        }
-      }
     } else {
       section->null("quality_curves");
       section->null("content_curves");
       section->null("quality_scores");
       section->null("gc_content");
-
-      // Currently only for input 1/2
-
-      if (m_stats->duplication()) {
-        section->null("duplication");
-      }
     }
   }
 
@@ -427,6 +243,9 @@ write_report_input(const userconfig& config,
   io_section("read2", stats.input_2, mate_2_filenames)
     .write_to_if(input, config.paired_ended_mode);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Demultiplexing
 
 void
 write_report_demultiplexing(const userconfig& config,
@@ -455,12 +274,16 @@ write_report_demultiplexing(const userconfig& config,
       const auto& stats = *sample_stats.trimming.at(i);
       const auto& files = out_files.get_sample(i);
 
+      // TODO: Remove once per barcode read counts have been implemented
       sample->u64("reads", demux.samples.at(i));
 
-      // TODO: Support multiple barcodes
-      auto adapters =
-        config.samples.get_sequences(i, 0).adapters.to_read_orientation();
-      write_report_trimming(config, sample, stats, adapters);
+      const auto barcodes = sample->list("barcodes");
+      for (const auto& it : config.samples.at(i)) {
+        const auto dict = barcodes->inline_dict();
+        dict->str("barcode1", it.barcode_1);
+        dict->str("barcode2", it.barcode_2);
+        // TODO: Per barcode-pair read counts
+      }
 
       const auto output = sample->dict("output");
       io_section(read_type::mate_1, "read1", stats.read_1, files)
@@ -484,6 +307,284 @@ write_report_demultiplexing(const userconfig& config,
     report.null("demultiplexing");
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Processing
+
+//! The kind of action performed by a processing step
+enum class feature_type
+{
+  //! Quality or complexity filtering
+  filter,
+  //! Read merging and error correction
+  merge,
+  //! Adapter, quality, or poly-X trimming
+  trim,
+};
+
+std::string_view
+feature_name(const feature_type action)
+{
+  switch (action) {
+    case feature_type::filter:
+      return "filter";
+    case feature_type::merge:
+      return "merge";
+    case feature_type::trim:
+      return "trim";
+    default:
+      AR_FAIL("invalid processing step type");
+  }
+}
+
+//! Basic processing/filtering statistics
+struct feature_stats
+{
+  //! Processing stage name
+  std::string key;
+  //! Whether or not this step is enabled by command-line options
+  bool enabled;
+  //! Number of reads/bases trimmed/filtered
+  reads_and_bases count;
+};
+
+void
+write_report_count(const json_list_ptr& json,
+                   const feature_type action,
+                   const feature_stats& it)
+{
+  if (it.enabled) {
+    const auto dict = json->inline_dict();
+
+    dict->str("step", it.key);
+    dict->str("action", feature_name(action));
+    dict->str("step", it.key);
+    dict->u64("reads", it.count.reads());
+    dict->u64("bases", it.count.bases());
+  }
+}
+
+void
+write_report_counts(const json_list_ptr& json,
+                    const feature_type action,
+                    const std::vector<feature_stats>& stats)
+{
+  for (const auto& it : stats) {
+    write_report_count(json, action, it);
+  }
+}
+
+void
+write_report_poly_x(json_dict& json,
+                    const std::string_view step,
+                    const std::string_view nucleotides,
+                    const indexed_count<ACGT>& reads,
+                    const indexed_count<ACGT>& bases)
+{
+  json.str("step", step);
+  json.str("action", "trim");
+  json.i64("reads", reads.sum());
+  json.i64("bases", bases.sum());
+
+  const auto dict = json.dict("x");
+  for (const auto nuc : nucleotides) {
+    const auto nuc_stats = dict->inline_dict(std::string(1, to_lower(nuc)));
+
+    nuc_stats->i64("reads", reads.get(nuc));
+    nuc_stats->i64("bases", bases.get(nuc));
+  }
+}
+
+void
+write_report_processing(const userconfig& config,
+                        json_dict_ptr report,
+                        const statistics& stats)
+{
+  if (!config.is_adapter_trimming_enabled()) {
+    report->null("processing");
+    return;
+  }
+
+  trimming_statistics totals;
+  for (const auto& it : stats.trimming) {
+    totals += *it;
+  }
+
+  auto json = report->list("processing");
+  write_report_count(json,
+                     feature_type::trim,
+                     { "terminal_pre",
+                       config.is_terminal_base_pre_trimming_enabled(),
+                       totals.terminal_pre_trimmed });
+
+  if (config.is_poly_x_tail_pre_trimming_enabled()) {
+    write_report_poly_x(*json->dict(),
+                        "poly_x_pre",
+                        config.pre_trim_poly_x,
+                        totals.poly_x_pre_trimmed_reads,
+                        totals.poly_x_pre_trimmed_bases);
+  }
+
+  {
+    AR_REQUIRE(totals.adapter_trimmed_reads.size() ==
+               totals.adapter_trimmed_bases.size());
+
+    int64_t reads = 0;
+    int64_t bases = 0;
+    for (size_t i = 0; i < totals.adapter_trimmed_reads.size(); ++i) {
+      reads += totals.adapter_trimmed_reads.get(i);
+      bases += totals.adapter_trimmed_bases.get(i);
+    }
+
+    const auto dict = json->dict();
+
+    dict->str("step", "adapters");
+    dict->str("action", "trim");
+    dict->u64("reads", reads);
+    dict->u64("bases", bases);
+
+    const auto adapters = config.samples.adapters().to_read_orientation();
+    const auto adapter_list = dict->list("adapter_list");
+    for (size_t i = 0; i < adapters.size(); ++i) {
+      const auto adapter = adapter_list->inline_dict();
+
+      adapter->str("adapter1", adapters.at(i).first);
+      adapter->str("adapter2", adapters.at(i).second);
+      adapter->i64("reads", totals.adapter_trimmed_reads.get(i));
+      adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
+    }
+  }
+
+  write_report_count(
+    json,
+    feature_type::merge,
+    { "merging", config.is_read_merging_enabled(), totals.reads_merged });
+
+  write_report_count(json,
+                     feature_type::trim,
+                     { "terminal_post",
+                       config.is_terminal_base_post_trimming_enabled(),
+                       totals.terminal_post_trimmed });
+
+  if (config.is_poly_x_tail_post_trimming_enabled()) {
+    write_report_poly_x(*json->dict(),
+                        "poly_x_post",
+                        config.post_trim_poly_x,
+                        totals.poly_x_post_trimmed_reads,
+                        totals.poly_x_post_trimmed_bases);
+  }
+
+  write_report_count(json,
+                     feature_type::trim,
+                     { "low_quality",
+                       config.is_low_quality_trimming_enabled(),
+                       totals.low_quality_trimmed });
+
+  // Filtering is (currently) performed after trimming
+  write_report_counts(json,
+                      feature_type::filter,
+                      { { "min_length",
+                          config.is_short_read_filtering_enabled(),
+                          totals.filtered_min_length },
+                        { "max_length",
+                          config.is_long_read_filtering_enabled(),
+                          totals.filtered_max_length },
+                        { "ambiguous_bases",
+                          config.is_ambiguous_base_filtering_enabled(),
+                          totals.filtered_ambiguous },
+                        { "mean_quality",
+                          config.is_mean_quality_filtering_enabled(),
+                          totals.filtered_mean_quality },
+                        { "low_complexity",
+                          config.is_low_complexity_filtering_enabled(),
+                          totals.filtered_low_complexity } });
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Analyses
+
+void
+write_report_duplication(json_dict_ptr json,
+                         const std::string_view key,
+                         const fastq_stats_ptr& stats)
+{
+  const auto dup_stats = stats->duplication();
+
+  if (dup_stats) {
+    auto duplication = json->dict(key);
+
+    const auto summary = dup_stats->summarize();
+    duplication->str_vec("labels", summary.labels);
+    duplication->f64_vec("unique_sequences", summary.unique_sequences);
+    duplication->f64_vec("total_sequences", summary.total_sequences);
+    duplication->f64("unique_frac", summary.unique_frac);
+  } else {
+    json->null(key);
+  }
+}
+
+void
+write_report_consensus_adapter(json_dict_ptr json,
+                               const std::string_view key,
+                               const consensus_adapter_stats& stats)
+{
+  auto dict = json->dict(key);
+
+  const auto adapter = stats.summarize();
+  dict->str("consensus", adapter.adapter().sequence());
+  dict->str("qualities", adapter.adapter().qualities());
+
+  auto kmer_dict = dict->dict("kmers");
+  for (const auto& it : adapter.top_kmers()) {
+    kmer_dict->i64(it.first, it.second);
+  }
+}
+
+void
+write_report_analyses(const userconfig& config,
+                      json_dict_ptr json,
+                      const statistics& stats)
+{
+  json = json->dict("analyses");
+
+  if (config.report_duplication) {
+    auto dict = json->dict("duplication");
+
+    write_report_duplication(dict, "read1", stats.input_1);
+    write_report_duplication(dict, "read2", stats.input_2);
+  } else {
+    json->null("duplication");
+  }
+
+  if (config.paired_ended_mode) {
+    counts total_insert_sizes;
+    for (const auto& it : stats.trimming) {
+      total_insert_sizes += it->insert_sizes;
+    }
+
+    json->i64_vec("insert_sizes", total_insert_sizes);
+  } else {
+    json->null("insert_sizes");
+  }
+
+  if (stats.adapter_id) {
+    auto consensus = json->dict("consensus_adapters");
+
+    consensus->i64("aligned_pairs", stats.adapter_id->aligned_pairs);
+    consensus->i64("pairs_with_adapters",
+                   stats.adapter_id->pairs_with_adapters);
+
+    write_report_consensus_adapter(
+      consensus, "read1", stats.adapter_id->adapter1);
+    write_report_consensus_adapter(
+      consensus, "read2", stats.adapter_id->adapter2);
+  } else {
+    json->null("consensus_adapters");
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Output
 
 string_vec
 collect_files(const output_files& files, read_type rtype)
@@ -559,6 +660,8 @@ write_report_output(const userconfig& config,
     .write_to_if(output, !demux_only && config.is_any_filtering_enabled());
 }
 
+} // namespace
+
 bool
 write_json_report(const userconfig& config,
                   const statistics& stats,
@@ -572,17 +675,19 @@ write_json_report(const userconfig& config,
   std::ostringstream output;
 
   {
-    json_dict report;
-    report.str("$schema",
-               "https://MikkelSchubert.github.io/adapterremoval/schemas/" +
-                 VERSION + ".json");
+    json_dict_ptr report = std::make_shared<json_dict>();
+    report->str("$schema",
+                "https://MikkelSchubert.github.io/adapterremoval/schemas/" +
+                  VERSION + ".json");
 
-    write_report_meta(config, report);
-    write_report_summary(config, report, stats);
-    write_report_input(config, report, stats);
-    write_report_demultiplexing(config, report, stats);
-    write_report_output(config, report, stats);
-    report.write(output);
+    write_report_meta(config, *report);
+    write_report_summary(config, *report, stats);
+    write_report_input(config, *report, stats);
+    write_report_demultiplexing(config, *report, stats);
+    write_report_processing(config, report, stats);
+    write_report_analyses(config, report, stats);
+    write_report_output(config, *report, stats);
+    report->write(output);
   }
 
   output << std::endl;

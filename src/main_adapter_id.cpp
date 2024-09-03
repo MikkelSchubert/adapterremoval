@@ -137,11 +137,12 @@ identify_adapter_sequences(const userconfig& config)
 {
   scheduler sch;
 
+  // FIXME: Length picked based on known sequences
+  const auto max_adapter_length = config.paired_ended_mode ? 42 : 0;
   statistics stats = statistics_builder()
                        .sample_rate(config.report_sample_rate)
                        .estimate_duplication(config.report_duplication)
-                       // FIXME: Length picked based on known sequences
-                       .adapter_identification(42)
+                       .adapter_identification(max_adapter_length)
                        .initialize();
   // FIXME: Required for insert size statistics
   stats.trimming.push_back(std::make_shared<trimming_statistics>());
