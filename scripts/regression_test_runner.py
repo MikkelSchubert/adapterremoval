@@ -57,6 +57,7 @@ from typing import (
 
 try:
     import jsonschema
+    import jsonschema.exceptions
 except ImportError:
     JSON_SCHEMA_VALIDATION = False  # pyright: ignore[reportConstantRedefinition]
 else:
@@ -247,7 +248,7 @@ def simplify_cmd(cmd: list[str | Path]) -> str:
     return " ".join(quote(field) for field in cmd)
 
 
-def path_to_s(path: Iterable[str]) -> str:
+def path_to_s(path: Iterable[str | int]) -> str:
     return ".".join(str(value) for value in path)
 
 
@@ -263,6 +264,19 @@ def classname(v: object) -> str:
         return "None"
 
     return v.__class__.__name__
+
+
+def error_path(error: Exception) -> str:
+    if JSON_SCHEMA_VALIDATION:
+        assert isinstance(error, jsonschema.exceptions.ValidationError)
+
+        path = path_to_s(error.path)
+        if error.parent is not None:
+            path = f"{error_path(error.parent)}.{path}"
+
+        return path
+
+    return str(error)
 
 
 ################################################################################
@@ -301,7 +315,7 @@ def diff_json(
     if not isinstance(reference, (dict, list)) and reference in JSON_WILDCARDS:
         if not JSON_WILDCARDS[reference](observed):
             yield _err("wildcard mismatch", repr(reference), repr(observed))
-    elif type(reference) != type(observed):
+    elif type(reference) is not type(observed):
         yield _err("type mismatch", classname(reference), classname(observed))
     elif isinstance(reference, list) and isinstance(observed, list):
         if len(reference) != len(observed):
@@ -390,7 +404,10 @@ class JSONValidator:
             try:
                 jsonschema.validate(instance=data, schema=self._schema)
             except jsonschema.ValidationError as error:
-                raise JSONSchemaError(f"Invalid JSON file: {error}") from error
+                # raise f"Invalid JSON file: {error}")
+                raise JSONSchemaError(
+                    f"Schema error at {error_path(error)}: {error.message}"
+                ) from error
 
     def __bool__(self) -> bool:
         return bool(self._schema)
@@ -1390,7 +1407,10 @@ def main(argv: list[str]) -> int:
         print_warn(f"Skipped {n_skipped} tests!")
 
     if not json_validator:
-        print_warn("JSON files were not validated!")
+        print_warn(
+            "JSON files not validated; install Python module `jsonschema` to enable "
+            "validation"
+        )
 
     return 1 if n_failures else 0
 
