@@ -127,8 +127,7 @@ write_report_summary(const userconfig& config,
       passed.push_back(it->read_1);
       passed.push_back(it->read_2);
       passed.push_back(it->merged);
-      // FIXME: Should singleton be included?
-      // passed.push_back(it->singleton);
+      passed.push_back(it->singleton);
 
       // Discarded reads are excluded, even if saved
     }

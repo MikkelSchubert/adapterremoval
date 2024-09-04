@@ -18,14 +18,14 @@
       "gc_content": 0.530
     },
     "output": {
-      "reads": 0,
-      "bases": 0,
-      "mean_length": null,
-      "reads_sampled": 0,
-      "q20_rate": null,
-      "q30_rate": null,
-      "uncalled_rate": null,
-      "gc_content": null
+      "reads": 1,
+      "bases": 49,
+      "mean_length": 49.000,
+      "reads_sampled": 1,
+      "q20_rate": 1.000,
+      "q30_rate": 1.000,
+      "uncalled_rate": 0.000,
+      "gc_content": 0.531
     }
   },
   "input": {
