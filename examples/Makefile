@@ -1,9 +1,8 @@
 EXE := adapterremoval3
 
-TARGETS := single_end paired_end phred_64_encoded \
-	merged_q50 multiple_adapters identify_adapters \
-	interleaved_input interleaved_output interleaved_input_and_output \
-	demultiplexing demultiplexing_only
+TARGETS := single_end paired_end interleaved_input interleaved_output \
+	interleaved_input_and_output phred_64_encoded merged multiple_adapters \
+	identify_adapters demultiplexing demultiplexing_only
 
 .PHONY: all ${TARGETS} clean
 

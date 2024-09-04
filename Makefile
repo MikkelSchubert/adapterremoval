@@ -218,16 +218,16 @@ TEST_OBJS := \
 
 ################################################################################
 
-.PHONY: all clean coverage docs everything examples install man regression static static-container test update-regression
+.PHONY: all clean coverage docs examples executable install man regression static static-container test update-regression
 
-all: $(EXECUTABLE)
+executable: $(EXECUTABLE)
+
+all: executable test regression examples docs
 
 clean:
 	@echo $(COLOR_GREEN)"Cleaning"$(COLOR_END)
 	$(QUIET) $(RM) -r $(BUILD_DIR)
 	$(QUIET) $(MAKE) -C examples clean
-
-everything: all test regression docs examples
 
 examples: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Running examples"$(COLOR_END)
@@ -266,7 +266,7 @@ regression: $(EXECUTABLE)
 		--json-schema "schema.json" \
 		--executable $(EXECUTABLE)
 
-update-regression:
+update-regression: $(EXECUTABLE)
 	@echo $(COLOR_GREEN)"Updating regression tests"$(COLOR_END)
 	$(QUIET) $(MKDIR) $(REGRESSION_DIR)
 	$(QUIET) python3 scripts/regression_test_runner.py $(REGRESSION_DIR)/updated $(REGRESSION_TESTS) \
