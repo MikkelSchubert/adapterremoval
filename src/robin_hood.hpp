@@ -77,12 +77,14 @@
 #ifdef ROBIN_HOOD_COUNT_ENABLED
 #include <iostream>
 #define ROBIN_HOOD_COUNT(x) ++counts().x;
+
 namespace robin_hood {
 struct Counts
 {
   uint64_t shiftUp{};
   uint64_t shiftDown{};
 };
+
 inline std::ostream&
 operator<<(std::ostream& os, Counts const& c)
 {
@@ -260,8 +262,10 @@ class integer_sequence
 public:
   using value_type = T;
   static_assert(std::is_integral<value_type>::value, "not integral type");
+
   static constexpr std::size_t size() noexcept { return sizeof...(Ints); }
 };
+
 template<std::size_t... Inds>
 using index_sequence = integer_sequence<std::size_t, Inds...>;
 
@@ -414,7 +418,8 @@ public:
     const BulkPoolAllocator& ROBIN_HOOD_UNUSED(o) /*unused*/) noexcept
     : mHead(nullptr)
     , mListForFree(nullptr)
-  {}
+  {
+  }
 
   BulkPoolAllocator(BulkPoolAllocator&& o) noexcept
     : mHead(o.mHead)
@@ -436,7 +441,7 @@ public:
 
   BulkPoolAllocator&
   // NOLINTNEXTLINE(bugprone-unhandled-self-assignment,cert-oop54-cpp)
-  operator=(const BulkPoolAllocator& ROBIN_HOOD_UNUSED(o) /*unused*/) noexcept
+  operator=(const BulkPoolAllocator & ROBIN_HOOD_UNUSED(o) /*unused*/) noexcept
   {
     // does not do anything
     return *this;
@@ -621,6 +626,7 @@ struct NodeAllocator<T, MinSize, MaxSize, false>
 namespace swappable {
 #if ROBIN_HOOD(CXX) < ROBIN_HOOD(CXX17)
 using std::swap;
+
 template<typename T>
 struct nothrow
 {
@@ -658,37 +664,45 @@ struct pair
   constexpr pair() noexcept(noexcept(U1()) && noexcept(U2()))
     : first()
     , second()
-  {}
+  {
+  }
 
   // pair constructors are explicit so we don't accidentally call this ctor when
   // we don't have to.
-  explicit constexpr pair(std::pair<T1, T2> const& o) noexcept(noexcept(
-    T1(std::declval<T1 const&>())) && noexcept(T2(std::declval<T2 const&>())))
+  explicit constexpr pair(std::pair<T1, T2> const& o) noexcept(
+    noexcept(T1(std::declval<T1 const&>())) &&
+    noexcept(T2(std::declval<T2 const&>())))
     : first(o.first)
     , second(o.second)
-  {}
+  {
+  }
 
   // pair constructors are explicit so we don't accidentally call this ctor when
   // we don't have to.
-  explicit constexpr pair(std::pair<T1, T2>&& o) noexcept(noexcept(T1(std::move(
-    std::declval<T1&&>()))) && noexcept(T2(std::move(std::declval<T2&&>()))))
+  explicit constexpr pair(std::pair<T1, T2>&& o) noexcept(
+    noexcept(T1(std::move(std::declval<T1&&>()))) &&
+    noexcept(T2(std::move(std::declval<T2&&>()))))
     : first(std::move(o.first))
     , second(std::move(o.second))
-  {}
+  {
+  }
 
-  constexpr pair(T1&& a, T2&& b) noexcept(noexcept(T1(std::move(
-    std::declval<T1&&>()))) && noexcept(T2(std::move(std::declval<T2&&>()))))
+  constexpr pair(T1&& a, T2&& b) noexcept(
+    noexcept(T1(std::move(std::declval<T1&&>()))) &&
+    noexcept(T2(std::move(std::declval<T2&&>()))))
     : first(std::move(a))
     , second(std::move(b))
-  {}
+  {
+  }
 
   template<typename U1, typename U2>
   constexpr pair(U1&& a, U2&& b) noexcept(
-    noexcept(T1(std::forward<U1>(std::declval<U1&&>()))) && noexcept(
-      T2(std::forward<U2>(std::declval<U2&&>()))))
+    noexcept(T1(std::forward<U1>(std::declval<U1&&>()))) &&
+    noexcept(T2(std::forward<U2>(std::declval<U2&&>()))))
     : first(std::forward<U1>(a))
     , second(std::forward<U2>(b))
-  {}
+  {
+  }
 
   template<typename... U1, typename... U2>
   // MSVC 2015 produces error "C2476: ‘constexpr’ constructor does not
@@ -708,7 +722,8 @@ struct pair
            b,
            ROBIN_HOOD_STD::index_sequence_for<U1...>(),
            ROBIN_HOOD_STD::index_sequence_for<U2...>())
-  {}
+  {
+  }
 
   // constructor called from the std::piecewise_construct_t ctor
   template<typename... U1, size_t... I1, typename... U2, size_t... I2>
@@ -720,13 +735,9 @@ struct pair
       I2...> /*unused*/) noexcept(noexcept(T1(std::
                                                 forward<U1>(std::get<I1>(
                                                   std::declval<std::tuple<
-                                                    U1...>&>()))...)) && noexcept(T2(std::
-                                                                                       forward<
-                                                                                         U2>(std::get<
-                                                                                             I2>(
-                                                                                         std::declval<
-                                                                                           std::tuple<
-                                                                                             U2...>&>()))...)))
+                                                    U1...>&>()))...)) &&
+                                  noexcept(T2(std::forward<U2>(std::get<I2>(
+                                    std::declval<std::tuple<U2...>&>()))...)))
     : first(std::forward<U1>(std::get<I1>(a))...)
     , second(std::forward<U2>(std::get<I2>(b))...)
   {
@@ -762,33 +773,37 @@ operator==(pair<A, B> const& x, pair<A, B> const& y)
 {
   return (x.first == y.first) && (x.second == y.second);
 }
+
 template<typename A, typename B>
 inline constexpr bool
 operator!=(pair<A, B> const& x, pair<A, B> const& y)
 {
   return !(x == y);
 }
+
 template<typename A, typename B>
 inline constexpr bool
 operator<(pair<A, B> const& x, pair<A, B> const& y) noexcept(
-  noexcept(std::declval<A const&>() <
-           std::declval<A const&>()) && noexcept(std::declval<B const&>() <
-                                                 std::declval<B const&>()))
+  noexcept(std::declval<A const&>() < std::declval<A const&>()) &&
+  noexcept(std::declval<B const&>() < std::declval<B const&>()))
 {
   return x.first < y.first || (!(y.first < x.first) && x.second < y.second);
 }
+
 template<typename A, typename B>
 inline constexpr bool
 operator>(pair<A, B> const& x, pair<A, B> const& y)
 {
   return y < x;
 }
+
 template<typename A, typename B>
 inline constexpr bool
 operator<=(pair<A, B> const& x, pair<A, B> const& y)
 {
   return !(x > y);
 }
+
 template<typename A, typename B>
 inline constexpr bool
 operator>=(pair<A, B> const& x, pair<A, B> const& y)
@@ -998,19 +1013,23 @@ template<typename T>
 struct WrapHash : public T
 {
   WrapHash() = default;
+
   explicit WrapHash(T const& o) noexcept(noexcept(T(std::declval<T const&>())))
     : T(o)
-  {}
+  {
+  }
 };
 
 template<typename T>
 struct WrapKeyEqual : public T
 {
   WrapKeyEqual() = default;
+
   explicit WrapKeyEqual(T const& o) noexcept(
     noexcept(T(std::declval<T const&>())))
     : T(o)
-  {}
+  {
+  }
 };
 
 // A highly optimized hashmap implementation, using the Robin Hood algorithm.
@@ -1125,20 +1144,24 @@ private:
       Args&&... args) noexcept(noexcept(value_type(std::
                                                      forward<Args>(args)...)))
       : mData(std::forward<Args>(args)...)
-    {}
+    {
+    }
 
     DataNode(
       M& ROBIN_HOOD_UNUSED(map) /*unused*/,
       DataNode<M, true>&&
         n) noexcept(std::is_nothrow_move_constructible<value_type>::value)
       : mData(std::move(n.mData))
-    {}
+    {
+    }
 
     // doesn't do anything
     void destroy(M& ROBIN_HOOD_UNUSED(map) /*unused*/) noexcept {}
+
     void destroyDoNotDeallocate() noexcept {}
 
     value_type const* operator->() const noexcept { return &mData; }
+
     value_type* operator->() noexcept { return &mData; }
 
     const value_type& operator*() const noexcept { return mData; }
@@ -1152,6 +1175,7 @@ private:
     {
       return mData.first;
     }
+
     template<typename VT = value_type>
     ROBIN_HOOD(NODISCARD)
     typename std::enable_if<is_set, VT&>::type getFirst() noexcept
@@ -1166,6 +1190,7 @@ private:
     {
       return mData.first;
     }
+
     template<typename VT = value_type>
     ROBIN_HOOD(NODISCARD)
     typename std::enable_if<is_set, VT const&>::type getFirst() const noexcept
@@ -1212,7 +1237,8 @@ private:
     DataNode(M& ROBIN_HOOD_UNUSED(map) /*unused*/,
              DataNode<M, false>&& n) noexcept
       : mData(std::move(n.mData))
-    {}
+    {
+    }
 
     void destroy(M& map) noexcept
     {
@@ -1238,6 +1264,7 @@ private:
     {
       return mData->first;
     }
+
     template<typename VT = value_type>
     ROBIN_HOOD(NODISCARD)
     typename std::enable_if<is_set, VT&>::type getFirst() noexcept
@@ -1252,6 +1279,7 @@ private:
     {
       return mData->first;
     }
+
     template<typename VT = value_type>
     ROBIN_HOOD(NODISCARD)
     typename std::enable_if<is_set, VT const&>::type getFirst() const noexcept
@@ -1288,6 +1316,7 @@ private:
   // helpers for insertKeyPrepareEmptySpot: extract first entry (only const
   // required)
   ROBIN_HOOD(NODISCARD)
+
   key_type const& getFirstConst(Node const& n) const noexcept
   {
     return n.getFirst();
@@ -1297,10 +1326,8 @@ private:
   // route k through. No need to disable this because it's just not used if not
   // applicable.
   ROBIN_HOOD(NODISCARD)
-  key_type const& getFirstConst(key_type const& k) const noexcept
-  {
-    return k;
-  }
+
+  key_type const& getFirstConst(key_type const& k) const noexcept { return k; }
 
   // in case we have non-void mapped_type, we have a standard robin_hood::pair
   template<typename Q = mapped_type>
@@ -1436,12 +1463,14 @@ private:
     Iter(Iter<OtherIsConst> const& other) noexcept
       : mKeyVals(other.mKeyVals)
       , mInfo(other.mInfo)
-    {}
+    {
+    }
 
     Iter(NodePtr valPtr, uint8_t const* infoPtr) noexcept
       : mKeyVals(valPtr)
       , mInfo(infoPtr)
-    {}
+    {
+    }
 
     Iter(NodePtr valPtr,
          uint8_t const* infoPtr,
@@ -1726,8 +1755,8 @@ public:
   explicit Table(
     size_t ROBIN_HOOD_UNUSED(bucket_count) /*unused*/,
     const Hash& h = Hash{},
-    const KeyEqual& equal =
-      KeyEqual{}) noexcept(noexcept(Hash(h)) && noexcept(KeyEqual(equal)))
+    const KeyEqual& equal = KeyEqual{}) noexcept(noexcept(Hash(h)) &&
+                                                 noexcept(KeyEqual(equal)))
     : WHash(h)
     , WKeyEqual(equal)
   {
@@ -2288,11 +2317,13 @@ public:
     }
     return iterator(mKeyVals, mInfo, fast_forward_tag{});
   }
+
   const_iterator begin() const
   { // NOLINT(modernize-use-nodiscard)
     ROBIN_HOOD_TRACE(this)
     return cbegin();
   }
+
   const_iterator cbegin() const
   { // NOLINT(modernize-use-nodiscard)
     ROBIN_HOOD_TRACE(this)
@@ -2310,11 +2341,13 @@ public:
     return iterator{ reinterpret_cast_no_cast_align_warning<Node*>(mInfo),
                      nullptr };
   }
+
   const_iterator end() const
   { // NOLINT(modernize-use-nodiscard)
     ROBIN_HOOD_TRACE(this)
     return cend();
   }
+
   const_iterator cend() const
   { // NOLINT(modernize-use-nodiscard)
     ROBIN_HOOD_TRACE(this)
@@ -2450,6 +2483,7 @@ public:
   }
 
   ROBIN_HOOD(NODISCARD)
+
   size_t calcMaxNumElementsAllowed(size_t maxElements) const noexcept
   {
     if (ROBIN_HOOD_LIKELY(maxElements <=
@@ -2463,6 +2497,7 @@ public:
   }
 
   ROBIN_HOOD(NODISCARD)
+
   size_t calcNumBytesInfo(size_t numElements) const noexcept
   {
     // we add a uint64_t, which houses the sentinel (first byte) and padding so
@@ -2471,6 +2506,7 @@ public:
   }
 
   ROBIN_HOOD(NODISCARD)
+
   size_t calcNumElementsWithBuffer(size_t numElements) const noexcept
   {
     auto maxNumElementsAllowed = calcMaxNumElementsAllowed(numElements);
@@ -2584,7 +2620,7 @@ private:
     }
   }
 
-  [[noreturn]] ROBIN_HOOD(NOINLINE)  void throwOverflowError() const
+  ROBIN_HOOD(NOINLINE) void throwOverflowError() const
   {
 #if ROBIN_HOOD(HAS_EXCEPTIONS)
     throw std::overflow_error("robin_hood::map overflow");
