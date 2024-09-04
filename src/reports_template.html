@@ -8,15 +8,38 @@
     <title>{{NAME}} {{VERSION}}</title>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/purecss@2.1.0/build/pure-min.css'
         integrity='sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH' crossorigin='anonymous'>
-    <script src="https://cdn.jsdelivr.net/npm/vega@5.21.0/build/vega.min.js"
-        integrity="sha384-s2nYi9D0FfKNopEKsfINeS1Ffhcf+5uvwIrb7Zqso2II+HPhzBTWvXClt+NdUwFc"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0/build/vega-lite.min.js"
-        integrity="sha384-tU6fj0fI2gxrcWwC7uBMp70QvipC9ukjcXyOs85VMmdCq33CrA7xQ3nJkJu0SmDm"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.2/build/vega-embed.min.js"
-        integrity="sha384-oP1rwLY7weRZ5jvAVzfnJsAn+sYA69rQC4geH82Y9oMvr8ruA1oeE9Jkft2noCHR"
-        crossorigin="anonymous"></script>
+    <script>
+        let vegaPlots = [];
+        function loadVegaPlots() {
+            while (vegaPlots.length) {
+                let info = vegaPlots.pop();
+                vegaEmbed(info[0], info[1]);
+            }
+        }
+
+        function addVegaPlot(el, schema) {
+            vegaPlots.push([el, schema]);
+        }
+
+        function onScriptError() {
+            let elems = Array.from(document.getElementsByClassName("loading"));
+            for (let i = 0; i < elems.length; ++i) {
+                let elem = elems[i].parentElement;
+
+                elem.classList = ["error"];
+                elem.innerHTML = "ERROR: Could not load Vega-lite; plotting is disabled!"
+            }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/vega@5.21.0/build/vega.min.js"
+        integrity="sha384-s2nYi9D0FfKNopEKsfINeS1Ffhcf+5uvwIrb7Zqso2II+HPhzBTWvXClt+NdUwFc" crossorigin="anonymous"
+        onerror="onScriptError()"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0/build/vega-lite.min.js"
+        integrity="sha384-tU6fj0fI2gxrcWwC7uBMp70QvipC9ukjcXyOs85VMmdCq33CrA7xQ3nJkJu0SmDm" crossorigin="anonymous"
+        onerror="onScriptError()"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.2/build/vega-embed.min.js"
+        integrity="sha384-oP1rwLY7weRZ5jvAVzfnJsAn+sYA69rQC4geH82Y9oMvr8ruA1oeE9Jkft2noCHR" crossorigin="anonymous"
+        onerror="onScriptError()"></script>
     <style type='text/css'>
         body {
             background-color: #E3E2DE;
@@ -149,12 +172,76 @@
         .anchor:hover {
             text-decoration: underline;
         }
+
+        /** Error message on failure to load scripts */
+        .error {
+            color: #a11111;
+            font-size: larger;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /** Spinner via https://loading.io/css/ (License: CC0) */
+        .loading {
+            color: #8C9CC0;
+        }
+
+        .loading,
+        .loading div {
+            box-sizing: border-box;
+        }
+
+        .loading {
+            display: block;
+            position: relative;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80px;
+            height: 80px;
+        }
+
+        .loading div {
+            display: inline-block;
+            position: absolute;
+            left: 8px;
+            width: 16px;
+            background: currentColor;
+            animation: loading 1.2s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+        }
+
+        .loading div:nth-child(1) {
+            left: 8px;
+            animation-delay: -0.24s;
+        }
+
+        .loading div:nth-child(2) {
+            left: 32px;
+            animation-delay: -0.12s;
+        }
+
+        .loading div:nth-child(3) {
+            left: 56px;
+            animation-delay: 0s;
+        }
+
+        @keyframes loading {
+            0% {
+                top: 8px;
+                height: 64px;
+            }
+
+            50%,
+            100% {
+                top: 24px;
+                height: 32px;
+            }
+        }
     </style>
 </head>
 
 <!-- TEMPLATE: BODY_START -->
 
-<body>
+<body onload="loadVegaPlots()">
     <div id='layout'>
         <div class="title">
             <h1>AdapterRemoval</h1>
@@ -386,7 +473,13 @@
 
             <!-- TEMPLATE: FREQUENCY_PLOT -->
 
-            <div id="vis_{{ID}}"></div>
+            <div id="vis_{{ID}}">
+                <div class="loading">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
 
             <script>
                 var schema = {
@@ -461,12 +554,18 @@
                     }
                 };
 
-                vegaEmbed('#vis_{{ID}}', schema);
+                addVegaPlot('#vis_{{ID}}', schema);
             </script>
 
             <!-- TEMPLATE: FACET_LINE_PLOT -->
 
-            <div id="vis_{{ID}}"></div>
+            <div id="vis_{{ID}}">
+                <div class="loading">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
 
             <script>
                 var schema = {
@@ -543,12 +642,18 @@
                     }
                 };
 
-                vegaEmbed('#vis_{{ID}}', schema);
+                addVegaPlot('#vis_{{ID}}', schema);
             </script>
 
             <!-- TEMPLATE: BAR_PLOT -->
 
-            <div id="vis_{{ID}}"></div>
+            <div id="vis_{{ID}}">
+                <div class="loading">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
 
             <script>
                 var schema = {
@@ -578,8 +683,7 @@
                         "values": JS_TEMPLATE_VALUES
                     }
                 };
-
-                vegaEmbed('#vis_{{ID}}', schema);
+                addVegaPlot('#vis_{{ID}}', schema);
             </script>
 
             <!-- TEMPLATE: DEMULTIPLEXING_HEAD -->
