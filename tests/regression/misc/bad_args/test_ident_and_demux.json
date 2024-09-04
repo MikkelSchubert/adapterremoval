@@ -1,12 +1,12 @@
 {
   "exhaustive": false,
   "arguments": [
-    "--identify-adapters",
+    "--report-only",
     "--demultiplex-only"
   ],
   "return_code": 1,
   "stderr": [
-    "[ERROR] Option --identify-adapters cannot be used together with option --demultiplex-only"
+    "[ERROR] Option --report-only cannot be used together with option --demultiplex-only"
   ],
   "files": {
     "input_1": [
@@ -15,6 +15,5 @@
     "input_2": [
       "input_2a.fastq"
     ]
-  },
-  "skip": true
+  }
 }

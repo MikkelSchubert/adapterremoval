@@ -1,0 +1,36 @@
+{
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/v3.0.0-alpha3.json",
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float",
+    "timestamp": "...str"
+  },
+  "summary": "...",
+  "input": "...",
+  "demultiplexing": null,
+  "processing": null,
+  "analyses": {
+    "duplication": null,
+    "insert_sizes": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    "consensus_adapters": {
+      "aligned_pairs": 1,
+      "pairs_with_adapters": 1,
+      "read1": {
+        "consensus": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCACAAGGGCAT",
+        "qualities": "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",
+        "kmers": {
+          "AGATCGGAA": 1
+        }
+      },
+      "read2": {
+        "consensus": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGG",
+        "qualities": "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",
+        "kmers": {
+          "AGATCGGAA": 1
+        }
+      }
+    }
+  },
+  "output": null
+}

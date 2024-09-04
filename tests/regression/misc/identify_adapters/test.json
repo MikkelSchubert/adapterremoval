@@ -1,10 +1,8 @@
 {
   "arguments": [
-    "--identify-adapters"
-  ],
-  "stdout": [
-    "Consensus:  AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-    "Consensus:  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT"
+    "--identify-adapters",
+    "--out-prefix",
+    "your_output"
   ],
   "files": {
     "input_1": [
@@ -12,7 +10,12 @@
     ],
     "input_2": [
       "input_2.fastq"
+    ],
+    "json": [
+      "your_output.json"
+    ],
+    "ignore": [
+      "your_output.html"
     ]
-  },
-  "skip": true
+  }
 }
