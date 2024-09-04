@@ -17,11 +17,6 @@
       "uncalled_rate": null,
       "gc_content": null
     },
-    "demultiplexing": null,
-    "adapter_trimming": null,
-    "quality_trimming": null,
-    "poly_x_trimming": null,
-    "filtering": null,
     "output": null
   },
   "input": {
@@ -34,11 +29,16 @@
       "quality_curves": null,
       "content_curves": null,
       "quality_scores": null,
-      "gc_content": null,
-      "duplication": null
+      "gc_content": null
     },
     "read2": null
   },
   "demultiplexing": null,
+  "processing": null,
+  "analyses": {
+    "duplication": null,
+    "insert_sizes": null,
+    "consensus_adapters": null
+  },
   "output": null
 }

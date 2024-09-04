@@ -17,48 +17,15 @@
       "uncalled_rate": null,
       "gc_content": null
     },
-    "demultiplexing": null,
-    "adapter_trimming": {
-      "adapters": [
-        {
-          "sequence_1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-          "sequence_2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
-          "reads": 0,
-          "bases": 0
-        }
-      ],
-      "overlapping_reads": 0,
-      "insert_sizes": null
-    },
-    "quality_trimming": {
-      "low_quality": { "reads": 0, "bases": 0 }
-    },
-    "poly_x_trimming": {},
-    "filtering": {
-      "min_length": { "reads": 0, "bases": 0 }
-    },
     "output": {
-      "passed": {
-        "reads": 0,
-        "bases": 0,
-        "mean_length": null,
-        "reads_sampled": 0,
-        "q20_rate": null,
-        "q30_rate": null,
-        "uncalled_rate": null,
-        "gc_content": null
-      },
-      "unidentified": null,
-      "discarded": {
-        "reads": 0,
-        "bases": 0,
-        "mean_length": null,
-        "reads_sampled": 0,
-        "q20_rate": null,
-        "q30_rate": null,
-        "uncalled_rate": null,
-        "gc_content": null
-      }
+      "reads": 0,
+      "bases": 0,
+      "mean_length": null,
+      "reads_sampled": 0,
+      "q20_rate": null,
+      "q30_rate": null,
+      "uncalled_rate": null,
+      "gc_content": null
     }
   },
   "input": {
@@ -71,12 +38,29 @@
       "quality_curves": null,
       "content_curves": null,
       "quality_scores": null,
-      "gc_content": null,
-      "duplication": null
+      "gc_content": null
     },
     "read2": null
   },
   "demultiplexing": null,
+  "processing": [
+    {
+      "step": "adapters",
+      "action": "trim",
+      "reads": 0,
+      "bases": 0,
+      "adapter_list": [
+        { "adapter1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA", "adapter2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT", "reads": 0, "bases": 0 }
+      ]
+    },
+    { "step": "low_quality", "action": "trim", "reads": 0, "bases": 0 },
+    { "step": "min_length", "action": "filter", "reads": 0, "bases": 0 }
+  ],
+  "analyses": {
+    "duplication": null,
+    "insert_sizes": null,
+    "consensus_adapters": null
+  },
   "output": {
     "read1": {
       "filenames": ["your_output.r1.fastq.gz"],
