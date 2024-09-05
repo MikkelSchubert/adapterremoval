@@ -21,6 +21,160 @@
             vegaPlots.push([el, schema]);
         }
 
+        function addFrequencyPlot(el, width, x_axis, y_axis, legend, values) {
+            var schema = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                "width": width,
+                "height": 250,
+                "padding": 5,
+                "autosize": "pad",
+                "encoding": {
+                    "x": {
+                        "title": x_axis,
+                        "field": "x",
+                        "type": "quantitative",
+                        "axis": { "offset": 5 },
+                    },
+                },
+                "layer": [
+                    {
+                        "encoding": {
+                            "y": {
+                                "title": y_axis,
+                                "field": "y",
+                                "type": "quantitative",
+                                "axis": { "offset": 5, "minExtent": 40 }
+                            },
+                            "color": {
+                                "field": "group",
+                                "sort": null,
+                                "legend": legend,
+                            }
+                        },
+                        "layer": [
+                            { "mark": "line" },
+                            {
+                                "transform": [{ "filter": { "param": "hover", "empty": false } }],
+                                "mark": "point"
+                            }
+                        ]
+                    },
+                    {
+                        "transform": [{ "pivot": "group", "value": "y", "groupby": ["x"] }],
+                        "mark": { "type": "rule", "tooltip": { "content": "data" } },
+                        "encoding": {
+                            "opacity": {
+                                "condition": { "value": 0.3, "param": "hover", "empty": false },
+                                "value": 0
+                            }
+                        },
+                        "params": [
+                            {
+                                "name": "hover",
+                                "select": {
+                                    "type": "point",
+                                    "fields": ["x"],
+                                    "nearest": true,
+                                    "on": "mouseover",
+                                    "clear": "mouseout"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "transform": [
+                    { "flatten": ["y"] },
+                    { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["group"] },
+                    { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
+                    { "joinaggregate": [{ "op": "sum", "field": "y", "as": "sum_y" }], "groupby": ["group"] },
+                    { "calculate": "datum.y / max(1, datum.sum_y)", "as": "y" },
+                ],
+                "data": {
+                    "values": values
+                }
+            };
+
+            addVegaPlot(el, schema);
+        }
+
+        function addLinePlot(el, width, x_axis, y_axis, values) {
+            var schema = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                "padding": 5,
+                "spec": {
+                    "width": width,
+                    "height": 250,
+                    "encoding": {
+                        "x": {
+                            "title": x_axis,
+                            "field": "x",
+                            "type": "quantitative",
+                            "axis": { "offset": 5 }
+                        }
+                    },
+                    "layer": [
+                        {
+                            "encoding": {
+                                "y": {
+                                    "title": y_axis,
+                                    "field": "y",
+                                    "type": "quantitative",
+                                    "sort": null,
+                                    "axis": { "offset": 5, "minExtent": 40 }
+                                },
+                                "color": {
+                                    "field": "group",
+                                    "sort": null,
+                                    "legend": "{ \"title\": \"Legend\", \"padding\": 5 }"
+                                }
+                            },
+                            "layer": [
+                                { "mark": "line" },
+                                {
+                                    "transform": [{ "filter": { "param": "hover", "empty": false } }],
+                                    "mark": "point"
+                                }
+                            ]
+                        },
+                        {
+                            "transform": [{ "pivot": "group", "value": "y", "groupby": ["x"] }],
+                            "mark": { "type": "rule", "tooltip": { "content": "data" } },
+                            "encoding": {
+                                "opacity": {
+                                    "condition": { "value": 0.3, "param": "hover", "empty": false },
+                                    "value": 0
+                                }
+                            },
+                            "params": [
+                                {
+                                    "name": "hover",
+                                    "select": {
+                                        "type": "point",
+                                        "fields": ["x"],
+                                        "nearest": true,
+                                        "on": "mouseover",
+                                        "clear": "mouseout"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "facet": { "field": "read", "type": "ordinal", "title": "", "sort": [] },
+                "columns": 2,
+                "transform": [
+                    { "flatten": ["y"] },
+                    { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
+                    { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
+                ],
+                "data": {
+                    "values": values
+                }
+            };
+
+            addVegaPlot(el, schema);
+        }
+
         function onScriptError() {
             let elems = Array.from(document.getElementsByClassName("loading"));
             for (let i = 0; i < elems.length; ++i) {
@@ -323,7 +477,7 @@
             <!-- TEMPLATE: SAMPLING_NOTE -->
 
             <p class="note">
-                Base composition statistics/plots are based on {{READS}} ({{PCT}}%) of {{LABEL}} reads sampled during
+                Base composition statistics/plots are based on {{READS}} ({{PCT}}) of {{LABEL}} reads sampled during
                 execution.
             </p>
 
@@ -482,79 +636,7 @@
             </div>
 
             <script>
-                var schema = {
-                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-                    "width": JS_TEMPLATE_WIDTH,
-                    "height": 250,
-                    "padding": 5,
-                    "autosize": "pad",
-                    "encoding": {
-                        "x": {
-                            "title": JS_DEFAULT_X_AXIS = null,
-                            "field": "x",
-                            "type": "quantitative",
-                            "axis": { "offset": 5 },
-                        },
-                    },
-                    "layer": [
-                        {
-                            "encoding": {
-                                "y": {
-                                    "title": JS_DEFAULT_Y_AXIS = null,
-                                    "field": "y",
-                                    "type": "quantitative",
-                                    "axis": { "offset": 5, "minExtent": 40 }
-                                },
-                                "color": {
-                                    "field": "group",
-                                    "sort": null,
-                                    "legend": JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }"
-                                }
-                            },
-                            "layer": [
-                                { "mark": "line" },
-                                {
-                                    "transform": [{ "filter": { "param": "hover", "empty": false } }],
-                                    "mark": "point"
-                                }
-                            ]
-                        },
-                        {
-                            "transform": [{ "pivot": "group", "value": "y", "groupby": ["x"] }],
-                            "mark": { "type": "rule", "tooltip": { "content": "data" } },
-                            "encoding": {
-                                "opacity": {
-                                    "condition": { "value": 0.3, "param": "hover", "empty": false },
-                                    "value": 0
-                                }
-                            },
-                            "params": [
-                                {
-                                    "name": "hover",
-                                    "select": {
-                                        "type": "point",
-                                        "fields": ["x"],
-                                        "nearest": true,
-                                        "on": "mouseover",
-                                        "clear": "mouseout"
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "transform": [
-                        { "flatten": ["y"] },
-                        { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["group"] },
-                        { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
-                        { "joinaggregate": [{ "op": "sum", "field": "y", "as": "sum_y" }], "groupby": ["group"] },
-                        { "calculate": "datum.y / max(1, datum.sum_y)", "as": "y" },
-                    ],
-                    "data": {
-                        "values": JS_TEMPLATE_VALUES
-                    }
-                };
-
-                addVegaPlot('#vis_{{ID}}', schema);
+                addFrequencyPlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }", JS_TEMPLATE_VALUES);
             </script>
 
             <!-- TEMPLATE: FACET_LINE_PLOT -->
@@ -568,81 +650,7 @@
             </div>
 
             <script>
-                var schema = {
-                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-                    "padding": 5,
-                    "spec": {
-                        "width": JS_TEMPLATE_WIDTH,
-                        "height": 250,
-                        "encoding": {
-                            "x": {
-                                "title": JS_DEFAULT_X_AXIS = null,
-                                "field": "x",
-                                "type": "quantitative",
-                                "axis": { "offset": 5 }
-                            }
-                        },
-                        "layer": [
-                            {
-                                "encoding": {
-                                    "y": {
-                                        "title": JS_DEFAULT_Y_AXIS = null,
-                                        "field": "y",
-                                        "type": "quantitative",
-                                        "sort": null,
-                                        "axis": { "offset": 5, "minExtent": 40 }
-                                    },
-                                    "color": {
-                                        "field": "group",
-                                        "sort": null,
-                                        "legend": JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }"
-                                    }
-                                },
-                                "layer": [
-                                    { "mark": "line" },
-                                    {
-                                        "transform": [{ "filter": { "param": "hover", "empty": false } }],
-                                        "mark": "point"
-                                    }
-                                ]
-                            },
-                            {
-                                "transform": [{ "pivot": "group", "value": "y", "groupby": ["x"] }],
-                                "mark": { "type": "rule", "tooltip": { "content": "data" } },
-                                "encoding": {
-                                    "opacity": {
-                                        "condition": { "value": 0.3, "param": "hover", "empty": false },
-                                        "value": 0
-                                    }
-                                },
-                                "params": [
-                                    {
-                                        "name": "hover",
-                                        "select": {
-                                            "type": "point",
-                                            "fields": ["x"],
-                                            "nearest": true,
-                                            "on": "mouseover",
-                                            "clear": "mouseout"
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    "facet": { "field": "read", "type": "ordinal", "title": "", "sort": [] },
-                    "columns": 2,
-                    "transform": [
-                        { "flatten": ["y"] },
-                        { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
-                        { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
-                    ],
-                    "data": {
-                        "values": JS_TEMPLATE_VALUES
-                    }
-                };
-
-                addVegaPlot('#vis_{{ID}}', schema);
+                addLinePlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_TEMPLATE_VALUES);
             </script>
 
             <!-- TEMPLATE: BAR_PLOT -->
@@ -683,6 +691,7 @@
                         "values": JS_TEMPLATE_VALUES
                     }
                 };
+
                 addVegaPlot('#vis_{{ID}}', schema);
             </script>
 

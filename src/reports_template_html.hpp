@@ -582,7 +582,6 @@ public:
   html_facet_line_plot& operator=(const html_facet_line_plot&) = delete;
   html_facet_line_plot& operator=(html_facet_line_plot&&) = delete;
 
-  html_facet_line_plot& set_legend(const std::string& value);
   html_facet_line_plot& set_values(const std::string& value);
   html_facet_line_plot& set_width(const std::string& value);
   html_facet_line_plot& set_x_axis(const std::string& value);
@@ -594,7 +593,6 @@ private:
   bool m_written{};
   bool m_values_is_set{};
   bool m_width_is_set{};
-  std::string m_legend{"{ \"title\": \"Legend\", \"padding\": 5 }"};
   std::string m_values{};
   std::string m_width{};
   std::string m_x_axis{"null"};
