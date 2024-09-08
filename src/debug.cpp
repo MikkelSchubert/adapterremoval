@@ -25,11 +25,11 @@ namespace adapterremoval {
 terminate(const std::string& message);
 
 void
-debug_raise_assert(const char* funcname,
-                   const char* filename,
+debug_raise_assert(std::string_view funcname,
+                   std::string_view filename,
                    unsigned lineno,
-                   const std::string& test,
-                   const std::string& msg)
+                   std::string_view test,
+                   std::string_view msg)
 {
   std::ostringstream message;
 
