@@ -6,6 +6,7 @@ Checks: "
     hicpp-*,
     -hicpp-no-array-decay,
     -hicpp-signed-bitwise,
+    -hicpp-no-malloc,
     misc-*,
     -misc-non-private-member-variables-in-classes,
     modernize-*,
@@ -17,6 +18,7 @@ Checks: "
     -readability-identifier-length,
     -readability-implicit-bool-conversion,
     -readability-magic-numbers,
+    -readability-redundant-member-init,
     -readability-use-anyofallof,
     "
 
