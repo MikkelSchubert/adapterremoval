@@ -265,7 +265,7 @@ processed_reads::add(const fastq& read,
   if (offset != sample_output_files::disabled) {
     auto& buffer = get_buffer(m_chunks.at(offset));
     m_serializers.at(offset).record(buffer, read, flags, barcode);
-    m_chunks.at(offset)->nucleotides += read.length();
+    m_chunks.at(offset)->reads++;
   }
 }
 
@@ -302,10 +302,10 @@ flush_chunk(chunk_vec& output,
             const bool eof,
             const char mate_separator)
 {
-  if (eof || ptr->nucleotides >= INPUT_BLOCK_SIZE) {
+  if (eof || ptr->reads >= INPUT_READS) {
     ptr->eof = eof;
     ptr->mate_separator = mate_separator;
-    output.push_back(chunk_pair(step, std::move(ptr)));
+    output.emplace_back(step, std::move(ptr));
     ptr = std::make_unique<analytical_chunk>();
   }
 }

@@ -102,7 +102,7 @@ enum class read_fastq::file_type
 namespace {
 
 bool
-read_record(joined_line_readers& reader, fastq_vec& chunk, size_t& nucleotides)
+read_record(joined_line_readers& reader, fastq_vec& chunk)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
@@ -113,8 +113,6 @@ read_record(joined_line_readers& reader, fastq_vec& chunk, size_t& nucleotides)
     auto& record = chunk.back();
 
     if (record.read_unsafe(reader)) {
-      nucleotides += record.length();
-
       return true;
     } else {
       chunk.pop_back();
@@ -237,19 +235,17 @@ read_fastq::process(chunk_ptr chunk)
 void
 read_fastq::read_single_end(fastq_vec& reads)
 {
-  size_t nucleotides = 0;
-  for (; nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof; m_head--) {
-    m_eof = !read_record(m_reader, reads, nucleotides);
+  for (; reads.size() < INPUT_READS && m_head && !m_eof; m_head--) {
+    m_eof = !read_record(m_reader, reads);
   }
 }
 
 void
 read_fastq::read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2)
 {
-  size_t nucleotides = 0;
-  for (; nucleotides < INPUT_BLOCK_SIZE && m_head && !m_eof; m_head--) {
-    m_eof = !read_record(m_reader, reads_1, nucleotides);
-    read_record(m_reader, reads_2, nucleotides);
+  for (; reads_1.size() < INPUT_READS && m_head && !m_eof; m_head--) {
+    m_eof = !read_record(m_reader, reads_1);
+    read_record(m_reader, reads_2);
   }
 }
 

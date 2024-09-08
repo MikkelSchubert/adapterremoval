@@ -122,8 +122,8 @@ public:
   //! Indicates that this is the last chunk/that EOF has been reached
   bool eof = false;
 
-  //! Total number of nucleotides in this chunk
-  size_t nucleotides = 0;
+  //! Total number of reads in this chunk
+  size_t reads = 0;
 
   //! Original mate separator for (paired) reads
   char mate_separator = '\0';
