@@ -556,7 +556,31 @@ TEST_CASE("No overlap in sequence pair", "[alignment::paired_end]")
 //                BBBBBBBBBBBBBBB
 // Expected result = optimal alignment between ends
 
-TEST_CASE("Partial overlap in sequence pair", "[alignment::paired_end]")
+TEST_CASE("Partial overlap in sequence pair (1 bp)", "[alignment::paired_end]")
+{
+  const fastq record1("Rec", "AAAAAAAAA", "!!!!!!!!!");
+  const fastq record2("Rec", "ATTTTTTT", "!!!!!!!!");
+  const adapter_set adapters = { { "TTTTTT", "TTTTT" } };
+  const alignment_info expected = ALN().offset(8).length(1);
+  const alignment_info result =
+    align_paired_ended_sequences(record1, record2, adapters, 0);
+  REQUIRE(result == expected);
+  REQUIRE_TRUNCATED_PE_IS_UNCHANGED(result, record1, record2);
+}
+
+TEST_CASE("Partial overlap in sequence pair (2 bp)", "[alignment::paired_end]")
+{
+  const fastq record1("Rec", "AAAAAAAAA", "!!!!!!!!!");
+  const fastq record2("Rec", "AATTTTTT", "!!!!!!!!");
+  const adapter_set adapters = { { "TTTTTT", "TTTTT" } };
+  const alignment_info expected = ALN().offset(7).length(2);
+  const alignment_info result =
+    align_paired_ended_sequences(record1, record2, adapters, 0);
+  REQUIRE(result == expected);
+  REQUIRE_TRUNCATED_PE_IS_UNCHANGED(result, record1, record2);
+}
+
+TEST_CASE("Partial overlap in sequence pair (5 bp)", "[alignment::paired_end]")
 {
   const fastq record1("Rec", "ACGTAGTAA", "!!!!!!!!!");
   const fastq record2("Rec", "AGTAAGGT", "!!!!!!!!");

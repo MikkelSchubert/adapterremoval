@@ -179,6 +179,7 @@ private:
    * @param seq2 Second sequence to align (mate 2 or adapter).
    * @param seq2_len The (unpadded) length of seq2.
    * @param min_offset Search for alignments from this offset.
+   * @param max_offset Search for alignments until and including this offset.
    * @return true if a better alignment was found
    */
   bool pairwise_align_sequences(alignment_info& alignment,
@@ -186,7 +187,8 @@ private:
                                 size_t seq1_len,
                                 const char* seq2,
                                 size_t seq2_len,
-                                int min_offset) const;
+                                int min_offset,
+                                int max_offset) const;
 
   //! Adapter sequences against which to align the sequences
   const adapter_set& m_adapters;
