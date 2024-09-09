@@ -24,6 +24,7 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for size_t, get_compare_subsequences_func
 #include <algorithm>         // for max, min
+#include <limits>            // for numeric_limits
 #include <string>            // for string, operator+
 #include <utility>           // for swap, pair
 
@@ -87,6 +88,29 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
   }
 
   return alignment_found;
+}
+
+void
+sequence_aligner::finalize_alignment(alignment_info& alignment,
+                                     const int max_offset)
+{
+  if (alignment.adapter_id >= 0) {
+    // Convert prioritized adapter index to user-supplied index
+    int index = alignment.adapter_id;
+    AR_REQUIRE(index < static_cast<int>(m_adapters.size()));
+    alignment.adapter_id = m_adapters.at(index).adapter_id;
+
+    // Prioritize alignments if they involve adapter sequence
+    if (alignment.offset < max_offset) {
+      m_adapters.at(index).hits++;
+
+      while (index > 0 &&
+             m_adapters.at(index).hits > m_adapters.at(index - 1).hits) {
+        std::swap(m_adapters.at(index), m_adapters.at(index - 1));
+        index--;
+      }
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,10 +178,13 @@ alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 
 sequence_aligner::sequence_aligner(const adapter_set& adapters,
                                    simd::instruction_set is)
-  : m_adapters(adapters)
-  , m_compare_func(simd::get_compare_subsequences_func(is))
+  : m_compare_func(simd::get_compare_subsequences_func(is))
   , m_padding(simd::padding(is))
 {
+  for (const auto& it : adapters) {
+    m_adapters.push_back(
+      { static_cast<int>(m_adapters.size()), 0, it.first, it.second });
+  }
 }
 
 alignment_info
@@ -166,8 +193,8 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift)
   int adapter_id = 0;
   alignment_info alignment;
 
-  for (const auto& adapter_pair : m_adapters) {
-    const std::string_view adapter = adapter_pair.first;
+  for (const auto& it : m_adapters) {
+    const std::string_view adapter = it.adapter1;
 
     m_buffer.clear();
     m_buffer += read.sequence();
@@ -190,6 +217,9 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift)
     ++adapter_id;
   }
 
+  // All single-end alignments involves adapter sequence
+  finalize_alignment(alignment, std::numeric_limits<int>::max());
+
   return alignment;
 }
 
@@ -199,11 +229,12 @@ sequence_aligner::align_paired_end(const fastq& read1,
                                    int max_shift)
 {
   int adapter_id = 0;
+  int max_adapter_offset = std::numeric_limits<int>::min();
   alignment_info alignment;
 
-  for (const auto& adapter_pair : m_adapters) {
-    const std::string_view adapter1 = adapter_pair.first;
-    const std::string_view adapter2 = adapter_pair.second;
+  for (const auto& it : m_adapters) {
+    const std::string_view adapter1 = it.adapter1;
+    const std::string_view adapter2 = it.adapter2;
 
     m_buffer.clear();
     m_buffer += adapter2;
@@ -237,10 +268,13 @@ sequence_aligner::align_paired_end(const fastq& read1,
       alignment.adapter_id = adapter_id;
       // Convert the alignment into an alignment between read 1 & 2 only
       alignment.offset -= adapter2.length();
+      max_adapter_offset = adapter2.length();
     }
 
     adapter_id++;
   }
+
+  finalize_alignment(alignment, max_adapter_offset);
 
   return alignment;
 }

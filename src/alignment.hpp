@@ -190,14 +190,30 @@ private:
                                 int min_offset,
                                 int max_offset) const;
 
-  //! Adapter sequences against which to align the sequences
-  const adapter_set& m_adapters;
+  /** Sets the user-facing adapter ID and prioritizes adapter sequences */
+  void finalize_alignment(alignment_info& alignment, int max_offset);
+
   //! SIMD instruction set to use for sequence comparisons
   const simd::compare_subsequences_func m_compare_func;
   //! Padding required by chosen SIMD instructions
   const size_t m_padding;
   //! Internal buffer used to combine adapters and reads
   std::string m_buffer{};
+
+  struct adapter_pair
+  {
+    //! The original adapter ID
+    int adapter_id = 0;
+    //! The number of best alignments that included this adapter
+    int hits = 0;
+    //! The forward adapter sequence
+    std::string_view adapter1{};
+    //! The reverse adapter sequence
+    std::string_view adapter2{};
+  };
+
+  //! Vector of adapter IDs and number of matching alignments with that adapter
+  std::vector<adapter_pair> m_adapters{};
 };
 
 /**
