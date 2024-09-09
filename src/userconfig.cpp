@@ -648,18 +648,20 @@ userconfig::userconfig()
   argparser.add_header("PROCESSING:");
 
   argparser.add("--adapter1", "SEQ")
-    .help("Adapter sequence expected to be found in mate 1 reads")
+    .help("Adapter sequence expected to be found in mate 1 reads. Any 'N' in "
+          "this sequence is treated as a wildcard")
     .bind_str(&adapter_1)
     .with_default("AGATCGGAAGAGCACACGTCTGAACTCCAGTCA");
   argparser.add("--adapter2", "SEQ")
-    .help("Adapter sequence expected to be found in mate 2 reads")
+    .help("Adapter sequence expected to be found in mate 2 reads. Any 'N' in "
+          "this sequence is treated as a wildcard")
     .bind_str(&adapter_2)
     .with_default("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT");
   argparser.add("--adapter-list", "FILE")
-    .help("Read table of white-space separated adapters pairs, used as if the "
-          "first column was supplied to --adapter1, and the second column was "
-          "supplied to --adapter2; only the first adapter in each pair is "
-          "required single-end trimming")
+    .help("Read adapter pairs from the first two columns of a white-space "
+          "separated table. AdapterRemoval will then select the best matching "
+          "adapter pair for each pair of input reads when trimming. Only the "
+          "first column is required for single-end trimming")
     .conflicts_with("--adapter1")
     .conflicts_with("--adapter2")
     .bind_str(&adapter_list);
