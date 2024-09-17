@@ -50,7 +50,7 @@ debug_raise_assert(std::string_view funcname,
   do {                                                                         \
     /* NOLINTNEXTLINE(readability-simplify-boolean-expr) */                    \
     if (AR_UNLIKELY(!(test))) {                                                \
-      debug_raise_assert(__FUNCTION__, __FILE__, __LINE__, #test, msg);        \
+      debug_raise_assert(__PRETTY_FUNCTION__, __FILE__, __LINE__, #test, msg); \
     }                                                                          \
   } while (0)
 
