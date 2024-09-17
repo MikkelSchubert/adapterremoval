@@ -72,7 +72,7 @@ if TYPE_CHECKING:
     ]
 
 #############################################################################
-_COLORS_ENABLED = not os.getenv("NO_COLOR")
+_COLORS_ENABLED = False
 
 
 def _do_print_color(
@@ -84,7 +84,7 @@ def _do_print_color(
     destination = sys.stdout
 
     # No colors if output is redirected (e.g. less, file, etc.)
-    if _COLORS_ENABLED and destination.isatty():
+    if _COLORS_ENABLED:
         vargs = list(vargs_)
         for index, varg in enumerate(vargs):
             varg_lines: list[str] = []
@@ -1200,6 +1200,7 @@ class Args(argparse.Namespace):
     schema_validation_required: bool
     create_updated_reference: bool
     threads: int
+    use_colors: str
 
 
 def parse_args(argv: list[str]) -> Args:
@@ -1266,12 +1267,25 @@ def parse_args(argv: list[str]) -> Args:
         default=min(4, multiprocessing.cpu_count()),
         help="Size of thread-pool for concurrent execution of tests",
     )
+    parser.add_argument(
+        "--use-colors",
+        type=str.lower,
+        choices=("auto", "always", "never"),
+        default="auto",
+        help="Enable color output",
+    )
 
     return parser.parse_args(argv, namespace=Args())
 
 
 def main(argv: list[str]) -> int:
+    global _COLORS_ENABLED
+
     args = parse_args(argv)
+    if args.use_colors == "auto":
+        _COLORS_ENABLED = sys.stdout.isatty() and not os.getenv("NO_COLOR")
+    elif args.use_colors == "always":
+        _COLORS_ENABLED = True
 
     print(f"Testing executable {quote(args.executable)}")
     if not args.executable.is_file():
