@@ -21,7 +21,8 @@
 #include <cstddef>     // for size_t
 #include <immintrin.h> // for _mm512_set1_epi8, __m512i, _mm512_lo...
 
-#ifdef AR_SUPPORTS_AVX512
+#if defined(MESON) || __GNUC__ >= 11 ||                                        \
+  (defined(__clang_major__) && __clang_major__ >= 8)
 
 namespace adapterremoval {
 
