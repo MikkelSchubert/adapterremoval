@@ -3,7 +3,7 @@
 ## [2.3.4] - 2024-08-24
 
 This release adds a new couple of command-line options for handling non-ACGTN
-bases input FASTQ data and back-ports a few minor fixes from the development
+bases in FASTQ data and back-ports a few minor fixes from the development
 branch.
 
 ### Added
