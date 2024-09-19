@@ -382,6 +382,10 @@ _OUTPUT_FILES = {
 
 _TEST_FILES = _INPUT_FILES | _OUTPUT_FILES
 
+_IGNORED_FILES = {
+    "meson.build",
+}
+
 
 class JSONValidator:
     _schema: JSON
@@ -1163,7 +1167,8 @@ def collect_unused_files(root: Path, tests: list[TestConfig]) -> set[Path]:
     observed_files: set[Path] = set()
     for dirname, _, filenames in os.walk(root):
         for filename in filenames:
-            observed_files.add(Path(dirname) / filename)
+            if filename not in _IGNORED_FILES:
+                observed_files.add(Path(dirname) / filename)
 
     recorded_files: set[Path] = set()
     for test in tests:
