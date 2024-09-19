@@ -26,6 +26,8 @@ namespace adapterremoval {
 TEST_CASE("log capture timestamps")
 {
   log::set_timestamps(false);
+  // Force logging of preamble prior to tests
+  log::log_preamble();
 
   SECTION("timestamps disabled")
   {
@@ -54,6 +56,8 @@ TEST_CASE("log capture timestamps")
 TEST_CASE("log capture colors")
 {
   log::set_colors(false);
+  // Force logging of preamble prior to tests
+  log::log_preamble();
 
   SECTION("colors enabled")
   {
@@ -74,6 +78,8 @@ TEST_CASE("log capture colors")
 TEST_CASE("log capture levels")
 {
   log::set_level(log::level::debug);
+  // Force logging of preamble prior to tests
+  log::log_preamble();
 
   SECTION("default levels")
   {
