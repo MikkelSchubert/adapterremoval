@@ -254,7 +254,9 @@ def path_to_s(path: Iterable[str | int]) -> str:
 
 def relative_to_cwd(path: Path) -> Path:
     if path.is_absolute():
-        return path.relative_to(os.getcwd())
+        cwd = os.getcwd()
+        if path.is_relative_to(cwd):
+            return path.relative_to(cwd)
 
     return path
 
