@@ -1299,6 +1299,9 @@ def main(argv: list[str]) -> int:
     elif args.schema_validation_required and not JSON_SCHEMA_VALIDATION:
         print_err("ERROR: Required module `jsonschema` could not be loaded")
         return 1
+    elif not args.source_dir.is_dir():
+        print_err(f"ERROR: {quote(args.source_dir)} is not a directory")
+        return 1
 
     if args.max_failures <= 0:
         args.max_failures = float("inf")
@@ -1331,7 +1334,12 @@ def main(argv: list[str]) -> int:
     print(f"Reading test-cases from {quote(args.source_dir)}")
     tests = collect_tests(root=args.source_dir, json_validator=json_validator)
     tests.sort(key=lambda it: it.path)
-    print(f"  {len(tests):,} tests found")
+
+    if not tests:
+        print_err(f"No tests found in {quote(args.source_dir)}")
+        return 1
+    else:
+        print(f"  {len(tests):,} tests found")
 
     unused_files = collect_unused_files(args.source_dir, tests)
     if unused_files:
