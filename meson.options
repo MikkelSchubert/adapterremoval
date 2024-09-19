@@ -1,0 +1,12 @@
+option(
+    'static',
+    type: 'boolean',
+    value: false,
+    description: 'Build static executable',
+)
+option(
+    'harden',
+    type: 'boolean',
+    value: false,
+    description: 'Build executable with hardening flags',
+)
