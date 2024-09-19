@@ -19,7 +19,11 @@ RUN apk add \
 
 WORKDIR /root
 
-ENV LDLIBS="-lmimalloc"
-ENTRYPOINT [ "make", "-C", "/root/adapterremoval/" ]
+ENV LDFLAGS="-lmimalloc"
+ENV OUT_DIR="/root/out/static-container"
+ENV SRC_DIR="/root/src"
 
-CMD ["-j4", "regression", "examples", "test", "install"]
+CMD meson setup --reconfigure "${OUT_DIR}/builddir" "${SRC_DIR}" -Dstatic=true \
+    && meson compile -v -C "${OUT_DIR}/builddir" \
+    && meson test --print-errorlogs -C "${OUT_DIR}/builddir" \
+    && DESTDIR="${OUT_DIR}/install" meson install -C "${OUT_DIR}/builddir"

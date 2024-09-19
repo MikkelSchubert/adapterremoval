@@ -304,15 +304,9 @@ static:
 	@echo $(COLOR_GREEN)"Building static binary"$(COLOR_END)
 	$(QUIET)mkdir -p "$(BUILD_DIR)"
 	$(QUIET)podman run --rm -it \
-		--mount "type=bind,src=$(shell pwd)/,dst=/root/adapterremoval/" \
-		--mount "type=bind,src=$(BUILD_DIR)/,dst=/root/build" \
-		$(CONTAINER) \
-		regression examples test install \
-		"BUILD_DIR=/root/build" \
-		"DESTDIR=/root/build/install" \
-		"VERBOSE=yes" \
-		"COLOR=no" \
-		"STATIC=yes"
+		--mount "type=bind,src=$(shell pwd)/,dst=/root/src/" \
+		--mount "type=bind,src=$(BUILD_DIR)/,dst=/root/out/" \
+		$(CONTAINER)
 	@echo $(COLOR_GREEN)"Static binary installed into $(BUILD_DIR)/"$(COLOR_END)
 
 static-container:
