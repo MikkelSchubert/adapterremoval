@@ -245,7 +245,9 @@ log_stream::log_stream(level lvl)
 log_stream::~log_stream()
 {
   std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
-  log_preamble();
+  if (m_level != level::cerr) {
+    log_preamble();
+  }
 
   if (g_log_transient) {
     *g_log_out << "\r\033[K";
