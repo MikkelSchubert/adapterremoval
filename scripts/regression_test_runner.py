@@ -1310,6 +1310,9 @@ def main(argv: list[str]) -> int:
         # test-sets may generate (partially) overlapping files
         args.threads = 1
 
+    args.work_dir.mkdir(parents=True, exist_ok=True)
+    args.work_dir = Path(tempfile.mkdtemp(dir=args.work_dir))
+
     if args.create_updated_reference:
         # `dirs_exist_ok` for `copytree` requires Python >= 3.8
         if args.work_dir.exists():
@@ -1352,8 +1355,6 @@ def main(argv: list[str]) -> int:
     if args.create_updated_reference:
         exhaustive_tests = build_test_updaters(args, tests)
     else:
-        args.work_dir.mkdir(parents=True, exist_ok=True)
-        args.work_dir = Path(tempfile.mkdtemp(dir=args.work_dir))
         exhaustive_tests = build_test_runners(args, tests)
 
     print(f"  {len(exhaustive_tests):,} test variants generated")
@@ -1435,6 +1436,9 @@ def main(argv: list[str]) -> int:
             "JSON files not validated; install Python module `jsonschema` to enable "
             "validation"
         )
+
+    if args.create_updated_reference:
+        print_ok(f"Updated regression tests written to {quote(args.work_dir)}")
 
     return 1 if n_failures else 0
 
