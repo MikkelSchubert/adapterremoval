@@ -68,4 +68,8 @@ jobs:
         if: ${{ matrix.coverage == 'true' }}
         run: |
           python3 -m pip install cpp-coveralls
-          coveralls --exclude tests --build-root "${PWD}" --gcov-options '\-lpbc'
+          coveralls
+            --exclude tests
+            --exclude-pattern 'reports_template_html\..*'
+            --build-root "${PWD}" \
+            --gcov-options '\-lpbc'
