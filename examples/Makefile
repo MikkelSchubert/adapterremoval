@@ -12,7 +12,7 @@ clean:
 	$(RM) output_*
 
 single_end:
-	$(EXE) --in-file1 reads_1.fastq --out-prefix output_single --gzip
+	$(EXE) --in-file1 reads_1.fastq --out-prefix output_single
 
 paired_end:
 	$(EXE) --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_paired
@@ -30,7 +30,7 @@ phred_64_encoded:
 	$(EXE) --quality-format 64 --in-file1 reads_q64.fastq --out-prefix output_phred_64
 
 merged:
-	$(EXE) --qualitymax 50 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --merge --out-prefix output_merged
+	$(EXE) --merge-quality-max 50 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --merge --out-prefix output_merged
 
 multiple_adapters:
 	$(EXE) --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_multi --adapter-list adapters.txt
