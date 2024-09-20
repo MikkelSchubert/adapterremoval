@@ -15,13 +15,13 @@ jobs:
         include:
           - os: ubuntu-22.04
             cxx: g++
-            coverage: "yes"
+            coverage: "true"
           - os: ubuntu-22.04
             cxx: clang++
-            coverage: "no"
-          # - os: macos-latest
-          #   cxx: clang++
-          #   coverage: "no"
+            coverage: "false"
+          - os: macos-latest
+            cxx: clang++
+            coverage: "false"
       # Do not auto-cancel other runners if one fails
       fail-fast: false
     env:
@@ -34,37 +34,38 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: dependencies
+      - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-22.04' }}
-        run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev
+        run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev gcovr
 
-      - name: dependencies
+      - name: dependencies (libraries)
         if: ${{ matrix.os == 'macos-latest' }}
         run: brew install isa-l libdeflate
 
-      - name: make test
+      - name: dependencies (pip)
+        run: python3 -m pip install meson ninja jsonschema sphinx
+
+      - name: setup
+        run: meson setup builddir -Db_sanitize=address,undefined -Db_coverage=${{ matrix.coverage }}
+
+      - name: install
+        run: DESTDIR=${PWD}/install meson install -C builddir
+
+      - name: examples
+        run: make -C examples EXE=${PWD}/builddir/src/adapterremoval3
+
+      - name: regression tests
+        run: meson test -C builddir --suite regression --print-errorlogs
+
+      # Unit tests are run last to enable cleanup of coverage data from other
+      # actions before running coveralls
+      - name: unit tests
         run: |
-          export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
-          make -j ${NPROCS} test VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=${{ matrix.coverage }}
+          find . -name '*.gcda' -print -delete
+          meson test -C builddir --suite unit --print-errorlogs
 
-      - name: make regression
-        run: |
-          export NPROCS=$(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')
-          python3 -m pip install jsonschema
-          make -j ${NPROCS} regression VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=no
-
-      - name: sphinx
-        run: python3 -m pip install sphinx
-
-      - name: make install
-        run: make install VERBOSE=yes DEBUG=yes SANITIZE=yes COVERAGE=no PREFIX=${PWD}/install
-
-      # Coverage statistics
-      - name: setup coveralls
-        if: ${{ matrix.coverage == 'yes' }}
+      - name: coveralls
+        if: ${{ matrix.coverage == 'true' }}
         run: |
           python3 -m pip install cpp-coveralls
           coveralls --exclude tests --build-root "${PWD}" --gcov-options '\-lpbc'
-
-      - name: examples
-        run: make -C examples EXE=${PWD}/install/bin/adapterremoval3
