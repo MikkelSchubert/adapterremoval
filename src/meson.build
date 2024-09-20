@@ -3,14 +3,14 @@
 html_template = custom_target(
     'html-template',
     input: ['reports_template.html'],
-    output: ['@BASENAME@.hpp', '@BASENAME@.cpp'],
+    output: ['@BASENAME@_html.hpp', '@BASENAME@_html.cpp'],
     depend_files: ['debug.hpp'],
     command: [
         find_program(
             meson.project_source_root() / 'scripts' / 'html_template_to_cpp.py',
         ),
         '@INPUT@',
-        '@OUTDIR@' / '@BASENAME@',
+        '@OUTDIR@' / '@BASENAME@_html',
     ],
 )
 
