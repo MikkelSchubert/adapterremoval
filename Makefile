@@ -54,7 +54,7 @@ install: ${NINJAFILE}
 	meson install -C "${BUILDDIR}"
 
 regression: ${NINJAFILE}
-	meson test -C "${BUILDDIR}" --suite regression
+	meson test -C "${BUILDDIR}" --print-errorlogs --suite regression
 
 setup:
 	meson setup "${BUILDDIR}" --reconfigure \
@@ -71,7 +71,7 @@ static-container: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" static-container
 
 test: setup
-	meson test -C "${BUILDDIR}" --suite unit
+	meson test -C "${BUILDDIR}" --print-errorlogs --suite unit
 
 ${NINJAFILE}:
 	$(MAKE) setup
