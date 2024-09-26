@@ -70,7 +70,7 @@ static: ${NINJAFILE}
 static-container: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" static-container
 
-test: setup
+test: ${NINJAFILE}
 	meson test -C "${BUILDDIR}" --print-errorlogs --suite unit
 
 ${NINJAFILE}:
