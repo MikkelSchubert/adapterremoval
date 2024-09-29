@@ -23,7 +23,10 @@
 #include "simd.hpp"         // for supported
 #include "strutils.hpp"     // for to_lower
 #include <algorithm>        // for find, accumulate
+#include <array>            // for array
+#include <cmath>            // for round
 #include <iomanip>          // for fixed, setsetprecision
+#include <iostream>         // for cout
 #include <numeric>          // for accumulate
 
 namespace adapterremoval {
@@ -37,9 +40,11 @@ const size_t BENCHMARK_MIN_LOOPS = 10;
 //! Benchmarks must be repeated at most this number of times
 const size_t BENCHMARK_MAX_LOOPS = 1000;
 //! Benchmarks must run for at this this number of nano-seconds
-const double BENCHMARK_MIN_TIME_NS = 10'000'000'000;
+const double BENCHMARK_MIN_TIME_NS = 5'000'000'000;
 //! Benchmark loops shorter than this number of nano-seconds cannot be measured
-const double BENCHMARK_CUTOFF_TIME_NS = BENCHMARK_MIN_TIME_NS / 100'000;
+const double BENCHMARK_CUTOFF_TIME_NS = 10'000;
+//! Number of NS between terminal updates
+const size_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
 
 } // namespace
 
@@ -105,7 +110,7 @@ benchmarker::run_if_toggled(const benchmark_toggles& toggles)
 
 /** Called before `setup` to perform any per batch setup */
 void
-benchmarker::setup(){};
+benchmarker::setup() {};
 
 strategy
 benchmarker::enabled(const benchmark_toggles& toggles) const
@@ -126,20 +131,29 @@ benchmarker::enabled(const benchmark_toggles& toggles) const
 void
 benchmarker::run(const strategy s)
 {
-  log::cerr() << "\r\033[KBenchmarking: " << summarize(0);
+  static bool header = false;
+  if (!header) {
+    std::cout << "             Benchmark |       Min |      Mean |       Max | "
+                 "SD (%) | Loops | Outliers"
+              << std::endl;
+    header = true;
+  }
 
   if (s != strategy::passthrough) {
+    log::cerr() << "\r\033[K" << std::setw(22) << m_description << " burn-in";
+
     for (size_t i = 1; i <= BENCHMARK_BURN_IN; ++i) {
       setup();
       execute();
 
-      log::cerr() << std::fixed << std::setprecision(5)
-                  << "\rBenchmarking: " << m_description << " burn-in loop "
-                  << i << " completed";
+      log::cerr() << ".";
     }
+  } else {
+    log::cerr() << "\r\033[K" << std::setw(22) << m_description << " (setup)";
   }
 
   size_t loops = 0;
+  uint64_t next_update = 0;
   do {
     uint64_t elapsed =
       std::accumulate(m_durations.begin(), m_durations.end(), uint64_t());
@@ -154,7 +168,10 @@ benchmarker::run(const strategy s)
       elapsed += duration;
       m_durations.push_back(duration);
 
-      log::cerr() << "\r\033[KBenchmarking: " << summarize(loops);
+      if (elapsed >= next_update) {
+        log::cerr() << "\r\033[K" << summarize(loops);
+        next_update += BENCHMARK_UPDATE_INTERVAL;
+      }
     } while (s == strategy::benchmark &&
              m_durations.size() < BENCHMARK_MAX_LOOPS &&
              (m_durations.size() < BENCHMARK_MIN_LOOPS ||
@@ -164,34 +181,48 @@ benchmarker::run(const strategy s)
            grubbs_test_prune(m_durations));
 
   log::cerr() << "\r\033[K";
-  log::info() << "  " << summarize(loops);
+
+  if (s != strategy::passthrough) {
+    std::cout << summarize(loops) << std::endl;
+  }
 }
 
 std::string
 benchmarker::summarize(size_t loops) const
 {
-  std::ostringstream ss;
-  if (loops) {
-    ss << m_durations.size();
-    if (loops > m_durations.size()) {
-      ss << " + " << loops - m_durations.size();
-    }
-
-    ss << (loops != 1 ? " loops of " : " loop of ");
-  }
-
-  ss << m_description;
+  const std::array<size_t, 7> COLUMN_WIDTHS{ 22, 9, 9, 9, 6, 5, 8 };
+  std::array<std::string, COLUMN_WIDTHS.size()> values{
+    m_description,
+    "",
+    "",
+    "",
+    "",
+    std::to_string(m_durations.size()),
+    std::to_string(loops - m_durations.size()),
+  };
 
   if (!m_durations.empty()) {
-    ss << " in " << std::fixed << std::setprecision(5)
-       << arithmetic_mean(m_durations) / 1e9;
+    const auto min_max =
+      std::minmax_element(m_durations.begin(), m_durations.end());
+    const auto mean = arithmetic_mean(m_durations);
+
+    values.at(1) = format_thousand_sep(*min_max.first / 1e3);
+    values.at(2) = format_thousand_sep(std::round(mean / 1e3));
+    values.at(3) = format_thousand_sep(*min_max.second / 1e3);
 
     if (m_durations.size() > 1) {
-      ss << " +/- " << std::setprecision(6)
-         << standard_deviation(m_durations) / 1e9;
+      const auto sd = standard_deviation(m_durations);
+      values.at(4) = format_fraction(1e9 * sd, 1e7 * mean);
+    }
+  }
+
+  std::ostringstream ss;
+  for (size_t i = 0; i < values.size(); ++i) {
+    if (i) {
+      ss << " | ";
     }
 
-    ss << " seconds";
+    ss << std::setw(COLUMN_WIDTHS.at(i)) << values.at(i);
   }
 
   return ss.str();

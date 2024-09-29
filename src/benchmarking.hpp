@@ -92,7 +92,7 @@ private:
 
   std::string summarize(size_t loops) const;
 
-  using clock = std::chrono::high_resolution_clock;
+  using clock = std::chrono::steady_clock;
   using time_point = std::chrono::time_point<clock>;
 
   const std::string m_description;
