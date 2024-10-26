@@ -106,11 +106,11 @@ public:
   char mate_separator{};
 
   //! The minimum length of trimmed reads (ie. genomic nts) to be retained
-  unsigned min_genomic_length{};
+  uint32_t min_genomic_length{};
   //! The maximum length of trimmed reads (ie. genomic nts) to be retained
-  unsigned max_genomic_length{};
+  uint32_t max_genomic_length{};
   //! The minimum required overlap before trimming single-end reads.
-  unsigned min_adapter_overlap{};
+  uint32_t min_adapter_overlap{};
   //! Rate of mismatches determining the threshold for a an acceptable
   //! alignment, depending on the length of the alignment. But see also the
   //! limits set in the function 'is_good_alignment'.
@@ -134,7 +134,7 @@ public:
   //! [window] Window based trimming; a fraction / N bp size / off (negative)
   double trim_window_length{};
   //! [window/per-base] The highest quality score considered low-quality
-  unsigned trim_quality_score{};
+  uint32_t trim_quality_score{};
   //! [per-base] If true, low quality bases read termini are trimmed.
   bool trim_low_quality_bases = false;
   //! [per-base] If true, ambiguous bases (N) at read termini are trimmed.
@@ -145,11 +145,11 @@ public:
   //! Nucleotides to trim from poly-X tails after alignment/adapter trimming.
   std::string post_trim_poly_x{};
   //! Minimum number of bases in poly-X tails.
-  unsigned trim_poly_x_threshold{};
+  uint32_t trim_poly_x_threshold{};
 
   //! The maximum number of ambiguous bases (N) in an read; reads exceeding
   //! this number following trimming (optionally) are discarded.
-  unsigned max_ambiguous_bases{};
+  uint32_t max_ambiguous_bases{};
   //! The minimum average phred score of non-empty reads
   double min_mean_quality = 0.0;
   //! The minimum complexity score for FASTQ reads (see FASTQ::complexity()).
@@ -162,15 +162,15 @@ public:
   //! merged to generate a higher quality consensus sequence.
   merge_strategy merge = merge_strategy::none;
   //! The minimum required genomic overlap before merging reads into one.
-  unsigned merge_threshold{};
+  uint32_t merge_threshold{};
   //! The maximum quality allowed when recalculating quality scores
-  unsigned merge_quality_max{};
+  uint32_t merge_quality_max{};
 
   // Allow for slipping base-pairs by allowing missing bases in adapter
-  unsigned shift{};
+  uint32_t shift{};
 
   //! The maximum number of threads used by the program
-  unsigned max_threads{};
+  uint32_t max_threads{};
   //! SIMD instruction set used for alignments
   simd::instruction_set simd = simd::instruction_set::none;
 
@@ -179,14 +179,14 @@ public:
   //! The format in which in which output reads are written to STDOUT
   output_format out_stdout_format = output_format::fastq;
   //! Compression level used for output reads where appropriate
-  unsigned int compression_level{};
+  uint32_t compression_level{};
 
   //! Maximum number of mismatches (considering both barcodes for PE)
-  unsigned barcode_mm{};
+  uint32_t barcode_mm{};
   //! Maximum number of mismatches (considering both barcodes for PE)
-  unsigned barcode_mm_r1{};
+  uint32_t barcode_mm_r1{};
   //! Maximum number of mismatches (considering both barcodes for PE)
-  unsigned barcode_mm_r2{};
+  uint32_t barcode_mm_r2{};
 
   //! Sample specific barcodes and adapters. In non-demultiplexing mode this
   //! set contains a single unnamed sample with empty barcodes
@@ -195,7 +195,7 @@ public:
   //! Fraction of reads used for quality/content curves, etc.
   double report_sample_rate{};
   //! Number of reads used to estimate duplication in input files
-  unsigned report_duplication{};
+  uint32_t report_duplication{};
 
   //! The kind of progress indicator to use
   progress_type log_progress{};

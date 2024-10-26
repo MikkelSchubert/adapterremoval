@@ -122,10 +122,10 @@ str_to(std::string_view s)
 
 } // namespace
 
-unsigned
-str_to_unsigned(std::string_view s)
+uint32_t
+str_to_u32(std::string_view s)
 {
-  return str_to<unsigned>(s);
+  return str_to<uint32_t>(s);
 }
 
 std::string

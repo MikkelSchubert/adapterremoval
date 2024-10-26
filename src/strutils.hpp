@@ -49,10 +49,10 @@ timestamp(const char* format, bool milliseconds = false);
  *
  * Throws std::invalid_argument if the string does not contain a proper number,
  * if it contains more than just a number, or if the number overflows a
- * unsigned integer. Whitespace is ignored.
+ * 32 bit unsigned integer. Whitespace is ignored.
  */
-unsigned
-str_to_unsigned(std::string_view s);
+uint32_t
+str_to_u32(std::string_view s);
 
 /** Lowercases letters in the range a-z */
 constexpr char

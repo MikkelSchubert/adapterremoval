@@ -88,31 +88,31 @@ TEST_CASE("bool sink rejects values", "[argparse::bool_sink]")
 ///////////////////////////////////////////////////////////////////////////////
 // uint sink
 
-TEST_CASE("uint sink is required", "[argparse::uint_sink]")
+TEST_CASE("uint sink is required", "[argparse::u32_sink]")
 {
-  REQUIRE_THROWS_AS(argparse::uint_sink(nullptr), assert_failed);
+  REQUIRE_THROWS_AS(argparse::u32_sink(nullptr), assert_failed);
 }
 
-TEST_CASE("uint sink is initialized", "[argparse::uint_sink]")
+TEST_CASE("uint sink is initialized", "[argparse::u32_sink]")
 {
-  unsigned value = 12345;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 12345;
+  argparse::u32_sink sink(&value);
   REQUIRE(value == 0);
 }
 
-TEST_CASE("uint sink value", "[argparse::uint_sink]")
+TEST_CASE("uint sink value", "[argparse::u32_sink]")
 {
-  unsigned value = 1234567;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 1234567;
+  argparse::u32_sink sink(&value);
   REQUIRE(sink.value() == "0");
   value = 1234567;
   REQUIRE(sink.value() == "1234567");
 }
 
-TEST_CASE("uint sink with_default", "[argparse::uint_sink]")
+TEST_CASE("uint sink with_default", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   REQUIRE_FALSE(sink.has_default());
   sink.with_default(1234567);
@@ -121,51 +121,51 @@ TEST_CASE("uint sink with_default", "[argparse::uint_sink]")
   REQUIRE(value == 1234567);
 }
 
-TEST_CASE("uint sink requires value", "[argparse::uint_sink]")
+TEST_CASE("uint sink requires value", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   string_vec values;
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
-TEST_CASE("uint sink consumes single value", "[argparse::uint_sink]")
+TEST_CASE("uint sink consumes single value", "[argparse::u32_sink]")
 {
   string_vec values{ "1234567" };
 
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
   REQUIRE(value == 1234567);
 }
 
-TEST_CASE("uint sink consumes single value only", "[argparse::uint_sink]")
+TEST_CASE("uint sink consumes single value only", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   const string_vec values{ "1234567", "8901234" };
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
-TEST_CASE("uint requires valid integer value", "[argparse::uint_sink]")
+TEST_CASE("uint requires valid integer value", "[argparse::u32_sink]")
 {
   string_vec values{ "abc" };
 
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
                     std::invalid_argument);
   REQUIRE(value == 0);
 }
 
-TEST_CASE("uint requires positive integer value", "[argparse::uint_sink]")
+TEST_CASE("uint requires positive integer value", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   string_vec values{ "-123" };
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
@@ -173,10 +173,10 @@ TEST_CASE("uint requires positive integer value", "[argparse::uint_sink]")
   REQUIRE(value == 0);
 }
 
-TEST_CASE("uint accepts unsigned lower bound", "[argparse::uint_sink]")
+TEST_CASE("uint accepts uint32_t lower bound", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
   sink.with_default(123456);
 
   string_vec values{ "0" };
@@ -184,20 +184,20 @@ TEST_CASE("uint accepts unsigned lower bound", "[argparse::uint_sink]")
   REQUIRE(value == 0);
 }
 
-TEST_CASE("uint accepts unsigned upper bound", "[argparse::uint_sink]")
+TEST_CASE("uint accepts uint32_t upper bound", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   string_vec values{ "4294967295" };
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
   REQUIRE(value == 4294967295);
 }
 
-TEST_CASE("uint rejects past unsigned upper bound", "[argparse::uint_sink]")
+TEST_CASE("uint rejects past uint32_t upper bound", "[argparse::u32_sink]")
 {
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   string_vec values{ "4294967296" };
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
@@ -205,12 +205,12 @@ TEST_CASE("uint rejects past unsigned upper bound", "[argparse::uint_sink]")
   REQUIRE(value == 0);
 }
 
-TEST_CASE("uint disallows trailing garbage", "[argparse::uint_sink]")
+TEST_CASE("uint disallows trailing garbage", "[argparse::u32_sink]")
 {
   string_vec values{ "123abc" };
 
-  unsigned value = 0;
-  argparse::uint_sink sink(&value);
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
 
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
                     std::invalid_argument);
@@ -599,19 +599,19 @@ TEST_CASE("help without default", "[argparse::argument]")
 
 TEST_CASE("help with default", "[argparse::argument]")
 {
-  unsigned value = 0;
+  uint32_t value = 0;
   argparse::argument arg("--12345", "67890");
-  arg.help("pointless gibberish").bind_uint(&value).with_default(7913);
+  arg.help("pointless gibberish").bind_u32(&value).with_default(7913);
 
   REQUIRE(arg.help() == "pointless gibberish [default: 7913]");
 }
 
 TEST_CASE("help with custom default", "[argparse::argument]")
 {
-  unsigned value = 0;
+  uint32_t value = 0;
   argparse::argument arg("--12345", "67890");
   arg.help("pointless gibberish [default: foo]")
-    .bind_uint(&value)
+    .bind_u32(&value)
     .with_default(7913);
 
   REQUIRE(arg.help() == "pointless gibberish [default: foo]");
@@ -759,8 +759,8 @@ TEST_CASE("bind uint", "[argparse::argument]")
   argparse::argument arg("--12345");
   string_vec values{ "--12345", "7913" };
 
-  unsigned sink = 0;
-  arg.bind_uint(&sink);
+  uint32_t sink = 0;
+  arg.bind_u32(&sink);
 
   REQUIRE(sink == 0);
   REQUIRE_FALSE(arg.is_set());
@@ -1026,9 +1026,9 @@ TEST_CASE("three possible arguments", "[argparse::parser]")
 
 TEST_CASE("parse multiple arguments", "[argparse::parser]")
 {
-  unsigned sink = 0;
+  uint32_t sink = 0;
   argparse::parser p;
-  p.add("--arg1").bind_uint(&sink);
+  p.add("--arg1").bind_u32(&sink);
   p.add("--arg2");
   p.add("--arg3");
 
@@ -1042,10 +1042,10 @@ TEST_CASE("parse multiple arguments", "[argparse::parser]")
 
 TEST_CASE("value returns value as str", "[argparse::parser]")
 {
-  unsigned usink = 0;
+  uint32_t usink = 0;
   std::string ssink;
   argparse::parser p;
-  p.add("--arg1").bind_uint(&usink);
+  p.add("--arg1").bind_u32(&usink);
   p.add("--arg2").bind_str(&ssink);
 
   REQUIRE(p.parse_args({ "exe", "--arg1", "1234", "--arg2", "foo bar*" }) ==
@@ -1070,13 +1070,13 @@ TEST_CASE("user supplied argument", "[argparse::parser]")
 
 TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 {
-  unsigned sink = 0;
+  uint32_t sink = 0;
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("v1234");
   p.set_preamble("basic help");
-  p.add("--test", "META").bind_uint(&sink);
+  p.add("--test", "META").bind_u32(&sink);
 
   p.print_help();
 
@@ -1091,7 +1091,7 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 
 TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 {
-  unsigned sink = 0;
+  uint32_t sink = 0;
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
@@ -1100,7 +1100,7 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
-    .bind_uint(&sink);
+    .bind_u32(&sink);
 
   p.set_terminal_width(60);
   p.print_help();
@@ -1120,7 +1120,7 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 
 TEST_CASE("help with default value", "[argparse::parser]")
 {
-  unsigned sink = 0;
+  uint32_t sink = 0;
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
@@ -1129,7 +1129,7 @@ TEST_CASE("help with default value", "[argparse::parser]")
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
           "amount in order to test the line break functionality")
-    .bind_uint(&sink)
+    .bind_u32(&sink)
     .with_default(1234);
 
   p.set_terminal_width(60);
@@ -1195,10 +1195,10 @@ TEST_CASE("conflicting option supplied", "[argparse::parser]")
 
 TEST_CASE("missing value", "[argparse::parser]")
 {
-  unsigned sink = 0;
+  uint32_t sink = 0;
   log::log_capture ss;
   argparse::parser p;
-  p.add("--foo").bind_uint(&sink);
+  p.add("--foo").bind_u32(&sink);
 
   REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(),
@@ -1208,10 +1208,10 @@ TEST_CASE("missing value", "[argparse::parser]")
 
 TEST_CASE("invalid value", "[argparse::parser]")
 {
-  unsigned sink = 0;
+  uint32_t sink = 0;
   log::log_capture ss;
   argparse::parser p;
-  p.add("--foo").bind_uint(&sink);
+  p.add("--foo").bind_u32(&sink);
 
   REQUIRE(p.parse_args({ "exe", "--foo", "one" }) ==
           argparse::parse_result::error);

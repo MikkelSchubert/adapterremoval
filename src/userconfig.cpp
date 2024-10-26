@@ -29,7 +29,7 @@
 #include "output.hpp"   // for DEV_NULL, output_files, output_file
 #include "progress.hpp" // for progress_type, progress_type::simple, progr...
 #include "simd.hpp"     // for size_t, name, supported, instruction_set
-#include "strutils.hpp" // for string_vec, shell_escape, str_to_unsigned
+#include "strutils.hpp" // for string_vec, shell_escape, str_to_u32
 #include <algorithm>    // for find, max, min
 #include <cerrno>       // for errno
 #include <cmath>        // for pow
@@ -76,13 +76,13 @@ parse_trim_argument(const string_vec& values)
 
   switch (values.size()) {
     case 1:
-      mate_1 = str_to_unsigned(values.front());
+      mate_1 = str_to_u32(values.front());
       mate_2 = mate_1;
       break;
 
     case 2:
-      mate_1 = str_to_unsigned(values.front());
-      mate_2 = str_to_unsigned(values.back());
+      mate_1 = str_to_u32(values.front());
+      mate_2 = str_to_u32(values.back());
       break;
 
     default:
@@ -173,7 +173,7 @@ parse_head(const std::string& sink, uint64_t& out)
   try {
     // This should not be able to overflow as log2(2^32 * 1e9) ~= 62,
     // but will need to be changed if we want to allow large raw numbers
-    out = static_cast<uint64_t>(str_to_unsigned(sink_without_unit)) * unit;
+    out = static_cast<uint64_t>(str_to_u32(sink_without_unit)) * unit;
   } catch (const std::invalid_argument&) {
     log::error() << "Invalid value in command-line option --sink "
                  << shell_escape(sink);
@@ -432,7 +432,7 @@ userconfig::userconfig()
   //////////////////////////////////////////////////////////////////////////////
   argparser.add("--threads", "N")
     .help("Maximum number of threads")
-    .bind_uint(&max_threads)
+    .bind_u32(&max_threads)
     .with_default(2);
 
   {
@@ -641,7 +641,7 @@ userconfig::userconfig()
       "for compatibility), and levels 2 to 13 are block compressed using the "
       "BGZF format")
     .deprecated_alias("--gzip-level")
-    .bind_uint(&compression_level)
+    .bind_u32(&compression_level)
     .with_default(5);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -672,7 +672,7 @@ userconfig::userconfig()
           "read and the adapter is at least X bases long, not counting "
           "ambiguous nucleotides (Ns)")
     .deprecated_alias("--minadapteroverlap")
-    .bind_uint(&min_adapter_overlap)
+    .bind_u32(&min_adapter_overlap)
     .with_default(0);
   argparser.add("--mismatch-rate", "X")
     .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
@@ -685,7 +685,7 @@ userconfig::userconfig()
   argparser.add("--shift", "N")
     .help("Consider alignments where up to N nucleotides are missing from the "
           "5' termini")
-    .bind_uint(&shift)
+    .bind_u32(&shift)
     .with_default(2);
 
   argparser.add_separator();
@@ -699,7 +699,7 @@ userconfig::userconfig()
     .help("Paired reads must overlap at least this many bases to be considered "
           "overlapping for the purpose of read merging")
     .deprecated_alias("--minalignmentlength")
-    .bind_uint(&merge_threshold)
+    .bind_u32(&merge_threshold)
     .with_default(11);
   argparser.add("--merge-strategy", "X")
     .help(
@@ -714,7 +714,7 @@ userconfig::userconfig()
     .help("Sets the maximum Phred score for re-calculated quality scores when "
           "read merging is enabled with the 'additive' merging strategy")
     .deprecated_alias("--qualitymax")
-    .bind_uint(&merge_quality_max)
+    .bind_u32(&merge_quality_max)
     .with_default(41);
   argparser.add("--collapse-deterministic")
     .conflicts_with("--collapse-conservatively")
@@ -808,7 +808,7 @@ userconfig::userconfig()
           "--quality-trimming options 'window' and 'per-base'")
     .deprecated_alias("--minquality")
     .conflicts_with("--trim-mott-rate")
-    .bind_uint(&trim_quality_score)
+    .bind_u32(&trim_quality_score)
     .with_default(2);
   argparser.add("--trim-ns")
     .help("If set, trim ambiguous bases (N) at 5'/3' termini when using the "
@@ -844,7 +844,7 @@ userconfig::userconfig()
     .with_min_values(0);
   argparser.add("--trim-polyx-threshold", "N")
     .help("The minimum number of bases in a poly-X tail")
-    .bind_uint(&trim_poly_x_threshold)
+    .bind_u32(&trim_poly_x_threshold)
     .with_default(10);
 
   argparser.add_separator();
@@ -861,20 +861,20 @@ userconfig::userconfig()
     .help("Reads containing more ambiguous bases (N) than this number after "
           "trimming are discarded [default: no maximum]")
     .deprecated_alias("--maxns")
-    .bind_uint(&max_ambiguous_bases)
-    .with_default(std::numeric_limits<unsigned>::max());
+    .bind_u32(&max_ambiguous_bases)
+    .with_default(std::numeric_limits<uint32_t>::max());
 
   argparser.add("--min-length", "N")
     .help("Reads shorter than this length following trimming are discarded")
     .deprecated_alias("--minlength")
-    .bind_uint(&min_genomic_length)
+    .bind_u32(&min_genomic_length)
     .with_default(15);
   argparser.add("--max-length", "N")
     .help("Reads longer than this length following trimming are discarded "
           "[default: no maximum]")
     .deprecated_alias("--maxlength")
-    .bind_uint(&max_genomic_length)
-    .with_default(std::numeric_limits<unsigned>::max());
+    .bind_u32(&max_genomic_length)
+    .with_default(std::numeric_limits<uint32_t>::max());
 
   argparser.add("--min-mean-quality", "N")
     .help("Reads with a mean Phred encoded quality score (typically 0 to 42) "
@@ -915,19 +915,19 @@ userconfig::userconfig()
   argparser.add("--barcode-mm", "N")
     .help("Maximum number of mismatches allowed when counting mismatches in "
           "both the mate 1 and the mate 2 barcode for paired reads")
-    .bind_uint(&barcode_mm)
+    .bind_u32(&barcode_mm)
     .with_default(0);
   argparser.add("--barcode-mm-r1", "N")
     .help("Maximum number of mismatches allowed for the mate 1 barcode. "
           "Cannot be higher than the --barcode-mm value [default: same value "
           "as --barcode-mm]")
-    .bind_uint(&barcode_mm_r1)
+    .bind_u32(&barcode_mm_r1)
     .with_default(0);
   argparser.add("--barcode-mm-r2", "N")
     .help("Maximum number of mismatches allowed for the mate 2 barcode. "
           "Cannot be higher than the --barcode-mm value [default: same value "
           "as --barcode-mm]")
-    .bind_uint(&barcode_mm_r2)
+    .bind_u32(&barcode_mm_r2)
     .with_default(0);
   argparser.add("--demultiplex-only")
     .help("Only carry out demultiplexing using the list of barcodes "
@@ -959,7 +959,7 @@ userconfig::userconfig()
     .help("FastQC based duplicate detection, based on the frequency of the "
           "first N unique sequences observed. A value of 100,000 corresponds "
           "to FastQC defaults; a value of 0 disables the analysis")
-    .bind_uint(&report_duplication)
+    .bind_u32(&report_duplication)
     .with_default(0);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1039,7 +1039,7 @@ userconfig::parse_args(const string_vec& argvec)
     run_type = ar_command::benchmark;
   }
 
-  if (trim_quality_score > static_cast<unsigned>(PHRED_SCORE_MAX)) {
+  if (trim_quality_score > static_cast<uint32_t>(PHRED_SCORE_MAX)) {
     log::error() << "--trim-min-quality must be in the range 0 to "
                  << PHRED_SCORE_MAX << ", not " << trim_quality_score;
     return argparse::parse_result::error;
@@ -1442,8 +1442,8 @@ userconfig::new_output_file(const std::string& key,
 bool
 check_and_set_barcode_mm(const argparse::parser& argparser,
                          const std::string& key,
-                         unsigned barcode_mm,
-                         unsigned& dst)
+                         uint32_t barcode_mm,
+                         uint32_t& dst)
 {
   if (!argparser.is_set(key)) {
     dst = barcode_mm;
@@ -1543,13 +1543,15 @@ userconfig::is_short_read_filtering_enabled() const
 bool
 userconfig::is_long_read_filtering_enabled() const
 {
-  return max_genomic_length != std::numeric_limits<unsigned>::max();
+  return max_genomic_length !=
+         std::numeric_limits<decltype(max_genomic_length)>::max();
 }
 
 bool
 userconfig::is_ambiguous_base_filtering_enabled() const
 {
-  return max_ambiguous_bases != std::numeric_limits<unsigned>::max();
+  return max_ambiguous_bases !=
+         std::numeric_limits<decltype(max_ambiguous_bases)>::max();
 }
 
 bool

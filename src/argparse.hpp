@@ -36,7 +36,7 @@ class argument;
 class sink;
 class bool_sink;
 class double_sink;
-class uint_sink;
+class u32_sink;
 class str_sink;
 class vec_sink;
 
@@ -239,7 +239,7 @@ public:
   argument& conflicts_with(const std::string& key);
 
   bool_sink& bind_bool(bool* ptr);
-  uint_sink& bind_uint(unsigned* ptr);
+  u32_sink& bind_u32(uint32_t* ptr);
   double_sink& bind_double(double* ptr);
   str_sink& bind_str(std::string* ptr);
   vec_sink& bind_vec(string_vec* ptr);
@@ -366,27 +366,27 @@ private:
   bool m_fallback_sink = false;
 };
 
-class uint_sink : public sink
+class u32_sink : public sink
 {
 public:
-  explicit uint_sink(unsigned* ptr);
-  ~uint_sink() override = default;
+  explicit u32_sink(uint32_t* ptr);
+  ~u32_sink() override = default;
 
-  uint_sink& with_default(unsigned value);
+  u32_sink& with_default(uint32_t value);
   std::string default_value() const override;
 
   std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
-  uint_sink(const uint_sink&) = delete;
-  uint_sink(uint_sink&&) = delete;
-  uint_sink& operator=(const uint_sink&) = delete;
-  uint_sink& operator=(uint_sink&&) = delete;
+  u32_sink(const u32_sink&) = delete;
+  u32_sink(u32_sink&&) = delete;
+  u32_sink& operator=(const u32_sink&) = delete;
+  u32_sink& operator=(u32_sink&&) = delete;
 
 private:
-  unsigned* m_sink = nullptr;
+  uint32_t* m_sink = nullptr;
   //! Default value used for -h/--help output
-  unsigned m_default{};
+  uint32_t m_default{};
 };
 
 class double_sink : public sink

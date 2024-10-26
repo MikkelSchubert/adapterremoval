@@ -19,7 +19,7 @@
 \*************************************************************************/
 #include "catch.hpp"
 #include "errors.hpp"   // for assert_failed
-#include "strutils.hpp" // for format_rough_number, wrap_text, str_to_unsigned
+#include "strutils.hpp" // for format_rough_number, wrap_text, str_to_u32
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string
@@ -219,55 +219,55 @@ TEST_CASE("Subsequent lines are indented", "[strutils::wrap_text]")
   REQUIRE(wrap_text("foo bar\nzood", 0, 2) == vec{ "foo", "  bar", "  zood" });
 }
 
-TEST_CASE("Proper numbers are converted", "[strutils::str_to_unsigned]")
+TEST_CASE("Proper numbers are converted", "[strutils::str_to_u32]")
 {
-  REQUIRE(str_to_unsigned("0") == 0);
-  REQUIRE(str_to_unsigned("1") == 1);
-  REQUIRE(str_to_unsigned("2") == 2);
-  REQUIRE(str_to_unsigned("2147483647") == 2147483647);
-  REQUIRE(str_to_unsigned("2147483648") == 2147483648);
-  REQUIRE(str_to_unsigned("2147483649") == 2147483649);
-  REQUIRE(str_to_unsigned("4294967293") == 4294967293);
-  REQUIRE(str_to_unsigned("4294967294") == 4294967294);
-  REQUIRE(str_to_unsigned("4294967295") == 4294967295);
+  REQUIRE(str_to_u32("0") == 0);
+  REQUIRE(str_to_u32("1") == 1);
+  REQUIRE(str_to_u32("2") == 2);
+  REQUIRE(str_to_u32("2147483647") == 2147483647);
+  REQUIRE(str_to_u32("2147483648") == 2147483648);
+  REQUIRE(str_to_u32("2147483649") == 2147483649);
+  REQUIRE(str_to_u32("4294967293") == 4294967293);
+  REQUIRE(str_to_u32("4294967294") == 4294967294);
+  REQUIRE(str_to_u32("4294967295") == 4294967295);
 }
 
-TEST_CASE("Whitespace is ignored", "[strutils::str_to_unsigned]")
+TEST_CASE("Whitespace is ignored", "[strutils::str_to_u32]")
 {
-  REQUIRE(str_to_unsigned(" 123") == 123);
-  REQUIRE(str_to_unsigned("123 ") == 123);
-  REQUIRE(str_to_unsigned(" 123 ") == 123);
-  REQUIRE(str_to_unsigned("\n123\n") == 123);
+  REQUIRE(str_to_u32(" 123") == 123);
+  REQUIRE(str_to_u32("123 ") == 123);
+  REQUIRE(str_to_u32(" 123 ") == 123);
+  REQUIRE(str_to_u32("\n123\n") == 123);
 }
 
-TEST_CASE("Numbers outside range are rejected", "[strutils::str_to_unsigned]")
+TEST_CASE("Numbers outside range are rejected", "[strutils::str_to_u32]")
 {
-  REQUIRE_THROWS_AS(str_to_unsigned("-2"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("-1"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("4294967296"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("4294967297"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("-2"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("-1"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("4294967296"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("4294967297"), std::invalid_argument);
 }
 
-TEST_CASE("Non numeric strings are rejected", "[strutils::str_to_unsigned]")
+TEST_CASE("Non numeric strings are rejected", "[strutils::str_to_u32]")
 {
-  REQUIRE_THROWS_AS(str_to_unsigned(" "), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("x"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("a b c"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("\n"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32(" "), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("x"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("a b c"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("\n"), std::invalid_argument);
 }
 
-TEST_CASE("Mixed strings are rejected", "[strutils::str_to_unsigned]")
+TEST_CASE("Mixed strings are rejected", "[strutils::str_to_u32]")
 {
-  REQUIRE_THROWS_AS(str_to_unsigned("1a"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("123x"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("123 x"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("x123"), std::invalid_argument);
-  REQUIRE_THROWS_AS(str_to_unsigned("x 123"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("1a"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("123x"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("123 x"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("x123"), std::invalid_argument);
+  REQUIRE_THROWS_AS(str_to_u32("x 123"), std::invalid_argument);
 }
 
-TEST_CASE("Base 10 is assumed", "[strutils::str_to_unsigned]")
+TEST_CASE("Base 10 is assumed", "[strutils::str_to_u32]")
 {
-  REQUIRE(str_to_unsigned("010") == 10);
+  REQUIRE(str_to_u32("010") == 10);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

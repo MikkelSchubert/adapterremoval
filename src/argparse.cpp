@@ -504,10 +504,10 @@ argument::bind_bool(bool* ptr)
   return bind<bool_sink>(m_sink, ptr);
 }
 
-uint_sink&
-argument::bind_uint(unsigned* ptr)
+u32_sink&
+argument::bind_u32(unsigned* ptr)
 {
-  return bind<uint_sink>(m_sink, ptr);
+  return bind<u32_sink>(m_sink, ptr);
 }
 
 double_sink&
@@ -756,9 +756,9 @@ bool_sink::consume(string_vec_citer start, const string_vec_citer& end)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// uint_sink
+// u32_sink
 
-uint_sink::uint_sink(unsigned* ptr)
+u32_sink::u32_sink(uint32_t* ptr)
   : sink(1)
   , m_sink(ptr)
 {
@@ -767,8 +767,8 @@ uint_sink::uint_sink(unsigned* ptr)
   *m_sink = m_default;
 }
 
-uint_sink&
-uint_sink::with_default(unsigned value)
+u32_sink&
+u32_sink::with_default(uint32_t value)
 {
   set_has_default();
   *m_sink = m_default = value;
@@ -777,24 +777,24 @@ uint_sink::with_default(unsigned value)
 }
 
 std::string
-uint_sink::value() const
+u32_sink::value() const
 {
   return std::to_string(*m_sink);
 }
 
 std::string
-uint_sink::default_value() const
+u32_sink::default_value() const
 {
   AR_REQUIRE(has_default());
   return std::to_string(m_default);
 }
 
 size_t
-uint_sink::consume(string_vec_citer start, const string_vec_citer& end)
+u32_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(end - start == 1);
 
-  *m_sink = str_to_unsigned(preprocess(*start));
+  *m_sink = str_to_u32(preprocess(*start));
 
   return 1;
 }
