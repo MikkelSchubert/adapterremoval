@@ -215,6 +215,23 @@ wrap_text(const std::string& value, size_t max_width, size_t ljust)
   return lines_out;
 }
 
+std::string_view
+trim_ascii_whitespace(std::string_view s)
+{
+  constexpr std::string_view whitespace = " \f\n\r\t\v";
+  auto pos = s.find_first_not_of(whitespace);
+  if (pos == std::string_view::npos) {
+    return std::string_view{};
+  }
+
+  s.remove_prefix(pos);
+  pos = s.find_last_not_of(whitespace);
+  // Assumes `pos != npos` since `s` is guaranteed to contain non-whitespace
+  s.remove_suffix(s.size() - pos - 1);
+
+  return s;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'cli_formatter'
 

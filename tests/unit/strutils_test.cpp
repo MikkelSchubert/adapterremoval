@@ -20,7 +20,6 @@
 #include "catch.hpp"
 #include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_unsigned
-#include "testing.hpp"  // for catch.hpp, StringMaker
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string
@@ -449,6 +448,21 @@ TEST_CASE("join_text")
   REQUIRE(join_text<int>({ 1, 2, 3 }, ", ", ", or ") == "1, 2, or 3");
 
   REQUIRE(join_text<int>({ 1, 2, 3 }, ". ", ", or ") == "1. 2, or 3");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'trim_ascii_whitespace'
+
+TEST_CASE("trim_ascii_whitespace")
+{
+  REQUIRE(trim_ascii_whitespace("") == "");
+  REQUIRE(trim_ascii_whitespace("\f\n\r\t\v") == "");
+  REQUIRE(trim_ascii_whitespace("\f\n\r\t\vabc") == "abc");
+  REQUIRE(trim_ascii_whitespace("abc\f\n\r\t\v") == "abc");
+  REQUIRE(trim_ascii_whitespace("\f\n\r\t\vabc\f\n\r\t\v") == "abc");
+  REQUIRE(trim_ascii_whitespace("\f\n\r\t\va b c\f\n\r\t\v") == "a b c");
+  REQUIRE(trim_ascii_whitespace("abc") == "abc");
+  REQUIRE(trim_ascii_whitespace("a b c") == "a b c");
 }
 
 } // namespace adapterremoval

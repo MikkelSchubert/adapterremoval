@@ -143,6 +143,10 @@ join_text(const std::vector<T>& values, std::string_view sep)
   return join_text(values, sep, sep);
 }
 
+/** Trims whitespace from both ends of a string view */
+std::string_view
+trim_ascii_whitespace(std::string_view s);
+
 /**
  * Wrapper around 'indent_lines' and 'wrap_text'.
  *
