@@ -2,6 +2,7 @@ project(
     'adapterremoval3',
     'cpp',
     version: '3.0.0-alpha3',
+    meson_version: '>=1.2.0',
     default_options: {
         'buildtype': 'debugoptimized',
         'cpp_std': 'c++17',
