@@ -45,14 +45,14 @@ std::string
 timestamp(const char* format, bool milliseconds = false);
 
 /**
- * Convert a string to an unsigned integer.
+ * Convert a string to a uint32_t.
  *
  * Throws std::invalid_argument if the string does not contain a proper number,
  * if it contains more than just a number, or if the number overflows a
- * unsigned integer.
+ * unsigned integer. Whitespace is ignored.
  */
 unsigned
-str_to_unsigned(const std::string& s);
+str_to_unsigned(std::string_view s);
 
 /** Lowercases letters in the range a-z */
 constexpr char

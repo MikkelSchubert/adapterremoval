@@ -20,11 +20,11 @@
 #include "debug.hpp"    // for AR_REQUIRE
 #include <algorithm>    // for min, reverse, max
 #include <cctype>       // for isprint, isalnum, tolower, toupper
+#include <charconv>     // for from_chars
 #include <chrono>       // for system_clock
 #include <cmath>        // for log10, pow, round
 #include <cstdint>      // for uint64_t, int64_t
 #include <iomanip>      // for operator<<, setprecision
-#include <limits>       // for numeric_limits
 #include <sstream>      // for ostringstream, operator<<, basic_ostream, bas...
 #include <stdexcept>    // for invalid_argument
 #include <unistd.h>     // for STDOUT_FILENO
@@ -98,27 +98,34 @@ timestamp(const char* format, const bool milliseconds)
   return ss.str();
 }
 
-unsigned
-str_to_unsigned(const std::string& s)
+namespace {
+
+template<typename T>
+inline T
+str_to(std::string_view s)
 {
-  std::istringstream stream(s);
-  int64_t temp = 0;
+  T value{};
 
-  if (!(stream >> temp)) {
+  s = trim_ascii_whitespace(s);
+  const auto* begin = s.data();
+  const auto* end = begin + s.size();
+  const auto result = std::from_chars(begin, end, value);
+
+  if (result.ec != std::errc{}) {
     throw std::invalid_argument("value is not a valid number");
+  } else if (result.ptr != end) {
+    throw std::invalid_argument("number contains text");
   }
 
-  // Failing on trailing, non-numerical values
-  std::string trailing;
-  if (stream >> trailing) {
-    throw std::invalid_argument("value contains trailing text");
-  }
+  return value;
+}
 
-  if (temp < 0 || temp > std::numeric_limits<unsigned>::max()) {
-    throw std::invalid_argument("numerical value overflows");
-  }
+} // namespace
 
-  return static_cast<unsigned>(temp);
+unsigned
+str_to_unsigned(std::string_view s)
+{
+  return str_to<unsigned>(s);
 }
 
 std::string
