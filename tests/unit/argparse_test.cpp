@@ -690,11 +690,11 @@ TEST_CASE("canonical key", "[argparse::argument]")
 TEST_CASE("short argument alias", "[argparse::argument]")
 {
   argparse::argument arg("--12345", "67890");
-  arg.abbreviation('1');
+  arg.abbreviation('a');
 
   REQUIRE(arg.key() == "--12345");
-  REQUIRE(arg.short_key() == "-1");
-  REQUIRE(arg.keys() == string_vec{ "--12345", "-1" });
+  REQUIRE(arg.short_key() == "-a");
+  REQUIRE(arg.keys() == string_vec{ "--12345", "-a" });
   REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
   REQUIRE_FALSE(arg.is_deprecated_alias("-1"));
 }

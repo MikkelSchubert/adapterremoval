@@ -172,6 +172,7 @@ parser::value(const std::string& key) const
 argument&
 parser::add(const std::string& name, const std::string& metavar)
 {
+  AR_REQUIRE(starts_with(name, "--"), name);
   auto ptr = std::make_shared<argument>(name, metavar);
   m_args.push_back({ std::string(), ptr });
 
@@ -518,6 +519,8 @@ argument::bind_vec(string_vec* ptr)
 argument&
 argument::abbreviation(char key)
 {
+  // To avoid ambiguity only lower-case alphabetical arguments are allowed
+  AR_REQUIRE(key >= 'a' && key <= 'z', std::string{ key });
   m_key_short.clear();
   m_key_short.push_back('-');
   m_key_short.push_back(key);
