@@ -128,6 +128,12 @@ str_to_u32(std::string_view s)
   return str_to<uint32_t>(s);
 }
 
+double
+str_to_double(std::string_view s)
+{
+  return str_to<double>(s);
+}
+
 std::string
 to_lower(std::string str)
 {

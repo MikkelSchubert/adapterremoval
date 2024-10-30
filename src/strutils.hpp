@@ -54,6 +54,10 @@ timestamp(const char* format, bool milliseconds = false);
 uint32_t
 str_to_u32(std::string_view s);
 
+/** Convert a string to a double using the same rules as str_to_u32  */
+double
+str_to_double(std::string_view s);
+
 /** Lowercases letters in the range a-z */
 constexpr char
 to_lower(char c)

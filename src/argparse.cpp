@@ -53,19 +53,6 @@ is_similar_argument(const std::string& user,
   return (diff <= max_distance && levenshtein(user, ref) <= max_distance);
 }
 
-bool
-to_double(const std::string& value, double& out)
-{
-  std::istringstream stream(value);
-  if (!(stream >> out)) {
-    return false;
-  }
-
-  // Failing on trailing, non-numerical values
-  char trailing = 0;
-  return (!(stream >> trailing));
-}
-
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -625,13 +612,15 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
                 << " has been specified more than once.";
   }
 
-  double numeric_sink = 0;
   auto end_of_values = start + 1;
   for (; end_of_values != end; ++end_of_values) {
-    if (end_of_values->size() > 1 && end_of_values->front() == '-' &&
-        // Avoid confusing numeric values for command-line arguments
-        !to_double(*end_of_values, numeric_sink)) {
-      break;
+    if (end_of_values->size() > 1 && end_of_values->front() == '-') {
+      // Avoid confusing numeric values for command-line arguments
+      try {
+        str_to_double(*end_of_values);
+      } catch (const std::invalid_argument&) {
+        break;
+      }
     }
   }
 
@@ -852,18 +841,7 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(end - start == 1);
 
-  double value = 0;
-  std::istringstream stream(*start);
-  if (!(stream >> value)) {
-    throw std::invalid_argument("not a valid number");
-  }
-
-  char trailing = 0;
-  if (stream >> trailing) {
-    throw std::invalid_argument("number contains trailing text");
-  }
-
-  *m_sink = value;
+  *m_sink = str_to_double(*start);
   return 1;
 }
 
