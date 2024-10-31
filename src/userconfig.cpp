@@ -433,7 +433,8 @@ userconfig::userconfig()
   argparser.add("--threads", "N")
     .help("Maximum number of threads")
     .bind_u32(&max_threads)
-    .with_default(2);
+    .with_default(2)
+    .with_minimum(1);
 
   {
     std::vector<std::string> choices;
@@ -642,6 +643,7 @@ userconfig::userconfig()
       "BGZF format")
     .deprecated_alias("--gzip-level")
     .bind_u32(&compression_level)
+    .with_maximum(13)
     .with_default(5);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -791,6 +793,8 @@ userconfig::userconfig()
     .conflicts_with("--trim-qualities")
     .conflicts_with("--trim-min-quality")
     .bind_double(&trim_mott_rate)
+    .with_minimum(0.0)
+    .with_maximum(1.0)
     .with_default(0.05);
   argparser.add("--trim-windows", "X")
     .help("Specifies the size of the window used for '--quality-trimming "
@@ -802,6 +806,7 @@ userconfig::userconfig()
     .conflicts_with("--trim-mott-rate")
     .conflicts_with("--trim-qualities")
     .bind_double(&trim_window_length)
+    .with_minimum(0.0)
     .with_default(0.1);
   argparser.add("--trim-min-quality", "N")
     .help("Inclusive minimum quality used when trimming low-quality bases with "
@@ -809,6 +814,7 @@ userconfig::userconfig()
     .deprecated_alias("--minquality")
     .conflicts_with("--trim-mott-rate")
     .bind_u32(&trim_quality_score)
+    .with_maximum(PHRED_SCORE_MAX)
     .with_default(2);
   argparser.add("--trim-ns")
     .help("If set, trim ambiguous bases (N) at 5'/3' termini when using the "
@@ -881,6 +887,7 @@ userconfig::userconfig()
           "less than this value following trimming are discarded [default: no "
           "minimum]")
     .bind_double(&min_mean_quality)
+    .with_minimum(0.0)
     .with_default(0.0);
 
   argparser.add("--min-complexity", "X")
@@ -889,6 +896,8 @@ userconfig::userconfig()
       "is measured as the fraction of positions that differ from the previous "
       "position. A suggested value is 0.3 [default: no minimum]")
     .bind_double(&min_complexity)
+    .with_minimum(0.0)
+    .with_maximum(1.0)
     .with_default(0);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -954,6 +963,8 @@ userconfig::userconfig()
           "curves for trimming reports. Using all data (--report-sample-nth "
           "1.0) results in an 10-30% decrease in throughput")
     .bind_double(&report_sample_rate)
+    .with_minimum(0.0)
+    .with_maximum(1.0)
     .with_default(0.1);
   argparser.add("--report-duplication", "N")
     .help("FastQC based duplicate detection, based on the frequency of the "
@@ -1039,19 +1050,7 @@ userconfig::parse_args(const string_vec& argvec)
     run_type = ar_command::benchmark;
   }
 
-  if (trim_quality_score > static_cast<uint32_t>(PHRED_SCORE_MAX)) {
-    log::error() << "--trim-min-quality must be in the range 0 to "
-                 << PHRED_SCORE_MAX << ", not " << trim_quality_score;
-    return argparse::parse_result::error;
-  } else if (trim_window_length < 0) {
-    log::error() << "--trim-windows must be greater than or equal to zero, not "
-                 << trim_window_length;
-    return argparse::parse_result::error;
-  } else if (trim_mott_rate < 0) {
-    log::error() << "--trim-mott-rate must be greater than or equal to zero, "
-                 << "not " << trim_window_length;
-    return argparse::parse_result::error;
-  } else {
+  {
     const auto strategy = argparser.value("--quality-trimming");
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
@@ -1076,12 +1075,6 @@ userconfig::parse_args(const string_vec& argvec)
     } else {
       AR_FAIL(shell_escape(strategy));
     }
-  }
-
-  if (min_complexity < 0.0 || min_complexity > 1.0) {
-    log::error() << "--min-complexity must be a value in the range 0 to "
-                 << "1, not " << min_complexity;
-    return argparse::parse_result::error;
   }
 
   // Check for invalid combinations of settings
@@ -1161,17 +1154,6 @@ userconfig::parse_args(const string_vec& argvec)
       // Defaults for PE / SE trimming (changed in v3)
       mismatch_threshold = 1.0 / 6.0;
     }
-  }
-
-  if (compression_level > 13) {
-    log::error() << "--compression-level must be in the range 0 to 13, not "
-                 << compression_level;
-    return argparse::parse_result::error;
-  }
-
-  if (!max_threads) {
-    log::error() << "--threads must be at least 1!";
-    return argparse::parse_result::error;
   }
 
   {
