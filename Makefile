@@ -40,7 +40,7 @@ endif
 .NOTPARALLEL:
 
 # Default meson build directory
-BUILDDIR := builddir
+BUILDDIR := build
 # Location of ninja build-file; used to detected existing setup
 NINJAFILE := ${BUILDDIR}/build.ninja
 
