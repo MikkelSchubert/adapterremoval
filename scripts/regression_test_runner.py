@@ -252,11 +252,9 @@ def path_to_s(path: Iterable[str | int]) -> str:
     return ".".join(str(value) for value in path)
 
 
-def relative_to_cwd(path: Path) -> Path:
-    if path.is_absolute():
-        cwd = os.getcwd()
-        if path.is_relative_to(cwd):
-            return path.relative_to(cwd)
+def relative_to(root: Path, path: Path) -> Path:
+    if path.is_absolute() and path.is_relative_to(root):
+        return path.relative_to(root)
 
     return path
 
@@ -1281,6 +1279,12 @@ def parse_args(argv: list[str]) -> Args:
         default="auto",
         help="Enable color output",
     )
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        default=os.getcwd(),
+        help="Source root used to construct relative paths",
+    )
 
     return parser.parse_args(argv, namespace=Args())
 
@@ -1410,8 +1414,8 @@ def main(argv: list[str]) -> int:
         print_err(f"\nTest {test.name} failed:")
         if test.description is not None:
             print_err("  Description   =", test.description)
-        print_err("  Specification =", relative_to_cwd(test.spec_path))
-        print_err("  Directory     =", relative_to_cwd(test.path))
+        print_err("  Specification =", relative_to(args.source_root, test.spec_path))
+        print_err("  Directory     =", relative_to(args.source_root, test.path))
         print_err("  Command       =", simplify_cmd(test.command))
 
         error = "\n                  ".join(str(error).split("\n"))
