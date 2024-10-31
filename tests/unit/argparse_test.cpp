@@ -18,15 +18,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
 #include "argparse.hpp" // for argument, parser, str_sink, parse_result
-#include "debug.hpp"    // for assert_failed
 #include "errors.hpp"   // for assert_failed
 #include "logging.hpp"  // for log_capture
 #include "strutils.hpp" // for string_vec
 #include "testing.hpp"  // for catch.hpp, StringMaker
 #include <cstddef>      // for size_t
+#include <limits>       // for numeric_limits
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string, allocator
 #include <vector>       // for vector, operator==
+
+namespace Catch {
+
+template<>
+std::string
+StringMaker<std::invalid_argument, void>::convert(
+  std::invalid_argument const& value)
+{
+  return value.what();
+}
+
+} // namespace Catch
 
 namespace adapterremoval {
 
@@ -38,6 +50,16 @@ using Catch::Matchers::Contains;
 
 #define REQUIRE_POSTFIX(a, b) REQUIRE_THAT((a), Catch::Matchers::EndsWith(b))
 #define REQUIRE_CONTAINS(a, b) REQUIRE_THAT((a), Catch::Matchers::Contains(b))
+
+///////////////////////////////////////////////////////////////////////////////
+// invalid_argument matches
+
+TEST_CASE("invalid_argument matches")
+{
+  using SM = Catch::StringMaker<std::invalid_argument>;
+
+  REQUIRE(SM::convert(std::invalid_argument("test 1 2")) == "test 1 2");
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // boolean sink
@@ -215,6 +237,93 @@ TEST_CASE("uint disallows trailing garbage", "[argparse::u32_sink]")
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()),
                     std::invalid_argument);
   REQUIRE(value == 0);
+}
+
+TEST_CASE("uint with_minimum requires valid default")
+{
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
+
+  SECTION("fail")
+  {
+    sink.with_minimum(0);
+    REQUIRE_THROWS_AS(sink.with_minimum(1), assert_failed);
+  }
+
+  SECTION("pass")
+  {
+    sink.with_default(101).with_minimum(100);
+    sink.with_default(100).with_minimum(100);
+  }
+}
+
+TEST_CASE("with uint minimum", "[argparse::u32_sink]")
+{
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
+  sink.with_default(100);
+  sink.with_minimum(100);
+
+  SECTION("pass")
+  {
+    const auto expected = GENERATE(100LU, 101LU, 4294967295LU);
+    string_vec values{ std::to_string(expected) };
+    REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+    REQUIRE(value == expected);
+  }
+
+  SECTION("fail")
+  {
+    string_vec values{ "99" };
+    REQUIRE_THROWS_MATCHES(sink.consume(values.begin(), values.end()),
+                           std::invalid_argument,
+                           Catch::Message("value must be at least 100"));
+    REQUIRE(value != 0);
+  }
+}
+
+TEST_CASE("uint with_maximum requires valid default")
+{
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
+  sink.with_default(100);
+
+  SECTION("fail")
+  {
+    sink.with_maximum(100);
+    REQUIRE_THROWS_AS(sink.with_maximum(99), assert_failed);
+  }
+
+  SECTION("pass")
+  {
+    sink.with_maximum(100);
+    sink.with_maximum(101);
+    sink.with_maximum(std::numeric_limits<uint32_t>::max());
+  }
+}
+
+TEST_CASE("with uint maximum", "[argparse::u32_sink]")
+{
+  uint32_t value = 0;
+  argparse::u32_sink sink(&value);
+  sink.with_maximum(100);
+
+  SECTION("pass")
+  {
+    const auto expected = GENERATE(0LU, 99LU, 100LU);
+    string_vec values{ std::to_string(expected) };
+    REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+    REQUIRE(value == expected);
+  }
+
+  SECTION("fail")
+  {
+    string_vec values{ "101" };
+    REQUIRE_THROWS_MATCHES(sink.consume(values.begin(), values.end()),
+                           std::invalid_argument,
+                           Catch::Message("value must be at most 100"));
+    REQUIRE(value != 101);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

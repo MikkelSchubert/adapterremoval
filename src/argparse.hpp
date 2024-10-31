@@ -375,6 +375,11 @@ public:
   u32_sink& with_default(uint32_t value);
   std::string default_value() const override;
 
+  /** Set minimum allowed value (inclusive) */
+  u32_sink& with_minimum(uint32_t value);
+  /** Set maximum allowed value (inclusive) */
+  u32_sink& with_maximum(uint32_t value);
+
   std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
@@ -387,6 +392,10 @@ private:
   uint32_t* m_sink = nullptr;
   //! Default value used for -h/--help output
   uint32_t m_default{};
+  //! Minimum allowed value (inclusive)
+  uint32_t m_minimum;
+  //! Maximum allowed value (inclusive)
+  uint32_t m_maximum;
 };
 
 class double_sink : public sink
@@ -397,6 +406,11 @@ public:
 
   double_sink& with_default(double value);
   std::string default_value() const override;
+
+  /** Set minimum allowed value (inclusive) */
+  double_sink& with_minimum(double value);
+  /** Set maximum allowed value (inclusive) */
+  double_sink& with_maximum(double value);
 
   std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
@@ -410,6 +424,10 @@ private:
   double* m_sink = nullptr;
   //! Default value used for -h/--help output
   double m_default{};
+  //! Minimum allowed value (inclusive)
+  double m_minimum;
+  //! Maximum allowed value (inclusive)
+  double m_maximum;
 };
 
 class str_sink : public sink

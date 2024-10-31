@@ -753,6 +753,8 @@ bool_sink::consume(string_vec_citer start, const string_vec_citer& end)
 u32_sink::u32_sink(uint32_t* ptr)
   : sink(1)
   , m_sink(ptr)
+  , m_minimum(std::numeric_limits<decltype(m_minimum)>::lowest())
+  , m_maximum(std::numeric_limits<decltype(m_maximum)>::max())
 {
   AR_REQUIRE(ptr);
 
@@ -762,6 +764,7 @@ u32_sink::u32_sink(uint32_t* ptr)
 u32_sink&
 u32_sink::with_default(uint32_t value)
 {
+  AR_REQUIRE(value >= m_minimum && value <= m_maximum);
   set_has_default();
   *m_sink = m_default = value;
 
@@ -781,13 +784,37 @@ u32_sink::default_value() const
   return std::to_string(m_default);
 }
 
+u32_sink&
+u32_sink::with_minimum(uint32_t value)
+{
+  AR_REQUIRE(m_default >= value && value <= m_maximum);
+  m_minimum = value;
+  return *this;
+}
+
+u32_sink&
+u32_sink::with_maximum(uint32_t value)
+{
+  AR_REQUIRE(m_default <= value && value >= m_minimum);
+  m_maximum = value;
+  return *this;
+}
+
 size_t
 u32_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(end - start == 1);
 
-  *m_sink = str_to_u32(preprocess(*start));
+  const auto value = str_to_u32(preprocess(*start));
+  if (value < m_minimum) {
+    throw std::invalid_argument("value must be at least " +
+                                std::to_string(m_minimum));
+  } else if (value > m_maximum) {
+    throw std::invalid_argument("value must be at most " +
+                                std::to_string(m_maximum));
+  }
 
+  *m_sink = value;
   return 1;
 }
 
@@ -797,15 +824,17 @@ u32_sink::consume(string_vec_citer start, const string_vec_citer& end)
 double_sink::double_sink(double* ptr)
   : sink(1)
   , m_sink(ptr)
+  , m_minimum(std::numeric_limits<decltype(m_minimum)>::lowest())
+  , m_maximum(std::numeric_limits<decltype(m_maximum)>::max())
 {
   AR_REQUIRE(ptr);
-
   *m_sink = m_default;
 }
 
 double_sink&
 double_sink::with_default(double value)
 {
+  AR_REQUIRE(value >= m_minimum && value <= m_maximum);
   set_has_default();
   *m_sink = m_default = value;
 
@@ -833,6 +862,23 @@ double_sink::default_value() const
   return double_to_string(m_default);
 }
 
+double_sink&
+double_sink::with_minimum(double value)
+{
+  AR_REQUIRE(m_default >= value && value >= m_minimum);
+  m_minimum = value;
+
+  return *this;
+}
+
+double_sink&
+double_sink::with_maximum(double value)
+{
+  AR_REQUIRE(m_default <= value && value >= m_minimum);
+  m_maximum = value;
+  return *this;
+}
+
 std::string
 double_sink::value() const
 {
@@ -844,7 +890,16 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(end - start == 1);
 
-  *m_sink = str_to_double(*start);
+  const auto value = str_to_double(*start);
+  if (value < m_minimum) {
+    throw std::invalid_argument("value must be at least " +
+                                double_to_string(m_minimum));
+  } else if (value > m_maximum) {
+    throw std::invalid_argument("value must be at most " +
+                                double_to_string(m_maximum));
+  }
+
+  *m_sink = value;
   return 1;
 }
 
