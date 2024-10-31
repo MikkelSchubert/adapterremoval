@@ -50,6 +50,10 @@ executable: ${NINJAFILE}
 clean:
 	rm -rvf "${BUILDDIR}"
 
+coverage: ${NINJAFILE}
+	ninja -C "${BUILDDIR}" coverage-text
+	cat build/meson-logs/coverage.txt
+
 install: ${NINJAFILE}
 	meson install -C "${BUILDDIR}"
 
