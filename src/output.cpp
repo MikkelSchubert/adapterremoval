@@ -225,8 +225,8 @@ processed_reads::processed_reads(const sample_output_files& map)
 void
 processed_reads::set_sample(const sample& value)
 {
-  for (auto& ser : m_serializers) {
-    ser.set_sample(value);
+  for (auto& it : m_serializers) {
+    it.set_sample(value);
   }
 }
 
@@ -234,16 +234,16 @@ void
 processed_reads::set_mate_separator(char value)
 {
   m_mate_separator = value;
-  for (auto& ser : m_serializers) {
-    ser.set_mate_separator(value);
+  for (auto& it : m_serializers) {
+    it.set_mate_separator(value);
   }
 }
 
 void
 processed_reads::set_demultiplexing_only(bool value)
 {
-  for (auto& ser : m_serializers) {
-    ser.set_demultiplexing_only(value);
+  for (auto& it : m_serializers) {
+    it.set_demultiplexing_only(value);
   }
 }
 

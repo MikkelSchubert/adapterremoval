@@ -544,7 +544,7 @@ gzip_split_fastq::process(chunk_ptr chunk)
     }
   }
 
-  // Enable re-use of the analytical_chunks
+  // Enable reuse of the analytical_chunks
   std::swap(input_buffer, output_buffer);
 
   chunk_vec chunks;

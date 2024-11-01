@@ -16,7 +16,7 @@ Installing AdapterRemoval from sources requires `libdeflate`_ and `isa-l`_. On D
 
     sudo apt-get install libdeflate-dev libisal-dev
 
-In addtion, a C++14 compatible compiler and basic build-tools are required. On Debian based systems, these may be installed as follows::
+In addition, a C++14 compatible compiler and basic build-tools are required. On Debian based systems, these may be installed as follows::
 
     sudo apt-get install build-essential
 

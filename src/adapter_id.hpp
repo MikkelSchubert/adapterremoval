@@ -63,7 +63,7 @@ private:
   fastq m_adapter{};
   //! Vector of the top N k-mer sequences and the number of observations
   kmer_vec m_top_kmers{};
-  //! Total number of k-mers observed
+  //! Total number of kmers observed
   size_t m_total_kmers = 0;
 };
 
@@ -71,11 +71,11 @@ private:
 class consensus_adapter_stats
 {
 public:
-  //! Length of k-mers to collect to find common kmers
+  //! Length of kmers to collect to find common kmers
   static const size_t kmer_length = 9;
   //! Size of vector needed for k-mer counts
   static const size_t kmer_count = 2LLU << (2 * kmer_length);
-  //! The N most common k-mers to print
+  //! The N most common kmers to print
   static const size_t top_n_kmers = 5;
 
   explicit consensus_adapter_stats(size_t max_length);

@@ -67,7 +67,7 @@
                     "$ref": "#/definitions/detailed-sequence-statistics"
                 },
                 "read2": {
-                    "description": "Detailed sequence statistics for input mate 2 reads, if running in paried-end mode",
+                    "description": "Detailed sequence statistics for input mate 2 reads, if running in paired-end mode",
                     "$ref": "#/definitions/optional-detailed-sequence-statistics"
                 }
             },
@@ -128,11 +128,11 @@
                                                 "$ref": "#/definitions/detailed-sequence-statistics"
                                             },
                                             "read2": {
-                                                "description": "Detailed sequence statistics for mate 2 reads, if running in paried-end mode",
+                                                "description": "Detailed sequence statistics for mate 2 reads, if running in paired-end mode",
                                                 "$ref": "#/definitions/optional-detailed-sequence-statistics"
                                             },
                                             "merged": {
-                                                "description": "Detailed sequence statistics for merged reads, if running in paried-end mode and merging is enabled",
+                                                "description": "Detailed sequence statistics for merged reads, if running in paired-end mode and merging is enabled",
                                                 "$ref": "#/definitions/optional-detailed-sequence-statistics"
                                             },
                                             "singleton": {
@@ -192,11 +192,11 @@
                             "$ref": "#/definitions/detailed-sequence-statistics"
                         },
                         "read2": {
-                            "description": "Detailed sequence statistics for mate 2 reads, if running in paried-end mode",
+                            "description": "Detailed sequence statistics for mate 2 reads, if running in paired-end mode",
                             "$ref": "#/definitions/optional-detailed-sequence-statistics"
                         },
                         "merged": {
-                            "description": "Detailed sequence statistics for merged reads, if running in paried-end mode and merging is enabled",
+                            "description": "Detailed sequence statistics for merged reads, if running in paired-end mode and merging is enabled",
                             "$ref": "#/definitions/optional-detailed-sequence-statistics"
                         },
                         "unidentified1": {
@@ -504,11 +504,11 @@
                     "$ref": "#/definitions/optional-nucleotide-content-statistics"
                 },
                 "quality_scores": {
-                    "description": "Phred score distrubution of reads written to output",
+                    "description": "Phred score distribution of reads written to output",
                     "$ref": "#/definitions/optional-array-of-counts"
                 },
                 "gc_content": {
-                    "description": "Smoothed distrubution of GC content per read",
+                    "description": "Smoothed distribution of GC content per read",
                     "$ref": "#/definitions/optional-array-of-non-negative-numbers"
                 },
                 "duplication": {

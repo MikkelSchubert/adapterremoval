@@ -164,7 +164,7 @@ class JSONParser:
         reader = TextIter(text)
         value = cls._parse_next(reader)
         if reader.get() is not None:
-            raise JSONError(f"unexpected charcter {reader.get()!r} after root value")
+            raise JSONError(f"unexpected character {reader.get()!r} after root value")
 
         return value
 

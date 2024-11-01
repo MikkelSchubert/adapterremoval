@@ -26,7 +26,7 @@
 
 namespace adapterremoval {
 
-/** Lightweight represention of a DNA sequence limited to bases ACGTN */
+/** Lightweight representation of a DNA sequence limited to bases ACGTN */
 class dna_sequence
 {
 public:

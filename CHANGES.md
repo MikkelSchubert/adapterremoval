@@ -366,7 +366,7 @@ The following changes are all [**BREAKING**] as described above:
 
 - Dropped the undocumented 'poor' classification for alignments; for
   statistical purposes, reads are either counted as aligned or not aligned.
-  This ony changes how results are presented in the .settings files.
+  This only changes how results are presented in the .settings files.
 
 ### Fixed
 

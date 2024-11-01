@@ -203,7 +203,7 @@ public:
   //! Sink for benchmark
   string_vec benchmarks{};
 
-  //! Timestamp from start of executation
+  //! Timestamp from start of execution
   static std::string start_time;
 
   /* Helper functions for logging / reporting */

@@ -234,7 +234,7 @@ TEST_CASE("constructor_invalid_nucleotides", "[fastq::fastq]")
   REQUIRE_NOTHROW(fastq("Name", "CATT", "IJJI"));
   // Non-alpha characters are not allowed
   REQUIRE_THROWS_AS(fastq("Name", "CAT!", "IJJI"), fastq_error);
-  // Numeric charecters are not allowed
+  // Numeric characters are not allowed
   REQUIRE_THROWS_AS(fastq("Name", "CAT7", "IJJI"), fastq_error);
   // But neither are non acgtn/ACGTN allowed
   REQUIRE_THROWS_AS(fastq("Name", "CATS", "IJJI"), fastq_error);

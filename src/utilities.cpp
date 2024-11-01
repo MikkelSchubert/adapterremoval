@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include <chrono> // for duration, high_resolution_clock, system_clock::tim...
+#include <chrono> // for duration, high_resolution_clock, system_clock::time..
 #include <mutex>  // for mutex
 #include <random> // for mt19937
 

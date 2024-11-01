@@ -79,7 +79,7 @@ public:
       return value;
     }
 
-    AR_FAIL("could not aquare thread state");
+    AR_FAIL("could not acquire thread state");
   }
 
   /** Release ownership of a value. **/
@@ -193,11 +193,11 @@ public:
    *
    * Initially, the first step in the pipeline will receive nullptr; during
    * subsequent cycles, the pipeline will return the value output from the
-   * last step to the initial step, which may re-use it to avoid allocations;
+   * last step to the initial step, which may reuse it to avoid allocations;
    * if this is not done, the chunk must be freed by the first step.
    *
    * Best performance is therefore obtained if the chunk contains buffers
-   * for all steps, and these can be re-used across cycles, thereby reducing
+   * for all steps, and these can be reused across cycles, thereby reducing
    * the number of (de)allocations that must be performed.
    *
    * To terminate the pipeline, the first step must cease to return chunks;

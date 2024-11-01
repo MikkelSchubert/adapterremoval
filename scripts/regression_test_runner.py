@@ -77,7 +77,7 @@ _COLORS_ENABLED = False
 
 def _do_print_color(
     *vargs_: object,
-    colorcode: int,
+    color_code: int,
     end: str,
 ) -> None:
     """Utility function: Prints using shell colors."""
@@ -91,7 +91,7 @@ def _do_print_color(
             # Newlines terminate the color-code for e.g. 'less', so ensure that
             # each line is color-coded, while preserving the list of arguments
             for line in str(varg).split("\n"):
-                varg_lines.append("\033[00;%im%s\033[00m" % (colorcode, line))
+                varg_lines.append("\033[00;%im%s\033[00m" % (color_code, line))
             vargs[index] = "\n".join(varg_lines)
     else:
         vargs = vargs_
@@ -102,18 +102,18 @@ def _do_print_color(
 
 
 def print_ok(*vargs: object, end: str = "\n") -> None:
-    """Equivalent to print, but prints using shell colorcodes (green)."""
-    _do_print_color(*vargs, colorcode=32, end=end)
+    """Equivalent to print, but prints using shell color codes (green)."""
+    _do_print_color(*vargs, color_code=32, end=end)
 
 
 def print_warn(*vargs: object, end: str = "\n") -> None:
-    """Equivalent to print, but prints using shell colorcodes (green)."""
-    _do_print_color(*vargs, colorcode=33, end=end)
+    """Equivalent to print, but prints using shell color codes (green)."""
+    _do_print_color(*vargs, color_code=33, end=end)
 
 
 def print_err(*vargs: object, end: str = "\n") -> None:
-    """Equivalent to print, but prints using shell colorcodes (red)."""
-    _do_print_color(*vargs, colorcode=31, end=end)
+    """Equivalent to print, but prints using shell color codes (red)."""
+    _do_print_color(*vargs, color_code=31, end=end)
 
 
 #############################################################################

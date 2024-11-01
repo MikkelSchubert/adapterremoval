@@ -3,7 +3,7 @@ AdapterRemoval
 
 AdapterRemoval searches for and trims remnant adapter sequences from High-Throughput Sequencing (HTS) data, trims low quality bases, merges overlapping paired-ended reads, and generates QC reports (human and machine readable). AdapterRemoval can additionally demultiplex sequencing reads and can construct a consensus adapter sequence from paired-ended reads.
 
-See the :doc:`getting_started` and :doc:`examples` pages to get started processing your own data. See the :doc:`detailed_overview` page for a description of processing carried out by AdapterRemoval and the options affecting each step of the process. See the :doc:`input_and_output` page for details on the input files read by AdapterRemoval and resulting output filess. And finally, see the :doc:`migrating` page if you are upgrading from an older version of AdapterRemoval.
+See the :doc:`getting_started` and :doc:`examples` pages to get started processing your own data. See the :doc:`detailed_overview` page for a description of processing carried out by AdapterRemoval and the options affecting each step of the process. See the :doc:`input_and_output` page for details on the input files read by AdapterRemoval and resulting output files. And finally, see the :doc:`migrating` page if you are upgrading from an older version of AdapterRemoval.
 
 If you use AdapterRemoval v3, then please cite the paper:
 
