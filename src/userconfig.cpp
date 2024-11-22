@@ -1616,13 +1616,8 @@ userconfig::setup_demultiplexing()
       return false;
     }
 
-    if (samples.size()) {
-      log::info() << "Read " << samples.size() << " sets of barcodes from "
-                  << shell_escape(barcode_list);
-    } else {
-      log::error() << "No barcodes sequences found in table!";
-      return false;
-    }
+    log::info() << "Read " << samples.size() << " sets of barcodes from "
+                << shell_escape(barcode_list);
   }
 
   const auto& output_files = get_output_filenames();

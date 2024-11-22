@@ -77,14 +77,14 @@ demultiplex_se_reads::process(chunk_ptr chunk)
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   for (auto& read : chunk->reads_1) {
-    const auto match = m_barcode_table.identify(read);
-
-    if (match < 0) {
-      switch (match) {
-        case barcode_table::no_match:
+    const auto [sample, barcode] = m_barcode_table.identify(read);
+    // TODO: We should keep reads even if we cannot identify the exact barcode
+    if (sample < 0 || barcode < 0) {
+      switch (sample) {
+        case barcode_key::unidentified:
           m_statistics->unidentified += 1;
           break;
-        case barcode_table::ambiguous:
+        case barcode_key::ambiguous:
           m_statistics->ambiguous += 1;
           break;
         default:
@@ -93,8 +93,6 @@ demultiplex_se_reads::process(chunk_ptr chunk)
 
       m_cache.add_unidentified_1(std::move(read));
     } else {
-      const auto [sample, barcode] = m_barcodes.at(match);
-
       read.truncate(m_barcode_table.length_1());
 
       m_statistics->samples.at(sample) += 1;
@@ -124,14 +122,15 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
   auto it_1 = chunk->reads_1.begin();
   auto it_2 = chunk->reads_2.begin();
   for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
-    const auto match = m_barcode_table.identify(*it_1, *it_2);
+    const auto [sample, barcode] = m_barcode_table.identify(*it_1, *it_2);
 
-    if (match < 0) {
-      switch (match) {
-        case barcode_table::no_match:
+    // TODO: We should keep reads even if we cannot identify the exact barcode
+    if (sample < 0 || barcode < 0) {
+      switch (sample) {
+        case barcode_key::unidentified:
           m_statistics->unidentified += 2;
           break;
-        case barcode_table::ambiguous:
+        case barcode_key::ambiguous:
           m_statistics->ambiguous += 2;
           break;
         default:
@@ -141,8 +140,6 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
       m_cache.add_unidentified_1(std::move(*it_1));
       m_cache.add_unidentified_2(std::move(*it_2));
     } else {
-      const auto [sample, barcode] = m_barcodes.at(match);
-
       it_1->truncate(m_barcode_table.length_1());
       m_cache.add_read_1(std::move(*it_1), sample, barcode);
 

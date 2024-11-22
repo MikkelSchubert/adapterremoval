@@ -26,6 +26,7 @@
 #include "strutils.hpp"    // for string_vec, indent_lines
 #include <algorithm>       // for max, sort, find
 #include <sstream>         // for operator<<, basic_ostream, ostringstream
+#include <stdexcept>       // for invalid_argument
 #include <string_view>     // for string_view
 #include <utility>         // for pair
 #include <vector>          // for vector, vector<>::const_iterator
@@ -172,7 +173,7 @@ validate_barcode_sequence(const dna_sequence& sequence,
 
   if (sequence.length() != expected_length) {
     std::ostringstream error;
-    error << "Inconsistent mate " << mate << "barcode lengths found: Last "
+    error << "Inconsistent mate " << mate << " barcode lengths found: Last "
           << "barcode was " << expected_length << " base-pairs long, but "
           << "barcode " << log_escape(seq) << " is " << seq.length() << " "
           << "base-pairs long. Variable length barcodes are not supported";
@@ -186,17 +187,25 @@ check_barcodes_sequences(const std::vector<sample>& samples,
                          const std::string& source,
                          bool paired_end = false)
 {
+  if (samples.empty()) {
+    throw parsing_error("No samples/barcodes provided");
+  }
+
   auto mate_1_len = static_cast<size_t>(-1);
   auto mate_2_len = static_cast<size_t>(-1);
 
   std::vector<std::pair<std::string_view, std::string_view>> sequences;
-  for (const auto& it : samples) {
-    validate_sample_name(it.name());
+  for (const auto& sample : samples) {
+    validate_sample_name(sample.name());
 
-    for (const auto& it : it) {
+    for (const auto& it : sample) {
       if (mate_1_len == static_cast<size_t>(-1)) {
         mate_1_len = it.barcode_1.length();
         mate_2_len = it.barcode_2.length();
+
+        if (!mate_1_len) {
+          throw parsing_error("Empty barcode 1 sequence for " + sample.name());
+        }
       }
 
       validate_barcode_sequence(it.barcode_1, mate_1_len, 1);
@@ -506,6 +515,27 @@ sample_set::sample_set()
 {
 }
 
+sample_set::sample_set(std::initializer_list<sample> args)
+  : m_samples(args)
+  , m_unidentified("unidentified", dna_sequence{}, dna_sequence{})
+{
+  std::sort(m_samples.begin(),
+            m_samples.end(),
+            [](const auto& a, const auto& b) { return a.name() < b.name(); });
+
+  std::string_view name;
+  for (const auto& sample : m_samples) {
+    validate_sample_name(sample.name());
+    if (sample.name() == name) {
+      throw parsing_error("duplicate sample name: " + sample.name());
+    }
+
+    name = sample.name();
+  }
+
+  check_barcodes_sequences(m_samples, "initializer_list", true);
+}
+
 void
 sample_set::set_adapters(adapter_set adapters)
 {
@@ -536,16 +566,16 @@ sample_set::load(const std::string& filename, const barcode_config& config)
     return a.name < b.name;
   });
 
-  m_samples.clear();
+  std::vector<sample> samples{};
   for (const auto& row : barcodes) {
-    if (m_samples.empty() || m_samples.back().name() != row.name) {
+    if (samples.empty() || samples.back().name() != row.name) {
       sample s{ row.name, row.sequence_1, row.sequence_2 };
       s.set_adapters(m_adapters);
       s.set_read_group(m_read_group);
 
-      m_samples.push_back(std::move(s));
+      samples.push_back(std::move(s));
     } else if (config.m_allow_multiple_barcodes) {
-      m_samples.back().add(row.sequence_1, row.sequence_2);
+      samples.back().add(row.sequence_1, row.sequence_2);
     } else {
       std::ostringstream error;
       error << "Duplicate sample name " << log_escape(row.name)
@@ -557,8 +587,9 @@ sample_set::load(const std::string& filename, const barcode_config& config)
   }
 
   // Check before adding reversed barcodes, to prevent misleading error messages
-  check_barcodes_sequences(m_samples, filename, config.m_paired_end_mode);
+  check_barcodes_sequences(samples, filename, config.m_paired_end_mode);
 
+  std::swap(m_samples, samples);
   if (!config.m_unidirectional_barcodes) {
     add_reversed_barcodes(config);
   }

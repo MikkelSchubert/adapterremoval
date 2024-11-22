@@ -24,7 +24,6 @@
 \*************************************************************************/
 #pragma once
 
-#include "barcode_table.hpp"
 #include "sequence.hpp"     // for for dna_sequence
 #include <cstddef>          // for size_t
 #include <initializer_list> // for initializer_list
@@ -252,6 +251,8 @@ class sample_set
 public:
   /** Creates barcode set with single unnamed sample with empty barcodes */
   sample_set();
+  /** Creates barcode set from set of samples. Allows multiple barcodes */
+  sample_set(std::initializer_list<sample> args);
 
   /** Sets adapter sequences for all samples */
   void set_adapters(adapter_set adapters);

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "barcode_table.hpp"
+#include "barcode_table.hpp" // declarations
 #include "debug.hpp"         // for AR_REQUIRE
 #include "errors.hpp"        // for parsing_error
 #include "fastq.hpp"         // for fastq
@@ -27,8 +27,19 @@
 
 namespace adapterremoval {
 
-using barcode_pair = std::pair<std::string, size_t>;
-using barcode_vec = std::vector<barcode_pair>;
+struct barcode_match
+{
+  barcode_match() = default;
+
+  explicit barcode_match(const barcode_key& key_, uint32_t mismatches_ = -1)
+    : key(key_)
+    , mismatches(mismatches_)
+  {
+  }
+
+  barcode_key key{};
+  uint32_t mismatches = -1;
+};
 
 struct next_subsequence
 {
@@ -45,80 +56,46 @@ struct next_subsequence
 
 ///////////////////////////////////////////////////////////////////////////////
 
-demultiplexer_node::demultiplexer_node()
+barcode_node::barcode_node()
   : children()
-  , value(barcode_table::no_match)
+  , key()
 {
-  children.fill(barcode_table::no_match);
-}
-
-barcode_table::candidate::candidate(int barcode_, size_t mismatches_)
-  : barcode(barcode_)
-  , mismatches(mismatches_)
-{
+  children.fill(barcode_key::unidentified);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-/**
- * Returns a lexicographically sorted list of merged barcodes, each paired with
- * the 0-based index of corresponding barcode in the source vector.
- */
-barcode_vec
-sort_barcodes(const sequence_pair_vec& barcodes)
-{
-  AR_REQUIRE(!barcodes.empty());
-  barcode_vec sorted_barcodes;
-
-  const size_t key_1_len = barcodes.front().first.length();
-  const size_t key_2_len = barcodes.front().second.length();
-  for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
-    if (it->first.length() != key_1_len) {
-      throw parsing_error("mate 1 barcodes do not have the same length");
-    } else if (it->second.length() != key_2_len) {
-      throw parsing_error("mate 2 barcodes do not have the same length");
-    }
-
-    std::string barcode;
-    barcode.reserve(key_1_len + key_2_len);
-    barcode.append(it->first);
-    barcode.append(it->second);
-
-    sorted_barcodes.emplace_back(barcode, it - barcodes.begin());
-  }
-
-  std::sort(sorted_barcodes.begin(), sorted_barcodes.end());
-
-  return sorted_barcodes;
-}
-
 /** Adds a nucleotide sequence with a given ID to a quad-tree. */
 void
-add_sequence_to_tree(demux_node_vec& tree,
+add_sequence_to_tree(std::vector<barcode_node>& tree,
                      const std::string& sequence,
-                     const size_t barcode_id)
+                     const barcode_key key)
 {
   size_t node_idx = 0;
   bool added_last_node = false;
   for (auto nuc : sequence) {
     auto& node = tree.at(node_idx);
-    // Indicate when PE barcodes can be unambiguously identified from SE
-    // reads
-    node.value = (node.value == barcode_table::no_match)
-                   ? barcode_id
-                   : barcode_table::ambiguous;
+    // Indicate when PE barcodes can be unambiguously identified from SE reads
+    if (node.key.sample == barcode_key::unidentified) {
+      node.key.sample = key.sample;
+      node.key.barcode = key.barcode;
+    } else if (node.key.sample == key.sample) {
+      node.key.barcode = barcode_key::ambiguous;
+    } else {
+      node.key.sample = barcode_key::ambiguous;
+      node.key.barcode = barcode_key::ambiguous;
+    }
 
     const auto nuc_idx = ACGT::to_index(nuc);
     auto child = node.children[nuc_idx];
 
-    added_last_node = (child == barcode_table::no_match);
+    added_last_node = (child == barcode_key::unidentified);
     if (added_last_node) {
-      // New nodes are added to the end of the list; as barcodes are
-      // added in lexicographic order, this helps ensure that a set of
-      // similar barcodes will be placed in mostly contiguous runs
-      // of the vector representation.
+      // New nodes are added to the end of the list; as barcodes are added in
+      // lexicographic order, this helps ensure that a set of similar barcodes
+      // will be placed in mostly contiguous runs of the vector representation.
       child = node.children[nuc_idx] = tree.size();
       tree.emplace_back();
     }
@@ -127,47 +104,31 @@ add_sequence_to_tree(demux_node_vec& tree,
   }
 
   if (!added_last_node) {
-    throw parsing_error(std::string("duplicate barcode (pair): ") + sequence);
+    throw parsing_error(std::string("duplicate barcode(s): ") + sequence);
   }
 
-  tree.at(node_idx).value = barcode_id;
+  tree.at(node_idx).key = key;
 }
 
-/**
- * Builds a sparse quad tree using the first sequence in a set of unique
- * barcodes pairs; duplicate pairs will negatively impact the identification of
- * these, since all hits will be considered ambiguous.
- */
-demux_node_vec
-build_demux_tree(const sequence_pair_vec& barcodes)
+barcode_vec
+build_barcode_vec(const sample_set& samples)
 {
-  // Step 1: Construct list of merged, sorted barcodes barcodes;
-  //         this allows construction of the sparse tree in one pass.
-  const barcode_vec sorted_barcodes = sort_barcodes(barcodes);
-
-  // Step 2: Create empty tree containing just the root node; creating
-  //         the root here simplifies the 'add_sequence_to_tree' function.
-  demux_node_vec tree;
-  tree.emplace_back();
-
-  // Step 3: Add each barcode to the tree, in sorted order
-  for (const auto& pair : sorted_barcodes) {
-    add_sequence_to_tree(tree, pair.first, pair.second);
-  }
-
-  return tree;
-}
-
-/** Converts sample set to list of barcodes in input order */
-sequence_pair_vec
-build_barcode_table(const sample_set& samples)
-{
-  sequence_pair_vec barcodes;
+  int32_t sample_i = 0;
+  barcode_vec barcodes;
   for (const auto& sample : samples) {
-    for (const auto& it : sample) {
-      barcodes.emplace_back(it.barcode_1, it.barcode_2);
+    AR_REQUIRE(!sample.name().empty());
+
+    int32_t barcode_i = 0;
+    for (const auto& sequences : sample) {
+      barcodes.emplace_back(
+        sequence_pair{ sequences.barcode_1, sequences.barcode_2 },
+        barcode_key{ sample_i, barcode_i++ });
     }
+
+    sample_i++;
   }
+
+  std::sort(barcodes.begin(), barcodes.end());
 
   return barcodes;
 }
@@ -180,80 +141,90 @@ barcode_table::barcode_table(const sample_set& samples,
                              size_t max_mm,
                              size_t max_mm_r1,
                              size_t max_mm_r2)
-  : barcode_table(build_barcode_table(samples), max_mm, max_mm_r1, max_mm_r2)
 {
-}
-
-barcode_table::barcode_table(const sequence_pair_vec& barcodes,
-                             size_t max_mm,
-                             size_t max_mm_r1,
-                             size_t max_mm_r2)
-{
+  AR_REQUIRE(samples.size());
   m_max_mismatches = std::min<size_t>(max_mm, max_mm_r1 + max_mm_r2);
   m_max_mismatches_r1 = std::min<size_t>(m_max_mismatches, max_mm_r1);
   m_max_mismatches_r2 = std::min<size_t>(m_max_mismatches, max_mm_r2);
 
-  if (!barcodes.empty()) {
-    m_nodes = build_demux_tree(barcodes);
-    m_barcode_1_len = barcodes.front().first.length();
-    m_barcode_2_len = barcodes.front().second.length();
+  // Flatten and lexigraphically sort barcodes to simplify tree building
+  auto barcodes = build_barcode_vec(samples);
+
+  // Create empty tree containing just the root node; creating the root here
+  // simplifies the 'add_sequence_to_tree' function.
+  m_nodes.emplace_back();
+
+  const auto& front = barcodes.front().first;
+  m_barcode_1_len = front.first.length();
+  m_barcode_2_len = front.second.length();
+
+  // Step 3: Add each barcode to the tree, in sorted order
+  for (const auto& [sequences, key] : barcodes) {
+    AR_REQUIRE(m_barcode_1_len && sequences.first.length() == m_barcode_1_len &&
+               sequences.second.length() == m_barcode_2_len);
+
+    std::string barcode;
+    barcode.reserve(m_barcode_1_len + m_barcode_2_len);
+    barcode.append(sequences.first);
+    barcode.append(sequences.second);
+
+    add_sequence_to_tree(m_nodes, barcode, key);
   }
 }
 
-int
+barcode_key
 barcode_table::identify(const fastq& read_r1) const
 {
   if (read_r1.length() < m_barcode_1_len) {
-    return barcode_table::no_match;
+    return barcode_key{};
   }
 
   const std::string barcode = read_r1.sequence().substr(0, m_barcode_1_len);
   auto match = lookup(barcode.c_str(), 0, 0, nullptr);
-  if (match.barcode == no_match && m_max_mismatches) {
+  if (match.key.sample == barcode_key::unidentified && m_max_mismatches_r1) {
     match = lookup_with_mm(
-      barcode.c_str(), 0, m_max_mismatches, m_max_mismatches_r1, nullptr);
+      barcode.c_str(), 0, m_max_mismatches_r1, m_max_mismatches_r1, nullptr);
   }
 
-  return match.barcode;
+  return match.key;
 }
 
-int
+barcode_key
 barcode_table::identify(const fastq& read_r1, const fastq& read_r2) const
 {
   if (read_r1.length() < m_barcode_1_len ||
       read_r2.length() < m_barcode_2_len) {
-    return no_match;
+    return barcode_key{};
   }
 
   const auto barcode_1 = read_r1.sequence().substr(0, m_barcode_1_len);
   const auto barcode_2 = read_r2.sequence().substr(0, m_barcode_2_len);
-  const auto combined_barcode = barcode_1 + barcode_2;
 
-  auto match = lookup(combined_barcode.c_str(), 0, 0, nullptr);
-  if (match.barcode == no_match && m_max_mismatches) {
-    const next_subsequence next(barcode_2.c_str(), m_max_mismatches_r2);
-
+  auto match = lookup(barcode_1.c_str(), 0, 0, barcode_2.c_str());
+  if (match.key.sample == barcode_key::unidentified && m_max_mismatches) {
     if (m_max_mismatches_r1) {
-      match = lookup_with_mm(
-        barcode_1.c_str(), 0, m_max_mismatches, m_max_mismatches_r1, &next);
+      match = lookup_with_mm(barcode_1.c_str(),
+                             0,
+                             m_max_mismatches,
+                             m_max_mismatches_r1,
+                             barcode_2.c_str());
     } else {
-      match = lookup(barcode_1.c_str(), 0, m_max_mismatches, &next);
+      match = lookup(barcode_1.c_str(), 0, m_max_mismatches, barcode_2.c_str());
     }
   }
 
-  return match.barcode;
+  return match.key;
 }
 
-barcode_table::candidate
+barcode_match
 barcode_table::lookup(const char* seq,
-                      int parent,
+                      int32_t parent,
                       const size_t max_global_mismatches,
-                      const next_subsequence* next) const
-
+                      const char* next) const
 {
-  for (; *seq && parent != no_match; ++seq) {
+  for (; *seq && parent != barcode_key::unidentified; ++seq) {
     if (*seq == 'N') {
-      return candidate(no_match);
+      return {};
     }
 
     const auto encoded_nuc = ACGT::to_index(*seq);
@@ -262,47 +233,45 @@ barcode_table::lookup(const char* seq,
     parent = node.children.at(encoded_nuc);
   }
 
-  if (parent == no_match) {
-    return candidate(no_match);
+  if (parent == barcode_key::unidentified) {
+    return {};
   } else if (next) {
     const auto max_local_mismatches =
-      std::min(max_global_mismatches, next->max_local_mismatches);
+      std::min(max_global_mismatches, m_max_mismatches_r2);
 
     if (max_local_mismatches) {
-      return lookup_with_mm(next->seq,
-                            parent,
-                            max_global_mismatches,
-                            max_local_mismatches,
-                            nullptr);
+      return lookup_with_mm(
+        next, parent, max_global_mismatches, max_local_mismatches, nullptr);
     } else {
-      return lookup(next->seq, parent, max_global_mismatches, nullptr);
+      return lookup(next, parent, max_global_mismatches, nullptr);
     }
   } else {
     const auto& node = m_nodes.at(parent);
-    return candidate(node.value, m_max_mismatches - max_global_mismatches);
+    return barcode_match(node.key, m_max_mismatches - max_global_mismatches);
   }
 }
 
-barcode_table::candidate
+barcode_match
 barcode_table::lookup_with_mm(const char* seq,
-                              int parent,
+                              int32_t parent,
                               const size_t max_global_mismatches,
-                              const size_t max_local_mismatches,
-                              const next_subsequence* next) const
+                              size_t max_local_mismatches,
+                              const char* next) const
 
 {
-  const demultiplexer_node& node = m_nodes.at(parent);
+  const barcode_node& node = m_nodes.at(parent);
   const auto nucleotide = *seq;
 
   if (nucleotide) {
-    candidate best_candidate;
+    barcode_match best_candidate;
 
     for (size_t encoded_i = 0; encoded_i < 4; ++encoded_i) {
       const auto child = node.children.at(encoded_i);
 
-      if (child != -1) {
-        candidate current_candidate;
+      if (child != barcode_key::unidentified) {
+        barcode_match current_candidate;
 
+        // Nucleotide may be 'N', so test has to be done by converting the index
         if (nucleotide == ACGT::to_value(encoded_i)) {
           current_candidate = lookup_with_mm(
             seq + 1, child, max_global_mismatches, max_local_mismatches, next);
@@ -320,28 +289,29 @@ barcode_table::lookup_with_mm(const char* seq,
         if (current_candidate.mismatches < best_candidate.mismatches) {
           best_candidate = current_candidate;
         } else if (current_candidate.mismatches == best_candidate.mismatches &&
-                   current_candidate.barcode != no_match) {
-          best_candidate.barcode = ambiguous;
+                   current_candidate.key.sample != barcode_key::unidentified) {
+          if (current_candidate.key.sample == best_candidate.key.sample) {
+            best_candidate.key.barcode = barcode_key::ambiguous;
+          } else {
+            best_candidate.key.sample = barcode_key::ambiguous;
+            best_candidate.key.barcode = barcode_key::ambiguous;
+          }
         }
       }
     }
 
     return best_candidate;
   } else if (next) {
-    const size_t next_max_local_mismatches =
-      std::min(max_global_mismatches, next->max_local_mismatches);
+    max_local_mismatches = std::min(max_global_mismatches, m_max_mismatches_r2);
 
-    if (next_max_local_mismatches) {
-      return lookup_with_mm(next->seq,
-                            parent,
-                            max_global_mismatches,
-                            next_max_local_mismatches,
-                            nullptr);
+    if (max_local_mismatches) {
+      return lookup_with_mm(
+        next, parent, max_global_mismatches, max_local_mismatches, nullptr);
     } else {
-      return lookup(next->seq, parent, max_global_mismatches, nullptr);
+      return lookup(next, parent, max_global_mismatches, nullptr);
     }
   } else {
-    return candidate(node.value, m_max_mismatches - max_global_mismatches);
+    return barcode_match(node.key, m_max_mismatches - max_global_mismatches);
   }
 }
 

@@ -29,22 +29,47 @@ namespace adapterremoval {
 
 class sample_set;
 class fastq;
+struct barcode_match;
 struct next_subsequence;
+
+/** The sample/barcode IDs associated with a set of sequences */
+struct barcode_key
+{
+  constexpr static const int32_t unidentified = -1;
+  constexpr static const int32_t ambiguous = -2;
+
+  //! Sample identified by 1 or more barcodes
+  int32_t sample = unidentified;
+  //! The specific barcode(s) used to identify this sample
+  int32_t barcode = unidentified;
+
+  bool operator==(const barcode_key& other) const
+  {
+    return sample == other.sample && barcode == other.barcode;
+  }
+
+  bool operator<(const barcode_key& other) const
+  {
+    return sample < other.sample ||
+           (sample == other.sample && barcode < other.barcode);
+  }
+};
+
+using barcode_pair = std::pair<sequence_pair, barcode_key>;
+using barcode_vec = std::vector<barcode_pair>;
 
 /**
  * Struct representing node in quad-tree; children are referenced using the
  * corresponding index in the vector representing the tree; -1 is used to
  * represent unassigned children.
  */
-struct demultiplexer_node
+struct barcode_node
 {
-  demultiplexer_node();
+  barcode_node();
 
   std::array<int32_t, 4> children;
-  int value;
+  barcode_key key;
 };
-
-using demux_node_vec = std::vector<demultiplexer_node>;
 
 /**
  *
@@ -57,43 +82,29 @@ public:
                 size_t max_mm_r1,
                 size_t max_mm_r2);
 
-  barcode_table(const sequence_pair_vec& barcodes,
-                size_t max_mm,
-                size_t max_mm_r1,
-                size_t max_mm_r2);
+  [[nodiscard]] barcode_key identify(const fastq& read_r1) const;
+  [[nodiscard]] barcode_key identify(const fastq& read_r1,
+                                     const fastq& read_r2) const;
 
-  int identify(const fastq& read_r1) const;
-  int identify(const fastq& read_r1, const fastq& read_r2) const;
-
+  /** Returns the length of barcodes in read 1  */
   [[nodiscard]] size_t length_1() const { return m_barcode_1_len; }
 
+  /** Returns the length of barcodes in read 2  */
   [[nodiscard]] size_t length_2() const { return m_barcode_2_len; }
 
-  constexpr static const int no_match = -1;
-  constexpr static const int ambiguous = -2;
-
 private:
-  struct candidate
-  {
-    explicit candidate(int barcode = barcode_table::no_match,
-                       size_t mismatches = -1);
+  barcode_match lookup(const char* seq,
+                       int32_t parent,
+                       size_t max_global_mismatches,
+                       const char* next) const;
 
-    int barcode;
-    size_t mismatches;
-  };
+  barcode_match lookup_with_mm(const char* seq,
+                               int32_t parent,
+                               size_t max_global_mismatches,
+                               size_t max_local_mismatches,
+                               const char* next) const;
 
-  candidate lookup(const char* seq,
-                   int parent,
-                   size_t max_global_mismatches,
-                   const next_subsequence* next) const;
-
-  candidate lookup_with_mm(const char* seq,
-                           int parent,
-                           size_t max_global_mismatches,
-                           size_t max_local_mismatches,
-                           const next_subsequence* next) const;
-
-  demux_node_vec m_nodes{};
+  std::vector<barcode_node> m_nodes{};
   size_t m_max_mismatches = 0;
   size_t m_max_mismatches_r1 = 0;
   size_t m_max_mismatches_r2 = 0;

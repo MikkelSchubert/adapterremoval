@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "errors.hpp"        // for parsing_error
 #include "sequence_sets.hpp" // for read_group
 #include "testing.hpp"       // for catch.hpp, StringMaker
 
@@ -115,6 +116,71 @@ TEST_CASE("invalid read groups")
                       "invalid escape sequence '\\x'");
   REQUIRE_THROWS_WITH(read_group{ "SM:foo\\" },
                       "incomplete escape sequence at end of string");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Sample sets -- initializer list
+
+TEST_CASE("Overlapping SE barcodes fail", "[sample_set::initializer_list]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{} };
+  sample sample2{ "sample2", dna_sequence{ "ACGT" }, dna_sequence{} };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Overlapping PE barcodes fail", "[sample_set::initializer_list]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
+  sample sample2{ "sample2", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Variable length SE barcodes fail #1",
+          "[sample_set::initializer_liset]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGTA" }, dna_sequence{} };
+  sample sample2{ "sample2", dna_sequence{ "TGCT" }, dna_sequence{} };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Variable length SE barcodes fail #2",
+          "[sample_set::initializer_liset]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{} };
+  sample sample2{ "sample2", dna_sequence{ "TGCTA" }, dna_sequence{} };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Variable length PE barcodes fail #1",
+          "[sample_set::initializer_liset]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGTT" }, dna_sequence{ "CGTG" } };
+  sample sample2{ "sample2", dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Variable length PE barcodes fail #2",
+          "[sample_set::initializer_liset]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTGT" } };
+  sample sample2{ "sample2", dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Variable length PE barcodes fail #3",
+          "[sample_set::initializer_liset]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
+  sample sample2{ "sample2", dna_sequence{ "CGTGA" }, dna_sequence{ "ACGT" } };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
+}
+
+TEST_CASE("Variable length PE barcodes fail #4",
+          "[sample_set::initializer_liset]")
+{
+  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
+  sample sample2{ "sample2", dna_sequence{ "CGTGA" }, dna_sequence{ "ACGTA" } };
+  REQUIRE_THROWS_AS(sample_set({ sample1, sample2 }), parsing_error);
 }
 
 } // namespace adapterremoval
