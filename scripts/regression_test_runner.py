@@ -181,18 +181,34 @@ def escape_whitespace(line: str) -> str:
     return "".join(out)
 
 
-def truncate_lines(lines: Iterable[str], max_lines: int) -> list[str]:
-    lines = list(islice(lines, max_lines + 1))
-    if len(lines) > max_lines:
-        lines[-1] = "..."
+def truncate_lines(
+    lines: Iterable[str],
+    *,
+    max_lines: int,
+    tail: bool = False,
+) -> list[str]:
+    if tail:
+        lines = list(lines)[-(max_lines + 1) :]
+        if len(lines) > max_lines:
+            lines[0] = "..."
+    else:
+        lines = list(islice(lines, max_lines + 1))
+        if len(lines) > max_lines:
+            lines[-1] = "..."
 
     return lines
 
 
-def pretty_output(lines: Iterable[str], max_lines: int, padding: int = 0) -> str:
+def pretty_output(
+    lines: Iterable[str],
+    *,
+    max_lines: int,
+    padding: int = 0,
+    tail: bool = False,
+) -> str:
     result: list[str] = []
     prefix = " " * padding
-    lines = truncate_lines(lines, max_lines)
+    lines = truncate_lines(lines, max_lines=max_lines, tail=tail)
     for line in lines:
         result.append(f"{prefix}>  {escape_whitespace(line)}")
 
@@ -213,7 +229,7 @@ def filter_errors(
     text: str,
     _re: re.Pattern[str] = re.compile(r"(\[(?:ERROR|WARNING)\] .*)"),
 ) -> list[str]:
-    lines = text.split("\n")
+    lines = text.rstrip().split("\n")
     errors: list[str] = []
     for line in lines:
         match = _re.search(line)
@@ -546,7 +562,7 @@ class TestTextFile(TestFile):
             label="output",
             expected=expected,
             observed=observed,
-            differences=pretty_output(lines, 10),
+            differences=pretty_output(lines, max_lines=10),
         )
 
 
@@ -559,7 +575,7 @@ class TestJsonFile(TestFile):
     def compare_with_file(self, expected: Path, observed: Path) -> None:
         _, data = read_json(observed)
         differences = diff_json(reference=self.data, observed=data)
-        differences = truncate_lines(differences, 4)
+        differences = truncate_lines(differences, max_lines=4)
 
         if differences:
             differences = "\n".join(
@@ -961,7 +977,7 @@ class TestRunner:
             raise TestError(
                 f"Expected return-code {self._test.return_code}, but AdapterRemoval "
                 f"returned {pretty_returncode(returncode)}:\n"
-                f"{pretty_output(filter_errors(stderr), 4)}"
+                f"{pretty_output(filter_errors(stderr), max_lines=4, tail=True)}"
             )
 
     def _evaluate_terminal_output(self, stdout: str, stderr: str) -> None:
