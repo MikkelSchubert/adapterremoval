@@ -930,9 +930,22 @@ class TestRunner:
             # Write observed terminal output
             write_data(self._test_path / "_stdout.txt", stdout)
             write_data(self._test_path / "_stderr.txt", stderr)
+
+            command = self.command
             write_data(
                 self._test_path / "_run.sh",
-                f"#!/bin/bash\n\n{cmd_to_s(self.command)}\n",
+                f"#!/bin/bash\n\n{cmd_to_s(command)}\n",
+            )
+            command = [
+                "gdb",
+                f"--cd={self._test_path}",
+                "--args",
+                os.path.abspath(command[0]),
+                *command[1:],
+            ]
+            write_data(
+                self._test_path / "_gdb.sh",
+                f"#!/bin/bash\n\n{cmd_to_s(command)}\n",
             )
 
             raise
