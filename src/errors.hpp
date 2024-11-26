@@ -44,17 +44,11 @@ class io_error : public std::ios_base::failure
 public:
   /** Produces a combined error including a description of the error code */
   explicit io_error(const std::string& message, int error_number = 0)
-    : std::ios_base::failure(format_io_error(message, error_number))
-    , m_what(format_io_error(message, error_number))
+    : std::ios_base::failure(message,
+                             std::error_code(static_cast<int>(error_number),
+                                             std::generic_category()))
   {
   }
-
-  /** Returns the error message */
-  const char* what() const noexcept override { return m_what.c_str(); }
-
-private:
-  //! Contains error message; workaround for base-class appending text
-  std::string m_what;
 };
 
 /** Represents errors during GZip (de)compression. */
