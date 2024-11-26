@@ -90,6 +90,7 @@ class FieldType(Enum):
 class Field(NamedTuple):
     name: str
     kind: FieldType
+    escape: bool
     default: str | None
 
 
@@ -119,13 +120,16 @@ def read_template(filepath: Path) -> dict[str, Section]:
         variables: dict[str, Field] = {}
         for value in _RE_FIELD.findall(text):
             default = None
+            escape = True
 
             if value.lower().startswith("js_template_"):
                 name = value[12:]
                 kind = FieldType.REQUIRED
+                escape = False
             elif value.lower().startswith("js_default_"):
                 name, default = value[11:].split("=", 1)
                 kind = FieldType.DEFAULT
+                escape = False
 
                 default = default.strip()
                 if default.startswith('"'):
@@ -147,6 +151,7 @@ def read_template(filepath: Path) -> dict[str, Section]:
                     name=name,
                     kind=kind,
                     default=default,
+                    escape=escape,
                 )
 
         result[key] = Section(
@@ -213,6 +218,7 @@ def write_header(sections: dict[str, Section]) -> str:
     def tprint(line: str, *args: object) -> None:
         print(line.format(*args), file=handle)
 
+    assert __doc__ is not None
     tprint(__doc__.strip())
     tprint("#pragma once\n")
     tprint("#include <ostream>")
@@ -280,10 +286,12 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
     def tprint(line: str, *args: object) -> None:
         print(line.format(*args), file=handle)
 
+    assert __doc__ is not None
     tprint(__doc__.strip())
     tprint('#include "{}"', header_name)
-    tprint('#include "debug.hpp" // for AR_REQUIRE')
-    tprint("#include <cstddef>   // for size_t")
+    tprint('#include "debug.hpp"    // for AR_REQUIRE')
+    tprint('#include "strutils.hpp" // for html_escape')
+    tprint("#include <cstddef>      // for size_t")
     tprint("")
     tprint("namespace adapterremoval {{")
     tprint("")
@@ -302,11 +310,18 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
             if field.kind == FieldType.REPEATED:
                 tprint("{}::add_{}(const std::string& value)", classname, field.name)
                 tprint("{{")
-                tprint("  m_{}.push_back(value);", field.name)
+
+                if field.escape:
+                    tprint("  m_{}.push_back(html_escape(value));", field.name)
+                else:
+                    tprint("  m_{}.push_back(value);", field.name)
             else:
                 tprint("{}::set_{}(const std::string& value)", classname, field.name)
                 tprint("{{")
-                tprint("  m_{} = value;", field.name)
+                if field.escape:
+                    tprint("  m_{} = html_escape(value);", field.name)
+                else:
+                    tprint("  m_{} = value;", field.name)
 
             if field.kind != FieldType.DEFAULT:
                 tprint("  m_{}_is_set = true;", field.name)
