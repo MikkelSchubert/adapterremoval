@@ -239,6 +239,22 @@ def filter_errors(
     return errors if errors else lines
 
 
+def print_long_err(
+    prefix: str,
+    error: str,
+    *,
+    max_lines: int | None = None,
+    tail: bool = False,
+):
+    lines = filter_errors(error)
+    if max_lines is not None:
+        lines = truncate_lines(lines, max_lines=max_lines, tail=tail)
+
+    for line in lines:
+        print_err(prefix, line)
+        prefix = " " * len(prefix)
+
+
 def write_data(path: Path, data: str) -> None:
     open_ = gzip.open if path.suffix == ".gz" else open
     with open_(path, "wt") as handle:
@@ -365,7 +381,9 @@ def diff_json(
 
 
 class TestError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, output: str | None = None) -> None:
+        super().__init__(message)
+        self.output = output
 
 
 class JSONSchemaError(TestError):
@@ -989,8 +1007,8 @@ class TestRunner:
         if returncode != self._test.return_code:
             raise TestError(
                 f"Expected return-code {self._test.return_code}, but AdapterRemoval "
-                f"returned {pretty_returncode(returncode)}:\n"
-                f"{pretty_output(filter_errors(stderr), max_lines=4, tail=True)}"
+                f"returned {pretty_returncode(returncode)}",
+                output=stderr,
             )
 
     def _evaluate_terminal_output(self, stdout: str, stderr: str) -> None:
@@ -1021,7 +1039,10 @@ class TestRunner:
             actual_lines.pop()
 
         if expected_lines:
-            raise TestError(f"expected {pipe} not found: {expected_lines[0]}")
+            raise TestError(
+                f"expected {pipe} not found: {expected_lines[0]}",
+                output=actual_text,
+            )
 
     def _evaluate_output_files(self) -> None:
         expected_files: set[str] = set()
@@ -1447,8 +1468,9 @@ def main(argv: list[str]) -> int:
         print_err("  Directory     =", relative_to(args.source_root, test.path))
         print_err("  Command       =", simplify_cmd(test.command))
 
-        error = "\n                  ".join(str(error).split("\n"))
-        print_err("  Error         =", error)
+        print_long_err("  Error         =", str(error))
+        if isinstance(error, TestError) and error.output is not None:
+            print_long_err("  Output        =", error.output, max_lines=4, tail=True)
 
     if not (n_failures or args.create_updated_reference):
         args.work_dir.rmdir()
