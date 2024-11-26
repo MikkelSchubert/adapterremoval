@@ -334,6 +334,17 @@ TEST_CASE("shell_escape_command with mixed command")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for 'html_escape'
+
+TEST_CASE("html_escape")
+{
+  REQUIRE(html_escape("") == "");
+  REQUIRE(html_escape(" abc1-9 ") == " abc1-9 ");
+  REQUIRE(html_escape(" '&<>' ") == " &#39;&amp;&lt;&gt;&#39; ");
+  REQUIRE(html_escape("\"quote\"") == "&quot;quote&quot;");
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for 'format_thousand_sep'
 
 TEST_CASE("format_thousand_sep")

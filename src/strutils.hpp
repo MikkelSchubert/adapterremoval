@@ -203,6 +203,10 @@ log_escape(std::string_view s);
 std::string
 shell_escape_command(const string_vec& v);
 
+/** Performs basic HTML escape of [<>'"&] */
+std::string
+html_escape(std::string_view s);
+
 /** Adds thousand separators to a number */
 std::string
 format_thousand_sep(size_t count);

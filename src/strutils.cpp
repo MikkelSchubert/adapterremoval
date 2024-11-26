@@ -382,6 +382,36 @@ shell_escape_command(const string_vec& values)
 }
 
 std::string
+html_escape(std::string_view s)
+{
+  std::string out;
+
+  for (const auto c : s) {
+    switch (c) {
+      case '\'':
+        out.append("&#39;");
+        break;
+      case '"':
+        out.append("&quot;");
+        break;
+      case '&':
+        out.append("&amp;");
+        break;
+      case '<':
+        out.append("&lt;");
+        break;
+      case '>':
+        out.append("&gt;");
+        break;
+      default:
+        out.push_back(c);
+    }
+  }
+
+  return out;
+}
+
+std::string
 format_thousand_sep(size_t count)
 {
   if (!count) {
