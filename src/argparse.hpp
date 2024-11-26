@@ -436,10 +436,12 @@ public:
   explicit str_sink(std::string* ptr);
   ~str_sink() override = default;
 
-  str_sink& with_default(const char* value);
-  str_sink& with_default(const std::string& value);
+  str_sink& with_default(std::string_view value);
   str_sink& with_choices(const string_vec& choices);
   std::string default_value() const override;
+
+  /** Implicit argument if the user does not supply one */
+  str_sink& with_implicit_argument(std::string_view value);
 
   std::string value() const override;
 
@@ -457,6 +459,10 @@ private:
   string_vec m_choices{};
   //! Default value used for -h/--help output
   std::string m_default{};
+  //! Specifies if a default argument was provided
+  bool m_has_implicit_argument{};
+  //! Default argument if no value is supplied by the user
+  std::string m_implicit_argument{};
   //! Sink variable used if no sink was supplied
   std::string m_fallback_sink{};
 };

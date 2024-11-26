@@ -580,6 +580,21 @@ TEST_CASE("str sink choices are set", "[argparse::str_sink]")
   REQUIRE(sink.choices() == choices);
 }
 
+TEST_CASE("str sink with implicit argument", "[argparse::str_sink]")
+{
+  std::string value;
+  argparse::str_sink sink(&value);
+  sink.with_implicit_argument("foo");
+  REQUIRE(value == "");
+
+  string_vec values{ "bar" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == "bar");
+
+  REQUIRE(sink.consume(values.end(), values.end()) == 0);
+  REQUIRE(value == "foo");
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // vec sink
 

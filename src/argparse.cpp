@@ -916,16 +916,7 @@ str_sink::str_sink(std::string* ptr)
 }
 
 str_sink&
-str_sink::with_default(const char* value)
-{
-  set_has_default();
-  *m_sink = m_default = value;
-
-  return *this;
-}
-
-str_sink&
-str_sink::with_default(const std::string& value)
+str_sink::with_default(std::string_view value)
 {
   set_has_default();
   *m_sink = m_default = value;
@@ -937,6 +928,16 @@ str_sink&
 str_sink::with_choices(const string_vec& choices)
 {
   m_choices = choices;
+
+  return *this;
+}
+
+str_sink&
+str_sink::with_implicit_argument(std::string_view value)
+{
+  m_has_implicit_argument = true;
+  m_implicit_argument = value;
+  set_min_values(0);
 
   return *this;
 }
@@ -957,18 +958,29 @@ str_sink::default_value() const
 size_t
 str_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
-  AR_REQUIRE(end - start == 1);
+  AR_REQUIRE(end - start <= 1);
+
+  size_t consumed = 0;
+  std::string argument;
+  if (start == end) {
+    AR_REQUIRE(m_has_implicit_argument);
+    argument = m_implicit_argument;
+    consumed = 0;
+  } else {
+    argument = *start;
+    consumed = 1;
+  }
 
   if (m_choices.empty()) {
-    *m_sink = preprocess(*start);
-    return 1;
+    *m_sink = preprocess(argument);
+    return consumed;
   } else {
-    const auto value = preprocess(*start);
+    const auto value = preprocess(argument);
     const auto choice = to_lower(value);
     for (const auto& it : m_choices) {
       if (choice == to_lower(it)) {
         *m_sink = it;
-        return 1;
+        return consumed;
       }
     }
 
