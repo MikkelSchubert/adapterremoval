@@ -307,9 +307,9 @@ write_html_summary_section(const userconfig& config,
                            const statistics& stats,
                            std::ostream& output)
 {
-  html_head().set_name(NAME).set_version(VERSION).write(output);
+  html_head().set_title(config.report_title).write(output);
 
-  html_body_start().write(output);
+  html_body_start().set_title(config.report_title).write(output);
 
   // Basic information about the executable / call
   {

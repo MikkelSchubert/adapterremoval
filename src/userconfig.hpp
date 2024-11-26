@@ -192,6 +192,8 @@ public:
   //! set contains a single unnamed sample with empty barcodes
   sample_set samples{};
 
+  //! Title used for HTML report
+  std::string report_title{};
   //! Fraction of reads used for quality/content curves, etc.
   double report_sample_rate{};
   //! Number of reads used to estimate duplication in input files

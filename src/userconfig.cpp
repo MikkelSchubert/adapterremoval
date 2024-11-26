@@ -958,6 +958,10 @@ userconfig::userconfig()
     .conflicts_with("--benchmark")
     .conflicts_with("--demultiplex-only");
 
+  argparser.add("--report-title", "X")
+    .help("Title used for HTML report")
+    .bind_str(&report_title)
+    .with_default(NAME + " " + VERSION);
   argparser.add("--report-sample-rate", "X")
     .help("Fraction of reads to use when generating base quality/composition "
           "curves for trimming reports. Using all data (--report-sample-nth "
