@@ -17,29 +17,30 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "userconfig.hpp"
-#include "alignment.hpp" // for alignment_info
-#include "commontypes.hpp"
-#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
-#include "errors.hpp"   // for fastq_error
-#include "fastq.hpp"    // for ACGT, ACGT::indices, ACGT::values
-#include "licenses.hpp" // for LICENSES
-#include "logging.hpp"  // for log_stream, error, set_level, set_colors, info
-#include "main.hpp"     // for HELPTEXT, NAME, VERSION
-#include "output.hpp"   // for DEV_NULL, output_files, output_file
-#include "progress.hpp" // for progress_type, progress_type::simple, progr...
-#include "simd.hpp"     // for size_t, name, supported, instruction_set
-#include "strutils.hpp" // for string_vec, shell_escape, str_to_u32
-#include <algorithm>    // for find, max, min
-#include <cerrno>       // for errno
-#include <cmath>        // for pow
-#include <cstdlib>      // for getenv
-#include <cstring>      // for size_t, strerror, strcmp
-#include <limits>       // for numeric_limits
-#include <stdexcept>    // for invalid_argument
-#include <string>       // for string, basic_string, operator==, operator+
-#include <tuple>        // for get, tuple
-#include <unistd.h>     // for access, isatty, R_OK, STDERR_FILENO
+#include "userconfig.hpp"  // declarations
+#include "alignment.hpp"   // for alignment_info
+#include "commontypes.hpp" // for string_vec, ...
+#include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"      // for fastq_error
+#include "fastq.hpp"       // for ACGT, ACGT::indices, ACGT::values
+#include "fastq_enc.hpp"   // for PHRED_SCORE_MAX
+#include "licenses.hpp"    // for LICENSES
+#include "logging.hpp"     // for log_stream, error, set_level, set_colors, info
+#include "main.hpp"        // for HELPTEXT, NAME, VERSION
+#include "output.hpp"      // for DEV_NULL, output_files, output_file
+#include "progress.hpp"    // for progress_type, progress_type::simple, progr...
+#include "simd.hpp"        // for size_t, name, supported, instruction_set
+#include "strutils.hpp"    // for shell_escape, str_to_u32
+#include <algorithm>       // for find, max, min
+#include <cerrno>          // for errno
+#include <cmath>           // for pow
+#include <cstdlib>         // for getenv
+#include <cstring>         // for size_t, strerror, strcmp
+#include <limits>          // for numeric_limits
+#include <stdexcept>       // for invalid_argument
+#include <string>          // for string, basic_string, operator==, operator+
+#include <tuple>           // for get, tuple
+#include <unistd.h>        // for access, isatty, R_OK, STDERR_FILENO
 
 namespace adapterremoval {
 
@@ -714,9 +715,12 @@ userconfig::userconfig()
     .with_default("maximum");
   argparser.add("--merge-quality-max", "N")
     .help("Sets the maximum Phred score for re-calculated quality scores when "
-          "read merging is enabled with the 'additive' merging strategy")
+          "read merging is enabled with the 'additive' merging strategy. The "
+          "value must be in the range 0 to 93, corresponding to Phred+33 "
+          "encoded values of '!' to '~'")
     .deprecated_alias("--qualitymax")
     .bind_u32(&merge_quality_max)
+    .with_maximum(PHRED_SCORE_MAX)
     .with_default(41);
   argparser.add("--collapse-deterministic")
     .conflicts_with("--collapse-conservatively")
@@ -810,7 +814,9 @@ userconfig::userconfig()
     .with_default(0.1);
   argparser.add("--trim-min-quality", "N")
     .help("Inclusive minimum quality used when trimming low-quality bases with "
-          "--quality-trimming options 'window' and 'per-base'")
+          "--quality-trimming options 'window' and 'per-base'. The value must "
+          "be in the range 0 to 93, corresponding to Phred+33 encoded values "
+          "of '!' to '~'")
     .deprecated_alias("--minquality")
     .conflicts_with("--trim-mott-rate")
     .bind_u32(&trim_quality_score)
@@ -883,11 +889,13 @@ userconfig::userconfig()
     .with_default(std::numeric_limits<uint32_t>::max());
 
   argparser.add("--min-mean-quality", "N")
-    .help("Reads with a mean Phred encoded quality score (typically 0 to 42) "
-          "less than this value following trimming are discarded [default: no "
-          "minimum]")
+    .help("Reads with a mean Phred quality score less than this value "
+          "following trimming are discarded. The value must be in the range 0 "
+          "to 93, corresponding to Phred+33 encoded values of '!' to '~' "
+          "[default: no minimum]")
     .bind_double(&min_mean_quality)
     .with_minimum(0.0)
+    .with_maximum(PHRED_SCORE_MAX)
     .with_default(0.0);
 
   argparser.add("--min-complexity", "X")
