@@ -228,6 +228,7 @@
     }
 
     .pure-table thead>tr>th {
+      text-align: center;
       font-weight: bold;
       background-color: #C4CCDB;
     }
@@ -240,9 +241,13 @@
       font-weight: bold;
     }
 
+    .io-table tr>td:first-child {
+      min-width: 85px;
+    }
+
     .io-table tr>td:not(:first-child) {
       text-align: right;
-      min-width: 100px;
+      min-width: 75px;
     }
 
     .trimming-table tr>td:nth-child(-n+3) {
@@ -431,7 +436,7 @@
         </tbody>
       </table>
 
-      <!-- TEMPLATE: SUMMARY_IO -->
+      <!-- TEMPLATE: SUMMARY_IO_HEAD -->
       <h4 id="{{HREF}}">
         {{TITLE}} <a class="anchor" href="#{{HREF}}">#</a>
       </h4>
@@ -439,38 +444,28 @@
         <thead>
           <tr>
             <th></th>
-            <th>[[COLUMNS]]</th>
+            <th>#Reads</th>
+            <th>#Bases</th>
+            <th>Read length</th>
+            <th>Q20</th>
+            <th>Q30</th>
+            <th>GC</th>
+            <th>N</th>
           </tr>
         </thead>
         <tbody>
+          <!-- TEMPLATE: SUMMARY_IO_ROW -->
           <tr>
-            <td>#Reads</td>
-            <td>[[N_READS]]</td>
+            <td>{{NAME}}</td>
+            <td>{{N_READS}}</td>
+            <td>{{N_BASES}}</td>
+            <td>{{LENGTHS}}</td>
+            <td>{{Q20}}</td>
+            <td>{{Q30}}</td>
+            <td>{{GC}}</td>
+            <td>{{NS}}</td>
           </tr>
-          <tr>
-            <td>#Bases</td>
-            <td>[[N_BASES]]</td>
-          </tr>
-          <tr>
-            <td>Read length</td>
-            <td>[[LENGTHS]]</td>
-          </tr>
-          <tr>
-            <td>Q20</td>
-            <td>[[Q20]]</td>
-          </tr>
-          <tr>
-            <td>Q30</td>
-            <td>[[Q30]]</td>
-          </tr>
-          <tr>
-            <td>GC</td>
-            <td>[[GC]]</td>
-          </tr>
-          <tr>
-            <td>N</td>
-            <td>[[NS]]</td>
-          </tr>
+          <!-- TEMPLATE: SUMMARY_IO_TAIL -->
         </tbody>
       </table>
 

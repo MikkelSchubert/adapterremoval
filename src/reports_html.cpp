@@ -157,37 +157,40 @@ public:
     output
   };
 
-  io_summary_writer(const std::string& title, io type)
-    : m_type(type)
+  io_summary_writer(std::ostream& output, const io type)
+    : m_output(output)
+    , m_type(type)
+
   {
-    m_writer.set_title(title);
   }
 
-  void set_href(const std::string& value) { m_writer.set_href(value); }
-
-  void write(std::ostream& output) { m_writer.write(output); }
-
-  void add_column(const std::string& title, const fastq_statistics& stats)
+  void write_head(const std::string& title, const std::string& href)
   {
-    m_writer.add_columns(title);
+    html_summary_io_head().set_title(title).set_href(href).write(m_output);
+  }
 
+  void write_row(const std::string& title, const fastq_statistics& stats)
+  {
     const auto n_reads = (m_type == io::input) ? stats.number_of_input_reads()
                                                : stats.number_of_output_reads();
-    m_writer.add_n_reads(format_rough_number(n_reads));
+    const auto total = stats.quality_dist().sum();
 
-    m_writer.add_n_bases(format_rough_number(stats.length_dist().product()));
-
-    m_writer.add_lengths(mean_of_bp_counts(stats.length_dist()));
-
-    auto total = stats.quality_dist().sum();
-    m_writer.add_q30(format_percentage(stats.quality_dist().sum(30), total));
-    m_writer.add_q20(format_percentage(stats.quality_dist().sum(20), total));
-    m_writer.add_ns(format_percentage(stats.nucleotides_pos('N').sum(), total));
-    m_writer.add_gc(format_percentage(stats.nucleotides_gc_pos().sum(), total));
+    html_summary_io_row()
+      .set_name(title)
+      .set_n_reads(format_rough_number(n_reads))
+      .set_n_bases(format_rough_number(stats.length_dist().product()))
+      .set_lengths(mean_of_bp_counts(stats.length_dist()))
+      .set_q30(format_percentage(stats.quality_dist().sum(30), total))
+      .set_q20(format_percentage(stats.quality_dist().sum(20), total))
+      .set_ns(format_percentage(stats.nucleotides_pos('N').sum(), total))
+      .set_gc(format_percentage(stats.nucleotides_gc_pos().sum(), total))
+      .write(m_output);
   }
 
+  void write_tail() { html_summary_io_tail().write(m_output); }
+
 private:
-  html_summary_io m_writer{};
+  std::ostream& m_output;
   io m_type;
 };
 
@@ -342,17 +345,14 @@ write_html_summary_section(const userconfig& config,
       totals += *stats.input_1;
       totals += *stats.input_2;
 
-      io_summary_writer summary("Input", io_summary_writer::io::input);
-
-      summary.set_href("summary-input");
-
+      io_summary_writer summary(output, io_summary_writer::io::input);
+      summary.write_head("Input", "summary-input");
       if (config.paired_ended_mode) {
-        summary.add_column("Summary", totals);
-        summary.add_column("File 1", *stats.input_1);
-        summary.add_column("File 2", *stats.input_2);
+        summary.write_row("Summary", totals);
+        summary.write_row("File 1", *stats.input_1);
+        summary.write_row("File 2", *stats.input_2);
       }
-
-      summary.write(output);
+      summary.write_tail();
 
       write_html_sampling_note(config, "input", totals, output);
     }
@@ -367,29 +367,26 @@ write_html_summary_section(const userconfig& config,
       // discarded reads not counted in the output
       // totals += discarded;
 
-      io_summary_writer summary("Output", io_summary_writer::io::output);
-
-      summary.set_href("summary-output");
-      summary.add_column("Passed*", totals);
-
+      io_summary_writer summary{ output, io_summary_writer::io::output };
+      summary.write_head("Output", "summary-output");
+      summary.write_row("Passed*", totals);
       if (config.paired_ended_mode) {
-        summary.add_column("File 1", output_1);
-        summary.add_column("File 2", output_2);
+        summary.write_row("File 1", output_1);
+        summary.write_row("File 2", output_2);
 
         if (config.is_read_merging_enabled()) {
-          summary.add_column("Merged", merged);
+          summary.write_row("Merged", merged);
         }
 
         if (config.is_any_filtering_enabled()) {
-          summary.add_column("Singleton", singleton);
+          summary.write_row("Singleton", singleton);
         }
       }
 
       if (config.is_any_filtering_enabled()) {
-        summary.add_column("Discarded*", discarded);
+        summary.write_row("Discarded*", discarded);
       }
-
-      summary.write(output);
+      summary.write_tail();
 
       write_html_sampling_note(config, "output", totals, output);
 
@@ -401,24 +398,23 @@ write_html_summary_section(const userconfig& config,
         .write(output);
     }
   } else if (config.run_type == ar_command::report_only) {
-    io_summary_writer summary("Input summary", io_summary_writer::io::input);
-
-    summary.set_href("summary-input");
-    summary.add_column("Input", *stats.input_1);
-    summary.write(output);
+    io_summary_writer summary{ output, io_summary_writer::io::input };
+    summary.write_head("Input summary", "summary-input");
+    summary.write_row("Input", *stats.input_1);
+    summary.write_tail();
 
     write_html_sampling_note(config, "input", *stats.input_1, output);
-  } else {
-    io_summary_writer summary("Input/Output summary",
-                              io_summary_writer::io::input);
+  }
 
-    summary.set_href("summary-input-output");
-    summary.add_column("Input", *stats.input_1);
-    summary.add_column("Output", output_1);
+  else {
+    io_summary_writer summary{ output, io_summary_writer::io::input };
+    summary.write_head("Input/Output summary", "summary-input-output");
+    summary.write_row("Input", *stats.input_1);
+    summary.write_row("Output", output_1);
     if (config.is_any_filtering_enabled()) {
-      summary.add_column("Discarded*", discarded);
+      summary.write_row("Discarded*", discarded);
     }
-    summary.write(output);
+    summary.write_tail();
 
     fastq_statistics totals;
     totals += *stats.input_1;
