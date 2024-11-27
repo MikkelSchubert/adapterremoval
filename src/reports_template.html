@@ -638,6 +638,9 @@
       <script>
         addFrequencyPlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }", JS_TEMPLATE_VALUES);
       </script>
+      <noscript class="error">
+        ERROR: Plots cannot be shown because JavaScript is disabled!
+      </noscript>
 
       <!-- TEMPLATE: FACET_LINE_PLOT -->
 
@@ -652,6 +655,9 @@
       <script>
         addLinePlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_TEMPLATE_VALUES);
       </script>
+      <noscript class="error">
+        ERROR: Plots cannot be shown because JavaScript is disabled!
+      </noscript>
 
       <!-- TEMPLATE: BAR_PLOT -->
 
@@ -694,6 +700,9 @@
 
         addVegaPlot('#vis_{{ID}}', schema);
       </script>
+      <noscript class="error">
+        ERROR: Plots cannot be shown because JavaScript is disabled!
+      </noscript>
 
       <!-- TEMPLATE: DEMULTIPLEXING_HEAD -->
 
