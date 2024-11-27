@@ -36,6 +36,7 @@
 #include <cmath>           // for pow
 #include <cstdlib>         // for getenv
 #include <cstring>         // for size_t, strerror, strcmp
+#include <filesystem>      // for weakly_canonical
 #include <limits>          // for numeric_limits
 #include <stdexcept>       // for invalid_argument
 #include <string>          // for string, basic_string, operator==, operator+
@@ -217,19 +218,62 @@ normalize_output_file(std::string& filename)
   }
 }
 
-bool
-check_input_and_output(const std::string& label,
-                       const string_vec& filenames,
-                       const output_files& output_files)
+void
+append_normalized_input_files(string_pair_vec& out, const string_vec& filenames)
 {
   for (const auto& filename : filenames) {
-    if (access(filename.c_str(), R_OK)) {
-      log::error() << "Cannot read file: " << label << " " << filename
-                   << "': " << std::strerror(errno);
-
-      return false;
+    try {
+      out.emplace_back(std::filesystem::weakly_canonical(filename), filename);
+    } catch (const std::filesystem::filesystem_error&) {
+      // Permission errors are handled by the explicit access checks below
+      out.emplace_back(filename, filename);
     }
   }
+}
+
+bool
+check_input_files(const string_vec& filenames_1, const string_vec& filenames_2)
+{
+  string_pair_vec filenames;
+  append_normalized_input_files(filenames, filenames_1);
+  append_normalized_input_files(filenames, filenames_2);
+  std::sort(filenames.begin(), filenames.end());
+
+  bool any_errors = false;
+  for (size_t i = 1; i < filenames.size(); ++i) {
+    const auto& it_0 = filenames.at(i - 1);
+    const auto& it_1 = filenames.at(i);
+
+    if (it_0.second == it_1.second) {
+      log::error() << "Input file " << log_escape(it_0.second)
+                   << " has been specified multiple times using --in-file1 "
+                      "and/or --in-file2";
+      any_errors = true;
+    } else if (it_0.first == it_1.first) {
+      log::error() << "The path of input file " << log_escape(it_0.second)
+                   << " and the path of input " << "file "
+                   << log_escape(it_1.second) << " both point to the file "
+                   << log_escape(it_0.first);
+      any_errors = true;
+    }
+  }
+
+  for (const auto& it : filenames) {
+    if (access(it.second.c_str(), R_OK)) {
+      log::error() << "Cannot access input file " << log_escape(it.second)
+                   << ": " << std::strerror(errno);
+      any_errors = true;
+    }
+  }
+
+  return !any_errors;
+}
+
+bool
+check_output_files(const std::string& label,
+                   const string_vec& filenames,
+                   const output_files& output_files)
+{
 
   if (!check_no_clobber(label, filenames, output_files.unidentified_1)) {
     return false;
@@ -1633,8 +1677,9 @@ userconfig::setup_demultiplexing()
 
   const auto& output_files = get_output_filenames();
 
-  return check_input_and_output("--in-file1", input_files_1, output_files) &&
-         check_input_and_output("--in-file2", input_files_2, output_files);
+  return check_input_files(input_files_1, input_files_2) &&
+         check_output_files("--in-file1", input_files_1, output_files) &&
+         check_output_files("--in-file2", input_files_2, output_files);
 }
 
 } // namespace adapterremoval
