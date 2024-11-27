@@ -24,13 +24,21 @@ STATIC := false
 ifeq ($(strip ${DEBUG}), true)
 BUILD_OPTS := debugoptimized
 else
+ifeq ($(strip ${DEBUG}), false)
 BUILD_OPTS := release
+else
+$(error "DEBUG must be 'true' or 'false', not '${DEBUG}'")
+endif
 endif
 
 ifeq ($(strip ${SANITIZE}), true)
 SANITIZE_OPTS := address,undefined
 else
+ifeq ($(strip ${SANITIZE}), false)
 SANITIZE_OPTS := none
+else
+$(error "SANITIZE must be 'true' or 'false', not '${SANITIZE}'")
+endif
 endif
 
 ###############################################################################
