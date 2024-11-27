@@ -53,7 +53,7 @@ BUILDDIR := build
 NINJAFILE := ${BUILDDIR}/build.ninja
 
 executable: ${NINJAFILE}
-	meson compile -C "${BUILDDIR}"
+	meson compile -C "${BUILDDIR}" adapterremoval3
 
 clean:
 	rm -rvf "${BUILDDIR}"
