@@ -17,120 +17,23 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "sequence_sets.hpp"
-#include "commontypes.hpp" // for fastq_vec
-#include "debug.hpp"       // for AR_REQUIRE
-#include "errors.hpp"      // for fastq_error
-#include "linereader.hpp"  // for line_reader
-#include "sequence.hpp"    // for dna_sequence
-#include "strutils.hpp"    // for string_vec, indent_lines
-#include <algorithm>       // for max, sort, find
-#include <sstream>         // for operator<<, basic_ostream, ostringstream
-#include <stdexcept>       // for invalid_argument
-#include <string_view>     // for string_view
-#include <utility>         // for pair
-#include <vector>          // for vector, vector<>::const_iterator
+#include "sequence_sets.hpp" // declarations
+#include "debug.hpp"         // for AR_REQUIRE
+#include "errors.hpp"        // for fastq_error
+#include "linereader.hpp"    // for line_reader
+#include "sequence.hpp"      // for dna_sequence
+#include "strutils.hpp"      // for string_vec, indent_lines
+#include "table_reader.hpp"  // for table_reader
+#include <algorithm>         // for max, sort, find
+#include <sstream>           // for operator<<, basic_ostream, ostringstream
+#include <stdexcept>         // for invalid_argument
+#include <string_view>       // for string_view
+#include <utility>           // for pair
+#include <vector>            // for vector, vector<>::const_iterator
 
 namespace adapterremoval {
 
 namespace {
-
-std::string
-trim_comments(std::string line)
-{
-  const size_t index = line.find('#');
-  if (index != std::string::npos) {
-    line.resize(index);
-  }
-
-  return line;
-}
-
-struct table_row
-{
-  std::string name{};
-  dna_sequence sequence_1{};
-  dna_sequence sequence_2{};
-};
-
-std::vector<table_row>
-read_table(const std::string& filename,
-           const bool paired_required = false,
-           const bool row_names = false)
-{
-  size_t last_row_size = 0;
-  size_t line_num = 1;
-  const size_t min_col = 1 + paired_required + row_names;
-  const size_t max_col = 2 + row_names;
-  std::vector<table_row> table;
-
-  try {
-    line_reader adapter_file(filename);
-
-    for (std::string line; adapter_file.getline(line); ++line_num) {
-      string_vec row;
-      std::string field;
-
-      std::istringstream instream(trim_comments(line));
-      while (instream >> field) {
-        row.push_back(field);
-        field.clear();
-      }
-
-      if (row.empty()) {
-        // Ignore empty lines, e.g. those containing only comments
-        continue;
-      } else if (row.size() < min_col) {
-        std::ostringstream message;
-        message << "Expected at least " << min_col << " columns in " << "table "
-                << log_escape(filename) << " at line " << line_num
-                << ", but only found " << row.size() << " column(s)!";
-
-        throw parsing_error(message.str());
-      } else if (row.size() > max_col) {
-        std::ostringstream message;
-        message << "Expected at most " << min_col << " columns in " << "table "
-                << log_escape(filename) << " at line " << line_num
-                << ", but found " << row.size() << " column(s)!";
-
-        throw parsing_error(message.str());
-      } else if (last_row_size && last_row_size != row.size()) {
-        std::ostringstream message;
-        message << "Error reading " << log_escape(filename) << " at line "
-                << line_num << "; rows contain unequal number of "
-                << "columns; last row contained " << last_row_size
-                << " column(s) but current row contains " << row.size()
-                << " column(s)!";
-
-        throw parsing_error(message.str());
-      } else {
-        last_row_size = row.size();
-      }
-
-      table_row record;
-      if (row_names) {
-        record.name = row.at(0);
-      }
-
-      record.sequence_1 = dna_sequence{ row.at(row_names) };
-      if (row.size() > row_names + 1U) {
-        record.sequence_2 = dna_sequence{ row.at(row_names + 1U) };
-      }
-
-      table.push_back(std::move(record));
-    }
-  } catch (const std::ios_base::failure& error) {
-    throw parsing_error(error.what());
-  } catch (const fastq_error& error) {
-    std::ostringstream message;
-    message << "invalid DNA sequence on line " << line_num << ": "
-            << error.what();
-
-    throw parsing_error(message.str());
-  }
-
-  return table;
-}
 
 void
 validate_sample_name(std::string_view name)
@@ -430,12 +333,22 @@ adapter_set::add_barcodes(const dna_sequence& barcode1,
 void
 adapter_set::load(const std::string& filename, bool paired_end)
 {
-  auto table = read_table(filename, paired_end);
+  line_reader reader(filename);
+  const auto adapters = table_reader()
+                          .with_comment_char('#')
+                          .with_min_columns(1 + paired_end)
+                          .with_max_columns(2)
+                          .parse(reader);
 
-  for (auto& row : table) {
+  for (const auto& row : adapters) {
+    dna_sequence adapter_1{ row.at(0) };
+    dna_sequence adapter_2;
+    if (row.size() > 1) {
+      adapter_2 = dna_sequence{ row.at(1) };
+    }
+
     // Convert from read to alignment orientation
-    m_adapters.emplace_back(row.sequence_1,
-                            row.sequence_2.reverse_complement());
+    m_adapters.emplace_back(adapter_1, adapter_2.reverse_complement());
   }
 }
 
@@ -561,24 +474,38 @@ sample_set::set_read_group(std::string_view value)
 void
 sample_set::load(const std::string& filename, const barcode_config& config)
 {
-  auto barcodes = read_table(filename, !config.m_unidirectional_barcodes, true);
+  line_reader reader(filename);
+  auto barcodes = table_reader()
+                    .with_comment_char('#')
+                    .with_min_columns(2 + !config.m_unidirectional_barcodes)
+                    .with_max_columns(3)
+                    .parse(reader);
+
   std::sort(barcodes.begin(), barcodes.end(), [](const auto& a, const auto& b) {
-    return a.name < b.name;
+    return a.at(0) < b.at(0);
   });
 
   std::vector<sample> samples{};
   for (const auto& row : barcodes) {
-    if (samples.empty() || samples.back().name() != row.name) {
-      sample s{ row.name, row.sequence_1, row.sequence_2 };
+    const auto& name = row.at(0);
+    dna_sequence barcode_1{ row.at(1) };
+    dna_sequence barcode_2;
+
+    if (row.size() > 2) {
+      barcode_2 = dna_sequence{ row.at(2) };
+    }
+
+    if (samples.empty() || samples.back().name() != name) {
+      sample s{ name, barcode_1, barcode_2 };
       s.set_adapters(m_adapters);
       s.set_read_group(m_read_group);
 
       samples.push_back(std::move(s));
     } else if (config.m_allow_multiple_barcodes) {
-      samples.back().add(row.sequence_1, row.sequence_2);
+      samples.back().add(barcode_1, barcode_2);
     } else {
       std::ostringstream error;
-      error << "Duplicate sample name " << log_escape(row.name)
+      error << "Duplicate sample name " << log_escape(name)
             << "; combining different barcodes for one sample is not "
                "supported. Please ensure that all sample names are unique!";
 
