@@ -393,8 +393,8 @@ write_html_summary_section(const userconfig& config,
       // Note regarding passed / discarded reads
       html_output_footnote()
         .set_symbol("*")
-        .set_text("The <b>Passed</b> column includes all read types except for "
-                  "<b>Discarded</b> reads.")
+        .set_html("The <b>Passed</b> column includes all read types except "
+                  "for <b>Discarded</b> reads.")
         .write(output);
     }
   } else if (config.run_type == ar_command::report_only) {
@@ -426,7 +426,7 @@ write_html_summary_section(const userconfig& config,
       // Note regarding discarded reads in output
       html_output_footnote()
         .set_symbol("*")
-        .set_text("<b>Discarded</b> reads are not included in the "
+        .set_html("<b>Discarded</b> reads are not included in the "
                   "<b>Output</b> column.")
         .write(output);
     }

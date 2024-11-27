@@ -137,6 +137,9 @@ def read_template(filepath: Path) -> dict[str, Section]:
             elif value.startswith("{"):
                 name = value[2:-2]
                 kind = FieldType.REQUIRED
+                if name.lower().startswith("raw_"):
+                    name = name[4:]
+                    escape = False
             else:
                 name = value[2:-2]
                 kind = FieldType.REPEATED
@@ -191,6 +194,8 @@ def inject_variables(value: str) -> str:
             result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
         elif field.startswith("{{") and field.endswith("}}"):
             name = field[2:-2].lower()
+            if name.startswith("raw_"):
+                name = name[4:]
             result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
         elif field.startswith("[[") and field.endswith("]]"):
             if repeater is not None:
