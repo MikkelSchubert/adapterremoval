@@ -61,10 +61,9 @@ const char* HELPTEXT =
   "  Notes, 12;9(1):88. https://doi.org/10.1186/s13104-016-1900-2\n"
   "\n"
   "Use the filename '-' to read from STDIN or to write to STDOUT. If the same "
-  "filenames are used for --in-file1 and --in-file2 then those files are read "
-  "in interleaved mode. If the same filename is used for two or more of the "
-  "--out options (excluding --out-json and --out-html), then output is "
-  "written to that file in interleaved mode.\n";
+  "filenames are used for two or more of the --out-* options (excluding "
+  "--out-json and --out-html), then the combined output is written to that "
+  "file in interleaved mode.\n";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions

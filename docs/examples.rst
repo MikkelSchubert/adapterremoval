@@ -49,13 +49,13 @@ Other than taking just a single input file, this mode operates almost exactly li
 
 Enabling either reading or writing of interleaved FASTQ files, both not both, can be accomplished by specifying the either of the ``--interleaved-input`` and ``--interleaved-output`` options, both of which are enabled by the ``--interleaved`` option.
 
-Alternatively, you can simply specify the same file for both ``--in-file1`` and ``--in-file2``::
+Alternatively, you can specify the same output file for multiple output types, in order to write all of those reads to a single file in interleaved mode::
 
-    adapterremoval3 --in-file1 interleaved.fastq --in-file2 interleaved.fastq --out-file1 output_interleaved.fastq.gz --out-file2 output_interleaved.fastq.gz
+    adapterremoval3 --in-file1 input_1.fastq.gz --in-file2 input_2.fastq.gz --out-file1 output_interleaved.fastq.gz --out-file2 output_interleaved.fastq.gz
 
-The ability to interleave input extends to all read types, and one could for example write discarded and singleton reads to the same file using the following command::
+The ability to interleave output extends to all output types, and one could for example write both discarded and singleton reads to the same file using the following command::
 
-   adapterremoval3 --in-file1 interleaved.fastq --in-file2 interleaved.fastq --out-prefix output_interleaved --out-discarded output_interleaved.discarded.fastq.gz --out-singleton output_interleaved.discarded.fastq.gz
+   adapterremoval3 --in-file1 input_1.fastq.gz --in-file2 input_2.fastq.gz --out-prefix output_interleaved --out-discarded output_interleaved.discarded.fastq.gz --out-singleton output_interleaved.discarded.fastq.gz
 
 Different quality score encodings
 ---------------------------------
