@@ -56,7 +56,7 @@ str_to_u32(std::string_view s);
 
 /** Convert a string to a double using the same rules as str_to_u32  */
 double
-str_to_double(std::string_view s);
+str_to_double(const std::string& s);
 
 /** Lowercases letters in the range a-z */
 constexpr char

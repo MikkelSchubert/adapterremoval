@@ -114,7 +114,7 @@ str_to(std::string_view s)
   if (result.ec != std::errc{}) {
     throw std::invalid_argument("value is not a valid number");
   } else if (result.ptr != end) {
-    throw std::invalid_argument("number contains text");
+    throw std::invalid_argument("number contains trailing text");
   }
 
   return value;
@@ -129,9 +129,21 @@ str_to_u32(std::string_view s)
 }
 
 double
-str_to_double(std::string_view s)
+str_to_double(const std::string& s)
 {
-  return str_to<double>(s);
+  // FIXME: This should use `str_to`, but that is not supported by older Clang
+  double value = 0;
+  std::istringstream stream(s);
+  if (!(stream >> value)) {
+    throw std::invalid_argument("value is not a valid number");
+  }
+
+  char trailing = 0;
+  if (stream >> trailing) {
+    throw std::invalid_argument("number contains trailing text");
+  }
+
+  return value;
 }
 
 std::string
