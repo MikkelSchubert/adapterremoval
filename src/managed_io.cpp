@@ -45,7 +45,8 @@ public:
     } else if (reader->filename() != "-") {
       reader->m_file = io_manager::fopen(reader->filename(), "rb");
 
-#if _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
+#if (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600) ||                        \
+  (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
       posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_WILLNEED);
       posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_SEQUENTIAL);
 #endif
