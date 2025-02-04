@@ -69,6 +69,14 @@ compare_subsequences_avx512(size_t& n_mismatches,
                             size_t length,
                             size_t max_penalty);
 
+bool
+compare_subsequences_neon(size_t& n_mismatches,
+                          size_t& n_ambiguous,
+                          const char* seq_1,
+                          const char* seq_2,
+                          size_t length,
+                          size_t max_penalty);
+
 std::vector<instruction_set>
 supported()
 {
@@ -92,6 +100,10 @@ supported()
   }
 #endif
 
+#if HAVE_NEON
+  choices.push_back(instruction_set::neon);
+#endif
+
   return choices;
 }
 
@@ -107,6 +119,8 @@ name(instruction_set value)
       return "AVX2";
     case instruction_set::avx512:
       return "AVX512";
+    case instruction_set::neon:
+      return "NEON";
     default:
       AR_FAIL("SIMD function not implemented!");
   }
@@ -136,6 +150,13 @@ padding(instruction_set value)
 #else
       AR_FAIL("AVX512 not supported!");
 #endif
+    case instruction_set::neon:
+#if HAVE_NEON
+      return 15;
+#else
+      AR_FAIL("NEON not supported!");
+#endif
+
     default:
       AR_FAIL("SIMD function not implemented!");
   }
@@ -164,6 +185,12 @@ get_compare_subsequences_func(instruction_set is)
       return &compare_subsequences_avx512;
 #else
       AR_FAIL("AVX512 not supported!");
+#endif
+    case instruction_set::neon:
+#if HAVE_NEON
+      return &compare_subsequences_neon;
+#else
+      AR_FAIL("NEON not supported!");
 #endif
     default:
       AR_FAIL("SIMD function not implemented!");

@@ -22,6 +22,7 @@ config = configuration_data(
         'HAVE_SSE2': '0',
         'HAVE_AVX2': '0',
         'HAVE_AVX512': '0',
+        'HAVE_NEON': '0',
     },
 )
 
@@ -40,6 +41,8 @@ elif target_machine.cpu_family() == 'x86_64'
     else
         warning('AVX512 support requires GCC>=11 or clang>=8')
     endif
+elif target_machine.cpu_family() == 'aarch64'
+    config.set('HAVE_NEON', '1')
 endif
 
 libsimd = []
@@ -47,6 +50,7 @@ libsimd_config = {
     'HAVE_SSE2': ['sse2', 'simd_sse2.cpp', '-msse2'],
     'HAVE_AVX2': ['avx2', 'simd_avx2.cpp', '-mavx2'],
     'HAVE_AVX512': ['avx512', 'simd_avx512bw.cpp', '-mavx512bw'],
+    'HAVE_NEON': ['neon', 'simd_neon.cpp', []],
 }
 
 foreach key, simd_config : libsimd_config
