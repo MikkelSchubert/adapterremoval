@@ -24,6 +24,7 @@
 #include "reports.hpp"    // for print_terminal_postamble, print_terminal_...
 #include "userconfig.hpp" // for ar_command, userconfig, ar_command::demul...
 #include <cstdlib>        // for abort, size_t
+#include <exception>      // for set_terminate
 #include <ios>            // for ios_base
 
 namespace adapterremoval {
@@ -57,6 +58,29 @@ terminate(const std::string& message)
   std::abort();
 }
 
+[[noreturn]] void
+terminate_on_exception()
+{
+  try {
+    std::exception_ptr eptr{ std::current_exception() };
+
+    if (eptr) {
+      std::rethrow_exception(eptr);
+    } else {
+      terminate("Aborted due to unknown error");
+    }
+  } catch (const std::exception& ex) {
+    log::error()
+      << ex.what()
+      << "\nAdapterRemoval did not run to completion; do NOT make use of the "
+         "resulting reads!";
+  } catch (...) {
+    terminate("Caught unknown exception type");
+  }
+
+  std::exit(1);
+}
+
 } // namespace adapterremoval
 
 int
@@ -64,6 +88,7 @@ main(int argc, char* argv[])
 {
   using namespace adapterremoval;
 
+  std::set_terminate(&terminate_on_exception);
   std::ios_base::sync_with_stdio(false);
 
   userconfig config;
