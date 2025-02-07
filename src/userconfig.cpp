@@ -719,7 +719,8 @@ userconfig::userconfig()
           "ambiguous nucleotides (Ns)")
     .deprecated_alias("--minadapteroverlap")
     .bind_u32(&min_adapter_overlap)
-    .with_default(0);
+    .with_default(1)
+    .with_minimum(1);
   argparser.add("--mismatch-rate", "X")
     .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
           "error-rate is set to 1 / X; if < 0, the defaults are used, "
