@@ -826,6 +826,7 @@ userconfig::userconfig()
           "Mott's algorithm; 'window' for window based trimming; 'per-base' "
           "for a per-base trimming of low quality base; and 'none' for no "
           "trimming of low quality bases")
+    .deprecated_alias("--trim-strategy") // name used during v3 alpha 1
     .bind_str(nullptr)
     .with_choices({ "mott", "window", "per-base", "none" })
     .with_default("mott");
