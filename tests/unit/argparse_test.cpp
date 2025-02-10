@@ -1014,9 +1014,9 @@ const char* HELP_HEADER =
   "My App v1234\n\n"
   "basic help\n\n"
   "OPTIONS:\n"
-  "   -h, --help      Display this message.\n"
-  "   -v, --version   Print the version string.\n"
-  "   --licenses      Print licenses for this software.\n\n";
+  "   -h, --help      Display this message\n"
+  "   -v, --version   Print the version string\n"
+  "   --licenses      Print licenses for this software\n\n";
 
 TEST_CASE("--version", "[argparse::parser]")
 {
@@ -1079,6 +1079,14 @@ TEST_CASE("--help with hidden argument", "[argparse::parser]")
 
   REQUIRE(p.parse_args({ "exe", "--help" }) == argparse::parse_result::exit);
   REQUIRE_THAT(ss.str(), !Contains("--foo"));
+}
+
+TEST_CASE("--help must not end in dot", "[argparse::parser]")
+{
+  argparse::parser p;
+  auto& arg = p.add("--foo");
+
+  REQUIRE_THROWS_AS(arg.help("invalid help text."), assert_failed);
 }
 
 TEST_CASE("unexpected positional argument", "[argparse::parser]")
@@ -1207,9 +1215,9 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
   REQUIRE(ss.str() == "My App v1234\n\n"
                       "basic help\n\n"
                       "OPTIONS:\n"
-                      "   -h, --help      Display this message.\n"
-                      "   -v, --version   Print the version string.\n"
-                      "   --licenses      Print licenses for this software.\n\n"
+                      "   -h, --help      Display this message\n"
+                      "   -v, --version   Print the version string\n"
+                      "   --licenses      Print licenses for this software\n\n"
                       "   --test <META>\n");
 }
 
@@ -1233,9 +1241,9 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
           "My App v1234\n\n"
           "basic help\n\n"
           "OPTIONS:\n"
-          "   -h, --help      Display this message.\n"
-          "   -v, --version   Print the version string.\n"
-          "   --licenses      Print licenses for this software.\n\n"
+          "   -h, --help      Display this message\n"
+          "   -v, --version   Print the version string\n"
+          "   --licenses      Print licenses for this software\n\n"
           "   --test <META>   A long help message that exceeds the\n"
           "                   limit of 60 characters by some amount in\n"
           "                   order to test the line break\n"
@@ -1263,9 +1271,9 @@ TEST_CASE("help with default value", "[argparse::parser]")
           "My App v1234\n\n"
           "basic help\n\n"
           "OPTIONS:\n"
-          "   -h, --help      Display this message.\n"
-          "   -v, --version   Print the version string.\n"
-          "   --licenses      Print licenses for this software.\n\n"
+          "   -h, --help      Display this message\n"
+          "   -v, --version   Print the version string\n"
+          "   --licenses      Print licenses for this software\n\n"
           "   --test <META>   A long help message that exceeds the\n"
           "                   limit of 60 characters by some amount in\n"
           "                   order to test the line break\n"
@@ -1360,13 +1368,12 @@ TEST_CASE("help with finite max number of values", "[argparse::parser]")
   p.set_terminal_width(60);
   p.print_help();
 
-  REQUIRE(ss.str() ==
-          "My App v1234\n\n"
-          "OPTIONS:\n"
-          "   -h, --help       Display this message.\n"
-          "   -v, --version    Print the version string.\n"
-          "   --licenses       Print licenses for this software.\n\n"
-          "   --test [X] [X]   Help text\n");
+  REQUIRE(ss.str() == "My App v1234\n\n"
+                      "OPTIONS:\n"
+                      "   -h, --help       Display this message\n"
+                      "   -v, --version    Print the version string\n"
+                      "   --licenses       Print licenses for this software\n\n"
+                      "   --test [X] [X]   Help text\n");
 }
 
 TEST_CASE("help with infinite number of values", "[argparse::parser]")
@@ -1384,9 +1391,9 @@ TEST_CASE("help with infinite number of values", "[argparse::parser]")
   REQUIRE(ss.str() ==
           "My App v1234\n\n"
           "OPTIONS:\n"
-          "   -h, --help        Display this message.\n"
-          "   -v, --version     Print the version string.\n"
-          "   --licenses        Print licenses for this software.\n\n"
+          "   -h, --help        Display this message\n"
+          "   -v, --version     Print the version string\n"
+          "   --licenses        Print licenses for this software\n\n"
           "   --test [X, ...]   Help text\n");
 }
 
@@ -1405,9 +1412,9 @@ TEST_CASE("help with lower bound of values", "[argparse::parser]")
   REQUIRE(ss.str() ==
           "My App v1234\n\n"
           "OPTIONS:\n"
-          "   -h, --help            Display this message.\n"
-          "   -v, --version         Print the version string.\n"
-          "   --licenses            Print licenses for this software.\n\n"
+          "   -h, --help            Display this message\n"
+          "   -v, --version         Print the version string\n"
+          "   --licenses            Print licenses for this software\n\n"
           "   --test <X> [X, ...]   Help text\n");
 }
 
@@ -1430,9 +1437,9 @@ TEST_CASE("help with lower and upper bound of values", "[argparse::parser]")
   REQUIRE(ss.str() ==
           "My App v1234\n\n"
           "OPTIONS:\n"
-          "   -h, --help           Display this message.\n"
-          "   -v, --version        Print the version string.\n"
-          "   --licenses           Print licenses for this software.\n\n"
+          "   -h, --help           Display this message\n"
+          "   -v, --version        Print the version string\n"
+          "   --licenses           Print licenses for this software\n\n"
           "   --test <X> <X> [X]   Help text\n");
 }
 

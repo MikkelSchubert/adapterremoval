@@ -62,9 +62,9 @@ parser::parser()
   add_header("OPTIONS:");
 
   // Built-in arguments
-  add("--help").abbreviation('h').help("Display this message.");
-  add("--version").abbreviation('v').help("Print the version string.");
-  add("--licenses").help("Print licenses for this software.");
+  add("--help").abbreviation('h').help("Display this message");
+  add("--version").abbreviation('v').help("Print the version string");
+  add("--licenses").help("Print licenses for this software");
   add_separator();
 }
 
@@ -416,6 +416,9 @@ argument::argument(const std::string& key, std::string metavar)
 argument&
 argument::help(const std::string& text)
 {
+  // Enforce this the style of help text
+  AR_REQUIRE(!ends_with(text, "."),
+             "Help text ends with dot: " + log_escape(text));
   m_help = text;
 
   return *this;

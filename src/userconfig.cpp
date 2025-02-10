@@ -643,10 +643,10 @@ userconfig::userconfig()
   argparser.add("--mask-degenerate-bases")
     .help("Mask degenerate/ambiguous bases (B/D/H/K/M/N/R/S/V/W/Y) in the "
           "input by replacing them with an 'N'; if this option is not used, "
-          "AdapterRemoval will abort upon encountering degenerate bases.");
+          "AdapterRemoval will abort upon encountering degenerate bases");
   argparser.add("--convert-uracils")
     .help("Convert uracils (U) to thymine (T) in input reads; if this option "
-          "is not used, AdapterRemoval will abort upon encountering uracils.");
+          "is not used, AdapterRemoval will abort upon encountering uracils");
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("OUTPUT FORMAT:");
