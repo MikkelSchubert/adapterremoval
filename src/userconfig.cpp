@@ -744,7 +744,8 @@ userconfig::userconfig()
     .deprecated_alias("--collapse");
   argparser.add("--merge-threshold", "N")
     .help("Paired reads must overlap at least this many bases to be considered "
-          "overlapping for the purpose of read merging")
+          "overlapping for the purpose of read merging. Overlapping bases "
+          "where one or both bases are ambiguous (N) are not counted")
     .deprecated_alias("--minalignmentlength")
     .bind_u32(&merge_threshold)
     .with_default(11);
