@@ -22,7 +22,7 @@
 #include "fastq.hpp"      // for fastq
 #include "fastq_io.hpp"   // for write_fastq, split_fastq, gzip_split_fastq
 #include "scheduler.hpp"  // for analytical_chunk
-#include "serializer.hpp" // for fastq_serialzier
+#include "serializer.hpp" // for fastq_serializer
 #include "strutils.hpp"   // for ends_with
 #include <limits>         // for numeric_limits
 

@@ -147,7 +147,7 @@ barcode_table::barcode_table(const sample_set& samples,
   m_max_mismatches_r1 = std::min<size_t>(m_max_mismatches, max_mm_r1);
   m_max_mismatches_r2 = std::min<size_t>(m_max_mismatches, max_mm_r2);
 
-  // Flatten and lexigraphically sort barcodes to simplify tree building
+  // Flatten and lexiographically sort barcodes to simplify tree building
   auto barcodes = build_barcode_vec(samples);
 
   // Create empty tree containing just the root node; creating the root here

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
-#include "serializer.hpp"  // for fastq_serialzier
+#include "serializer.hpp"  // for fastq_serializer
 #include "buffer.hpp"      // for buffer
 #include "commontypes.hpp" // for output_format
 #include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
