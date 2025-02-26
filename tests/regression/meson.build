@@ -1,4 +1,12 @@
-regression_test_runner = find_program(meson.project_source_root() / 'scripts' / 'regression_test_runner.py')
+test_runner_script = meson.project_source_root() / 'scripts' / 'regression_test_runner.py'
+
+regression_test_exe = find_program('uv', required: false, version: '>=0.5.17')
+if regression_test_exe.found()
+    regression_test_args = ['run', test_runner_script]
+else
+    regression_test_exe = find_program(test_runner_script)
+    regression_test_args = []
+endif
 
 regression_tests = [
     'adapter_trimming' / 'excl_adapter' / 'pe' / 'non_overlapping',
@@ -93,8 +101,9 @@ regression_tests = [
 foreach test : regression_tests
     test(
         test.replace('/', ' / '),
-        regression_test_runner,
-        args: [
+        regression_test_exe,
+        args: regression_test_args
+        + [
             meson.current_build_dir(),
             meson.current_source_dir() / test,
             '--threads', '1',
@@ -110,8 +119,9 @@ endforeach
 
 custom_target(
     'update-regression',
-    command: [
-        regression_test_runner,
+    command: [regression_test_exe]
+    + regression_test_args
+    + [
         meson.current_build_dir(),
         meson.current_source_dir(),
         '--create-updated-reference',

@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.7"
+# dependencies = [
+#     "jsonschema==4.17.3",
+# ]
+# [tool.uv]
+# exclude-newer = "2025-02-26T00:00:00Z"
+# ///
 # Copyright (c) 2022 Mikkel Schubert <MikkelSch@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
