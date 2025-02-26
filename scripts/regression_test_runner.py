@@ -285,8 +285,11 @@ def path_to_s(path: Iterable[str | int]) -> str:
 
 
 def relative_to(root: Path, path: Path) -> Path:
-    if path.is_absolute() and path.is_relative_to(root):
-        return path.relative_to(root)
+    if path.is_absolute():
+        try:
+            return path.relative_to(root)
+        except ValueError:
+            pass
 
     return path
 
