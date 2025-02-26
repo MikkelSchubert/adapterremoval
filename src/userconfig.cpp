@@ -1384,8 +1384,8 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings_json = new_output_file("--out-json", { ".json" }).name;
-  files.settings_html = new_output_file("--out-html", { ".html" }).name;
+  files.settings_json = new_output_file("--out-json", { ".json" }, false).name;
+  files.settings_html = new_output_file("--out-html", { ".html" }, false).name;
 
   const std::string ext{ output_files::file_extension(out_file_format) };
   const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
@@ -1393,14 +1393,14 @@ userconfig::get_output_filenames() const
 
   if (is_demultiplexing_enabled()) {
     files.unidentified_1 =
-      new_output_file("--out-unidentified1", { ".unidentified", out1 });
+      new_output_file("--out-unidentified1", { ".unidentified", out1 }, false);
 
     if (paired_ended_mode) {
       if (interleaved_output) {
         files.unidentified_2 = files.unidentified_1;
       } else {
-        files.unidentified_2 =
-          new_output_file("--out-unidentified2", { ".unidentified", out2 });
+        files.unidentified_2 = new_output_file(
+          "--out-unidentified2", { ".unidentified", out2 }, false);
       }
     }
   }
@@ -1451,11 +1451,12 @@ userconfig::get_output_filenames() const
 
 output_file
 userconfig::new_output_file(const std::string& key,
-                            const string_vec& values) const
+                            const string_vec& values,
+                            const bool sample_file) const
 {
   std::string out;
   if (argparser.is_set(key)) {
-    if (!is_demultiplexing_enabled()) {
+    if (!sample_file || !is_demultiplexing_enabled()) {
       const auto filename = argparser.value(key);
 
       return { filename, infer_output_format(filename) };
