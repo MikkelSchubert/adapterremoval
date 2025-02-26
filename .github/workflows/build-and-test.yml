@@ -65,7 +65,7 @@ jobs:
           meson test -C builddir --suite unit --print-errorlogs
 
       - name: coveralls
-        if: ${{ matrix.coverage == 'true' }}
+        if: ${{ matrix.coverage == 'true' && github.event_name == 'push' }}
         run: |
           python3 -m pip install cpp-coveralls
           coveralls --exclude tests --root . --build-root builddir --gcov-options '\-lpbc'
