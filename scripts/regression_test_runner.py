@@ -562,9 +562,6 @@ class TestTextFile(TestFile):
     text: str
 
     def compare_with_file(self, expected: Path, observed: Path) -> None:
-        if not observed.is_file():
-            raise TestError(f"file {observed} not created")
-
         text = read_and_decompress_file(observed)
         if text == self.text:
             return
@@ -636,7 +633,8 @@ class TestJsonFile(TestFile):
 
 
 class TestMiscFile(TestFile):
-    def compare_with_file(self, expected: Path, observed: Path) -> None: ...
+    def compare_with_file(self, expected: Path, observed: Path) -> None:
+        pass
 
 
 class TestConfig(NamedTuple):
@@ -1045,7 +1043,18 @@ class TestRunner:
             )
 
     def _evaluate_output_files(self) -> None:
-        expected_files: set[str] = set()
+        observed_files = set(os.listdir(self._test_path))
+        expected_files: set[str] = {
+            it.name for it in self._test.get_files(_OUTPUT_FILES | _INPUT_FILES)
+        }
+
+        if observed_files != expected_files:
+            changes: list[str] = []
+            for name in sorted(observed_files.symmetric_difference(expected_files)):
+                changes.append(f"-{name}" if name in expected_files else f"+{name}")
+
+            raise TestError(f"files do not match expectations: {', '.join(changes)}")
+
         for it in self._test.get_files(_OUTPUT_FILES | _INPUT_FILES):
             expected_files.add(it.name)
 
@@ -1053,11 +1062,6 @@ class TestRunner:
                 expected=self._exp_path / it.name,
                 observed=self._test_path / it.name,
             )
-
-        observed_files = set(os.listdir(self._test_path))
-        unexpected_files = observed_files - expected_files
-        if unexpected_files:
-            raise TestError(f"unexpected files created {unexpected_files!r}")
 
 
 class TestUpdater:
