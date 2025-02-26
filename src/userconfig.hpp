@@ -242,8 +242,14 @@ private:
   [[nodiscard]] output_format infer_output_format(
     const std::string& filename) const;
 
+  /**
+   * Generates filename + format for a output (FQ/SAM/BAM/HTML/JSON) file. If
+   * sample_file is true, the file is expected to belong to a sample. Otherwise
+   * it is expected to be a HTML/JSON/unidentified fastq file.
+   */
   [[nodiscard]] output_file new_output_file(const std::string& key,
-                                            const string_vec& values) const;
+                                            const string_vec& values,
+                                            bool sample_file = true) const;
 
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser{};
