@@ -78,6 +78,7 @@ regression_tests = [
     'misc' / 'qualityformat' / 'solexa',
     'misc' / 'uneven_input_1',
     'misc' / 'uneven_input_2',
+    'quality_trimming' / 'mott' / 'pe',
     'quality_trimming' / 'perbase' / 'pe',
     'quality_trimming' / 'perbase' / 'se',
     'quality_trimming' / 'trimfixed' / 'pe' / '3p_both_set',

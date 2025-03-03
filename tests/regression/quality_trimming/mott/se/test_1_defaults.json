@@ -1,0 +1,21 @@
+{
+  "description": "Trimming with default error rate",
+  "arguments": [
+    "--quality-trimming",
+    "mott",
+    "--out-prefix",
+    "output_defaults"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "output_defaults.r1.fastq.gz"
+    ],
+    "ignore": [
+      "output_defaults.json",
+      "output_defaults.html"
+    ]
+  }
+}
