@@ -1,0 +1,20 @@
+{
+    "description": "Missing check resulting in attempted to write disabled read-type",
+    "arguments": [
+        "--out-prefix",
+        "/dev/null",
+        "--barcode-list",
+        "barcodes.txt"
+    ],
+    "files": {
+        "input_1": [
+            "input_1.fastq"
+        ],
+        "input_2": [
+            "input_2.fastq"
+        ],
+        "barcodes": [
+            "barcodes.txt"
+        ]
+    }
+}
