@@ -1,0 +1,23 @@
+{
+  "description": "Trimming with default error rate. Should trim additional bases compared to --trim-mott-quality 19",
+  "arguments": [
+    "--quality-trimming",
+    "mott",
+    "--trim-mott-quality",
+    "20",
+    "--out-prefix",
+    "output_20"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "output_20.r1.fastq.gz"
+    ],
+    "ignore": [
+      "output_20.json",
+      "output_20.html"
+    ]
+  }
+}
