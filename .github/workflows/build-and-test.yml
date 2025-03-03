@@ -38,6 +38,12 @@ jobs:
         with:
           version: "latest"
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.cxx }}
+          create-symlink: true
+
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev gcovr
