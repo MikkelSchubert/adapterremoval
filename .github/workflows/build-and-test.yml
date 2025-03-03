@@ -42,6 +42,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.cxx }}
+          create-symlink: true
 
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-22.04' }}
