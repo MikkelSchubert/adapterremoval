@@ -833,19 +833,20 @@ userconfig::userconfig()
     .with_choices({ "mott", "window", "per-base", "none" })
     .with_default("mott");
 
-  argparser.add("--trim-mott-rate", "X")
-    .help("The threshold value used when performing trimming quality based "
-          "trimming using the modified Mott's algorithm. A value of zero or "
-          "less disables trimming; a value greater than one is assumed to be "
-          "a Phred encoded error rate (e.g. 13 ~= 0.05)")
+  argparser.add("--trim-mott-quality", "N")
+    .help("The inclusive threshold value used when performing quality based "
+          "trimming using the modified Mott's algorithm. The value must be in "
+          "the range 0 to 93, corresponding to Phred+33 encoded values of '!' "
+          "to '~'")
+    .deprecated_alias("--trim-mott-rate")
     .conflicts_with("--trim-windows")
     .conflicts_with("--trim-ns")
     .conflicts_with("--trim-qualities")
     .conflicts_with("--trim-min-quality")
     .bind_double(&trim_mott_rate)
-    .with_minimum(0.0)
-    .with_maximum(1.0)
-    .with_default(0.05);
+    .with_minimum(0)
+    .with_maximum(93)
+    .with_default(13);
   argparser.add("--trim-windows", "X")
     .help("Specifies the size of the window used for '--quality-trimming "
           "window': If >= 1, this value will be used as the window size; if "
@@ -853,7 +854,7 @@ userconfig::userconfig()
           "If the resulting window size is 0 or larger than the read length, "
           "the read length is used as the window size")
     .deprecated_alias("--trimwindows")
-    .conflicts_with("--trim-mott-rate")
+    .conflicts_with("--trim-mott-quality")
     .conflicts_with("--trim-qualities")
     .bind_double(&trim_window_length)
     .with_minimum(0.0)
@@ -864,21 +865,21 @@ userconfig::userconfig()
           "be in the range 0 to 93, corresponding to Phred+33 encoded values "
           "of '!' to '~'")
     .deprecated_alias("--minquality")
-    .conflicts_with("--trim-mott-rate")
+    .conflicts_with("--trim-mott-quality")
     .bind_u32(&trim_quality_score)
     .with_maximum(PHRED_SCORE_MAX)
     .with_default(2);
   argparser.add("--trim-ns")
     .help("If set, trim ambiguous bases (N) at 5'/3' termini when using the "
           "'window' or the 'per-base' trimming strategy")
-    .conflicts_with("--trim-mott-rate")
+    .conflicts_with("--trim-mott-quality")
     .deprecated_alias("--trimns")
     .bind_bool(&trim_ambiguous_bases);
   argparser.add("--trim-qualities")
     .help("If set, trim low-quality bases (< --trim-min-quality) when using "
           "the 'per-base' trimming strategy")
     .deprecated_alias("--trimqualities")
-    .conflicts_with("--trim-mott-rate")
+    .conflicts_with("--trim-mott-quality")
     .conflicts_with("--trim-windows")
     .bind_bool(&trim_low_quality_bases);
 
@@ -1112,10 +1113,7 @@ userconfig::parse_args(const string_vec& argvec)
     const auto strategy = argparser.value("--quality-trimming");
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
-
-      if (trim_mott_rate > 1) {
-        trim_mott_rate = std::pow(10.0, trim_mott_rate / -10.0);
-      }
+      trim_mott_rate = std::pow(10.0, trim_mott_rate / -10.0);
     } else if (strategy == "window") {
       trim = trimming_strategy::window;
     } else if (strategy == "per-base") {
