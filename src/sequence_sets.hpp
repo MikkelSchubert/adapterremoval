@@ -162,7 +162,7 @@ public:
   };
 
   explicit sample(std::string name, std::string barcode1, std::string barcode2)
-    : sample(name, dna_sequence{ barcode1 }, dna_sequence{ barcode2 }){};
+    : sample(name, dna_sequence{ barcode1 }, dna_sequence{ barcode2 }) {};
 
   /** Adds a pair of barcodes in read orientation */
   void add(dna_sequence barcode1, dna_sequence barcode2);
