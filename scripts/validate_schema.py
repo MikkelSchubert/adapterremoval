@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-# pyright: strict
+# /// script
+# requires-python = ">=3.7"
+# dependencies = [
+#     "fastjsonschema==2.21.1",
+# ]
+# [tool.uv]
+# exclude-newer = "2025-02-26T00:00:00Z"
+# ///
 from __future__ import annotations
 
 import argparse
@@ -7,23 +14,14 @@ import functools
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
-import jsonschema
-import jsonschema.exceptions
+import fastjsonschema
 
 
 def load_json(filepath: Path) -> object:
     with filepath.open("rb") as handle:
         return json.load(handle)
-
-
-def error_path(error: jsonschema.exceptions.ValidationError) -> str:
-    path = ".".join(map(str, error.path))
-    if error.parent is not None:
-        assert isinstance(error.parent, jsonschema.exceptions.ValidationError)
-        return f"{error_path(error.parent)}.{path}"
-
-    return path
 
 
 class Args(argparse.Namespace):
@@ -54,16 +52,15 @@ def parse_args(argv: list[str]) -> Args:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     schema = load_json(args.schema)
+    validator: Any = fastjsonschema.compile(schema, use_default=False)
     exit_code = 0
 
     for filepath in args.files:
         try:
-            jsonschema.validate(load_json(filepath), schema=schema)
-        except jsonschema.exceptions.ValidationError as error:
-            print(
-                f"ERROR in {filepath} at {error_path(error)}: {error.message}",
-                file=sys.stderr,
-            )
+            validator(load_json(filepath))
+        except fastjsonschema.JsonSchemaValueException as error:
+            path = ".".join(map(str, error.path))
+            print(f"ERROR in {filepath} at {path}: {error.message}", file=sys.stderr)
             exit_code = 1
         else:
             print(f"Successfully validated {filepath}", filepath, file=sys.stderr)

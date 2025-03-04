@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.7"
 # dependencies = [
-#     "jsonschema==4.17.3",
+#     "fastjsonschema==2.21.1",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-02-26T00:00:00Z"
@@ -34,7 +34,6 @@ import errno
 import gzip
 import json
 import math
-import multiprocessing
 import os
 import re
 import shlex
@@ -49,6 +48,7 @@ from itertools import groupby, islice
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -64,8 +64,7 @@ from typing import (
 )
 
 try:
-    import jsonschema
-    import jsonschema.exceptions
+    import fastjsonschema
 except ImportError:
     JSON_SCHEMA_VALIDATION = False  # pyright: ignore[reportConstantRedefinition]
 else:
@@ -309,19 +308,6 @@ def classname(v: object) -> str:
     return v.__class__.__name__
 
 
-def error_path(error: Exception) -> str:
-    if JSON_SCHEMA_VALIDATION:
-        assert isinstance(error, jsonschema.exceptions.ValidationError)
-
-        path = path_to_s(error.path)
-        if error.parent is not None:
-            path = f"{error_path(error.parent)}.{path}"
-
-        return path
-
-    return str(error)
-
-
 ################################################################################
 
 
@@ -435,28 +421,31 @@ class JSONValidator:
 
     __slots__ = [
         "_schema",
+        "_validator",
     ]
 
     def __init__(self, filepath: Path | None) -> None:
-        if filepath is None:
-            self._schema = {}
-        elif not JSON_SCHEMA_VALIDATION:
-            print_warn("JSON schema provided, but `jsonschema` could not be loaded")
-
+        if filepath is None or not JSON_SCHEMA_VALIDATION:
             self._schema = {}
         else:
             print(f"Reading JSON schema from {quote(filepath)}")
             _, self._schema = read_json(filepath)
+            self._validator: Any = fastjsonschema.compile(
+                self._schema,
+                use_default=False,
+            )
 
     def __call__(self, data: JSON) -> None:
         if self._schema:
             try:
-                jsonschema.validate(instance=data, schema=self._schema)
-            except jsonschema.ValidationError as error:
-                # raise f"Invalid JSON file: {error}")
+                self._validator(data)
+            except fastjsonschema.JsonSchemaValueException as error:
+                error_path = path_to_s(error.path)
                 raise JSONSchemaError(
-                    f"Schema error at {error_path(error)}: {error.message}"
+                    f"Schema error at {error_path}: {error.message}"
                 ) from error
+            except fastjsonschema.JsonSchemaException as error:
+                raise JSONSchemaError(str(error)) from error
 
     def __bool__(self) -> bool:
         return bool(self._schema)
@@ -1269,7 +1258,6 @@ class Args(argparse.Namespace):
     json_schema: Path | None
     schema_validation_required: bool
     create_updated_reference: bool
-    threads: int
     use_colors: str
 
 
@@ -1314,7 +1302,7 @@ def parse_args(argv: list[str]) -> Args:
         "--json-schema",
         type=Path,
         help="Validate output JSON files using the supplied schema; requires Python "
-        "module `jsonschema`; validating the schema is only performed if the "
+        "module `fastjsonschema`; validating the schema is only performed if the "
         "required is installed, otherwise it is skipped",
     )
     parser.add_argument(
@@ -1330,12 +1318,6 @@ def parse_args(argv: list[str]) -> Args:
         help="Creates updated reference files by running test commands in the "
         "specified work folder, mirroring the structure of the input folder. "
         "Commands that are expected to fail/not generate output are not run.",
-    )
-    parser.add_argument(
-        "--threads",
-        type=int,
-        default=min(4, multiprocessing.cpu_count()),
-        help="Size of thread-pool for concurrent execution of tests",
     )
     parser.add_argument(
         "--use-colors",
@@ -1371,7 +1353,7 @@ def main(argv: list[str]) -> int:
         print_err("ERROR: No JSON schema was provided")
         return 1
     elif args.schema_validation_required and not JSON_SCHEMA_VALIDATION:
-        print_err("ERROR: Required module `jsonschema` could not be loaded")
+        print_err("ERROR: Required module `fastjsonschema` could not be loaded")
         return 1
     elif not args.source_dir.is_dir():
         print_err(f"ERROR: {quote(args.source_dir)} is not a directory")
@@ -1379,10 +1361,6 @@ def main(argv: list[str]) -> int:
 
     if args.max_failures <= 0:
         args.max_failures = float("inf")
-
-    if args.create_updated_reference:
-        # test-sets may generate (partially) overlapping files
-        args.threads = 1
 
     args.work_dir.mkdir(parents=True, exist_ok=True)
     args.work_dir = Path(tempfile.mkdtemp(dir=args.work_dir))
@@ -1440,40 +1418,38 @@ def main(argv: list[str]) -> int:
     print("\nRunning tests:")
 
     failures: List[Tuple[Union[TestRunner, TestUpdater], Exception]] = []
-    with multiprocessing.Pool(args.threads) as pool:
-        results = pool.imap(run_test, exhaustive_tests)
-        grouped_results = groupby(results, lambda it: it[0].name)
+    results = (run_test(it) for it in exhaustive_tests)
+    grouped_results = groupby(results, lambda it: it[0].name)
 
-        for idx, (name, test_results) in enumerate(grouped_results, start=1):
-            print("  %i of %i: %s " % (idx, len(tests), name), end="")
+    for idx, (name, test_results) in enumerate(grouped_results, start=1):
+        print("  %i of %i: %s " % (idx, len(tests), name), end="")
 
-            last_error = None
-            test_skipped = False
-            for test, error in test_results:
-                if error is not None:
-                    print_err("X", end="")
-                    failures.append((test, error))
-                    last_error = error
-                elif test.skip:
-                    print_warn(".", end="")
-                    test_skipped = True
-                else:
-                    print_ok(".", end="")
-
-                sys.stdout.flush()
-
-            if test_skipped:
-                print_warn(" [SKIPPED]")
-                n_skipped += 1
-            elif last_error is None:
-                print_ok(" [OK]")
-                n_successes += 1
+        last_error = None
+        test_skipped = False
+        for test, error in test_results:
+            if error is not None:
+                print_err("X", end="")
+                failures.append((test, error))
+                last_error = error
+            elif test.skip:
+                print_warn(".", end="")
+                test_skipped = True
             else:
-                print_err(" [FAILED]")
-                n_failures += 1
-                if n_failures >= args.max_failures:
-                    pool.terminate()
-                    break
+                print_ok(".", end="")
+
+            sys.stdout.flush()
+
+        if test_skipped:
+            print_warn(" [SKIPPED]")
+            n_skipped += 1
+        elif last_error is None:
+            print_ok(" [OK]")
+            n_successes += 1
+        else:
+            print_err(" [FAILED]")
+            n_failures += 1
+            if n_failures >= args.max_failures:
+                break
 
     for test, error in failures:
         print_err(f"\nTest {test.name} failed:")
@@ -1502,15 +1478,17 @@ def main(argv: list[str]) -> int:
 
     if json_validator:
         print_ok("JSON file validation performed.")
+    else:
+        fastjsonschema_was = "available" if JSON_SCHEMA_VALIDATION else "unavailable"
+        schema_was = "not provided" if args.json_schema is None else "provided"
+
+        print_warn(
+            f"JSON files not validated: `fastjsonschema` was {fastjsonschema_was}, "
+            f"and JSON schema was {schema_was}"
+        )
 
     if n_skipped:
         print_warn(f"Skipped {n_skipped} tests!")
-
-    if not json_validator:
-        print_warn(
-            "JSON files not validated; install Python module `jsonschema` to enable "
-            "validation"
-        )
 
     if args.create_updated_reference:
         print_ok(f"Updated regression tests written to {quote(args.work_dir)}")
