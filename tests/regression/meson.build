@@ -107,7 +107,6 @@ foreach test : regression_tests
         + [
             meson.current_build_dir(),
             meson.current_source_dir() / test,
-            '--threads', '1',
             '--use-colors', 'always',
             '--json-schema', meson.project_source_root() / 'schema.json',
             '--executable', exe.full_path(),
