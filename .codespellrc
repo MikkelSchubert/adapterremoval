@@ -1,0 +1,3 @@
+[codespell]
+skip = tests/unit/catch.hpp,*.fastq,*.json
+builtin = clear,rare,informal,names
