@@ -40,6 +40,7 @@
 #include <limits>          // for numeric_limits
 #include <stdexcept>       // for invalid_argument
 #include <string>          // for string, basic_string, operator==, operator+
+#include <string_view>     // for string_view
 #include <tuple>           // for get, tuple
 #include <unistd.h>        // for access, isatty, R_OK, STDERR_FILENO
 
@@ -1382,23 +1383,23 @@ userconfig::get_output_filenames() const
 {
   output_files files;
 
-  files.settings_json = new_output_file("--out-json", { ".json" }, false).name;
-  files.settings_html = new_output_file("--out-html", { ".html" }, false).name;
+  files.settings_json = new_output_file("--out-json", {}, {}, ".json").name;
+  files.settings_html = new_output_file("--out-html", {}, {}, ".html").name;
 
-  const std::string ext{ output_files::file_extension(out_file_format) };
-  const std::string out1 = (interleaved_output ? "" : ".r1") + ext;
-  const std::string out2 = (interleaved_output ? "" : ".r2") + ext;
+  auto ext = output_files::file_extension(out_file_format);
+  std::string_view out1 = interleaved_output ? "" : ".r1";
+  std::string_view out2 = interleaved_output ? "" : ".r2";
 
   if (is_demultiplexing_enabled()) {
-    files.unidentified_1 =
-      new_output_file("--out-unidentified1", { ".unidentified", out1 }, false);
+    files.unidentified_1 = new_output_file(
+      "--out-unidentified1", {}, { ".unidentified", out1 }, ext);
 
     if (paired_ended_mode) {
       if (interleaved_output) {
         files.unidentified_2 = files.unidentified_1;
       } else {
         files.unidentified_2 = new_output_file(
-          "--out-unidentified2", { ".unidentified", out2 }, false);
+          "--out-unidentified2", {}, { ".unidentified", out2 }, ext);
       }
     }
   }
@@ -1407,7 +1408,7 @@ userconfig::get_output_filenames() const
     const auto& name = sample.name();
     sample_output_files map;
 
-    const auto mate_1 = new_output_file("--out-file1", { name, out1 });
+    const auto mate_1 = new_output_file("--out-file1", name, { out1 }, ext);
     map.set_file(read_type::mate_1, mate_1);
 
     if (paired_ended_mode) {
@@ -1415,7 +1416,7 @@ userconfig::get_output_filenames() const
         map.set_file(read_type::mate_2, mate_1);
       } else {
         map.set_file(read_type::mate_2,
-                     new_output_file("--out-file2", { name, out2 }));
+                     new_output_file("--out-file2", name, { out2 }, ext));
       }
     }
 
@@ -1423,20 +1424,20 @@ userconfig::get_output_filenames() const
       if (is_any_filtering_enabled()) {
         map.set_file(
           read_type::discarded,
-          new_output_file("--out-discarded", { name, ".discarded", ext }));
+          new_output_file("--out-discarded", name, { ".discarded" }, ext));
       }
 
       if (paired_ended_mode) {
         if (is_any_filtering_enabled()) {
           map.set_file(
             read_type::singleton,
-            new_output_file("--out-singleton", { name, ".singleton", ext }));
+            new_output_file("--out-singleton", name, { ".singleton" }, ext));
         }
 
         if (is_read_merging_enabled()) {
           map.set_file(
             read_type::merged,
-            new_output_file("--out-merged", { name, ".merged", ext }));
+            new_output_file("--out-merged", name, { ".merged" }, ext));
         }
       }
     }
@@ -1449,25 +1450,44 @@ userconfig::get_output_filenames() const
 
 output_file
 userconfig::new_output_file(const std::string& key,
-                            const string_vec& values,
-                            const bool sample_file) const
+                            std::string_view sample,
+                            std::vector<std::string_view> keys,
+                            std::string_view ext) const
 {
+  AR_REQUIRE(!ext.empty());
+  const auto default_is_fastq = out_file_format == output_format::fastq ||
+                                out_file_format == output_format::fastq_gzip;
+
   std::string out;
   if (argparser.is_set(key)) {
-    if (!sample_file || !is_demultiplexing_enabled()) {
+    // global files, e.g. reports and unidentified reads
+    if (sample.empty()) {
       const auto filename = argparser.value(key);
 
       return { filename, infer_output_format(filename) };
     }
 
     out = argparser.value(key);
-  } else if (out_prefix == DEV_NULL || key == "--out-discarded") {
+  } else if (out_prefix == DEV_NULL ||
+             // Discarded reads are dropped by default for non-archival formats
+             (default_is_fastq && key == "--out-discarded")) {
     return { DEV_NULL, output_format::fastq };
   } else {
     out = out_prefix;
   }
 
-  for (const auto& value : values) {
+  if (!(default_is_fastq || keys.empty())) {
+    // SAM/BAM files are combined by default
+    keys.pop_back();
+  }
+
+  if (!sample.empty()) {
+    keys.insert(keys.begin(), sample);
+  }
+
+  keys.emplace_back(ext);
+
+  for (const auto& value : keys) {
     if (!value.empty() && value.front() != '.') {
       out.push_back('.');
     }

@@ -24,11 +24,11 @@
 #include "fastq_enc.hpp"     // for fastq_encoding
 #include "sequence_sets.hpp" // for sample_set
 #include "serializer.hpp"    // for read_group
-#include "simd.hpp"          // for size_t, instruction_set
+#include "simd.hpp"          // for instruction_set
 #include "timer.hpp"         // for monotonic_timer
-#include <cstddef>           // for size_t
 #include <cstdint>           // for uint64_t
 #include <string>            // for string
+#include <string_view>       // for string_view
 #include <utility>           // for pair
 
 namespace adapterremoval {
@@ -243,13 +243,17 @@ private:
     const std::string& filename) const;
 
   /**
-   * Generates filename + format for a output (FQ/SAM/BAM/HTML/JSON) file. If
-   * sample_file is true, the file is expected to belong to a sample. Otherwise
-   * it is expected to be a HTML/JSON/unidentified fastq file.
+   * Generates filename + format for a output (FQ/SAM/BAM/HTML/JSON) file.
+   * sample_name may optionally contain a sample name, otherwise the file is
+   * expected to be used by all samples (if any); keys contain filename parts
+   * such as "r1", from which the final filename is constructed. The last key is
+   * ignored by formats that aggregate output by default; ext is the mandatory
+   * file extension.
    */
   [[nodiscard]] output_file new_output_file(const std::string& key,
-                                            const string_vec& values,
-                                            bool sample_file = true) const;
+                                            std::string_view sample,
+                                            std::vector<std::string_view> keys,
+                                            std::string_view ext) const;
 
   //! Argument parser setup to parse the arguments expected by AR
   argparse::parser argparser{};
