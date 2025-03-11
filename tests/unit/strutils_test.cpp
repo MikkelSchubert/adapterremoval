@@ -73,7 +73,7 @@ TEST_CASE("starts_with")
   REQUIRE(starts_with("morb", ""));
   REQUIRE(starts_with("morb", "m"));
   REQUIRE(starts_with("morb", "mo"));
-  REQUIRE(starts_with("morb", "mor"));
+  REQUIRE(starts_with("morb", "mor")); // codespell:ignore mor
   REQUIRE(starts_with("morb", "morb"));
 
   REQUIRE_FALSE(starts_with("", "x"));
