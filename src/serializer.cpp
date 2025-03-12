@@ -214,7 +214,7 @@ sam_serializer::record(buffer& buf,
 
   buf.append("\tRG:Z:");
   buf.append(sequences.info.id());
-  buf.append("\tPG:Z:adapterremoval\n");
+  buf.append("\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -260,13 +260,9 @@ bam_serializer::record(buffer& buf,
   sequence_to_bam(buf, record.sequence());
   qualities_to_bam(buf, record.qualities());
 
-  // PG:Z:adapterremoval tag
+  // RG:Z:${ID} tag
   buf.append("RGZ");
   buf.append(sequences.info.id());
-  buf.append_u8(0); // NUL
-
-  // PG:Z:adapterremoval tag
-  buf.append("PGZadapterremoval");
   buf.append_u8(0); // NUL
 
   const size_t block_size = buf.size() - block_size_pos - 4;

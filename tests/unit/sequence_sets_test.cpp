@@ -34,14 +34,14 @@ TEST_CASE("default read group")
   {
     read_group rg;
     REQUIRE(rg.id() == "1");
-    REQUIRE(rg.header() == "@RG\tID:1\tPG:adapterremoval");
+    REQUIRE(rg.header() == "@RG\tID:1");
   }
 
   SECTION("explicit")
   {
     read_group rg{ "" };
     REQUIRE(rg.id() == "1");
-    REQUIRE(rg.header() == "@RG\tID:1\tPG:adapterremoval");
+    REQUIRE(rg.header() == "@RG\tID:1");
   }
 }
 
@@ -58,7 +58,7 @@ TEST_CASE("black-slash in read-group")
 {
   read_group rg{ "ID:foo\\\\bar" };
   REQUIRE(rg.id() == "foo\\bar");
-  REQUIRE(rg.header() == "@RG\tID:foo\\bar\tPG:adapterremoval");
+  REQUIRE(rg.header() == "@RG\tID:foo\\bar");
 }
 
 TEST_CASE("minimal read group with ID")
@@ -67,13 +67,13 @@ TEST_CASE("minimal read group with ID")
 
   read_group rg{ header };
   REQUIRE(rg.id() == "foo");
-  REQUIRE(rg.header() == "@RG\tID:foo\tPG:adapterremoval");
+  REQUIRE(rg.header() == "@RG\tID:foo");
 
   std::string id = GENERATE("2", "longer");
 
   rg.set_id(id);
   REQUIRE(rg.id() == id);
-  REQUIRE(rg.header() == std::string("@RG\tID:") + id + "\tPG:adapterremoval");
+  REQUIRE(rg.header() == std::string("@RG\tID:") + id + "");
 }
 
 TEST_CASE("minimal read group with SM")
@@ -82,13 +82,12 @@ TEST_CASE("minimal read group with SM")
 
   read_group rg{ header };
   REQUIRE(rg.id() == "1");
-  REQUIRE(rg.header() == "@RG\tID:1\tSM:foo\tPG:adapterremoval");
+  REQUIRE(rg.header() == "@RG\tID:1\tSM:foo");
 
   std::string name = GENERATE("2", "longer");
 
   rg.set_sample(name);
-  REQUIRE(rg.header() ==
-          std::string("@RG\tID:1\tSM:") + name + "\tPG:adapterremoval");
+  REQUIRE(rg.header() == std::string("@RG\tID:1\tSM:") + name + "");
 }
 
 TEST_CASE("invalid read groups")
