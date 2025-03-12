@@ -150,39 +150,6 @@ check_barcodes_sequences(const std::vector<sample>& samples,
   return true;
 }
 
-/** Unescapes the escape sequences "\\" and "\t" in a read-group string */
-std::string
-unescape_read_group(std::string_view value)
-{
-  std::string result;
-
-  bool in_escape = false;
-  for (auto c : value) {
-    if (in_escape) {
-      if (c == '\\') {
-        result.push_back('\\');
-      } else if (c == 't') {
-        result.push_back('\t');
-      } else {
-        throw std::invalid_argument("invalid escape sequence " +
-                                    std::string("'\\") + c + '\'');
-      }
-
-      in_escape = false;
-    } else if (c == '\\') {
-      in_escape = true;
-    } else {
-      result.push_back(c);
-    }
-  }
-
-  if (in_escape) {
-    throw std::invalid_argument("incomplete escape sequence at end of string");
-  }
-
-  return result;
-}
-
 constexpr bool
 is_ascii_alpha(const char c)
 {
@@ -206,11 +173,10 @@ read_group::read_group()
 {
 }
 
-read_group::read_group(std::string_view value_)
+read_group::read_group(std::string_view value)
   : m_header{ "@RG" }
 {
   using invalid = std::invalid_argument;
-  auto value = unescape_read_group(value_);
 
   // It's not unreasonable to except users to try to specify a full @RG line
   if (starts_with(value, "@RG\t")) {

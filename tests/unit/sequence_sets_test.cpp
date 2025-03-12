@@ -47,23 +47,16 @@ TEST_CASE("default read group")
 
 TEST_CASE("minimal read group with PG")
 {
-  std::string_view header = GENERATE("PG:foo", "@RG\tPG:foo", "@RG\\tPG:foo");
+  std::string_view header = GENERATE("PG:foo", "@RG\tPG:foo");
 
   read_group rg{ header };
   REQUIRE(rg.id() == "1");
   REQUIRE(rg.header() == "@RG\tID:1\tPG:foo");
 }
 
-TEST_CASE("black-slash in read-group")
-{
-  read_group rg{ "ID:foo\\\\bar" };
-  REQUIRE(rg.id() == "foo\\bar");
-  REQUIRE(rg.header() == "@RG\tID:foo\\bar");
-}
-
 TEST_CASE("minimal read group with ID")
 {
-  std::string_view header = GENERATE("ID:foo", "@RG\tID:foo", "@RG\\tID:foo");
+  std::string_view header = GENERATE("ID:foo", "@RG\tID:foo");
 
   read_group rg{ header };
   REQUIRE(rg.id() == "foo");
@@ -78,7 +71,7 @@ TEST_CASE("minimal read group with ID")
 
 TEST_CASE("minimal read group with SM")
 {
-  std::string_view header = GENERATE("SM:foo", "@RG\tSM:foo", "@RG\\tSM:foo");
+  std::string_view header = GENERATE("SM:foo", "@RG\tSM:foo");
 
   read_group rg{ header };
   REQUIRE(rg.id() == "1");
@@ -136,11 +129,6 @@ TEST_CASE("invalid read groups")
                       "third character in tag must be a colon");
   REQUIRE_THROWS_WITH(read_group{ "ID:1\nSM:foo" },
                       "only characters in the range ' ' to '~' are allowed");
-
-  REQUIRE_THROWS_WITH(read_group{ "SM:foo\\x" },
-                      "invalid escape sequence '\\x'");
-  REQUIRE_THROWS_WITH(read_group{ "SM:foo\\" },
-                      "incomplete escape sequence at end of string");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
