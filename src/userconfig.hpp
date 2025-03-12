@@ -275,6 +275,9 @@ private:
   //! Sink for --interleaved
   bool interleaved = false;
 
+  //! Sink for --read-group
+  string_vec read_group{};
+
   //! Sinks for --pre-trim5p/--pre-trimp3p
 #ifdef PRE_TRIM_5P
   string_vec pre_trim5p{};

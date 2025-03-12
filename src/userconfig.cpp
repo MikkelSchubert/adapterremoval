@@ -674,11 +674,13 @@ userconfig::userconfig()
     .bind_str(nullptr)
     .with_choices({ "fastq", "fastq.gz", "sam", "sam.gz", "bam", "ubam" });
   argparser.add("--read-group", "RG")
-    .help("Add read-group (RG) information to SAM/BAM output. The value is "
-          "expected to be a valid set of read-group tags separated by tabs, "
-          "for example \"ID:DS-1\\tSM:TK-421\\tPL:ILLUMINA\". If the ID tag is "
-          "not provided, the default ID \"1\" will be used")
-    .bind_str(nullptr);
+    .help("Add read-group to SAM/BAM output. Takes zero or more arguments in "
+          "the form 'tag:value' where tag consists of two alphanumerical "
+          "characters and where value is one or more characters. An argument "
+          "may also contain multiple, tab-separated tag/value pairs. An ID tag "
+          "is automatically generated if no ID tag is specified")
+    .bind_vec(&read_group)
+    .with_min_values(0);
   argparser.add("--compression-level", "N")
     .help(
       "Sets the compression level for compressed output. Valid values are 0 to "
@@ -1191,16 +1193,17 @@ userconfig::parse_args(const string_vec& argvec)
     return argparse::parse_result::error;
   }
 
-  try {
-    if (argparser.is_set("--read-group")) {
-      samples.set_read_group(argparser.value("--read-group"));
-    }
-  } catch (const std::invalid_argument& error) {
-    log::error() << "Invalid argument --read-group "
-                 << log_escape(argparser.value("--read-group")) << ": "
-                 << error.what();
+  if (argparser.is_set("--read-group")) {
+    auto merged_tags = join_text(read_group, "\t");
 
-    return argparse::parse_result::error;
+    try {
+      samples.set_read_group(merged_tags);
+    } catch (const std::invalid_argument& error) {
+      log::error() << "Invalid argument --read-group "
+                   << log_escape(merged_tags) << ": " << error.what();
+
+      return argparse::parse_result::error;
+    }
   }
 
   // Set mismatch threshold
