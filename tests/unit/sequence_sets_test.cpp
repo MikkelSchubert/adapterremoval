@@ -90,6 +90,32 @@ TEST_CASE("minimal read group with SM")
   REQUIRE(rg.header() == std::string("@RG\tID:1\tSM:") + name + "");
 }
 
+TEST_CASE("unsetting read group fields")
+{
+  read_group rg;
+  REQUIRE(rg.header() == "@RG\tID:1");
+  rg.set_sample("foo");
+  REQUIRE(rg.header() == "@RG\tID:1\tSM:foo");
+  rg.set_comment("comment");
+  REQUIRE(rg.header() == "@RG\tID:1\tSM:foo\tCO:comment");
+
+  SECTION("SM first")
+  {
+    rg.set_sample("");
+    REQUIRE(rg.header() == "@RG\tID:1\tCO:comment");
+    rg.set_comment("");
+  }
+
+  SECTION("CO first")
+  {
+    rg.set_comment("");
+    REQUIRE(rg.header() == "@RG\tID:1\tSM:foo");
+    rg.set_sample("");
+  }
+
+  REQUIRE(rg.header() == "@RG\tID:1");
+}
+
 TEST_CASE("invalid read groups")
 {
   REQUIRE_THROWS_WITH(read_group{ "ID:" },

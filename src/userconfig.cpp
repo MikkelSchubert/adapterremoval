@@ -1192,7 +1192,9 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   try {
-    samples.set_read_group(argparser.value("--read-group"));
+    if (argparser.is_set("--read-group")) {
+      samples.set_read_group(argparser.value("--read-group"));
+    }
   } catch (const std::invalid_argument& error) {
     log::error() << "Invalid argument --read-group "
                  << log_escape(argparser.value("--read-group")) << ": "
