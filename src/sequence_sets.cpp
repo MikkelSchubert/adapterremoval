@@ -201,7 +201,7 @@ is_ascii_alphanum(const char c)
 // Implementations for `read_group`
 
 read_group::read_group()
-  : m_header{ "@RG\tID:1\tPG:adapterremoval" }
+  : m_header{ "@RG\tID:1" }
   , m_id{ "1" }
 {
 }
@@ -217,7 +217,6 @@ read_group::read_group(std::string_view value_)
     value = value.substr(4);
   }
 
-  bool has_pg_tag = false;
   if (!value.empty()) {
     for (const auto& field : split_text(value, '\t')) {
       for (const auto c : field) {
@@ -241,9 +240,6 @@ read_group::read_group(std::string_view value_)
         }
 
         m_id = field.substr(3);
-      } else if (starts_with(field, "PG:")) {
-        // Allow the user to override the PG field, just in case
-        has_pg_tag = true;
       }
     }
   }
@@ -257,10 +253,6 @@ read_group::read_group(std::string_view value_)
   if (!value.empty()) {
     m_header += "\t";
     m_header += value;
-  }
-
-  if (!has_pg_tag) {
-    m_header.append("\tPG:adapterremoval");
   }
 }
 
