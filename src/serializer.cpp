@@ -127,8 +127,10 @@ create_sam_header(const string_vec& args, const sample& s)
 
   // @RG
   for (const auto& it : s) {
-    header.append(it.info.header());
-    header.append("\n");
+    if (it.has_read_group) {
+      header.append(it.info.header());
+      header.append("\n");
+    }
   }
 
   // @PG
@@ -212,8 +214,11 @@ sam_serializer::record(buffer& buf,
     );
   }
 
-  buf.append("\tRG:Z:");
-  buf.append(sequences.info.id());
+  if (sequences.has_read_group) {
+    buf.append("\tRG:Z:");
+    buf.append(sequences.info.id());
+  }
+
   buf.append("\n");
 }
 
@@ -260,10 +265,12 @@ bam_serializer::record(buffer& buf,
   sequence_to_bam(buf, record.sequence());
   qualities_to_bam(buf, record.qualities());
 
-  // RG:Z:${ID} tag
-  buf.append("RGZ");
-  buf.append(sequences.info.id());
-  buf.append_u8(0); // NUL
+  if (sequences.has_read_group) {
+    // RG:Z:${ID} tag
+    buf.append("RGZ");
+    buf.append(sequences.info.id());
+    buf.append_u8(0); // NUL
+  }
 
   const size_t block_size = buf.size() - block_size_pos - 4;
   buf.put_u32(block_size_pos, block_size); // block size (final)

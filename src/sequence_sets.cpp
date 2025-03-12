@@ -257,9 +257,17 @@ read_group::read_group(std::string_view value_)
 }
 
 void
+read_group::set_id(std::string_view id)
+{
+  AR_REQUIRE(!id.empty());
+  update_tag("ID", id);
+  m_id = id;
+}
+
+void
 read_group::update_tag(std::string_view key, std::string_view value)
 {
-  AR_REQUIRE(!key.empty() && !value.empty());
+  AR_REQUIRE(!key.empty());
   std::string cache;
   cache.push_back('\t');
   cache.append(key);
@@ -267,8 +275,12 @@ read_group::update_tag(std::string_view key, std::string_view value)
 
   auto index = m_header.find(cache);
   if (index != std::string::npos) {
-    cache = m_header.substr(0, index + cache.size());
-    cache.append(value);
+    if (value.empty()) {
+      cache = m_header.substr(0, index);
+    } else {
+      cache = m_header.substr(0, index + cache.size());
+      cache.append(value);
+    }
 
     index = m_header.find('\t', index + 1);
     if (index != std::string::npos) {
@@ -276,13 +288,9 @@ read_group::update_tag(std::string_view key, std::string_view value)
     }
 
     m_header = cache;
-  } else {
+  } else if (!value.empty()) {
     m_header.append(cache);
     m_header.append(value);
-  }
-
-  if (key == "ID") {
-    m_id = value;
   }
 }
 
@@ -383,6 +391,7 @@ sample::set_read_group(const read_group& info)
 {
   for (auto it = m_barcodes.begin(); it != m_barcodes.end(); ++it) {
     it->info = info;
+    it->has_read_group = true;
 
     if (!m_name.empty()) {
       it->info.set_sample(m_name);
@@ -416,14 +425,17 @@ sample::set_read_group(const read_group& info)
 
 sample_set::sample_set()
   : m_samples{ sample{} }
-  , m_unidentified("unidentified", dna_sequence{}, dna_sequence{})
+  , m_unidentified("", dna_sequence{}, dna_sequence{})
 {
+  set_unidentified_read_group(m_read_group);
 }
 
 sample_set::sample_set(std::initializer_list<sample> args)
   : m_samples(args)
-  , m_unidentified("unidentified", dna_sequence{}, dna_sequence{})
+  , m_unidentified("", dna_sequence{}, dna_sequence{})
 {
+  set_unidentified_read_group(m_read_group);
+
   std::sort(m_samples.begin(),
             m_samples.end(),
             [](const auto& a, const auto& b) { return a.name() < b.name(); });
@@ -460,7 +472,7 @@ sample_set::set_read_group(std::string_view value)
     sample.set_read_group(m_read_group);
   }
 
-  m_unidentified.set_read_group(m_read_group);
+  set_unidentified_read_group(m_read_group);
 }
 
 void
@@ -512,6 +524,14 @@ sample_set::load(const std::string& filename, const barcode_config& config)
   if (!config.m_unidirectional_barcodes) {
     add_reversed_barcodes(config);
   }
+}
+
+void
+sample_set::set_unidentified_read_group(read_group tmpl)
+{
+  // Unidentified reads lack a SM tag, so add a comment instead
+  tmpl.set_comment("unidentified");
+  m_unidentified.set_read_group(tmpl);
 }
 
 void

@@ -55,13 +55,16 @@ public:
   [[nodiscard]] std::string_view header() const { return m_header; }
 
   /** Adds/replaces the barcode (ID) tag */
-  void set_id(std::string_view id) { update_tag("ID", id); }
+  void set_id(std::string_view id);
 
   /** Adds/replaces the sample (SM) tag */
   void set_sample(std::string_view name) { update_tag("SM", name); }
 
   /** Adds/replaces the barcode (BC) tag */
   void set_barcodes(std::string_view value) { update_tag("BC", value); }
+
+  /** Adds/replaces the comment (CO) tag */
+  void set_comment(std::string_view value) { update_tag("CO", value); }
 
 private:
   /** Updates or adds the specified tag; sets `m_id` if key is `ID` */
@@ -137,6 +140,8 @@ struct sample_sequences
   {
   }
 
+  //! Whether read groups are specified for this set of sequences
+  bool has_read_group{};
   //! Read-group for this sample/barcode combination
   read_group info{};
   //! Barcode expected to be found in mate 1 reads, if any (read orientation)
@@ -289,6 +294,9 @@ public:
   [[nodiscard]] const auto& unidentified() const { return m_unidentified; }
 
 private:
+  /** Sets read-group for unidentified reads */
+  void set_unidentified_read_group(read_group tmpl);
+
   /** Adds the reverse complement of barcodes for all samples, if missing */
   void add_reversed_barcodes(const barcode_config& config);
 
