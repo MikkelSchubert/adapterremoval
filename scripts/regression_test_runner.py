@@ -1227,7 +1227,8 @@ def collect_unused_files(root: Path, tests: list[TestConfig]) -> set[Path]:
         recorded_files.add(test.path)
         dirname = test.path.parent
         for it in test.files:
-            recorded_files.add(dirname / it.name)
+            if it.kind not in ("html", "ignore"):
+                recorded_files.add(dirname / it.name)
 
     return observed_files - recorded_files
 
