@@ -34,6 +34,7 @@ import errno
 import gzip
 import json
 import math
+import multiprocessing
 import os
 import re
 import shlex
@@ -50,6 +51,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Dict,
     Iterable,
     Iterator,
@@ -417,28 +419,20 @@ _IGNORED_FILES = {
 
 
 class JSONValidator:
-    _schema: JSON
+    # Validator is stored a a class-var, to support multiprocessing (pickling)
+    _validator: ClassVar[Any] = None
 
-    __slots__ = [
-        "_schema",
-        "_validator",
-    ]
+    @classmethod
+    def load_schema(cls, filepath: Path) -> None:
+        _, schema = read_json(filepath)
 
-    def __init__(self, filepath: Path | None) -> None:
-        if filepath is None or not JSON_SCHEMA_VALIDATION:
-            self._schema = {}
-        else:
-            print(f"Reading JSON schema from {quote(filepath)}")
-            _, self._schema = read_json(filepath)
-            self._validator: Any = fastjsonschema.compile(
-                self._schema,
-                use_default=False,
-            )
+        cls._validator = fastjsonschema.compile(schema, use_default=False)
 
-    def __call__(self, data: JSON) -> None:
-        if self._schema:
+    @classmethod
+    def validate(cls, data: JSON) -> None:
+        if cls._validator is not None:
             try:
-                self._validator(data)
+                cls._validator(data)
             except fastjsonschema.JsonSchemaValueException as error:
                 error_path = path_to_s(error.path)
                 raise JSONSchemaError(
@@ -447,8 +441,9 @@ class JSONValidator:
             except fastjsonschema.JsonSchemaException as error:
                 raise JSONSchemaError(str(error)) from error
 
-    def __bool__(self) -> bool:
-        return bool(self._schema)
+    @classmethod
+    def can_validate(cls) -> bool:
+        return cls._validator is not None
 
 
 def json_pop_value(data: JSON, path: tuple[str, ...], default: JSON) -> JSON:
@@ -516,14 +511,7 @@ class TestFile:
         raise NotImplementedError
 
     @classmethod
-    def parse(
-        cls,
-        *,
-        root: Path,
-        name: str,
-        kind: str,
-        json_validator: JSONValidator | None,
-    ) -> TestFile:
+    def parse(cls, *, root: Path, name: str, kind: str) -> TestFile:
         # HTML files are not compared in detail
         if kind in ("html", "ignore"):
             return TestMiscFile(name=name, kind=kind)
@@ -531,13 +519,7 @@ class TestFile:
         filename = root / name
         if kind == "json":
             text, data = read_json(filename)
-            return TestJsonFile(
-                name=name,
-                kind=kind,
-                text=text,
-                data=data,
-                json_validator=json_validator,
-            )
+            return TestJsonFile(name=name, kind=kind, text=text, data=data)
 
         # Reference data is not compresses, regardless of extension
         return TestTextFile(name=name, kind=kind, text=read_file(filename))
@@ -612,7 +594,6 @@ class TestTextFile(TestFile):
 class TestJsonFile(TestFile):
     text: str
     data: JSON
-    json_validator: JSONValidator | None
 
     def compare_with_file(self, expected: Path, observed: Path) -> None:
         _, data = read_json(observed)
@@ -631,8 +612,7 @@ class TestJsonFile(TestFile):
                 differences=differences,
             )
 
-        if self.json_validator is not None:
-            self.json_validator(data)
+        JSONValidator.validate(data)
 
     def mask_filenames(self) -> TestJsonFile:
         def _mask_filenames(data: JSON) -> JSON:
@@ -655,7 +635,6 @@ class TestJsonFile(TestFile):
             kind=self.kind,
             text=self.text,
             data=_mask_filenames(self.data),
-            json_validator=self.json_validator,
         )
 
 
@@ -678,12 +657,7 @@ class TestConfig(NamedTuple):
     files: tuple[TestFile, ...]
 
     @classmethod
-    def load(
-        cls,
-        name: tuple[str, ...],
-        filepath: Path,
-        json_validator: JSONValidator | None,
-    ) -> TestConfig:
+    def load(cls, name: tuple[str, ...], filepath: Path) -> TestConfig:
         root = filepath.parent
         _, data = read_json(filepath)
         assert isinstance(data, dict)
@@ -709,14 +683,7 @@ class TestConfig(NamedTuple):
         test_files: list[TestFile] = []
         for key in _TEST_FILES:
             for filename in json_pop_tuple_of_str(files, ("files", key), []):
-                test_files.append(
-                    TestFile.parse(
-                        root=root,
-                        name=filename,
-                        kind=key,
-                        json_validator=json_validator,
-                    )
-                )
+                test_files.append(TestFile.parse(root=root, name=filename, kind=key))
 
         if files:
             raise TestError(f"Unexpected files: {files}")
@@ -1190,11 +1157,7 @@ def test_name(root: Path, current: Path, filename: str) -> tuple[str, ...]:
     return tuple(name)
 
 
-def collect_tests(
-    *,
-    root: Path,
-    json_validator: JSONValidator | None,
-) -> list[TestConfig]:
+def collect_tests(*, root: Path) -> list[TestConfig]:
     tests: list[TestConfig] = []
     for dirname, _, filenames in os.walk(root):
         dirname = Path(dirname)
@@ -1206,11 +1169,7 @@ def collect_tests(
                 filepath = dirname / filename
 
                 try:
-                    test = TestConfig.load(
-                        name=name,
-                        filepath=filepath,
-                        json_validator=json_validator,
-                    )
+                    test = TestConfig.load(name=name, filepath=filepath)
                 except TestError as error:
                     print_err(f"Error while loading test {quote(filepath)}: {error}")
                     sys.exit(1)
@@ -1286,6 +1245,7 @@ class Args(argparse.Namespace):
     json_schema: Path | None
     schema_validation_required: bool
     create_updated_reference: bool
+    threads: int
     use_colors: str
 
 
@@ -1348,6 +1308,12 @@ def parse_args(argv: list[str]) -> Args:
         "Commands that are expected to fail/not generate output are not run.",
     )
     parser.add_argument(
+        "--threads",
+        type=int,
+        default=min(8, multiprocessing.cpu_count()),
+        help="Size of thread-pool for concurrent execution of tests",
+    )
+    parser.add_argument(
         "--use-colors",
         type=str.lower,
         choices=("auto", "always", "never"),
@@ -1390,6 +1356,10 @@ def main(argv: list[str]) -> int:
     if args.max_failures <= 0:
         args.max_failures = float("inf")
 
+    if args.create_updated_reference:
+        # test-sets may generate (partially) overlapping files
+        args.threads = 1
+
     args.work_dir.mkdir(parents=True, exist_ok=True)
     args.work_dir = Path(tempfile.mkdtemp(dir=args.work_dir))
 
@@ -1412,10 +1382,12 @@ def main(argv: list[str]) -> int:
         args.source_dir = args.work_dir
         args.keep_all = True
 
-    json_validator = JSONValidator(args.json_schema)
+    if args.json_schema is not None and JSON_SCHEMA_VALIDATION:
+        print(f"Reading JSON schema from {quote(args.json_schema)}")
+        JSONValidator.load_schema(args.json_schema)
 
     print(f"Reading test-cases from {quote(args.source_dir)}")
-    tests = collect_tests(root=args.source_dir, json_validator=json_validator)
+    tests = collect_tests(root=args.source_dir)
     tests.sort(key=lambda it: it.path)
 
     if not tests:
@@ -1446,38 +1418,39 @@ def main(argv: list[str]) -> int:
     print("\nRunning tests:")
 
     failures: List[Tuple[Union[TestRunner, TestUpdater], Exception]] = []
-    results = (run_test(it) for it in exhaustive_tests)
-    grouped_results = groupby(results, lambda it: it[0].name)
+    with multiprocessing.Pool(args.threads) as pool:
+        results = pool.imap(run_test, exhaustive_tests)
+        grouped_results = groupby(results, lambda it: it[0].name)
 
-    for idx, (name, test_results) in enumerate(grouped_results, start=1):
-        print("  %i of %i: %s " % (idx, len(tests), name), end="")
+        for idx, (name, test_results) in enumerate(grouped_results, start=1):
+            print("  %i of %i: %s " % (idx, len(tests), name), end="")
 
-        last_error = None
-        test_skipped = False
-        for test, error in test_results:
-            if error is not None:
-                print_err("X", end="")
-                failures.append((test, error))
-                last_error = error
-            elif test.skip:
-                print_warn(".", end="")
-                test_skipped = True
+            last_error = None
+            test_skipped = False
+            for test, error in test_results:
+                if error is not None:
+                    print_err("X", end="")
+                    failures.append((test, error))
+                    last_error = error
+                elif test.skip:
+                    print_warn(".", end="")
+                    test_skipped = True
+                else:
+                    print_ok(".", end="")
+
+                sys.stdout.flush()
+
+            if test_skipped:
+                print_warn(" [SKIPPED]")
+                n_skipped += 1
+            elif last_error is None:
+                print_ok(" [OK]")
+                n_successes += 1
             else:
-                print_ok(".", end="")
-
-            sys.stdout.flush()
-
-        if test_skipped:
-            print_warn(" [SKIPPED]")
-            n_skipped += 1
-        elif last_error is None:
-            print_ok(" [OK]")
-            n_successes += 1
-        else:
-            print_err(" [FAILED]")
-            n_failures += 1
-            if n_failures >= args.max_failures:
-                break
+                print_err(" [FAILED]")
+                n_failures += 1
+                if n_failures >= args.max_failures:
+                    break
 
     for test, error in failures:
         print_err(f"\nTest {test.name} failed:")
@@ -1504,7 +1477,7 @@ def main(argv: list[str]) -> int:
     else:
         print_ok("\nAll %i tests succeeded." % (len(exhaustive_tests),))
 
-    if json_validator:
+    if JSONValidator.can_validate():
         print_ok("JSON file validation performed.")
     else:
         fastjsonschema_was = "available" if JSON_SCHEMA_VALIDATION else "unavailable"
