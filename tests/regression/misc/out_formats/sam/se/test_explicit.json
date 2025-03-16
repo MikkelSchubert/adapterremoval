@@ -1,0 +1,21 @@
+{
+    "description": "SAM output with eplicit output filenames",
+    "exhaustive": false,
+    "arguments": [
+        "--out-file1",
+        "output_explicit.r1.sam",
+        "--out-discarded",
+        "output_explicit.discarded.sam",
+        "--out-format",
+        "sam"
+    ],
+    "files": {
+        "input_1": [
+            "input.fastq"
+        ],
+        "output": [
+            "output_explicit.r1.sam",
+            "output_explicit.discarded.sam"
+        ]
+    }
+}
