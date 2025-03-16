@@ -562,13 +562,19 @@ class TestTextFile(TestFile):
     text: str
 
     def compare_with_file(self, expected: Path, observed: Path) -> None:
-        text = read_and_decompress_file(observed)
-        if text == self.text:
+        expected_text = self.text.splitlines(keepends=True)
+        observed_text = read_and_decompress_file(observed).splitlines(keepends=True)
+
+        if self._is_sam():
+            self._preprocess_sam(expected_text)
+            self._preprocess_sam(observed_text)
+
+        if observed_text == expected_text:
             return
 
         lines = difflib.unified_diff(
-            self.text.splitlines(keepends=True),
-            text.splitlines(keepends=True),
+            expected_text,
+            observed_text,
             "expected",
             "observed",
         )
@@ -579,6 +585,27 @@ class TestTextFile(TestFile):
             observed=observed,
             differences=pretty_output(lines, max_lines=10),
         )
+
+    def _is_sam(self) -> bool:
+        # Simple check for SAM header, which should always be present in reference files
+        return self.text.startswith("@")
+
+    @classmethod
+    def _preprocess_sam(cls, lines: list[str]) -> None:
+        for line_idx, line in enumerate(lines):
+            if line.startswith("@PG") and "ID:adapterremoval" in line:
+                fields = line.split("\t")
+                for idx, value in enumerate(fields):
+                    if value.startswith("CL:"):
+                        # The location of the executable must be normalized
+                        command = value[3:].split(" ")
+                        command[0] = os.path.basename(command[0])
+                        fields[idx] = "CL:" + " ".join(command)
+                    elif value.startswith("VN:"):
+                        # Program version must be masked
+                        fields[idx] = "VN:3.x.x"
+
+                lines[line_idx] = "\t".join(fields)
 
 
 @dataclass
