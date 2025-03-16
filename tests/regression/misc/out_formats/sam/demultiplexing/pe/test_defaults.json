@@ -1,0 +1,32 @@
+{
+  "description": "SAM output with default parameters",
+  "exhaustive": false,
+  "arguments": [
+    "--out-prefix",
+    "output_defaults",
+    "--barcode-list",
+    "barcodes.txt",
+    "--out-format",
+    "sam"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "output_defaults.sample_1.sam",
+      "output_defaults.sample_2.sam",
+      "output_defaults.unidentified.sam"
+    ],
+    "ignore": [
+      "output_defaults.json",
+      "output_defaults.html"
+    ]
+  }
+}

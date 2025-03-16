@@ -1,0 +1,7 @@
+@HD	VN:1.6	SO:unsorted
+@RG	ID:sample_1	SM:sample_1	BC:CTTGCCCT-ACGTTATT
+@PG	ID:adapterremoval	PN:adapterremoval	CL:adapterremoval3 --out-prefix output_defaults --barcode-list barcodes.txt --out-format sam --in-file1 input.fastq	VN:3.0.0-alpha3
+s1_no_adapter_no_trimming/1	4	*	0	0	*	*	0	0	ATTAGCGTTAAAAGGAAATCGGCGGTAGTGGGAGAGGACCGGACGCGCAACAAGTAACATACAATAAAGATGCTACCAATAT	HDHHDGHGGFDF<CEHHIIIIEGIIDGIEHIGIIIIIIIIIGEGIIIIIGIGEGBFHG;CG:@@@EHEEHFFFECECCECEC	RG:Z:sample_1
+s1_adapter_trimmed/1	4	*	0	0	*	*	0	0	GATTCTGGACTTTTCCGATTGATGTTCTAAATTTTGTGCCTAAGGAAGCT	HHAFHGIIIIIIIIIIIIIIIIIIIIFEIHIIHIIIIFHGGIIGHIGIII	RG:Z:sample_1
+s1_discarded_short/1	516	*	0	0	*	*	0	0	CCTCCTCTTA	HHHHHIIHII	RG:Z:sample_1
+s1_discarded_empty/1	516	*	0	0	*	*	0	0	*	*	RG:Z:sample_1

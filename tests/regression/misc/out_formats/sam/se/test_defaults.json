@@ -1,0 +1,22 @@
+{
+  "description": "SAM output with default parameters",
+  "exhaustive": false,
+  "arguments": [
+    "--out-prefix",
+    "output_defaults",
+    "--out-format",
+    "sam"
+  ],
+  "files": {
+    "input_1": [
+      "input.fastq"
+    ],
+    "output": [
+      "output_defaults.sam"
+    ],
+    "ignore": [
+      "output_defaults.json",
+      "output_defaults.html"
+    ]
+  }
+}

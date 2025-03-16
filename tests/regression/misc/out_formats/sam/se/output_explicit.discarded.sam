@@ -1,0 +1,4 @@
+@HD	VN:1.6	SO:unsorted
+@PG	ID:adapterremoval	PN:adapterremoval	CL:adapterremoval3 --out-file1 output_explicit.r1.sam --out-discarded output_explicit.discarded.sam --out-format sam --in-file1 input.fastq	VN:3.0.0-alpha3
+discarded_short	516	*	0	0	*	*	0	0	AAATAACCAA	CCCFFFFFHH
+discarded_empty	516	*	0	0	*	*	0	0	*	*

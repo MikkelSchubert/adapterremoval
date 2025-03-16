@@ -1,0 +1,26 @@
+{
+  "description": "SAM output with default parameters",
+  "exhaustive": false,
+  "arguments": [
+    "--out-prefix",
+    "output_merge",
+    "--out-format",
+    "sam",
+    "--merge"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "output_merge.sam"
+    ],
+    "ignore": [
+      "output_merge.json",
+      "output_merge.html"
+    ]
+  }
+}

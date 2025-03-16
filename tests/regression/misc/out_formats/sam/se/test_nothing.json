@@ -1,0 +1,15 @@
+{
+  "description": "SAM output with no-output files",
+  "exhaustive": false,
+  "arguments": [
+    "--out-prefix",
+    "/dev/null",
+    "--out-format",
+    "sam"
+  ],
+  "files": {
+    "input_1": [
+      "input.fastq"
+    ]
+  }
+}

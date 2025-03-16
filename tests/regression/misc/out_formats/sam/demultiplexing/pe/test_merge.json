@@ -1,0 +1,33 @@
+{
+  "description": "SAM output with default parameters",
+  "exhaustive": false,
+  "arguments": [
+    "--out-prefix",
+    "output_merge",
+    "--barcode-list",
+    "barcodes.txt",
+    "--out-format",
+    "sam",
+    "--merge"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "output_merge.sample_1.sam",
+      "output_merge.sample_2.sam",
+      "output_merge.unidentified.sam"
+    ],
+    "ignore": [
+      "output_merge.json",
+      "output_merge.html"
+    ]
+  }
+}

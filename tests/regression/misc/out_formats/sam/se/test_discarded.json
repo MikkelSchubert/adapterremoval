@@ -1,0 +1,24 @@
+{
+    "description": "SAM output with default parameters",
+    "exhaustive": false,
+    "arguments": [
+        "--out-prefix",
+        "output_discarded",
+        "--out-discarded",
+        "/dev/null",
+        "--out-format",
+        "sam"
+    ],
+    "files": {
+        "input_1": [
+            "input.fastq"
+        ],
+        "output": [
+            "output_discarded.sam"
+        ],
+        "ignore": [
+            "output_discarded.json",
+            "output_discarded.html"
+        ]
+    }
+}
