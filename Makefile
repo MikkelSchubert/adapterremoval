@@ -66,7 +66,7 @@ install: ${NINJAFILE}
 	meson install -C "${BUILDDIR}"
 
 regression: ${NINJAFILE}
-	meson test -C "${BUILDDIR}" --print-errorlogs --suite regression
+	meson compile -C "${BUILDDIR}" regression
 
 setup:
 	meson setup "${BUILDDIR}" --reconfigure \
