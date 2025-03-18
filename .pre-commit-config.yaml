@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b # v5.0.0
     hooks:
     - id: check-added-large-files
     - id: check-json
@@ -13,16 +13,16 @@ repos:
     - id: no-commit-to-branch
       args: [--branch, master, --branch, 2.3.x]
 - repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v19.1.2
+  rev: a8c7c3ac16eabd3b958952ea0d6bf1dceeab6411 # v19.1.2
   hooks:
   - id: clang-format
     types_or: [c++, c]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.9.9
+  rev: 2c8dce6094fa2b4b668e74f694ca63ceffd38614 # v0.9.9
   hooks:
     - id: ruff
     - id: ruff-format
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.4.1
+  rev: 63c8f8312b7559622c0d82815639671ae42132ac # v2.4.1
   hooks:
   - id: codespell
