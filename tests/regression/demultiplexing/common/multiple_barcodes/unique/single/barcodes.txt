@@ -1,0 +1,3 @@
+sample_1 CTTGCCCT
+sample_2 CGCCGATG
+sample_1 CAAAACTA

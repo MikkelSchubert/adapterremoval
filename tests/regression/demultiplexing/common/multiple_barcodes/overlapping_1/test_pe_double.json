@@ -1,0 +1,36 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "output",
+    "--barcode-list",
+    "barcodes_double.txt"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes_double.txt"
+    ],
+    "output": [
+      "output.sample_1.r1.fastq.gz",
+      "output.sample_1.r2.fastq.gz",
+      "output.sample_2.r1.fastq.gz",
+      "output.sample_2.r2.fastq.gz",
+      "output.sample_3.r1.fastq.gz",
+      "output.sample_3.r2.fastq.gz",
+      "output.unidentified.r1.fastq.gz",
+      "output.unidentified.r2.fastq.gz"
+    ],
+    "ignore": [
+      "output.sample_1.singleton.fastq.gz",
+      "output.sample_2.singleton.fastq.gz",
+      "output.sample_3.singleton.fastq.gz",
+      "output.json",
+      "output.html"
+    ]
+  }
+}

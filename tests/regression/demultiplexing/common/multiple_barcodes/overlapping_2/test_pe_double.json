@@ -1,0 +1,24 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "output",
+    "--barcode-list",
+    "barcodes_double.txt",
+    "--demultiplex-only"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes_double.txt"
+    ]
+  },
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Error reading barcodes from 'barcodes_double.txt': Duplicate barcode pairs found in 'barcodes_double.txt' with barcodes 'CTTGCCCT' and 'ACGTTATT'. please verify correctness of the barcode table and remove any duplicate entries!"
+  ]
+}
