@@ -827,7 +827,7 @@ write_html_analyses_section(const userconfig& config,
     ss << "Insert sizes inferred for "
        << format_percentage(insert_sizes.sum(),
                             stats.input_1->number_of_input_reads())
-       << "% of reads";
+       << " of reads";
 
     html_plot_title()
       .set_href("analyses-insert-sizes")
