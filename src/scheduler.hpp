@@ -306,9 +306,6 @@ private:
   step_queue m_queue_calc{};
   //! Queue used for currently runnable steps involving only IO
   step_queue m_queue_io{};
-
-  //! Set to indicate if errors have occurred
-  std::atomic_bool m_errors{ false };
 };
 
 } // namespace adapterremoval

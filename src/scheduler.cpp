@@ -182,8 +182,8 @@ scheduler::run(int nthreads)
       threads.emplace_back(run_wrapper, this, threadtype::io);
     }
   } catch (const std::system_error& error) {
-    log::error() << "Failed to create threads:\n" << indent_lines(error.what());
-    m_errors = true;
+    log::error() << "Failed to create worker threads";
+    throw;
   }
 
   // Run the main thread; the only calculation thread when "single-threaded"
@@ -193,26 +193,17 @@ scheduler::run(int nthreads)
     try {
       thread.join();
     } catch (const std::system_error& error) {
-      log::error() << "Failed to join thread: " << error.what();
-      m_errors = true;
+      log::error() << "Failed to join worker threads";
+      throw;
     }
-  }
-
-  if (m_errors) {
-    return false;
   }
 
   for (const auto& step : m_steps) {
     if (step->chunks_queued()) {
       log::error() << "Not all parts run for step " << step->name() << "; "
                    << step->chunks_queued() << " parts left";
-
-      m_errors = true;
+      return false;
     }
-  }
-
-  if (m_errors) {
-    return false;
   }
 
   // Steps are added in reverse order
@@ -231,22 +222,15 @@ scheduler::run(int nthreads)
 void
 scheduler::run_wrapper(scheduler* sch, threadtype thread_type)
 {
-  try {
-    switch (thread_type) {
-      case threadtype::cpu:
-        sch->run_calc_loop();
-        break;
-      case threadtype::io:
-        sch->run_io_loop();
-        break;
-      default:
-        AR_FAIL("unexpected threadtype value");
-    }
-  } catch (const std::exception& error) {
-    sch->m_errors = true;
-    log::error() << error.what();
-  } catch (...) {
-    AR_FAIL("Unhandled, non-standard exception in thread");
+  switch (thread_type) {
+    case threadtype::cpu:
+      sch->run_calc_loop();
+      break;
+    case threadtype::io:
+      sch->run_io_loop();
+      break;
+    default:
+      AR_FAIL("unexpected threadtype value");
   }
 
   // Signal any waiting threads
@@ -259,7 +243,7 @@ scheduler::run_io_loop()
 {
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
-  while (!m_errors) {
+  while (true) {
     step_ptr step;
     if (!m_queue_io.empty()) {
       step = m_queue_io.front();
@@ -307,7 +291,7 @@ scheduler::run_calc_loop()
 {
   std::unique_lock<std::mutex> lock(m_queue_lock);
 
-  while (!m_errors) {
+  while (true) {
     step_ptr step;
     if (!m_queue_calc.empty()) {
       // Otherwise try do do some non-IO work

@@ -942,20 +942,22 @@ class TestRunner:
             write_data(self._test_path / "_stderr.txt", stderr)
 
             command = self.command
+            command = [os.path.abspath(command[0]), *command[1:]]
+            command_s = cmd_to_s(command)
+
             write_data(
                 self._test_path / "_run.sh",
-                f"#!/bin/bash\n\n{cmd_to_s(command)}\n",
+                f"#!/bin/bash\n\n{command_s}\n",
             )
-            command = [
-                "gdb",
-                f"--cd={self._test_path}",
-                "--args",
-                os.path.abspath(command[0]),
-                *command[1:],
-            ]
+
             write_data(
                 self._test_path / "_gdb.sh",
-                f"#!/bin/bash\n\n{cmd_to_s(command)}\n",
+                "#!/bin/bash\n"
+                "gdb \\\n"
+                "  --eval-command='break std::terminate' \\\n"
+                "  --eval-command='run' \\\n"
+                f"  --cd={quote(self._test_path)} \\\n"
+                f"  --args {command_s}\n",
             )
 
             raise
