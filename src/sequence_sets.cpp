@@ -466,18 +466,15 @@ sample_set::load(const std::string& filename, const barcode_config& config)
     }
 
     if (samples.empty() || samples.back().name() != name) {
-      sample s{ name, barcode_1, barcode_2 };
-      s.set_adapters(m_adapters);
-      s.set_read_group(m_read_group);
-
-      samples.push_back(std::move(s));
+      samples.emplace_back(name, barcode_1, barcode_2);
     } else if (config.m_allow_multiple_barcodes) {
       samples.back().add(barcode_1, barcode_2);
     } else {
       std::ostringstream error;
       error << "Duplicate sample name " << log_escape(name)
-            << "; combining different barcodes for one sample is not "
-               "supported. Please ensure that all sample names are unique!";
+            << "; multiple barcodes per samples is not enabled. Either ensure "
+               "that all sample names are unique or use --multiple-barcodes to "
+               "map multiple barcodes to a single sample";
 
       throw parsing_error(error.str());
     }
@@ -489,6 +486,11 @@ sample_set::load(const std::string& filename, const barcode_config& config)
   std::swap(m_samples, samples);
   if (!config.m_unidirectional_barcodes) {
     add_reversed_barcodes(config);
+  }
+
+  for (auto& s : m_samples) {
+    s.set_read_group(m_read_group);
+    s.set_adapters(m_adapters);
   }
 }
 

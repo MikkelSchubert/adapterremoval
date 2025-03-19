@@ -1,0 +1,21 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "output",
+    "--barcode-list",
+    "barcodes_double.txt",
+    "--demultiplex-only"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "barcodes": [
+      "barcodes_double.txt"
+    ]
+  },
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Error reading barcodes from 'barcodes_double.txt': Duplicate mate 1 barcodes found in 'barcodes_double.txt': 'CTTGCCCT'. Even if these are associated with different mate 2 barcodes, it is not possible to distinguish between these in single-end mode!"
+  ]
+}
