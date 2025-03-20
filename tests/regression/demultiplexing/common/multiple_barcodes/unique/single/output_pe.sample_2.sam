@@ -1,0 +1,5 @@
+@HD	VN:1.6	SO:unsorted
+@RG	ID:sample_2	SM:sample_2	BC:CGCCGATG
+@PG	ID:adapterremoval	PN:adapterremoval	CL:adapterremoval3 --out-prefix output_pe --barcode-list barcodes.txt --multiple-barcodes --out-format sam --report-sample-rate 1 --in-file1 input_1.fastq --in-file2 input_2.fastq	VN:3.0.0-alpha3
+read2_s2	77	*	0	0	*	*	0	0	CGTCAGAGAATCGCCATTTCATTGAACCCGTGCA	FHHHGIIIIIGIIIDHFGI>HFGGIIIGII:DDB	RG:Z:sample_2
+read2_s2	141	*	0	0	*	*	0	0	TGCACGGGTTCAATGAAATGGCGATTTTCTGACG	@CCFFDDEHHGFFGIGIGHEEHEH:C?FGEIGEG	RG:Z:sample_2
