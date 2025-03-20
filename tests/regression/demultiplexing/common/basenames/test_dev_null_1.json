@@ -1,0 +1,37 @@
+{
+    "exhaustive": true,
+    "arguments": [
+        "--out-json",
+        "/dev/null",
+        "--out-unidentified1",
+        "/dev/null",
+        "--out-unidentified2",
+        "/dev/null",
+        "--out-discarded",
+        "/dev/null",
+        "--out-merged",
+        "/dev/null",
+        "--out-singleton",
+        "/dev/null",
+        "--out-file1",
+        "/dev/null",
+        "--out-file2",
+        "/dev/null",
+        "--out-html",
+        "/dev/null",
+        "--barcode-list",
+        "barcodes.txt",
+        "--merge"
+    ],
+    "files": {
+        "input_1": [
+            "input_1.fastq"
+        ],
+        "input_2": [
+            "input_2.fastq"
+        ],
+        "barcodes": [
+            "barcodes.txt"
+        ]
+    }
+}

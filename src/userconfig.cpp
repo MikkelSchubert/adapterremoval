@@ -1465,20 +1465,21 @@ userconfig::new_output_file(const std::string& key,
 
   std::string out;
   if (argparser.is_set(key)) {
+    out = argparser.value(key);
+
     // global files, e.g. reports and unidentified reads
     if (sample.empty()) {
-      const auto filename = argparser.value(key);
-
-      return { filename, infer_output_format(filename) };
+      return { out, infer_output_format(out) };
     }
-
-    out = argparser.value(key);
-  } else if (out_prefix == DEV_NULL ||
-             // Discarded reads are dropped by default for non-archival formats
-             (default_is_fastq && key == "--out-discarded")) {
-    return { DEV_NULL, output_format::fastq };
+  } else if (default_is_fastq && key == "--out-discarded") {
+    // Discarded reads are dropped by default for non-archival formats
+    out = DEV_NULL;
   } else {
     out = out_prefix;
+  }
+
+  if (out == DEV_NULL) {
+    return { out, output_format::fastq };
   }
 
   if (!(default_is_fastq || keys.empty())) {
