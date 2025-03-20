@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "commontypes.hpp" // for string_vec, read_type, merge_strategy
+#include "commontypes.hpp" // for string_vec, read_type, merge_strategy, ...
 #include <array>           // for array
 #include <cstddef>         // for size_t
 #include <memory>          // for unique_ptr
@@ -25,9 +25,6 @@ using chunk_ptr = std::unique_ptr<analytical_chunk>;
 using chunk_ptr_vec = std::vector<chunk_ptr>;
 using chunk_pair = std::pair<size_t, chunk_ptr>;
 using chunk_vec = std::vector<chunk_pair>;
-
-//! Path used to indicate that a file is not needed
-const std::string DEV_NULL = "/dev/null";
 
 struct output_file
 {
@@ -124,11 +121,11 @@ public:
   std::string settings_html{};
 
   //! Filename for unidentified mate 1 reads (demultiplexing)
-  output_file unidentified_1 = output_file{ DEV_NULL };
+  output_file unidentified_1{ std::string{ DEV_NULL } };
   //! Pipeline step responsible for compresssing/writing unidentified 1 reads
   size_t unidentified_1_step = disabled;
   //! Filename for unidentified mate 1 reads (demultiplexing)
-  output_file unidentified_2 = output_file{ DEV_NULL };
+  output_file unidentified_2{ std::string{ DEV_NULL } };
   //! Pipeline step responsible for compresssing/writing unidentified 2 reads
   size_t unidentified_2_step = disabled;
 
