@@ -1,0 +1,35 @@
+{
+  "description": "Demultiplexing of PE reads without adapter-trimming/post-processing",
+  "arguments": [
+    "--out-prefix",
+    "output_pe",
+    "--barcode-list",
+    "barcodes.txt",
+    "--demultiplex-only"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "output_pe.sample_1.r1.fastq.gz",
+      "output_pe.sample_1.r2.fastq.gz",
+      "output_pe.sample_2.r1.fastq.gz",
+      "output_pe.sample_2.r2.fastq.gz",
+      "output_pe.unidentified.r1.fastq.gz",
+      "output_pe.unidentified.r2.fastq.gz"
+    ],
+    "json": [
+      "output_pe.json"
+    ],
+    "html": [
+      "output_pe.html"
+    ]
+  }
+}
