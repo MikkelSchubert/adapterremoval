@@ -1,17 +1,17 @@
-# AdapterRemoval [![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![coverage](https://coveralls.io/repos/github/MikkelSchubert/adapterremoval/badge.svg?branch=master)](https://coveralls.io/github/MikkelSchubert/adapterremoval) [![docs](https://readthedocs.org/projects/paleomix/badge/?version=stable)](https://paleomix.readthedocs.io/en/stable/)
+# AdapterRemoval [![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yaml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![coverage](https://coveralls.io/repos/github/MikkelSchubert/adapterremoval/badge.svg?branch=master)](https://coveralls.io/github/MikkelSchubert/adapterremoval) [![docs](https://readthedocs.org/projects/adapterremoval/badge/?version=stable)](https://adapterremoval.readthedocs.io/)
 
 AdapterRemoval searches for and removes adapter sequences from High-Throughput
 Sequencing (HTS) data and (optionally) trims low quality bases from the 3' end
 of reads following adapter removal. AdapterRemoval can analyze both single end
 and paired end data, and can be used to merge overlapping paired-ended reads
 into (longer) consensus sequences. Additionally, AdapterRemoval can construct a
-consensus adapter sequence for paired-ended reads, if which this information is
-not available.
+consensus adapter sequence for paired-ended reads, if this information is not
+available.
 
 For questions, bug reports, and/or suggestions, please use the
 [GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/).
 
-# AdapterRemoval v3 - Dang fast(Q) processing
+## AdapterRemoval v3 - Dang fast(Q) processing
 
 AdapterRemoval v3 is a major revision of AdapterRemoval, that aims to simplify usage by picking a sensible set of default settings, adding new features to handle a wider range of data, providing [human readable HTML reports](https://mikkelschubert.github.io/adapterremoval/examples/example.html) and [machine readable JSON files](https://mikkelschubert.github.io/adapterremoval/examples/example.json), as well as greatly improving overall throughput.
 
@@ -19,7 +19,7 @@ AdapterRemoval v3 is still a work in progress, but alpha release 2 is [available
 
 Compiling AdapterRemoval v3 requires [libdeflate](https://github.com/ebiggers/libdeflate), [isa-l v2.30+](https://github.com/intel/isa-l), and a compiler with support for C++17. AVX512 support requires GCC v11, Clang v8, or later. Apple M1 is currently not supported.
 
-# AdapterRemoval v2
+## AdapterRemoval v2
 
 If you use AdapterRemoval v2, then please cite the paper:
 
@@ -33,7 +33,7 @@ AdapterRemoval was originally published in Lindgreen 2012:
     Sequencing Reads, BMC Research Notes, 5:337
     http://www.biomedcentral.com/1756-0500/5/337/
 
-## Overview of major features
+### Overview of major features
 
 - Trimming of adapters sequences from single-end and paired-end FASTQ reads.
 - Trimming of multiple, different adapters or adapter pairs.
@@ -46,22 +46,22 @@ AdapterRemoval was originally published in Lindgreen 2012:
 - Reading and writing of gzip and bzip2 compressed files.
 - Reading and writing of interleaved FASTQ files.
 
-## Documentation
+### Documentation
 
 For a detailed description of program installation and usage, please refer to
 the [online documentation](https://adapterremoval.readthedocs.io/). A summary
 of command-line options may also be found in the manual page, accessible via
 the command "man AdapterRemoval" once AdapterRemoval has been installed.
 
-## Installation
+### Installation
 
-### Installation with Conda
+#### Installation with Conda
 
 If you have `Conda`_ installed on your system:
 
     conda install -c bioconda adapterremoval
 
-### Installing from sources
+#### Installing from sources
 
 Installing AdapterRemoval from sources requires libz and libbz2.
 
@@ -78,7 +78,7 @@ subdirectory and may be installed by running "make install":
 
     sudo make install
 
-## Getting started
+### Getting started
 
 To run AdapterRemoval, specify the location of pair 1 and (optionally) pair 2
 FASTQ using the --file1 and --file2 command-line options:
