@@ -646,25 +646,23 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
 
   if (info1.name != info2.name) {
     std::ostringstream error;
-    error << "Pair contains reads with mismatching names:\n"
+    error << "Could not normalize paired read names:\n"
           << " - '" << info1.name << "'\n"
           << " - '" << info2.name << "'";
 
     if (info1.mate == read_mate::unknown || info2.mate == read_mate::unknown) {
-      error << "\n\nNote that AdapterRemoval by determines the mate "
-               "numbers as the digit found at the end of the read name, "
-               "if this is preceded by";
+      error << "\nAdapterRemoval expected the mate numbers (1 or 2) to be "
+               "found at the end of the read name, ";
 
       if (mate_separator) {
-        error << "the character '" << mate_separator << "'";
+        error << "preceded by the character '" << mate_separator << "'";
       } else {
-        error << "a character such as '/'";
+        error << "the character '/', ':', or '.'";
       }
-
-      error << "; if these data makes use of a different character to "
-               "separate the mate number from the read name, then you "
-               "will need to set the --mate-separator command-line "
-               "option to the appropriate character.";
+      error << "; use the --mate-separator command-line option to select the "
+               "correct character, if AdapterRemoval did not detect it "
+               "automatically. If the read names do not match at all, then "
+               "make sure that you specified the correct input files";
     }
 
     throw fastq_error(error.str());
