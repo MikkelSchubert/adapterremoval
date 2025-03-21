@@ -1,0 +1,248 @@
+{
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/v3.0.0-alpha3.json",
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float",
+    "timestamp": "...str"
+  },
+  "summary": "...",
+  "input": {
+    "read1": {
+      "filenames": ["input_1.fastq"],
+      "input_reads": 8,
+      "output_reads": 8,
+      "reads_sampled": 8,
+      "lengths": "...",
+      "quality_curves": "...",
+      "content_curves": "...",
+      "quality_scores": "...",
+      "gc_content": "..."
+    },
+    "read2": {
+      "filenames": ["input_2.fastq"],
+      "input_reads": 8,
+      "output_reads": 8,
+      "reads_sampled": 8,
+      "lengths": "...",
+      "quality_curves": "...",
+      "content_curves": "...",
+      "quality_scores": "...",
+      "gc_content": "..."
+    }
+  },
+  "demultiplexing": {
+    "assigned_reads": 16,
+    "ambiguous_reads": 0,
+    "unassigned_reads": 0,
+    "samples": {
+      "sample_1": {
+        "reads": 8,
+        "barcodes": [
+          { "barcode1": "TGAGTCAT", "barcode2": "GTTAGTGG" }
+        ],
+        "output": {
+          "read1": {
+            "filenames": null,
+            "input_reads": 1,
+            "output_reads": 1,
+            "reads_sampled": 1,
+            "lengths": "...",
+            "quality_curves": "...",
+            "content_curves": "...",
+            "quality_scores": "...",
+            "gc_content": "..."
+          },
+          "read2": {
+            "filenames": null,
+            "input_reads": 1,
+            "output_reads": 1,
+            "reads_sampled": 1,
+            "lengths": "...",
+            "quality_curves": "...",
+            "content_curves": "...",
+            "quality_scores": "...",
+            "gc_content": "..."
+          },
+          "singleton": {
+            "filenames": null,
+            "input_reads": 0,
+            "output_reads": 0,
+            "reads_sampled": 0,
+            "lengths": [],
+            "quality_curves": null,
+            "content_curves": null,
+            "quality_scores": null,
+            "gc_content": null
+          },
+          "merged": {
+            "filenames": null,
+            "input_reads": 4,
+            "output_reads": 2,
+            "reads_sampled": 2,
+            "lengths": "...",
+            "quality_curves": "...",
+            "content_curves": "...",
+            "quality_scores": "...",
+            "gc_content": "..."
+          },
+          "discarded": {
+            "filenames": null,
+            "input_reads": 2,
+            "output_reads": 1,
+            "reads_sampled": 1,
+            "lengths": [1],
+            "quality_curves": null,
+            "content_curves": null,
+            "quality_scores": null,
+            "gc_content": null
+          }
+        }
+      },
+      "sample_2": {
+        "reads": 8,
+        "barcodes": [
+          { "barcode1": "GCAGAGAT", "barcode2": "CCTAGGGT" }
+        ],
+        "output": {
+          "read1": {
+            "filenames": null,
+            "input_reads": 1,
+            "output_reads": 1,
+            "reads_sampled": 1,
+            "lengths": "...",
+            "quality_curves": "...",
+            "content_curves": "...",
+            "quality_scores": "...",
+            "gc_content": "..."
+          },
+          "read2": {
+            "filenames": null,
+            "input_reads": 1,
+            "output_reads": 1,
+            "reads_sampled": 1,
+            "lengths": "...",
+            "quality_curves": "...",
+            "content_curves": "...",
+            "quality_scores": "...",
+            "gc_content": "..."
+          },
+          "singleton": {
+            "filenames": null,
+            "input_reads": 0,
+            "output_reads": 0,
+            "reads_sampled": 0,
+            "lengths": [],
+            "quality_curves": null,
+            "content_curves": null,
+            "quality_scores": null,
+            "gc_content": null
+          },
+          "merged": {
+            "filenames": null,
+            "input_reads": 4,
+            "output_reads": 2,
+            "reads_sampled": 2,
+            "lengths": "...",
+            "quality_curves": "...",
+            "content_curves": "...",
+            "quality_scores": "...",
+            "gc_content": "..."
+          },
+          "discarded": {
+            "filenames": null,
+            "input_reads": 2,
+            "output_reads": 1,
+            "reads_sampled": 1,
+            "lengths": [1],
+            "quality_curves": null,
+            "content_curves": null,
+            "quality_scores": null,
+            "gc_content": null
+          }
+        }
+      }
+    }
+  },
+  "processing": "...",
+  "analyses": "...",
+  "output": {
+    "read1": {
+      "filenames": null,
+      "input_reads": 2,
+      "output_reads": 2,
+      "reads_sampled": 2,
+      "lengths": "...",
+      "quality_curves": "...",
+      "content_curves": "...",
+      "quality_scores": "...",
+      "gc_content": "..."
+    },
+    "read2": {
+      "filenames": null,
+      "input_reads": 2,
+      "output_reads": 2,
+      "reads_sampled": 2,
+      "lengths": "...",
+      "quality_curves": "...",
+      "content_curves": "...",
+      "quality_scores": "...",
+      "gc_content": "..."
+    },
+    "merged": {
+      "filenames": null,
+      "input_reads": 8,
+      "output_reads": 4,
+      "reads_sampled": 4,
+      "lengths": "...",
+      "quality_curves": "...",
+      "content_curves": "...",
+      "quality_scores": "...",
+      "gc_content": "..."
+    },
+    "unidentified1": {
+      "filenames": null,
+      "input_reads": 0,
+      "output_reads": 0,
+      "reads_sampled": 0,
+      "lengths": [],
+      "quality_curves": null,
+      "content_curves": null,
+      "quality_scores": null,
+      "gc_content": null
+    },
+    "unidentified2": {
+      "filenames": null,
+      "input_reads": 0,
+      "output_reads": 0,
+      "reads_sampled": 0,
+      "lengths": [],
+      "quality_curves": null,
+      "content_curves": null,
+      "quality_scores": null,
+      "gc_content": null
+    },
+    "singleton": {
+      "filenames": null,
+      "input_reads": 0,
+      "output_reads": 0,
+      "reads_sampled": 0,
+      "lengths": [],
+      "quality_curves": null,
+      "content_curves": null,
+      "quality_scores": null,
+      "gc_content": null
+    },
+    "discarded": {
+      "filenames": null,
+      "input_reads": 4,
+      "output_reads": 2,
+      "reads_sampled": 2,
+      "lengths": [2],
+      "quality_curves": null,
+      "content_curves": null,
+      "quality_scores": null,
+      "gc_content": null
+    }
+  }
+}

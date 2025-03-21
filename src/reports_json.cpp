@@ -600,6 +600,17 @@ collect_files(const output_files& files, read_type rtype)
   return filenames;
 }
 
+string_vec
+filter_output_file(output_file file)
+{
+  string_vec out;
+  if (file.name != DEV_NULL) {
+    out.emplace_back(file.name);
+  }
+
+  return out;
+}
+
 void
 write_report_output(const userconfig& config,
                     json_dict& report,
@@ -642,11 +653,11 @@ write_report_output(const userconfig& config,
 
   io_section("unidentified1",
              stats.demultiplexing->unidentified_stats_1,
-             { out_files.unidentified_1.name })
+             filter_output_file(out_files.unidentified_1))
     .write_to_if(output, config.is_demultiplexing_enabled());
   io_section("unidentified2",
              stats.demultiplexing->unidentified_stats_2,
-             { out_files.unidentified_2.name })
+             filter_output_file(out_files.unidentified_2))
     .write_to_if(
       output, config.is_demultiplexing_enabled() && config.paired_ended_mode);
 

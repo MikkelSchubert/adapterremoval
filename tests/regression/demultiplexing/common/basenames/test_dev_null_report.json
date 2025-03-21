@@ -1,0 +1,26 @@
+{
+    "exhaustive": true,
+    "arguments": [
+        "--out-prefix",
+        "/dev/null",
+        "--out-json",
+        "basename_null.json",
+        "--barcode-list",
+        "barcodes.txt",
+        "--merge"
+    ],
+    "files": {
+        "input_1": [
+            "input_1.fastq"
+        ],
+        "input_2": [
+            "input_2.fastq"
+        ],
+        "barcodes": [
+            "barcodes.txt"
+        ],
+        "json": [
+            "basename_null.json"
+        ]
+    }
+}
