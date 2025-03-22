@@ -1,22 +1,6 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
+// SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "userconfig.hpp"  // declarations
 #include "alignment.hpp"   // for alignment_info
 #include "commontypes.hpp" // for string_vec, ...
@@ -1396,15 +1380,19 @@ userconfig::get_output_filenames() const
   std::string_view out2 = interleaved_output ? "" : ".r2";
 
   if (is_demultiplexing_enabled()) {
-    files.unidentified_1 = new_output_file(
-      "--out-unidentified1", {}, { ".unidentified", out1 }, ext);
+    files.unidentified_1 = new_output_file("--out-unidentified1",
+                                           {},
+                                           { ".unidentified", out1 },
+                                           ext);
 
     if (paired_ended_mode) {
       if (interleaved_output) {
         files.unidentified_2 = files.unidentified_1;
       } else {
-        files.unidentified_2 = new_output_file(
-          "--out-unidentified2", {}, { ".unidentified", out2 }, ext);
+        files.unidentified_2 = new_output_file("--out-unidentified2",
+                                               {},
+                                               { ".unidentified", out2 },
+                                               ext);
       }
     }
   }
@@ -1674,13 +1662,17 @@ userconfig::setup_demultiplexing()
     barcode_mm = barcode_mm_r1 + barcode_mm_r2;
   }
 
-  if (!check_and_set_barcode_mm(
-        argparser, "--barcode-mm-r1", barcode_mm, barcode_mm_r1)) {
+  if (!check_and_set_barcode_mm(argparser,
+                                "--barcode-mm-r1",
+                                barcode_mm,
+                                barcode_mm_r1)) {
     return false;
   }
 
-  if (!check_and_set_barcode_mm(
-        argparser, "--barcode-mm-r2", barcode_mm, barcode_mm_r2)) {
+  if (!check_and_set_barcode_mm(argparser,
+                                "--barcode-mm-r2",
+                                barcode_mm,
+                                barcode_mm_r2)) {
     return false;
   }
 

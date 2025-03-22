@@ -1,22 +1,6 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
+// SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_id.hpp"    // for consensus_adapter_stats
 #include "commontypes.hpp"   // for read_type, read_type::mate_1, read_typ...
 #include "counts.hpp"        // for counts, counts_tmpl, indexed_count
@@ -573,10 +557,12 @@ write_report_analyses(const userconfig& config,
     consensus->i64("pairs_with_adapters",
                    stats.adapter_id->pairs_with_adapters);
 
-    write_report_consensus_adapter(
-      consensus, "read1", stats.adapter_id->adapter1);
-    write_report_consensus_adapter(
-      consensus, "read2", stats.adapter_id->adapter2);
+    write_report_consensus_adapter(consensus,
+                                   "read1",
+                                   stats.adapter_id->adapter1);
+    write_report_consensus_adapter(consensus,
+                                   "read2",
+                                   stats.adapter_id->adapter2);
   } else {
     json->null("consensus_adapters");
   }
@@ -658,8 +644,9 @@ write_report_output(const userconfig& config,
   io_section("unidentified2",
              stats.demultiplexing->unidentified_stats_2,
              filter_output_file(out_files.unidentified_2))
-    .write_to_if(
-      output, config.is_demultiplexing_enabled() && config.paired_ended_mode);
+    .write_to_if(output,
+                 config.is_demultiplexing_enabled() &&
+                   config.paired_ended_mode);
 
   io_section("singleton", singleton, singleton_files)
     .write_to_if(output,

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2017 Mikkel Schubert <mikkelsch@gmail.com>
 #define CATCH_CONFIG_MAIN
 
 #include "catch.hpp"

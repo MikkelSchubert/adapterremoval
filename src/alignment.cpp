@@ -1,22 +1,6 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
+// SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "alignment.hpp"     // declarations
 #include "commontypes.hpp"   // for merge_strategy
 #include "debug.hpp"         // for AR_REQUIRE
@@ -47,8 +31,9 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
              alignment.score() - static_cast<int>(seq2_len));
   // Alignments involving fewer than `score` bases are not interesting, since
   // the maximum possible score is `length` when all bases match
-  int end_offset = std::min(
-    max_offset, static_cast<int>(seq1_len) - std::max(1, alignment.score()));
+  int end_offset =
+    std::min(max_offset,
+             static_cast<int>(seq1_len) - std::max(1, alignment.score()));
 
   bool alignment_found = false;
   for (; offset <= end_offset; ++offset) {
@@ -400,7 +385,8 @@ extract_adapter_sequences(const alignment_info& alignment,
 
   read1.truncate(std::min<size_t>(read1.length(), template_length));
   read2.truncate(
-    0, std::max<int>(0, static_cast<int>(read2.length()) - template_length));
+    0,
+    std::max<int>(0, static_cast<int>(read2.length()) - template_length));
 
   return read1.sequence().length() || read2.sequence().length();
 }

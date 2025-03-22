@@ -1,24 +1,9 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2022 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "errors.hpp"     // for io_error
 #include "linereader.hpp" // declarations
 #include "logging.hpp"    // for log_capture
+#include "strutils.hpp"   // for log_escape
 #include "testing.hpp"    // for catch.hpp, StringMaker
 #include <algorithm>      // for max
 #include <array>          // for array
@@ -26,7 +11,6 @@
 #include <libdeflate.h>   // for libdeflate_alloc_compressor, libdeflate_free...
 #include <string>         // for string, basic_string, operator==
 #include <vector>         // for operator==, vector
-#include "strutils.hpp"   // for log_escape
 
 namespace adapterremoval {
 
@@ -55,8 +39,11 @@ temporary_gzip_file(const string_vec& blocks)
   auto* compressor = libdeflate_alloc_compressor(6);
   for (const auto& block : blocks) {
     std::array<char, 1024> buffer{};
-    auto size = libdeflate_gzip_compress(
-      compressor, block.data(), block.size(), buffer.data(), buffer.size());
+    auto size = libdeflate_gzip_compress(compressor,
+                                         block.data(),
+                                         block.size(),
+                                         buffer.data(),
+                                         buffer.size());
 
     const auto n = std::fwrite(buffer.data(), sizeof(char), size, handle);
     REQUIRE(n == size);
@@ -251,9 +238,10 @@ TEST_CASE("line_reader handles gzipped file in blocks, with partial lines")
 TEST_CASE("line_reader handles gzipped file with empty blocks")
 {
   // Multiple strings/blocks:
-  const string_vec input = {
-    "HnSw4nWJAsds32emFfQdwO6Z\n", "", "tiuSGNsadNZ\n", "pAehX8GBlmyOPR\n"
-  };
+  const string_vec input = { "HnSw4nWJAsds32emFfQdwO6Z\n",
+                             "",
+                             "tiuSGNsadNZ\n",
+                             "pAehX8GBlmyOPR\n" };
   const string_vec expected = { "HnSw4nWJAsds32emFfQdwO6Z",
                                 "tiuSGNsadNZ",
                                 "pAehX8GBlmyOPR" };

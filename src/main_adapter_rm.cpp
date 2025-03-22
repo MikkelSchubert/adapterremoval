@@ -1,22 +1,6 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
+// SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq_io.hpp"       // for gzip_split_fastq, post_process_fastq
 #include "output.hpp"         // for outpuT_file, DEV_NULL
@@ -57,14 +41,23 @@ remove_adapter_sequences(const userconfig& config)
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
     if (!config.is_adapter_trimming_enabled()) {
-      steps.samples.push_back(sch.add<process_demultiplexed>(
-        config, output.get_sample(nth), nth, stats.trimming.back()));
+      steps.samples.push_back(
+        sch.add<process_demultiplexed>(config,
+                                       output.get_sample(nth),
+                                       nth,
+                                       stats.trimming.back()));
     } else if (config.paired_ended_mode) {
-      steps.samples.push_back(sch.add<pe_reads_processor>(
-        config, output.get_sample(nth), nth, stats.trimming.back()));
+      steps.samples.push_back(
+        sch.add<pe_reads_processor>(config,
+                                    output.get_sample(nth),
+                                    nth,
+                                    stats.trimming.back()));
     } else {
-      steps.samples.push_back(sch.add<se_reads_processor>(
-        config, output.get_sample(nth), nth, stats.trimming.back()));
+      steps.samples.push_back(
+        sch.add<se_reads_processor>(config,
+                                    output.get_sample(nth),
+                                    nth,
+                                    stats.trimming.back()));
     }
   }
 

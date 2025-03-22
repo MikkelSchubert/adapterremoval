@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
+
 test_runner_script = meson.project_source_root() / 'scripts' / 'regression_test_runner.py'
 
 regression_test_exe = find_program('uv', required: false, version: '>=0.5.17')

@@ -7,6 +7,8 @@
 # [tool.uv]
 # exclude-newer = "2025-02-26T00:00:00Z"
 # ///
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 from __future__ import annotations
 
 import argparse

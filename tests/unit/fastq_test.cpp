@@ -1,22 +1,6 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
+// SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "catch.hpp"       // for Catch
 #include "commontypes.hpp" // for fastq_vec
 #include "errors.hpp"      // for fastq_error
@@ -144,8 +128,10 @@ TEST_CASE("constructor_simple_record_phred_64_encoded", "[fastq::fastq]")
 
 TEST_CASE("constructor_simple_record_phred_solexa_encoded", "[fastq::fastq]")
 {
-  const fastq record(
-    "record_3", "AAACGAGTCA", ";h>S\\TCDUJ", FASTQ_ENCODING_SOLEXA);
+  const fastq record("record_3",
+                     "AAACGAGTCA",
+                     ";h>S\\TCDUJ",
+                     FASTQ_ENCODING_SOLEXA);
   REQUIRE(record.header() == "@record_3");
   REQUIRE(record.sequence() == "AAACGAGTCA");
   REQUIRE(record.qualities() == "\"I#4=5&&6+");
@@ -498,7 +484,8 @@ TEST_CASE("trim_trailing_bases__trim_3p__trim_trailing_bases", "[fastq::fastq]")
 TEST_CASE("Window trimming with invalid parameters", "[fastq::windows]")
 {
   const std::vector<double> values = {
-    -1.0, std::numeric_limits<double>::quiet_NaN()
+    -1.0,
+    std::numeric_limits<double>::quiet_NaN()
   };
   for (const auto& value : values) {
     fastq record("Rec", "TAGTGACAT", "111111111");
@@ -1117,8 +1104,9 @@ TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_MESSAGE(
-    record.read(reader, FASTQ_ENCODING_33), fastq_error, "sequence is empty");
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence is empty");
 }
 
 TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
@@ -1146,8 +1134,9 @@ TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_MESSAGE(
-    record.read(reader, FASTQ_ENCODING_33), fastq_error, "sequence is empty");
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence is empty");
 }
 
 TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")

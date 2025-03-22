@@ -1,21 +1,5 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2022 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_id.hpp"            // for adapter_id_statistics
 #include "counts.hpp"                // for counts, indexed_count, counts_tmpl
 #include "debug.hpp"                 // for AR_REQUIRE
@@ -796,8 +780,11 @@ write_html_input_section(const userconfig& config,
     names.emplace_back("File 2");
   }
 
-  write_html_io_section(
-    config, output, "Input", std::move(stats_vec), std::move(names));
+  write_html_io_section(config,
+                        output,
+                        "Input",
+                        std::move(stats_vec),
+                        std::move(names));
 }
 
 void
@@ -1027,8 +1014,9 @@ write_html_demultiplexing_section(const userconfig& config,
       .set_barcode_1(barcodes.first)
       .set_barcode_2(barcodes.second)
       .set_name(sample.name())
-      .set_pct(format_percentage(
-        stats.demultiplexing->samples.at(sample_idx), input_reads, 2))
+      .set_pct(format_percentage(stats.demultiplexing->samples.at(sample_idx),
+                                 input_reads,
+                                 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
@@ -1083,8 +1071,12 @@ write_html_output_section(const userconfig& config,
     }
   }
 
-  write_html_io_section(
-    config, output, "Output", std::move(stats_vec), std::move(names), merged);
+  write_html_io_section(config,
+                        output,
+                        "Output",
+                        std::move(stats_vec),
+                        std::move(names),
+                        merged);
 }
 
 } // namespace

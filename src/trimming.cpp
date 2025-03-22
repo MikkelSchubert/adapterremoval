@@ -1,22 +1,6 @@
-/*************************************************************************\
- * AdapterRemoval - cleaning next-generation sequencing reads            *
- *                                                                       *
- * Copyright (C) 2011 by Stinus Lindgreen - stinus@binf.ku.dk            *
- * Copyright (C) 2014 by Mikkel Schubert - mikkelsch@gmail.com           *
- *                                                                       *
- * This program is free software: you can redistribute it and/or modify  *
- * it under the terms of the GNU General Public License as published by  *
- * the Free Software Foundation, either version 3 of the License, or     *
- * (at your option) any later version.                                   *
- *                                                                       *
- * This program is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- * GNU General Public License for more details.                          *
- *                                                                       *
- * You should have received a copy of the GNU General Public License     *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
-\*************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
+// SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "trimming.hpp"
 #include "alignment.hpp"   // for alignment_info, sequence_merger, sequence_...
 #include "commontypes.hpp" // for read_type, trimming_strategy, merge_strategy
@@ -527,8 +511,11 @@ pe_reads_processor::process(chunk_ptr chunk)
         read_1.add_prefix_to_name(m_config.prefix_merged);
 
         // Trim fixed number of bases from 5' and/or 3' termini
-        post_trim_read_termini(
-          m_config, *stats, read_1, read_type::merged, &mstats);
+        post_trim_read_termini(m_config,
+                               *stats,
+                               read_1,
+                               read_type::merged,
+                               &mstats);
 
         if (!m_config.preserve5p) {
           // A merged read essentially consists of two 5p termini, so neither
@@ -546,8 +533,10 @@ pe_reads_processor::process(chunk_ptr chunk)
           chunks.add(read_1, read_type::merged, fastq_flags::se, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(
-            read_1, read_type::discarded, fastq_flags::se_fail, barcode);
+          chunks.add(read_1,
+                     read_type::discarded,
+                     fastq_flags::se_fail,
+                     barcode);
         }
 
         continue;
