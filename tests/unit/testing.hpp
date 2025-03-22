@@ -34,4 +34,12 @@ struct StringMaker<
   static std::string convert(T const& value);
 };
 
+/** Helper macro for typed catching of thrown messages */
+#define REQUIRE_THROWS_MESSAGE(expr, exceptionType, message)                   \
+  REQUIRE_THROWS_MATCHES(expr, exceptionType, Catch::Message(message))
+
+/** Helper macro for typed catching of thrown messages */
+#define CHECK_THROWS_MESSAGE(expr, exceptionType, message)                     \
+  CHECK_THROWS_MATCHES(expr, exceptionType, Catch::Message(message))
+
 } // namespace Catch

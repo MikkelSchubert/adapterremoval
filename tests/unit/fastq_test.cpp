@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License     *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
 \*************************************************************************/
+#include "catch.hpp"       // for Catch
 #include "commontypes.hpp" // for fastq_vec
 #include "errors.hpp"      // for fastq_error
 #include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
@@ -159,86 +160,105 @@ TEST_CASE("constructor_simple_record_lowercase_to_uppercase", "[fastq::fastq]")
 TEST_CASE("constructor_score_boundaries_phred_33", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_33));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_33),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_33),
+                      Catch::Contains("Found raw FASTQ quality score of 32"));
 
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "IJN", FASTQ_ENCODING_33));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "IJO", FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_WITH(
+    fastq("Rec", "CAT", "IJO", FASTQ_ENCODING_33),
+    Catch::Contains("Found Phred+33 encoded quality score of 46"));
 }
 
 TEST_CASE("constructor_score_boundaries_phred_64", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "@@A", FASTQ_ENCODING_64));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "?@A", FASTQ_ENCODING_64), fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", "?@A", FASTQ_ENCODING_64),
+                      Catch::Contains("Found Phred+64 encoded quality "
+                                      "score of -1"));
 
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_64));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_64),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_64),
+                      Catch::Contains("Found raw FASTQ quality score of 127"));
 }
 
 TEST_CASE("constructor_score_boundaries_phred_64 suggests solexa")
 {
   REQUIRE_THROWS_WITH(fastq("Rec", "A", ":", FASTQ_ENCODING_64),
-                      !Catch::Contains("Solexa format"));
+                      !Catch::Contains("score could also be the older "
+                                       "Solexa"));
   REQUIRE_THROWS_WITH(fastq("Rec", "A", ";", FASTQ_ENCODING_64),
-                      Catch::Contains("Solexa format"));
+                      Catch::Contains("score could also be the older "
+                                      "Solexa"));
 }
 
 TEST_CASE("constructor_score_boundaries_solexa", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", ";;<", FASTQ_ENCODING_SOLEXA));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", ":;<", FASTQ_ENCODING_SOLEXA),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(
+    fastq("Rec", "CAT", ":;<", FASTQ_ENCODING_SOLEXA),
+    Catch::Contains("Found Solexa encoded quality score of -6"));
 
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "fgh", FASTQ_ENCODING_SOLEXA));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "fgi", FASTQ_ENCODING_SOLEXA),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(
+    fastq("Rec", "CAT", "fgi", FASTQ_ENCODING_SOLEXA),
+    Catch::Contains("Found Solexa encoded quality score of 41"));
 }
 
 TEST_CASE("constructor_score_boundaries_phred_sam", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
+                      Catch::Contains("Found raw FASTQ quality score of 32"));
 
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_SAM));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM),
+                      Catch::Contains("Found raw FASTQ quality score of 127"));
 }
 
 TEST_CASE("constructor_score_boundaries_ignored", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
+                      Catch::Contains("Found raw FASTQ quality score of 32"));
 
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_SAM));
-  REQUIRE_THROWS_AS(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM),
-                    fastq_error);
+  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM),
+                      Catch::Contains("Found raw FASTQ quality score of 127"));
 }
 
 TEST_CASE("constructor_field_lengths", "[fastq::fastq]")
 {
+  const std::string message =
+    "invalid FASTQ record; sequence/quality length does not match";
+
   REQUIRE_NOTHROW(fastq("Name", "CAT", "IJJ"));
   // A non-empty sequence must be specified
-  REQUIRE_THROWS_AS(fastq("Name", "", "IJJ"), fastq_error);
+  CHECK_THROWS_MESSAGE(fastq("Name", "", "IJJ"), fastq_error, message);
   // A non-empty quality string must be specified
-  REQUIRE_THROWS_AS(fastq("Name", "CAT", ""), fastq_error);
+  CHECK_THROWS_MESSAGE(fastq("Name", "CAT", ""), fastq_error, message);
   // And the length of each must be the same
-  REQUIRE_THROWS_AS(fastq("Name", "CA", "IJJ"), fastq_error);
-  REQUIRE_THROWS_AS(fastq("Name", "CAT", "IJ"), fastq_error);
+  CHECK_THROWS_MESSAGE(fastq("Name", "CA", "IJJ"), fastq_error, message);
+  CHECK_THROWS_MESSAGE(fastq("Name", "CAT", "IJ"), fastq_error, message);
 }
 
 TEST_CASE("constructor_invalid_nucleotides", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Name", "CATT", "IJJI"));
   // Non-alpha characters are not allowed
-  REQUIRE_THROWS_AS(fastq("Name", "CAT!", "IJJI"), fastq_error);
+  CHECK_THROWS_MESSAGE(fastq("Name", "CAT!", "IJJI"),
+                       fastq_error,
+                       "invalid character '!' found in FASTQ sequence");
   // Numeric characters are not allowed
-  REQUIRE_THROWS_AS(fastq("Name", "CAT7", "IJJI"), fastq_error);
+  CHECK_THROWS_MESSAGE(fastq("Name", "CAT7", "IJJI"),
+                       fastq_error,
+                       "invalid character '7' found in FASTQ sequence");
   // But neither are non acgtn/ACGTN allowed
-  REQUIRE_THROWS_AS(fastq("Name", "CATS", "IJJI"), fastq_error);
-  REQUIRE_THROWS_AS(fastq("Name", "CATs", "IJJI"), fastq_error);
+  CHECK_THROWS_WITH(
+    fastq("Name", "CATS", "IJJI"),
+    Catch::Contains("found degenerate base \'S\' in FASTQ sequence"));
+  CHECK_THROWS_WITH(
+    fastq("Name", "CATs", "IJJI"),
+    Catch::Contains("found degenerate base \'s\' in FASTQ sequence"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1082,7 +1102,9 @@ TEST_CASE("simple_fastq_record__no_header", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "Malformed or empty FASTQ header");
 }
 
 TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
@@ -1095,7 +1117,8 @@ TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(
+    record.read(reader, FASTQ_ENCODING_33), fastq_error, "sequence is empty");
 }
 
 TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
@@ -1108,7 +1131,9 @@ TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence/quality lengths do not match");
 }
 
 TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
@@ -1121,7 +1146,8 @@ TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(
+    record.read(reader, FASTQ_ENCODING_33), fastq_error, "sequence is empty");
 }
 
 TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")
@@ -1134,7 +1160,9 @@ TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence/quality lengths do not match");
 }
 
 TEST_CASE("eof_when_starting_to_read_record", "[fastq::fastq]")
@@ -1153,7 +1181,9 @@ TEST_CASE("eof_after_header", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "partial FASTQ record; cut off after header");
 }
 
 TEST_CASE("eof_after_sequence_1", "[fastq::fastq]")
@@ -1164,7 +1194,9 @@ TEST_CASE("eof_after_sequence_1", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "partial FASTQ record; cut off after sequence");
 }
 
 TEST_CASE("eof_after_sequence_2", "[fastq::fastq]")
@@ -1176,7 +1208,9 @@ TEST_CASE("eof_after_sequence_2", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "FASTQ record lacks separator character (+)");
 }
 
 TEST_CASE("eof_after_sep_1", "[fastq::fastq]")
@@ -1188,7 +1222,9 @@ TEST_CASE("eof_after_sep_1", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "partial FASTQ record; cut off after separator");
 }
 
 TEST_CASE("eof_after_sep_2", "[fastq::fastq]")
@@ -1201,7 +1237,9 @@ TEST_CASE("eof_after_sep_2", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence/quality lengths do not match");
 }
 
 TEST_CASE("eof_after_qualities_following_previous_read_1", "[fastq::fastq]")
@@ -1218,7 +1256,9 @@ TEST_CASE("eof_after_qualities_following_previous_read_1", "[fastq::fastq]")
 
   fastq record;
   REQUIRE_NOTHROW(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "partial FASTQ record; cut off after separator");
 }
 
 TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
@@ -1236,7 +1276,9 @@ TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
 
   fastq record;
   REQUIRE_NOTHROW(record.read(reader, FASTQ_ENCODING_33));
-  REQUIRE_THROWS_AS(record.read(reader, FASTQ_ENCODING_33), fastq_error);
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence/quality lengths do not match");
 }
 
 TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
@@ -1371,66 +1413,45 @@ TEST_CASE("guess_mate_separator fails on malformed data")
 TEST_CASE("normalize_paired_reads__throws_if_order_or_number_is_wrong",
           "[fastq::fastq]")
 {
-  const fastq ref_mate0 = fastq("Mate/0", "ACGT", "!!#$");
-  const fastq ref_mate1 = fastq("Mate/1", "ACGT", "!!#$");
-  const fastq ref_mate2 = fastq("Mate/2", "ACGT", "!!#$");
-  const fastq ref_mate3 = fastq("Mate/3", "ACGT", "!!#$");
-  const fastq ref_matea = fastq("Mate/A", "ACGT", "!!#$");
-  const fastq ref_mateb = fastq("Mate/B", "ACGT", "!!#$");
+  const fastq mate0{ "Mate/0", "ACGT", "!!#$" };
+  const fastq mate1{ "Mate/1", "ACGT", "!!#$" };
+  const fastq mate2{ "Mate/2", "ACGT", "!!#$" };
+  const fastq mate3{ "Mate/3", "ACGT", "!!#$" };
+  const fastq matea{ "Mate/A", "ACGT", "!!#$" };
+  const fastq mateb{ "Mate/B", "ACGT", "!!#$" };
 
-  {
-    fastq mate0 = ref_mate0;
-    fastq mate1 = ref_mate1;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate0, mate1), fastq_error);
-  }
-
-  {
-    fastq mate0 = ref_mate0;
-    fastq mate1 = ref_mate1;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate0), fastq_error);
-  }
-
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
+  auto normalize = [](fastq mate1, fastq mate2) -> void {
     fastq::normalize_paired_reads(mate1, mate2);
-  }
+  };
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
-  }
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  CHECK_THROWS_WITH(normalize(mate0, mate1),
+                    Catch::Contains("Could not normalize paired read names"));
 
-  {
-    fastq mate2 = ref_mate2;
-    fastq mate3 = ref_mate3;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate3), fastq_error);
-  }
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  CHECK_THROWS_WITH(normalize(mate1, mate0),
+                    Catch::Contains("Could not normalize paired read names"));
 
-  {
-    fastq mate2 = ref_mate2;
-    fastq mate3 = ref_mate3;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate3, mate2), fastq_error);
-  }
+  CHECK_NOTHROW(normalize(mate1, mate2));
 
-  {
-    fastq matea = ref_matea;
-    fastq mateb = ref_mateb;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(matea, mateb), fastq_error);
-  }
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  CHECK_THROWS_WITH(normalize(mate2, mate1),
+                    Catch::Contains("Inconsistent mate numbering"));
 
-  {
-    fastq matea = ref_matea;
-    fastq mateb = ref_mateb;
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mateb, matea), fastq_error);
-  }
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  CHECK_THROWS_WITH(normalize(mate2, mate3),
+                    Catch::Contains("Could not normalize paired read names"));
+
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  CHECK_THROWS_WITH(normalize(mate3, mate2),
+                    Catch::Contains("Could not normalize paired read names"));
+
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  CHECK_THROWS_WITH(normalize(matea, mateb),
+                    Catch::Contains("Could not normalize paired read names"));
+
+  CHECK_THROWS_WITH(normalize(mateb, matea),
+                    Catch::Contains("Could not normalize paired read names"));
 }
 
 TEST_CASE("normalize_paired_reads__allows_other_separators", "[fastq::fastq]")
@@ -1448,7 +1469,9 @@ TEST_CASE("normalize_paired_reads__allows_other_separators", "[fastq::fastq]")
     fastq mate1 = ref_mate1;
     fastq mate2 = ref_mate2;
     // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
+    REQUIRE_THROWS_WITH(
+      fastq::normalize_paired_reads(mate2, mate1),
+      Catch::Contains("Could not normalize paired read name"));
   }
 }
 
@@ -1467,68 +1490,66 @@ TEST_CASE("normalize_paired_reads__mate_separator_is_updated", "[fastq::fastq]")
 
 TEST_CASE("normalize_paired_reads__throws_if_mate_is_empty", "[fastq::fastq]")
 {
-  const fastq ref_mate1 = fastq("Mate", "", "");
-  const fastq ref_mate2 = fastq("Mate", "ACGT", "!!#$");
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
-  }
+  const fastq mate1 = fastq("Mate", "", "");
+  const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
+  const std::string error = "Pair contains empty reads";
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
-  }
+  auto normalize = [](fastq mate1, fastq mate2) -> void {
+    fastq::normalize_paired_reads(mate1, mate2);
+  };
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
-  }
+  REQUIRE_THROWS_MESSAGE(normalize(mate1, mate2), fastq_error, error);
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  REQUIRE_THROWS_MESSAGE(normalize(mate2, mate1), fastq_error, error);
+  REQUIRE_THROWS_MESSAGE(normalize(mate1, mate1), fastq_error, error);
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_only_mate_1_is_numbered",
           "[fastq::fastq]")
 {
-  const fastq ref_mate2 = fastq("Mate/1", "GCTAA", "$!@#$");
-  const fastq ref_mate1 = fastq("Mate", "ACGT", "!!#$");
+  const fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
+  const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
-  }
+  auto normalize = [](fastq mate1, fastq mate2) -> void {
+    fastq::normalize_paired_reads(mate1, mate2);
+  };
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
+  REQUIRE_THROWS_MESSAGE(normalize(mate1, mate2),
+                         fastq_error,
+                         "Inconsistent mate numbering; please verify data:\n\n"
+                         "Read 1 identified as mate 1: Mate/1\nRead 2 "
+                         "identified as unknown: Mate");
 
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
-  }
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  REQUIRE_THROWS_MESSAGE(normalize(mate2, mate1),
+                         fastq_error,
+                         "Inconsistent mate numbering; please verify data:\n\n"
+                         "Read 1 identified as unknown: Mate\nRead 2 "
+                         "identified as mate 1: Mate/1");
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_only_mate_2_is_numbered",
           "[fastq::fastq]")
 {
-  const fastq ref_mate1 = fastq("Mate", "GCTAA", "$!@#$");
-  const fastq ref_mate2 = fastq("Mate/2", "ACGT", "!!#$");
+  const fastq mate1 = fastq("Mate", "GCTAA", "$!@#$");
+  const fastq mate2 = fastq("Mate/2", "ACGT", "!!#$");
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
-  }
+  auto normalize = [](fastq mate1, fastq mate2) -> void {
+    fastq::normalize_paired_reads(mate1, mate2);
+  };
 
-  {
-    fastq mate1 = ref_mate1;
-    fastq mate2 = ref_mate2;
+  REQUIRE_THROWS_MESSAGE(normalize(mate1, mate2),
+                         fastq_error,
+                         "Inconsistent mate numbering; please verify data:\n\n"
+                         "Read 1 identified as unknown: Mate\nRead 2 "
+                         "identified as mate 2: Mate/2");
 
-    // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate2, mate1), fastq_error);
-  }
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
+  REQUIRE_THROWS_MESSAGE(normalize(mate2, mate1),
+                         fastq_error,
+                         "Inconsistent mate numbering; please verify data:\n\n"
+                         "Read 1 identified as mate 2: Mate/2\nRead 2 "
+                         "identified as unknown: Mate");
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_mate_is_misnumbered",
@@ -1536,7 +1557,10 @@ TEST_CASE("normalize_paired_reads__throws_if_mate_is_misnumbered",
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/3", "ACGT", "!!#$");
-  REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
+  REQUIRE_THROWS_WITH(fastq::normalize_paired_reads(mate1, mate2),
+                      Catch::Contains("AdapterRemoval expected the mate "
+                                      "numbers (1 or 2) to be found at the end "
+                                      "of the read name"));
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_same_mate_numbers",
@@ -1544,14 +1568,21 @@ TEST_CASE("normalize_paired_reads__throws_if_same_mate_numbers",
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/1", "ACGT", "!!#$");
-  REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
+  REQUIRE_THROWS_MESSAGE(fastq::normalize_paired_reads(mate1, mate2),
+                         fastq_error,
+                         "Inconsistent mate numbering; please verify data:\n\n"
+                         "Read 1 identified as mate 1: Mate/1\nRead 2 "
+                         "identified as mate 1: Mate/1");
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
-  REQUIRE_THROWS_AS(fastq::normalize_paired_reads(mate1, mate2), fastq_error);
+  REQUIRE_THROWS_MESSAGE(fastq::normalize_paired_reads(mate1, mate2),
+                         fastq_error,
+                         "Could not normalize paired read names:\n"
+                         " - '@Mate'\n - '@WrongName'");
 }
 
 TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
@@ -1567,6 +1598,8 @@ TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
   REQUIRE(mate2.header() == name_s);
 }
 
+namespace {
+
 template<typename A, typename B>
 std::string
 debug_stringify(const std::pair<A, B>& value)
@@ -1575,6 +1608,8 @@ debug_stringify(const std::pair<A, B>& value)
   stream << "{" << value.first << ", " << value.second << "}";
   return stream.str();
 }
+
+} // namespace
 
 } // namespace adapterremoval
 
@@ -1591,6 +1626,13 @@ StringMaker<fastq, void>::convert(fastq const& value)
          << ", sequence = " << log_escape(value.sequence())
          << ", qualities = " << log_escape(value.qualities()) << "}";
   return stream.str();
+}
+
+template<>
+std::string
+StringMaker<fastq_error, void>::convert(fastq_error const& value)
+{
+  return log_escape(value.what());
 }
 
 template<>
