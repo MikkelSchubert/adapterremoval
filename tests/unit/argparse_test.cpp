@@ -275,9 +275,9 @@ TEST_CASE("with uint minimum", "[argparse::u32_sink]")
   SECTION("fail")
   {
     string_vec values{ "99" };
-    REQUIRE_THROWS_MATCHES(sink.consume(values.begin(), values.end()),
+    REQUIRE_THROWS_MESSAGE(sink.consume(values.begin(), values.end()),
                            std::invalid_argument,
-                           Catch::Message("value must be at least 100"));
+                           "value must be at least 100");
     REQUIRE(value != 0);
   }
 }
@@ -319,9 +319,9 @@ TEST_CASE("with uint maximum", "[argparse::u32_sink]")
   SECTION("fail")
   {
     string_vec values{ "101" };
-    REQUIRE_THROWS_MATCHES(sink.consume(values.begin(), values.end()),
+    REQUIRE_THROWS_MESSAGE(sink.consume(values.begin(), values.end()),
                            std::invalid_argument,
-                           Catch::Message("value must be at most 100"));
+                           "value must be at most 100");
     REQUIRE(value != 101);
   }
 }

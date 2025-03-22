@@ -26,6 +26,7 @@
 #include <libdeflate.h>   // for libdeflate_alloc_compressor, libdeflate_free...
 #include <string>         // for string, basic_string, operator==
 #include <vector>         // for operator==, vector
+#include "strutils.hpp"   // for log_escape
 
 namespace adapterremoval {
 
@@ -91,8 +92,8 @@ TEST_CASE("line_reader throws on null")
 TEST_CASE("line_reader throws on missing file")
 {
   // This file hopefully does not exist ...
-  REQUIRE_THROWS_AS(line_reader("eb8d324f-bae2-4484-894a-883b6abacc6b"),
-                    io_error);
+  REQUIRE_THROWS_WITH(line_reader("eb8d324f-bae2-4484-894a-883b6abacc6b"),
+                      Catch::Contains("failed to open file:"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -283,3 +284,14 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
 }
 
 } // namespace adapterremoval
+
+namespace Catch {
+using namespace adapterremoval;
+
+template<>
+std::string
+StringMaker<io_error, void>::convert(io_error const& value)
+{
+  return log_escape(value.what());
+}
+} // namespace Catch

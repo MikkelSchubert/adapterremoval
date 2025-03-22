@@ -81,6 +81,17 @@ const auto g_solexa_to_phred33 = calc_solexa_to_phred33();
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Uppercase letters in the range a-z, but mangles other characters. Resulting
+ * values outside of A-Z should be compared against/reported, since they may not
+ * reflect the original value.
+ */
+constexpr char
+mangle_to_upper(const char c)
+{
+  return c & 0xDF;
+}
+
 /** Returns the quality score in a form that is human readable */
 std::string
 escape_raw_score(char raw)
@@ -225,7 +236,7 @@ throw_invalid_base(char c)
 {
   std::ostringstream stream;
 
-  switch (c) {
+  switch (mangle_to_upper(c)) {
     case 'B': // C / G / T
     case 'D': // A / G / T
     case 'H': // A / C / T
@@ -261,7 +272,7 @@ process_nucleotides_strict(std::string& nucleotides)
 {
   for (char& nuc : nucleotides) {
     // Fast ASCII letter uppercase
-    const auto upper_case = nuc & 0xDF;
+    const auto upper_case = mangle_to_upper(nuc);
     switch (upper_case) {
       case 'A':
       case 'C':
@@ -284,7 +295,7 @@ process_nucleotides_lenient(std::string& nucleotides,
 {
   for (char& nuc : nucleotides) {
     // Fast ASCII letter uppercase
-    const auto upper_case = nuc & 0xDF;
+    const auto upper_case = mangle_to_upper(nuc);
     switch (upper_case) {
       case 'A':
       case 'C':
