@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # pyright: strict
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 from __future__ import annotations
 
 import argparse

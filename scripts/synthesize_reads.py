@@ -11,6 +11,8 @@
 # [tool.uv]
 # exclude-newer = "2025-02-25T00:00:00Z"
 # ///
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 from __future__ import annotations
 
 import json

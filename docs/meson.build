@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
+
 sh = find_program('sh')
 sphinx_build = find_program('sphinx-build', required: false)
 
