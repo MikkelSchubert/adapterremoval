@@ -31,8 +31,9 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
              alignment.score() - static_cast<int>(seq2_len));
   // Alignments involving fewer than `score` bases are not interesting, since
   // the maximum possible score is `length` when all bases match
-  int end_offset = std::min(
-    max_offset, static_cast<int>(seq1_len) - std::max(1, alignment.score()));
+  int end_offset =
+    std::min(max_offset,
+             static_cast<int>(seq1_len) - std::max(1, alignment.score()));
 
   bool alignment_found = false;
   for (; offset <= end_offset; ++offset) {
@@ -384,7 +385,8 @@ extract_adapter_sequences(const alignment_info& alignment,
 
   read1.truncate(std::min<size_t>(read1.length(), template_length));
   read2.truncate(
-    0, std::max<int>(0, static_cast<int>(read2.length()) - template_length));
+    0,
+    std::max<int>(0, static_cast<int>(read2.length()) - template_length));
 
   return read1.sequence().length() || read2.sequence().length();
 }

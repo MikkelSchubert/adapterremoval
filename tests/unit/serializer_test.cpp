@@ -22,8 +22,10 @@ TEST_CASE("Writing_to_stream_phred_33", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
   buffer buf;
-  fastq_serializer::record(
-    buf, record, sample_sequences{}, serializer_settings{});
+  fastq_serializer::record(buf,
+                           record,
+                           sample_sequences{},
+                           serializer_settings{});
 
   REQUIRE(
     std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==
@@ -34,8 +36,10 @@ TEST_CASE("Writing_to_stream_phred_33_explicit", "[fastq::fastq]")
 {
   const fastq record = fastq("record_1", "ACGTACGATA", "!$#$*68CGJ");
   buffer buf;
-  fastq_serializer::record(
-    buf, record, sample_sequences{}, serializer_settings{});
+  fastq_serializer::record(buf,
+                           record,
+                           sample_sequences{},
+                           serializer_settings{});
 
   REQUIRE(
     std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()) ==

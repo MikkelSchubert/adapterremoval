@@ -1380,15 +1380,19 @@ userconfig::get_output_filenames() const
   std::string_view out2 = interleaved_output ? "" : ".r2";
 
   if (is_demultiplexing_enabled()) {
-    files.unidentified_1 = new_output_file(
-      "--out-unidentified1", {}, { ".unidentified", out1 }, ext);
+    files.unidentified_1 = new_output_file("--out-unidentified1",
+                                           {},
+                                           { ".unidentified", out1 },
+                                           ext);
 
     if (paired_ended_mode) {
       if (interleaved_output) {
         files.unidentified_2 = files.unidentified_1;
       } else {
-        files.unidentified_2 = new_output_file(
-          "--out-unidentified2", {}, { ".unidentified", out2 }, ext);
+        files.unidentified_2 = new_output_file("--out-unidentified2",
+                                               {},
+                                               { ".unidentified", out2 },
+                                               ext);
       }
     }
   }
@@ -1658,13 +1662,17 @@ userconfig::setup_demultiplexing()
     barcode_mm = barcode_mm_r1 + barcode_mm_r2;
   }
 
-  if (!check_and_set_barcode_mm(
-        argparser, "--barcode-mm-r1", barcode_mm, barcode_mm_r1)) {
+  if (!check_and_set_barcode_mm(argparser,
+                                "--barcode-mm-r1",
+                                barcode_mm,
+                                barcode_mm_r1)) {
     return false;
   }
 
-  if (!check_and_set_barcode_mm(
-        argparser, "--barcode-mm-r2", barcode_mm, barcode_mm_r2)) {
+  if (!check_and_set_barcode_mm(argparser,
+                                "--barcode-mm-r2",
+                                barcode_mm,
+                                barcode_mm_r2)) {
     return false;
   }
 

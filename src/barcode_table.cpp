@@ -166,8 +166,11 @@ barcode_table::identify(const fastq& read_r1) const
   const std::string barcode = read_r1.sequence().substr(0, m_barcode_1_len);
   auto match = lookup(barcode.c_str(), 0, 0, nullptr);
   if (match.key.sample == barcode_key::unidentified && m_max_mismatches_r1) {
-    match = lookup_with_mm(
-      barcode.c_str(), 0, m_max_mismatches_r1, m_max_mismatches_r1, nullptr);
+    match = lookup_with_mm(barcode.c_str(),
+                           0,
+                           m_max_mismatches_r1,
+                           m_max_mismatches_r1,
+                           nullptr);
   }
 
   return match.key;
@@ -224,8 +227,11 @@ barcode_table::lookup(const char* seq,
       std::min(max_global_mismatches, m_max_mismatches_r2);
 
     if (max_local_mismatches) {
-      return lookup_with_mm(
-        next, parent, max_global_mismatches, max_local_mismatches, nullptr);
+      return lookup_with_mm(next,
+                            parent,
+                            max_global_mismatches,
+                            max_local_mismatches,
+                            nullptr);
     } else {
       return lookup(next, parent, max_global_mismatches, nullptr);
     }
@@ -257,8 +263,11 @@ barcode_table::lookup_with_mm(const char* seq,
 
         // Nucleotide may be 'N', so test has to be done by converting the index
         if (nucleotide == ACGT::to_value(encoded_i)) {
-          current_candidate = lookup_with_mm(
-            seq + 1, child, max_global_mismatches, max_local_mismatches, next);
+          current_candidate = lookup_with_mm(seq + 1,
+                                             child,
+                                             max_global_mismatches,
+                                             max_local_mismatches,
+                                             next);
         } else if (max_local_mismatches == 1) {
           current_candidate =
             lookup(seq + 1, child, max_global_mismatches - 1, next);
@@ -289,8 +298,11 @@ barcode_table::lookup_with_mm(const char* seq,
     max_local_mismatches = std::min(max_global_mismatches, m_max_mismatches_r2);
 
     if (max_local_mismatches) {
-      return lookup_with_mm(
-        next, parent, max_global_mismatches, max_local_mismatches, nullptr);
+      return lookup_with_mm(next,
+                            parent,
+                            max_global_mismatches,
+                            max_local_mismatches,
+                            nullptr);
     } else {
       return lookup(next, parent, max_global_mismatches, nullptr);
     }

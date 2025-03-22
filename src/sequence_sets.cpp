@@ -513,8 +513,9 @@ sample_set::add_reversed_barcodes(const barcode_config& config)
     }
   }
 
-  check_barcodes_sequences(
-    m_samples, "reversed barcodes", config.m_paired_end_mode);
+  check_barcodes_sequences(m_samples,
+                           "reversed barcodes",
+                           config.m_paired_end_mode);
 }
 
 } // namespace adapterremoval

@@ -481,8 +481,10 @@ gzip_split_fastq::process(chunk_ptr chunk)
       output_buffer.append(BGZF_HEADER);
       output_buffer.resize(output_buffer.capacity());
 
-      const auto output_size = isal_deflate_block(
-        input_buffer, output_buffer, BGZF_HEADER.size(), true);
+      const auto output_size = isal_deflate_block(input_buffer,
+                                                  output_buffer,
+                                                  BGZF_HEADER.size(),
+                                                  true);
 
       // Resize the buffer to the actually used size
       output_buffer.resize(output_size + BGZF_HEADER.size());

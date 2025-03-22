@@ -234,8 +234,9 @@ line_reader::initialize_buffers_gzip()
 
   isal_gzip_header_init(m_gzip_header.get());
   auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-  check_isal_return_code(
-    result, m_reader.filename(), "reading first gzip header from");
+  check_isal_return_code(result,
+                         m_reader.filename(),
+                         "reading first gzip header from");
 }
 
 void
@@ -258,8 +259,9 @@ line_reader::refill_buffers_gzip()
 
         const auto result =
           isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-        check_isal_return_code(
-          result, m_reader.filename(), "reading next gzip header from");
+        check_isal_return_code(result,
+                               m_reader.filename(),
+                               "reading next gzip header from");
       } else if (m_gzip_stream->avail_in) {
         log::warn() << "Ignoring trailing garbage at the end of "
                     << shell_escape(m_reader.filename());
@@ -272,8 +274,9 @@ line_reader::refill_buffers_gzip()
     }
   }
 
-  check_isal_return_code(
-    isal_inflate(m_gzip_stream.get()), m_reader.filename(), "decompressing");
+  check_isal_return_code(isal_inflate(m_gzip_stream.get()),
+                         m_reader.filename(),
+                         "decompressing");
 
   m_buffer_ptr = m_buffer->data();
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);

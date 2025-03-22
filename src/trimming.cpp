@@ -511,8 +511,11 @@ pe_reads_processor::process(chunk_ptr chunk)
         read_1.add_prefix_to_name(m_config.prefix_merged);
 
         // Trim fixed number of bases from 5' and/or 3' termini
-        post_trim_read_termini(
-          m_config, *stats, read_1, read_type::merged, &mstats);
+        post_trim_read_termini(m_config,
+                               *stats,
+                               read_1,
+                               read_type::merged,
+                               &mstats);
 
         if (!m_config.preserve5p) {
           // A merged read essentially consists of two 5p termini, so neither
@@ -530,8 +533,10 @@ pe_reads_processor::process(chunk_ptr chunk)
           chunks.add(read_1, read_type::merged, fastq_flags::se, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(
-            read_1, read_type::discarded, fastq_flags::se_fail, barcode);
+          chunks.add(read_1,
+                     read_type::discarded,
+                     fastq_flags::se_fail,
+                     barcode);
         }
 
         continue;

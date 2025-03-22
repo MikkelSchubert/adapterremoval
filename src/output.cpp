@@ -349,8 +349,11 @@ demultiplexed_reads::flush(bool eof, char mate_separator)
   flush_chunk(output, m_cache.at(0), m_steps.unidentified, eof, mate_separator);
 
   for (size_t i = 1; i < m_cache.size(); ++i) {
-    flush_chunk(
-      output, m_cache.at(i), m_steps.samples.at(i - 1), eof, mate_separator);
+    flush_chunk(output,
+                m_cache.at(i),
+                m_steps.samples.at(i - 1),
+                eof,
+                mate_separator);
   }
 
   return output;

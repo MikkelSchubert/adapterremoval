@@ -39,8 +39,11 @@ temporary_gzip_file(const string_vec& blocks)
   auto* compressor = libdeflate_alloc_compressor(6);
   for (const auto& block : blocks) {
     std::array<char, 1024> buffer{};
-    auto size = libdeflate_gzip_compress(
-      compressor, block.data(), block.size(), buffer.data(), buffer.size());
+    auto size = libdeflate_gzip_compress(compressor,
+                                         block.data(),
+                                         block.size(),
+                                         buffer.data(),
+                                         buffer.size());
 
     const auto n = std::fwrite(buffer.data(), sizeof(char), size, handle);
     REQUIRE(n == size);
@@ -235,9 +238,10 @@ TEST_CASE("line_reader handles gzipped file in blocks, with partial lines")
 TEST_CASE("line_reader handles gzipped file with empty blocks")
 {
   // Multiple strings/blocks:
-  const string_vec input = {
-    "HnSw4nWJAsds32emFfQdwO6Z\n", "", "tiuSGNsadNZ\n", "pAehX8GBlmyOPR\n"
-  };
+  const string_vec input = { "HnSw4nWJAsds32emFfQdwO6Z\n",
+                             "",
+                             "tiuSGNsadNZ\n",
+                             "pAehX8GBlmyOPR\n" };
   const string_vec expected = { "HnSw4nWJAsds32emFfQdwO6Z",
                                 "tiuSGNsadNZ",
                                 "pAehX8GBlmyOPR" };

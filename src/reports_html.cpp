@@ -780,8 +780,11 @@ write_html_input_section(const userconfig& config,
     names.emplace_back("File 2");
   }
 
-  write_html_io_section(
-    config, output, "Input", std::move(stats_vec), std::move(names));
+  write_html_io_section(config,
+                        output,
+                        "Input",
+                        std::move(stats_vec),
+                        std::move(names));
 }
 
 void
@@ -1011,8 +1014,9 @@ write_html_demultiplexing_section(const userconfig& config,
       .set_barcode_1(barcodes.first)
       .set_barcode_2(barcodes.second)
       .set_name(sample.name())
-      .set_pct(format_percentage(
-        stats.demultiplexing->samples.at(sample_idx), input_reads, 2))
+      .set_pct(format_percentage(stats.demultiplexing->samples.at(sample_idx),
+                                 input_reads,
+                                 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
@@ -1067,8 +1071,12 @@ write_html_output_section(const userconfig& config,
     }
   }
 
-  write_html_io_section(
-    config, output, "Output", std::move(stats_vec), std::move(names), merged);
+  write_html_io_section(config,
+                        output,
+                        "Output",
+                        std::move(stats_vec),
+                        std::move(names),
+                        merged);
 }
 
 } // namespace

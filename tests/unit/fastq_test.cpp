@@ -128,8 +128,10 @@ TEST_CASE("constructor_simple_record_phred_64_encoded", "[fastq::fastq]")
 
 TEST_CASE("constructor_simple_record_phred_solexa_encoded", "[fastq::fastq]")
 {
-  const fastq record(
-    "record_3", "AAACGAGTCA", ";h>S\\TCDUJ", FASTQ_ENCODING_SOLEXA);
+  const fastq record("record_3",
+                     "AAACGAGTCA",
+                     ";h>S\\TCDUJ",
+                     FASTQ_ENCODING_SOLEXA);
   REQUIRE(record.header() == "@record_3");
   REQUIRE(record.sequence() == "AAACGAGTCA");
   REQUIRE(record.qualities() == "\"I#4=5&&6+");
@@ -482,7 +484,8 @@ TEST_CASE("trim_trailing_bases__trim_3p__trim_trailing_bases", "[fastq::fastq]")
 TEST_CASE("Window trimming with invalid parameters", "[fastq::windows]")
 {
   const std::vector<double> values = {
-    -1.0, std::numeric_limits<double>::quiet_NaN()
+    -1.0,
+    std::numeric_limits<double>::quiet_NaN()
   };
   for (const auto& value : values) {
     fastq record("Rec", "TAGTGACAT", "111111111");
@@ -1101,8 +1104,9 @@ TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_MESSAGE(
-    record.read(reader, FASTQ_ENCODING_33), fastq_error, "sequence is empty");
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence is empty");
 }
 
 TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
@@ -1130,8 +1134,9 @@ TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
   vec_reader reader(lines);
 
   fastq record;
-  REQUIRE_THROWS_MESSAGE(
-    record.read(reader, FASTQ_ENCODING_33), fastq_error, "sequence is empty");
+  REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
+                         fastq_error,
+                         "sequence is empty");
 }
 
 TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")

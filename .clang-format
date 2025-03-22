@@ -4,8 +4,10 @@ BasedOnStyle: Mozilla
 ---
 Language: Cpp
 # Braches requires for control statements (requires clang-format v15)
-# InsertBraces: true
+InsertBraces: true
 # Add newlines between function definitions (requires clang-format v14)
 SeparateDefinitionBlocks: Always
 # Automatically add namespace comments
 FixNamespaceComments: true
+# Ensure consistent formatting of long argument lists
+AllowAllArgumentsOnNextLine: false

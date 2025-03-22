@@ -557,10 +557,12 @@ write_report_analyses(const userconfig& config,
     consensus->i64("pairs_with_adapters",
                    stats.adapter_id->pairs_with_adapters);
 
-    write_report_consensus_adapter(
-      consensus, "read1", stats.adapter_id->adapter1);
-    write_report_consensus_adapter(
-      consensus, "read2", stats.adapter_id->adapter2);
+    write_report_consensus_adapter(consensus,
+                                   "read1",
+                                   stats.adapter_id->adapter1);
+    write_report_consensus_adapter(consensus,
+                                   "read2",
+                                   stats.adapter_id->adapter2);
   } else {
     json->null("consensus_adapters");
   }
@@ -642,8 +644,9 @@ write_report_output(const userconfig& config,
   io_section("unidentified2",
              stats.demultiplexing->unidentified_stats_2,
              filter_output_file(out_files.unidentified_2))
-    .write_to_if(
-      output, config.is_demultiplexing_enabled() && config.paired_ended_mode);
+    .write_to_if(output,
+                 config.is_demultiplexing_enabled() &&
+                   config.paired_ended_mode);
 
   io_section("singleton", singleton, singleton_files)
     .write_to_if(output,

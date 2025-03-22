@@ -41,14 +41,23 @@ remove_adapter_sequences(const userconfig& config)
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
     if (!config.is_adapter_trimming_enabled()) {
-      steps.samples.push_back(sch.add<process_demultiplexed>(
-        config, output.get_sample(nth), nth, stats.trimming.back()));
+      steps.samples.push_back(
+        sch.add<process_demultiplexed>(config,
+                                       output.get_sample(nth),
+                                       nth,
+                                       stats.trimming.back()));
     } else if (config.paired_ended_mode) {
-      steps.samples.push_back(sch.add<pe_reads_processor>(
-        config, output.get_sample(nth), nth, stats.trimming.back()));
+      steps.samples.push_back(
+        sch.add<pe_reads_processor>(config,
+                                    output.get_sample(nth),
+                                    nth,
+                                    stats.trimming.back()));
     } else {
-      steps.samples.push_back(sch.add<se_reads_processor>(
-        config, output.get_sample(nth), nth, stats.trimming.back()));
+      steps.samples.push_back(
+        sch.add<se_reads_processor>(config,
+                                    output.get_sample(nth),
+                                    nth,
+                                    stats.trimming.back()));
     }
   }
 

@@ -534,8 +534,10 @@ benchmark(const userconfig& config)
 
   if (config.paired_ended_mode) {
     for (const auto is : simd::supported()) {
-      pe_alignment_benchmarker(
-        config, records.records_1(), records.records_2(), is)
+      pe_alignment_benchmarker(config,
+                               records.records_1(),
+                               records.records_2(),
+                               is)
         .run_if_toggled(toggles);
     }
   }
