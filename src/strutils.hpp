@@ -28,6 +28,20 @@ levenshtein(std::string_view s, std::string_view t);
 std::string
 timestamp(const char* format, bool milliseconds = false);
 
+/** Returns true if character is a simple letter */
+constexpr bool
+is_ascii_letter(const char c)
+{
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+/** Returns true if character is a simple letter or number */
+constexpr bool
+is_ascii_letter_or_digit(const char c)
+{
+  return is_ascii_letter(c) || (c >= '0' && c <= '9');
+}
+
 /**
  * Convert a string to a uint32_t.
  *

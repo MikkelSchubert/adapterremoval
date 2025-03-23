@@ -30,8 +30,7 @@ validate_sample_name(std::string_view name)
   }
 
   for (const char c : name) {
-    if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-          (c >= '0' && c <= '9') || (c == '_'))) {
+    if (!is_ascii_letter_or_digit(c) && (c != '_')) {
       std::ostringstream error;
       error << "The sample name " << log_escape(name)
             << " is not a valid sample name; only letters ('a' to 'z' and 'A' "
@@ -134,18 +133,6 @@ check_barcodes_sequences(const std::vector<sample>& samples,
   return true;
 }
 
-constexpr bool
-is_ascii_alpha(const char c)
-{
-  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-}
-
-constexpr bool
-is_ascii_alphanum(const char c)
-{
-  return is_ascii_alpha(c) || (c >= '0' && c <= '9');
-}
-
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,9 +164,9 @@ read_group::read_group(std::string_view value)
 
       if (field.size() < 4) {
         throw invalid("tags must be at least 4 characters long");
-      } else if (!is_ascii_alpha(field.at(0))) {
+      } else if (!is_ascii_letter(field.at(0))) {
         throw invalid("first character in tag name must be a letter");
-      } else if (!is_ascii_alphanum(field.at(1))) {
+      } else if (!is_ascii_letter_or_digit(field.at(1))) {
         throw invalid(
           "second character in tag name must be a letter or number");
       } else if (field.at(2) != ':') {

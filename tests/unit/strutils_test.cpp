@@ -4,9 +4,12 @@
 #include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_u32
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
+#include <algorithm>    // for find
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
+#include <limits>       // for numeric_limits
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string
+#include <string_view>  // for string_view
 #include <vector>       // for operator==, vector
 
 namespace adapterremoval {
@@ -202,6 +205,42 @@ TEST_CASE("Subsequent lines are indented", "[strutils::wrap_text]")
   REQUIRE(wrap_text("foo bar\nzood", 1, 2) == vec{ "foo", "  bar", "  zood" });
   REQUIRE(wrap_text("foo bar\nzood", 0, 2) == vec{ "foo", "  bar", "  zood" });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'is_ascii_*'
+
+TEST_CASE("is_ascii_letter is true for lower/uppercase letters")
+{
+  const unsigned min = std::numeric_limits<unsigned char>::min();
+  const unsigned max = std::numeric_limits<unsigned char>::max();
+  const std::string_view letters =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  for (auto i = min; i <= max; ++i) {
+    const auto c = static_cast<char>(i);
+    const bool is_letter = letters.find(c) != std::string_view::npos;
+
+    REQUIRE(is_ascii_letter(c) == is_letter);
+  }
+}
+
+TEST_CASE("is_ascii_letter_or_digit is true for letters and digits")
+{
+  const unsigned min = std::numeric_limits<unsigned char>::min();
+  const unsigned max = std::numeric_limits<unsigned char>::max();
+  const std::string_view letters =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  for (auto i = min; i <= max; ++i) {
+    const auto c = static_cast<char>(i);
+    const bool is_letter_or_digit = letters.find(c) != std::string_view::npos;
+
+    REQUIRE(is_ascii_letter_or_digit(c) == is_letter_or_digit);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for 'str_to_u32'
 
 TEST_CASE("Proper numbers are converted", "[strutils::str_to_u32]")
 {
