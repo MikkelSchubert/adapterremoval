@@ -367,27 +367,11 @@ sample_set::sample_set()
   set_unidentified_read_group(m_read_group);
 }
 
-sample_set::sample_set(std::initializer_list<sample> args)
-  : m_samples(args)
-  , m_unidentified("", dna_sequence{}, dna_sequence{})
+sample_set::sample_set(std::initializer_list<std::string_view> lines,
+                       barcode_config config)
 {
-  set_unidentified_read_group(m_read_group);
-
-  std::sort(m_samples.begin(),
-            m_samples.end(),
-            [](const auto& a, const auto& b) { return a.name() < b.name(); });
-
-  std::string_view name;
-  for (const auto& sample : m_samples) {
-    validate_sample_name(sample.name());
-    if (sample.name() == name) {
-      throw parsing_error("duplicate sample name: " + sample.name());
-    }
-
-    name = sample.name();
-  }
-
-  check_barcodes_sequences(m_samples, "initializer_list", true);
+  vec_reader reader(lines);
+  load(reader, config, "initializer_list");
 }
 
 void
@@ -416,6 +400,14 @@ void
 sample_set::load(const std::string& filename, const barcode_config& config)
 {
   line_reader reader(filename);
+  load(reader, config, filename);
+}
+
+void
+sample_set::load(line_reader_base& reader,
+                 const barcode_config& config,
+                 const std::string& filename)
+{
   auto barcodes = table_reader()
                     .with_comment_char('#')
                     .with_min_columns(2 + !config.m_unidirectional_barcodes)
