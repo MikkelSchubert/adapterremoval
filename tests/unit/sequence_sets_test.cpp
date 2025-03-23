@@ -1,14 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "errors.hpp"        // for parsing_error, operator<<
+#include "errors.hpp"        // for parsing_error
 #include "sequence_sets.hpp" // for read_group
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include <initializer_list>  // for initializer_list
 #include <stdexcept>         // for invalid_argument
+#include <string_view>       // for string_view
+#include <vector>            // for vector
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
 
 namespace adapterremoval {
+
+namespace {
+
+/** Convenience function for loading in PE mode */
+sample_set
+sample_set_pe(std::initializer_list<std::string_view> lines)
+{
+  return { lines, barcode_config().paired_end_mode(true) };
+}
+
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Read groups
@@ -127,102 +141,124 @@ TEST_CASE("invalid read groups")
 ///////////////////////////////////////////////////////////////////////////////
 // Sample sets -- initializer list
 
-TEST_CASE("Overlapping SE barcodes fail", "[sample_set::initializer_list]")
+TEST_CASE("Overlapping SE barcodes fail", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{} };
-  sample sample2{ "sample2", dna_sequence{ "ACGT" }, dna_sequence{} };
-  REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+  const std::string message =
+    "Duplicate mate 1 barcodes found in \'initializer_list\': \'ACGT\'. Even "
+    "if these are associated with different mate 2 barcodes, it is not "
+    "possible to distinguish between these in single-end mode!";
+
+  const std::initializer_list<std::string_view> barcodes_1{
+    "sample1 ACGT",
+    "sample2 ACGT",
+  };
+
+  const std::initializer_list<std::string_view> barcodes_2{
+    "sample1 ACGT CGTG",
+    "sample2 ACGT TATA",
+  };
+
+  // SE mode
+  CHECK_THROWS_MESSAGE(sample_set(barcodes_1), parsing_error, message);
+  CHECK_THROWS_MESSAGE(sample_set(barcodes_2), parsing_error, message);
+
+  // PE mode
+  CHECK_THROWS_MESSAGE(
+    sample_set_pe(barcodes_1),
     parsing_error,
     "Duplicate barcode pairs found in \'initializer_list\' with barcodes "
     "\'ACGT\' and \'\'. please verify correctness of the barcode table and "
     "remove any duplicate entries!");
+  CHECK_NOTHROW(sample_set_pe(barcodes_2));
 }
 
-TEST_CASE("Overlapping PE barcodes fail", "[sample_set::initializer_list]")
+TEST_CASE("Overlapping PE barcodes fail", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
-  sample sample2{ "sample2", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGT CGTG",
+      "sample2 ACGT CGTG",
+    }),
     parsing_error,
     "Duplicate barcode pairs found in \'initializer_list\' with barcodes "
     "\'ACGT\' and \'CGTG\'. please verify correctness of the barcode table and "
     "remove any duplicate entries!");
 }
 
-TEST_CASE("Variable length SE barcodes fail #1",
-          "[sample_set::initializer_liset]")
+TEST_CASE("Variable length SE barcodes fail #1", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGTA" }, dna_sequence{} };
-  sample sample2{ "sample2", dna_sequence{ "TGCT" }, dna_sequence{} };
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGTA",
+      "sample2 TGCT",
+    }),
     parsing_error,
     "Inconsistent mate 1 barcode lengths found: Last barcode was 5 base-pairs "
     "long, but barcode \'TGCT\' is 4 base-pairs long. Variable length barcodes "
     "are not supported");
 }
 
-TEST_CASE("Variable length SE barcodes fail #2",
-          "[sample_set::initializer_liset]")
+TEST_CASE("Variable length SE barcodes fail #2", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{} };
-  sample sample2{ "sample2", dna_sequence{ "TGCTA" }, dna_sequence{} };
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGT",
+      "sample2 TGCTA",
+    }),
     parsing_error,
     "Inconsistent mate 1 barcode lengths found: Last barcode was 4 base-pairs "
     "long, but barcode \'TGCTA\' is 5 base-pairs long. Variable length "
     "barcodes are not supported");
 }
 
-TEST_CASE("Variable length PE barcodes fail #1",
-          "[sample_set::initializer_liset]")
+TEST_CASE("Variable length PE barcodes fail #1", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGTT" }, dna_sequence{ "CGTG" } };
-  sample sample2{ "sample2", dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } };
+
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGTT CGTG",
+      "sample2 CGTG ACGT",
+    }),
     parsing_error,
     "Inconsistent mate 1 barcode lengths found: Last barcode was 5 base-pairs "
     "long, but barcode \'CGTG\' is 4 base-pairs long. Variable length barcodes "
     "are not supported");
 }
 
-TEST_CASE("Variable length PE barcodes fail #2",
-          "[sample_set::initializer_liset]")
+TEST_CASE("Variable length PE barcodes fail #2", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTGT" } };
-  sample sample2{ "sample2", dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } };
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGT CGTGT",
+      "sample2 CGTG ACGT",
+    }),
     parsing_error,
     "Inconsistent mate 2 barcode lengths found: Last barcode was 5 base-pairs "
     "long, but barcode \'ACGT\' is 4 base-pairs long. Variable length barcodes "
     "are not supported");
 }
 
-TEST_CASE("Variable length PE barcodes fail #3",
-          "[sample_set::initializer_liset]")
+TEST_CASE("Variable length PE barcodes fail #3", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
-  sample sample2{ "sample2", dna_sequence{ "CGTGA" }, dna_sequence{ "ACGT" } };
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGT CGTG",
+      "sample2 CGTGA ACGT",
+    }),
     parsing_error,
     "Inconsistent mate 1 barcode lengths found: Last barcode was 4 base-pairs "
     "long, but barcode \'CGTGA\' is 5 base-pairs long. Variable length "
     "barcodes are not supported");
 }
 
-TEST_CASE("Variable length PE barcodes fail #4",
-          "[sample_set::initializer_liset]")
+TEST_CASE("Variable length PE barcodes fail #4", "[sample_set::load]")
 {
-  sample sample1{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } };
-  sample sample2{ "sample2", dna_sequence{ "CGTGA" }, dna_sequence{ "ACGTA" } };
+
   REQUIRE_THROWS_MESSAGE(
-    sample_set({ sample1, sample2 }),
+    sample_set_pe({
+      "sample1 ACGT CGTG",
+      "sample2 CGTGA ACGTA",
+    }),
     parsing_error,
     "Inconsistent mate 1 barcode lengths found: Last barcode was 4 base-pairs "
     "long, but barcode \'CGTGA\' is 5 base-pairs long. Variable length "
