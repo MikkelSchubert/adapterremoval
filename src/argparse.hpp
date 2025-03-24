@@ -6,6 +6,7 @@
 #include "commontypes.hpp" // for string_vec_citer, string_vec
 #include <cstddef>         // for size_t
 #include <functional>      // for less
+#include <iosfwd>          // for ostream
 #include <map>             // for map
 #include <memory>          // for shared_ptr, unique_ptr
 #include <string>          // for string
@@ -473,6 +474,10 @@ public:
 private:
   string_vec* m_sink = nullptr;
 };
+
+/** Stream operator for debugging output */
+std::ostream&
+operator<<(std::ostream& os, const parse_result& value);
 
 } // namespace argparse
 

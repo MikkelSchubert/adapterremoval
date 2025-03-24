@@ -6,31 +6,13 @@
 #include "fastq.hpp"         // for fastq, sequence_pair_vec, fastq_pair
 #include "sequence.hpp"      // for dna_sequence
 #include "sequence_sets.hpp" // for sample_set
-#include "testing.hpp"       // for catch.hpp, StringMaker
-#include <sstream>           // for ostringstream
-#include <string>            // for basic_string, operator==, string
+#include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include <string>            // for string
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g
 // Ignore nucleotide comments
 // spell-checker:ignoreRegExp /\W[acgtnACGTN]+\W/g
-
-namespace Catch {
-
-template<>
-std::string
-StringMaker<adapterremoval::barcode_key, void>::convert(
-  adapterremoval::barcode_key const& value)
-{
-  std::ostringstream ss;
-
-  ss << "barcode_key{ sample = " << value.sample
-     << ", barcode = " << value.barcode << " }";
-
-  return ss.str();
-}
-
-} // namespace Catch
 
 namespace adapterremoval {
 
@@ -673,6 +655,24 @@ TEST_CASE("Mismatch resulting in apparent match", "[barcodes::inexact::se]")
   REQUIRE(table.identify(fastq("A", "TCCTT")) == barcode_key{ 1, 0 });
   REQUIRE(table.identify(fastq("A", "TCCCA")) == barcode_key{ 0, 0 });
   REQUIRE(table.identify(fastq("A", "ACCTT")) == barcode_key{ 1, 0 });
+}
+
+TEST_CASE("barcode_key to string", "[barcodes]")
+{
+  using Catch::fallbackStringifier;
+
+  CHECK(fallbackStringifier(barcode_key{}) ==
+        "barcode_key{sample=unidentified, barcode=unidentified}");
+  CHECK(fallbackStringifier(barcode_key{ barcode_key::unidentified, 3 }) ==
+        "barcode_key{sample=unidentified, barcode=3}");
+  CHECK(fallbackStringifier(barcode_key{ 4, barcode_key::unidentified }) ==
+        "barcode_key{sample=4, barcode=unidentified}");
+  CHECK(fallbackStringifier(barcode_key{ 1, 2 }) ==
+        "barcode_key{sample=1, barcode=2}");
+  CHECK(fallbackStringifier(barcode_key{ barcode_key::ambiguous, 3 }) ==
+        "barcode_key{sample=ambiguous, barcode=3}");
+  CHECK(fallbackStringifier(barcode_key{ 4, barcode_key::ambiguous }) ==
+        "barcode_key{sample=4, barcode=ambiguous}");
 }
 
 } // namespace adapterremoval

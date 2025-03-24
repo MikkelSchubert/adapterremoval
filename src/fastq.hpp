@@ -6,6 +6,7 @@
 #include "fastq_enc.hpp" // for FASTQ_ENCODING_33, MATE_SEPARATOR
 #include <array>         // for array
 #include <cstddef>       // for size_t
+#include <iosfwd>        // for ostream
 #include <string>        // for string
 #include <string_view>   // for string_view
 #include <utility>       // for pair
@@ -255,9 +256,11 @@ struct ACGTN
   static constexpr value_type to_value(size_t idx) { return "-A-CT-NG"[idx]; }
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
 using fastq_pair = std::pair<fastq, fastq>;
 using fastq_pair_vec = std::vector<fastq_pair>;
+
+/** Stream operator for debugging output */
+std::ostream&
+operator<<(std::ostream& os, const fastq& value);
 
 } // namespace adapterremoval

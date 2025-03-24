@@ -4,8 +4,7 @@
 #include "linereader.hpp" // declarations
 #include "logging.hpp"    // for log_capture
 #include "strutils.hpp"   // for log_escape
-#include "testing.hpp"    // for catch.hpp, StringMaker
-#include <algorithm>      // for max
+#include "testing.hpp"    // for TEST_CASE, REQUIRE, ...
 #include <array>          // for array
 #include <cstdio>         // for fclose, fwrite, rewind, tmpfile, FILE, fread
 #include <libdeflate.h>   // for libdeflate_alloc_compressor, libdeflate_free...
@@ -272,14 +271,3 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
 }
 
 } // namespace adapterremoval
-
-namespace Catch {
-using namespace adapterremoval;
-
-template<>
-std::string
-StringMaker<io_error, void>::convert(io_error const& value)
-{
-  return log_escape(value.what());
-}
-} // namespace Catch

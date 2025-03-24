@@ -2039,12 +2039,15 @@ namespace Catch {
         return rss.str();
     }
 
+// Disabled to prevent complex classes from being represented as ranges
+#if 0
     template<typename R>
     struct StringMaker<R, typename std::enable_if<is_range<R>::value && !::Catch::Detail::IsStreamInsertable<R>::value>::type> {
         static std::string convert( R const& range ) {
             return rangeToString( range );
         }
     };
+#endif
 
     template <typename T, int SZ>
     struct StringMaker<T[SZ]> {

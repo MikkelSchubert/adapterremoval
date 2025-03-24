@@ -6,7 +6,7 @@
 #include "fastq.hpp"         // for fastq, fastq::ntrimmed, ACGTN, ACGT
 #include "sequence_sets.hpp" // sample_seequences
 #include "serializer.hpp"    // for fastq_serializer
-#include "testing.hpp"       // for catch.hpp, StringMaker
+#include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g

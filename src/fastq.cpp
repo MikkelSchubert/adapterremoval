@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "fastq.hpp"
+#include "fastq.hpp"      // declarations
 #include "debug.hpp"      // for AR_REQUIRE, AR_FAIL
 #include "errors.hpp"     // for fastq_error
 #include "linereader.hpp" // for line_reader_base
+#include "strutils.hpp"   // for log_escape
 #include <algorithm>      // for reverse, count, max, min
 #include <cmath>          // for log10, pow
 #include <numeric>        // for accumulate
@@ -687,6 +688,15 @@ fastq::trim_sequence_and_qualities(const size_t left_inclusive,
   truncate(left_inclusive, right_exclusive - left_inclusive);
 
   return summary;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const fastq& value)
+{
+  os << "fastq{header=" << log_escape(value.header())
+     << ", sequence=" << log_escape(value.sequence())
+     << ", qualities=" << log_escape(value.qualities()) << "}";
+  return os;
 }
 
 } // namespace adapterremoval
