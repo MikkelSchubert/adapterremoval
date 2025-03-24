@@ -89,6 +89,7 @@ libcore = static_library(
     'managed_io.cpp',
     'mathutils.cpp',
     'sequence_sets.cpp',
+    'sequence.cpp',
     'serializer.cpp',
     'simd_std.cpp',
     'simd.cpp',

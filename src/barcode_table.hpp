@@ -7,6 +7,7 @@
 #include <array>        // for array
 #include <cstddef>      // for size_t
 #include <cstdint>      // for int32_t
+#include <iosfwd>       // for ostream
 #include <vector>       // for vector
 
 namespace adapterremoval {
@@ -95,5 +96,9 @@ private:
   size_t m_barcode_1_len = 0;
   size_t m_barcode_2_len = 0;
 };
+
+/** Stream operator for debugging output */
+std::ostream&
+operator<<(std::ostream& os, const barcode_key& value);
 
 } // namespace adapterremoval

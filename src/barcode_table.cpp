@@ -7,6 +7,7 @@
 #include "fastq.hpp"         // for fastq
 #include "sequence_sets.hpp" // for sample_set
 #include <algorithm>         // for min, max, sort
+#include <string>            // for std::string
 #include <utility>           // for pair
 
 namespace adapterremoval {
@@ -309,6 +310,24 @@ barcode_table::lookup_with_mm(const char* seq,
   } else {
     return barcode_match(node.key, m_max_mismatches - max_global_mismatches);
   }
+}
+
+std::ostream&
+operator<<(std::ostream& os, const barcode_key& value)
+{
+  const auto to_str_ = [](int32_t value) -> std::string {
+    switch (value) {
+      case barcode_key::unidentified:
+        return "unidentified";
+      case barcode_key::ambiguous:
+        return "ambiguous";
+      default:
+        return std::to_string(value);
+    }
+  };
+
+  return os << "barcode_key{sample=" << to_str_(value.sample)
+            << ", barcode=" << to_str_(value.barcode) << "}";
 }
 
 } // namespace adapterremoval

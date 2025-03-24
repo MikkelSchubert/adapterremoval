@@ -10,6 +10,7 @@
 #include <cstdint>          // for int64_t
 #include <initializer_list> // for initializer_list
 #include <limits>           // for numeric_limits, numeric_limits<>::is_iec559
+#include <ostream>          // for ostream
 #include <type_traits>      // for is_same, is_floating_point, is_integral
 #include <utility>          // for move
 #include <vector>           // for operator==, vector
@@ -144,6 +145,10 @@ public:
   {
     return m_counts == other.m_counts;
   }
+
+  [[nodiscard]] auto begin() const { return m_counts.begin(); }
+
+  [[nodiscard]] auto end() const { return m_counts.end(); }
 
 private:
   std::vector<T> m_counts;
@@ -334,5 +339,71 @@ private:
 using counts = counts_tmpl<int64_t>;
 //! Standard class for rates, averages, etc.
 using rates = counts_tmpl<double>;
+
+/** Stream operator for debugging output */
+template<typename T>
+std::ostream&
+operator<<(std::ostream& os, const counts_tmpl<T>& value)
+{
+  os << "counts{[";
+  bool first = true;
+  for (const auto v : value) {
+    if (!first) {
+      os << ", ";
+    }
+
+    os << v;
+    first = false;
+  }
+
+  return os << "]}";
+}
+
+/** Stream operator for debugging output */
+template<typename I, typename T>
+std::ostream&
+operator<<(std::ostream& os, const indexed_count<I, T>& value)
+{
+  os << "indexed_count{";
+  bool first = true;
+  for (const auto key : I::values) {
+    if (!first) {
+      os << ", ";
+    }
+
+    os << key << "=" << value.get(key);
+    first = false;
+  }
+
+  return os << "}";
+}
+
+/** Stream operator for debugging output */
+template<typename I, typename T>
+std::ostream&
+operator<<(std::ostream& os, const indexed_counts<I, T>& value)
+{
+  bool first = true;
+  os << "indexed_counts{";
+  for (const auto key : I::values) {
+    if (!first) {
+      os << ", ";
+    }
+
+    os << key << "=[";
+    for (size_t i = 0; i < value.size(); ++i) {
+      if (i) {
+        os << ", ";
+      }
+
+      os << value.get(key, i);
+    }
+
+    os << "]";
+    first = false;
+  }
+
+  return os << "}";
+}
 
 } // namespace adapterremoval

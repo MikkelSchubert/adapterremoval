@@ -1030,6 +1030,21 @@ vec_sink::value() const
   return output;
 }
 
+std::ostream&
+operator<<(std::ostream& os, const parse_result& value)
+{
+  switch (value) {
+    case parse_result::exit:
+      return os << "parse_result::exit";
+    case parse_result::error:
+      return os << "parse_result::error";
+    case parse_result::ok:
+      return os << "parse_result::ok";
+    default:
+      AR_FAIL("invalid parse_result");
+  }
+}
+
 } // namespace argparse
 
 } // namespace adapterremoval

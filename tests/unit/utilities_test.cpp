@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "testing.hpp"   // for catch.hpp, StringMaker
+#include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 #include "utilities.hpp" // for merge
-#include <algorithm>     // for max
 #include <array>         // for array, operator==
 #include <cstddef>       // for size_t
 #include <vector>        // for vector, allocator, operator==

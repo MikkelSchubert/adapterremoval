@@ -3,11 +3,9 @@
 #include "counts.hpp"  // for counts, indexed_counts, counts_tmpl, indexed_c...
 #include "errors.hpp"  // for assert_failed
 #include "fastq.hpp"   // for ACGT, ACGTN, ACGT::indices
-#include "testing.hpp" // for catch.hpp, StringMaker
-#include <array>       // for array
+#include "testing.hpp" // for TEST_CASE, REQUIRE, ...
 #include <cmath>       // for isnan
 #include <cstddef>     // for size_t
-#include <sstream>     // for operator<<, ostream, ostringstream, basic_ostr...
 #include <string>      // for basic_string, operator==
 
 namespace adapterremoval {
@@ -517,105 +515,73 @@ TEST_CASE("indexed_counts<ACGT> operator==")
   REQUIRE(!(non_empty_1 == non_empty_2));
 }
 
-template<typename T>
-std::string
-debug_stringify(const counts_tmpl<T>& value)
+////////////////////////////////////////////////////////////////////////////////
+// to string
+
+TEST_CASE("counts to string")
 {
-  std::ostringstream stream;
-  stream << "{";
-  for (size_t i = 0; i < value.size(); ++i) {
-    if (i) {
-      stream << ", ";
-    }
+  counts c;
+  c.resize_up_to(4);
+  c.inc(0, 15);
+  c.inc(1, 10);
+  c.inc(2, 5);
+  c.inc(3, 0);
 
-    stream << value.get(i);
-  }
-
-  stream << "}";
-
-  return stream.str();
+  REQUIRE(Catch::fallbackStringifier(c) == "counts{[15, 10, 5, 0]}");
 }
 
-template<typename I, typename T>
-std::string
-debug_stringify(const indexed_count<I, T>& value)
+TEST_CASE("indexed_count<ACGT> to string")
 {
-  std::ostringstream stream;
-  stream << "{";
+  indexed_count<ACGT> c;
+  c.inc('A', 15);
+  c.inc('C', 10);
+  c.inc('G', 5);
+  c.inc('T', 1);
 
-  bool first = true;
-  for (const auto key : I::values) {
-    if (!first) {
-      stream << ", ";
-    }
-
-    stream << key << " = " << value.get(key);
-    first = false;
-  }
-
-  stream << "}";
-
-  return stream.str();
+  REQUIRE(Catch::fallbackStringifier(c) ==
+          "indexed_count{A=15, C=10, G=5, T=1}");
 }
 
-template<typename I, typename T>
-std::string
-debug_stringify(const indexed_counts<I, T>& value)
+TEST_CASE("indexed_count<ACGTN> to string")
 {
-  std::ostringstream stream;
-  stream << "[";
+  indexed_count<ACGTN> c;
+  c.inc('N', 20);
+  c.inc('A', 15);
+  c.inc('C', 10);
+  c.inc('G', 5);
+  c.inc('T', 1);
 
-  bool first = true;
-  for (size_t i = 0; i < value.size(); ++i) {
-    if (!first) {
-      stream << ", ";
-    }
+  REQUIRE(Catch::fallbackStringifier(c) ==
+          "indexed_count{A=15, C=10, G=5, T=1, N=20}");
+}
 
-    stream << i << " = " << debug_stringify(value.get(i));
-    first = false;
-  }
+TEST_CASE("indexed_counts<ACGT> to string")
+{
+  indexed_counts<ACGT> c;
+  c.resize_up_to(4);
+  c.inc('A', 2, 15);
+  c.inc('C', 0, 10);
+  c.inc('G', 1, 5);
+  c.inc('T', 3, 1);
 
-  stream << "]";
+  REQUIRE(Catch::fallbackStringifier(c) ==
+          "indexed_counts{A=[0, 0, 15, 0], C=[10, 0, 0, 0], G=[0, 5, 0, 0], "
+          "T=[0, 0, 0, 1]}");
+}
 
-  return stream.str();
+TEST_CASE("indexed_counts<ACGTN> to string")
+{
+  indexed_counts<ACGTN> c;
+  c.resize_up_to(4);
+  c.inc('A', 2, 15);
+  c.inc('C', 0, 10);
+  c.inc('G', 1, 5);
+  c.inc('T', 3, 1);
+  c.inc('N', 1, 13);
+
+  REQUIRE(Catch::fallbackStringifier(c) ==
+          "indexed_counts{A=[0, 0, 15, 0], C=[10, 0, 0, 0], G=[0, 5, 0, 0], "
+          "T=[0, 0, 0, 1], N=[0, 13, 0, 0]}");
 }
 
 } // namespace adapterremoval
-
-namespace Catch {
-
-using namespace adapterremoval;
-
-template<>
-std::string
-StringMaker<counts_tmpl<int64_t>, void>::convert(
-  counts_tmpl<int64_t> const& value)
-{
-  return debug_stringify(value);
-}
-
-template<>
-std::string
-StringMaker<counts_tmpl<double>, void>::convert(
-  counts_tmpl<double> const& value)
-{
-  return debug_stringify(value);
-}
-
-template<>
-std::string
-StringMaker<indexed_count<ACGT, int64_t>, void>::convert(
-  indexed_count<ACGT, int64_t> const& value)
-{
-  return debug_stringify(value);
-}
-
-template<>
-std::string
-StringMaker<indexed_counts<ACGT, int64_t>, void>::convert(
-  indexed_counts<ACGT, int64_t> const& value)
-{
-  return debug_stringify(value);
-}
-
-} // namespace Catch

@@ -9,6 +9,7 @@ unit_tests = executable(
     'buffer_test.cpp',
     'counts_test.cpp',
     'debug_test.cpp',
+    'errors_test.cpp',
     'fastq_test.cpp',
     'json_test.cpp',
     'linereader_test.cpp',
@@ -16,14 +17,20 @@ unit_tests = executable(
     'main_test.cpp',
     'mathutils_test.cpp',
     'sequence_sets_test.cpp',
+    'sequence_test.cpp',
     'serializer_test.cpp',
     'strutils_test.cpp',
+    'testing.cpp',
     'utilities_test.cpp',
     config_inc,
     link_with: [libcore, libsimd],
     dependencies: [libisal, libdeflate, libthreads],
     include_directories: [
         '..' / '..' / 'src',
+    ],
+    cpp_args: [
+        # Custom function to serialize values; see 'testing.hpp'
+        '-DCATCH_CONFIG_FALLBACK_STRINGIFIER=::Catch::fallbackStringifier',
     ],
 )
 

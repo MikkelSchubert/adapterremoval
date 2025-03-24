@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "buffer.hpp"  // declarations
-#include "errors.hpp"  // for assert_failed
-#include "testing.hpp" // for catch.hpp, StringMaker
+#include "testing.hpp" // for TEST_CASE, REQUIRE, ...
 #include <cstring>     // for memset
 #include <utility>     // for move
 

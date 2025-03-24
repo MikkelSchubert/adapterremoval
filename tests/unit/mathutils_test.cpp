@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "errors.hpp"    // for assert_failed
 #include "mathutils.hpp" // for arithmetic_mean, standard_deviation
-#include "testing.hpp"   // for catch.hpp, StringMaker
+#include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 #include <vector>        // for vector
 
 namespace adapterremoval {

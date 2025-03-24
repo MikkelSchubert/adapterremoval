@@ -4,10 +4,9 @@
 #include "counts.hpp"   // for rates, counts
 #include "json.hpp"     // for json_dict, json_value, json_token, json_list
 #include "strutils.hpp" // for string_vec
-#include "testing.hpp"  // for catch.hpp, StringMaker
+#include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cmath>        // for nan
 #include <limits>       // for numeric_limits
-#include <memory>       // for __shared_ptr_access, shared_ptr, __shared_pt...
 #include <sstream>      // for ostringstream
 #include <string>       // for basic_string, operator==, string
 

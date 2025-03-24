@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "catch.hpp"       // for Catch
 #include "commontypes.hpp" // for fastq_vec
 #include "errors.hpp"      // for fastq_error
 #include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
 #include "fastq_enc.hpp"   // for FASTQ_ENCODING_33
 #include "linereader.hpp"  // for vec_reader
 #include "strutils.hpp"    // for string_vec
-#include "testing.hpp"     // for catch.hpp, StringMaker
+#include "testing.hpp"     // for TEST_CASE, REQUIRE, ...
 #include <cstddef>         // for size_t
 #include <limits>          // for numeric_limits
-#include <sstream>         // for ostringstream
 #include <string>          // for operator==, basic_string, string, operator+
 #include <utility>         // for operator==, pair, move
 #include <vector>          // for vector, vector<>::const_iterator
@@ -1587,56 +1585,16 @@ TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
   REQUIRE(mate2.header() == name_s);
 }
 
-namespace {
+///////////////////////////////////////////////////////////////////////////////
+// operator<<
 
-template<typename A, typename B>
-std::string
-debug_stringify(const std::pair<A, B>& value)
+TEST_CASE("fastq::operator<<", "[fastq]")
 {
-  std::ostringstream stream;
-  stream << "{" << value.first << ", " << value.second << "}";
-  return stream.str();
-}
+  CHECK(Catch::fallbackStringifier(fastq()) ==
+        "fastq{header='@', sequence='', qualities=''}");
 
-} // namespace
+  CHECK(Catch::fallbackStringifier(fastq("Mate/2", "GCTAA", "$!@#$")) ==
+        "fastq{header='@Mate/2', sequence='GCTAA', qualities='$!@#$'}");
+}
 
 } // namespace adapterremoval
-
-namespace Catch {
-
-using namespace adapterremoval;
-
-template<>
-std::string
-StringMaker<fastq, void>::convert(fastq const& value)
-{
-  std::ostringstream stream;
-  stream << "{name = " << log_escape(value.name())
-         << ", sequence = " << log_escape(value.sequence())
-         << ", qualities = " << log_escape(value.qualities()) << "}";
-  return stream.str();
-}
-
-template<>
-std::string
-StringMaker<fastq_error, void>::convert(fastq_error const& value)
-{
-  return log_escape(value.what());
-}
-
-template<>
-std::string
-StringMaker<fastq::ntrimmed, void>::convert(fastq::ntrimmed const& value)
-{
-  return debug_stringify(value);
-}
-
-template<>
-std::string
-StringMaker<std::pair<char, size_t>, void>::convert(
-  std::pair<char, size_t> const& value)
-{
-  return debug_stringify(value);
-}
-
-} // namespace Catch

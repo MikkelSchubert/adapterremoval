@@ -5,24 +5,13 @@
 #include "errors.hpp"   // for assert_failed
 #include "logging.hpp"  // for log_capture
 #include "strutils.hpp" // for string_vec
-#include "testing.hpp"  // for catch.hpp, StringMaker
+#include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cstddef>      // for size_t
 #include <limits>       // for numeric_limits
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string, allocator
+#include <string_view>  // for string_view
 #include <vector>       // for vector, operator==
-
-namespace Catch {
-
-template<>
-std::string
-StringMaker<std::invalid_argument, void>::convert(
-  std::invalid_argument const& value)
-{
-  return value.what();
-}
-
-} // namespace Catch
 
 namespace adapterremoval {
 
@@ -34,16 +23,6 @@ using Catch::Matchers::Contains;
 
 #define REQUIRE_POSTFIX(a, b) REQUIRE_THAT((a), Catch::Matchers::EndsWith(b))
 #define REQUIRE_CONTAINS(a, b) REQUIRE_THAT((a), Catch::Matchers::Contains(b))
-
-///////////////////////////////////////////////////////////////////////////////
-// invalid_argument matches
-
-TEST_CASE("invalid_argument matches")
-{
-  using SM = Catch::StringMaker<std::invalid_argument>;
-
-  REQUIRE(SM::convert(std::invalid_argument("test 1 2")) == "test 1 2");
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // boolean sink
@@ -994,13 +973,17 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 ///////////////////////////////////////////////////////////////////////////////
 // parser
 
-const char* HELP_HEADER =
+namespace {
+
+const std::string_view HELP_HEADER =
   "My App v1234\n\n"
   "basic help\n\n"
   "OPTIONS:\n"
   "   -h, --help      Display this message\n"
   "   -v, --version   Print the version string\n"
   "   --licenses      Print licenses for this software\n\n";
+
+} // namespace
 
 TEST_CASE("--version", "[argparse::parser]")
 {
@@ -1425,6 +1408,20 @@ TEST_CASE("help with lower and upper bound of values", "[argparse::parser]")
           "   -v, --version        Print the version string\n"
           "   --licenses           Print licenses for this software\n\n"
           "   --test <X> <X> [X]   Help text\n");
+}
+
+TEST_CASE("parse_result to string", "[argparse]")
+{
+  using Catch::fallbackStringifier;
+
+  CHECK(fallbackStringifier(argparse::parse_result::exit) ==
+        "parse_result::exit");
+  CHECK(fallbackStringifier(argparse::parse_result::error) ==
+        "parse_result::error");
+  CHECK(fallbackStringifier(argparse::parse_result::ok) == "parse_result::ok");
+
+  CHECK_THROWS_AS(fallbackStringifier(static_cast<argparse::parse_result>(-1)),
+                  assert_failed);
 }
 
 } // namespace adapterremoval

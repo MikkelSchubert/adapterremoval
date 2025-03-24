@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "errors.hpp"        // for parsing_error
+#include "errors.hpp"        // for parsing_error, operator<<
 #include "sequence_sets.hpp" // for read_group
-#include "strutils.hpp"      // for log_escape
-#include "testing.hpp"       // for catch.hpp, StringMaker
+#include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <stdexcept>         // for invalid_argument
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
@@ -231,16 +230,3 @@ TEST_CASE("Variable length PE barcodes fail #4",
 }
 
 } // namespace adapterremoval
-
-namespace Catch {
-
-using namespace adapterremoval;
-
-template<>
-std::string
-StringMaker<parsing_error, void>::convert(parsing_error const& value)
-{
-  return log_escape(value.what());
-}
-
-} // namespace Catch

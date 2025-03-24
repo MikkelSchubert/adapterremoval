@@ -5,6 +5,7 @@
 
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
+#include <iosfwd>        // for ostream
 #include <string>        // for string
 
 namespace adapterremoval {
@@ -273,5 +274,9 @@ bool
 extract_adapter_sequences(const alignment_info& alignment,
                           fastq& read1,
                           fastq& read2);
+
+/** Stream operator for debugging output */
+std::ostream&
+operator<<(std::ostream& os, const alignment_info& value);
 
 } // namespace adapterremoval

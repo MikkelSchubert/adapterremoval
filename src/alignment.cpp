@@ -9,6 +9,7 @@
 #include "simd.hpp"          // for size_t, get_compare_subsequences_func
 #include <algorithm>         // for max, min
 #include <limits>            // for numeric_limits
+#include <ostream>           // for ostream
 #include <string>            // for string, operator+
 #include <utility>           // for swap, pair
 
@@ -389,6 +390,16 @@ extract_adapter_sequences(const alignment_info& alignment,
     std::max<int>(0, static_cast<int>(read2.length()) - template_length));
 
   return read1.sequence().length() || read2.sequence().length();
+}
+
+std::ostream&
+operator<<(std::ostream& os, const alignment_info& value)
+{
+  return os << "alignment_info{score=" << value.score()
+            << ", adapter_id=" << value.adapter_id
+            << ", offset=" << value.offset << ", length=" << value.length
+            << ", n_mismatches=" << value.n_mismatches
+            << ", n_ambiguous=" << value.n_ambiguous << "}";
 }
 
 } // namespace adapterremoval

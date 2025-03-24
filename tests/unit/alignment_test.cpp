@@ -3,19 +3,18 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "alignment.hpp"     // for alignment_info, sequence_merger, extract_...
 #include "commontypes.hpp"   // for merge_strategy, merge_strategy::determini...
-#include "debug.hpp"         // for assert_failed
+#include "debug.hpp"         // for AR_FAIL
 #include "errors.hpp"        // for assert_failed
 #include "fastq.hpp"         // for fastq
 #include "fastq_enc.hpp"     // for FASTQ_ENCODING_SAM
 #include "sequence.hpp"      // for dna_sequence
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for size_t, instruction_set, supported, get_c...
-#include "testing.hpp"       // for catch.hpp, StringMaker
+#include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <cstddef>           // for size_t
 #include <cstdint>           // for int64_t
-#include <sstream>           // for operator<<, ostream, basic_ostream, char_...
-#include <string>            // for string, basic_string, operator<<
-#include <vector>            // for vector
+#include <sstream>
+#include <string> // for string, basic_string, operator<<
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g
@@ -1324,6 +1323,15 @@ struct MMNs
   bool operator!=(const MMNs& other) const { return !(*this == other); }
 };
 
+std::ostream&
+operator<<(std::ostream& os, const MMNs& value)
+{
+  os << "MMNs{mismatches=" << value.mismatches
+     << ", ambiguous=" << value.ambiguous << "}";
+
+  return os;
+}
+
 char
 rotate_nucleotide(char c)
 {
@@ -1443,73 +1451,13 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
   }
 }
 
-} // namespace adapterremoval
-
-namespace Catch {
-
-using namespace adapterremoval;
-
-template<>
-std::string
-StringMaker<alignment_info, void>::convert(alignment_info const& value)
-{
-  std::vector<std::string> labels = { "score",       "offset",
-                                      "length",      "n_mismatches",
-                                      "n_ambiguous", "adapter_id" };
-
-  std::vector<int64_t> values = {
-    static_cast<int64_t>(value.score()),
-    static_cast<int64_t>(value.offset),
-    static_cast<int64_t>(value.length),
-    static_cast<int64_t>(value.n_mismatches),
-    static_cast<int64_t>(value.n_ambiguous),
-    static_cast<int64_t>(value.adapter_id),
-  };
-
-  std::ostringstream stream;
-  stream << "alignment_info(";
-
-  bool any_streamed = false;
-  for (size_t i = 0; i < labels.size(); ++i) {
-    if (values.at(i)) {
-      if (any_streamed) {
-        stream << ", ";
-      }
-
-      stream << labels.at(i) << " = " << values.at(i);
-      any_streamed = true;
-    }
-  }
-
-  stream << ")";
-
-  return stream.str();
-}
-
-template<>
-std::string
-StringMaker<ALN, void>::convert(ALN const& value)
-{
-  return StringMaker<alignment_info>::convert(value.info);
-}
-
-template<>
-std::string
-StringMaker<adapterremoval::MMNs, void>::convert(
-  adapterremoval::MMNs const& value)
-{
-  std::ostringstream stream;
-  stream << "{MMs = " << value.mismatches << ", Ns = " << value.ambiguous
-         << "}";
-  return stream.str();
-}
-
 TEST_CASE("stringmaker for empty alignment_info")
 {
-  alignment_info info;
+  std::ostringstream os;
+  os << alignment_info{};
 
-  REQUIRE(StringMaker<alignment_info>::convert(info) ==
-          "alignment_info(adapter_id = -1)");
+  REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
+                      "length=0, n_mismatches=0, n_ambiguous=0}");
 }
 
 TEST_CASE("stringmaker for alignment_info")
@@ -1521,21 +1469,28 @@ TEST_CASE("stringmaker for alignment_info")
   info.n_mismatches = 4;
   info.n_ambiguous = 5;
 
-  REQUIRE(StringMaker<alignment_info>::convert(info) ==
-          "alignment_info(score = -10, offset = 2, length = 3, n_mismatches "
-          "= 4, n_ambiguous = 5, adapter_id = 1)");
+  std::ostringstream os;
+  os << info;
+
+  REQUIRE(os.str() == "alignment_info{score=-10, adapter_id=1, offset=2, "
+                      "length=3, n_mismatches=4, n_ambiguous=5}");
 }
 
 TEST_CASE("stringmaker for ALN")
 {
-  REQUIRE(StringMaker<ALN>::convert(ALN()) ==
-          "alignment_info(adapter_id = -1)");
+  std::ostringstream os;
+  os << alignment_info{};
+
+  REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
+                      "length=0, n_mismatches=0, n_ambiguous=0}");
 }
 
 TEST_CASE("stringmaker for MMNs")
 {
-  REQUIRE(StringMaker<adapterremoval::MMNs>::convert(MMNs{ 1, 2 }) ==
-          "{MMs = 1, Ns = 2}");
+  std::ostringstream os;
+  os << adapterremoval::MMNs{ 1, 2 };
+
+  REQUIRE(os.str() == "MMNs{mismatches=1, ambiguous=2}");
 }
 
-} // namespace Catch
+} // namespace adapterremoval

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "catch.hpp"
 #include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_u32
+#include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string
