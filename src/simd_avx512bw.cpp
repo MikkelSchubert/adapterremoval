@@ -5,9 +5,6 @@
 #include <cstddef>     // for size_t
 #include <immintrin.h> // for _mm512_set1_epi8, __m512i, _mm512_lo...
 
-#if defined(MESON) || __GNUC__ >= 11 ||                                        \
-  (defined(__clang_major__) && __clang_major__ >= 8)
-
 namespace adapterremoval {
 
 namespace simd {
@@ -77,5 +74,3 @@ compare_subsequences_avx512(size_t& n_mismatches,
 } // namespace simd
 
 } // namespace adapterremoval
-
-#endif

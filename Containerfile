@@ -14,11 +14,6 @@ RUN apk add \
     mimalloc2-dev \
     ninja \
     pkgconf \
+    py3-fastjsonschema \
     py3-sphinx \
     python3
-
-WORKDIR /root
-
-ENV LDFLAGS="-lmimalloc"
-
-ENTRYPOINT [ "/usr/bin/make", "-C", "/root/src", "setup", "test", "regression", "install", "STATIC=true", "BUILDDIR=/root/out/static-container", "DESTDIR=/root/out/static-container/install" ]

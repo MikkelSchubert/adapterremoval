@@ -22,6 +22,9 @@ compiler = meson.get_compiler(
 compiler_id = compiler.get_id()
 compiler_version = compiler.version()
 
+# '' is defined to always be not found
+not_found = dependency('', required: false)
+
 ################################################################################
 
 add_project_arguments(
@@ -50,8 +53,6 @@ add_project_arguments(
         '-Wundef', # Undefined variables used in #if pragmas
         checked: 'off',
     ),
-    # TODO: Remove once Makefile has been deleted
-    '-DMESON',
     language: 'cpp',
 )
 
@@ -64,6 +65,12 @@ if static
         ),
         language: 'cpp',
     )
+endif
+
+# Build static binary, forcing linking against static libraries
+libmimalloc = not_found
+if get_option('mimalloc')
+    libmimalloc = dependency('libmimalloc', 'mimalloc', version: ['>=2', '<3'], static: static)
 endif
 
 # Hardening flags based on https://wiki.debian.org/Hardening
@@ -88,11 +95,10 @@ if harden
         ),
         language: 'cpp',
     )
-
 endif
 
-libisal = dependency('libisal', version: ['>=2.30.0', '<3'], static: static)
-libdeflate = dependency('libdeflate', version: ['>=1', '<2'], static: static)
+libisal = dependency('libisal', 'isal', version: ['>=2.30.0', '<3'], static: static)
+libdeflate = dependency('libdeflate', 'deflate', version: ['>=1', '<2'], static: static)
 libthreads = dependency('threads', static: static)
 
 ################################################################################
@@ -133,9 +139,25 @@ if container_runner.found()
             'run',
             '--rm',
             '-t',
-            '--mount', 'type=bind,src=@0@/,dst=/root/src/'.format(meson.current_source_dir()),
-            '--mount', 'type=bind,src=@0@/,dst=/root/out/'.format(meson.current_build_dir()),
+            '--mount', 'type=bind,src=@0@/,dst=/host/src/'.format(meson.current_source_dir()),
+            '--mount', 'type=bind,src=@0@/,dst=/host/out/'.format(meson.current_build_dir()),
+            '--entrypoint', '/usr/bin/make',
             container_name,
+            '-C', '/host/src',
+            'BUILDDIR=/host/out/static/build',
+            'DESTDIR=/host/out/static/install',
+            'BUILD=@0@'.format(get_option('buildtype')),
+            'COVERAGE=@0@'.format(get_option('b_coverage')),
+            # Compilation with sanitize flags fails with alpine 3.20.1, but support is
+            # left in to avoid giving the false impression that they were enabled
+            'SANITIZE_OPTS=@0@'.format(get_option('b_sanitize')),
+            'HARDEN=@0@'.format(get_option('harden')),
+            'STATIC=true',
+            'MIMALLOC=true',
+            'setup',
+            'test',
+            'regression',
+            'install',
         ],
     )
 endif
