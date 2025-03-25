@@ -3,19 +3,7 @@
 #include "simd.hpp"  // declarations
 #include "debug.hpp" // for AR_FAIL
 
-#ifdef MESON
 #include "config-ar3.hpp" // for HAVE_SSE2, HAVE_AVX2, HAVE_AVX512...
-#else
-#define HAVE_SSE2 1
-#define HAVE_AVX2 1
-
-#if __GNUC__ >= 11 || (defined(__clang_major__) && __clang_major__ >= 8)
-#define HAVE_AVX512 1
-#else
-#pragma GCC warning "AVX512 support requires GCC >= 11.0 or Clang >= 8.0"
-#define HAVE_AVX512 0
-#endif
-#endif
 
 namespace adapterremoval {
 

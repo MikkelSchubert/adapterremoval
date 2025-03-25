@@ -19,13 +19,17 @@ HARDEN := false
 # It is recommended to use the included Containerfile to build the static binary
 STATIC := false
 
+# Use/require mimalloc. Mainly intended for static builds, as the musl allocator
+# comes with a significant performance cost
+MIMALLOC := $(STATIC)
+
 ###############################################################################
 
 ifeq ($(strip ${DEBUG}), true)
-BUILD_OPTS := debugoptimized
+BUILD := debugoptimized
 else
 ifeq ($(strip ${DEBUG}), false)
-BUILD_OPTS := release
+BUILD := release
 else
 $(error "DEBUG must be 'true' or 'false', not '${DEBUG}'")
 endif
@@ -70,11 +74,12 @@ regression: ${NINJAFILE}
 
 setup:
 	meson setup "${BUILDDIR}" --reconfigure \
-		--buildtype=${BUILD_OPTS} \
+		--buildtype=${BUILD} \
 		-Db_coverage=${COVERAGE} \
 		-Db_sanitize=${SANITIZE_OPTS} \
 		-Dharden=${HARDEN} \
-		-Dstatic=${STATIC}
+		-Dstatic=${STATIC} \
+		-Dmimalloc=${MIMALLOC}
 
 static: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" static

@@ -61,7 +61,7 @@ foreach key, simd_config : libsimd_config
     if config.get(key) != '0'
         libsimd += [
             static_library(
-                'lib' + simd_config[0],
+                simd_config[0],
                 simd_config[1],
                 cpp_args: simd_config[2],
             ),
@@ -75,7 +75,7 @@ config_inc = configure_file(output: 'config-ar3.hpp', configuration: config)
 
 # Library containing objects shared between the executable and unit tests
 libcore = static_library(
-    'libcore',
+    'core',
     'alignment.cpp',
     'argparse.cpp',
     'barcode_table.cpp',
@@ -97,7 +97,7 @@ libcore = static_library(
     'table_reader.cpp',
     'utilities.cpp',
     config_inc,
-    dependencies: [libisal, libdeflate, libthreads],
+    dependencies: [libdeflate, libisal, libmimalloc,  libthreads],
 )
 
 exe = executable(
@@ -124,6 +124,6 @@ exe = executable(
     html_template,
     config_inc,
     link_with: [libcore, libsimd],
-    dependencies: [libisal, libdeflate, libthreads],
+    dependencies: [libdeflate, libisal, libmimalloc,  libthreads],
     install: true,
 )

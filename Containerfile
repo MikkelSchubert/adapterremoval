@@ -14,16 +14,6 @@ RUN apk add \
     mimalloc2-dev \
     ninja \
     pkgconf \
+    py3-fastjsonschema \
     py3-sphinx \
     python3
-
-WORKDIR /root
-
-ENV LDFLAGS="-lmimalloc"
-ENV OUT_DIR="/root/out/static-container"
-ENV SRC_DIR="/root/src"
-
-CMD meson setup --reconfigure "${OUT_DIR}/builddir" "${SRC_DIR}" -Dstatic=true \
-    && meson compile -v -C "${OUT_DIR}/builddir" \
-    && meson test --print-errorlogs -C "${OUT_DIR}/builddir" \
-    && DESTDIR="${OUT_DIR}/install" meson install -C "${OUT_DIR}/builddir"
