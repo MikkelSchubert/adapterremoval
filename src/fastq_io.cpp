@@ -10,6 +10,7 @@
 #include "statistics.hpp"    // for fastq_statistics, fastq_stats_ptr, stat...
 #include "strutils.hpp"      // for shell_escape, string_vec, ends_with
 #include "userconfig.hpp"    // for userconfig
+#include "utilities.hpp"     // for prng_seed
 #include <algorithm>         // for max, min
 #include <cerrno>            // for errno
 #include <cstring>           // for size_t, memcpy
@@ -255,7 +256,7 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   AR_REQUIRE(m_statistics_1 && m_statistics_2);
 
   for (size_t i = 0; i < config.max_threads; ++i) {
-    m_stats.emplace_back_n(1, config.report_sample_rate, prng_seed());
+    m_stats.emplace_back(config.report_sample_rate, prng_seed());
   }
 }
 

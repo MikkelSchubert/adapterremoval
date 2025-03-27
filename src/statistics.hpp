@@ -114,7 +114,7 @@ class fastq_statistics
 {
 public:
   explicit fastq_statistics(double sample_rate = 1.0);
-  explicit fastq_statistics(double sample_rate, uint32_t seed);
+  fastq_statistics(double sample_rate, unsigned int seed);
   ~fastq_statistics() = default;
 
   void process(const fastq& read, size_t num_input_reads = 1);

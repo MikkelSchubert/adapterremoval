@@ -31,6 +31,13 @@ public:
 
   using pointer = std::unique_ptr<T>;
 
+  /** Create a new state value **/
+  template<class... Args>
+  void emplace_back(Args&&... args)
+  {
+    emplace_back_n(1, std::forward<Args>(args)...);
+  }
+
   /** Create N new state values **/
   template<class... Args>
   void emplace_back_n(size_t n, Args&&... args)

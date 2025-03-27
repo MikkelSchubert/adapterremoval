@@ -4,14 +4,13 @@
 
 #include <array>       // for array
 #include <cstddef>     // for size_t
-#include <cstdint>     // for uint32_t
 #include <memory>      // for allocator
 #include <type_traits> // for enable_if_t, is_floating_point, is_integral
 
 namespace adapterremoval {
 
 /** Returns a seed value for a PRNG; not intended to be strongly random. */
-uint32_t
+unsigned int
 prng_seed();
 
 template<typename A>
