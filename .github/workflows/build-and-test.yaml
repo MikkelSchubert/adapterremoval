@@ -16,10 +16,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             cxx: g++
             coverage: "true"
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             cxx: clang++
             coverage: "false"
           - os: macos-latest
@@ -27,6 +27,7 @@ jobs:
             coverage: "false"
       # Do not auto-cancel other runners if one fails
       fail-fast: false
+
     env:
       CXX: ${{ matrix.cxx }}
       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
@@ -51,9 +52,11 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.cxx }}
           create-symlink: true
+          # Set cache size to about 4 full builds
+          max-size: "100M"
 
       - name: dependencies (libraries)
-        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev gcovr
 
       - name: dependencies (libraries)
@@ -65,6 +68,12 @@ jobs:
 
       - name: setup
         run: make setup DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
+
+      - name: compile (executable)
+        run: make executable DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
+
+      - name: compile (unit tests)
+        run: make test_executable DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
 
       - name: install
         run: make install DESTDIR=${PWD}/install
