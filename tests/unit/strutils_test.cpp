@@ -468,20 +468,44 @@ TEST_CASE("format_percentage")
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for 'join_text'
 
-TEST_CASE("join_text")
+TEST_CASE("join_text on list of ints")
 {
-  REQUIRE(join_text<std::string>({}, ", ").empty());
-  REQUIRE(join_text<std::string>({}, ", ", ", ").empty());
 
-  REQUIRE(join_text<int>({ 1 }, ", ") == "1");
-  REQUIRE(join_text<int>({ 1, 2 }, ", ") == "1, 2");
-  REQUIRE(join_text<int>({ 1, 2, 3 }, ", ") == "1, 2, 3");
+  using int_vec = std::vector<int>;
 
-  REQUIRE(join_text<int>({ 1 }, ", ", ", or ") == "1");
-  REQUIRE(join_text<int>({ 1, 2 }, ", ", ", or ") == "1, or 2");
-  REQUIRE(join_text<int>({ 1, 2, 3 }, ", ", ", or ") == "1, 2, or 3");
+  REQUIRE(join_text(int_vec{}, ", ").empty());
+  REQUIRE(join_text(int_vec{}, ", ", ", ").empty());
 
-  REQUIRE(join_text<int>({ 1, 2, 3 }, ". ", ", or ") == "1. 2, or 3");
+  REQUIRE(join_text(int_vec{ 1 }, ", ") == "1");
+
+  REQUIRE(join_text(int_vec{ 1, 2 }, ", ") == "1, 2");
+  REQUIRE(join_text(int_vec{ 1, 2, 3 }, ", ") == "1, 2, 3");
+
+  REQUIRE(join_text(int_vec{ 1 }, ", ", ", or ") == "1");
+  REQUIRE(join_text(int_vec{ 1, 2 }, ", ", ", or ") == "1, or 2");
+  REQUIRE(join_text(int_vec{ 1, 2, 3 }, ", ", ", or ") == "1, 2, or 3");
+
+  REQUIRE(join_text(int_vec{ 1, 2, 3 }, ". ", ", or ") == "1. 2, or 3");
+}
+
+TEST_CASE("join_text on list of strings")
+{
+  using str_vec = std::vector<std::string>;
+  REQUIRE(join_text(str_vec{ "foo" }, ", ") == "foo");
+  REQUIRE(join_text(str_vec{ "foo", "bar" }, ", ") == "foo, bar");
+  REQUIRE(join_text(str_vec{ "foo", "bar", "zod" }, ", ") == "foo, bar, zod");
+  REQUIRE(join_text(str_vec{ "foo", "bar", "zod" }, ", ", ", and ") ==
+          "foo, bar, and zod");
+}
+
+TEST_CASE("join_text on list of strings views")
+{
+  using str_vec = std::vector<std::string_view>;
+  REQUIRE(join_text(str_vec{ "foo" }, ", ") == "foo");
+  REQUIRE(join_text(str_vec{ "foo", "bar" }, ", ") == "foo, bar");
+  REQUIRE(join_text(str_vec{ "foo", "bar", "zod" }, ", ") == "foo, bar, zod");
+  REQUIRE(join_text(str_vec{ "foo", "bar", "zod" }, ", ", ", and ") ==
+          "foo, bar, and zod");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
