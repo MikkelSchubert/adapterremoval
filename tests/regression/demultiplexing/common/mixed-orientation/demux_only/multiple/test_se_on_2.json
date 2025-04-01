@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "out_on",
+    "--barcode-list",
+    "barcodes.txt",
+    "--demultiplex-only",
+    "--mixed-orientation",
+    "forward",
+    "--multiple-barcodes"
+  ],
+  "inherit_from": "test_se_on_1.json"
+}
