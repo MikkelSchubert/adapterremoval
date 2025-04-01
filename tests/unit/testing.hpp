@@ -58,8 +58,8 @@ struct StringMaker<std::pair<T, U>>
   static std::string convert(const std::pair<T, U>& value)
   {
     ReusableStringStream os;
-    os << "pair{first=" << ::Catch::Detail::stringify(value.first)
-       << ", second=" << ::Catch::Detail::stringify(value.second) << "}";
+    os << "pair{ first=" << ::Catch::Detail::stringify(value.first)
+       << ", second=" << ::Catch::Detail::stringify(value.second) << " }";
     return os.str();
   }
 };

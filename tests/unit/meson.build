@@ -20,6 +20,7 @@ unit_tests = executable(
     'sequence_test.cpp',
     'serializer_test.cpp',
     'strutils_test.cpp',
+    'testing_test.cpp',
     'testing.cpp',
     'utilities_test.cpp',
     config_inc,

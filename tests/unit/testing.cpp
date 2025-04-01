@@ -9,7 +9,7 @@ std::string
 format_exception(std::string_view name, const std::exception& value)
 {
   Catch::ReusableStringStream os;
-  os << name << "{" << adapterremoval::log_escape(value.what()) << "}";
+  os << name << "{ " << adapterremoval::log_escape(value.what()) << " }";
   return os.str();
 }
 
