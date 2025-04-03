@@ -49,4 +49,12 @@ merge(C<T, A>& dst, const C<T, A>& src)
   }
 }
 
+/** Returns the underlying value for an enum/enum class member */
+template<typename T>
+constexpr auto
+underlying_value(T value)
+{
+  return static_cast<std::underlying_type_t<T>>(value);
+}
+
 } // namespace adapterremoval

@@ -8,6 +8,8 @@
 
 namespace adapterremoval {
 
+namespace merging {
+
 using arr = std::array<size_t, 3>;
 using vec = std::vector<size_t>;
 using arrvec = std::vector<arr>;
@@ -87,6 +89,78 @@ TEST_CASE("merging vector of arrays")
   arrvec dst{ { 10, 20 } };
   merge(dst, { { 1, 2 }, { 3 }, { 4, 5, 6 } });
   REQUIRE(dst == arrvec{ { 11, 22, 0 }, { 3, 0, 0 }, { 4, 5, 6 } });
+}
+
+} // namespace merging
+
+////////////////////////////////////////////////////////////////////////////////
+// underlying_value
+
+TEST_CASE("underlying_value enum value", "[underlying_value]")
+{
+  enum my_enum
+  {
+    a = -1,
+    b = 0,
+    c = 23,
+  };
+
+  CHECK(underlying_value(my_enum::a) == -1);
+  CHECK(underlying_value(my_enum::b) == 0);
+  CHECK(underlying_value(my_enum::c) == 23);
+  CHECK(underlying_value(static_cast<my_enum>(123)) == 123);
+}
+
+TEST_CASE("underlying_value enum class value", "[underlying_value]")
+{
+  enum class my_enum : unsigned
+  {
+    a = 0,
+    b = 4,
+    c = 8,
+  };
+
+  CHECK(underlying_value(my_enum::a) == 0);
+  CHECK(underlying_value(my_enum::b) == 4);
+  CHECK(underlying_value(my_enum::c) == 8);
+  CHECK(underlying_value(static_cast<my_enum>(123)) == 123);
+}
+
+TEST_CASE("underlying_value returns same type", "[underlying_value]")
+{
+  // These tests do not do anything at runtime
+  {
+    enum my_enum : char;
+    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    static_assert(std::is_same_v<decltype(uvalue), char>);
+  }
+  {
+    enum my_enum : unsigned char;
+    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    static_assert(std::is_same_v<decltype(uvalue), unsigned char>);
+  }
+
+  {
+    enum my_enum : int;
+    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    static_assert(std::is_same_v<decltype(uvalue), int>);
+  }
+  {
+    enum my_enum : unsigned int;
+    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    static_assert(std::is_same_v<decltype(uvalue), unsigned int>);
+  }
+
+  {
+    enum class my_enum : int;
+    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    static_assert(std::is_same_v<decltype(uvalue), int>);
+  }
+  {
+    enum class my_enum : unsigned int;
+    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    static_assert(std::is_same_v<decltype(uvalue), unsigned int>);
+  }
 }
 
 } // namespace adapterremoval
