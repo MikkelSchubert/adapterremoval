@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "userconfig.hpp"  // declarations
 #include "alignment.hpp"   // for alignment_info
-#include "commontypes.hpp" // for string_vec, ...
+#include "commontypes.hpp" // for string_vec, DEV_STDOUT, DEV_STDERR, ...
 #include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
 #include "errors.hpp"      // for fastq_error
 #include "fastq.hpp"       // for ACGT, ACGT::indices, ACGT::values
@@ -189,8 +189,8 @@ check_no_clobber(const std::string& label,
 void
 normalize_input_file(std::string& filename)
 {
-  if (filename == "-") {
-    filename = "/dev/stdin";
+  if (filename == DEV_PIPE) {
+    filename = DEV_STDIN;
   }
 }
 
@@ -198,8 +198,8 @@ normalize_input_file(std::string& filename)
 void
 normalize_output_file(std::string& filename)
 {
-  if (filename == "-") {
-    filename = "/dev/stdout";
+  if (filename == DEV_PIPE) {
+    filename = DEV_STDOUT;
   }
 }
 
@@ -520,7 +520,7 @@ userconfig::userconfig()
           "was not set [default: not set]")
     .deprecated_alias("--basename")
     .bind_str(&out_prefix)
-    .with_default("/dev/null");
+    .with_default(DEV_NULL);
 
   argparser.add_separator();
   argparser.add("--out-file1", "FILE")
@@ -1356,7 +1356,7 @@ userconfig::can_merge_alignment(const alignment_info& alignment) const
 output_format
 userconfig::infer_output_format(const std::string& filename) const
 {
-  if (filename == "/dev/stdout") {
+  if (filename == DEV_STDOUT) {
     return out_stdout_format;
   }
 

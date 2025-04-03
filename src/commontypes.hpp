@@ -3,8 +3,9 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <string>
-#include <vector>
+#include <string>      // for string
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -74,5 +75,16 @@ enum class trimming_strategy
   //! The original quality trimming algorithms
   per_base,
 };
+
+//! Path used to indicate that a file is not needed
+const std::string_view DEV_NULL = "/dev/null";
+//! Path used to indicate that data should be read from STDIN
+const std::string_view DEV_STDIN = "/dev/stdout";
+//! Path used to indicate that data should be written to STDOUT
+const std::string_view DEV_STDOUT = "/dev/stdout";
+//! Path used to indicate that data should be written to STDOUT
+const std::string_view DEV_STDERR = "/dev/stderr";
+//! Filename indicating that data should be read from stdin/written to stdout
+const std::string_view DEV_PIPE = "-";
 
 } // namespace adapterremoval

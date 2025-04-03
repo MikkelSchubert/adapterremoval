@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "managed_io.hpp" // declarations
-#include "debug.hpp"      // for AR_REQUIRE
-#include "errors.hpp"     // for io_error
-#include "logging.hpp"    // for log::warn
-#include "strutils.hpp"   // for log_escape
-#include <algorithm>      // for any_of
-#include <cerrno>         // for EMFILE, errno
-#include <cstddef>        // for size_t
-#include <cstdio>         // for fopen, fread, fwrite, ...
-#include <exception>      // for std::exception
-#include <fcntl.h>        // for posix_fadvise
-#include <mutex>          // for mutex, lock_guard
-#include <string>         // for string
-#include <sys/stat.h>     // for fstat
+#include "managed_io.hpp"  // declarations
+#include "commontypes.hpp" // for DEV_STDOUT, DEV_STDERR, ...
+#include "debug.hpp"       // for AR_REQUIRE
+#include "errors.hpp"      // for io_error
+#include "logging.hpp"     // for log::warn
+#include "strutils.hpp"    // for log_escape
+#include <algorithm>       // for any_of
+#include <cerrno>          // for EMFILE, errno
+#include <cstddef>         // for size_t
+#include <cstdio>          // for fopen, fread, fwrite, ...
+#include <exception>       // for std::exception
+#include <fcntl.h>         // for posix_fadvise
+#include <mutex>           // for mutex, lock_guard
+#include <string>          // for string
+#include <sys/stat.h>      // for fstat
 
 namespace adapterremoval {
 
@@ -24,9 +25,9 @@ public:
   {
     if (reader->m_file) {
       return;
-    } else if (reader->filename() == "/dev/stdin") {
+    } else if (reader->filename() == DEV_STDIN) {
       reader->m_file = stdin;
-    } else if (reader->filename() != "-") {
+    } else if (reader->filename() != DEV_PIPE) {
       reader->m_file = io_manager::fopen(reader->filename(), "rb");
 
 #if (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600) ||                        \
@@ -44,12 +45,12 @@ public:
   {
     if (writer->m_file) {
       return;
-    } else if (writer->filename() == "/dev/stdout") {
+    } else if (writer->filename() == DEV_STDOUT) {
       writer->m_file = stdout;
-    } else if (writer->filename() == "/dev/stderr") {
+    } else if (writer->filename() == DEV_STDERR) {
       // Not sure why anyone would do this, but ¯\_(ツ)_/¯
       writer->m_file = stderr;
-    } else if (writer->filename() != "-") {
+    } else if (writer->filename() != DEV_PIPE) {
       writer->m_file =
         io_manager::fopen(writer->filename(), writer->m_created ? "ab" : "wb");
     } else {
