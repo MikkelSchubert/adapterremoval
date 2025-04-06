@@ -124,7 +124,7 @@ private:
   /** Linked mate 1/2 statistics to synchronize sampling of reads */
   struct stats_pair
   {
-    stats_pair(double sample_rate, uint32_t seed)
+    stats_pair(double sample_rate, unsigned int seed)
       : stats_1(sample_rate, seed)
       , stats_2(sample_rate, seed)
     {

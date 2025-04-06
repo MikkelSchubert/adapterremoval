@@ -369,16 +369,7 @@ parser::find_argument(const std::string& key)
     if (!candidates.empty()) {
       std::sort(candidates.begin(), candidates.end());
 
-      error << ". Did you mean " << candidates.front();
-      for (size_t i = 1; i < candidates.size() - 1; ++i) {
-        error << ", " << candidates.at(i);
-      }
-
-      if (candidates.size() > 1) {
-        error << " or " << candidates.back();
-      }
-
-      error << "?";
+      error << ". Did you mean " << join_text(candidates, ", ", ", or ") << "?";
     }
   } else {
     log::error() << "Unexpected positional argument '" << key << "'";

@@ -1485,6 +1485,7 @@ TEST_CASE("normalize_paired_reads__throws_if_mate_is_empty", "[fastq::fastq]")
     fastq::normalize_paired_reads(mate1, mate2);
   };
 
+  REQUIRE_NOTHROW(normalize(mate2, mate2));
   REQUIRE_THROWS_MESSAGE(normalize(mate1, mate2), fastq_error, error);
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
   REQUIRE_THROWS_MESSAGE(normalize(mate2, mate1), fastq_error, error);
@@ -1501,6 +1502,7 @@ TEST_CASE("normalize_paired_reads__throws_if_only_mate_1_is_numbered",
     fastq::normalize_paired_reads(mate1, mate2);
   };
 
+  REQUIRE_NOTHROW(normalize(mate2, mate2));
   REQUIRE_THROWS_MESSAGE(normalize(mate1, mate2),
                          fastq_error,
                          "Inconsistent mate numbering; please verify data:\n\n"
@@ -1524,6 +1526,8 @@ TEST_CASE("normalize_paired_reads__throws_if_only_mate_2_is_numbered",
   auto normalize = [](fastq mate1, fastq mate2) -> void {
     fastq::normalize_paired_reads(mate1, mate2);
   };
+
+  REQUIRE_NOTHROW(normalize(mate1, mate1));
 
   REQUIRE_THROWS_MESSAGE(normalize(mate1, mate2),
                          fastq_error,

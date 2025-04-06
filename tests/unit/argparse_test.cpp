@@ -1106,7 +1106,7 @@ TEST_CASE("two possible arguments", "[argparse::parser]")
 
   REQUIRE(p.parse_args({ "exe", "--arg" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
-                      "Did you mean --arg1 or --arg2?\n");
+                      "Did you mean --arg1, or --arg2?\n");
 }
 
 TEST_CASE("three possible arguments", "[argparse::parser]")
@@ -1120,7 +1120,7 @@ TEST_CASE("three possible arguments", "[argparse::parser]")
 
   REQUIRE(p.parse_args({ "exe", "--arg" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
-                      "Did you mean --arg1, --arg2 or --arg3?\n");
+                      "Did you mean --arg1, --arg2, or --arg3?\n");
 }
 
 TEST_CASE("parse multiple arguments", "[argparse::parser]")

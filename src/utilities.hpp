@@ -4,14 +4,13 @@
 
 #include <array>       // for array
 #include <cstddef>     // for size_t
-#include <cstdint>     // for uint32_t
 #include <memory>      // for allocator
 #include <type_traits> // for enable_if_t, is_floating_point, is_integral
 
 namespace adapterremoval {
 
 /** Returns a seed value for a PRNG; not intended to be strongly random. */
-uint32_t
+unsigned int
 prng_seed();
 
 template<typename A>
@@ -48,6 +47,14 @@ merge(C<T, A>& dst, const C<T, A>& src)
   while (src_it != std::end(src)) {
     merge(*dst_it++, *src_it++);
   }
+}
+
+/** Returns the underlying value for an enum/enum class member */
+template<typename T>
+constexpr auto
+underlying_value(T value)
+{
+  return static_cast<std::underlying_type_t<T>>(value);
 }
 
 } // namespace adapterremoval

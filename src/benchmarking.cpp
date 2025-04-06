@@ -58,11 +58,7 @@ benchmark_toggles::update_toggles(const string_vec& keys)
 
   if (any_errors) {
     auto msg = log::error();
-    msg << "Valid toggles are ";
-    for (size_t i = 0; i < m_toggles.size() - 1; ++i) {
-      msg << m_toggles.at(i) << ", ";
-    }
-    msg << " and " << m_toggles.back();
+    msg << "Valid toggles are " << join_text(m_toggles, ", ", ", and ");
   }
 
   return !any_errors;

@@ -28,6 +28,20 @@ levenshtein(std::string_view s, std::string_view t);
 std::string
 timestamp(const char* format, bool milliseconds = false);
 
+/** Returns true if character is a simple letter */
+constexpr bool
+is_ascii_letter(const char c)
+{
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+/** Returns true if character is a simple letter or number */
+constexpr bool
+is_ascii_letter_or_digit(const char c)
+{
+  return is_ascii_letter(c) || (c >= '0' && c <= '9');
+}
+
 /**
  * Convert a string to a uint32_t.
  *
@@ -102,16 +116,22 @@ wrap_text(const std::string& value,
           size_t max_width = DEFAULT_MAX_COLUMNS,
           size_t ljust = 0);
 
+/**
+ * Joins a iterable sequence of values that support `operator<<` into a string.
+ * The first N - 1 values are joined using `sep`, while the last two values are
+ * joined using `final_sep`
+ */
 template<typename T>
 std::string
-join_text(const std::vector<T>& values,
-          std::string_view sep,
-          std::string_view final_sep)
+join_text(const T& values, std::string_view sep, std::string_view final_sep)
 {
   std::ostringstream stream;
-  for (auto it = values.begin(); it != values.end(); ++it) {
-    if (it != values.begin()) {
-      if (it + 1 == values.end()) {
+  const auto begin = std::begin(values);
+  const auto end = std::end(values);
+
+  for (auto it = begin; it != end; ++it) {
+    if (it != begin) {
+      if (it + 1 == end) {
         stream << final_sep;
       } else {
         stream << sep;
@@ -126,7 +146,7 @@ join_text(const std::vector<T>& values,
 
 template<typename T>
 std::string
-join_text(const std::vector<T>& values, std::string_view sep)
+join_text(const T& values, std::string_view sep)
 {
   return join_text(values, sep, sep);
 }
