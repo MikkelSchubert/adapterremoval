@@ -28,7 +28,10 @@ jobs:
         run: sudo apt-get install -y libisal-dev libdeflate-dev meson ninja-build
 
       - name: setup
-        run: make setup DEBUG=true
+        run: |
+          echo "sonar.projectKey=MikkelSchubert_adapterremoval" > "sonar-project.properties"
+          echo "sonar.organization=mikkelschubert" >> "sonar-project.properties"
+          make setup DEBUG=true
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
