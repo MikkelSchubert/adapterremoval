@@ -7,12 +7,12 @@ project(
     version: '3.0.0-alpha3',
     meson_version: '>=1.2.0',
     default_options: {
-        'buildtype': 'debugoptimized',
+        # Disable costly (libc++) assertions in release mode
+        'b_ndebug': 'true',
         'cpp_std': 'c++17',
+        'debug': 'false',
         'optimization': '2',
         'warning_level': '3',
-        # Disable costly (libc++) assertions in release mode
-        'b_ndebug': 'if-release',
     },
 )
 
@@ -146,24 +146,17 @@ if container_runner.found()
             '-C', '/host/src',
             'BUILDDIR=/host/out/static/build',
             'DESTDIR=/host/out/static/install',
-            'BUILD=@0@'.format(get_option('buildtype')),
+            'DEBUG=@0@'.format(get_option('debug')),
             'COVERAGE=@0@'.format(get_option('b_coverage')),
             # Compilation with sanitize flags fails with alpine 3.20.1, but support is
             # left in to avoid giving the false impression that they were enabled
-            'SANITIZE_OPTS=@0@'.format(get_option('b_sanitize')),
+            'SANITIZE=@0@'.format(get_option('b_sanitize') != 'none'),
             'HARDEN=@0@'.format(get_option('harden')),
             'STATIC=true',
             'MIMALLOC=true',
             'setup',
-            'test',
-            'regression',
+            'tests',
             'install',
         ],
     )
 endif
-
-################################################################################
-
-summary('type', get_option('buildtype'), section: 'Build')
-summary('static', static, section: 'Build')
-summary('harden', harden, section: 'Build')

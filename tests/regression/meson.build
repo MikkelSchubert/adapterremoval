@@ -12,7 +12,7 @@ else
 endif
 
 custom_target(
-    'regression',
+    'run-regression-tests',
     command: [regression_test_exe]
     + regression_test_args
     + [
@@ -29,7 +29,7 @@ custom_target(
 )
 
 custom_target(
-    'update-regression',
+    'update-regression-tests',
     command: [regression_test_exe]
     + regression_test_args
     + [

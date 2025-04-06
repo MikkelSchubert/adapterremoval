@@ -7,6 +7,9 @@
 #include <string> // for string
 #include <vector> // for vector
 
+#define CATCH_CONFIG_FAST_COMPILE
+#define CATCH_CONFIG_FALLBACK_STRINGIFIER ::Catch::fallbackStringifier
+
 namespace Catch {
 
 /** Helper macro for typed catching of thrown messages */

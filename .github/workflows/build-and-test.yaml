@@ -57,7 +57,7 @@ jobs:
 
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo apt-get install zlib1g-dev libisal-dev libdeflate-dev gcovr
+        run: sudo apt-get install -y libisal-dev libdeflate-dev
 
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'macos-latest' }}
@@ -69,11 +69,8 @@ jobs:
       - name: setup
         run: make setup DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
 
-      - name: compile (executable)
-        run: make executable DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
-
-      - name: compile (unit tests)
-        run: make test_executable DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
+      - name: compile
+        run: make executables DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
 
       - name: install
         run: make install DESTDIR=${PWD}/install
@@ -82,17 +79,18 @@ jobs:
         run: make -C examples EXE=${PWD}/build/src/adapterremoval3
 
       - name: regression tests
-        run: make regression
+        run: make regression-tests
 
       # Unit tests are run last to enable cleanup of coverage data from other
       # actions before running coveralls
       - name: unit tests
         run: |
           find . -name '*.gcda' -print -delete
-          make test
+          make unit-tests
 
       - name: coveralls
         if: ${{ matrix.coverage == 'true' && github.event_name == 'push' }}
         run: |
+          sudo apt-get install -y gcovr
           uv pip install cpp-coveralls
           coveralls --exclude tests --root . --build-root build --gcov-options '\-lpbc'
