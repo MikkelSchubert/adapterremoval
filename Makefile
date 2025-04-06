@@ -1,13 +1,14 @@
 ###############################################################################
 # This makefile is provided as a simple convenience
 
-## Optional features; set to 'true' to enable or 'false' to disable
-
-# Debug build; adds warnings and debugging symbols
-DEBUG := false
+## Optional features; set to 'true' to enable or 'false' to disable:
+##   $ make DEBUG=true
 
 # Include coverage instrumentation in build
 COVERAGE := false
+
+# Debug build; adds warnings, debugging symbols, and extra STL/POSIX asserts
+DEBUG := ${COVERAGE}
 
 # Enable address and undefined behavior sanitation
 SANITIZE := false
@@ -25,29 +26,24 @@ MIMALLOC := $(STATIC)
 
 ###############################################################################
 
+# Extra meson flags
+MESON_OPTIONS :=
+
+# Enable extra checks for STL and POSIX functions
 ifeq ($(strip ${DEBUG}), true)
-BUILD := debugoptimized
-else
-ifeq ($(strip ${DEBUG}), false)
-BUILD := release
-else
-$(error "DEBUG must be 'true' or 'false', not '${DEBUG}'")
-endif
+override MESON_OPTIONS += -Db_ndebug=false
 endif
 
 ifeq ($(strip ${SANITIZE}), true)
-SANITIZE_OPTS := address,undefined
+override MESON_OPTIONS += -Db_sanitize=address,undefined
 else
-ifeq ($(strip ${SANITIZE}), false)
-SANITIZE_OPTS := none
-else
+ifneq ($(strip ${SANITIZE}), false)
 $(error "SANITIZE must be 'true' or 'false', not '${SANITIZE}'")
 endif
 endif
 
 ###############################################################################
 
-.PHONY := clean executable install regression setup static static-container test
 # Meson commands cannot be run in parallel
 .NOTPARALLEL:
 
@@ -59,27 +55,33 @@ NINJAFILE := ${BUILDDIR}/build.ninja
 executable: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" adapterremoval3
 
+executables: ${NINJAFILE}
+	meson compile -C "${BUILDDIR}" adapterremoval3 unit_tests
+
 clean:
-	rm -rvf "${BUILDDIR}"
+	rm -rf "${BUILDDIR}"
 
 coverage: ${NINJAFILE}
 	ninja -C "${BUILDDIR}" coverage-text
 	cat build/meson-logs/coverage.txt
 
+coverage-xml: ${NINJAFILE}
+	ninja -C "${BUILDDIR}" coverage-xml
+
 install: ${NINJAFILE}
 	meson install -C "${BUILDDIR}"
 
-regression: ${NINJAFILE}
-	meson compile -C "${BUILDDIR}" regression
+regression-tests: ${NINJAFILE}
+	meson compile -C "${BUILDDIR}" run-regression-tests
 
-setup:
+setup ${NINJAFILE}:
 	meson setup "${BUILDDIR}" --reconfigure \
-		--buildtype=${BUILD} \
 		-Db_coverage=${COVERAGE} \
-		-Db_sanitize=${SANITIZE_OPTS} \
+		-Ddebug=${DEBUG} \
 		-Dharden=${HARDEN} \
+		-Dmimalloc=${MIMALLOC} \
 		-Dstatic=${STATIC} \
-		-Dmimalloc=${MIMALLOC}
+		${MESON_OPTIONS}
 
 static: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" static
@@ -87,11 +89,17 @@ static: ${NINJAFILE}
 static-container: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" static-container
 
-test_executable: ${NINJAFILE}
+unit-tests-executable: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" unit_tests
 
-test: ${NINJAFILE}
-	meson test -C "${BUILDDIR}" --print-errorlogs --suite unit
+unit-tests: ${NINJAFILE}
+	meson compile -C "${BUILDDIR}" run-unit-tests
 
-${NINJAFILE}:
-	$(MAKE) setup
+update-regression-tests: ${NINJAFILE}
+	meson compile -C "${BUILDDIR}" update-regression-tests
+
+tests: executables unit-tests regression-tests
+
+.PHONY: clean coverage-xml coverage executable executables install \
+	regression-tests setup static-container static unit-tests \
+	unit-tests-executable update-regression-tests tests

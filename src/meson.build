@@ -57,7 +57,7 @@ libsimd_config = {
 }
 
 foreach key, simd_config : libsimd_config
-    summary(simd_config[0], config.get(key) != '0', section: 'SIMD')
+    summary(simd_config[0], config.get(key) != '0', section: 'Build')
     if config.get(key) != '0'
         libsimd += [
             static_library(
@@ -97,7 +97,7 @@ libcore = static_library(
     'table_reader.cpp',
     'utilities.cpp',
     config_inc,
-    dependencies: [libdeflate, libisal, libmimalloc,  libthreads],
+    dependencies: [libdeflate, libisal, libmimalloc, libthreads],
 )
 
 exe = executable(
@@ -124,6 +124,6 @@ exe = executable(
     html_template,
     config_inc,
     link_with: [libcore, libsimd],
-    dependencies: [libdeflate, libisal, libmimalloc,  libthreads],
+    dependencies: [libdeflate, libisal, libmimalloc, libthreads],
     install: true,
 )

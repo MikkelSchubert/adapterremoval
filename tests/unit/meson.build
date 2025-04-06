@@ -28,19 +28,13 @@ unit_tests = executable(
     include_directories: [
         '..' / '..' / 'src',
     ],
-    cpp_args: [
-        # Custom function to serialize values; see 'testing.hpp'
-        '-DCATCH_CONFIG_FALLBACK_STRINGIFIER=::Catch::fallbackStringifier',
-    ],
 )
 
-test(
-    'unit_tests',
-    unit_tests,
-    args: [
+run_target(
+    'run-unit-tests',
+    command: [
+        unit_tests,
         '--invisibles',
         '--use-colour', 'yes',
     ],
-    suite: ['unit'],
-    verbose: true,
 )
