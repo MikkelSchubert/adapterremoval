@@ -26,6 +26,7 @@
 #include <memory>                    // for __shared_ptr_access, shared_ptr
 #include <sstream>                   // for ostringstream
 #include <string>                    // for string, operator==, to_string
+#include <string_view>               // for string_view
 #include <utility>                   // for pair
 #include <vector>                    // for vector
 
@@ -837,6 +838,64 @@ write_html_analyses_section(const userconfig& config,
     }
   }
 
+  if (config.report_duplication) {
+    AR_REQUIRE(stats.duplication_1 && stats.duplication_2);
+    const auto dupes_1 = stats.duplication_1->summarize();
+    const auto dupes_2 = stats.duplication_2->summarize();
+    const auto mean_uniq_frac = (dupes_1.unique_frac + dupes_2.unique_frac) / 2;
+
+    const auto to_percent = [](double value) {
+      std::ostringstream os;
+      os << std::fixed << std::setprecision(1) << (value * 100.0) << " %";
+      return os.str();
+    };
+
+    html_duplication_head().write(output);
+    if (config.paired_ended_mode) {
+      html_duplication_body_pe()
+        .set_pct_unique(to_percent(mean_uniq_frac))
+        .set_pct_unique_1(to_percent(dupes_1.unique_frac))
+        .set_pct_unique_2(to_percent(dupes_2.unique_frac))
+        .write(output);
+    } else {
+      html_duplication_body_se()
+        .set_pct_unique(to_percent(dupes_1.unique_frac))
+        .write(output);
+    }
+
+    const auto add_line = [](json_list& list,
+                             std::string_view read,
+                             std::string_view group,
+                             const std::vector<std::string>& labels,
+                             const rates& values) {
+      AR_REQUIRE(labels.size() == values.size());
+      for (size_t i = 0; i < labels.size(); ++i) {
+        auto dict = list.dict();
+        dict->str("read", read);
+        dict->str("group", group);
+        dict->str("x", labels.at(i));
+        dict->f64("y", values.get(i));
+      }
+    };
+
+    json_list data;
+    const auto add_lines = [add_line, &data](const decltype(dupes_1)& s,
+                                             std::string_view label) {
+      add_line(data, label, "All", s.labels, s.total_sequences);
+      add_line(data, label, "Unique", s.labels, s.unique_sequences);
+    };
+
+    add_lines(dupes_1, "File 1");
+    if (config.paired_ended_mode) {
+      add_lines(dupes_2, "File 2");
+    }
+
+    html_duplication_plot()
+      .set_width(config.paired_ended_mode ? FACET_WIDTH_2 : FACET_WIDTH_1)
+      .set_values(data.to_string())
+      .write(output);
+  }
+
   // Consensus adapter sequence inference
   if (config.paired_ended_mode && config.run_type == ar_command::report_only) {
     AR_REQUIRE(stats.adapter_id);
@@ -1104,7 +1163,8 @@ write_html_report(const userconfig& config,
 
   write_html_input_section(config, stats, output);
 
-  if (config.paired_ended_mode || config.run_type == ar_command::report_only) {
+  if (config.paired_ended_mode || config.report_duplication ||
+      config.run_type == ar_command::report_only) {
     write_html_analyses_section(config, stats, output);
   }
 
