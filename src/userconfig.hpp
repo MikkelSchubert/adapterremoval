@@ -181,7 +181,7 @@ public:
   //! Fraction of reads used for quality/content curves, etc.
   double report_sample_rate{};
   //! Number of reads used to estimate duplication in input files
-  uint32_t report_duplication{};
+  uint64_t report_duplication{};
 
   //! The kind of progress indicator to use
   progress_type log_progress{};
