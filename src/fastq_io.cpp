@@ -130,7 +130,8 @@ select_filenames(const userconfig& config, const read_fastq::file_type mode)
 
 read_fastq::read_fastq(const userconfig& config,
                        const size_t next_step,
-                       const read_fastq::file_type mode)
+                       const read_fastq::file_type mode,
+                       statistics& stats)
   : analytical_step(processing_order::ordered, "read_fastq")
   , m_reader(select_filenames(config, mode))
   , m_next_step(next_step)
@@ -138,22 +139,29 @@ read_fastq::read_fastq(const userconfig& config,
   , m_head(config.head)
   , m_mate_separator(config.mate_separator)
   , m_mate_separator_identified(config.mate_separator)
+  , m_duplication_1(stats.duplication_1)
+  , m_duplication_2(stats.duplication_2)
 {
+  AR_REQUIRE(m_duplication_1 && m_duplication_2);
 }
 
 void
 read_fastq::add_steps(scheduler& sch,
                       const userconfig& config,
-                      size_t next_step)
+                      size_t next_step,
+                      statistics& stats)
 {
+  const auto add_step = [&sch, &config, &stats](auto next_step, auto type) {
+    return sch.add<read_fastq>(config, next_step, type, stats);
+  };
+
   if (config.interleaved_input) {
-    sch.add<read_fastq>(config, next_step, read_fastq::file_type::interleaved);
+    add_step(next_step, read_fastq::file_type::interleaved);
   } else if (config.paired_ended_mode) {
-    next_step =
-      sch.add<read_fastq>(config, next_step, read_fastq::file_type::read_2);
-    sch.add<read_fastq>(config, next_step, read_fastq::file_type::read_1);
+    next_step = add_step(next_step, read_fastq::file_type::read_2);
+    add_step(next_step, read_fastq::file_type::read_1);
   } else {
-    sch.add<read_fastq>(config, next_step, read_fastq::file_type::read_1);
+    add_step(next_step, read_fastq::file_type::read_1);
   }
 }
 
@@ -178,12 +186,12 @@ read_fastq::process(chunk_ptr chunk)
 
   if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
     if (m_mode == file_type::read_1) {
-      read_single_end(reads_1);
+      read_single_end(reads_1, *m_duplication_1);
     } else {
       read_interleaved(reads_1, reads_2);
     }
   } else if (m_mode == file_type::read_2) {
-    read_single_end(reads_2);
+    read_single_end(reads_2, *m_duplication_2);
   } else {
     AR_FAIL("invalid file_type value");
   }
@@ -217,10 +225,14 @@ read_fastq::process(chunk_ptr chunk)
 }
 
 void
-read_fastq::read_single_end(fastq_vec& reads)
+read_fastq::read_single_end(fastq_vec& reads, duplication_statistics& stats)
 {
   for (; reads.size() < INPUT_READS && m_head && !m_eof; m_head--) {
-    m_eof = !read_record(m_reader, reads);
+    if (read_record(m_reader, reads)) {
+      stats.process(reads.back());
+    } else {
+      m_eof = true;
+    }
   }
 }
 
@@ -228,8 +240,16 @@ void
 read_fastq::read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2)
 {
   for (; reads_1.size() < INPUT_READS && m_head && !m_eof; m_head--) {
-    m_eof = !read_record(m_reader, reads_1);
-    read_record(m_reader, reads_2);
+    if (read_record(m_reader, reads_1)) {
+      m_duplication_1->process(reads_1.back());
+    } else {
+      m_eof = true;
+      break;
+    }
+
+    if (read_record(m_reader, reads_2)) {
+      m_duplication_2->process(reads_2.back());
+    }
   }
 }
 

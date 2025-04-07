@@ -489,21 +489,16 @@ write_report_processing(const userconfig& config,
 void
 write_report_duplication(json_dict_ptr json,
                          const std::string_view key,
-                         const fastq_stats_ptr& stats)
+                         const duplication_stats_ptr& stats)
 {
-  const auto dup_stats = stats->duplication();
+  AR_REQUIRE(stats);
+  auto duplication = json->dict(key);
 
-  if (dup_stats) {
-    auto duplication = json->dict(key);
-
-    const auto summary = dup_stats->summarize();
-    duplication->str_vec("labels", summary.labels);
-    duplication->f64_vec("unique_sequences", summary.unique_sequences);
-    duplication->f64_vec("total_sequences", summary.total_sequences);
-    duplication->f64("unique_frac", summary.unique_frac);
-  } else {
-    json->null(key);
-  }
+  const auto summary = stats->summarize();
+  duplication->str_vec("labels", summary.labels);
+  duplication->f64_vec("unique_sequences", summary.unique_sequences);
+  duplication->f64_vec("total_sequences", summary.total_sequences);
+  duplication->f64("unique_frac", summary.unique_frac);
 }
 
 void
@@ -533,8 +528,8 @@ write_report_analyses(const userconfig& config,
   if (config.report_duplication) {
     auto dict = json->dict("duplication");
 
-    write_report_duplication(dict, "read1", stats.input_1);
-    write_report_duplication(dict, "read2", stats.input_2);
+    write_report_duplication(dict, "read1", stats.duplication_1);
+    write_report_duplication(dict, "read2", stats.duplication_2);
   } else {
     json->null("duplication");
   }

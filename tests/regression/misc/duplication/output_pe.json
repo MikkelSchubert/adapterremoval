@@ -1,0 +1,44 @@
+{
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/v3.0.0-alpha3.json",
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float",
+    "timestamp": "...str"
+  },
+  "summary": {
+    "input": {
+      "reads": 16,
+      "bases": 800,
+      "mean_length": 50.000,
+      "reads_sampled": 16,
+      "q20_rate": 0.978,
+      "q30_rate": 0.907,
+      "uncalled_rate": 0.000,
+      "gc_content": 0.378
+    },
+    "output": "..."
+  },
+  "input": "...",
+  "demultiplexing": null,
+  "processing": "...",
+  "analyses": {
+    "duplication": {
+      "read1": {
+        "labels": ["1", "2", "3", "4", "5", "6", "7", "8", "9", ">10", ">50", ">100", ">500", ">1k", ">5k", ">10k"],
+        "unique_sequences": [0.600, 0.200, 0.200, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
+        "total_sequences": [0.375, 0.250, 0.375, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
+        "unique_frac": 0.625
+      },
+      "read2": {
+        "labels": ["1", "2", "3", "4", "5", "6", "7", "8", "9", ">10", ">50", ">100", ">500", ">1k", ">5k", ">10k"],
+        "unique_sequences": [0.000, 0.667, 0.000, 0.333, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
+        "total_sequences": [0.000, 0.500, 0.000, 0.500, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
+        "unique_frac": 0.375
+      }
+    },
+    "insert_sizes": [],
+    "consensus_adapters": null
+  },
+  "output": "..."
+}

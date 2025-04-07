@@ -47,13 +47,17 @@ class read_fastq : public analytical_step
 public:
   enum class file_type;
 
-  read_fastq(const userconfig& config, size_t next_step, file_type mode);
+  read_fastq(const userconfig& config,
+             size_t next_step,
+             file_type mode,
+             statistics& stats);
   ~read_fastq() override = default;
 
   /** Adds read_fastq step(s) to the scheduler depending on current input */
   static void add_steps(scheduler& sch,
                         const userconfig& config,
-                        size_t next_step);
+                        size_t next_step,
+                        statistics& stats);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -68,7 +72,7 @@ public:
 
 private:
   /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
-  void read_single_end(fastq_vec& reads);
+  void read_single_end(fastq_vec& reads, duplication_statistics& stats);
   /** Fills a chunk of interleaved reads; stops on EOF or after `head` reads. */
   void read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2);
 
@@ -89,6 +93,11 @@ private:
   char m_mate_separator;
   //! Indicates if the mate separator is known / has been attempted identififed
   bool m_mate_separator_identified;
+
+  //! Optional duplication stats for mate 1 reads
+  duplication_stats_ptr m_duplication_1{};
+  //! Optional duplication stats for mate 2 reads
+  duplication_stats_ptr m_duplication_2{};
 
   //! Lock used to verify that the analytical_step is only run sequentially.
   std::mutex m_lock{};
