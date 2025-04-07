@@ -97,7 +97,7 @@
       addVegaPlot(el, schema);
     }
 
-    function addLinePlot(el, width, x_axis, y_axis, values) {
+    function addLinePlotBase({ el, width, x_axis, x_axis_type, y_axis, values, transforms }) {
       var schema = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "padding": 5,
@@ -108,7 +108,7 @@
             "x": {
               "title": x_axis,
               "field": "x",
-              "type": "quantitative",
+              "type": x_axis_type,
               "axis": { "offset": 5 }
             }
           },
@@ -125,7 +125,7 @@
                 "color": {
                   "field": "group",
                   "sort": null,
-                  "legend": "{ \"title\": \"Legend\", \"padding\": 5 }"
+                  "legend": { "title": "Legend", "padding": 5 },
                 }
               },
               "layer": [
@@ -162,17 +162,29 @@
         },
         "facet": { "field": "read", "type": "ordinal", "title": "", "sort": [] },
         "columns": 2,
-        "transform": [
-          { "flatten": ["y"] },
-          { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
-          { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
-        ],
+        "transform": transforms,
         "data": {
           "values": values
         }
       };
 
       addVegaPlot(el, schema);
+    }
+
+    function addLinePlot({ el, width, x_axis, y_axis, values }) {
+      addLinePlotBase({
+        el,
+        width,
+        x_axis,
+        x_axis_type: 'quantitative',
+        y_axis,
+        values,
+        'transforms': [
+          { "flatten": ["y"] },
+          { "window": [{ "op": "row_number", "as": "x" }], "groupby": ["read", "group"] },
+          { "calculate": "datum.x - 1 + (datum.offset)", "as": "x" },
+        ]
+      });
     }
 
     function onScriptError() {
@@ -525,6 +537,44 @@
         lost during each step.
       </p>
 
+      <!-- TEMPLATE: DUPLICATION_HEAD -->
+      <h4 id="analyses-consensus-adapter">
+        Sequence duplication levels <a class="anchor" href="#sequence-duplication-levels">#</a>
+      </h4>
+
+      <!-- TEMPLATE: DUPLICATION_BODY_SE -->
+      <p class="note">
+        Estimated that {{PCT_UNIQUE}} of reads are unique.
+      </p>
+
+      <!-- TEMPLATE: DUPLICATION_BODY_PE -->
+      <p class="note">
+        Estimated that {{PCT_UNIQUE}} of reads are unique, including {{PCT_UNIQUE_1}} of mate 1 reads and
+        {{PCT_UNIQUE_2}} of mate 2 reads.
+      </p>
+
+      <!-- TEMPLATE: DUPLICATION_PLOT -->
+
+      <div id="vis_{{ID}}">
+        <div class="loading">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+
+      <script>
+        addLinePlotBase({
+          'el': '#vis_{{ID}}',
+          'width': JS_TEMPLATE_WIDTH,
+          'x_axis': 'Duplication levels',
+          'x_axis_type': 'ordinal',
+          'y_axis': 'Fraction',
+          'values': JS_TEMPLATE_VALUES
+        });
+        addVegaPlot('#vis_{{ID}}', schema);
+      </script>
+
       <!-- TEMPLATE: CONSENSUS_ADAPTER_HEAD -->
       <h4 id="analyses-consensus-adapter">
         Consensus adapter sequences <a class="anchor" href="#analyses-consensus-adapter">#</a>
@@ -631,7 +681,7 @@
       </div>
 
       <script>
-        addFrequencyPlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_DEFAULT_LEGEND = "{ \"title\": \"Legend\", \"padding\": 5 }", JS_TEMPLATE_VALUES);
+        addFrequencyPlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_DEFAULT_LEGEND = "{ 'title': 'Legend', 'padding': 5 }", JS_TEMPLATE_VALUES);
       </script>
       <noscript class="error">
         ERROR: Plots cannot be shown because JavaScript is disabled!
@@ -648,7 +698,13 @@
       </div>
 
       <script>
-        addLinePlot('#vis_{{ID}}', JS_TEMPLATE_WIDTH, JS_DEFAULT_X_AXIS = null, JS_DEFAULT_Y_AXIS = null, JS_TEMPLATE_VALUES);
+        addLinePlot({
+          'el': '#vis_{{ID}}',
+          'width': JS_TEMPLATE_WIDTH,
+          'x_axis': JS_DEFAULT_X_AXIS = null,
+          'y_axis': JS_DEFAULT_Y_AXIS = null,
+          'values': JS_TEMPLATE_VALUES,
+        });
       </script>
       <noscript class="error">
         ERROR: Plots cannot be shown because JavaScript is disabled!

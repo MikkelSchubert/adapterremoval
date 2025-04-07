@@ -120,11 +120,12 @@ parse_poly_x_option(const std::string& key,
 }
 
 bool
-parse_head(const std::string& sink, uint64_t& out)
+parse_counts(const argparse::parser& args,
+             const std::string& key,
+             uint64_t& out)
 {
+  const auto sink = args.value(std::string{ key });
   if (sink.empty()) {
-    // Default to all reads
-    out = std::numeric_limits<uint64_t>::max();
     return true;
   }
 
@@ -148,7 +149,7 @@ parse_head(const std::string& sink, uint64_t& out)
         break;
 
       default:
-        log::error() << "Invalid unit in command-line option --sink "
+        log::error() << "Invalid unit in command-line option " << key
                      << shell_escape(sink);
         return false;
     }
@@ -1014,10 +1015,11 @@ userconfig::userconfig()
     .with_default(0.1);
   argparser.add("--report-duplication", "N")
     .help("FastQC based duplicate detection, based on the frequency of the "
-          "first N unique sequences observed. A value of 100,000 corresponds "
-          "to FastQC defaults; a value of 0 disables the analysis")
-    .bind_u32(&report_duplication)
-    .with_default(0);
+          "first N unique sequences observed. If no value is given, an N of "
+          "100k is used, corresponding to FastQC defaults; a value of 0 "
+          "disables the analysis. Accepts suffixes K, M, and G")
+    .bind_str(nullptr)
+    .with_implicit_argument("100k");
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("LOGGING:");
@@ -1312,7 +1314,13 @@ userconfig::parse_args(const string_vec& argvec)
                    "that are incompatible with some tools!";
   }
 
-  if (!parse_head(argparser.value("--head"), head)) {
+  // Default to all reads, but don't print value with --help
+  head = std::numeric_limits<uint64_t>::max();
+  if (!parse_counts(argparser, "--head", head)) {
+    return argparse::parse_result::error;
+  }
+
+  if (!parse_counts(argparser, "--report-duplication", report_duplication)) {
     return argparse::parse_result::error;
   }
 

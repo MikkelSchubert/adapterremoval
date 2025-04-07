@@ -1,0 +1,16 @@
+{
+  "arguments": [
+    "--out-json",
+    "output_se.json",
+    "--report-duplication",
+    "100000"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "json": [
+      "output_se.json"
+    ]
+  }
+}

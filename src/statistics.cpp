@@ -264,18 +264,6 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
       smoothed_gc_count(m_gc_content_dist, n_gc, n_gc + n_at);
     }
   }
-
-  if (m_duplication) {
-    m_duplication->process(read);
-  }
-}
-
-void
-fastq_statistics::init_duplication_stats(size_t max_unique_sequences)
-{
-  AR_REQUIRE(!m_duplication);
-  m_duplication =
-    std::make_shared<duplication_statistics>(max_unique_sequences);
 }
 
 fastq_statistics&
@@ -407,8 +395,8 @@ statistics_builder::initialize() const
     stats.demultiplexing->samples.resize(m_sample_count);
   }
 
-  stats.input_1->init_duplication_stats(m_max_unique);
-  stats.input_2->init_duplication_stats(m_max_unique);
+  stats.duplication_1 = std::make_shared<duplication_statistics>(m_max_unique);
+  stats.duplication_2 = std::make_shared<duplication_statistics>(m_max_unique);
 
   if (m_adapter_id) {
     stats.adapter_id = std::make_shared<adapter_id_statistics>(m_adapter_id);

@@ -1,0 +1,20 @@
+{
+    "exhaustive": true,
+    "arguments": [
+        "--out-json",
+        "output_pe.json",
+        "--report-duplication",
+        "100000"
+    ],
+    "files": {
+        "input_1": [
+            "input_1.fastq"
+        ],
+        "input_2": [
+            "input_2.fastq"
+        ],
+        "json": [
+            "output_pe.json"
+        ]
+    }
+}

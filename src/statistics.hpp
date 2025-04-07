@@ -167,12 +167,6 @@ public:
   /** Sum of base qualities for ACGTN by position */
   counts qualities_pos() const { return m_quality_pos.merge(); }
 
-  /** Count duplications with the given max number of unique sequences. */
-  void init_duplication_stats(size_t max_unique);
-
-  /** Return the duplication statistics, if any. */
-  const duplication_stats_ptr& duplication() const { return m_duplication; }
-
   /** Sum statistics, e.g. those used by different threads. */
   fastq_statistics& operator+=(const fastq_statistics& other);
 
@@ -205,9 +199,6 @@ private:
   indexed_counts<ACGTN> m_nucleotide_pos{};
   /** Per position quality score sums indexed using ACGTN::to_index. */
   indexed_counts<ACGTN> m_quality_pos{};
-
-  //! Optional duplication statistics
-  duplication_stats_ptr m_duplication{};
 };
 
 /** Object used to collect summary statistics for trimming. */
@@ -315,6 +306,11 @@ public:
 
   demux_stats_ptr demultiplexing{};
   std::vector<trim_stats_ptr> trimming{};
+
+  //! Optional duplication statistics
+  duplication_stats_ptr duplication_1{};
+  //! Optional duplication statistics
+  duplication_stats_ptr duplication_2{};
 
   //! Optional adapter identification statistics
   adapter_id_stats_ptr adapter_id{};
