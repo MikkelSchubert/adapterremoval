@@ -32,6 +32,9 @@ add_project_arguments(
         '-fno-rtti',
         '-pedantic-errors',
         '-Wfatal-errors', # Terminate on the first error to simplify debugging
+        # Convert certain warnings to errors
+        '-Werror=return-type', # Treat missing/wrong return statements as errors
+        '-Werror=switch-enum', # Require all enum values in a switch, to catch unhandled cases
         # Additional warnings
         '-Wcast-align',
         '-Wcast-qual',
@@ -49,7 +52,6 @@ add_project_arguments(
         '-Wsign-promo',
         '-Wstrict-overflow=2',
         '-Wswitch-default', # Require a default: statement in a switch, to catch corruption
-        '-Wswitch-enum', # Require all enum values in a switch, to catch unhandled cases
         '-Wundef', # Undefined variables used in #if pragmas
         checked: 'off',
     ),
