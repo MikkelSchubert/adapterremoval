@@ -1231,6 +1231,7 @@ class Args(argparse.Namespace):
     schema_validation_required: bool
     create_updated_reference: bool
     threads: int
+    verbose: bool
     use_colors: str
 
 
@@ -1297,6 +1298,12 @@ def parse_args(argv: list[str]) -> Args:
         type=int,
         default=min(8, multiprocessing.cpu_count()),
         help="Size of thread-pool for concurrent execution of tests",
+    )
+    parser.add_argument(
+        "--verbose",
+        default=False,
+        action="store_true",
+        help="Print the name of each test that is executed",
     )
     parser.add_argument(
         "--use-colors",
@@ -1378,8 +1385,6 @@ def main(argv: list[str]) -> int:
     if not tests:
         print_err(f"No tests found in {quote(args.source_dir)}")
         return 1
-    else:
-        print(f"  {len(tests):,} tests found")
 
     unused_files = collect_unused_files(args.source_dir, tests)
     if unused_files:
@@ -1394,31 +1399,30 @@ def main(argv: list[str]) -> int:
     else:
         exhaustive_tests = build_test_runners(args, tests)
 
-    print(f"  {len(exhaustive_tests):,} test variants generated")
-    print(f"Writing test-cases results to {quote(args.work_dir)}")
+    print(f"Found {len(tests)} specifications; generated {len(exhaustive_tests)} tests")
+    print(f"Using work-dir {quote(args.work_dir)}")
 
     n_failures = 0
     n_successes = 0
     n_skipped = 0
-    print("\nRunning tests:")
-
     failures: List[Tuple[Union[TestRunner, TestUpdater], Exception]] = []
     with multiprocessing.Pool(args.threads) as pool:
         results = pool.imap(run_test, exhaustive_tests)
         grouped_results = groupby(results, lambda it: it[0].name)
 
         for idx, (name, test_results) in enumerate(grouped_results, start=1):
-            print("  %i of %i: %s " % (idx, len(tests), name), end="")
+            if args.verbose:
+                print("  %i of %i: %s " % (idx, len(tests), name), end="")
 
             last_error = None
             test_skipped = False
             for test, error in test_results:
                 if error is not None:
-                    print_err("X", end="")
+                    print_err("x", end="")
                     failures.append((test, error))
                     last_error = error
                 elif test.skip:
-                    print_warn(".", end="")
+                    print_warn("s", end="")
                     test_skipped = True
                 else:
                     print_ok(".", end="")
@@ -1426,13 +1430,16 @@ def main(argv: list[str]) -> int:
                 sys.stdout.flush()
 
             if test_skipped:
-                print_warn(" [SKIPPED]")
+                if args.verbose:
+                    print_warn(" [SKIPPED]")
                 n_skipped += 1
             elif last_error is None:
-                print_ok(" [OK]")
+                if args.verbose:
+                    print_ok(" [OK]")
                 n_successes += 1
             else:
-                print_err(" [FAILED]")
+                if args.verbose:
+                    print_err(" [FAILED]")
                 n_failures += 1
                 if n_failures >= args.max_failures:
                     break
@@ -1460,10 +1467,10 @@ def main(argv: list[str]) -> int:
     elif n_failures:
         print_err("\n%i of %i tests failed." % (n_failures, len(exhaustive_tests)))
     else:
-        print_ok("\nAll %i tests succeeded." % (len(exhaustive_tests),))
+        print("\nAll %i tests succeeded." % (len(exhaustive_tests),))
 
     if JSONValidator.can_validate():
-        print_ok("JSON file validation performed.")
+        print("JSON file validation performed.")
     else:
         fastjsonschema_was = "available" if JSON_SCHEMA_VALIDATION else "unavailable"
         schema_was = "not provided" if args.json_schema is None else "provided"
