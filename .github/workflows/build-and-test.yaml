@@ -34,6 +34,11 @@ jobs:
       UV_SYSTEM_PYTHON: 1
 
     steps:
+      - name: Disable man-db building
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        # This speeds up apt-get, by preventing the man-db step from running
+        run: sudo rm -vf /var/lib/man-db/auto-update
+
       - name: Audit all outbound calls
         uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
         with:
@@ -52,8 +57,8 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.cxx }}
           create-symlink: true
-          # Set cache size to about 4 full builds
-          max-size: "100M"
+          # Disable cache cleanups while building
+          max-size: "0"
 
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -94,3 +99,7 @@ jobs:
           sudo apt-get install -y gcovr
           uv pip install cpp-coveralls
           coveralls --exclude tests --root . --build-root build --gcov-options '\-lpbc'
+
+      - name: CCache cleanup
+      # Manual ccache cleanup, using the ccache-action default max size
+        run: env CCACHE_MAXSIZE=500M ccache --cleanup
