@@ -3,9 +3,10 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <iosfwd>      // for ostream
-#include <string>      // for string
-#include <string_view> // for string_view
+#include "commontypes.hpp" // for barcode_orientation
+#include <iosfwd>          // for ostream
+#include <string>          // for string
+#include <string_view>     // for string_view
 
 namespace adapterremoval {
 
@@ -40,6 +41,9 @@ public:
 
   /** Adds/replaces the description (DS) tag */
   void set_description(std::string_view value) { update_tag("DS", value); }
+
+  /** Adds/replaces the custom orientation ('or') tag */
+  void set_orientation(barcode_orientation value);
 
   /** Returns true if the header and ID are identical */
   [[nodiscard]] bool operator==(const read_group& other) const;

@@ -5,7 +5,7 @@
 #include "debug.hpp"      // for AR_REQUIRE
 #include "strutils.hpp"   // for string_vec, indent_lines
 #include <stdexcept>      // for invalid_argument
-#include <string>         // for string
+#include <string>         // for to_string
 #include <string_view>    // for string_view
 
 namespace adapterremoval {
@@ -71,6 +71,24 @@ read_group::set_id(std::string_view id)
   AR_REQUIRE(!id.empty());
   update_tag("ID", id);
   m_id = id;
+}
+
+void
+read_group::set_orientation(barcode_orientation value)
+{
+  switch (value) {
+    case barcode_orientation::unspecified:
+      update_tag("or", "");
+      break;
+    case barcode_orientation::forward:
+      update_tag("or", "forward");
+      break;
+    case barcode_orientation::reverse:
+      update_tag("or", "reverse");
+      break;
+    default:                                        // GCOVR_EXCL_LINE
+      AR_FAIL("invalid barcode_orientation value"); // GCOVR_EXCL_LINE
+  }
 }
 
 bool

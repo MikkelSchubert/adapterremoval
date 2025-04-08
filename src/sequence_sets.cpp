@@ -8,8 +8,13 @@
 #include "sequence.hpp"      // for dna_sequence
 #include "strutils.hpp"      // for log_escape
 #include "table_reader.hpp"  // for table_reader
+#include "utilities.hpp"     // for underlying_value
 #include <algorithm>         // for max, sort, find
+#include <cstddef>           // for size_t
+#include <initializer_list>  // for initializer_list
 #include <sstream>           // for operator<<, basic_ostream, ostringstream
+#include <stdexcept>         // for invalid_argument
+#include <string>            // for to_string
 #include <string_view>       // for string_view
 #include <utility>           // for pair
 #include <vector>            // for vector, vector<>::const_iterator
@@ -21,9 +26,8 @@ namespace {
 void
 validate_sample_name(std::string_view name)
 {
-  if (name.empty()) {
-    throw parsing_error("Sample names must not be empty");
-  } else if (name == "unidentified") {
+  AR_REQUIRE(!name.empty());
+  if (name == "unidentified") {
     throw parsing_error("The sample name 'unidentified' is a reserved "
                         "name, and cannot be used!");
   }
@@ -41,12 +45,10 @@ validate_sample_name(std::string_view name)
 }
 
 void
-validate_barcode_sequence(const dna_sequence& sequence,
+validate_barcode_sequence(std::string_view seq,
                           const size_t expected_length,
                           const int mate)
 {
-  std::string_view seq = sequence;
-
   if (seq.find('N') != std::string::npos) {
     std::ostringstream error;
     error << "Degenerate base (N) found in mate " << mate << " barcode "
@@ -56,7 +58,7 @@ validate_barcode_sequence(const dna_sequence& sequence,
     throw parsing_error(error.str());
   }
 
-  if (sequence.length() != expected_length) {
+  if (seq.length() != expected_length) {
     std::ostringstream error;
     error << "Inconsistent mate " << mate << " barcode lengths found: Last "
           << "barcode was " << expected_length << " base-pairs long, but "
@@ -67,72 +69,311 @@ validate_barcode_sequence(const dna_sequence& sequence,
   }
 }
 
-bool
-check_barcodes_sequences(const std::vector<sample>& samples,
-                         const std::string& source,
-                         bool paired_end = false)
+/**
+ * Checks for multiple barcodes, while allowing that both the forward and
+ * reverse barcode has been specified for a sample
+ */
+void
+disallow_multiple_barcodes(const sample& s)
+{
+  if (s.size() > 1) {
+    if (s.size() == 2) {
+      const auto& ss_0 = s.at(0);
+      const auto& ss_1 = s.at(1);
+
+      // It is allowed to explicitly specify both forward and reverse barcodes
+      if (ss_0.barcode_1 == ss_1.barcode_2 &&
+          ss_0.barcode_2 == ss_1.barcode_1 &&
+          ss_0.orientation != ss_1.orientation) {
+        // At this point samples should not have been configured further
+        AR_REQUIRE(ss_0.orientation != barcode_orientation::unspecified);
+        AR_REQUIRE(ss_1.orientation != barcode_orientation::unspecified);
+        AR_REQUIRE(ss_0.has_read_group == ss_1.has_read_group);
+        AR_REQUIRE(ss_0.adapters == ss_1.adapters);
+        AR_REQUIRE(ss_0.read_group_ == ss_1.read_group_);
+        return;
+      }
+    }
+
+    std::ostringstream error;
+    error << "Duplicate sample name " << log_escape(s.name())
+          << "; multiple barcodes per samples is not enabled. Either ensure "
+             "that all sample names are unique or use --multiple-barcodes to "
+             "map multiple barcodes to a single sample";
+
+    throw parsing_error(error.str());
+  }
+}
+
+/** Check that sample names are valid and not overlapping (case-insensitive) */
+void
+check_sample_names(const std::vector<sample>& samples)
+{
+  std::vector<std::pair<std::string, std::string>> names;
+  for (const auto& sample : samples) {
+    const auto& name = sample.name();
+
+    validate_sample_name(name);
+    names.emplace_back(to_lower(name), name);
+  }
+
+  std::sort(names.begin(), names.end());
+  for (size_t i = 1; i < names.size(); ++i) {
+    const auto& [key_0, name_0] = names.at(i - 1);
+    const auto& [key_1, name_1] = names.at(i);
+
+    if ((key_0 == key_1) && (name_0 != name_1)) {
+      std::ostringstream error;
+      error << "Samples with names " << log_escape(name_0) << " and "
+            << log_escape(name_1) << " differ only by case. Either use the "
+            << "exact same name for both, if they the same sample, or give "
+               "them distinct names";
+
+      throw parsing_error(error.str());
+    }
+  }
+}
+
+/** Checks for basic barcode validity, but not for overlapping barcodes */
+void
+check_barcode_sequences(const std::vector<sample>& samples,
+                        bool allow_multiple_barcodes)
 {
   if (samples.empty()) {
-    throw parsing_error("No samples/barcodes provided");
+    throw parsing_error("No samples/barcodes found in table");
   }
 
   auto mate_1_len = static_cast<size_t>(-1);
   auto mate_2_len = static_cast<size_t>(-1);
 
-  std::vector<std::pair<std::string_view, std::string_view>> sequences;
   for (const auto& sample : samples) {
-    validate_sample_name(sample.name());
+    if (!allow_multiple_barcodes) {
+      disallow_multiple_barcodes(sample);
+    }
 
     for (const auto& it : sample) {
       if (mate_1_len == static_cast<size_t>(-1)) {
         mate_1_len = it.barcode_1.length();
         mate_2_len = it.barcode_2.length();
-
-        if (!mate_1_len) {
-          throw parsing_error("Empty barcode 1 sequence for " + sample.name());
-        }
       }
 
       validate_barcode_sequence(it.barcode_1, mate_1_len, 1);
       validate_barcode_sequence(it.barcode_2, mate_2_len, 2);
+    }
+  }
+}
 
-      if (paired_end) {
-        sequences.emplace_back(it.barcode_1, it.barcode_2);
-      } else {
-        sequences.emplace_back(it.barcode_1, dna_sequence{});
-      }
+/** Helper class used to validate barcodes */
+struct barcode_key
+{
+  std::string_view barcode_1;
+  std::string_view barcode_2;
+  barcode_orientation orientation;
+  std::string_view sample;
+
+  [[nodiscard]] std::string describe() const
+  {
+    std::ostringstream out;
+    out << log_escape(this->sample) << " (" << this->barcode_1;
+
+    if (!this->barcode_2.empty()) {
+      out << "-" << this->barcode_2;
+    }
+
+    switch (this->orientation) {
+      case barcode_orientation::unspecified:
+        out << ")";
+        break;
+      case barcode_orientation::forward:
+        out << "; forward)";
+        break;
+      case barcode_orientation::reverse:
+        out << "; reverse)";
+        break;
+      default:                                  // GCOVR_EXCL_LINE
+        AR_FAIL("invalid barcode_orientation"); // GCOVR_EXCL_LINE
+    }
+
+    return out.str();
+  }
+
+  bool operator<(const barcode_key& other) const
+  {
+    // Sorted by barcodes first to allow easy duplicate checks
+    if (this->barcode_1 != other.barcode_1) {
+      return this->barcode_1 < other.barcode_1;
+    } else if (this->barcode_2 != other.barcode_2) {
+      return this->barcode_2 < other.barcode_2;
+    } else if (this->sample != other.sample) {
+      // Sorted by sample name after barcodes for more sensible looking output
+      // when overlapping sequences are printed
+      return this->sample < other.sample;
+    } else {
+      return this->orientation < other.orientation;
+    }
+  }
+};
+
+/** Checks for overlapping barcodes */
+void
+check_barcode_overlap(const std::vector<sample>& samples, bool paired_end)
+{
+  std::vector<barcode_key> sequences;
+  for (const auto& sample : samples) {
+    for (const auto& it : sample) {
+      sequences.emplace_back(barcode_key{ it.barcode_1,
+                                          it.barcode_2,
+                                          it.orientation,
+                                          sample.name() });
     }
   }
 
   std::sort(sequences.begin(), sequences.end());
   for (size_t i = 1; i < sequences.size(); ++i) {
-    if (sequences.at(i - 1) == sequences.at(i)) {
-      const auto& it = sequences.at(i);
+    const auto& it_0 = sequences.at(i - 1);
+    const auto& it_1 = sequences.at(i);
 
-      if (paired_end) {
-        std::ostringstream error;
-        error << "Duplicate barcode pairs found in " << log_escape(source)
-              << " with barcodes " << log_escape(it.first) << " and "
-              << log_escape(it.second) << ". please verify correctness of "
-              << "the barcode table and remove any duplicate entries!";
+    if (it_0.barcode_1 == it_1.barcode_1 &&
+        (!paired_end || it_0.barcode_2 == it_1.barcode_2)) {
+      std::ostringstream error;
+      error << "Sample " << it_0.describe() << " and sample " << it_1.describe()
+            << " have overlapping barcodes";
 
-        throw parsing_error(error.str());
-      } else {
-        std::ostringstream error;
-        error << "Duplicate mate 1 barcodes found in " << log_escape(source)
-              << ": " << log_escape(it.first) << ". Even if these are "
-              << "associated with different mate 2 barcodes, it is not "
-                 "possible to distinguish between these in single-end mode!";
-
-        throw parsing_error(error.str());
+      if (it_0.barcode_2 != it_1.barcode_2) {
+        error << ". Note that AdapterRemoval cannot distinguish these barcodes "
+              << "in single-end mode, even though the second barcodes differ";
       }
+
+      error << ". Please remove any duplicate entries from the barcode table "
+               "before continuing";
+
+      throw parsing_error(error.str());
+    }
+  }
+}
+
+/** Returns the reverse of a user specified orientation */
+barcode_orientation
+reverse_orientation(barcode_table_orientation orientation)
+{
+  switch (orientation) {
+    case barcode_table_orientation::forward:
+      return barcode_orientation::reverse;
+    case barcode_table_orientation::reverse:
+      return barcode_orientation::forward;
+    // Cannot be reversed
+    case barcode_table_orientation::unspecified:
+    case barcode_table_orientation::explicit_:
+      return barcode_orientation::unspecified;
+    default:                                        // GCOVR_EXCL_LINE
+      AR_FAIL("invalid barcode_table_orientation"); // GCOVR_EXCL_LINE
+  }
+}
+
+/** Build list of samples from individual barcodes ordered by sample */
+void
+append_sample(std::vector<sample>& samples,
+              const std::string& name,
+              const dna_sequence& barcode_1,
+              const dna_sequence& barcode_2,
+              barcode_orientation orientation)
+{
+
+  if (samples.empty() || samples.back().name() != name) {
+    samples.emplace_back(name, barcode_1, barcode_2, orientation);
+  } else {
+    samples.back().add(barcode_1, barcode_2, orientation);
+  }
+}
+
+/** Updates a vector of barcodes to include the reverse sequences  */
+void
+create_reversed_barcodes(std::vector<sample>& samples,
+                         barcode_table_orientation orientation)
+{
+  const auto rev_orientation = reverse_orientation(orientation);
+  if (rev_orientation == barcode_orientation::unspecified) {
+    return;
+  }
+
+  // This is inefficient, but easier than trying to sort the list afterwards
+  std::vector<sample> rsamples;
+  for (const auto& sample : samples) {
+    for (const auto& seqs : sample) {
+      const auto& name = sample.name();
+      const auto& barcode_1 = seqs.barcode_1;
+      const auto& barcode_2 = seqs.barcode_2;
+
+      append_sample(rsamples, name, barcode_1, barcode_2, seqs.orientation);
+      // NOLINTNEXTLINE(readability-suspicious-call-argument)
+      append_sample(rsamples, name, barcode_2, barcode_1, rev_orientation);
     }
   }
 
-  return true;
+  std::swap(samples, rsamples);
+}
+
+/** Returns expected number of columns for different types of barcode tables */
+std::pair<int, int>
+barcode_table_columns(barcode_table_orientation orientation)
+{
+  auto min_columns = 2; // Name and one barcode
+  auto max_columns = 3; // Name and two barcodes
+  switch (orientation) {
+    case barcode_table_orientation::unspecified:
+      break;
+    case barcode_table_orientation::forward:
+    case barcode_table_orientation::reverse:
+      min_columns = 3;
+      break;
+    case barcode_table_orientation::explicit_:
+      min_columns = 4; // Name, two barcodes, and orientation
+      max_columns = 4;
+      break;
+    default:                                  // GCOVR_EXCL_LINE
+      AR_FAIL("invalid barcode_orientation"); // GCOVR_EXCL_LINE
+  }
+
+  return { min_columns, max_columns };
+}
+
+/** Parse barcode orientation from a table file */
+barcode_orientation
+parse_barcode_orientation(std::string_view name, std::string value)
+{
+  value = to_lower(value);
+  if (value == "forward" || value == "fwd" || value == "+") {
+    return barcode_orientation::forward;
+  } else if (value == "reverse" || value == "rev" || value == "-") {
+    return barcode_orientation::reverse;
+  }
+
+  throw parsing_error("Invalid barcode orientation for sample " +
+                      log_escape(name) + ": " + log_escape(value));
 }
 
 } // namespace
+
+///////////////////////////////////////////////////////////////////////////////
+
+barcode_table_orientation
+parse_table_orientation(std::string_view value)
+{
+  value = trim_ascii_whitespace(value);
+  auto value_l = to_lower(std::string{ value });
+
+  if (value_l == "forward") {
+    return barcode_table_orientation::forward;
+  } else if (value_l == "reverse") {
+    return barcode_table_orientation::reverse;
+  } else if (value_l == "explicit") {
+    return barcode_table_orientation::explicit_;
+  } else if (value_l == "unspecified") {
+    return barcode_table_orientation::unspecified;
+  } else {
+    throw std::invalid_argument("invalid barcode table orientation ");
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'adapter_set' class
@@ -238,9 +479,11 @@ operator<<(std::ostream& os, const adapter_set& value)
 // Implementations for 'sample_sequences' class
 
 sample_sequences::sample_sequences(dna_sequence barcode_1_,
-                                   dna_sequence barcode_2_)
+                                   dna_sequence barcode_2_,
+                                   barcode_orientation orientation_)
   : barcode_1(std::move(barcode_1_))
   , barcode_2(std::move(barcode_2_))
+  , orientation(orientation_)
 {
 }
 
@@ -250,7 +493,9 @@ sample_sequences::operator==(const sample_sequences& other) const
   return this->has_read_group == other.has_read_group &&
          this->read_group_ == other.read_group_ &&
          this->barcode_1 == other.barcode_1 &&
-         this->barcode_2 == other.barcode_2 && this->adapters == other.adapters;
+         this->barcode_2 == other.barcode_2 &&
+         this->orientation == other.orientation &&
+         this->adapters == other.adapters;
 }
 
 std::ostream&
@@ -261,6 +506,7 @@ operator<<(std::ostream& os, const sample_sequences& value)
             << ", read_group=" << value.read_group_
             << ", barcode_1=" << value.barcode_1
             << ", barcode_2=" << value.barcode_2
+            << ", orientation=" << value.orientation
             << ", adapters=" << value.adapters << "}";
 }
 
@@ -268,21 +514,31 @@ operator<<(std::ostream& os, const sample_sequences& value)
 // Implementations for 'sample' class
 
 sample::sample()
-  : sample(std::string{}, dna_sequence{}, dna_sequence{})
+  : sample(std::string{},
+           dna_sequence{},
+           dna_sequence{},
+           barcode_orientation::unspecified)
 {
 }
 
-sample::sample(std::string name, dna_sequence barcode1, dna_sequence barcode2)
+sample::sample(std::string name,
+               dna_sequence barcode1,
+               dna_sequence barcode2,
+               barcode_orientation orientation)
   : m_name(std::move(name))
 {
-  add(std::move(barcode1), std::move(barcode2));
+  add(std::move(barcode1), std::move(barcode2), orientation);
 }
 
 void
-sample::add(dna_sequence barcode1, dna_sequence barcode2)
+sample::add(dna_sequence barcode1,
+            dna_sequence barcode2,
+            barcode_orientation orientation)
 {
   AR_REQUIRE(barcode2.empty() || !barcode1.empty());
-  m_barcodes.emplace_back(std::move(barcode1), std::move(barcode2));
+  m_barcodes.emplace_back(std::move(barcode1),
+                          std::move(barcode2),
+                          orientation);
 }
 
 void
@@ -324,6 +580,8 @@ sample::set_read_group(const read_group& read_group_)
 
       it->read_group_.set_barcodes(barcodes);
     }
+
+    it->read_group_.set_orientation(it->orientation);
   }
 }
 
@@ -345,7 +603,10 @@ operator<<(std::ostream& os, const sample& value)
 
 sample_set::sample_set()
   : m_samples{ sample{} }
-  , m_unidentified("", dna_sequence{}, dna_sequence{})
+  , m_unidentified({},
+                   dna_sequence{},
+                   dna_sequence{},
+                   barcode_orientation::unspecified)
 {
   set_unidentified_read_group(m_read_group);
 }
@@ -354,7 +615,7 @@ sample_set::sample_set(std::initializer_list<std::string_view> lines,
                        barcode_config config)
 {
   vec_reader reader(lines);
-  load(reader, config, "initializer_list");
+  load(reader, config);
 }
 
 void
@@ -383,101 +644,117 @@ void
 sample_set::load(const std::string& filename, const barcode_config& config)
 {
   line_reader reader(filename);
-  load(reader, config, filename);
+  load(reader, config);
 }
 
 void
-sample_set::load(line_reader_base& reader,
-                 const barcode_config& config,
-                 const std::string& filename)
+sample_set::load(line_reader_base& reader, const barcode_config& config)
 {
+  auto [min_columns, max_columns] = barcode_table_columns(config.m_orientation);
+
   auto barcodes = table_reader()
                     .with_comment_char('#')
-                    .with_min_columns(2 + !config.m_unidirectional_barcodes)
-                    .with_max_columns(3)
+                    .with_min_columns(min_columns)
+                    .with_max_columns(max_columns)
                     .parse(reader);
 
+  // Sort by sample name to simplify sample set construction
   std::sort(barcodes.begin(), barcodes.end(), [](const auto& a, const auto& b) {
     return a.at(0) < b.at(0);
   });
 
-  std::vector<sample> samples{};
+  std::vector<sample> samples;
   for (const auto& row : barcodes) {
     const auto& name = row.at(0);
-    dna_sequence barcode_1{ row.at(1) };
+    const dna_sequence barcode_1{ row.at(1) };
     dna_sequence barcode_2;
 
     if (row.size() > 2) {
       barcode_2 = dna_sequence{ row.at(2) };
     }
 
-    if (samples.empty() || samples.back().name() != name) {
-      samples.emplace_back(name, barcode_1, barcode_2);
-    } else if (config.m_allow_multiple_barcodes) {
-      samples.back().add(barcode_1, barcode_2);
+    auto orientation = barcode_orientation::unspecified;
+    if (config.m_orientation == barcode_table_orientation::explicit_) {
+      orientation = parse_barcode_orientation(name, row.at(3));
     } else {
-      std::ostringstream error;
-      error << "Duplicate sample name " << log_escape(name)
-            << "; multiple barcodes per samples is not enabled. Either ensure "
-               "that all sample names are unique or use --multiple-barcodes to "
-               "map multiple barcodes to a single sample";
-
-      throw parsing_error(error.str());
+      orientation = static_cast<barcode_orientation>(config.m_orientation);
     }
+
+    append_sample(samples, name, barcode_1, barcode_2, orientation);
   }
 
-  // Check before adding reversed barcodes, to prevent misleading error messages
-  check_barcodes_sequences(samples, filename, config.m_paired_end_mode);
+  // Check sample names for overlap (case-insensitive) and disallowed characters
+  check_sample_names(samples);
 
-  std::swap(m_samples, samples);
-  if (!config.m_unidirectional_barcodes) {
-    add_reversed_barcodes(config);
-  }
+  // Basic properties are checked first, before (potentially) reversing barcodes
+  check_barcode_sequences(samples, config.m_allow_multiple_barcodes);
 
-  for (auto& s : m_samples) {
+  // Create reversed barcodes if enabled
+  create_reversed_barcodes(samples, config.m_orientation);
+
+  // Check for overlap between user barcodes, generated barcodes, or both
+  check_barcode_overlap(samples, config.m_paired_end_mode);
+
+  // Update read-group information and generate adapters based on all barcodes
+  for (auto& s : samples) {
     s.set_read_group(m_read_group);
     s.set_adapters(m_adapters);
   }
+
+  std::swap(m_samples, samples);
 }
 
 void
 sample_set::set_unidentified_read_group(read_group tmpl)
 {
   // Unidentified reads lack a SM tag, so add a description instead
+  tmpl.set_sample("");
   tmpl.set_description("unidentified");
   m_unidentified.set_read_group(tmpl);
 }
 
-void
-sample_set::add_reversed_barcodes(const barcode_config& config)
+std::ostream&
+operator<<(std::ostream& os, const sample_set& value)
 {
-  for (auto& sample : m_samples) {
-    // Original number of barcodes
-    const size_t count = sample.size();
+  return os << "sample_set{samples=[" << join_text(value, ", ") << "]"
+            << ", unidentified=" << value.unidentified()
+            << ", read_group=" << value.readgroup()
+            << ", adapters=" << value.adapters() << "}";
+}
 
-    for (size_t i = 0; i < count; ++i) {
-      const auto& sequences = sample.at(i);
-      auto barcode_1 = sequences.barcode_2.reverse_complement();
-      auto barcode_2 = sequences.barcode_1.reverse_complement();
-      AR_REQUIRE(barcode_1.length() && barcode_2.length());
+////////////////////////////////////////////////////////////////////////////////
 
-      bool reverse_found = false;
-      for (const auto& it : sample) {
-        if (it.barcode_1 == barcode_1 && it.barcode_2 == barcode_2) {
-          reverse_found = true;
-          break;
-        }
-      }
-
-      if (!reverse_found) {
-        sample.add(std::move(barcode_1), std::move(barcode_2));
-      }
-    }
+std::ostream&
+operator<<(std::ostream& os, const barcode_orientation& value)
+{
+  switch (value) {
+    case barcode_orientation::unspecified:
+      return os << "barcode_orientation::unspecified";
+    case barcode_orientation::forward:
+      return os << "barcode_orientation::forward";
+    case barcode_orientation::reverse:
+      return os << "barcode_orientation::reverse";
+    default:
+      return os << "barcode_orientation{" << underlying_value(value) << "}";
   }
+}
 
-  check_barcodes_sequences(m_samples,
-                           "reversed barcodes",
-                           config.m_paired_end_mode);
+std::ostream&
+operator<<(std::ostream& os, const barcode_table_orientation& value)
+{
+  switch (value) {
+    case barcode_table_orientation::unspecified:
+      return os << "barcode_table_orientation::unspecified";
+    case barcode_table_orientation::forward:
+      return os << "barcode_table_orientation::forward";
+    case barcode_table_orientation::reverse:
+      return os << "barcode_table_orientation::reverse";
+    case barcode_table_orientation::explicit_:
+      return os << "barcode_table_orientation::explicit_";
+    default:
+      return os << "barcode_table_orientation{" << underlying_value(value)
+                << "}";
+  }
 }
 
 } // namespace adapterremoval
