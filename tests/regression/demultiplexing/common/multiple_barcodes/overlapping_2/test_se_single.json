@@ -16,6 +16,6 @@
   },
   "return_code": 1,
   "stderr": [
-    "[ERROR] Error reading barcodes from 'barcodes_single.txt': Duplicate mate 1 barcodes found in 'barcodes_single.txt': 'CTTGCCCT'. Even if these are associated with different mate 2 barcodes, it is not possible to distinguish between these in single-end mode!"
+    "[ERROR] Error reading barcodes from 'barcodes_single.txt': Sample 'sample_1' (CTTGCCCT) and sample 'sample_3' (CTTGCCCT) have overlapping barcodes. Please remove any duplicate entries from the barcode table before continuing"
   ]
 }

@@ -76,6 +76,30 @@ enum class trimming_strategy
   per_base,
 };
 
+/** The user-specified or derived orientation of barcodes */
+enum class barcode_orientation
+{
+  //! The orientation of barcode is unspecified
+  unspecified = 0,
+  //! The barcode is in forward orientation
+  forward,
+  //! The barcode is in reverse orientation
+  reverse,
+};
+
+/** The orientation of barcodes in user-provided tables */
+enum class barcode_table_orientation
+{
+  //! The orientation of barcodes in the table is unspecified
+  unspecified = 0,
+  //! All barcodes in the table are in forward orientation
+  forward,
+  //! All barcodes in the table are in reverse orientation
+  reverse,
+  //! The user has provided an oritentation per barcode
+  explicit_,
+};
+
 //! Path used to indicate that a file is not needed
 const std::string_view DEV_NULL = "/dev/null";
 //! Path used to indicate that data should be read from STDIN
