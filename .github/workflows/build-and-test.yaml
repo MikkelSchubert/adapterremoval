@@ -34,6 +34,17 @@ jobs:
       UV_SYSTEM_PYTHON: 1
 
     steps:
+      # Potentially speed up install steps
+      - name: Disable man-db building
+        run: sudo rm -vf /var/lib/man-db/auto-update
+
+      - name: Ccache debugging
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.cxx == 'g++' }}
+        run: |
+            echo 'CCACHE_DEBUG=true' | tee -a $GITHUB_ENV
+            echo "CCACHE_DEBUGDIR=/tmp/ccache-debug" | tee -a $GITHUB_ENV
+            mkdir -p /tmp/ccache-debug
+
       - name: Audit all outbound calls
         uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
         with:
@@ -87,6 +98,13 @@ jobs:
         run: |
           find . -name '*.gcda' -print -delete
           make unit-tests
+
+      - name: Archive code coverage results
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.cxx == 'g++' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ccache-debug
+          path: /tmp/ccache-debug
 
       - name: coveralls
         if: ${{ matrix.coverage == 'true' && github.event_name == 'push' }}
