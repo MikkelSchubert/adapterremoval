@@ -34,8 +34,9 @@ jobs:
       UV_SYSTEM_PYTHON: 1
 
     steps:
-      # Potentially speed up install steps
       - name: Disable man-db building
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        # This speeds up apt-get, by preventing the man-db step from running
         run: sudo rm -vf /var/lib/man-db/auto-update
 
       - name: Audit all outbound calls
@@ -100,4 +101,5 @@ jobs:
           coveralls --exclude tests --root . --build-root build --gcov-options '\-lpbc'
 
       - name: CCache cleanup
+      # Manual ccache cleanup, using the ccache-action default max size
         run: env CCACHE_MAXSIZE=500M ccache --cleanup
