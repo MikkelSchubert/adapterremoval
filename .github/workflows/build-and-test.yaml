@@ -38,13 +38,6 @@ jobs:
       - name: Disable man-db building
         run: sudo rm -vf /var/lib/man-db/auto-update
 
-      - name: Ccache debugging
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.cxx == 'g++' }}
-        run: |
-            echo 'CCACHE_DEBUG=true' | tee -a $GITHUB_ENV
-            echo "CCACHE_DEBUGDIR=/tmp/ccache-debug" | tee -a $GITHUB_ENV
-            mkdir -p /tmp/ccache-debug
-
       - name: Audit all outbound calls
         uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
         with:
@@ -63,6 +56,8 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.cxx }}
           create-symlink: true
+          # Disable cache cleanups while building
+          max-size: "0"
 
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -97,13 +92,6 @@ jobs:
           find . -name '*.gcda' -print -delete
           make unit-tests
 
-      - name: Archive code coverage results
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.cxx == 'g++' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ccache-debug
-          path: /tmp/ccache-debug
-
       - name: coveralls
         if: ${{ matrix.coverage == 'true' && github.event_name == 'push' }}
         run: |
@@ -112,4 +100,4 @@ jobs:
           coveralls --exclude tests --root . --build-root build --gcov-options '\-lpbc'
 
       - name: CCache cleanup
-        run: env CCACHE_MAXSIZE=100M ccache --cleanup
+        run: env CCACHE_MAXSIZE=500M ccache --cleanup
