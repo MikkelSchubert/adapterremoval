@@ -63,8 +63,6 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.cxx }}
           create-symlink: true
-          # Set cache size to about 4 full builds
-          max-size: "100M"
 
       - name: dependencies (libraries)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -112,3 +110,6 @@ jobs:
           sudo apt-get install -y gcovr
           uv pip install cpp-coveralls
           coveralls --exclude tests --root . --build-root build --gcov-options '\-lpbc'
+
+      - name: CCache cleanup
+        run: env CCACHE_MAXSIZE=100M ccache --cleanup
