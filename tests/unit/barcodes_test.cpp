@@ -4,7 +4,6 @@
 #include "barcode_table.hpp" // for barcode_table
 #include "errors.hpp"        // for parsing_error
 #include "fastq.hpp"         // for fastq, sequence_pair_vec, fastq_pair
-#include "sequence.hpp"      // for dna_sequence
 #include "sequence_sets.hpp" // for sample_set
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <string>            // for string
@@ -32,9 +31,9 @@ TEST_CASE("copy constructor", "[barcodes::errors]")
 
 TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACGT" }, dna_sequence{ "CGTG" } },
-    sample{ "sample2", dna_sequence{ "CGTG" }, dna_sequence{ "ACGT" } },
+  sample_set samples{
+    "sample1 ACGT CGTG",
+    "sample2 CGTG ACGT",
   };
 
   barcode_table table(samples, 0, 0, 0);
@@ -46,10 +45,10 @@ TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
 TEST_CASE("Exact match among different SE barcodes for SE reads",
           "[barcodes::exact]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "CACAC" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "AATTC" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 CACAC",
+    "sample3 AATTC",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -62,10 +61,10 @@ TEST_CASE("Exact match among different SE barcodes for SE reads",
 TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 5p",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "TCCCA" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "AGCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 TCCCA",
+    "sample3 AGCCA",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -78,10 +77,10 @@ TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 5p",
 TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 3p",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "ACCCT" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "ACCTA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 ACCCT",
+    "sample3 ACCTA",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -94,8 +93,8 @@ TEST_CASE("Exact match among similar SE barcodes for SE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for SE barcodes and SE reads",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample ACCCA",
   };
   const barcode_table table(samples, 0, 0, 0);
 
@@ -110,10 +109,10 @@ TEST_CASE("Shorter and longer reads for SE barcodes and SE reads",
 TEST_CASE("Exact match among different PE barcodes for SE reads",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "CACAC" }, dna_sequence{ "GATGC" } },
-    sample{ "sample3", dna_sequence{ "AATTC" }, dna_sequence{ "TGCGG" } },
+  const sample_set samples{
+    "sample1 ACCCA GTTTC",
+    "sample2 CACAC GATGC",
+    "sample3 AATTC TGCGG",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -126,10 +125,10 @@ TEST_CASE("Exact match among different PE barcodes for SE reads",
 TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 5p",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "TCCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample3", dna_sequence{ "AGCCA" }, dna_sequence{ "ATTTC" } },
+  const sample_set samples{
+    "sample1 ACCCA GTTTC",
+    "sample2 TCCCA GTTTC",
+    "sample3 AGCCA ATTTC",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -142,10 +141,10 @@ TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 5p",
 TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 3p",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "ACCCT" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample3", dna_sequence{ "AGCCA" }, dna_sequence{ "GTTTA" } },
+  const sample_set samples{
+    "sample1 ACCCA GTTTC",
+    "sample2 ACCCT GTTTC",
+    "sample3 AGCCA GTTTA",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -158,8 +157,8 @@ TEST_CASE("Exact match among similar PE barcodes for SE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for PE barcodes and SE reads",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "TGATA" } }
+  const sample_set samples{
+    "sample ACCCA TGATA",
   };
   const barcode_table table(samples, 0, 0, 0);
 
@@ -172,11 +171,13 @@ TEST_CASE(
   "Exact match among different PE barcodes for SE reads with ambiguous results",
   "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "AATTC" }, dna_sequence{ "GATGC" } },
-    sample{ "sample3", dna_sequence{ "AATTC" }, dna_sequence{ "TGCGG" } },
-  };
+  const sample_set samples(
+    {
+      "sample1 ACCCA GTTTC",
+      "sample2 AATTC GATGC",
+      "sample3 AATTC TGCGG",
+    },
+    barcode_config{}.paired_end_mode(true));
 
   const barcode_table table(samples, 0, 0, 0);
 
@@ -190,10 +191,10 @@ TEST_CASE(
 TEST_CASE("Exact match among different SE barcodes for PE reads",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "CACAC" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "AATTC" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 CACAC",
+    "sample3 AATTC",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -209,10 +210,10 @@ TEST_CASE("Exact match among different SE barcodes for PE reads",
 TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 5p",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "TCCCA" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "ATCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 TCCCA",
+    "sample3 ATCCA",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -228,10 +229,10 @@ TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 5p",
 TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 3p",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "ACCCT" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "ACCGA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 ACCCT",
+    "sample3 ACCGA",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -247,8 +248,8 @@ TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for SE barcodes and PE reads",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample ACCCA",
   };
   const barcode_table table(samples, 0, 0, 0);
 
@@ -266,10 +267,10 @@ TEST_CASE("Shorter and longer reads for SE barcodes and PE reads",
 TEST_CASE("Exact match among different PE barcodes for PE reads",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "CACAC" }, dna_sequence{ "GATGC" } },
-    sample{ "sample3", dna_sequence{ "AATTC" }, dna_sequence{ "TGCGG" } },
+  const sample_set samples{
+    "sample1 ACCCA GTTTC",
+    "sample2 CACAC GATGC",
+    "sample3 AATTC TGCGG",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -285,11 +286,13 @@ TEST_CASE("Exact match among different PE barcodes for PE reads",
 TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 5p",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "TCCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample3", dna_sequence{ "ACCCA" }, dna_sequence{ "ATTTC" } },
-  };
+  const sample_set samples(
+    {
+      "sample1 ACCCA GTTTC",
+      "sample2 TCCCA GTTTC",
+      "sample3 ACCCA ATTTC",
+    },
+    barcode_config().paired_end_mode());
 
   const barcode_table table(samples, 0, 0, 0);
 
@@ -304,11 +307,13 @@ TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 5p",
 TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 3p",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample2", dna_sequence{ "ACCCT" }, dna_sequence{ "GTTTC" } },
-    sample{ "sample3", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTA" } },
-  };
+  const sample_set samples(
+    {
+      "sample1 ACCCA GTTTC",
+      "sample2 ACCCT GTTTC",
+      "sample3 ACCCA GTTTA",
+    },
+    barcode_config().paired_end_mode());
 
   const barcode_table table(samples, 0, 0, 0);
 
@@ -323,8 +328,8 @@ TEST_CASE("Exact match among similar PE barcodes for PE reads - differs at 3p",
 TEST_CASE("Shorter and longer reads for PE barcodes and PE reads",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "TGATGA" } }
+  const sample_set samples{
+    "sample ACCCA TGATGA",
   };
   const barcode_table table(samples, 0, 0, 0);
 
@@ -356,8 +361,8 @@ TEST_CASE("Shorter and longer reads for PE barcodes and PE reads",
 TEST_CASE("Exact matching reads with mismatches for SE barcodes",
           "[barcodes::exact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample ACCCA",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -388,8 +393,8 @@ TEST_CASE("Exact matching reads with mismatches for SE barcodes",
 TEST_CASE("Exact matching reads with mismatches for PE barcodes",
           "[barcodes::exact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  const sample_set samples{
+    "sample ACCCA GTTTC",
   };
 
   const barcode_table table(samples, 0, 0, 0);
@@ -421,8 +426,8 @@ TEST_CASE("Exact matching reads with mismatches for PE barcodes",
 TEST_CASE("Global limits override local limits for SE barcodes",
           "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample ACCCA",
   };
 
   const barcode_table table(samples, 0, 1, 1);
@@ -439,8 +444,8 @@ TEST_CASE("Global limits override local limits for SE barcodes",
 TEST_CASE("Global limits override local limits for PE barcodes",
           "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  const sample_set samples{
+    "sample ACCCA GTTTC",
   };
 
   const barcode_table table(samples, 0, 1, 1);
@@ -462,8 +467,8 @@ TEST_CASE("Global limits override local limits for PE barcodes",
 
 TEST_CASE("Mismatches in R1 only with SE table", "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample ACCCA",
   };
 
   const barcode_table table(samples, 1, 1, 0);
@@ -489,8 +494,8 @@ TEST_CASE("Mismatches in R1 only with SE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Mismatches in R1 only with PE table", "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  const sample_set samples{
+    "sample ACCCA GTTTC",
   };
 
   const barcode_table table(samples, 1, 1, 0);
@@ -516,8 +521,8 @@ TEST_CASE("Mismatches in R1 only with PE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Mismatches in R2 only with SE table", "[barcodes::inexact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{} }
+  const sample_set samples{
+    "sample ACCCA",
   };
 
   const barcode_table table(samples, 1, 0, 1);
@@ -535,8 +540,8 @@ TEST_CASE("Mismatches in R2 only with SE table", "[barcodes::inexact::pe]")
 
 TEST_CASE("Mismatches in R2 only with PE table", "[barcodes::inexact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  const sample_set samples{
+    "sample ACCCA GTTTC",
   };
 
   const barcode_table table(samples, 1, 0, 1);
@@ -558,8 +563,8 @@ TEST_CASE("Mismatches in R2 only with PE table", "[barcodes::inexact::pe]")
 
 TEST_CASE("Mismatches in R1/R2 with PE table", "[barcodes::inexact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  const sample_set samples{
+    "sample ACCCA GTTTC",
   };
 
   const barcode_table table(samples, 1, 1, 1);
@@ -586,8 +591,8 @@ TEST_CASE("Mismatches in R1/R2 with PE table", "[barcodes::inexact::pe]")
 TEST_CASE("Multiple mismatches in R1/R2 with PE table",
           "[barcodes::inexact::pe]")
 {
-  const sample_set samples = {
-    sample{ "sample", dna_sequence{ "ACCCA" }, dna_sequence{ "GTTTC" } },
+  const sample_set samples{
+    "sample ACCCA GTTTC",
   };
 
   const barcode_table table(samples, 2, 2, 2);
@@ -615,10 +620,10 @@ TEST_CASE("Multiple mismatches in R1/R2 with PE table",
 
 TEST_CASE("Ambiguous matches in R1 for SE table", "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{} },
-    sample{ "sample2", dna_sequence{ "TCCCA" }, dna_sequence{} },
-    sample{ "sample3", dna_sequence{ "ACCCG" }, dna_sequence{} }
+  const sample_set samples{
+    "sample1 ACCCA",
+    "sample2 TCCCA",
+    "sample3 ACCCG",
   };
 
   const barcode_table table(samples, 1, 1, 1);
@@ -630,10 +635,10 @@ TEST_CASE("Ambiguous matches in R1 for SE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Ambiguous matches in SE R1 for PE table", "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "TGCGT" } },
-    sample{ "sample2", dna_sequence{ "TCCCA" }, dna_sequence{ "AAGTT" } },
-    sample{ "sample3", dna_sequence{ "ACCCG" }, dna_sequence{ "CGGCA" } },
+  const sample_set samples{
+    "sample1 ACCCA TGCGT",
+    "sample2 TCCCA AAGTT",
+    "sample3 ACCCG CGGCA",
   };
 
   const barcode_table table(samples, 1, 1, 1);
@@ -645,9 +650,9 @@ TEST_CASE("Ambiguous matches in SE R1 for PE table", "[barcodes::inexact::se]")
 
 TEST_CASE("Mismatch resulting in apparent match", "[barcodes::inexact::se]")
 {
-  const sample_set samples = {
-    sample{ "sample1", dna_sequence{ "ACCCA" }, dna_sequence{ "TGCGT" } },
-    sample{ "sample2", dna_sequence{ "TCCTT" }, dna_sequence{ "AAGTT" } },
+  const sample_set samples{
+    "sample1 ACCCA TGCGT",
+    "sample2 TCCTT AAGTT",
   };
 
   const barcode_table table(samples, 1, 1, 1);

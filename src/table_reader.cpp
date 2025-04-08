@@ -18,7 +18,7 @@ throw_table_error(std::string_view name, size_t linenum, std::string_view error)
 {
   std::ostringstream ss;
   if (!name.empty() || linenum != static_cast<size_t>(-1)) {
-    ss << "Error ";
+    ss << "Error";
 
     if (linenum != static_cast<size_t>(-1)) {
       ss << " at line " << linenum;

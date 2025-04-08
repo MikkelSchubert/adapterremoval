@@ -13,6 +13,7 @@
 #include "main.hpp"        // for HELPTEXT, NAME, VERSION
 #include "output.hpp"      // for DEV_NULL, output_files, output_file
 #include "progress.hpp"    // for progress_type, progress_type::simple, progr...
+#include "sequence.hpp"    // for dna_sequence
 #include "simd.hpp"        // for size_t, name, supported, instruction_set
 #include "strutils.hpp"    // for shell_escape, str_to_u32
 #include <algorithm>       // for find, max, min
@@ -955,13 +956,18 @@ userconfig::userconfig()
     .bind_str(&barcode_list);
   argparser.add("--multiple-barcodes")
     .help("Allow for more than one barcode (pair) for each sample. If this "
-          "option is not specified, AdapterRemoval will abort if "
-          "barcodes/barcode pairs do not to unique samples");
-  argparser.add("--reversible-barcodes")
+          "option is not specified, AdapterRemoval will abort if multiple "
+          "barcodes/barcode pairs identify the same sample");
+  argparser.add("--reversible-barcodes", "X")
     .help("If set, it is assumed that barcodes can be sequences in both the "
-          "barcode1-insert-barcode2 orientation and barcode2'-insert-barcode1' "
-          "orientation, where ' indicates reverse complementation. This option "
-          "requires two barcodes per sample (double-indexing)");
+          "barcode1-insert-barcode2 orientation and barcode2-insert-barcode1 "
+          "orientation. This option requires two barcodes per sample "
+          "(double-indexing). If --reversible-barcodes is set without a value, "
+          "forward direction is assumed")
+    .bind_str(nullptr)
+    .with_default("unspecified")
+    .with_implicit_argument("forward")
+    .with_choices({ "unspecified", "forward", "reverse", "explicit" });
 
   argparser.add_separator();
   argparser.add("--barcode-mm", "N")
@@ -1640,16 +1646,11 @@ userconfig::setup_adapter_sequences()
       return false;
     }
 
-    if (adapters.size()) {
-      log::info() << "Read " << adapters.size()
-                  << " adapters / adapter pairs from '" << adapter_list << "'";
-    } else {
-      log::error() << "No adapter sequences found in table!";
-      return false;
-    }
+    log::info() << "Read " << adapters.size()
+                << " adapters / adapter pairs from '" << adapter_list << "'";
   } else {
     try {
-      adapters.add(adapter_1, adapter_2);
+      adapters.add(dna_sequence{ adapter_1 }, dna_sequence{ adapter_2 });
     } catch (const fastq_error& error) {
       log::error() << "Error parsing adapter sequence(s):\n"
                    << "   " << error.what();
@@ -1685,11 +1686,13 @@ userconfig::setup_demultiplexing()
   }
 
   if (argparser.is_set("--barcode-list")) {
-    const auto config =
-      barcode_config()
-        .paired_end_mode(paired_ended_mode)
-        .allow_multiple_barcodes(argparser.is_set("--multiple-barcodes"))
-        .unidirectional_barcodes(!argparser.is_set("--reversible-barcodes"));
+    const auto orientation =
+      parse_table_orientation(argparser.value("--reversible-barcodes"));
+
+    barcode_config config;
+    config.paired_end_mode(paired_ended_mode)
+      .allow_multiple_barcodes(argparser.is_set("--multiple-barcodes"))
+      .orientation(orientation);
 
     try {
       samples.load(barcode_list, config);

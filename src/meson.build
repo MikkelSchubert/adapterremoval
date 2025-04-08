@@ -88,6 +88,7 @@ libcore = static_library(
     'logging.cpp',
     'managed_io.cpp',
     'mathutils.cpp',
+    'read_group.cpp',
     'sequence_sets.cpp',
     'sequence.cpp',
     'serializer.cpp',

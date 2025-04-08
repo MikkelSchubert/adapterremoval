@@ -7,7 +7,6 @@
 #include "commontypes.hpp"   // for string_vec, read_type, merge_strategy
 #include "fastq_enc.hpp"     // for fastq_encoding
 #include "sequence_sets.hpp" // for sample_set
-#include "serializer.hpp"    // for read_group
 #include "simd.hpp"          // for instruction_set
 #include "timer.hpp"         // for monotonic_timer
 #include <cstdint>           // for uint64_t

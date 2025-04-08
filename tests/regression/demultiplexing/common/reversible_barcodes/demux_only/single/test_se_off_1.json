@@ -1,0 +1,26 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "out_off",
+    "--barcode-list",
+    "barcodes.txt",
+    "--demultiplex-only"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "out_off.sample_1.r1.fastq.gz",
+      "out_off.sample_2.r1.fastq.gz",
+      "out_off.unidentified.r1.fastq.gz"
+    ],
+    "ignore": [
+      "out_off.html",
+      "out_off.json"
+    ]
+  }
+}
