@@ -2,30 +2,27 @@
   "description": "Trimming list of adapters containing multiple adapter pairs",
   "arguments": [
     "--out-prefix",
-    "your_output",
+    "output",
     "--adapter-list",
-    "adapters.txt"
+    "adapters.txt",
+    "--out-json",
+    "output.se.json"
   ],
   "files": {
     "input_1": [
-      "reads_1.fastq"
-    ],
-    "input_2": [
-      "reads_2.fastq"
+      "input_1.fastq"
     ],
     "adapters": [
       "adapters.txt"
     ],
     "output": [
-      "your_output.r1.fastq.gz",
-      "your_output.r2.fastq.gz",
-      "your_output.singleton.fastq.gz"
+      "output.r1.fastq.gz"
     ],
     "json": [
-      "your_output.json"
+      "output.se.json"
     ],
     "html": [
-      "your_output.html"
+      "output.html"
     ]
   }
 }

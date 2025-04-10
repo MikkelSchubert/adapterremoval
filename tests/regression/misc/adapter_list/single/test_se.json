@@ -1,0 +1,28 @@
+{
+    "description": "Trimming list of adapters containing single adapter pair",
+    "arguments": [
+        "--out-prefix",
+        "output",
+        "--adapter-list",
+        "adapters.txt",
+        "--out-json",
+        "output.se.json"
+    ],
+    "files": {
+        "input_1": [
+            "input_1.fastq"
+        ],
+        "adapters": [
+            "adapters.txt"
+        ],
+        "output": [
+            "output.r1.fastq.gz"
+        ],
+        "json": [
+            "output.se.json"
+        ],
+        "html": [
+            "output.html"
+        ]
+    }
+}

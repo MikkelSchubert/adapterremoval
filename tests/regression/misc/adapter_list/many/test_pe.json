@@ -1,10 +1,12 @@
 {
-  "description": "Trimming list of adapters containing single adapter pair",
+  "description": "Trimming list of adapters containing multiple adapter pairs",
   "arguments": [
     "--out-prefix",
-    "your_output",
+    "output",
     "--adapter-list",
-    "adapters.txt"
+    "adapters.txt",
+    "--out-json",
+    "output.pe.json"
   ],
   "files": {
     "input_1": [
@@ -17,15 +19,15 @@
       "adapters.txt"
     ],
     "output": [
-      "your_output.r1.fastq.gz",
-      "your_output.r2.fastq.gz",
-      "your_output.singleton.fastq.gz"
+      "output.r1.fastq.gz",
+      "output.r2.fastq.gz",
+      "output.singleton.fastq.gz"
     ],
     "json": [
-      "your_output.json"
+      "output.pe.json"
     ],
     "html": [
-      "your_output.html"
+      "output.html"
     ]
   }
 }

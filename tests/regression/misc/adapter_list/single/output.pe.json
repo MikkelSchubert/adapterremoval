@@ -1,0 +1,51 @@
+{
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/v3.0.0-alpha3.json",
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float",
+    "timestamp": "...str"
+  },
+  "summary": {
+    "input": {
+      "reads": 2,
+      "bases": 200,
+      "mean_length": 100.000,
+      "reads_sampled": 2,
+      "q20_rate": 0.910,
+      "q30_rate": 0.710,
+      "uncalled_rate": 0.000,
+      "gc_content": 0.530
+    },
+    "output": {
+      "reads": 2,
+      "bases": 100,
+      "mean_length": 50.000,
+      "reads_sampled": 2,
+      "q20_rate": 1.000,
+      "q30_rate": 1.000,
+      "uncalled_rate": 0.000,
+      "gc_content": 0.520
+    }
+  },
+  "input": {
+    "read1": "...",
+    "read2": "..."
+  },
+  "demultiplexing": null,
+  "processing": [
+    {
+      "step": "adapters",
+      "action": "trim",
+      "reads": 2,
+      "bases": 100,
+      "adapter_list": [
+        { "adapter1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA", "adapter2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT", "reads": 2, "bases": 100 }
+      ]
+    },
+    { "step": "low_quality", "action": "trim", "reads": 0, "bases": 0 },
+    { "step": "min_length", "action": "filter", "reads": 0, "bases": 0 }
+  ],
+  "analyses": "...",
+  "output": "..."
+}
