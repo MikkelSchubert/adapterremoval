@@ -1,0 +1,11 @@
+{
+  "inherit_from": "test_pe.json",
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "adapters": [
+      "adapters.txt"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/v3.0.0-alpha3.json",
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float",
+    "timestamp": "...str"
+  },
+  "summary": {
+    "input": {
+      "reads": 5,
+      "bases": 450,
+      "mean_length": 90.000,
+      "reads_sampled": 5,
+      "q20_rate": 0.969,
+      "q30_rate": 0.902,
+      "uncalled_rate": 0.000,
+      "gc_content": 0.367
+    },
+    "output": {
+      "reads": 5,
+      "bases": 250,
+      "mean_length": 50.000,
+      "reads_sampled": 5,
+      "q20_rate": 0.996,
+      "q30_rate": 0.964,
+      "uncalled_rate": 0.000,
+      "gc_content": 0.316
+    }
+  },
+  "input":"...",
+  "demultiplexing": null,
+  "processing": [
+    {
+      "step": "adapters",
+      "action": "trim",
+      "reads": 5,
+      "bases": 200,
+      "adapter_list": [
+        { "adapter1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA", "adapter2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT", "reads": 1, "bases": 40 },
+        { "adapter1": "AAACTTGCTCTGTGCCCGCTCCGTATGTCACAA", "adapter2": "GATCGGGAGTAATTTGGAGGCAGTAGTTCGTCG", "reads": 1, "bases": 40 },
+        { "adapter1": "CTAATTTGCCGTAGCGACGTACTTCAGCCTCCA", "adapter2": "TACCGTGAAAGGTGCGCTTAGTGGCATATGCGT", "reads": 1, "bases": 40 },
+        { "adapter1": "GTTCATACGACGACGACCAATGGCACACTTATC", "adapter2": "TAAGAAACTCGGAGTTTGGCCTGCGAGGTAGCT", "reads": 1, "bases": 40 },
+        { "adapter1": "CCATGCCCCGAAGATTCCTATACCCTTAAGGTC", "adapter2": "GTTGCATTGACCCGAAGGGCTCGATGTTTAGGG", "reads": 1, "bases": 40 }
+      ]
+    },
+    { "step": "low_quality", "action": "trim", "reads": 0, "bases": 0 },
+    { "step": "min_length", "action": "filter", "reads": 0, "bases": 0 }
+  ],
+  "analyses": {
+    "duplication": null,
+    "insert_sizes": null,
+    "consensus_adapters": null
+  },
+  "output": "..."
+}

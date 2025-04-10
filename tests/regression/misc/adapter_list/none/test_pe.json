@@ -1,0 +1,24 @@
+{
+  "description": "Trimming list of adapters fails if there are no adapters",
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--adapter-list",
+    "adapters.txt"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "adapters": [
+      "adapters.txt"
+    ]
+  },
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] No adapter sequences found in table!"
+  ]
+}
