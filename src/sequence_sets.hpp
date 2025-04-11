@@ -42,8 +42,8 @@ public:
   /** Adds/replaces the barcode (BC) tag */
   void set_barcodes(std::string_view value) { update_tag("BC", value); }
 
-  /** Adds/replaces the comment (CO) tag */
-  void set_comment(std::string_view value) { update_tag("CO", value); }
+  /** Adds/replaces the description (DS) tag */
+  void set_description(std::string_view value) { update_tag("DS", value); }
 
 private:
   /** Updates or adds the specified tag; sets `m_id` if key is `ID` */

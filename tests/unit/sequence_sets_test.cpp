@@ -74,19 +74,19 @@ TEST_CASE("unsetting read group fields")
   REQUIRE(rg.header() == "@RG\tID:1");
   rg.set_sample("foo");
   REQUIRE(rg.header() == "@RG\tID:1\tSM:foo");
-  rg.set_comment("comment");
-  REQUIRE(rg.header() == "@RG\tID:1\tSM:foo\tCO:comment");
+  rg.set_description("comment");
+  REQUIRE(rg.header() == "@RG\tID:1\tSM:foo\tDS:comment");
 
   SECTION("SM first")
   {
     rg.set_sample("");
-    REQUIRE(rg.header() == "@RG\tID:1\tCO:comment");
-    rg.set_comment("");
+    REQUIRE(rg.header() == "@RG\tID:1\tDS:comment");
+    rg.set_description("");
   }
 
   SECTION("CO first")
   {
-    rg.set_comment("");
+    rg.set_description("");
     REQUIRE(rg.header() == "@RG\tID:1\tSM:foo");
     rg.set_sample("");
   }
