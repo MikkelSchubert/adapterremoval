@@ -468,8 +468,8 @@ sample_set::load(const std::string& filename, const barcode_config& config)
 void
 sample_set::set_unidentified_read_group(read_group tmpl)
 {
-  // Unidentified reads lack a SM tag, so add a comment instead
-  tmpl.set_comment("unidentified");
+  // Unidentified reads lack a SM tag, so add a description instead
+  tmpl.set_description("unidentified");
   m_unidentified.set_read_group(tmpl);
 }
 

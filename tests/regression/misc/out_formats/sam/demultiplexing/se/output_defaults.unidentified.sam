@@ -1,4 +1,4 @@
 @HD	VN:1.6	SO:unsorted
-@RG	ID:1	CO:unidentified
+@RG	ID:1	DS:unidentified
 @PG	ID:adapterremoval	PN:adapterremoval	CL:adapterremoval3 --out-prefix output_defaults --barcode-list barcodes.txt --out-format sam --in-file1 input.fastq	VN:3.0.0-alpha3
 unidentified/1	4	*	0	0	*	*	0	0	AGATGTTCGAATAGTCGGAATAATAATGCGAGCTAATATACTGGGTCACCGAGAGGTGATGAACTAGAGCTATTGATCATCAAGGAAATT	@@@DDFABDHFBDHEGGGGHBF>BFG9FHIIIGEGG:CB?FFG9D@BBDAHIIIIIIIGGGAAAAC==2?;>>CAAC2;;A@=@>CC@B?	RG:Z:1
