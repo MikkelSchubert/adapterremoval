@@ -444,7 +444,8 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  for (const auto& it : m_config.samples.at(m_sample)) {
+  const auto& sample = m_config.samples.at(m_sample);
+  for (const auto& it : sample) {
     aligners.emplace_back(it.adapters, m_config.simd);
   }
 
@@ -529,13 +530,20 @@ pe_reads_processor::process(chunk_ptr chunk)
         stats->total_trimmed.inc_bases(in_length_1 + in_length_2 -
                                        read_1.length());
 
+        auto meta = read_meta(read_type::merged).barcode(barcode);
+        if (m_config.normalize_orientation &&
+            sample.at(barcode).orientation == barcode_orientation::reverse) {
+          read_1.reverse_complement();
+        }
+
         if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
-          chunks.add(read_1, read_type::merged, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(read_1, read_type::merged_fail, barcode);
+          meta.type(read_type::merged_fail);
         }
+
+        chunks.add(read_1, meta);
 
         continue;
       }

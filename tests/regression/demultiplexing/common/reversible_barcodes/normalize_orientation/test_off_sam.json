@@ -1,0 +1,35 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "out_off",
+    "--barcode-list",
+    "barcodes.txt",
+    "--mixed-orientation",
+    "--multiple-barcodes",
+    "--merge",
+    "--out-format",
+    "sam"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "out_off.sample_1.sam",
+      "out_off.sample_2.sam"
+    ],
+    "json": [
+      "out_off.json"
+    ],
+    "ignore": [
+      "out_off.unidentified.sam",
+      "out_off.html"
+    ]
+  }
+}

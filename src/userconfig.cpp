@@ -969,6 +969,12 @@ userconfig::userconfig()
     .with_default("unspecified")
     .with_implicit_argument("forward")
     .with_choices({ "unspecified", "forward", "reverse", "explicit" });
+  argparser.add("--normalize-orientation")
+    .help("Reverse complement merged reads found to be in the reverse "
+          "orientation, based on barcodes")
+    .depends_on("--mixed-orientation")
+    .depends_on("--merge")
+    .bind_bool(&normalize_orientation);
 
   argparser.add_separator();
   argparser.add("--barcode-mm", "N")

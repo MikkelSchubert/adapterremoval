@@ -27,6 +27,13 @@ public:
   /** Returns the file type associated with the read type */
   [[nodiscard]] read_file get_file() const noexcept;
 
+  /** Overwrites the current read type */
+  constexpr auto& type(read_type v) noexcept
+  {
+    m_type = v;
+    return *this;
+  }
+
   /** Overwrites the current barcode */
   constexpr auto& barcode(size_t v) noexcept
   {
