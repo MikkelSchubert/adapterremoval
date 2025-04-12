@@ -33,20 +33,20 @@ constexpr std::string_view SAM_HEADER = "@HD\tVN:1.6\tSO:unsorted\n";
  */
 
 std::string_view
-flags_to_sam(fastq_flags flags)
+flags_to_sam(read_type flags)
 {
   switch (flags) {
-    case fastq_flags::se:
+    case read_type::se:
       return "4";
-    case fastq_flags::se_fail:
+    case read_type::se_fail:
       return "516";
-    case fastq_flags::pe_1:
+    case read_type::pe_1:
       return "77";
-    case fastq_flags::pe_1_fail:
+    case read_type::pe_1_fail:
       return "589";
-    case fastq_flags::pe_2:
+    case read_type::pe_2:
       return "141";
-    case fastq_flags::pe_2_fail:
+    case read_type::pe_2_fail:
       return "653";
     default:
       AR_FAIL("invalid fastq flags");
@@ -54,20 +54,20 @@ flags_to_sam(fastq_flags flags)
 }
 
 uint16_t
-flags_to_bam(fastq_flags flags)
+flags_to_bam(read_type flags)
 {
   switch (flags) {
-    case fastq_flags::se:
+    case read_type::se:
       return 4;
-    case fastq_flags::se_fail:
+    case read_type::se_fail:
       return 516;
-    case fastq_flags::pe_1:
+    case read_type::pe_1:
       return 77;
-    case fastq_flags::pe_1_fail:
+    case read_type::pe_1_fail:
       return 589;
-    case fastq_flags::pe_2:
+    case read_type::pe_2:
       return 141;
-    case fastq_flags::pe_2_fail:
+    case read_type::pe_2_fail:
       return 653;
     default:
       AR_FAIL("invalid fastq flags");
@@ -295,7 +295,7 @@ serializer::header(buffer& buf, const string_vec& args) const
 void
 serializer::record(buffer& buf,
                    const fastq& record,
-                   const fastq_flags flags,
+                   const read_type flags,
                    const size_t barcode) const
 {
   m_record(

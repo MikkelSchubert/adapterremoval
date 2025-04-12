@@ -7,7 +7,7 @@
 #include "fastq_io.hpp"      // for chunk_ptr, fastq...
 #include "output.hpp"        // for output_files
 #include "sequence_sets.hpp" // for adapter_set
-#include "serializer.hpp"    // for fastq_flags
+#include "serializer.hpp"    // for read_type
 #include "userconfig.hpp"    // for userconfig, ar_command, ar_command::demul...
 #include <cstddef>           // for size_t
 #include <memory>            // for make_unique, unique_ptr
@@ -183,18 +183,18 @@ process_demultiplexed::process(chunk_ptr chunk)
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2, ++barcode) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats->read_1->process(*it_1);
-      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1, *barcode);
+      chunks.add(*it_1, read_file::mate_1, read_type::pe_1, *barcode);
 
       it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats->read_2->process(*it_2);
-      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2, *barcode);
+      chunks.add(*it_2, read_file::mate_2, read_type::pe_2, *barcode);
     }
   } else {
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats->read_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se, *barcode++);
+      chunks.add(read, read_file::mate_1, read_type::se, *barcode++);
     }
   }
 
@@ -218,16 +218,16 @@ processes_unidentified::processes_unidentified(const userconfig& config,
   , m_config(config)
   , m_statistics(std::move(stats))
 {
-  m_output.set_file(read_type::mate_1, output.unidentified_1);
-  m_output.set_file(read_type::mate_2, output.unidentified_2);
+  m_output.set_file(read_file::mate_1, output.unidentified_1);
+  m_output.set_file(read_file::mate_2, output.unidentified_2);
 
   if (output.unidentified_1_step != output_files::disabled) {
-    m_output.set_step(read_type::mate_1, output.unidentified_1_step);
+    m_output.set_step(read_file::mate_1, output.unidentified_1_step);
   }
 
   if (output.unidentified_1_step != output.unidentified_2_step &&
       output.unidentified_2_step != output_files::disabled) {
-    m_output.set_step(read_type::mate_2, output.unidentified_2_step);
+    m_output.set_step(read_file::mate_2, output.unidentified_2_step);
   }
 
   m_stats_1.emplace_back_n(m_config.max_threads, config.report_sample_rate);
@@ -258,18 +258,18 @@ processes_unidentified::process(chunk_ptr chunk)
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats_1->process(*it_1);
-      chunks.add(*it_1, read_type::mate_1, fastq_flags::pe_1, 0);
+      chunks.add(*it_1, read_file::mate_1, read_type::pe_1, 0);
 
       it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats_2->process(*it_2);
-      chunks.add(*it_2, read_type::mate_2, fastq_flags::pe_2, 0);
+      chunks.add(*it_2, read_file::mate_2, read_type::pe_2, 0);
     }
   } else {
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se, 0);
+      chunks.add(read, read_file::mate_1, read_type::se, 0);
     }
   }
 
