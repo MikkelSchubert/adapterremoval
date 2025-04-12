@@ -42,6 +42,13 @@ public:
   explicit parsing_error(const std::string& message);
 };
 
+/** Exception raised for for errors during serialization / encoding. */
+class serializing_error : public std::runtime_error
+{
+public:
+  explicit serializing_error(const std::string& message);
+};
+
 /** Exception raised for FASTQ parsing and validation errors. */
 class fastq_error : public parsing_error
 {

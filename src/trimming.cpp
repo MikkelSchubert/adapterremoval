@@ -2,21 +2,21 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "trimming.hpp"
-#include "alignment.hpp"   // for alignment_info, sequence_merger, sequence_...
-#include "commontypes.hpp" // for read_file, trimming_strategy, merge_strategy
-#include "counts.hpp"      // for counts, indexed_count
-#include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
-#include "fastq_io.hpp"    // for chunk_ptr, fastq_...
-#include "output.hpp"      // for sample_output_files, processed_reads
+#include "alignment.hpp"     // for alignment_info, sequence_merger, ...
+#include "commontypes.hpp"   // for read_file, trimming_strategy, ...
+#include "counts.hpp"        // for counts, indexed_count
+#include "debug.hpp"         // for AR_FAIL, AR_REQUIRE
+#include "fastq_io.hpp"      // for chunk_ptr, fastq_...
+#include "output.hpp"        // for sample_output_files, processed_reads
 #include "sequence_sets.hpp" // for adapter_set
 #include "serializer.hpp"    // for read_type
 #include "simd.hpp"          // for size_t
-#include "statistics.hpp" // for trimming_statistics, reads_and_bases, fast...
-#include "userconfig.hpp" // for userconfig
-#include <cstddef>        // for size_t
-#include <memory>         // for unique_ptr, __shared_ptr_access, make_unique
-#include <string>         // for string
-#include <utility>        // for pair, move
+#include "statistics.hpp"    // for trimming_statistics, reads_and_bases, ...
+#include "userconfig.hpp"    // for userconfig
+#include <cstddef>           // for size_t
+#include <memory>            // for unique_ptr, __shared_ptr_access, make_unique
+#include <string>            // for string
+#include <utility>           // for pair, move
 
 namespace adapterremoval {
 
@@ -369,10 +369,10 @@ se_reads_processor::process(chunk_ptr chunk)
 
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
-      chunks.add(read, read_file::mate_1, read_type::se, barcode);
+      chunks.add(std::move(read), read_type::se, barcode);
     } else {
       stats->discarded->process(read);
-      chunks.add(read, read_file::discarded, read_type::se_fail, barcode);
+      chunks.add(std::move(read), read_type::se_fail, barcode);
     }
   }
 
@@ -383,6 +383,8 @@ se_reads_processor::process(chunk_ptr chunk)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `pe_reads_processor`
+
+namespace {
 
 void
 add_pe_statistics(const trimming_statistics& stats,
@@ -397,10 +399,6 @@ add_pe_statistics(const trimming_statistics& stats,
       stats.read_2->process(read);
       break;
 
-    case read_file::merged:
-      stats.merged->process(read);
-      break;
-
     case read_file::singleton:
       stats.singleton->process(read);
       break;
@@ -410,12 +408,15 @@ add_pe_statistics(const trimming_statistics& stats,
       break;
 
     case read_file::max:
+    case read_file::merged:
       AR_FAIL("unhandled read type");
 
     default:
       AR_FAIL("invalid read type");
   }
 }
+
+} // namespace
 
 pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const sample_output_files& output,
@@ -530,10 +531,10 @@ pe_reads_processor::process(chunk_ptr chunk)
 
         if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
-          chunks.add(read_1, read_file::merged, read_type::se, barcode);
+          chunks.add(std::move(read_1), read_type::merged, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(read_1, read_file::discarded, read_type::se_fail, barcode);
+          chunks.add(std::move(read_1), read_type::merged_fail, barcode);
         }
 
         continue;
@@ -564,24 +565,23 @@ pe_reads_processor::process(chunk_ptr chunk)
     const bool is_ok_1 = is_acceptable_read(m_config, *stats, read_1);
     const bool is_ok_2 = is_acceptable_read(m_config, *stats, read_2);
 
-    read_file type_1;
-    read_file type_2;
-    if (is_ok_1 && is_ok_2) {
-      type_1 = read_file::mate_1;
-      type_2 = read_file::mate_2;
-    } else if (is_ok_1) {
-      type_1 = read_file::singleton;
-      type_2 = read_file::discarded;
-    } else if (is_ok_2) {
-      type_1 = read_file::discarded;
-      type_2 = read_file::singleton;
-    } else {
-      type_1 = read_file::discarded;
-      type_2 = read_file::discarded;
+    read_meta meta_1{ read_type::pe_1 };
+    read_meta meta_2{ read_type::pe_2 };
+    if (!is_ok_1 || !is_ok_2) {
+      if (is_ok_1) {
+        meta_1.type(read_type::singleton_1);
+        meta_2.type(read_type::pe_2_fail);
+      } else if (is_ok_2) {
+        meta_1.type(read_type::pe_1_fail);
+        meta_2.type(read_type::singleton_2);
+      } else {
+        meta_1.type(read_type::pe_1_fail);
+        meta_2.type(read_type::pe_2_fail);
+      }
     }
 
-    add_pe_statistics(*stats, read_1, type_1);
-    add_pe_statistics(*stats, read_2, type_2);
+    add_pe_statistics(*stats, read_1, meta_1.get_file());
+    add_pe_statistics(*stats, read_2, meta_2.get_file());
 
     // Total number of reads/bases trimmed
     stats->total_trimmed.inc_reads((in_length_1 != read_1.length()) +
@@ -589,12 +589,9 @@ pe_reads_processor::process(chunk_ptr chunk)
     stats->total_trimmed.inc_bases((in_length_1 - read_1.length()) +
                                    (in_length_2 - read_2.length()));
 
-    const auto flags_1 = is_ok_1 ? read_type::pe_1 : read_type::pe_1_fail;
-    const auto flags_2 = is_ok_2 ? read_type::pe_2 : read_type::pe_2_fail;
-
     // Queue reads last, since this result in modifications to lengths
-    chunks.add(read_1, type_1, flags_1, barcode);
-    chunks.add(read_2, type_2, flags_2, barcode);
+    chunks.add(std::move(read_1), meta_1.barcode(barcode));
+    chunks.add(std::move(read_2), meta_2.barcode(barcode));
   }
 
   // Track amount of overlapping bases "lost" due to read merging
