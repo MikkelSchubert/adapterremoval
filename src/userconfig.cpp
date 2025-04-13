@@ -13,6 +13,7 @@
 #include "main.hpp"        // for HELPTEXT, NAME, VERSION
 #include "output.hpp"      // for DEV_NULL, output_files, output_file
 #include "progress.hpp"    // for progress_type, progress_type::simple, progr...
+#include "sequence.hpp"    // for dna_sequence
 #include "simd.hpp"        // for size_t, name, supported, instruction_set
 #include "strutils.hpp"    // for shell_escape, str_to_u32
 #include <algorithm>       // for find, max, min
@@ -1640,16 +1641,11 @@ userconfig::setup_adapter_sequences()
       return false;
     }
 
-    if (adapters.size()) {
-      log::info() << "Read " << adapters.size()
-                  << " adapters / adapter pairs from '" << adapter_list << "'";
-    } else {
-      log::error() << "No adapter sequences found in table!";
-      return false;
-    }
+    log::info() << "Read " << adapters.size()
+                << " adapters / adapter pairs from '" << adapter_list << "'";
   } else {
     try {
-      adapters.add(adapter_1, adapter_2);
+      adapters.add(dna_sequence{ adapter_1 }, dna_sequence{ adapter_2 });
     } catch (const fastq_error& error) {
       log::error() << "Error parsing adapter sequence(s):\n"
                    << "   " << error.what();

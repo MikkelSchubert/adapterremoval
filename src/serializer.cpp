@@ -112,7 +112,7 @@ create_sam_header(const string_vec& args, const sample& s)
   // @RG
   for (const auto& it : s) {
     if (it.has_read_group) {
-      header.append(it.info.header());
+      header.append(it.read_group_.header());
       header.append("\n");
     }
   }
@@ -200,7 +200,7 @@ sam_serializer::record(buffer& buf,
 
   if (sequences.has_read_group) {
     buf.append("\tRG:Z:");
-    buf.append(sequences.info.id());
+    buf.append(sequences.read_group_.id());
   }
 
   buf.append("\n");
@@ -252,7 +252,7 @@ bam_serializer::record(buffer& buf,
   if (sequences.has_read_group) {
     // RG:Z:${ID} tag
     buf.append("RGZ");
-    buf.append(sequences.info.id());
+    buf.append(sequences.read_group_.id());
     buf.append_u8(0); // NUL
   }
 

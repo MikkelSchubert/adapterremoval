@@ -6,11 +6,10 @@
 #include "errors.hpp"        // for fastq_error
 #include "linereader.hpp"    // for line_reader
 #include "sequence.hpp"      // for dna_sequence
-#include "strutils.hpp"      // for string_vec, indent_lines
+#include "strutils.hpp"      // for log_escape
 #include "table_reader.hpp"  // for table_reader
 #include <algorithm>         // for max, sort, find
 #include <sstream>           // for operator<<, basic_ostream, ostringstream
-#include <stdexcept>         // for invalid_argument
 #include <string_view>       // for string_view
 #include <utility>           // for pair
 #include <vector>            // for vector, vector<>::const_iterator
@@ -136,121 +135,19 @@ check_barcodes_sequences(const std::vector<sample>& samples,
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for `read_group`
-
-read_group::read_group()
-  : m_header{ "@RG\tID:1" }
-  , m_id{ "1" }
-{
-}
-
-read_group::read_group(std::string_view value)
-  : m_header{ "@RG" }
-{
-  using invalid = std::invalid_argument;
-
-  // It's not unreasonable to except users to try to specify a full @RG line
-  if (starts_with(value, "@RG\t")) {
-    value = value.substr(4);
-  }
-
-  if (!value.empty()) {
-    for (const auto& field : split_text(value, '\t')) {
-      for (const auto c : field) {
-        if (c < ' ' || c > '~') {
-          throw invalid("only characters in the range ' ' to '~' are allowed");
-        }
-      }
-
-      if (field.size() < 4) {
-        throw invalid("tags must be at least 4 characters long");
-      } else if (!is_ascii_letter(field.at(0))) {
-        throw invalid("first character in tag name must be a letter");
-      } else if (!is_ascii_letter_or_digit(field.at(1))) {
-        throw invalid(
-          "second character in tag name must be a letter or number");
-      } else if (field.at(2) != ':') {
-        throw invalid("third character in tag must be a colon");
-      } else if (starts_with(field, "ID:")) {
-        if (!m_id.empty()) {
-          throw invalid("multiple ID tags found");
-        }
-
-        m_id = field.substr(3);
-      }
-    }
-  }
-
-  // Generic read-group key if the user did not supply one
-  if (m_id.empty()) {
-    m_id = "1";
-    m_header += "\tID:1";
-  }
-
-  if (!value.empty()) {
-    m_header += "\t";
-    m_header += value;
-  }
-}
-
-void
-read_group::set_id(std::string_view id)
-{
-  AR_REQUIRE(!id.empty());
-  update_tag("ID", id);
-  m_id = id;
-}
-
-void
-read_group::update_tag(std::string_view key, std::string_view value)
-{
-  AR_REQUIRE(!key.empty());
-  std::string cache;
-  cache.push_back('\t');
-  cache.append(key);
-  cache.push_back(':');
-
-  auto index = m_header.find(cache);
-  if (index != std::string::npos) {
-    if (value.empty()) {
-      cache = m_header.substr(0, index);
-    } else {
-      cache = m_header.substr(0, index + cache.size());
-      cache.append(value);
-    }
-
-    index = m_header.find('\t', index + 1);
-    if (index != std::string::npos) {
-      cache.append(m_header.substr(index));
-    }
-
-    m_header = cache;
-  } else if (!value.empty()) {
-    m_header.append(cache);
-    m_header.append(value);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'adapters' class
+// Implementations for 'adapter_set' class
 
 adapter_set::adapter_set(std::initializer_list<string_view_pair> args)
 {
-  for (const auto& pair : args) {
-    add(std::string{ pair.first }, std::string{ pair.second });
+  for (const auto& [first, second] : args) {
+    add(dna_sequence{ first }, dna_sequence{ second });
   }
 }
 
 void
-adapter_set::add(dna_sequence adapter1, dna_sequence adapter2)
+adapter_set::add(dna_sequence adapter1, const dna_sequence& adapter2)
 {
-  m_adapters.emplace_back(adapter1, adapter2.reverse_complement());
-}
-
-void
-adapter_set::add(std::string adapter1, const std::string adapter2)
-{
-  add(dna_sequence{ adapter1 }, dna_sequence{ adapter2 });
+  m_adapters.emplace_back(std::move(adapter1), adapter2.reverse_complement());
 }
 
 adapter_set
@@ -258,26 +155,33 @@ adapter_set::add_barcodes(const dna_sequence& barcode1,
                           const dna_sequence& barcode2) const
 {
   adapter_set adapters;
-  for (const auto& it : m_adapters) {
+  const auto barcode2rc = barcode2.reverse_complement();
+  for (const auto& [first, second] : m_adapters) {
     // Add sequences directly in alignment orientation
-    adapters.m_adapters.emplace_back(barcode2.reverse_complement() + it.first,
-                                     it.second + barcode1);
+    adapters.m_adapters.emplace_back(barcode2rc + first, second + barcode1);
   }
 
   return adapters;
 }
 
 void
-adapter_set::load(const std::string& filename, bool paired_end)
+adapter_set::load(const std::string& filename, bool paired_end_mode)
 {
   line_reader reader(filename);
-  const auto adapters = table_reader()
-                          .with_comment_char('#')
-                          .with_min_columns(1 + paired_end)
-                          .with_max_columns(2)
-                          .parse(reader);
+  load(reader, paired_end_mode);
+}
 
-  for (const auto& row : adapters) {
+void
+adapter_set::load(line_reader_base& reader, bool paired_end_mode)
+{
+  const auto table = table_reader()
+                       .with_comment_char('#')
+                       .with_min_columns(1 + paired_end_mode)
+                       .with_max_columns(2)
+                       .parse(reader);
+
+  sequence_pair_vec adapters;
+  for (const auto& row : table) {
     dna_sequence adapter_1{ row.at(0) };
     dna_sequence adapter_2;
     if (row.size() > 1) {
@@ -285,34 +189,100 @@ adapter_set::load(const std::string& filename, bool paired_end)
     }
 
     // Convert from read to alignment orientation
-    m_adapters.emplace_back(adapter_1, adapter_2.reverse_complement());
+    adapters.emplace_back(std::move(adapter_1), adapter_2.reverse_complement());
   }
+
+  if (adapters.empty()) {
+    throw parsing_error("No adapter sequences in table");
+  }
+
+  std::swap(m_adapters, adapters);
 }
 
 sequence_pair_vec
 adapter_set::to_read_orientation() const
 {
   sequence_pair_vec adapters;
-  for (const auto& it : m_adapters) {
-    adapters.emplace_back(it.first, it.second.reverse_complement());
+  for (const auto& [first, second] : m_adapters) {
+    adapters.emplace_back(first, second.reverse_complement());
   }
 
   return adapters;
 }
 
+bool
+adapter_set::operator==(const adapter_set& other) const
+{
+  return m_adapters == other.m_adapters;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const adapter_set& value)
+{
+  os << "adapter_set{[";
+
+  bool is_first = true;
+  for (const auto& [first, second] : value) {
+    if (!is_first) {
+      os << ", ";
+    }
+
+    is_first = false;
+    os << "pair{first=" << first << ", second=" << second << "}";
+  }
+
+  return os << "]}";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'sample_sequences' class
+
+sample_sequences::sample_sequences(dna_sequence barcode_1_,
+                                   dna_sequence barcode_2_)
+  : barcode_1(std::move(barcode_1_))
+  , barcode_2(std::move(barcode_2_))
+{
+}
+
+bool
+sample_sequences::operator==(const sample_sequences& other) const
+{
+  return this->has_read_group == other.has_read_group &&
+         this->read_group_ == other.read_group_ &&
+         this->barcode_1 == other.barcode_1 &&
+         this->barcode_2 == other.barcode_2 && this->adapters == other.adapters;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const sample_sequences& value)
+{
+  return os << "sample_sequences{has_read_group="
+            << (value.has_read_group ? "true" : "false")
+            << ", read_group=" << value.read_group_
+            << ", barcode_1=" << value.barcode_1
+            << ", barcode_2=" << value.barcode_2
+            << ", adapters=" << value.adapters << "}";
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'sample' class
+
+sample::sample()
+  : sample(std::string{}, dna_sequence{}, dna_sequence{})
+{
+}
+
+sample::sample(std::string name, dna_sequence barcode1, dna_sequence barcode2)
+  : m_name(std::move(name))
+{
+  add(std::move(barcode1), std::move(barcode2));
+}
 
 void
 sample::add(dna_sequence barcode1, dna_sequence barcode2)
 {
+  AR_REQUIRE(barcode2.empty() || !barcode1.empty());
   m_barcodes.emplace_back(std::move(barcode1), std::move(barcode2));
-}
-
-void
-sample::add(std::string barcode1, std::string barcode2)
-{
-  add(dna_sequence(barcode1), dna_sequence(barcode2));
 }
 
 void
@@ -324,23 +294,23 @@ sample::set_adapters(const adapter_set& adapters)
 }
 
 void
-sample::set_read_group(const read_group& info)
+sample::set_read_group(const read_group& read_group_)
 {
   for (auto it = m_barcodes.begin(); it != m_barcodes.end(); ++it) {
-    it->info = info;
+    it->read_group_ = read_group_;
     it->has_read_group = true;
 
     if (!m_name.empty()) {
-      it->info.set_sample(m_name);
+      it->read_group_.set_sample(m_name);
 
       if (m_barcodes.size() > 1) {
         std::string id = m_name;
         id.push_back('.');
         id.append(std::to_string((it - m_barcodes.begin()) + 1));
 
-        it->info.set_id(id);
+        it->read_group_.set_id(id);
       } else {
-        it->info.set_id(m_name);
+        it->read_group_.set_id(m_name);
       }
     }
 
@@ -352,9 +322,22 @@ sample::set_read_group(const read_group& info)
         barcodes.append(it->barcode_2);
       }
 
-      it->info.set_barcodes(barcodes);
+      it->read_group_.set_barcodes(barcodes);
     }
   }
+}
+
+bool
+sample::operator==(const sample& other) const
+{
+  return m_name == other.m_name && m_barcodes == other.m_barcodes;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const sample& value)
+{
+  return os << "sample{name=" << log_escape(value.name()) << ", barcodes=["
+            << join_text(value, ", ") << "]}";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

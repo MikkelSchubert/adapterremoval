@@ -19,6 +19,6 @@
   },
   "return_code": 1,
   "stderr": [
-    "[ERROR] No adapter sequences found in table!"
+    "[ERROR] Error reading adapters from 'adapters.txt': No adapter sequences in table"
   ]
 }
