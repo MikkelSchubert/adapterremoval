@@ -31,7 +31,7 @@ add_project_arguments(
     compiler.get_supported_arguments(
         '-fno-rtti',
         # abort when sanitizers trigger
-        '-fno-sanitize-recover',
+        '-fno-sanitize-recover=all',
         # Treat non-ISO-conforming code and the use of extensions as errors
         '-pedantic-errors',
         # Terminate on the first error to simplify debugging

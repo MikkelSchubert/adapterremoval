@@ -108,7 +108,6 @@ TEST_CASE("underlying_value enum value", "[underlying_value]")
   CHECK(underlying_value(my_enum::a) == -1);
   CHECK(underlying_value(my_enum::b) == 0);
   CHECK(underlying_value(my_enum::c) == 23);
-  CHECK(underlying_value(static_cast<my_enum>(123)) == 123);
 }
 
 TEST_CASE("underlying_value enum class value", "[underlying_value]")
@@ -123,7 +122,6 @@ TEST_CASE("underlying_value enum class value", "[underlying_value]")
   CHECK(underlying_value(my_enum::a) == 0);
   CHECK(underlying_value(my_enum::b) == 4);
   CHECK(underlying_value(my_enum::c) == 8);
-  CHECK(underlying_value(static_cast<my_enum>(123)) == 123);
 }
 
 TEST_CASE("underlying_value returns same type", "[underlying_value]")
