@@ -30,11 +30,15 @@ not_found = dependency('', required: false)
 add_project_arguments(
     compiler.get_supported_arguments(
         '-fno-rtti',
+        # abort when sanitizers trigger
+        '-fno-sanitize-recover=all',
+        # Treat non-ISO-conforming code and the use of extensions as errors
         '-pedantic-errors',
-        '-Wfatal-errors', # Terminate on the first error to simplify debugging
+        # Terminate on the first error to simplify debugging
+        '-Wfatal-errors',
         # Convert certain warnings to errors
-        '-Werror=return-type', # Treat missing/wrong return statements as errors
-        '-Werror=switch-enum', # Require all enum values in a switch, to catch unhandled cases
+        '-Werror=return-type', # Treat missing/wrong returns as errors
+        '-Werror=switch-enum', # Require all enum values in a switch
         # Additional warnings
         '-Wcast-align',
         '-Wcast-qual',
