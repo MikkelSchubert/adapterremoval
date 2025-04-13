@@ -87,8 +87,14 @@ check_isal_return_code(int returncode,
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'vec_reader'
 
-vec_reader::vec_reader(const string_vec& lines)
-  : m_lines(lines)
+vec_reader::vec_reader(std::initializer_list<std::string_view> lines)
+  : m_lines(lines.begin(), lines.end())
+  , m_it(m_lines.begin())
+{
+}
+
+vec_reader::vec_reader(string_vec lines)
+  : m_lines(std::move(lines))
   , m_it(m_lines.begin())
 {
 }

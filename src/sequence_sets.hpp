@@ -8,9 +8,12 @@
 #include <initializer_list> // for initializer_list
 #include <string>           // for string
 #include <string_view>      // for string_view
+#include <utility>          // for move
 #include <vector>           // for vector
 
 namespace adapterremoval {
+
+class line_reader_base;
 
 using string_view_pair = std::pair<std::string_view, std::string_view>;
 
@@ -193,21 +196,21 @@ public:
    * barcode 1 sequences alone must be unique to allow unambiguous
    * identification of samples
    */
-  auto& paired_end_mode(bool value)
+  auto& paired_end_mode(bool value = true)
   {
     m_paired_end_mode = value;
     return *this;
   }
 
   /** Specifies if barcodes are expected in one or both orientations */
-  auto& unidirectional_barcodes(bool value)
+  auto& unidirectional_barcodes(bool value = true)
   {
     m_unidirectional_barcodes = value;
     return *this;
   }
 
   /** Enable or disable support for multiple barcodes for the same sample */
-  auto& allow_multiple_barcodes(bool value)
+  auto& allow_multiple_barcodes(bool value = true)
   {
     m_allow_multiple_barcodes = value;
     return *this;
@@ -233,10 +236,11 @@ private:
 class sample_set
 {
 public:
-  /** Creates barcode set with single unnamed sample with empty barcodes */
+  /** Creates sample set with single unnamed sample with empty barcodes */
   sample_set();
-  /** Creates barcode set from set of samples. Allows multiple barcodes */
-  sample_set(std::initializer_list<sample> args);
+  /** Creates sample set from  lines representing a barcode table */
+  sample_set(std::initializer_list<std::string_view> lines,
+             barcode_config config = {});
 
   /** Sets adapter sequences for all samples */
   void set_adapters(adapter_set adapters);
@@ -246,6 +250,10 @@ public:
 
   /** Clears existing samples and loads barcodes from a TSV file */
   void load(const std::string& filename, const barcode_config& config);
+  /** Clears existing samples and loads barcodes from a TSV file */
+  void load(line_reader_base& reader,
+            const barcode_config& config,
+            const std::string& filename);
 
   /** Convenience function to get sequences for sample / barcode pair */
   [[nodiscard]] const auto& get_sequences(const size_t sample,

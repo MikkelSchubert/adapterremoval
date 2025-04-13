@@ -2,14 +2,15 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "managed_io.hpp" // for managed_reader
-#include <array>          // for array
-#include <cstdio>         // for BUFSIZ
-#include <ios>            // for ios_base, ios_base::failure
-#include <isa-l.h>        // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
-#include <memory>         // for shared_ptr, unique_ptr
-#include <string>         // for string
-#include <vector>         // for vector
+#include "managed_io.hpp"   // for managed_reader
+#include <array>            // for array
+#include <cstdio>           // for BUFSIZ
+#include <initializer_list> // for initializer_list
+#include <isa-l.h>          // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
+#include <memory>           // for shared_ptr, unique_ptr
+#include <string>           // for string
+#include <string_view>      // for string_view
+#include <vector>           // for vector
 
 struct inflate_state;
 struct isal_gzip_header;
@@ -47,15 +48,17 @@ public:
 class vec_reader : public line_reader_base
 {
 public:
-  /** Constructs a reader from a set of lines (not copied) */
-  explicit vec_reader(const std::vector<std::string>& lines);
+  /** Constructs a reader from a set of lines without newlines */
+  vec_reader(std::initializer_list<std::string_view> lines);
+  /** Constructs a reader from a set of lines without newlines */
+  explicit vec_reader(std::vector<std::string> lines);
 
   /** Reads a line into dst, returning false on EOF. */
   bool getline(std::string& dst) override;
 
 private:
-  //! Reference to vector containing lines of text
-  const std::vector<std::string>& m_lines;
+  //! Lines of text in reader
+  std::vector<std::string> m_lines;
   //! Current position in m_lines
   std::vector<std::string>::const_iterator m_it;
 };
