@@ -98,7 +98,14 @@ jobs:
         run: |
           sudo apt-get install -y gcovr
           uv pip install cpp-coveralls
-          coveralls --exclude tests --root . --build-root build --gcov-options '\-lpbc'
+          coveralls \
+            --exclude build/src/reports_template_html.cpp \
+            --exclude build/src/reports_template_html.hpp \
+            --exclude src/robin_hood.hpp \
+            --exclude tests/unit/catch.hpp \
+            --build-root build \
+            --root . \
+            --gcov-options '\-lpbc'
 
       - name: CCache cleanup
       # Manual ccache cleanup, using the ccache-action default max size
