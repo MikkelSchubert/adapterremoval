@@ -102,15 +102,15 @@ def parse_field(value: str) -> Field | str:
         if default.startswith('"'):
             default = default[1:-1]
     elif value.startswith("{"):
-        name = value[2:-2]
+        name = value[2:-2].lower()
         kind = FieldType.REQUIRED
 
         while True:
-            if name.lower().startswith("raw_"):
+            if name.startswith("raw_"):
                 name = name[4:]
                 escape = False
                 continue
-            elif name.lower().startswith("optional_"):
+            elif name.startswith("optional_"):
                 name = name[9:]
                 kind = FieldType.DEFAULT
                 default = ""
