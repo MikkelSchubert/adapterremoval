@@ -19,6 +19,6 @@
   },
   "return_code": 1,
   "stderr": [
-    "[ERROR] Error reading barcodes from 'barcodes_double.txt': Duplicate barcode pairs found in 'barcodes_double.txt' with barcodes 'CTTGCCCT' and 'ACGTTATT'. please verify correctness of the barcode table and remove any duplicate entries!"
+    "[ERROR] Error reading barcodes from 'barcodes_double.txt': Sample 'sample_1' (CTTGCCCT-ACGTTATT) and sample 'sample_3' (CTTGCCCT-ACGTTATT) have overlapping barcodes. Please remove any duplicate entries from the barcode table before continuing"
   ]
 }

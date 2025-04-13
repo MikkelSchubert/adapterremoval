@@ -83,6 +83,27 @@ TEST_CASE("minimal read group with barcodes", "[read_group]")
   }
 }
 
+TEST_CASE("minimal read group with orientation", "[read_group]")
+{
+  {
+    read_group rg;
+    rg.set_orientation(barcode_orientation::unspecified);
+    CHECK(rg.header() == "@RG\tID:1");
+  }
+
+  {
+    read_group rg;
+    rg.set_orientation(barcode_orientation::forward);
+    CHECK(rg.header() == "@RG\tID:1\tor:forward");
+  }
+
+  {
+    read_group rg;
+    rg.set_orientation(barcode_orientation::reverse);
+    CHECK(rg.header() == "@RG\tID:1\tor:reverse");
+  }
+}
+
 TEST_CASE("unsetting read group fields", "[read_group]")
 {
   read_group rg;
@@ -148,6 +169,33 @@ TEST_CASE("invalid read groups", "[read_group]")
   REQUIRE_THROWS_MESSAGE(read_group{ "ID:1\nSM:foo" },
                          std::invalid_argument,
                          "only characters in the range ' ' to '~' are allowed");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Read groups to debug strings
+
+TEST_CASE("read groups to string", "[read_group]")
+{
+  using ::Catch::fallbackStringifier;
+
+  CHECK(fallbackStringifier(read_group{}) ==
+        "read_group{id='1', header='@RG\\tID:1'}");
+
+  CHECK(fallbackStringifier(read_group{ "ID:foo\tSM:bar\tLB:foo" }) ==
+        "read_group{id='foo', header='@RG\\tID:foo\\tSM:bar\\tLB:foo'}");
+
+  CHECK(fallbackStringifier(read_group{ "@RG\tID:foo\tSM:bar\tLB:foo" }) ==
+        "read_group{id='foo', header='@RG\\tID:foo\\tSM:bar\\tLB:foo'}");
+
+  {
+    read_group foo;
+    foo.set_sample("some sample");
+    foo.set_description("some comment");
+    foo.set_id("bleh");
+    foo.set_sample("");
+    CHECK(fallbackStringifier(foo) ==
+          "read_group{id='bleh', header='@RG\\tID:bleh\\tDS:some comment'}");
+  }
 }
 
 } // namespace adapterremoval

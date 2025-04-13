@@ -3,6 +3,7 @@
 #pragma once
 
 #include "commontypes.hpp" // for string_vec, read_type, merge_strategy, ...
+#include "serializer.hpp"  // for serializer
 #include <array>           // for array
 #include <cstddef>         // for size_t
 #include <memory>          // for unique_ptr

@@ -3,20 +3,25 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include "commontypes.hpp"  // for barcode_orientation, ...
 #include "read_group.hpp"   // for read_group
 #include "sequence.hpp"     // for for dna_sequence
 #include <cstddef>          // for size_t
 #include <initializer_list> // for initializer_list
+#include <iosfwd>           // for ostream
 #include <string>           // for string
 #include <string_view>      // for string_view
 #include <utility>          // for move
-#include <vector>           // for vector
 
 namespace adapterremoval {
 
 class line_reader_base;
 
 using string_view_pair = std::pair<std::string_view, std::string_view>;
+
+/** Maps a name to the corresponding barcode_table_orientation enum */
+barcode_table_orientation
+parse_table_orientation(std::string_view value);
 
 /**
  * Class for loading/handling adapter adapter sequences.
@@ -88,7 +93,9 @@ struct sample_sequences
 {
   sample_sequences() = default;
 
-  sample_sequences(dna_sequence barcode_1_, dna_sequence barcode_2_);
+  sample_sequences(dna_sequence barcode_1,
+                   dna_sequence barcode_2,
+                   barcode_orientation orientation);
 
   //! Whether read groups are specified for this set of sequences
   bool has_read_group{};
@@ -98,6 +105,8 @@ struct sample_sequences
   dna_sequence barcode_1{};
   //! Barcode expected to be found in mate 2 reads, if any (read orientation)
   dna_sequence barcode_2{};
+  //! User specified orientation of the barcodes
+  barcode_orientation orientation = barcode_orientation::unspecified;
   //! Adapter set with the above barcodes added
   adapter_set adapters{};
 
@@ -117,10 +126,15 @@ public:
   sample();
 
   /** Creates named sample with the specified barcodes */
-  sample(std::string name, dna_sequence barcode1, dna_sequence barcode2);
+  sample(std::string name,
+         dna_sequence barcode1,
+         dna_sequence barcode2,
+         barcode_orientation orientation);
 
   /** Adds a pair of barcodes in read orientation */
-  void add(dna_sequence barcode1, dna_sequence barcode2);
+  void add(dna_sequence barcode1,
+           dna_sequence barcode2,
+           barcode_orientation orientation);
 
   /** Assigns adapter sequences for each pair of barcodes */
   void set_adapters(const adapter_set& adapters);
@@ -173,9 +187,9 @@ public:
   }
 
   /** Specifies if barcodes are expected in one or both orientations */
-  constexpr auto& unidirectional_barcodes(bool value = true) noexcept
+  constexpr auto& orientation(barcode_table_orientation value) noexcept
   {
-    m_unidirectional_barcodes = value;
+    m_orientation = value;
     return *this;
   }
 
@@ -194,8 +208,9 @@ private:
   bool m_paired_end_mode = false;
   //! Indicates if multiple barcodes/barcode pairs are allowed per sample
   bool m_allow_multiple_barcodes = false;
-  //! Indicates if barcode pairs can be annealed in both orientations
-  bool m_unidirectional_barcodes = true;
+  //! Indicates the orientation of barcodes in the table
+  barcode_table_orientation m_orientation =
+    barcode_table_orientation::unspecified;
 };
 
 /**
@@ -228,17 +243,8 @@ public:
    * updated with the current read group and adapters set.
    */
   void load(const std::string& filename, const barcode_config& config);
-  /** Clears existing samples and loads barcodes from a TSV file */
-  void load(line_reader_base& reader,
-            const barcode_config& config,
-            const std::string& filename);
-
-  /** Convenience function to get sequences for sample / barcode pair */
-  [[nodiscard]] const auto& get_sequences(const size_t sample,
-                                          const size_t barcodes) const
-  {
-    return m_samples.at(sample).at(barcodes);
-  }
+  /** See `load(const std::string&, const barcode_config&)` */
+  void load(line_reader_base& reader, const barcode_config& config);
 
   /** Returns the number of (demultiplexing) samples */
   [[nodiscard]] size_t size() const { return m_samples.size(); }
@@ -255,15 +261,21 @@ public:
   /** Returns the original, user-supplied adapter sequences */
   [[nodiscard]] const adapter_set& adapters() const { return m_adapters; }
 
+  /** Returns the original, user-supplied adapter sequences */
+  [[nodiscard]] const read_group& readgroup() const { return m_read_group; }
+
   /** Returns special sample representing uidentified reads */
   [[nodiscard]] const auto& unidentified() const { return m_unidentified; }
+
+  /** Returns the vector of samples */
+  [[nodiscard]] const auto& samples() const { return m_samples; }
+
+  /** Creates debug representation of a sample set */
+  friend std::ostream& operator<<(std::ostream& os, const sample_set& value);
 
 private:
   /** Sets read-group for unidentified reads */
   void set_unidentified_read_group(read_group tmpl);
-
-  /** Adds the reverse complement of barcodes for all samples, if missing */
-  void add_reversed_barcodes(const barcode_config& config);
 
   //! Demultiplexing samples. Names and barcode pairs are both unique
   std::vector<sample> m_samples{};
@@ -274,5 +286,14 @@ private:
   //! User-supplied adapter sequences used to generate per-barcode adapters
   adapter_set m_adapters{};
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Stream operators for debugging output
+
+std::ostream&
+operator<<(std::ostream& os, const barcode_orientation& value);
+
+std::ostream&
+operator<<(std::ostream& os, const barcode_table_orientation& value);
 
 } // namespace adapterremoval
