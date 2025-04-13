@@ -798,7 +798,7 @@
               <th>%Reads</th>
               <th>#Reads</th>
               <th>#Bases</th>
-              <th>Read length</th>
+              <th>Length</th>
               <th>GC</th>
               <th>Barcode 1</th>
               <th>Barcode 2</th>
@@ -839,18 +839,15 @@
             <!-- TEMPLATE: DEMULTIPLEXING_TABLE_TAIL -->
           </tbody>
         </table>
-
-        <!-- TEMPLATE: DEMULTIPLEXING_TOGGLE -->
-
-        <p style="text-align: center;">
-          <a id="toggle-barcodes" href="#" onclick="toggleBarcodeRows(); return false;" style="color: inherit;">
-            Show/hide per-barcode statistics
-          </a>
-        </p>
-
-        <!-- TEMPLATE: DEMULTIPLEXING_TAIL -->
       </div>
 
+      <!-- TEMPLATE: DEMULTIPLEXING_TOGGLE -->
+
+      <p style="text-align: center;">
+        <a id="toggle-barcodes" href="#" onclick="toggleBarcodeRows(); return false;" style="color: inherit;">
+          Show/hide per-barcode statistics
+        </a>
+      </p>
 
       <!-- TEMPLATE: BODY_END -->
     </div>

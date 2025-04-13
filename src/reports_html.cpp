@@ -1095,7 +1095,7 @@ write_html_demultiplexing_table(const userconfig& config,
 
         html_demultiplexing_barcode_row()
           .set_barcode_1(std::string{ it.barcode_1 })
-          .set_barcode_2(std::string{ it.barcode_1 })
+          .set_barcode_2(std::string{ it.barcode_2 })
           .set_barcode_pct_row(format_percentage(count, total, 2))
           .write(output);
       }
@@ -1129,7 +1129,6 @@ write_html_demultiplexing_section(const userconfig& config,
   html_demultiplexing_head().write(output);
   write_html_demultiplexing_barplot(config, stats, output);
   write_html_demultiplexing_table(config, stats, output, multiple_barcodes);
-  html_demultiplexing_tail().write(output);
 }
 
 void
