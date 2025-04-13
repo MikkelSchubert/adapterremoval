@@ -83,6 +83,51 @@ class Section(NamedTuple):
     variables: list[Field]
 
 
+def parse_field(value: str) -> Field | str:
+    default = None
+    escape = True
+
+    if not _RE_FIELD.match(value):
+        return value
+    elif value.lower().startswith("js_template_"):
+        name = value[12:]
+        kind = FieldType.REQUIRED
+        escape = False
+    elif value.lower().startswith("js_default_"):
+        name, default = value[11:].split("=", 1)
+        kind = FieldType.DEFAULT
+        escape = False
+
+        default = default.strip()
+        if default.startswith('"'):
+            default = default[1:-1]
+    elif value.startswith("{"):
+        name = value[2:-2]
+        kind = FieldType.REQUIRED
+
+        while True:
+            if name.lower().startswith("raw_"):
+                name = name[4:]
+                escape = False
+                continue
+            elif name.lower().startswith("optional_"):
+                name = name[9:]
+                kind = FieldType.DEFAULT
+                default = ""
+                continue
+            break
+    else:
+        name = value[2:-2]
+        kind = FieldType.REPEATED
+
+    return Field(
+        name=name.strip().lower(),
+        kind=kind,
+        default=default,
+        escape=escape,
+    )
+
+
 def read_template(filepath: Path) -> dict[str, Section]:
     current: list[str] | None = None
     sections: dict[str, list[str]] = {}
@@ -103,43 +148,15 @@ def read_template(filepath: Path) -> dict[str, Section]:
         text = "".join(lines)
         variables: dict[str, Field] = {}
         for value in _RE_FIELD.findall(text):
-            default = None
-            escape = True
+            field = parse_field(value)
 
-            if value.lower().startswith("js_template_"):
-                name = value[12:]
-                kind = FieldType.REQUIRED
-                escape = False
-            elif value.lower().startswith("js_default_"):
-                name, default = value[11:].split("=", 1)
-                kind = FieldType.DEFAULT
-                escape = False
-
-                default = default.strip()
-                if default.startswith('"'):
-                    default = default[1:-1]
-            elif value.startswith("{"):
-                name = value[2:-2]
-                kind = FieldType.REQUIRED
-                if name.lower().startswith("raw_"):
-                    name = name[4:]
-                    escape = False
-            else:
-                name = value[2:-2]
-                kind = FieldType.REPEATED
-
-            name = name.strip().lower()
-            if name not in _BUILTIN_VARS:
+            if isinstance(field, Field) and field.name not in _BUILTIN_VARS:
+                name = field.name
                 variable = variables.get(name)
-                if variable is not None and variable.kind != kind:
-                    abort("{!r} is both {!r} and {!r}", name, kind, variable.kind)
+                if variable is not None and variable.kind != field.kind:
+                    abort("{!r} is both {!r} and {!r}", name, field.kind, variable.kind)
 
-                variables[name] = Field(
-                    name=name,
-                    kind=kind,
-                    default=default,
-                    escape=escape,
-                )
+                variables[name] = field
 
         result[key] = Section(
             lines=lines,
@@ -167,27 +184,20 @@ def inject_variables(value: str) -> str:
 
     repeater = None
     for field in _RE_FIELD.split(value):
-        lc_field = field.lower()
+        field = parse_field(field)
 
         result.append("<<")
-        if lc_field.startswith("js_template_"):
-            name = field[12:].lower()
-            result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
-        elif lc_field.startswith("js_default_"):
-            name, _ = field[11:].lower().split("=", 1)
-            result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
-        elif field.startswith("{{") and field.endswith("}}"):
-            name = field[2:-2].lower()
-            if name.startswith("raw_"):
-                name = name[4:]
-            result.append(_BUILTIN_VARS.get(name, f"m_{name}"))
-        elif field.startswith("[[") and field.endswith("]]"):
+        if isinstance(field, str):
+            result.append(quote(field))
+        elif field.kind in (FieldType.DEFAULT, FieldType.REQUIRED):
+            result.append(_BUILTIN_VARS.get(field.name, f"m_{field.name}"))
+        elif field.kind == FieldType.REPEATED:
             if repeater is not None:
-                abort("multiple repeater values: {!r} and {!r}", repeater, field[2:-2])
-            repeater = field[2:-2].lower()
+                abort("multiple repeater values: {!r} and {!r}", repeater, field.name)
+            repeater = field.name
             result.append("value")
         else:
-            result.append(quote(field))
+            raise NotImplementedError(field)
 
     result = " ".join(result) + ";"
 
@@ -256,7 +266,7 @@ def write_header(sections: dict[str, Section]) -> str:
         for field in props.variables:
             if field.kind == FieldType.REPEATED:
                 tprint("  string_vec m_{}{{}};", field.name)
-            elif field.kind == FieldType.DEFAULT:
+            elif field.kind == FieldType.DEFAULT and field.default:
                 tprint('  std::string m_{}{{"{}"}};', field.name, field.default)
             else:
                 tprint("  std::string m_{}{{}};", field.name)
