@@ -141,6 +141,16 @@ TEST_CASE("constructor_simple_record_lowercase_to_uppercase", "[fastq::fastq]")
   REQUIRE(record.sequence() == "ANGAGTCA");
 }
 
+TEST_CASE("constructor_simple_record_dots_to_n", "[fastq::fastq]")
+{
+  const auto degenerate_bases =
+    GENERATE(degenerate_encoding::mask, degenerate_encoding::reject);
+  const auto encoding = fastq_encoding(quality_encoding::sam, degenerate_bases);
+
+  const fastq record("record_1", "AC.AG.C.", "!7BF8DGI", encoding);
+  REQUIRE(record.sequence() == "ACNAGNCN");
+}
+
 TEST_CASE("constructor_score_boundaries_phred_33", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_33));

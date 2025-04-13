@@ -267,7 +267,12 @@ process_nucleotides_strict(std::string& nucleotides)
         break;
 
       default:
-        throw_invalid_base(nuc);
+        // Found in some very old data sets
+        if (nuc == '.') {
+          nuc = 'N';
+        } else {
+          throw_invalid_base(nuc);
+        }
     }
   }
 }
@@ -317,7 +322,12 @@ process_nucleotides_lenient(std::string& nucleotides,
         }
 
       default:
-        throw_invalid_base(nuc);
+        if (nuc == '.') {
+          // Found in some very old data sets
+          nuc = 'N';
+        } else {
+          throw_invalid_base(nuc);
+        }
     }
   }
 }
