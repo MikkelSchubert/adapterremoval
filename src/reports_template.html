@@ -187,6 +187,19 @@
       });
     }
 
+    function toggleBarcodeRows() {
+      let mode = undefined;
+      let elems = Array.from(document.getElementsByClassName("multiple-barcodes"));
+      for (let i = 0; i < elems.length; ++i) {
+        let elem = elems[i];
+        if (mode === undefined) {
+          mode = (elem.style["display"] == "none" ? "" : "none");
+        }
+
+        elem.style["display"] = mode;
+      }
+    }
+
     function onScriptError() {
       let elems = Array.from(document.getElementsByClassName("loading"));
       for (let i = 0; i < elems.length; ++i) {
@@ -302,16 +315,24 @@
       min-width: 25px;
     }
 
-    .fixed-height-table {
+    .barcode-table {
       max-height: 300px;
       overflow-y: scroll;
     }
 
-    .fixed-height-table>table {
-      min-width: 100%;
+    .barcode-table>table {
+      width: 875px;
     }
 
-    .fixed-height-table>table>thead>tr>th {
+    .barcode-table tr>td:nth-child(3),
+    .barcode-table tr>td:nth-child(4),
+    .barcode-table tr>td:nth-child(5),
+    .barcode-table tr>td:nth-child(6),
+    .barcode-table tr>td:nth-child(7) {
+      text-align: right;
+    }
+
+    .barcode-table>table>thead>tr>th {
       position: sticky;
       top: 0;
       box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
@@ -727,22 +748,27 @@
           "height": 250,
           "padding": 5,
           "autosize": "pad",
-          "mark": "bar",
+          "mark": { "type": "bar", "tooltip": true },
           "encoding": {
             "x": {
               "title": JS_DEFAULT_X_AXIS = null,
-              "field": "x",
+              "field": "sample",
               "type": "nominal",
               "title": "",
               "axis": { "labels": false }
             },
             "y": {
               "title": JS_DEFAULT_Y_AXIS = null,
-              "field": "y",
+              "field": "pct",
               "type": "quantitative",
               "axis": { "offset": 5, "minExtent": 40 }
             },
-            "tooltip": { "field": "x" }
+            "color": { "field": "n", "legend": null },
+            "tooltip": [
+              { "field": "sample", "type": "nominal" },
+              { "field": "barcodes", "type": "nominal" },
+              { "field": "pct", "type": "quantitative" }
+            ]
           },
           "data": {
             "values": JS_TEMPLATE_VALUES
@@ -761,19 +787,22 @@
         Per sample statistics <a class="anchor" href="#demux-per-sample">#</a>
       </h4>
 
-      <div class="fixed-height-table">
+      <!-- TEMPLATE: DEMULTIPLEXING_TABLE_HEAD -->
+
+      <div class="barcode-table">
         <table class="pure-table pure-table-striped">
           <thead>
             <tr>
               <th>#</th>
-              <th>Barcode #1</th>
-              <th>Barcode #2</th>
               <th>Sample</th>
-              <th>%</th>
+              <th>%Reads</th>
               <th>#Reads</th>
               <th>#Bases</th>
               <th>Read length</th>
               <th>GC</th>
+              <th>Barcode 1</th>
+              <th>Barcode 2</th>
+              <th class="multiple-barcodes" style="display: none">%</th>
             </tr>
           </thead>
           <tbody>
@@ -781,20 +810,47 @@
 
             <tr>
               <td>{{OPTIONAL_N}}</td>
+              <td>{{OPTIONAL_RAW_NAME}}</td>
+              <td>{{OPTIONAL_SAMPLE_PCT}}</td>
+              <td>{{OPTIONAL_READS}}</td>
+              <td>{{OPTIONAL_BP}}</td>
+              <td>{{OPTIONAL_LENGTH}}</td>
+              <td>{{OPTIONAL_GC}}</td>
               <td>{{OPTIONAL_RAW_BARCODE_1}}</td>
               <td>{{OPTIONAL_RAW_BARCODE_2}}</td>
-              <td>{{RAW_NAME}}</td>
-              <td>{{PCT}}</td>
-              <td>{{READS}}</td>
-              <td>{{BP}}</td>
-              <td>{{LENGTH}}</td>
-              <td>{{GC}}</td>
+              <td class="multiple-barcodes" style="display: none"></td>
             </tr>
 
-            <!-- TEMPLATE: DEMULTIPLEXING_TAIL -->
+            <!-- TEMPLATE: DEMULTIPLEXING_BARCODE_ROW -->
+
+            <tr class="multiple-barcodes" style="display: none">
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>{{BARCODE_1}}</td>
+              <td>{{BARCODE_2}}</td>
+              <td>{{BARCODE_PCT_ROW}}</td>
+            </tr>
+
+            <!-- TEMPLATE: DEMULTIPLEXING_TABLE_TAIL -->
           </tbody>
         </table>
+
+        <!-- TEMPLATE: DEMULTIPLEXING_TOGGLE -->
+
+        <p style="text-align: center;">
+          <a id="toggle-barcodes" href="#" onclick="toggleBarcodeRows(); return false;" style="color: inherit;">
+            Show/hide per-barcode statistics
+          </a>
+        </p>
+
+        <!-- TEMPLATE: DEMULTIPLEXING_TAIL -->
       </div>
+
 
       <!-- TEMPLATE: BODY_END -->
     </div>

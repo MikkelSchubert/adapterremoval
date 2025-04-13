@@ -243,8 +243,8 @@ write_report_demultiplexing(const userconfig& config,
 
     const auto& demux = *sample_stats.demultiplexing;
     size_t assigned_reads = 0;
-    for (size_t it : demux.samples) {
-      assigned_reads += it;
+    for (const auto& it : demux.samples) {
+      assigned_reads += it.sum();
     }
 
     demultiplexing->u64("assigned_reads", assigned_reads);
@@ -257,15 +257,15 @@ write_report_demultiplexing(const userconfig& config,
       const auto& stats = *sample_stats.trimming.at(i);
       const auto& files = out_files.get_sample(i);
 
-      // TODO: Remove once per barcode read counts have been implemented
-      sample->u64("reads", demux.samples.at(i));
+      const auto& barcodes = config.samples.at(i);
+      const auto barcode_list = sample->list("barcodes");
+      for (size_t j = 0; j < barcodes.size(); ++j) {
+        const auto it = barcodes.at(j);
 
-      const auto barcodes = sample->list("barcodes");
-      for (const auto& it : config.samples.at(i)) {
-        const auto dict = barcodes->inline_dict();
+        const auto dict = barcode_list->inline_dict();
         dict->str("barcode1", it.barcode_1);
         dict->str("barcode2", it.barcode_2);
-        // TODO: Per barcode-pair read counts
+        dict->i64("reads", demux.samples.at(i).get(j));
       }
 
       const auto output = sample->dict("output");

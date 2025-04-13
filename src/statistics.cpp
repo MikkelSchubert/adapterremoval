@@ -332,8 +332,8 @@ size_t
 demux_statistics::total() const
 {
   size_t total = unidentified + ambiguous;
-  for (const auto count : samples) {
-    total += count;
+  for (const auto& count : samples) {
+    total += count.sum();
   }
 
   return total;
@@ -391,9 +391,6 @@ statistics
 statistics_builder::initialize() const
 {
   statistics stats(m_sample_rate);
-  if (m_sample_count) {
-    stats.demultiplexing->samples.resize(m_sample_count);
-  }
 
   stats.duplication_1 = std::make_shared<duplication_statistics>(m_max_unique);
   stats.duplication_2 = std::make_shared<duplication_statistics>(m_max_unique);

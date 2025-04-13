@@ -970,44 +970,39 @@ write_html_analyses_section(const userconfig& config,
   }
 }
 
-std::pair<std::string, std::string>
-join_barcodes(const sample& s)
-{
-  string_vec mate_1;
-  string_vec mate_2;
-
-  for (const auto& barcode : s) {
-    mate_1.emplace_back(barcode.barcode_1);
-    mate_2.emplace_back(barcode.barcode_2);
-  }
-
-  return {
-    join_text(mate_1, "<br/>"),
-    join_text(mate_2, "<br/>"),
-  };
-}
-
 void
-write_html_demultiplexing_section(const userconfig& config,
+write_html_demultiplexing_barplot(const userconfig& config,
                                   const statistics& stats,
                                   std::ostream& output)
-
 {
-  write_html_section_title("Demultiplexing", output);
-
   json_list data;
 
   const size_t input_reads = stats.input_1->number_of_input_reads() +
                              stats.input_2->number_of_input_reads();
 
   for (size_t i = 0; i < config.samples.size(); ++i) {
-    auto m = data.dict();
-    m->str("x", config.samples.at(i).name());
+    const auto& sample = config.samples.at(i);
 
-    if (input_reads) {
-      m->f64("y", (100.0 * stats.demultiplexing->samples.at(i)) / input_reads);
-    } else {
-      m->null("y");
+    for (size_t j = 0; j < sample.size(); ++j) {
+      auto count = stats.demultiplexing->samples.at(i).get(j);
+
+      const auto& sequences = sample.at(j);
+      std::string key{ sequences.barcode_1 };
+      if (!sequences.barcode_2.empty()) {
+        key.push_back('-');
+        key.append(sequences.barcode_2);
+      }
+
+      auto m = data.dict();
+      m->i64("n", j + 1);
+      m->str("barcodes", key);
+      m->str("sample", sample.name());
+
+      if (input_reads) {
+        m->f64("pct", (100.0 * count) / input_reads);
+      } else {
+        m->null("pct");
+      }
     }
   }
 
@@ -1021,8 +1016,18 @@ write_html_demultiplexing_section(const userconfig& config,
     .set_width(FIGURE_WIDTH)
     .set_values(data.to_string())
     .write(output);
+}
 
-  html_demultiplexing_head().write(output);
+void
+write_html_demultiplexing_table(const userconfig& config,
+                                const statistics& stats,
+                                std::ostream& output,
+                                const bool multiple_barcodes)
+{
+  const size_t input_reads = stats.input_1->number_of_input_reads() +
+                             stats.input_2->number_of_input_reads();
+
+  html_demultiplexing_table_head().write(output);
 
   {
     const size_t unidentified = stats.demultiplexing->unidentified;
@@ -1036,7 +1041,7 @@ write_html_demultiplexing_section(const userconfig& config,
 
     html_demultiplexing_row()
       .set_name("<b>Unidentified</b>")
-      .set_pct(format_percentage(unidentified, input_reads, 2))
+      .set_sample_pct(format_percentage(unidentified, input_reads, 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
@@ -1046,36 +1051,84 @@ write_html_demultiplexing_section(const userconfig& config,
 
   size_t sample_idx = 0;
   for (const auto& sample : config.samples) {
-    const auto& sample_stats = *stats.trimming.at(sample_idx);
+    const auto& output_stats = *stats.trimming.at(sample_idx);
+    const auto& barcode_counts = stats.demultiplexing->samples.at(sample_idx);
+    const auto sample_reads = barcode_counts.sum();
 
     fastq_statistics total;
 
-    total += *sample_stats.read_1;
-    total += *sample_stats.read_2;
-    total += *sample_stats.merged;
-    total += *sample_stats.singleton;
+    total += *output_stats.read_1;
+    total += *output_stats.read_2;
+    total += *output_stats.merged;
+    total += *output_stats.singleton;
     // Not included in overview:
     // total += *sample.discarded;
 
     const auto output_reads = total.length_dist().sum();
     const auto output_bp = total.nucleotides_pos().sum();
-    const auto barcodes = join_barcodes(sample);
 
-    html_demultiplexing_row()
-      .set_n(std::to_string(sample_idx + 1))
-      .set_barcode_1(barcodes.first)
-      .set_barcode_2(barcodes.second)
+    html_demultiplexing_row row;
+    if (sample.size() < 2) {
+      row.set_barcode_1(std::string{ sample.at(0).barcode_1 })
+        .set_barcode_2(std::string{ sample.at(0).barcode_2 });
+    } else {
+      const auto cell =
+        "<i>(" + std::to_string(sample.size()) + " barcodes)</i>";
+      row.set_barcode_1(cell).set_barcode_2(cell);
+    }
+
+    row.set_n(std::to_string(sample_idx + 1))
       .set_name(sample.name())
-      .set_pct(format_percentage(stats.demultiplexing->samples.at(sample_idx),
-                                 input_reads,
-                                 2))
+      .set_sample_pct(format_percentage(sample_reads, input_reads, 2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
       .set_gc(format_percentage(total.nucleotides_gc_pos().sum(), output_bp))
       .write(output);
+
+    if (sample.size() > 1) {
+      const auto total = barcode_counts.sum();
+
+      for (size_t j = 0; j < sample.size(); j++) {
+        const auto& it = sample.at(j);
+        const auto count = barcode_counts.get(j);
+
+        html_demultiplexing_barcode_row()
+          .set_barcode_1(std::string{ it.barcode_1 })
+          .set_barcode_2(std::string{ it.barcode_1 })
+          .set_barcode_pct_row(format_percentage(count, total, 2))
+          .write(output);
+      }
+    }
+
+    ++sample_idx;
   }
 
+  html_demultiplexing_table_tail().write(output);
+
+  if (multiple_barcodes) {
+    html_demultiplexing_toggle().write(output);
+  }
+}
+
+void
+write_html_demultiplexing_section(const userconfig& config,
+                                  const statistics& stats,
+                                  std::ostream& output)
+
+{
+  bool multiple_barcodes = false;
+  for (const auto& sample : config.samples) {
+    if (sample.size() > 1) {
+      multiple_barcodes = true;
+      break;
+    }
+  }
+
+  write_html_section_title("Demultiplexing", output);
+  html_demultiplexing_head().write(output);
+  write_html_demultiplexing_barplot(config, stats, output);
+  write_html_demultiplexing_table(config, stats, output, multiple_barcodes);
   html_demultiplexing_tail().write(output);
 }
 
