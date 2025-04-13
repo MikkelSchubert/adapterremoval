@@ -952,8 +952,6 @@ write_html_analyses_section(const userconfig& config,
           row.set_kmer_1(kmer.first)
             .set_count_1(format_rough_number(kmer.second))
             .set_pct_1(format_percentage(kmer.second, adapter_1.total_kmers()));
-        } else {
-          row.set_kmer_1("").set_count_1("").set_pct_1("");
         }
 
         if (top_kmers_2.size() > i) {
@@ -962,8 +960,6 @@ write_html_analyses_section(const userconfig& config,
           row.set_kmer_2(kmer.first)
             .set_count_2(format_rough_number(kmer.second))
             .set_pct_2(format_percentage(kmer.second, adapter_2.total_kmers()));
-        } else {
-          row.set_kmer_2("").set_count_2("").set_pct_2("");
         }
 
         row.write(output);
@@ -1039,9 +1035,6 @@ write_html_demultiplexing_section(const userconfig& config,
     const auto output_bp = total.nucleotides_pos().sum();
 
     html_demultiplexing_row()
-      .set_n("")
-      .set_barcode_1("")
-      .set_barcode_2("")
       .set_name("<b>Unidentified</b>")
       .set_pct(format_percentage(unidentified, input_reads, 2))
       .set_reads(format_rough_number(output_reads))
