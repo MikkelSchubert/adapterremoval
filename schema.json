@@ -106,10 +106,6 @@
                                 "type": "object",
                                 "additionalProperties": false,
                                 "properties": {
-                                    "reads": {
-                                        "description": "The number of reads assigned to each sample",
-                                        "$ref": "#/definitions/count"
-                                    },
                                     "barcodes": {
                                         "type": "array",
                                         "description": "The barcode pair(s) used to identify this sample",
@@ -154,7 +150,6 @@
                                     }
                                 },
                                 "required": [
-                                    "reads",
                                     "barcodes",
                                     "output"
                                 ]
@@ -917,7 +912,8 @@
             },
             "required": [
                 "barcode1",
-                "barcode2"
+                "barcode2",
+                "reads"
             ]
         }
     }

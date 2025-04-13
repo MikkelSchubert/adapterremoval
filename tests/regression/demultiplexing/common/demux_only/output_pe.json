@@ -82,9 +82,8 @@
     "unassigned_reads": 4,
     "samples": {
       "sample_1": {
-        "reads": 6,
         "barcodes": [
-          { "barcode1": "GGCCCCTG", "barcode2": "CCAAAGCT" }
+          { "barcode1": "GGCCCCTG", "barcode2": "CCAAAGCT", "reads": 6 }
         ],
         "output": {
           "read1": {
@@ -139,9 +138,8 @@
         }
       },
       "sample_2": {
-        "reads": 6,
         "barcodes": [
-          { "barcode1": "AATCCTAG", "barcode2": "GTCTAGTT" }
+          { "barcode1": "AATCCTAG", "barcode2": "GTCTAGTT", "reads": 6 }
         ],
         "output": {
           "read1": {
