@@ -278,8 +278,8 @@ public:
 
   size_t total() const;
 
-  //! Number of reads identified for for each barcode (pair)
-  std::vector<size_t> samples{};
+  //! Number of reads identified for each barcode (pair) for each sample
+  std::vector<counts> samples{};
   //! Number of reads with no hits
   size_t unidentified = 0;
   //! Number of reads with no single best hit

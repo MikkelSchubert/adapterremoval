@@ -35,11 +35,15 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   AR_REQUIRE(m_samples.size());
   AR_REQUIRE(m_samples.size() == m_steps.samples.size());
   AR_REQUIRE(m_statistics);
-  AR_REQUIRE(m_statistics->samples.size() == m_samples.size());
+
+  AR_REQUIRE(m_statistics->samples.empty());
+  m_statistics->samples.resize(m_samples.size());
 
   // Map global barcode offsets to sample and relative barcode offsets
   for (size_t i = 0; i < m_samples.size(); ++i) {
     const size_t barcodes = m_samples.at(i).size();
+
+    m_statistics->samples.at(i).resize_up_to(barcodes);
     for (size_t j = 0; j < barcodes; ++j) {
       m_barcodes.emplace_back(i, j);
     }
@@ -79,7 +83,7 @@ demultiplex_se_reads::process(chunk_ptr chunk)
     } else {
       read.truncate(m_barcode_table.length_1());
 
-      m_statistics->samples.at(sample) += 1;
+      m_statistics->samples.at(sample).inc(barcode);
       m_cache.add_read_1(std::move(read), sample, barcode);
     }
   }
@@ -130,7 +134,7 @@ demultiplex_pe_reads::process(chunk_ptr chunk)
       it_2->truncate(m_barcode_table.length_2());
       m_cache.add_read_2(std::move(*it_2), sample);
 
-      m_statistics->samples.at(sample) += 2;
+      m_statistics->samples.at(sample).inc(barcode, 2);
     }
   }
 

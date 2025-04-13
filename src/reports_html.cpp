@@ -1005,7 +1005,8 @@ write_html_demultiplexing_section(const userconfig& config,
     m->str("x", config.samples.at(i).name());
 
     if (input_reads) {
-      m->f64("y", (100.0 * stats.demultiplexing->samples.at(i)) / input_reads);
+      m->f64("y",
+             (100.0 * stats.demultiplexing->samples.at(i).sum()) / input_reads);
     } else {
       m->null("y");
     }
@@ -1066,9 +1067,10 @@ write_html_demultiplexing_section(const userconfig& config,
       .set_barcode_1(barcodes.first)
       .set_barcode_2(barcodes.second)
       .set_name(sample.name())
-      .set_pct(format_percentage(stats.demultiplexing->samples.at(sample_idx),
-                                 input_reads,
-                                 2))
+      .set_pct(
+        format_percentage(stats.demultiplexing->samples.at(sample_idx).sum(),
+                          input_reads,
+                          2))
       .set_reads(format_rough_number(output_reads))
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
