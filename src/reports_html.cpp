@@ -1074,6 +1074,8 @@ write_html_demultiplexing_section(const userconfig& config,
       .set_length(mean_of_bp_counts(total.length_dist()))
       .set_gc(format_percentage(total.nucleotides_gc_pos().sum(), output_bp))
       .write(output);
+
+    ++sample_idx;
   }
 
   html_demultiplexing_tail().write(output);
