@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include "read_group.hpp"   // for read_group
 #include "sequence.hpp"     // for for dna_sequence
 #include <cstddef>          // for size_t
 #include <initializer_list> // for initializer_list
@@ -16,47 +17,6 @@ namespace adapterremoval {
 class line_reader_base;
 
 using string_view_pair = std::pair<std::string_view, std::string_view>;
-
-/** Contains SAM/BAM read-group information */
-class read_group
-{
-public:
-  read_group();
-
-  /**
-   * Parses a read-group string in the form "ID:1\tSM:sample" (optionally
-   * including a leading "@RG\t"). Throws std::invalid_argument if the value
-   * is invalid.
-   */
-  explicit read_group(std::string_view value);
-
-  /** Returns the read-group ID for use in per-read 'RG' tags */
-  [[nodiscard]] std::string_view id() const { return m_id; }
-
-  /** Returns the full @RG header, not including a trailing new-line */
-  [[nodiscard]] std::string_view header() const { return m_header; }
-
-  /** Adds/replaces the barcode (ID) tag */
-  void set_id(std::string_view id);
-
-  /** Adds/replaces the sample (SM) tag */
-  void set_sample(std::string_view name) { update_tag("SM", name); }
-
-  /** Adds/replaces the barcode (BC) tag */
-  void set_barcodes(std::string_view value) { update_tag("BC", value); }
-
-  /** Adds/replaces the description (DS) tag */
-  void set_description(std::string_view value) { update_tag("DS", value); }
-
-private:
-  /** Updates or adds the specified tag; sets `m_id` if key is `ID` */
-  void update_tag(std::string_view key, std::string_view value);
-
-  //! The full read_group header, including leading `@RG\t`
-  std::string m_header{};
-  //! Value mapping reads (via `RG:Z:${ID}`) to the @RG header
-  std::string m_id{};
-};
 
 /**
  * Class for loading/handling adapter adapter sequences.
@@ -77,23 +37,28 @@ public:
   adapter_set(std::initializer_list<string_view_pair> args);
 
   /** Adds a pair of adapters to the set in read orientation */
-  void add(dna_sequence adapter1, dna_sequence adapter2);
-
-  /** Adds a pair of adapters to the set in read orientation */
-  void add(std::string adapter1, std::string adapter2);
+  void add(dna_sequence adapter1, const dna_sequence& adapter2);
 
   /** Generate new adapter set with these barcodes (in read orientation) */
   [[nodiscard]] adapter_set add_barcodes(const dna_sequence& barcode1,
                                          const dna_sequence& barcode2) const;
 
   /**
-   * Loads adapters in read orientation from a TSV file, throwing on failure.
-   * Two adapter sequences are expected if 'paired_end_mode' is set.
+   * Loads adapters in read orientation, clearing existing adapters. Two adapter
+   * sequences are expected if 'paired_end_mode' is set.
    */
   void load(const std::string& filename, bool paired_end_mode);
+  /**
+   * Loads adapters in read orientation, clearing existing adapters. Two adapter
+   * sequences are expected if 'paired_end_mode' is set.
+   */
+  void load(line_reader_base& reader, bool paired_end_mode);
 
   /** Returns the number of adapters/adapter pairs added/loaded */
   [[nodiscard]] size_t size() const { return m_adapters.size(); }
+
+  /** Returns true if the adapter set is empty */
+  [[nodiscard]] bool empty() const { return m_adapters.empty(); }
 
   /** Iterator over adapter sequences in alignment orientation */
   [[nodiscard]] auto begin() const { return m_adapters.begin(); }
@@ -101,10 +66,17 @@ public:
   /** Terminal iterator over adapter sequences in alignment orientation */
   [[nodiscard]] auto end() const { return m_adapters.end(); }
 
+  /** Returns the nth adapter sequences */
   [[nodiscard]] const auto& at(size_t n) const { return m_adapters.at(n); }
 
   /** Returns the adapters in read orientation */
   [[nodiscard]] sequence_pair_vec to_read_orientation() const;
+
+  /** Returns true if the adapters (including ordering) are identical  */
+  [[nodiscard]] bool operator==(const adapter_set& other) const;
+
+  /** Creates debug representation of an adapter set */
+  friend std::ostream& operator<<(std::ostream& os, const adapter_set& value);
 
 private:
   //! Adapter sequences in alignment orientation
@@ -116,52 +88,45 @@ struct sample_sequences
 {
   sample_sequences() = default;
 
-  sample_sequences(dna_sequence barcode1, dna_sequence barcode2)
-    : barcode_1(std::move(barcode1))
-    , barcode_2(std::move(barcode2))
-  {
-  }
+  sample_sequences(dna_sequence barcode_1_, dna_sequence barcode_2_);
 
   //! Whether read groups are specified for this set of sequences
   bool has_read_group{};
-  //! Read-group for this sample/barcode combination
-  read_group info{};
+  //! Optional read-group for this sample/barcode combination
+  read_group read_group_{};
   //! Barcode expected to be found in mate 1 reads, if any (read orientation)
   dna_sequence barcode_1{};
   //! Barcode expected to be found in mate 2 reads, if any (read orientation)
   dna_sequence barcode_2{};
   //! Adapter set with the above barcodes added
   adapter_set adapters{};
+
+  /** Returns true if all members are identical */
+  [[nodiscard]] bool operator==(const sample_sequences& other) const;
+
+  /** Creates debug representation of sample sequences */
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const sample_sequences& value);
 };
 
-/** Represents a demultiplexing sample with one or more barcodes */
+/** Represents a (demultiplexing) sample with one or more barcodes */
 class sample
 {
 public:
-  sample() { add(dna_sequence{}, dna_sequence{}); }
+  /** Creates basic unnamed sample without barcodes */
+  sample();
 
-  explicit sample(std::string name,
-                  dna_sequence barcode1,
-                  dna_sequence barcode2)
-    : m_name(std::move(name))
-  {
-    add(std::move(barcode1), std::move(barcode2));
-  };
-
-  explicit sample(std::string name, std::string barcode1, std::string barcode2)
-    : sample(name, dna_sequence{ barcode1 }, dna_sequence{ barcode2 }) {};
+  /** Creates named sample with the specified barcodes */
+  sample(std::string name, dna_sequence barcode1, dna_sequence barcode2);
 
   /** Adds a pair of barcodes in read orientation */
   void add(dna_sequence barcode1, dna_sequence barcode2);
-
-  /** Adds barcodes in read orientation */
-  void add(std::string barcode1, std::string barcode2);
 
   /** Assigns adapter sequences for each pair of barcodes */
   void set_adapters(const adapter_set& adapters);
 
   /** Assigns read groups for each pair of barcodes */
-  void set_read_group(const read_group& info);
+  void set_read_group(const read_group& read_group_);
 
   /** Returns the unique name of this sample */
   [[nodiscard]] const auto& name() const { return m_name; }
@@ -178,6 +143,12 @@ public:
   /** Returns the nth barcode / pair of barcodes */
   [[nodiscard]] const auto& at(size_t n) const { return m_barcodes.at(n); }
 
+  /** Returns true if name and barcodes are identical */
+  [[nodiscard]] bool operator==(const sample& other) const;
+
+  /** Creates debug representation of a sample */
+  friend std::ostream& operator<<(std::ostream& os, const sample& value);
+
 private:
   //! Unique name associated with this sample
   std::string m_name{};
@@ -189,28 +160,27 @@ private:
 class barcode_config
 {
 public:
-  barcode_config() = default;
+  constexpr barcode_config() = default;
 
   /**
    * If PE mode is enabled, barcode 1 and 2 together must be unique, otherwise
-   * barcode 1 sequences alone must be unique to allow unambiguous
-   * identification of samples
+   * barcode 1 sequences must be unique to allow samples to be identified.
    */
-  auto& paired_end_mode(bool value = true)
+  constexpr auto& paired_end_mode(bool value = true) noexcept
   {
     m_paired_end_mode = value;
     return *this;
   }
 
   /** Specifies if barcodes are expected in one or both orientations */
-  auto& unidirectional_barcodes(bool value = true)
+  constexpr auto& unidirectional_barcodes(bool value = true) noexcept
   {
     m_unidirectional_barcodes = value;
     return *this;
   }
 
   /** Enable or disable support for multiple barcodes for the same sample */
-  auto& allow_multiple_barcodes(bool value = true)
+  constexpr auto& allow_multiple_barcodes(bool value = true) noexcept
   {
     m_allow_multiple_barcodes = value;
     return *this;
@@ -229,9 +199,10 @@ private:
 };
 
 /**
- * Class for handling samples for demultiplexing. The class further checks for
- * the correctness of these sequences, and detects duplicate barcode sequences /
- * pairs of sequences.
+ * Class for handling user-specified samples for demultiplexing, in addition to
+ * an 'unidentified' sample representing reads that could not be assigned to a
+ * sample. In non-demultiplexing mode, the set contains a single, unnamed sample
+ * with an optional read-group, and no barcode sequences.
  */
 class sample_set
 {
@@ -242,13 +213,20 @@ public:
   sample_set(std::initializer_list<std::string_view> lines,
              barcode_config config = {});
 
-  /** Sets adapter sequences for all samples */
+  /**
+   * Sets adapter sequences for all samples, generating unique sequences for
+   * each set of adapters for each set of barcodes
+   */
   void set_adapters(adapter_set adapters);
 
-  /** Sets read group for samples using information parsed using `read_group` */
+  /** Parses read group string and updates existing samples */
   void set_read_group(std::string_view value);
 
-  /** Clears existing samples and loads barcodes from a TSV file */
+  /**
+   * Overrides table with samples specified in a whitespace separated table,
+   * containing a name column, and one or two barcode columns. Samples are
+   * updated with the current read group and adapters set.
+   */
   void load(const std::string& filename, const barcode_config& config);
   /** Clears existing samples and loads barcodes from a TSV file */
   void load(line_reader_base& reader,
