@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_id.hpp"    // for consensus_adapter_stats
-#include "commontypes.hpp"   // for read_type, read_type::mate_1, read_typ...
+#include "commontypes.hpp"   // for read_file, read_file::mate_1, read_typ...
 #include "counts.hpp"        // for counts, counts_tmpl, indexed_count
 #include "debug.hpp"         // for AR_REQUIRE
 #include "fastq.hpp"         // for ACGT, fastq, ACGT::values
@@ -126,7 +126,7 @@ write_report_summary(const userconfig& config,
 /** Helper struct used to simplify writing of multiple io sections. */
 struct io_section
 {
-  io_section(read_type rtype,
+  io_section(read_file rtype,
              std::string name,
              fastq_stats_ptr stats,
              const sample_output_files& sample_files)
@@ -269,21 +269,21 @@ write_report_demultiplexing(const userconfig& config,
       }
 
       const auto output = sample->dict("output");
-      io_section(read_type::mate_1, "read1", stats.read_1, files)
+      io_section(read_file::mate_1, "read1", stats.read_1, files)
         .write_to_if(output, true);
 
-      io_section(read_type::mate_2, "read2", stats.read_2, files)
+      io_section(read_file::mate_2, "read2", stats.read_2, files)
         .write_to_if(output, config.paired_ended_mode);
 
-      io_section(read_type::singleton, "singleton", stats.singleton, files)
+      io_section(read_file::singleton, "singleton", stats.singleton, files)
         .write_to_if(output,
                      config.paired_ended_mode && !demux_only &&
                        config.is_any_filtering_enabled());
 
-      io_section(read_type::merged, "merged", stats.merged, files)
+      io_section(read_file::merged, "merged", stats.merged, files)
         .write_to_if(output, config.is_read_merging_enabled());
 
-      io_section(read_type::discarded, "discarded", stats.discarded, files)
+      io_section(read_file::discarded, "discarded", stats.discarded, files)
         .write_to_if(output, !demux_only && config.is_any_filtering_enabled());
     }
   } else {
@@ -567,7 +567,7 @@ write_report_analyses(const userconfig& config,
 // Output
 
 string_vec
-collect_files(const output_files& files, read_type rtype)
+collect_files(const output_files& files, read_file rtype)
 {
   string_vec filenames;
 
@@ -617,11 +617,11 @@ write_report_output(const userconfig& config,
   }
 
   const auto out_files = config.get_output_filenames();
-  const auto mate_1_files = collect_files(out_files, read_type::mate_1);
-  const auto mate_2_files = collect_files(out_files, read_type::mate_2);
-  const auto merged_files = collect_files(out_files, read_type::merged);
-  const auto singleton_files = collect_files(out_files, read_type::singleton);
-  const auto discarded_files = collect_files(out_files, read_type::discarded);
+  const auto mate_1_files = collect_files(out_files, read_file::mate_1);
+  const auto mate_2_files = collect_files(out_files, read_file::mate_2);
+  const auto merged_files = collect_files(out_files, read_file::merged);
+  const auto singleton_files = collect_files(out_files, read_file::singleton);
+  const auto discarded_files = collect_files(out_files, read_file::discarded);
 
   const bool demux_only = config.run_type == ar_command::demultiplex_only;
 

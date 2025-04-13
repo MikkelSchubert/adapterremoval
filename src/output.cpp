@@ -67,7 +67,7 @@ sample_output_files::sample_output_files()
 }
 
 void
-sample_output_files::set_file(const read_type rtype, output_file file)
+sample_output_files::set_file(const read_file rtype, output_file file)
 {
   const auto index = static_cast<size_t>(rtype);
   AR_REQUIRE(m_offsets.at(index) == sample_output_files::disabled);
@@ -95,7 +95,7 @@ sample_output_files::set_file(const read_type rtype, output_file file)
 }
 
 void
-sample_output_files::set_step(read_type rtype, size_t step)
+sample_output_files::set_step(read_file rtype, size_t step)
 {
   const auto index = static_cast<size_t>(rtype);
   const auto offset = m_offsets.at(index);
@@ -106,7 +106,7 @@ sample_output_files::set_step(read_type rtype, size_t step)
 }
 
 size_t
-sample_output_files::offset(read_type value) const
+sample_output_files::offset(read_file value) const
 {
   return m_offsets.at(static_cast<size_t>(value));
 }
@@ -241,8 +241,8 @@ processed_reads::write_headers(const string_vec& args)
 
 void
 processed_reads::add(const fastq& read,
-                     const read_type type,
-                     const fastq_flags flags,
+                     const read_file type,
+                     const read_type flags,
                      const size_t barcode)
 {
   const size_t offset = m_map.offset(type);

@@ -1417,13 +1417,13 @@ userconfig::get_output_filenames() const
     sample_output_files map;
 
     const auto mate_1 = new_output_file("--out-file1", name, { out1 }, ext);
-    map.set_file(read_type::mate_1, mate_1);
+    map.set_file(read_file::mate_1, mate_1);
 
     if (paired_ended_mode) {
       if (interleaved_output) {
-        map.set_file(read_type::mate_2, mate_1);
+        map.set_file(read_file::mate_2, mate_1);
       } else {
-        map.set_file(read_type::mate_2,
+        map.set_file(read_file::mate_2,
                      new_output_file("--out-file2", name, { out2 }, ext));
       }
     }
@@ -1431,20 +1431,20 @@ userconfig::get_output_filenames() const
     if (run_type == ar_command::trim_adapters) {
       if (is_any_filtering_enabled()) {
         map.set_file(
-          read_type::discarded,
+          read_file::discarded,
           new_output_file("--out-discarded", name, { ".discarded" }, ext));
       }
 
       if (paired_ended_mode) {
         if (is_any_filtering_enabled()) {
           map.set_file(
-            read_type::singleton,
+            read_file::singleton,
             new_output_file("--out-singleton", name, { ".singleton" }, ext));
         }
 
         if (is_read_merging_enabled()) {
           map.set_file(
-            read_type::merged,
+            read_file::merged,
             new_output_file("--out-merged", name, { ".merged" }, ext));
         }
       }

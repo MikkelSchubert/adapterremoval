@@ -14,27 +14,10 @@ class fastq;
 class read_group;
 enum class output_format;
 
-enum class fastq_flags
-{
-  //! SE read
-  se,
-  //! SE read that failed QC
-  se_fail,
-  //! Mate 1 read
-  pe_1,
-  //! Mate 1 read that failed QC
-  pe_1_fail,
-  //! Mate 1 read
-  pe_2,
-  //! Mate 1 read that failed QC
-  pe_2_fail,
-
-};
-
 /** Struct containing metadata required to serialize a record */
 struct serializer_settings
 {
-  const fastq_flags flags = fastq_flags::se;
+  const read_type flags = read_type::se;
   const char mate_separator = '\0';
   const bool demultiplexing_only = false;
 };
@@ -86,7 +69,7 @@ public:
   void header(buffer& buf, const string_vec& args) const;
   void record(buffer& buf,
               const fastq& record,
-              fastq_flags flags,
+              read_type flags,
               size_t barcode) const;
 
 private:

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "argparse.hpp"      // for parse_result, parser
-#include "commontypes.hpp"   // for string_vec, read_type, merge_strategy
+#include "commontypes.hpp"   // for string_vec, read_file, merge_strategy
 #include "fastq_enc.hpp"     // for fastq_encoding
 #include "sequence_sets.hpp" // for sample_set
 #include "simd.hpp"          // for instruction_set

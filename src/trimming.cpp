@@ -3,13 +3,13 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "trimming.hpp"
 #include "alignment.hpp"   // for alignment_info, sequence_merger, sequence_...
-#include "commontypes.hpp" // for read_type, trimming_strategy, merge_strategy
+#include "commontypes.hpp" // for read_file, trimming_strategy, merge_strategy
 #include "counts.hpp"      // for counts, indexed_count
 #include "debug.hpp"       // for AR_FAIL, AR_REQUIRE
 #include "fastq_io.hpp"    // for chunk_ptr, fastq_...
 #include "output.hpp"      // for sample_output_files, processed_reads
 #include "sequence_sets.hpp" // for adapter_set
-#include "serializer.hpp"    // for fastq_flags
+#include "serializer.hpp"    // for read_type
 #include "simd.hpp"          // for size_t
 #include "statistics.hpp" // for trimming_statistics, reads_and_bases, fast...
 #include "userconfig.hpp" // for userconfig
@@ -118,17 +118,17 @@ void
 pre_trim_read_termini(const userconfig& config,
                       trimming_statistics& stats,
                       fastq& read,
-                      read_type type)
+                      read_file type)
 {
   size_t trim_5p = 0;
   size_t trim_3p = 0;
 
-  if (type == read_type::mate_1) {
+  if (type == read_file::mate_1) {
 #ifdef PRE_TRIM_5P
     trim_5p = config.pre_trim_fixed_5p.first;
 #endif
     trim_3p = config.pre_trim_fixed_3p.first;
-  } else if (type == read_type::mate_2) {
+  } else if (type == read_file::mate_2) {
 #ifdef PRE_TRIM_5P
     trim_5p = config.pre_trim_fixed_5p.second;
 #endif
@@ -145,34 +145,34 @@ void
 post_trim_read_termini(const userconfig& config,
                        trimming_statistics& stats,
                        fastq& read,
-                       read_type type,
+                       read_file type,
                        merged_reads* mstats = nullptr)
 {
   size_t trim_5p = 0;
   size_t trim_3p = 0;
 
   switch (type) {
-    case read_type::mate_1:
+    case read_file::mate_1:
       trim_5p = config.post_trim_fixed_5p.first;
       trim_3p = config.post_trim_fixed_3p.first;
       break;
 
-    case read_type::mate_2:
+    case read_file::mate_2:
       trim_5p = config.post_trim_fixed_5p.second;
       trim_3p = config.post_trim_fixed_3p.second;
       break;
 
-    case read_type::merged:
+    case read_file::merged:
       AR_REQUIRE(config.paired_ended_mode);
       trim_5p = config.post_trim_fixed_5p.first;
       trim_3p = config.post_trim_fixed_5p.second;
       break;
 
-    case read_type::singleton:
-    case read_type::discarded:
+    case read_file::singleton:
+    case read_file::discarded:
       AR_FAIL("unsupported read type in post_trim_read_termini");
 
-    case read_type::max:
+    case read_file::max:
     default:
       AR_FAIL("invalid read type in post_trim_read_termini");
   }
@@ -337,7 +337,7 @@ se_reads_processor::process(chunk_ptr chunk)
     const size_t in_length = read.length();
 
     // Trim fixed number of bases from 5' and/or 3' termini
-    pre_trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    pre_trim_read_termini(m_config, *stats, read, read_file::mate_1);
     // Trim poly-X tails for zero or more X
     pre_trim_poly_x_tail(m_config, *stats, read);
 
@@ -358,7 +358,7 @@ se_reads_processor::process(chunk_ptr chunk)
     read.add_prefix_to_name(m_config.prefix_read_1);
 
     // Trim fixed number of bases from 5' and/or 3' termini
-    post_trim_read_termini(m_config, *stats, read, read_type::mate_1);
+    post_trim_read_termini(m_config, *stats, read, read_file::mate_1);
     // Trim poly-X tails for zero or more X
     post_trim_poly_x_tail(m_config, *stats, read);
     // Sliding window trimming or single-base trimming of low quality bases
@@ -369,10 +369,10 @@ se_reads_processor::process(chunk_ptr chunk)
 
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
-      chunks.add(read, read_type::mate_1, fastq_flags::se, barcode);
+      chunks.add(read, read_file::mate_1, read_type::se, barcode);
     } else {
       stats->discarded->process(read);
-      chunks.add(read, read_type::discarded, fastq_flags::se_fail, barcode);
+      chunks.add(read, read_file::discarded, read_type::se_fail, barcode);
     }
   }
 
@@ -387,29 +387,29 @@ se_reads_processor::process(chunk_ptr chunk)
 void
 add_pe_statistics(const trimming_statistics& stats,
                   const fastq& read,
-                  read_type type)
+                  read_file type)
 {
   switch (type) {
-    case read_type::mate_1:
+    case read_file::mate_1:
       stats.read_1->process(read);
       break;
-    case read_type::mate_2:
+    case read_file::mate_2:
       stats.read_2->process(read);
       break;
 
-    case read_type::merged:
+    case read_file::merged:
       stats.merged->process(read);
       break;
 
-    case read_type::singleton:
+    case read_file::singleton:
       stats.singleton->process(read);
       break;
 
-    case read_type::discarded:
+    case read_file::discarded:
       stats.discarded->process(read);
       break;
 
-    case read_type::max:
+    case read_file::max:
       AR_FAIL("unhandled read type");
 
     default:
@@ -469,8 +469,8 @@ pe_reads_processor::process(chunk_ptr chunk)
     const size_t in_length_2 = read_2.length();
 
     // Trim fixed number of bases from 5' and/or 3' termini
-    pre_trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
-    pre_trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
+    pre_trim_read_termini(m_config, *stats, read_1, read_file::mate_1);
+    pre_trim_read_termini(m_config, *stats, read_2, read_file::mate_2);
 
     // Trim poly-X tails for zero or more X
     pre_trim_poly_x_tail(m_config, *stats, read_1);
@@ -514,7 +514,7 @@ pe_reads_processor::process(chunk_ptr chunk)
         post_trim_read_termini(m_config,
                                *stats,
                                read_1,
-                               read_type::merged,
+                               read_file::merged,
                                &mstats);
 
         if (!m_config.preserve5p) {
@@ -530,13 +530,10 @@ pe_reads_processor::process(chunk_ptr chunk)
 
         if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
-          chunks.add(read_1, read_type::merged, fastq_flags::se, barcode);
+          chunks.add(read_1, read_file::merged, read_type::se, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(read_1,
-                     read_type::discarded,
-                     fastq_flags::se_fail,
-                     barcode);
+          chunks.add(read_1, read_file::discarded, read_type::se_fail, barcode);
         }
 
         continue;
@@ -552,8 +549,8 @@ pe_reads_processor::process(chunk_ptr chunk)
     read_2.add_prefix_to_name(m_config.prefix_read_2);
 
     // Trim fixed number of bases from 5' and/or 3' termini
-    post_trim_read_termini(m_config, *stats, read_1, read_type::mate_1);
-    post_trim_read_termini(m_config, *stats, read_2, read_type::mate_2);
+    post_trim_read_termini(m_config, *stats, read_1, read_file::mate_1);
+    post_trim_read_termini(m_config, *stats, read_2, read_file::mate_2);
 
     // Trim poly-X tails for zero or more X
     post_trim_poly_x_tail(m_config, *stats, read_1);
@@ -567,20 +564,20 @@ pe_reads_processor::process(chunk_ptr chunk)
     const bool is_ok_1 = is_acceptable_read(m_config, *stats, read_1);
     const bool is_ok_2 = is_acceptable_read(m_config, *stats, read_2);
 
-    read_type type_1;
-    read_type type_2;
+    read_file type_1;
+    read_file type_2;
     if (is_ok_1 && is_ok_2) {
-      type_1 = read_type::mate_1;
-      type_2 = read_type::mate_2;
+      type_1 = read_file::mate_1;
+      type_2 = read_file::mate_2;
     } else if (is_ok_1) {
-      type_1 = read_type::singleton;
-      type_2 = read_type::discarded;
+      type_1 = read_file::singleton;
+      type_2 = read_file::discarded;
     } else if (is_ok_2) {
-      type_1 = read_type::discarded;
-      type_2 = read_type::singleton;
+      type_1 = read_file::discarded;
+      type_2 = read_file::singleton;
     } else {
-      type_1 = read_type::discarded;
-      type_2 = read_type::discarded;
+      type_1 = read_file::discarded;
+      type_2 = read_file::discarded;
     }
 
     add_pe_statistics(*stats, read_1, type_1);
@@ -592,8 +589,8 @@ pe_reads_processor::process(chunk_ptr chunk)
     stats->total_trimmed.inc_bases((in_length_1 - read_1.length()) +
                                    (in_length_2 - read_2.length()));
 
-    const auto flags_1 = is_ok_1 ? fastq_flags::pe_1 : fastq_flags::pe_1_fail;
-    const auto flags_2 = is_ok_2 ? fastq_flags::pe_2 : fastq_flags::pe_2_fail;
+    const auto flags_1 = is_ok_1 ? read_type::pe_1 : read_type::pe_1_fail;
+    const auto flags_2 = is_ok_2 ? read_type::pe_2 : read_type::pe_2_fail;
 
     // Queue reads last, since this result in modifications to lengths
     chunks.add(read_1, type_1, flags_1, barcode);

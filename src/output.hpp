@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "commontypes.hpp" // for string_vec, read_type, merge_strategy, ...
+#include "commontypes.hpp" // for string_vec, read_file, merge_strategy, ...
 #include "serializer.hpp"  // for serializer
 #include <array>           // for array
 #include <cstddef>         // for size_t
@@ -20,7 +20,7 @@ class sample;
 class scheduler;
 class serializer;
 class userconfig;
-enum class fastq_flags;
+enum class read_type;
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
 using chunk_ptr_vec = std::vector<chunk_ptr>;
@@ -51,14 +51,14 @@ public:
   sample_output_files();
 
   /** Sets the output file for a given read type. */
-  void set_file(read_type rtype, output_file file);
+  void set_file(read_file rtype, output_file file);
   /** Sets the pipeline step for a given read type. */
-  void set_step(read_type rtype, size_t step);
+  void set_step(read_file rtype, size_t step);
 
   [[nodiscard]] size_t size() const { return m_output.size(); }
 
   /** Returns the offset to the pipeline step/filename for a given read type. */
-  [[nodiscard]] size_t offset(read_type value) const;
+  [[nodiscard]] size_t offset(read_file value) const;
 
   /** Returns the filename for a given offset */
   [[nodiscard]] const output_file& file(size_t offset) const
@@ -100,7 +100,7 @@ private:
 
   std::vector<file_and_step> m_output{};
   //! Mapping of read types to filenames/steps.
-  std::array<size_t, static_cast<size_t>(read_type::max)> m_offsets{};
+  std::array<size_t, static_cast<size_t>(read_file::max)> m_offsets{};
 };
 
 /** Class used to organize filenames of output files. */
@@ -167,10 +167,7 @@ public:
   void write_headers(const string_vec& args);
 
   /** Adds a read of the given type to be processed */
-  void add(const fastq& read,
-           read_type type,
-           fastq_flags flags,
-           size_t barcode);
+  void add(const fastq& read, read_file type, read_type flags, size_t barcode);
 
   /** Returns a chunk for each generated type of processed reads. */
   chunk_vec finalize(bool eof);
@@ -180,7 +177,7 @@ private:
 
   //! Mate separator found in reads
   char m_mate_separator = '\0';
-  //! A set of output chunks being created; typically fewer than read_type::max.
+  //! A set of output chunks being created; typically fewer than read_file::max.
   chunk_ptr_vec m_chunks{};
   //! The serializer used for each chunk
   std::vector<serializer> m_serializers{};

@@ -11,7 +11,7 @@
 
 namespace adapterremoval {
 
-enum class read_type : size_t;
+enum class read_file : size_t;
 class sample_output_files;
 class userconfig;
 
