@@ -129,35 +129,35 @@ TEST_CASE("underlying_value returns same type", "[underlying_value]")
   // These tests do not do anything at runtime
   {
     enum my_enum : char;
-    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    auto uvalue = underlying_value(my_enum{});
     static_assert(std::is_same_v<decltype(uvalue), char>);
   }
   {
     enum my_enum : unsigned char;
-    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    auto uvalue = underlying_value(my_enum{});
     static_assert(std::is_same_v<decltype(uvalue), unsigned char>);
   }
 
   {
     enum my_enum : int;
-    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    auto uvalue = underlying_value(my_enum{});
     static_assert(std::is_same_v<decltype(uvalue), int>);
   }
   {
     enum my_enum : unsigned int;
-    auto uvalue = underlying_value(static_cast<my_enum>(0));
+    auto uvalue = underlying_value(my_enum{});
     static_assert(std::is_same_v<decltype(uvalue), unsigned int>);
   }
 
   {
-    enum class my_enum : int;
-    auto uvalue = underlying_value(static_cast<my_enum>(0));
-    static_assert(std::is_same_v<decltype(uvalue), int>);
+    enum class my_enum : long;
+    auto uvalue = underlying_value(my_enum{});
+    static_assert(std::is_same_v<decltype(uvalue), long>);
   }
   {
-    enum class my_enum : unsigned int;
-    auto uvalue = underlying_value(static_cast<my_enum>(0));
-    static_assert(std::is_same_v<decltype(uvalue), unsigned int>);
+    enum class my_enum : unsigned long;
+    auto uvalue = underlying_value(my_enum{});
+    static_assert(std::is_same_v<decltype(uvalue), unsigned long>);
   }
 }
 
