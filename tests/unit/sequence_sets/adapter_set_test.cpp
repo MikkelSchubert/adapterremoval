@@ -8,8 +8,6 @@
 #include "sequence_sets.hpp" // for read_group
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <string>            // for string==, string
-#include <string_view>       // for basic_string_view
-#include <utility>           // for pair, operator==
 #include <vector>            // for vector
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
@@ -34,10 +32,8 @@ TEST_CASE("initializer list", "[adapter_set]")
   adapter_set set{ { "ACGTA", "TGGAT" }, { "CCGAT", "AGAGT" } };
 
   // alignment orientation
-  const auto pair_1 =
-    sequence_pair{ dna_sequence{ "ACGTA" }, dna_sequence{ "ATCCA" } };
-  const auto pair_2 =
-    sequence_pair{ dna_sequence{ "CCGAT" }, dna_sequence{ "ACTCT" } };
+  const sequence_pair pair_1{ "ACGTA"_dna, "ATCCA"_dna };
+  const sequence_pair pair_2{ "CCGAT"_dna, "ACTCT"_dna };
 
   REQUIRE(set.size() == 2);
   REQUIRE(!set.empty());
@@ -134,22 +130,22 @@ TEST_CASE("load table with too many columns", "[adapter_set]")
 
 TEST_CASE("add squences", "[adapter_set]")
 {
-  const auto set_1a = dna_sequence{ "ACT" };
-  const auto set_1b = dna_sequence{ "CTA" };
-  const auto set_2a = dna_sequence{ "ATT" };
-  const auto set_2b = dna_sequence{ "CTT" };
+  const dna_sequence set_1a{ "ACT" };
+  const dna_sequence set_1b{ "CTA" };
+  const dna_sequence set_2a{ "ATT" };
+  const dna_sequence set_2b{ "CTT" };
 
   adapter_set set;
   CHECK(std::vector(set.begin(), set.end()) == sequence_pair_vec{});
 
-  set.add(dna_sequence{ "ACT" }, dna_sequence{ "CTA" });
+  set.add("ACT"_dna, "CTA"_dna);
   CHECK(std::vector(set.begin(), set.end()) ==
-        sequence_pair_vec{ { dna_sequence{ "ACT" }, dna_sequence{ "TAG" } } });
+        sequence_pair_vec{ { "ACT"_dna, "TAG"_dna } });
 
-  set.add(dna_sequence{ "ATT" }, dna_sequence{ "CTT" });
-  CHECK(std::vector(set.begin(), set.end()) ==
-        sequence_pair_vec{ { dna_sequence{ "ACT" }, dna_sequence{ "TAG" } },
-                           { dna_sequence{ "ATT" }, dna_sequence{ "AAG" } } });
+  set.add("ATT"_dna, "CTT"_dna);
+  CHECK(
+    std::vector(set.begin(), set.end()) ==
+    sequence_pair_vec{ { "ACT"_dna, "TAG"_dna }, { "ATT"_dna, "AAG"_dna } });
 }
 
 TEST_CASE("add barcodes to adapters", "[adapter_set]")

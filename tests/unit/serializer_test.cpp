@@ -33,8 +33,8 @@ constexpr std::string_view EXTREMELY_LONG_NAME =
 
 // Basic named sample with barcodes, but otherwise no special properties
 const sample BASIC_SAMPLE_WITH_BARCODES{ "foo",
-                                         dna_sequence{ "ACGT" },
-                                         dna_sequence{ "TGCA" },
+                                         "ACGT"_dna,
+                                         "TGCA"_dna,
                                          barcode_orientation::unspecified };
 
 } // namespace
@@ -229,9 +229,7 @@ TEST_CASE("Writing SAM read-group header to buffer with multiple barcodes",
           "[serializer::fastq]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add_barcodes(dna_sequence{ "TTGG" },
-                      dna_sequence{ "AGTT" },
-                      barcode_orientation::unspecified);
+  sample.add_barcodes("TTGG"_dna, "AGTT"_dna, barcode_orientation::unspecified);
   sample.set_read_group({});
 
   buffer buf;
@@ -280,9 +278,7 @@ TEST_CASE("serialize SAM record with sample")
 TEST_CASE("serialize SAM record with multiple barcodes")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add_barcodes(dna_sequence{ "TTGG" },
-                      dna_sequence{ "AGTT" },
-                      barcode_orientation::unspecified);
+  sample.add_barcodes("TTGG"_dna, "AGTT"_dna, barcode_orientation::unspecified);
   sample.set_read_group({});
 
   buffer buf;
@@ -455,9 +451,7 @@ TEST_CASE("Writing BAM read-group header to buffer with multiple barcodes",
           "[serializer::fastq]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add_barcodes(dna_sequence{ "TTGG" },
-                      dna_sequence{ "AGTT" },
-                      barcode_orientation::unspecified);
+  sample.add_barcodes("TTGG"_dna, "AGTT"_dna, barcode_orientation::unspecified);
   sample.set_read_group({});
 
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
@@ -526,9 +520,7 @@ TEST_CASE("serialize BAM record with sample")
 TEST_CASE("serialize BAM record with multiple barcodes")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add_barcodes(dna_sequence{ "TTGG" },
-                      dna_sequence{ "AGTT" },
-                      barcode_orientation::unspecified);
+  sample.add_barcodes("TTGG"_dna, "AGTT"_dna, barcode_orientation::unspecified);
   sample.set_read_group({});
 
   buffer buf;

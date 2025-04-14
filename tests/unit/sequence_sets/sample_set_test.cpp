@@ -69,13 +69,13 @@ TEST_CASE("constructor", "[sample_set]")
 TEST_CASE("Loading single barcodes", "[sample_set]")
 {
   sample sample_1{ "sample_1",
-                   dna_sequence{ "ACGTA" },
-                   dna_sequence{},
+                   "ACGTA"_dna,
+                   ""_dna,
                    barcode_orientation::unspecified };
   sample_1.set_read_group(read_group{ "ID:sample_1\tSM:sample_1\tBC:ACGTA" });
   sample sample_2{ "sample_2",
-                   dna_sequence{ "TGCAT" },
-                   dna_sequence{},
+                   "TGCAT"_dna,
+                   ""_dna,
                    barcode_orientation::unspecified };
   sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_1\tBC:TGCAT" });
 
@@ -97,13 +97,13 @@ TEST_CASE("Loading single barcodes", "[sample_set]")
 TEST_CASE("Loading two barcodes per sample", "[sample_set]")
 {
   sample sample_1{ "sample_1",
-                   dna_sequence{ "ACGTA" },
-                   dna_sequence{ "TTGTC" },
+                   "ACGTA"_dna,
+                   "TTGTC"_dna,
                    barcode_orientation::unspecified };
   sample_1.set_read_group(read_group{ "ID:sample_1\tSM:sample_1" });
   sample sample_2{ "sample_2",
-                   dna_sequence{ "TGCAT" },
-                   dna_sequence{ "CCGAT" },
+                   "TGCAT"_dna,
+                   "CCGAT"_dna,
                    barcode_orientation::unspecified };
   sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_1" });
 
@@ -125,16 +125,16 @@ TEST_CASE("Loading two barcodes per sample", "[sample_set]")
 TEST_CASE("Loading multiple barcodes per sample", "[sample_set]")
 {
   sample sample_1{ "sample_1",
-                   dna_sequence{ "ACGTA" },
-                   dna_sequence{ "TTGTC" },
+                   "ACGTA"_dna,
+                   "TTGTC"_dna,
                    barcode_orientation::unspecified };
   sample_1.add_barcodes(dna_sequence{ "GGTTG" },
                         dna_sequence{ "ACGTA" },
                         barcode_orientation::unspecified);
   sample_1.set_read_group(read_group{ "ID:sample_1\tSM:sample_1" });
   sample sample_2{ "sample_2",
-                   dna_sequence{ "TGCAT" },
-                   dna_sequence{ "CCGAT" },
+                   "TGCAT"_dna,
+                   "CCGAT"_dna,
                    barcode_orientation::unspecified };
   sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_2" });
 
@@ -410,8 +410,8 @@ TEST_CASE("Barcodes in forward orientation", "[sample_set]")
   };
 
   sample sample_1{ "sample_1",
-                   dna_sequence{ "CTTGCCCT" },
-                   dna_sequence{ "ACGTTATT" },
+                   "CTTGCCCT"_dna,
+                   "ACGTTATT"_dna,
                    barcode_orientation::forward };
   sample_1.add_barcodes(dna_sequence{ "ACGTTATT" },
                         dna_sequence{ "CTTGCCCT" },
@@ -419,8 +419,8 @@ TEST_CASE("Barcodes in forward orientation", "[sample_set]")
   sample_1.set_read_group(read_group{});
 
   sample sample_2{ "sample_2",
-                   dna_sequence{ "CGCCGATG" },
-                   dna_sequence{ "TGCACGGG" },
+                   "CGCCGATG"_dna,
+                   "TGCACGGG"_dna,
                    barcode_orientation::forward };
   sample_2.add_barcodes(dna_sequence{ "TGCACGGG" },
                         dna_sequence{ "CGCCGATG" },
@@ -446,8 +446,8 @@ TEST_CASE("Barcodes in reverse orientation", "[sample_set]")
   };
 
   sample sample_1{ "sample_1",
-                   dna_sequence{ "CTTGCCCT" },
-                   dna_sequence{ "ACGTTATT" },
+                   "CTTGCCCT"_dna,
+                   "ACGTTATT"_dna,
                    barcode_orientation::reverse };
   sample_1.add_barcodes(dna_sequence{ "ACGTTATT" },
                         dna_sequence{ "CTTGCCCT" },
@@ -455,8 +455,8 @@ TEST_CASE("Barcodes in reverse orientation", "[sample_set]")
   sample_1.set_read_group(read_group{});
 
   sample sample_2{ "sample_2",
-                   dna_sequence{ "CGCCGATG" },
-                   dna_sequence{ "TGCACGGG" },
+                   "CGCCGATG"_dna,
+                   "TGCACGGG"_dna,
                    barcode_orientation::reverse };
   sample_2.add_barcodes(dna_sequence{ "TGCACGGG" },
                         dna_sequence{ "CGCCGATG" },
@@ -486,12 +486,12 @@ TEST_CASE("Barcodes in explicit orientation", "[sample_set]")
   const auto rev = barcode_orientation::reverse;
 
   std::vector<sample> samples = {
-    sample{ "sample_1", dna_sequence{ "ACCC" }, dna_sequence{ "CTAA" }, fwd },
-    sample{ "sample_2", dna_sequence{ "GACA" }, dna_sequence{ "ACAG" }, fwd },
-    sample{ "sample_3", dna_sequence{ "TTCA" }, dna_sequence{ "TCCA" }, fwd },
-    sample{ "sample_4", dna_sequence{ "CGAG" }, dna_sequence{ "CCAT" }, rev },
-    sample{ "sample_5", dna_sequence{ "TAAG" }, dna_sequence{ "GCTT" }, rev },
-    sample{ "sample_6", dna_sequence{ "ATAT" }, dna_sequence{ "CTCT" }, rev },
+    sample{ "sample_1", "ACCC"_dna, "CTAA"_dna, fwd },
+    sample{ "sample_2", "GACA"_dna, "ACAG"_dna, fwd },
+    sample{ "sample_3", "TTCA"_dna, "TCCA"_dna, fwd },
+    sample{ "sample_4", "CGAG"_dna, "CCAT"_dna, rev },
+    sample{ "sample_5", "TAAG"_dna, "GCTT"_dna, rev },
+    sample{ "sample_6", "ATAT"_dna, "CTCT"_dna, rev },
   };
 
   for (auto& sample : samples) {
@@ -528,8 +528,8 @@ TEST_CASE("Different names for barcodes in opposite orientation",
   const auto fwd = barcode_orientation::forward;
   const auto rev = barcode_orientation::reverse;
   std::vector<sample> samples = {
-    sample{ "sample_1", dna_sequence{ "ACCC" }, dna_sequence{ "CTAA" }, fwd },
-    sample{ "sample_2", dna_sequence{ "CTAA" }, dna_sequence{ "ACCC" }, rev },
+    sample{ "sample_1", "ACCC"_dna, "CTAA"_dna, fwd },
+    sample{ "sample_2", "CTAA"_dna, "ACCC"_dna, rev },
   };
 
   for (auto& sample : samples) {
@@ -548,8 +548,8 @@ TEST_CASE("Different names for barcodes in same orientation", "[sample_set]")
 {
   const auto fwd = barcode_orientation::forward;
   std::vector<sample> samples = {
-    sample{ "sample_1", dna_sequence{ "ACCC" }, dna_sequence{ "CTAA" }, fwd },
-    sample{ "sample_2", dna_sequence{ "CTAA" }, dna_sequence{ "ACCC" }, fwd },
+    sample{ "sample_1", "ACCC"_dna, "CTAA"_dna, fwd },
+    sample{ "sample_2", "CTAA"_dna, "ACCC"_dna, fwd },
   };
 
   for (auto& sample : samples) {

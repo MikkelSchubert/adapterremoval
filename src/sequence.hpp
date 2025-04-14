@@ -70,6 +70,13 @@ private:
 using sequence_pair = std::pair<dna_sequence, dna_sequence>;
 using sequence_pair_vec = std::vector<sequence_pair>;
 
+/** String literal; mostly for testing */
+inline dna_sequence
+operator""_dna(const char* seq, size_t length)
+{
+  return dna_sequence{ std::string_view{ seq, length } };
+}
+
 /** Stream operator for debugging output */
 std::ostream&
 operator<<(std::ostream& os, const dna_sequence& value);
