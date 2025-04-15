@@ -7,6 +7,7 @@
 #include <cstddef>     // for size_t
 #include <cstdint>     // for uint32_t
 #include <cstring>     // for memcpy
+#include <iosfwd>      // for ostream
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
@@ -40,10 +41,10 @@ public:
   ~buffer() { free(); }
 
   /** Returns pointer to the buffer, if any */
-  [[nodiscard]] inline uint8_t* data() { return m_data; }
+  [[nodiscard]] uint8_t* data() { return m_data; }
 
   /** Returns pointer to the buffer, if any */
-  [[nodiscard]] inline const uint8_t* data() const { return m_data; }
+  [[nodiscard]] const uint8_t* data() const { return m_data; }
 
   /** Returns the nth value in the buffer */
   [[nodiscard]] uint8_t at(size_t n) const
@@ -53,13 +54,13 @@ public:
   }
 
   /** Returns the current size of the buffer */
-  [[nodiscard]] inline size_t size() const { return m_size; }
+  [[nodiscard]] size_t size() const { return m_size; }
 
   /** Returns the capacity of the buffer */
-  [[nodiscard]] inline size_t capacity() const { return m_capacity; }
+  [[nodiscard]] size_t capacity() const { return m_capacity; }
 
   /** Changes the reported size of the buffer */
-  inline void resize(size_t n)
+  void resize(size_t n)
   {
     if (n > m_capacity) {
       reserve(n);
@@ -69,14 +70,10 @@ public:
   }
 
   /** Reserve additional space in the buffer */
-  inline void reserve(size_t n)
+  void reserve(size_t n)
   {
     if (n > m_capacity) {
-      if (m_data) {
-        m_data = reinterpret_cast<uint8_t*>(std::realloc(m_data, n));
-      } else {
-        m_data = reinterpret_cast<uint8_t*>(std::malloc(n));
-      }
+      m_data = reinterpret_cast<uint8_t*>(std::realloc(m_data, n));
 
       AR_REQUIRE(m_data);
       m_capacity = n;
@@ -84,37 +81,37 @@ public:
   }
 
   /** Append a string to the buffer */
-  inline void append(std::string_view data)
-  {
-    append(data.data(), data.size());
-  }
+  void append(std::string_view data) { append(data.data(), data.size()); }
 
   /** Append a string to the buffer */
-  inline void append(const buffer& data) { append(data.data(), data.size()); }
+  void append(const buffer& data) { append(data.data(), data.size()); }
 
   /** Append data to the buffer */
-  inline void append(const char* data, size_t length)
+  void append(const char* data, size_t length)
   {
     append(reinterpret_cast<const uint8_t*>(data), length);
   }
 
   /** Append data to the buffer */
-  inline void append(const uint8_t* data, size_t length)
+  void append(const uint8_t* data, size_t length)
   {
-    grow_to_fit(m_size + length);
-    std::memcpy(m_data + m_size, data, length);
-    m_size += length;
+    if (length) {
+      AR_REQUIRE(data);
+      grow_to_fit(m_size + length);
+      std::memcpy(m_data + m_size, data, length);
+      m_size += length;
+    }
   }
 
   /** Append a byte to the buffer */
-  inline void append_u8(uint8_t value)
+  void append_u8(uint8_t value)
   {
     grow_to_fit(m_size + 1);
     m_data[m_size++] = value;
   }
 
   /** Append 16 bit integer to buffer in LE orientation */
-  inline void append_u16(uint16_t value)
+  void append_u16(uint16_t value)
   {
     grow_to_fit(m_size + 2);
     m_data[m_size + 0] = value & 0xFFU;
@@ -123,7 +120,7 @@ public:
   }
 
   /** Append 32 bit integer to buffer in LE orientation */
-  inline void append_u32(uint32_t value)
+  void append_u32(uint32_t value)
   {
     grow_to_fit(m_size + 4);
     m_data[m_size + 0] = value & 0xFFU;
@@ -134,13 +131,10 @@ public:
   }
 
   /** Append signed 32 bit integer to buffer in LE orientation */
-  inline void append_i32(int32_t value)
-  {
-    append_u32(static_cast<uint32_t>(value));
-  }
+  void append_i32(int32_t value) { append_u32(static_cast<uint32_t>(value)); }
 
   /** Insert 16 bit integer into buffer in LE orientation at offset */
-  inline void put_u16(size_t offset, uint16_t value)
+  void put_u16(size_t offset, uint16_t value)
   {
     AR_REQUIRE(offset + 2 <= size());
     m_data[offset + 0] = value & 0xFFU;
@@ -148,7 +142,7 @@ public:
   }
 
   /** Insert 32 bit integer into buffer in LE orientation at offset */
-  inline void put_u32(size_t offset, uint32_t value)
+  void put_u32(size_t offset, uint32_t value)
   {
     AR_REQUIRE(offset + 4 <= size());
     m_data[offset + 0] = value & 0xFFU;
@@ -157,11 +151,21 @@ public:
     m_data[offset + 3] = (value >> 24U) & 0xFFU;
   }
 
+  /** Returns true if content, but not necessarily capacity, is the same */
+  [[nodiscard]] bool operator==(const buffer& other) const
+  {
+    return (m_size == other.m_size) &&
+           (m_size == 0 || !std::memcmp(m_data, other.m_data, m_size));
+  }
+
+  /** Creates debug representation of an buffer */
+  friend std::ostream& operator<<(std::ostream& os, const buffer& value);
+
   buffer(const buffer& other) = delete;
   buffer& operator=(const buffer& other) = delete;
 
 private:
-  inline void free()
+  void free()
   {
     if (m_data) {
       std::free(m_data);
@@ -171,7 +175,7 @@ private:
     }
   }
 
-  inline void grow_to_fit(size_t n)
+  void grow_to_fit(size_t n)
   {
     if (n > m_capacity) {
       size_t increase_to = std::max<size_t>(1, m_capacity);
@@ -190,6 +194,10 @@ private:
   //! Size of backing buffer sized
   size_t m_size = 0;
 };
+
+/** Initializes a buffer from a string literal; for testing */
+buffer
+operator""_buffer(const char* s, size_t l);
 
 using buffer_vec = std::vector<buffer>;
 
