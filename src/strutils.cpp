@@ -347,7 +347,8 @@ log_escape(const std::string_view s)
       default:
         if (!std::isprint(c)) {
           std::ostringstream ss;
-          ss << "\\x" << std::hex << static_cast<int>(c);
+          ss << "\\x" << std::hex
+             << static_cast<unsigned int>(static_cast<unsigned char>(c));
 
           out.append(ss.str());
 

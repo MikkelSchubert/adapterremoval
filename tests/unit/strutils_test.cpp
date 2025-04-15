@@ -340,6 +340,7 @@ TEST_CASE("log_escape tests")
   // unprintable characters must be hex encoded
   REQUIRE(log_escape("\1") == "'\\x1'");
   REQUIRE(log_escape("\x7f") == "'\\x7f'");
+  REQUIRE(log_escape("\xff") == "'\\xff'");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
