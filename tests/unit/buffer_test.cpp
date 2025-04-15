@@ -1,11 +1,106 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "buffer.hpp"  // declarations
-#include "testing.hpp" // for TEST_CASE, REQUIRE, ...
-#include <cstring>     // for memset
-#include <utility>     // for move
+#include "buffer.hpp"   // declarations
+#include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
+#include <cstring>      // for memset
+#include <strutils.hpp> // for log_escape
+#include <utility>      // for move
 
 namespace adapterremoval {
+
+////////////////////////////////////////////////////////////////////////////////
+// implementations of buffer test functions
+
+/**
+ * Creates debug representation of an buffer; should only be used on fully
+ * initialized buffers, to avoid reading uninitialized values.
+ */
+std::ostream&
+operator<<(std::ostream& os, const buffer& value)
+{
+  const std::string_view buf{ reinterpret_cast<const char*>(value.data()),
+                              value.size() };
+
+  return os << "buffer{data=" << log_escape(buf)
+            << ", capacity=" << value.capacity() << ", size=" << value.size()
+            << "}";
+}
+
+/** Initialize a buffer using a string literal */
+buffer
+operator""_buffer(const char* s, size_t l)
+{
+  buffer buf;
+  buf.append(s, l);
+
+  return buf;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// testing helper functions
+
+TEST_CASE("buffer to string")
+{
+  buffer buf;
+  buf.append("test string");
+  buf.append_u32(0xDEADBEEF);
+
+  CHECK(Catch::fallbackStringifier(buf) ==
+        "buffer{data='test string\\xef\\xbe\\xad\\xde', capacity=16, size=15}");
+}
+
+TEST_CASE("buffer literals")
+{
+  CHECK(buffer{} == ""_buffer);
+  CHECK_FALSE(buffer{} == "test string"_buffer);
+
+  SECTION("string")
+  {
+    buffer buf;
+    buf.append("test string");
+    CHECK(buf == "test string"_buffer);
+  }
+
+  SECTION("unprintable")
+  {
+    buffer buf;
+    buf.append_u32(0xDEADBEEF);
+    CHECK(buf == "\xef\xbe\xad\xde"_buffer);
+  }
+}
+
+TEST_CASE("buffer equality operator")
+{
+  CHECK(buffer{} == buffer{});
+
+  SECTION("reserved space is not considered")
+  {
+    buffer buff;
+    buff.reserve(16);
+    CHECK(buff == buffer{});
+  }
+
+  SECTION("content is considered")
+  {
+    buffer buf1;
+    buffer buf2;
+    REQUIRE(buf1 == buf2);
+
+    buf1.append("foo bar");
+    REQUIRE_FALSE(buf1 == buf2);
+
+    buf2.append("foo bar");
+    REQUIRE(buf1 == buf2);
+
+    buf2.append_u32(0xDEADBEEF);
+    REQUIRE_FALSE(buf1 == buf2);
+
+    buf1.append_u32(0xDEADBEEF);
+    REQUIRE(buf1 == buf2);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 TEST_CASE("buffer defaults to empty/nullptr")
 {
