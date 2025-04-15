@@ -15086,6 +15086,8 @@ std::string fpToString( T value, int precision ) {
 //
 //// ======================================================= ////
 
+// Does not handle non-printable characters
+#if 0
 std::string StringMaker<std::string>::convert(const std::string& str) {
     if (!getCurrentContext().getConfig()->showInvisibles()) {
         return '"' + str + '"';
@@ -15108,6 +15110,7 @@ std::string StringMaker<std::string>::convert(const std::string& str) {
     s.append("\"");
     return s;
 }
+#endif
 
 #ifdef CATCH_CONFIG_CPP17_STRING_VIEW
 std::string StringMaker<std::string_view>::convert(std::string_view str) {
