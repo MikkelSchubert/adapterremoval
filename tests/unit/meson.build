@@ -39,7 +39,6 @@ run_target(
     'run-unit-tests',
     command: [
         unit_tests,
-        '--invisibles',
         '--use-colour', 'yes',
     ],
 )
