@@ -11,6 +11,7 @@
 #include <iomanip>      // for operator<<, setprecision
 #include <sstream>      // for ostringstream, operator<<, basic_ostream, bas...
 #include <stdexcept>    // for invalid_argument
+#include <string_view>  // for string_view
 #include <unistd.h>     // for STDOUT_FILENO
 #include <vector>       // for vector, swap
 
@@ -321,6 +322,8 @@ log_escape(const std::string_view s)
   std::string out;
   out.push_back('\'');
 
+  constexpr std::string_view HEX{ "0123456789abcdef" };
+
   for (const auto c : s) {
     switch (c) {
       case '\'':
@@ -346,11 +349,10 @@ log_escape(const std::string_view s)
         break;
       default:
         if (!std::isprint(c)) {
-          std::ostringstream ss;
-          ss << "\\x" << std::hex
-             << static_cast<unsigned int>(static_cast<unsigned char>(c));
 
-          out.append(ss.str());
+          out.append("\\x");
+          out.push_back(HEX.at((static_cast<uint8_t>(c) & 0xf0) >> 4));
+          out.push_back(HEX.at((static_cast<uint8_t>(c) & 0xf)));
 
         } else {
           out.push_back(c);
