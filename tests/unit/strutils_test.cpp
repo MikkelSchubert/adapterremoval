@@ -315,8 +315,9 @@ TEST_CASE("shell_escape tests")
   // mixed strings must be quoted and escaped
   REQUIRE(shell_escape("bob's file.txt") == "'bob\\'s file.txt'");
   // unprintable characters must be hex encoded
-  REQUIRE(shell_escape("\1") == "'\\x1'");
+  REQUIRE(shell_escape("\x01") == "'\\x01'");
   REQUIRE(shell_escape("\x7f") == "'\\x7f'");
+  REQUIRE(shell_escape("\xff") == "'\\xff'");
 }
 
 TEST_CASE("log_escape tests")
@@ -338,7 +339,7 @@ TEST_CASE("log_escape tests")
   // mixed strings must be quoted and escaped
   REQUIRE(log_escape("bob's file.txt") == "'bob\\'s file.txt'");
   // unprintable characters must be hex encoded
-  REQUIRE(log_escape("\1") == "'\\x1'");
+  REQUIRE(log_escape("\x01") == "'\\x01'");
   REQUIRE(log_escape("\x7f") == "'\\x7f'");
   REQUIRE(log_escape("\xff") == "'\\xff'");
 }
