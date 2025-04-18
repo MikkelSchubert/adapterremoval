@@ -6,7 +6,7 @@
 #include "fastq.hpp"      // for fastq
 #include "fastq_io.hpp"   // for write_fastq, split_fastq, gzip_split_fastq
 #include "scheduler.hpp"  // for analytical_chunk
-#include "serializer.hpp" // for fastq_serializer
+#include "serializer.hpp" // for read_meta
 #include "strutils.hpp"   // for ends_with
 #include <limits>         // for numeric_limits
 
@@ -240,15 +240,12 @@ processed_reads::write_headers(const string_vec& args)
 }
 
 void
-processed_reads::add(const fastq& read,
-                     const read_file type,
-                     const read_type flags,
-                     const size_t barcode)
+processed_reads::add(const fastq& read, const read_meta& meta)
 {
-  const size_t offset = m_map.offset(type);
+  const size_t offset = m_map.offset(meta.get_file());
   if (offset != sample_output_files::disabled) {
     auto& buffer = get_buffer(m_chunks.at(offset));
-    m_serializers.at(offset).record(buffer, read, flags, barcode);
+    m_serializers.at(offset).record(buffer, read, meta);
     m_chunks.at(offset)->reads++;
   }
 }

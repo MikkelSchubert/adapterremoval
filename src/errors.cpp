@@ -87,6 +87,11 @@ parsing_error::parsing_error(const std::string& message)
 {
 }
 
+serializing_error::serializing_error(const std::string& message)
+  : std::runtime_error(message)
+{
+}
+
 fastq_error::fastq_error(const std::string& message)
   : parsing_error(message)
 {

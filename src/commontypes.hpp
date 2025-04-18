@@ -51,6 +51,14 @@ enum class read_type
   pe_2,
   //! PE mate 1 read that failed QC
   pe_2_fail,
+  //! PE mate 1 read for which the mate 2 read failed QC
+  singleton_1,
+  //! PE mate 2 read for which the mate 1 read failed QC
+  singleton_2,
+  //! Merged PE reads
+  merged,
+  //! Merged PE reads that failed QC
+  merged_fail,
 };
 
 /** Enum describing the user-requested output format for processed reads */

@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
-#include "serializer.hpp"  // for fastq_serializer
+#include "serializer.hpp"  // declarations
 #include "buffer.hpp"      // for buffer
 #include "commontypes.hpp" // for output_format
 #include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"      // for serializing_error
 #include "fastq.hpp"       // for fastq
 #include "fastq_enc.hpp"   // for PHRED_OFFSET_MIN
 #include "main.hpp"        // for VERSION
 #include "strutils.hpp"    // for join_text
+#include <sstream>         // for ostringstream
 #include <string_view>     // for string_view
 
 namespace adapterremoval {
+
+using namespace std::literals;
 
 class userconfig;
 
@@ -33,44 +37,52 @@ constexpr std::string_view SAM_HEADER = "@HD\tVN:1.6\tSO:unsorted\n";
  */
 
 std::string_view
-flags_to_sam(read_type flags)
+read_type_to_sam(read_type flags)
 {
   switch (flags) {
     case read_type::se:
+    case read_type::merged:
       return "4";
     case read_type::se_fail:
+    case read_type::merged_fail:
       return "516";
     case read_type::pe_1:
+    case read_type::singleton_1:
       return "77";
     case read_type::pe_1_fail:
       return "589";
     case read_type::pe_2:
+    case read_type::singleton_2:
       return "141";
     case read_type::pe_2_fail:
       return "653";
-    default:
-      AR_FAIL("invalid fastq flags");
+    default:                          // GCOVR_EXCL_LINE
+      AR_FAIL("invalid fastq flags"); // GCOVR_EXCL_LINE
   }
 }
 
 uint16_t
-flags_to_bam(read_type flags)
+read_type_to_bam(read_type flags)
 {
   switch (flags) {
     case read_type::se:
+    case read_type::merged:
       return 4;
     case read_type::se_fail:
+    case read_type::merged_fail:
       return 516;
     case read_type::pe_1:
+    case read_type::singleton_1:
       return 77;
     case read_type::pe_1_fail:
       return 589;
     case read_type::pe_2:
+    case read_type::singleton_2:
       return 141;
     case read_type::pe_2_fail:
       return 653;
-    default:
-      AR_FAIL("invalid fastq flags");
+    default:                          // GCOVR_EXCL_LINE
+      AR_FAIL("invalid fastq flags"); // GCOVR_EXCL_LINE
   }
 }
 
@@ -127,26 +139,44 @@ create_sam_header(const string_vec& args, const sample& s)
   return header;
 }
 
+std::string_view
+prepare_name(const fastq& record, const char mate_separator)
+{
+  auto name = record.name(mate_separator);
+  if (name.length() > 254) {
+    std::ostringstream os;
+    os << "Cannot encode read as SAM/BAM; read name is longer than 254 "
+       << "characters: len(" << log_escape(name) << ") == " << name.length();
+
+    throw serializing_error(os.str());
+  }
+
+  for (const char c : name) {
+    if ((c < '!' || c > '?') && (c < 'A' || c > '~')) {
+      std::ostringstream os;
+      os << "Cannot encode read as SAM/BAM; read name contains characters "
+         << "other than the allowed [!-?A-~]: " << log_escape(name);
+
+      throw serializing_error(os.str());
+    }
+  }
+
+  return name;
+}
+
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `fastq_serializer`
 
 void
-fastq_serializer::header(buffer& /* buf */,
-                         const string_vec& /* args */,
-                         const sample& /* s */)
-{
-}
-
-void
-fastq_serializer::record(buffer& buf,
+serializer::fastq_record(buffer& buf,
                          const fastq& record,
-                         const sample_sequences& sequences,
-                         const serializer_settings& settings)
+                         const read_meta& /* meta */,
+                         const sample_sequences& sequences) const
 {
   buf.append(record.header());
-  if (settings.demultiplexing_only) {
+  if (m_demultiplexing_only && !sequences.barcode_1.empty()) {
     buf.append(" BC:");
     buf.append(sequences.barcode_1);
     if (sequences.barcode_2.length()) {
@@ -156,7 +186,7 @@ fastq_serializer::record(buffer& buf,
   }
   buf.append_u8('\n');
   buf.append(record.sequence());
-  buf.append("\n+\n", 3);
+  buf.append("\n+\n"sv);
   buf.append(record.qualities());
   buf.append_u8('\n');
 }
@@ -165,20 +195,20 @@ fastq_serializer::record(buffer& buf,
 // Implementations for `sam_serializer`
 
 void
-sam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
+serializer::sam_header(buffer& buf, const string_vec& args, const sample& s)
 {
   buf.append(create_sam_header(args, s));
 }
 
 void
-sam_serializer::record(buffer& buf,
+serializer::sam_record(buffer& buf,
                        const fastq& record,
-                       const sample_sequences& sequences,
-                       const serializer_settings& settings)
+                       const read_meta& meta,
+                       const sample_sequences& sequences) const
 {
-  buf.append(record.name(settings.mate_separator)); // 1. QNAME
+  buf.append(prepare_name(record, m_mate_separator)); // 1. QNAME
   buf.append_u8('\t');
-  buf.append(flags_to_sam(settings.flags)); // 2. FLAG
+  buf.append(read_type_to_sam(meta.m_type)); // 2. FLAG
   buf.append("\t"
              "*\t" // 3. RNAME
              "0\t" // 4. POS
@@ -188,6 +218,7 @@ sam_serializer::record(buffer& buf,
              "0\t" // 8. PNEXT
              "0\t" // 9. TLEN
   );
+
   if (record.length()) {
     buf.append(record.sequence()); // 10. SEQ
     buf.append_u8('\t');
@@ -210,7 +241,7 @@ sam_serializer::record(buffer& buf,
 // Implementations for `bam_serializer`
 
 void
-bam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
+serializer::bam_header(buffer& buf, const string_vec& args, const sample& s)
 {
   const auto sam_header = create_sam_header(args, s);
 
@@ -221,22 +252,22 @@ bam_serializer::header(buffer& buf, const string_vec& args, const sample& s)
 }
 
 void
-bam_serializer::record(buffer& buf,
+serializer::bam_record(buffer& buf,
                        const fastq& record,
-                       const sample_sequences& sequences,
-                       const serializer_settings& settings)
+                       const read_meta& meta,
+                       const sample_sequences& sequences) const
 {
   const size_t block_size_pos = buf.size();
   buf.append_u32(0);  // block size (preliminary)
   buf.append_i32(-1); // refID
   buf.append_i32(-1); // pos
 
-  const auto name = record.name(settings.mate_separator).substr(0, 255);
+  const auto name = prepare_name(record, m_mate_separator);
   buf.append_u8(name.length() + 1); // l_read_name
   buf.append_u8(0);                 // mapq
   buf.append_u16(4680);             // bin (c.f. specification 4.2.1)
   buf.append_u16(0);                // n_cigar
-  buf.append_u16(flags_to_bam(settings.flags)); // flags
+  buf.append_u16(read_type_to_bam(meta.m_type)); // flags
 
   buf.append_u32(record.length()); // l_seq
   buf.append_i32(-1);              // next_refID
@@ -261,48 +292,81 @@ bam_serializer::record(buffer& buf,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Implementations for `read_meta`
+
+read_file
+read_meta::get_file() const noexcept
+{
+  switch (m_type) {
+    case read_type::se:
+    case read_type::pe_1:
+      return read_file::mate_1;
+    case read_type::pe_2:
+      return read_file::mate_2;
+    case read_type::se_fail:
+    case read_type::pe_1_fail:
+    case read_type::pe_2_fail:
+    case read_type::merged_fail:
+      return read_file::discarded;
+    case read_type::singleton_1:
+    case read_type::singleton_2:
+      return read_file::singleton;
+    case read_type::merged:
+      return read_file::merged;
+    default:                         // GCOVR_EXCL_LINE
+      AR_FAIL("invalid read flags"); // GCOVR_EXCL_LINE
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Implementations for `serializer`
 
 serializer::serializer(output_format format)
+  : m_format(format)
 {
-  switch (format) {
-    case output_format::fastq:
-    case output_format::fastq_gzip:
-      m_header = fastq_serializer::header;
-      m_record = fastq_serializer::record;
-      break;
-    case output_format::sam:
-    case output_format::sam_gzip:
-      m_header = sam_serializer::header;
-      m_record = sam_serializer::record;
-      break;
-    case output_format::bam:
-    case output_format::ubam:
-      m_header = bam_serializer::header;
-      m_record = bam_serializer::record;
-      break;
-    default:
-      AR_FAIL("invalid output format");
-  }
 }
 
 void
 serializer::header(buffer& buf, const string_vec& args) const
 {
-  m_header(buf, args, m_sample);
+  switch (m_format) {
+    case output_format::fastq:
+    case output_format::fastq_gzip:
+      // No header
+      break;
+    case output_format::sam:
+    case output_format::sam_gzip:
+      sam_header(buf, args, m_sample);
+      break;
+    case output_format::bam:
+    case output_format::ubam:
+      bam_header(buf, args, m_sample);
+      break;
+    default:                            // GCOVR_EXCL_LINE
+      AR_FAIL("invalid output format"); // GCOVR_EXCL_LINE
+  }
 }
 
 void
-serializer::record(buffer& buf,
-                   const fastq& record,
-                   const read_type flags,
-                   const size_t barcode) const
+serializer::record(buffer& buf, const fastq& record, read_meta meta) const
 {
-  m_record(
-    buf,
-    record,
-    m_sample.at(barcode),
-    serializer_settings{ flags, m_mate_separator, m_demultiplexing_only });
+  const auto& sequences = m_sample.at(meta.m_barcode);
+  switch (m_format) {
+    case output_format::fastq:
+    case output_format::fastq_gzip:
+      fastq_record(buf, record, meta, sequences);
+      break;
+    case output_format::sam:
+    case output_format::sam_gzip:
+      sam_record(buf, record, meta, sequences);
+      break;
+    case output_format::bam:
+    case output_format::ubam:
+      bam_record(buf, record, meta, sequences);
+      break;
+    default:                            // GCOVR_EXCL_LINE
+      AR_FAIL("invalid output format"); // GCOVR_EXCL_LINE
+  }
 }
 
 } // namespace adapterremoval
