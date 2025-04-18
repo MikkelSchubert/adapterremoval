@@ -1,0 +1,4 @@
+sample_1 CTTGCCCT ACGTTATT forward
+sample_2 TGCACGGG CGCCGATG reverse
+sample_2 GGCCACTC TAAAGGTA reverse
+sample_2 TAAAGGTA GGCCACTC forward

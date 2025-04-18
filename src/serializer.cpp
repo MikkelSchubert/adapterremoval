@@ -184,6 +184,7 @@ serializer::fastq_record(buffer& buf,
       buf.append(sequences.barcode_2);
     }
   }
+
   buf.append_u8('\n');
   buf.append(record.sequence());
   buf.append("\n+\n"sv);

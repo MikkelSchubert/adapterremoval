@@ -1,0 +1,40 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "out_off",
+    "--barcode-list",
+    "barcodes.txt",
+    "--mixed-orientation",
+    "--multiple-barcodes",
+    "--merge"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "out_off.sample_1.merged.fastq.gz",
+      "out_off.sample_2.merged.fastq.gz"
+    ],
+    "json": [
+      "out_off.json"
+    ],
+    "ignore": [
+      "out_off.sample_1.r1.fastq.gz",
+      "out_off.sample_1.r2.fastq.gz",
+      "out_off.sample_2.r1.fastq.gz",
+      "out_off.sample_2.r2.fastq.gz",
+      "out_off.sample_1.singleton.fastq.gz",
+      "out_off.sample_2.singleton.fastq.gz",
+      "out_off.unidentified.r1.fastq.gz",
+      "out_off.unidentified.r2.fastq.gz",
+      "out_off.html"
+    ]
+  }
+}

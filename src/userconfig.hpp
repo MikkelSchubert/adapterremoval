@@ -170,6 +170,8 @@ public:
   uint32_t barcode_mm_r1{};
   //! Maximum number of mismatches (considering both barcodes for PE)
   uint32_t barcode_mm_r2{};
+  //! Normalize the orientation of merged reads to forward
+  bool normalize_orientation{};
 
   //! Sample specific barcodes and adapters. In non-demultiplexing mode this
   //! set contains a single unnamed sample with empty barcodes

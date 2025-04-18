@@ -1,0 +1,34 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "out_on",
+    "--barcode-list",
+    "barcodes.txt",
+    "--demultiplex-only",
+    "--reversible-barcodes",
+    "--multiple-barcodes"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "out_on.sample_1.r1.fastq.gz",
+      "out_on.sample_1.r2.fastq.gz",
+      "out_on.sample_2.r1.fastq.gz",
+      "out_on.sample_2.r2.fastq.gz",
+      "out_on.unidentified.r1.fastq.gz",
+      "out_on.unidentified.r2.fastq.gz"
+    ],
+    "ignore": [
+      "out_on.html",
+      "out_on.json"
+    ]
+  }
+}
