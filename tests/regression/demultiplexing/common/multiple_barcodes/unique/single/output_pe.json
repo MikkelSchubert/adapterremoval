@@ -15,14 +15,14 @@
     "samples": {
       "sample_1": {
         "barcodes": [
-          { "barcode1": "CTTGCCCT", "barcode2": "", "reads": 2 },
-          { "barcode1": "CAAAACTA", "barcode2": "", "reads": 2 }
+          { "barcode1": "CTTGCCCT", "barcode2": "", "orientation": null, "reads": 2 },
+          { "barcode1": "CAAAACTA", "barcode2": "", "orientation": null, "reads": 2 }
         ],
         "output": "..."
       },
       "sample_2": {
         "barcodes": [
-          { "barcode1": "CGCCGATG", "barcode2": "", "reads": 2 }
+          { "barcode1": "CGCCGATG", "barcode2": "", "orientation": null, "reads": 2 }
         ],
         "output": "..."
       }

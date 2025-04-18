@@ -83,7 +83,7 @@
     "samples": {
       "sample_1": {
         "barcodes": [
-          { "barcode1": "TGTAACGC", "barcode2": "CTCCTTAG", "reads": 8 }
+          { "barcode1": "TGTAACGC", "barcode2": "CTCCTTAG", "orientation": null, "reads": 8 }
         ],
         "output": {
           "read1": {
@@ -159,7 +159,7 @@
       },
       "sample_2": {
         "barcodes": [
-          { "barcode1": "GGGGACTC", "barcode2": "GTATATGC", "reads": 8 }
+          { "barcode1": "GGGGACTC", "barcode2": "GTATATGC", "orientation": null, "reads": 8 }
         ],
         "output": {
           "read1": {

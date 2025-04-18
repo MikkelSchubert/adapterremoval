@@ -15,8 +15,8 @@
     "samples": {
       "sample_1": {
         "barcodes": [
-          { "barcode1": "CTTGCCCT", "barcode2": "ACGTTATT", "reads": 2 },
-          { "barcode1": "ACGTTATT", "barcode2": "CTTGCCCT", "reads": 2 }
+          { "barcode1": "CTTGCCCT", "barcode2": "ACGTTATT", "orientation": "forward", "reads": 2 },
+          { "barcode1": "ACGTTATT", "barcode2": "CTTGCCCT", "orientation": "reverse", "reads": 2 }
         ],
         "output": {
           "read1": "...",
@@ -50,10 +50,10 @@
       },
       "sample_2": {
         "barcodes": [
-          { "barcode1": "CGCCGATG", "barcode2": "TGCACGGG", "reads": 2 },
-          { "barcode1": "TGCACGGG", "barcode2": "CGCCGATG", "reads": 2 },
-          { "barcode1": "TAAAGGTA", "barcode2": "GGCCACTC", "reads": 2 },
-          { "barcode1": "GGCCACTC", "barcode2": "TAAAGGTA", "reads": 4 }
+          { "barcode1": "CGCCGATG", "barcode2": "TGCACGGG", "orientation": "forward", "reads": 2 },
+          { "barcode1": "TGCACGGG", "barcode2": "CGCCGATG", "orientation": "reverse", "reads": 2 },
+          { "barcode1": "TAAAGGTA", "barcode2": "GGCCACTC", "orientation": "forward", "reads": 2 },
+          { "barcode1": "GGCCACTC", "barcode2": "TAAAGGTA", "orientation": "reverse", "reads": 4 }
         ],
         "output": {
           "read1":"...",
