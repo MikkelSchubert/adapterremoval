@@ -94,7 +94,7 @@ TEST_CASE("Writing FASTQ header to buffer", "[serializer::fastq]")
 
   SECTION("basic record")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n"_buffer);
   }
 }
@@ -116,7 +116,7 @@ TEST_CASE("Writing FASTQ records when only demultiplexing")
 
   buffer buf;
   fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   // The read header should include the barcodes when only demultiplexing
   REQUIRE(buf == "@record_1 BC:ACGT-TGCA\nACGTACGATA\n+\n!$#$*68CGJ\n"_buffer);
@@ -131,7 +131,7 @@ TEST_CASE("Writing FASTQ with mate separator")
   s.set_mate_separator(GENERATE('\0', '/'));
 
   buffer buf;
-  s.record(buf, std::move(record), read_meta(read_type::pe_1));
+  s.record(buf, record, read_meta(read_type::pe_1));
   REQUIRE(buf == "@record_1/1\nACGTACGATA\n+\n!$#$*68CGJ\n"_buffer);
 }
 
@@ -164,7 +164,7 @@ TEST_CASE("FASTQ is the same for all read and sub-formats")
 
   const read_meta meta{ type };
   const serializer s{ format };
-  s.record(buf, std::move(record), meta);
+  s.record(buf, record, meta);
 
   REQUIRE(buf == "@record_1\nACGTACGATA\n+\n!$#$*68CGJ\n"_buffer);
 }
@@ -175,7 +175,7 @@ TEST_CASE("Writing empty FASTQ to buffer", "[serializer::fastq]")
   fastq record{ "record_1", "", "" };
 
   serializer s{ output_format::fastq };
-  s.record(buf, std::move(record), read_meta(read_type::se));
+  s.record(buf, record, read_meta(read_type::se));
 
   REQUIRE(buf == "@record_1\n\n+\n\n"_buffer);
 }
@@ -186,7 +186,7 @@ TEST_CASE("Writing FASTQ with meta-data to buffer", "[serializer::fastq]")
   fastq record{ "record_1 length=5", "ACGTA", "68CGJ" };
 
   serializer s{ output_format::fastq };
-  s.record(buf, std::move(record), read_meta(read_type::se));
+  s.record(buf, record, read_meta(read_type::se));
 
   REQUIRE(buf == "@record_1 length=5\nACGTA\n+\n68CGJ\n"_buffer);
 }
@@ -255,7 +255,7 @@ TEST_CASE("serialize SAM record without sample")
   s.set_demultiplexing_only(GENERATE(true, false));
 
   fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                  "!$#$*68CGJ\n"_buffer);
@@ -271,7 +271,7 @@ TEST_CASE("serialize SAM record with sample")
 
   buffer buf;
   fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
                  "RG:Z:foo\n"_buffer);
@@ -293,7 +293,7 @@ TEST_CASE("serialize SAM record with multiple barcodes")
 
   SECTION("first/default barcodes")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
                    "RG:Z:foo.1\n"_buffer);
   }
@@ -301,7 +301,7 @@ TEST_CASE("serialize SAM record with multiple barcodes")
   SECTION("second barcodes")
   {
     auto meta = read_meta{ read_type::se }.barcode(1);
-    s.record(buf, std::move(record), meta);
+    s.record(buf, record, meta);
     REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
                    "RG:Z:foo.2\n"_buffer);
   }
@@ -316,7 +316,7 @@ TEST_CASE("serialize SAM record with mate separator")
 
   SECTION("without mate sep")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "record/1\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
   }
@@ -324,7 +324,7 @@ TEST_CASE("serialize SAM record with mate separator")
   SECTION("with mate sep")
   {
     s.set_mate_separator('/');
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
   }
@@ -339,7 +339,7 @@ TEST_CASE("serialize read types for SAM")
   SECTION("single end")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::se, read_type::merged) });
     REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
@@ -348,7 +348,7 @@ TEST_CASE("serialize read types for SAM")
   SECTION("single end failed QC")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::se_fail, read_type::merged_fail) });
     REQUIRE(buf == "record\t516\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
@@ -357,7 +357,7 @@ TEST_CASE("serialize read types for SAM")
   SECTION("paired end mate 1, mate 2 passed/failed")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::pe_1, read_type::singleton_1) });
     REQUIRE(buf == "record\t77\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
@@ -365,7 +365,7 @@ TEST_CASE("serialize read types for SAM")
 
   SECTION("paired end mate 1 failed, mate 2 passed/failed")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::pe_1_fail });
+    s.record(buf, record, read_meta{ read_type::pe_1_fail });
     REQUIRE(buf == "record\t589\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
   }
@@ -373,7 +373,7 @@ TEST_CASE("serialize read types for SAM")
   SECTION("paired end mate 2, mate 1 passed/failed")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::pe_2, read_type::singleton_2) });
     REQUIRE(buf == "record\t141\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
@@ -381,7 +381,7 @@ TEST_CASE("serialize read types for SAM")
 
   SECTION("paired end mate 2 failed, mate 1 passed/failed")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::pe_2_fail });
+    s.record(buf, record, read_meta{ read_type::pe_2_fail });
     REQUIRE(buf == "record\t653\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
   }
@@ -393,7 +393,7 @@ TEST_CASE("serialize empty SAM record")
 
   buffer buf;
   serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"_buffer);
 }
@@ -404,7 +404,7 @@ TEST_CASE("serialize SAM record from FASTQ with meta-data")
   serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
 
   fastq record{ "record length=NA", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   // The meta-data is (currently) not serialized
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
@@ -482,7 +482,7 @@ TEST_CASE("serialize BAM record without sample")
   s.set_demultiplexing_only(GENERATE(true, false));
 
   fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                  "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -497,7 +497,7 @@ TEST_CASE("serialize BAM record with uneven length sequence")
   s.set_demultiplexing_only(GENERATE(true, false));
 
   fastq record{ "record", "ACGTACGAT", "!$#$*68CG" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "5\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                  "\x00\x00\x04\x00\t\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -515,7 +515,7 @@ TEST_CASE("serialize BAM record with sample")
 
   buffer buf;
   fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "=\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                  "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -539,7 +539,7 @@ TEST_CASE("serialize BAM record with multiple barcodes")
 
   SECTION("first/default barcodes")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "?\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
                    "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
@@ -549,7 +549,7 @@ TEST_CASE("serialize BAM record with multiple barcodes")
   SECTION("second barcodes")
   {
     auto meta = read_meta{ read_type::se }.barcode(1);
-    s.record(buf, std::move(record), meta);
+    s.record(buf, record, meta);
     REQUIRE(buf == "?\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
                    "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
@@ -566,7 +566,7 @@ TEST_CASE("serialize BAM record with mate separator")
 
   SECTION("without mate sep")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "8\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\t\x00H\x12"
                    "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
                    "\xff\x00\x00\x00\x00record/1\x00\x12H\x12\x41\x81\x00\x03"
@@ -576,7 +576,7 @@ TEST_CASE("serialize BAM record with mate separator")
   SECTION("with mate sep")
   {
     s.set_mate_separator('/');
-    s.record(buf, std::move(record), read_meta{ read_type::se });
+    s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
                    "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
@@ -593,7 +593,7 @@ TEST_CASE("serialize read types for BAM")
   SECTION("single end")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::se, read_type::merged) });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -604,7 +604,7 @@ TEST_CASE("serialize read types for BAM")
   SECTION("single end failed QC")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::se_fail, read_type::merged_fail) });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x04\x02\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -615,7 +615,7 @@ TEST_CASE("serialize read types for BAM")
   SECTION("paired end mate 1, mate 2 passed/failed")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::pe_1, read_type::singleton_1) });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00M\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff"
@@ -625,7 +625,7 @@ TEST_CASE("serialize read types for BAM")
 
   SECTION("paired end mate 1 failed, mate 2 passed/failed")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::pe_1_fail });
+    s.record(buf, record, read_meta{ read_type::pe_1_fail });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00M\x02\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff"
                    "\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02\x03"
@@ -635,7 +635,7 @@ TEST_CASE("serialize read types for BAM")
   SECTION("paired end mate 2, mate 1 passed/failed")
   {
     s.record(buf,
-             std::move(record),
+             record,
              read_meta{ GENERATE(read_type::pe_2, read_type::singleton_2) });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x8d\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -645,7 +645,7 @@ TEST_CASE("serialize read types for BAM")
 
   SECTION("paired end mate 2 failed, mate 1 passed/failed")
   {
-    s.record(buf, std::move(record), read_meta{ read_type::pe_2_fail });
+    s.record(buf, record, read_meta{ read_type::pe_2_fail });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x8d\x02\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
                    "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
@@ -659,7 +659,7 @@ TEST_CASE("serialize empty BAM record")
 
   buffer buf;
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "'\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                  "\x00\x00\x04\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
@@ -672,7 +672,7 @@ TEST_CASE("serialize BAM record from FASTQ with meta-data")
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
 
   fastq record{ "record length=NA", "ACGTACGATA", "!$#$*68CGJ" };
-  s.record(buf, std::move(record), read_meta{ read_type::se });
+  s.record(buf, record, read_meta{ read_type::se });
 
   // The meta-data is (currently) not serialized
   REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
@@ -699,8 +699,8 @@ TEST_CASE("Serializing too long read names")
   SECTION("fastq is always valid")
   {
     serializer s{ GENERATE(output_format::fastq, output_format::fastq_gzip) };
-    CHECK_NOTHROW(s.record(buf, std::move(record_254), meta));
-    CHECK_NOTHROW(s.record(buf, std::move(record_255), meta));
+    CHECK_NOTHROW(s.record(buf, record_254, meta));
+    CHECK_NOTHROW(s.record(buf, record_255, meta));
   }
 
   SECTION("SAM/BAM allows only 254 characters")
@@ -710,8 +710,8 @@ TEST_CASE("Serializing too long read names")
                            output_format::bam,
                            output_format::ubam) };
 
-    CHECK_NOTHROW(s.record(buf, std::move(record_254), meta));
-    REQUIRE_THROWS_WITH(s.record(buf, std::move(record_255), meta),
+    CHECK_NOTHROW(s.record(buf, record_254, meta));
+    REQUIRE_THROWS_WITH(s.record(buf, record_255, meta),
                         Catch::Contains("Cannot encode read as SAM/BAM; read "
                                         "name is longer than 254 characters"));
   }
@@ -726,7 +726,7 @@ TEST_CASE("invalid read names")
   SECTION("FASTQ allows anything")
   {
     serializer s{ GENERATE(output_format::fastq, output_format::fastq_gzip) };
-    CHECK_NOTHROW(s.record(buf, std::move(record), meta));
+    CHECK_NOTHROW(s.record(buf, record, meta));
   }
 
   SECTION("SAM/BAM limits valid characters")
@@ -736,7 +736,7 @@ TEST_CASE("invalid read names")
                            output_format::bam,
                            output_format::ubam) };
 
-    REQUIRE_THROWS_WITH(s.record(buf, std::move(record), meta),
+    REQUIRE_THROWS_WITH(s.record(buf, record, meta),
                         Catch::Contains("Cannot encode read as SAM/BAM; read "
                                         "name contains characters other than "
                                         "the allowed"));

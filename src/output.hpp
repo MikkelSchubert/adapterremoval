@@ -167,13 +167,13 @@ public:
   void write_headers(const string_vec& args);
 
   /** Adds a read of the given type to be processed with simple meta-data */
-  void add(fastq&& read, read_type flags, size_t barcode = 0)
+  void add(const fastq& read, read_type flags, size_t barcode = 0)
   {
-    add(std::move(read), read_meta(flags).barcode(barcode));
+    add(read, read_meta(flags).barcode(barcode));
   }
 
   /** Adds a read of the given type to be processed */
-  void add(fastq&& read, const read_meta& meta);
+  void add(const fastq& read, const read_meta& meta);
 
   /** Returns a chunk for each generated type of processed reads. */
   chunk_vec finalize(bool eof);

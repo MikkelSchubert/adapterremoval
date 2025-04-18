@@ -182,18 +182,18 @@ process_demultiplexed::process(chunk_ptr chunk)
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2, ++barcode) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats->read_1->process(*it_1);
-      chunks.add(std::move(*it_1), read_type::pe_1, *barcode);
+      chunks.add(*it_1, read_type::pe_1, *barcode);
 
       it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats->read_2->process(*it_2);
-      chunks.add(std::move(*it_2), read_type::pe_2, *barcode);
+      chunks.add(*it_2, read_type::pe_2, *barcode);
     }
   } else {
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats->read_1->process(read);
-      chunks.add(std::move(read), read_type::se, *barcode++);
+      chunks.add(read, read_type::se, *barcode++);
     }
   }
 
@@ -257,18 +257,18 @@ processes_unidentified::process(chunk_ptr chunk)
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
       stats_1->process(*it_1);
-      chunks.add(std::move(*it_1), read_type::pe_1);
+      chunks.add(*it_1, read_type::pe_1);
 
       it_2->add_prefix_to_name(m_config.prefix_read_2);
       stats_2->process(*it_2);
-      chunks.add(std::move(*it_2), read_type::pe_2);
+      chunks.add(*it_2, read_type::pe_2);
     }
   } else {
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats_1->process(read);
-      chunks.add(std::move(read), read_type::se);
+      chunks.add(read, read_type::se);
     }
   }
 

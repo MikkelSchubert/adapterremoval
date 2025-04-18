@@ -60,7 +60,7 @@ public:
   void set_demultiplexing_only(bool value) { m_demultiplexing_only = value; }
 
   void header(buffer& buf, const string_vec& args) const;
-  void record(buffer& buf, fastq&& record, read_meta meta) const;
+  void record(buffer& buf, const fastq& record, read_meta meta) const;
 
 private:
   /** Write record to buffer in in FASTQ format */

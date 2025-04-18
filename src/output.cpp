@@ -240,12 +240,12 @@ processed_reads::write_headers(const string_vec& args)
 }
 
 void
-processed_reads::add(fastq&& read, const read_meta& meta)
+processed_reads::add(const fastq& read, const read_meta& meta)
 {
   const size_t offset = m_map.offset(meta.get_file());
   if (offset != sample_output_files::disabled) {
     auto& buffer = get_buffer(m_chunks.at(offset));
-    m_serializers.at(offset).record(buffer, std::move(read), meta);
+    m_serializers.at(offset).record(buffer, read, meta);
     m_chunks.at(offset)->reads++;
   }
 }

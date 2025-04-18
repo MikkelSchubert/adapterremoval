@@ -348,7 +348,7 @@ serializer::header(buffer& buf, const string_vec& args) const
 }
 
 void
-serializer::record(buffer& buf, fastq&& record, read_meta meta) const
+serializer::record(buffer& buf, const fastq& record, read_meta meta) const
 {
   const auto& sequences = m_sample.at(meta.m_barcode);
   switch (m_format) {

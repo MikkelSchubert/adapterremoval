@@ -369,10 +369,10 @@ se_reads_processor::process(chunk_ptr chunk)
 
     if (is_acceptable_read(m_config, *stats, read)) {
       stats->read_1->process(read);
-      chunks.add(std::move(read), read_type::se, barcode);
+      chunks.add(read, read_type::se, barcode);
     } else {
       stats->discarded->process(read);
-      chunks.add(std::move(read), read_type::se_fail, barcode);
+      chunks.add(read, read_type::se_fail, barcode);
     }
   }
 
@@ -531,10 +531,10 @@ pe_reads_processor::process(chunk_ptr chunk)
 
         if (is_acceptable_read(m_config, *stats, read_1, 2)) {
           stats->merged->process(read_1, 2);
-          chunks.add(std::move(read_1), read_type::merged, barcode);
+          chunks.add(read_1, read_type::merged, barcode);
         } else {
           stats->discarded->process(read_1, 2);
-          chunks.add(std::move(read_1), read_type::merged_fail, barcode);
+          chunks.add(read_1, read_type::merged_fail, barcode);
         }
 
         continue;
@@ -590,8 +590,8 @@ pe_reads_processor::process(chunk_ptr chunk)
                                    (in_length_2 - read_2.length()));
 
     // Queue reads last, since this result in modifications to lengths
-    chunks.add(std::move(read_1), meta_1.barcode(barcode));
-    chunks.add(std::move(read_2), meta_2.barcode(barcode));
+    chunks.add(read_1, meta_1.barcode(barcode));
+    chunks.add(read_2, meta_2.barcode(barcode));
   }
 
   // Track amount of overlapping bases "lost" due to read merging
