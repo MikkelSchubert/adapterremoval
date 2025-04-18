@@ -282,7 +282,7 @@ append_sample(std::vector<sample>& samples,
   if (samples.empty() || samples.back().name() != name) {
     samples.emplace_back(name, barcode_1, barcode_2, orientation);
   } else {
-    samples.back().add(barcode_1, barcode_2, orientation);
+    samples.back().add_barcodes(barcode_1, barcode_2, orientation);
   }
 }
 
@@ -527,13 +527,13 @@ sample::sample(std::string name,
                barcode_orientation orientation)
   : m_name(std::move(name))
 {
-  add(std::move(barcode1), std::move(barcode2), orientation);
+  add_barcodes(std::move(barcode1), std::move(barcode2), orientation);
 }
 
 void
-sample::add(dna_sequence barcode1,
-            dna_sequence barcode2,
-            barcode_orientation orientation)
+sample::add_barcodes(dna_sequence barcode1,
+                     dna_sequence barcode2,
+                     barcode_orientation orientation)
 {
   AR_REQUIRE(barcode2.empty() || !barcode1.empty());
   m_barcodes.emplace_back(std::move(barcode1),

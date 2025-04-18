@@ -154,9 +154,9 @@ TEST_CASE("add to sample", "[sample]")
             dna_sequence{ "TTAC" },
             dna_sequence{ "GATG" },
             barcode_orientation::forward };
-  s.add(dna_sequence{ "GTGT" },
-        dna_sequence{ "GATC" },
-        barcode_orientation::reverse);
+  s.add_barcodes(dna_sequence{ "GTGT" },
+                 dna_sequence{ "GATC" },
+                 barcode_orientation::reverse);
 
   sample_sequences ss_1{ dna_sequence{ "TTAC" },
                          dna_sequence{ "GATG" },
@@ -226,7 +226,9 @@ TEST_CASE("set read group for multiple sample", "[sample]")
             dna_sequence{},
             dna_sequence{},
             barcode_orientation::unspecified };
-  s.add(dna_sequence{}, dna_sequence{}, barcode_orientation::unspecified);
+  s.add_barcodes(dna_sequence{},
+                 dna_sequence{},
+                 barcode_orientation::unspecified);
   s.set_read_group(read_group{ "LB:foo" });
 
   CHECK(s.at(0).read_group_ == read_group{ "ID:sample.1\tLB:foo\tSM:sample" });
