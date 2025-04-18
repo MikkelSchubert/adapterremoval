@@ -125,9 +125,9 @@ TEST_CASE("Loading multiple barcodes per sample", "[sample_set]")
                    dna_sequence{ "ACGTA" },
                    dna_sequence{ "TTGTC" },
                    barcode_orientation::unspecified };
-  sample_1.add(dna_sequence{ "GGTTG" },
-               dna_sequence{ "ACGTA" },
-               barcode_orientation::unspecified);
+  sample_1.add_barcodes(dna_sequence{ "GGTTG" },
+                        dna_sequence{ "ACGTA" },
+                        barcode_orientation::unspecified);
   sample_1.set_read_group(read_group{ "ID:sample_1\tSM:sample_1" });
   sample sample_2{ "sample_2",
                    dna_sequence{ "TGCAT" },
@@ -399,18 +399,18 @@ TEST_CASE("Barcodes in forward orientation", "[sample_set]")
                    dna_sequence{ "CTTGCCCT" },
                    dna_sequence{ "ACGTTATT" },
                    barcode_orientation::forward };
-  sample_1.add(dna_sequence{ "ACGTTATT" },
-               dna_sequence{ "CTTGCCCT" },
-               barcode_orientation::reverse);
+  sample_1.add_barcodes(dna_sequence{ "ACGTTATT" },
+                        dna_sequence{ "CTTGCCCT" },
+                        barcode_orientation::reverse);
   sample_1.set_read_group(read_group{});
 
   sample sample_2{ "sample_2",
                    dna_sequence{ "CGCCGATG" },
                    dna_sequence{ "TGCACGGG" },
                    barcode_orientation::forward };
-  sample_2.add(dna_sequence{ "TGCACGGG" },
-               dna_sequence{ "CGCCGATG" },
-               barcode_orientation::reverse);
+  sample_2.add_barcodes(dna_sequence{ "TGCACGGG" },
+                        dna_sequence{ "CGCCGATG" },
+                        barcode_orientation::reverse);
   sample_2.set_read_group(read_group{});
 
   std::vector<sample> samples = { sample_1, sample_2 };
@@ -435,18 +435,18 @@ TEST_CASE("Barcodes in reverse orientation", "[sample_set]")
                    dna_sequence{ "CTTGCCCT" },
                    dna_sequence{ "ACGTTATT" },
                    barcode_orientation::reverse };
-  sample_1.add(dna_sequence{ "ACGTTATT" },
-               dna_sequence{ "CTTGCCCT" },
-               barcode_orientation::forward);
+  sample_1.add_barcodes(dna_sequence{ "ACGTTATT" },
+                        dna_sequence{ "CTTGCCCT" },
+                        barcode_orientation::forward);
   sample_1.set_read_group(read_group{});
 
   sample sample_2{ "sample_2",
                    dna_sequence{ "CGCCGATG" },
                    dna_sequence{ "TGCACGGG" },
                    barcode_orientation::reverse };
-  sample_2.add(dna_sequence{ "TGCACGGG" },
-               dna_sequence{ "CGCCGATG" },
-               barcode_orientation::forward);
+  sample_2.add_barcodes(dna_sequence{ "TGCACGGG" },
+                        dna_sequence{ "CGCCGATG" },
+                        barcode_orientation::forward);
   sample_2.set_read_group(read_group{});
 
   std::vector<sample> samples = { sample_1, sample_2 };
@@ -501,7 +501,7 @@ TEST_CASE("Barcodes in explicit orientation for same sample", "[sample_set]")
                    dna_sequence{ "ACCC" },
                    dna_sequence{ "CTAA" },
                    fwd };
-  sample_1.add(dna_sequence{ "CTAA" }, dna_sequence{ "ACCC" }, rev);
+  sample_1.add_barcodes(dna_sequence{ "CTAA" }, dna_sequence{ "ACCC" }, rev);
   sample_1.set_read_group(read_group{});
 
   const sample_set ss{ lines, CONFIG_PE_EXPLICIT };
@@ -562,9 +562,9 @@ TEST_CASE("Multiple barcodes in forward orientation", "[sample_set]")
   };
 
   sample sample_1{ "sample_1", seq{ "CTTGCCCT" }, seq{ "ACGTTATT" }, fwd };
-  sample_1.add(seq{ "ACGTTATT" }, seq{ "CTTGCCCT" }, rev);
-  sample_1.add(seq{ "CGCCGATG" }, seq{ "TGCACGGG" }, fwd);
-  sample_1.add(seq{ "TGCACGGG" }, seq{ "CGCCGATG" }, rev);
+  sample_1.add_barcodes(seq{ "ACGTTATT" }, seq{ "CTTGCCCT" }, rev);
+  sample_1.add_barcodes(seq{ "CGCCGATG" }, seq{ "TGCACGGG" }, fwd);
+  sample_1.add_barcodes(seq{ "TGCACGGG" }, seq{ "CGCCGATG" }, rev);
   sample_1.set_read_group(read_group{});
 
   std::vector<sample> samples = { sample_1 };

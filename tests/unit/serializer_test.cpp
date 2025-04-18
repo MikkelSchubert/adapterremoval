@@ -229,9 +229,9 @@ TEST_CASE("Writing SAM read-group header to buffer with multiple barcodes",
           "[serializer::fastq]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add(dna_sequence{ "TTGG" },
-             dna_sequence{ "AGTT" },
-             barcode_orientation::unspecified);
+  sample.add_barcodes(dna_sequence{ "TTGG" },
+                      dna_sequence{ "AGTT" },
+                      barcode_orientation::unspecified);
   sample.set_read_group({});
 
   buffer buf;
@@ -280,9 +280,9 @@ TEST_CASE("serialize SAM record with sample")
 TEST_CASE("serialize SAM record with multiple barcodes")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add(dna_sequence{ "TTGG" },
-             dna_sequence{ "AGTT" },
-             barcode_orientation::unspecified);
+  sample.add_barcodes(dna_sequence{ "TTGG" },
+                      dna_sequence{ "AGTT" },
+                      barcode_orientation::unspecified);
   sample.set_read_group({});
 
   buffer buf;
@@ -455,9 +455,9 @@ TEST_CASE("Writing BAM read-group header to buffer with multiple barcodes",
           "[serializer::fastq]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add(dna_sequence{ "TTGG" },
-             dna_sequence{ "AGTT" },
-             barcode_orientation::unspecified);
+  sample.add_barcodes(dna_sequence{ "TTGG" },
+                      dna_sequence{ "AGTT" },
+                      barcode_orientation::unspecified);
   sample.set_read_group({});
 
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
@@ -526,9 +526,9 @@ TEST_CASE("serialize BAM record with sample")
 TEST_CASE("serialize BAM record with multiple barcodes")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
-  sample.add(dna_sequence{ "TTGG" },
-             dna_sequence{ "AGTT" },
-             barcode_orientation::unspecified);
+  sample.add_barcodes(dna_sequence{ "TTGG" },
+                      dna_sequence{ "AGTT" },
+                      barcode_orientation::unspecified);
   sample.set_read_group({});
 
   buffer buf;

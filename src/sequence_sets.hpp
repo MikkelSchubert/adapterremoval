@@ -132,9 +132,9 @@ public:
          barcode_orientation orientation);
 
   /** Adds a pair of barcodes in read orientation */
-  void add(dna_sequence barcode1,
-           dna_sequence barcode2,
-           barcode_orientation orientation);
+  void add_barcodes(dna_sequence barcode1,
+                    dna_sequence barcode2,
+                    barcode_orientation orientation);
 
   /** Assigns adapter sequences for each pair of barcodes */
   void set_adapters(const adapter_set& adapters);
