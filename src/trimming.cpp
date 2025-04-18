@@ -569,14 +569,14 @@ pe_reads_processor::process(chunk_ptr chunk)
     read_meta meta_2{ read_type::pe_2 };
     if (!is_ok_1 || !is_ok_2) {
       if (is_ok_1) {
-        meta_1.type(read_type::singleton_1);
-        meta_2.type(read_type::pe_2_fail);
+        meta_1 = read_meta{ read_type::singleton_1 };
+        meta_2 = read_meta{ read_type::pe_2_fail };
       } else if (is_ok_2) {
-        meta_1.type(read_type::pe_1_fail);
-        meta_2.type(read_type::singleton_2);
+        meta_1 = read_meta{ read_type::pe_1_fail };
+        meta_2 = read_meta{ read_type::singleton_2 };
       } else {
-        meta_1.type(read_type::pe_1_fail);
-        meta_2.type(read_type::pe_2_fail);
+        meta_1 = read_meta{ read_type::pe_1_fail };
+        meta_2 = read_meta{ read_type::pe_2_fail };
       }
     }
 

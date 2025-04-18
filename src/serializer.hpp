@@ -5,6 +5,7 @@
 #include "commontypes.hpp"   // for string_vec, read_type, read_file
 #include "sequence_sets.hpp" // for sample
 #include <cstddef>           // for size_t
+#include <iosfwd>            // for ostream
 
 namespace adapterremoval {
 
@@ -26,19 +27,15 @@ public:
   /** Returns the file type associated with the read type */
   [[nodiscard]] read_file get_file() const noexcept;
 
-  /** Overwrites the current read type */
-  constexpr auto& type(read_type v) noexcept
-  {
-    m_type = v;
-    return *this;
-  }
-
   /** Overwrites the current barcode */
   constexpr auto& barcode(size_t v) noexcept
   {
     m_barcode = v;
     return *this;
   }
+
+  /** Creates debug representation of read meta data */
+  friend std::ostream& operator<<(std::ostream& os, const read_meta& value);
 
 private:
   friend class serializer;
@@ -95,5 +92,9 @@ private:
   //! Indicates if output has only been demultiplexed but not trimmed
   bool m_demultiplexing_only = false;
 };
+
+/** Creates debug representation of read meta data */
+std::ostream&
+operator<<(std::ostream& os, const read_file& value);
 
 } // namespace adapterremoval

@@ -8,10 +8,10 @@
 #include "read_group.hpp"  // for read_group
 #include "sequence.hpp"    // for dna_sequence
 #include "serializer.hpp"  // for serializer
-#include "strutils.hpp"
-#include "testing.hpp" // for TEST_CASE, REQUIRE, ...
-#include <string>      // for string
-#include <string_view> // for string_view
+#include "testing.hpp"     // for TEST_CASE, REQUIRE, ...
+#include "utilities.hpp"   // for underlying_type
+#include <string>          // for string
+#include <string_view>     // for string_view
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g
@@ -38,6 +38,29 @@ const sample BASIC_SAMPLE_WITH_BARCODES{ "foo",
                                          barcode_orientation::unspecified };
 
 } // namespace
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementation of enum debug serialization
+
+std::ostream&
+operator<<(std::ostream& os, const read_file& value)
+{
+  switch (value) {
+    case read_file::mate_1:
+      return os << "read_file::mate_1";
+    case read_file::mate_2:
+      return os << "read_file::mate_2";
+    case read_file::merged:
+      return os << "read_file::merged";
+    case read_file::singleton:
+      return os << "read_file::singleton";
+    case read_file::discarded:
+      return os << "read_file::discarded";
+    case read_file::max:
+    default:
+      return os << "read_file{" << underlying_value(value) << "}";
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // FASTQ header serialization
@@ -252,6 +275,36 @@ TEST_CASE("serialize SAM record with sample")
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
                  "RG:Z:foo\n"_buffer);
+}
+
+TEST_CASE("serialize SAM record with multiple barcodes")
+{
+  sample sample{ BASIC_SAMPLE_WITH_BARCODES };
+  sample.add(dna_sequence{ "TTGG" },
+             dna_sequence{ "AGTT" },
+             barcode_orientation::unspecified);
+  sample.set_read_group({});
+
+  buffer buf;
+  serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
+  s.set_sample(sample);
+
+  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+
+  SECTION("first/default barcodes")
+  {
+    s.record(buf, std::move(record), read_meta{ read_type::se });
+    REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
+                   "RG:Z:foo.1\n"_buffer);
+  }
+
+  SECTION("second barcodes")
+  {
+    auto meta = read_meta{ read_type::se }.barcode(1);
+    s.record(buf, std::move(record), meta);
+    REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
+                   "RG:Z:foo.2\n"_buffer);
+  }
 }
 
 TEST_CASE("serialize SAM record with mate separator")
@@ -470,6 +523,40 @@ TEST_CASE("serialize BAM record with sample")
                  "\x03\t\x15\x17\"&)RGZfoo\x00"_buffer);
 }
 
+TEST_CASE("serialize BAM record with multiple barcodes")
+{
+  sample sample{ BASIC_SAMPLE_WITH_BARCODES };
+  sample.add(dna_sequence{ "TTGG" },
+             dna_sequence{ "AGTT" },
+             barcode_orientation::unspecified);
+  sample.set_read_group({});
+
+  buffer buf;
+  serializer s{ GENERATE(output_format::bam, output_format::ubam) };
+  s.set_sample(sample);
+
+  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+
+  SECTION("first/default barcodes")
+  {
+    s.record(buf, std::move(record), read_meta{ read_type::se });
+    REQUIRE(buf == "?\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
+                   "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
+                   "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
+                   "\x03\t\x15\x17\"&)RGZfoo.1\x00"_buffer);
+  }
+
+  SECTION("second barcodes")
+  {
+    auto meta = read_meta{ read_type::se }.barcode(1);
+    s.record(buf, std::move(record), meta);
+    REQUIRE(buf == "?\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
+                   "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
+                   "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
+                   "\x03\t\x15\x17\"&)RGZfoo.2\x00"_buffer);
+  }
+}
+
 TEST_CASE("serialize BAM record with mate separator")
 {
   buffer buf;
@@ -653,6 +740,45 @@ TEST_CASE("invalid read names")
                         Catch::Contains("Cannot encode read as SAM/BAM; read "
                                         "name contains characters other than "
                                         "the allowed"));
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Tests of read meta data
+
+TEST_CASE("read type to file type mapping")
+{
+  SECTION("--out-file1")
+  {
+    read_meta meta{ GENERATE(read_type::se, read_type::pe_1) };
+    CHECK(meta.get_file() == read_file::mate_1);
+  }
+
+  SECTION("--out-file2")
+  {
+    read_meta meta{ GENERATE(read_type::pe_2) };
+    CHECK(meta.get_file() == read_file::mate_2);
+  }
+
+  SECTION("--out-singleton")
+  {
+    read_meta meta(GENERATE(read_type::singleton_1, read_type::singleton_2));
+    CHECK(meta.get_file() == read_file::singleton);
+  }
+
+  SECTION("--out-singleton")
+  {
+    read_meta meta(read_type::merged);
+    CHECK(meta.get_file() == read_file::merged);
+  }
+
+  SECTION("--out-discarded")
+  {
+    read_meta meta(GENERATE(read_type::se_fail,
+                            read_type::pe_1_fail,
+                            read_type::pe_2_fail,
+                            read_type::merged_fail));
+    CHECK(meta.get_file() == read_file::discarded);
   }
 }
 
