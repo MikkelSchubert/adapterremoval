@@ -265,6 +265,21 @@ write_report_demultiplexing(const userconfig& config,
         const auto dict = barcode_list->inline_dict();
         dict->str("barcode1", it.barcode_1);
         dict->str("barcode2", it.barcode_2);
+
+        switch (it.orientation) {
+          case barcode_orientation::unspecified:
+            dict->null("orientation");
+            break;
+          case barcode_orientation::forward:
+            dict->str("orientation", "forward");
+            break;
+          case barcode_orientation::reverse:
+            dict->str("orientation", "reverse");
+            break;
+          default:
+            AR_FAIL("invalid barcode orientation");
+        }
+
         dict->i64("reads", demux.samples.at(i).get(j));
       }
 

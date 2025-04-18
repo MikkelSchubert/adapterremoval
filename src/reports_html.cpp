@@ -131,6 +131,21 @@ format_average_bases(const reads_and_bases& counts)
   }
 }
 
+std::string
+orientation_to_label(const sample_sequences& it)
+{
+  switch (it.orientation) {
+    case barcode_orientation::unspecified:
+      return {};
+    case barcode_orientation::forward:
+      return "+";
+    case barcode_orientation::reverse:
+      return "-";
+    default:
+      AR_FAIL("invalid barcode orientation");
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class io_summary_writer
@@ -996,6 +1011,11 @@ write_html_demultiplexing_barplot(const userconfig& config,
       auto m = data.dict();
       m->i64("n", j + 1);
       m->str("barcodes", key);
+
+      if (sequences.orientation != barcode_orientation::unspecified) {
+        m->str("orientation", orientation_to_label(sequences));
+      }
+
       m->str("sample", sample.name());
 
       if (input_reads) {
@@ -1022,12 +1042,15 @@ void
 write_html_demultiplexing_table(const userconfig& config,
                                 const statistics& stats,
                                 std::ostream& output,
-                                const bool multiple_barcodes)
+                                const bool multiple_barcodes,
+                                const bool mixed_orientation)
 {
   const size_t input_reads = stats.input_1->number_of_input_reads() +
                              stats.input_2->number_of_input_reads();
 
-  html_demultiplexing_table_head().write(output);
+  html_demultiplexing_table_head()
+    .set_orientation(mixed_orientation ? "<th></th>" : "")
+    .write(output);
 
   {
     const size_t unidentified = stats.demultiplexing->unidentified;
@@ -1046,6 +1069,7 @@ write_html_demultiplexing_table(const userconfig& config,
       .set_bp(format_rough_number(output_bp))
       .set_length(mean_of_bp_counts(total.length_dist()))
       .set_gc(format_percentage(total.nucleotides_gc_pos().sum(), output_bp))
+      .set_orientation(mixed_orientation ? "<td></td>" : "")
       .write(output);
   }
 
@@ -1069,12 +1093,20 @@ write_html_demultiplexing_table(const userconfig& config,
 
     html_demultiplexing_row row;
     if (sample.size() < 2) {
-      row.set_barcode_1(std::string{ sample.at(0).barcode_1 })
-        .set_barcode_2(std::string{ sample.at(0).barcode_2 });
+      const auto& it = sample.at(0);
+      row.set_barcode_1(std::string{ it.barcode_1 })
+        .set_barcode_2(std::string{ it.barcode_2 });
+
+      if (mixed_orientation) {
+        row.set_orientation("<td>" + orientation_to_label(it) + "</td>");
+      }
     } else {
-      const auto cell =
-        "<i>(" + std::to_string(sample.size()) + " barcodes)</i>";
+      const auto cell = "<i>" + std::to_string(sample.size()) + " barcodes</i>";
       row.set_barcode_1(cell).set_barcode_2(cell);
+
+      if (mixed_orientation) {
+        row.set_orientation("<td></td>");
+      }
     }
 
     row.set_n(std::to_string(sample_idx + 1))
@@ -1093,11 +1125,16 @@ write_html_demultiplexing_table(const userconfig& config,
         const auto& it = sample.at(j);
         const auto count = barcode_counts.get(j);
 
-        html_demultiplexing_barcode_row()
-          .set_barcode_1(std::string{ it.barcode_1 })
+        html_demultiplexing_barcode_row row;
+        row.set_barcode_1(std::string{ it.barcode_1 })
           .set_barcode_2(std::string{ it.barcode_2 })
-          .set_barcode_pct_row(format_percentage(count, total, 2))
-          .write(output);
+          .set_barcode_pct_row(format_percentage(count, total, 2));
+
+        if (mixed_orientation) {
+          row.set_orientation("<td>" + orientation_to_label(it) + "</td>");
+        }
+
+        row.write(output);
       }
     }
 
@@ -1106,7 +1143,7 @@ write_html_demultiplexing_table(const userconfig& config,
 
   html_demultiplexing_table_tail().write(output);
 
-  if (multiple_barcodes) {
+  if (multiple_barcodes || mixed_orientation) {
     html_demultiplexing_toggle().write(output);
   }
 }
@@ -1118,17 +1155,22 @@ write_html_demultiplexing_section(const userconfig& config,
 
 {
   bool multiple_barcodes = false;
+  bool mixed_orientation = false;
   for (const auto& sample : config.samples) {
-    if (sample.size() > 1) {
-      multiple_barcodes = true;
-      break;
+    multiple_barcodes |= sample.size() > 1;
+    for (const auto& it : sample) {
+      mixed_orientation |= it.orientation != barcode_orientation::unspecified;
     }
   }
 
   write_html_section_title("Demultiplexing", output);
   html_demultiplexing_head().write(output);
   write_html_demultiplexing_barplot(config, stats, output);
-  write_html_demultiplexing_table(config, stats, output, multiple_barcodes);
+  write_html_demultiplexing_table(config,
+                                  stats,
+                                  output,
+                                  multiple_barcodes,
+                                  mixed_orientation);
 }
 
 void

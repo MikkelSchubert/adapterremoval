@@ -895,6 +895,19 @@
                 }
             ]
         },
+        "barcode-orientation": {
+            "oneOf": [
+                {
+                    "type": "null"
+                },
+                {
+                    "enum": [
+                        "forward",
+                        "reverse"
+                    ]
+                }
+            ]
+        },
         "barcode-pair": {
             "type": "object",
             "additionalProperties": false,
@@ -905,6 +918,9 @@
                 "barcode2": {
                     "type": "string"
                 },
+                "orientation": {
+                    "$ref": "#/definitions/barcode-orientation"
+                },
                 "reads": {
                     "description": "The number of reads identified containing these barcodes",
                     "$ref": "#/definitions/count"
@@ -913,6 +929,7 @@
             "required": [
                 "barcode1",
                 "barcode2",
+                "orientation",
                 "reads"
             ]
         }

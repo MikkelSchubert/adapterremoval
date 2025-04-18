@@ -767,6 +767,7 @@
             "tooltip": [
               { "field": "sample", "type": "nominal" },
               { "field": "barcodes", "type": "nominal" },
+              { "field": "orientation", "type": "nominal" },
               { "field": "pct", "type": "quantitative" }
             ]
           },
@@ -802,6 +803,7 @@
               <th>GC</th>
               <th>Barcode 1</th>
               <th>Barcode 2</th>
+              {{OPTIONAL_RAW_ORIENTATION}}
               <th class="multiple-barcodes" style="display: none">%</th>
             </tr>
           </thead>
@@ -818,6 +820,7 @@
               <td>{{OPTIONAL_GC}}</td>
               <td>{{OPTIONAL_RAW_BARCODE_1}}</td>
               <td>{{OPTIONAL_RAW_BARCODE_2}}</td>
+              {{OPTIONAL_RAW_ORIENTATION}}
               <td class="multiple-barcodes" style="display: none"></td>
             </tr>
 
@@ -833,6 +836,7 @@
               <td></td>
               <td>{{BARCODE_1}}</td>
               <td>{{BARCODE_2}}</td>
+              {{OPTIONAL_RAW_ORIENTATION}}
               <td>{{BARCODE_PCT_ROW}}</td>
             </tr>
 
