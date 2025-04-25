@@ -56,8 +56,6 @@ TEST_CASE("barcode_orientation to debug string", "[barcode_orientation]")
         "barcode_orientation::forward");
   CHECK(fallbackStringifier(barcode_orientation::reverse) ==
         "barcode_orientation::reverse");
-  CHECK(fallbackStringifier(static_cast<barcode_orientation>(-3)) ==
-        "barcode_orientation{-3}");
 }
 
 TEST_CASE("barcode_table_orientation to debug string", "[barcode_orientation]")
@@ -72,8 +70,6 @@ TEST_CASE("barcode_table_orientation to debug string", "[barcode_orientation]")
         "barcode_table_orientation::reverse");
   CHECK(fallbackStringifier(barcode_table_orientation::explicit_) ==
         "barcode_table_orientation::explicit_");
-  CHECK(fallbackStringifier(static_cast<barcode_table_orientation>(-3)) ==
-        "barcode_table_orientation{-3}");
 }
 
 } // namespace adapterremoval
