@@ -58,7 +58,7 @@ operator<<(std::ostream& os, const read_file& value)
       return os << "read_file::discarded";
     case read_file::max:
     default:
-      return os << "read_file{" << underlying_value(value) << "}";
+      return os << "read_file{?}";
   }
 }
 

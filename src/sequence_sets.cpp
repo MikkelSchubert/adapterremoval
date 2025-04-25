@@ -735,7 +735,7 @@ operator<<(std::ostream& os, const barcode_orientation& value)
     case barcode_orientation::reverse:
       return os << "barcode_orientation::reverse";
     default:
-      return os << "barcode_orientation{" << underlying_value(value) << "}";
+      return os << "barcode_orientation{?}";
   }
 }
 
@@ -752,8 +752,7 @@ operator<<(std::ostream& os, const barcode_table_orientation& value)
     case barcode_table_orientation::explicit_:
       return os << "barcode_table_orientation::explicit_";
     default:
-      return os << "barcode_table_orientation{" << underlying_value(value)
-                << "}";
+      return os << "barcode_table_orientation{?}";
   }
 }
 
