@@ -1,5 +1,103 @@
 # Changelog
 
+## [3.0.0-alpha3] - 2025-05-19
+
+This is the third alpha release of AdapterRemoval v3. As with the previous alpha releases, changes that affect how AdapterRemoval is used (e.g. by
+removing options) or that result in different output compared to previous versions are marked with the label "[**BREAKING**]".
+
+AdapterRemoval now uses `meson` for its build process, and `meson` is therefore
+a formal requirement. A `Makefile` is still provided to simplify setting up and
+running the build. See the installation instructions for more information.
+
+Major changes include support for hardware accelerated alignments on Apple
+M1/M2/M3 hardware, support for samples being identified by multiple barcodes,
+support for handling barcodes in that may ligate in different orientations,
+improved support for SAM/BAM output, (optional) duplication plot in HTML report,
+TODO
+
+### Added
+
+- Multiple barcodes/barcode pairs may now be used to identify the same sample,
+  via the `--multiple-barcodes` flag. The number of hits per barcode/barcode
+  pair is reported in the HTML/JSON reports.
+- Added support for handling barcodes that may ligate in different orientations
+  (via `--barcode-orientation`) and for normalizing the orientation of merged reads (via `--normalize-orientation`).
+- The `--use-colors` parameter may now be used to controls color output.
+  Options are auto (default; enabled when run interactively), always, or never.
+- The title of the HTML report can now be set via `--report-title`.
+- Input files are now checked for duplicate filenames, in order to help
+  prevents accidental data duplication.
+- Alignments are now accelerated on Apple hardware using NEON instructions, for
+  a roughly 3-fold increase in throughput.
+- A duplication plot is now included in the HTML report if this is enabled,
+  instead of only being reported in the JSON file.
+- Fixed use of `CO` tags for comments/descriptions in SAM/BAM output, where the
+  `DS` (description) tags should have been used [**BREAKING**].
+
+### Changed
+
+- Improved checks for conflicting command-line options.
+- Barcodes are now recorded in FASTQ headers demultiplexing without trimming.
+- The `$schema` URL is now included in the JSON report
+- A number of changes have been made to the JSON report layout, including the
+  moving, removal, and addition of sections. The layout is described in
+  `schema.json` [**BREAKING**].
+- Makefile features are now enabled/disable with `true`/`false` instead of
+  `yes`/`no`.
+- Vega-lite is now loaded in the background, when opening the HTML reports,
+  making the report readable before Vega-lite has loaded.
+- Optimized alignments involving multiple possible adapter sequences, by only
+  once performing the alignments that involve no adapter sequences.
+- Optimized alignments involving multiple possible adapter sequences, by
+  sorting the list of adapter sequences by hits. This increasing the odds that
+  a good alignment is found early so that worse alignments can be skipped.
+- The old Makefile was replaced with the Meson build system, but a wrapper
+  Makefile is still provided/used as a convenience for setting the recommended
+  build options.
+- The minimum allowed/default value for `--min-adapter-overlap` was set to 1.
+  In practice this has no effect, since length 0 alignments were never
+  considered, but may break scripts running AdapterRemoval [**BREAKING**].
+- A number of small improvements were made to the `--help` text.
+- Drop support for raw error-rates to `--trim-mott-rate`, which was renamed to
+  `--trim-mott-quality` to match other trimming options [**BREAKING**].
+- SAM/BAM output is now combined into a single file by default, including
+  discarded reads. This can be overridden by setting the individual `--out-*`
+  options [**BREAKING**].
+- Dropped `PG` tag from read-groups/records in SAM/BAM output [**BREAKING**].
+- Dropped (minimal) read-groups for SAM/BAM output. If desired, read-group
+  information can be added with `--read-group` [**BREAKING**].
+- Improved error messages when mismatching (paired) read names are detected.
+- The `--report-duplication` option now supports k/m/g suffixes, and defaults
+  to `100k` if used without an explicit value.
+- Singleton reads are now included in the overall summary statistics in
+  JSON/HTML reports [**BREAKING**].
+- Hardening flags are now enabled by default during compilation. This comes with
+  a small performance cost, but most distros are also expected to enable similar
+  flags by default.
+- The `--read-group` option no longer attempts to unescape special characters.
+  Instead, tags must be separated using embedded tabs (`--read-group $'ID:A\tSM:B'`) or provided as individual arguments (`--read-group 'ID:A' 'SM:B'`) [**BREAKING**].
+
+### Fixed
+
+- NA values were being written with '%' or 'bp' suffixes in HTML report.
+- Some plots were omitted for merged reads in HTML report.
+- Mate 2 adapters were reverse-complemented in JSON report when demultiplexing.
+- SAM/BAM headers were not being written in demultiplexing mode.
+- Mate 1/2 statistics were sampled independently, and thus potentially not
+  derived from the same read pairs.
+- The JSON/HTML reports would give different time-stamps for the run, since one
+  gave the start time and the other the end time. Now start time is always used.
+- Fixed failure when reading paired FASTQ files where read lengths differed
+  between the two files
+- Fixed report files and unidentified reads getting additional suffixes when
+  filenames were specified manually during demultiplexing.
+- Fixed `/dev/null` being listed as the path for some files when demultiplexing,
+  and these outputs were disabled.
+- Reverted the removal of support for '.' as equivalent to 'N' in FASTQ reads.
+  This is found in some older data-sets (#112).
+- Fixed misleading IO error messages, that would include descriptions of
+  unrelated errors in some cases.
+
 ## [2.3.4] - 2024-08-24
 
 This release adds a new couple of command-line options for handling non-ACGTN
@@ -151,6 +249,8 @@ Feedback is very welcome in the mean time.
   `--gzip` option when manually specifying output files.
 - Added options `--prefix-read1`, `--prefix-read2`, and `--prefix-merged` for
   adding custom prefixes to the names of FASTQ reads.
+- Added support for trimming poly-X tails. Trimming can be done for a single
+  nucleotide (e.g. poly-A) or for any combination of A, C, G, and T tails.
 
 ### Changed
 
@@ -690,7 +790,7 @@ dramatic effects on the use of the program so please read these notes carefully
 ### Changed
 
 - Updated trimming of qualities.
-- The programs handles lower vs upper case issues by translating all sequences
+- The program handles lower vs upper case issues by translating all sequences
   to upper case.
 - The program now checks for inconsistent parameters.
 
@@ -702,6 +802,7 @@ dramatic effects on the use of the program so please read these notes carefully
 
 - Initial release
 
+[3.0.0-alpha3]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha2...3.0.0-alpha3
 [2.3.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...v2.3.4
 [3.0.0-alpha2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha1...3.0.0-alpha2
 [3.0.0-alpha1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...3.0.0-alpha1
