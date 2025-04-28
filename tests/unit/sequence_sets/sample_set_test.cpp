@@ -186,14 +186,25 @@ TEST_CASE("Degenerate bases in barcodes", "[sample_set]")
 {
   CHECK_THROWS_MESSAGE(sample_set{ "sample_1 ACNT TGGA" },
                        parsing_error,
-                       "Degenerate base (N) found in mate 1 barcode sequence "
-                       "'ACNT'. Degenerate bases are not supported for "
-                       "demultiplexing; please remove before continuing!");
+                       "Unsupported character found in mate 1 barcode sequence "
+                       "'ACNT'. Only bases A, C, G, and T, are supported; "
+                       "please fix before continuing");
+  CHECK_THROWS_MESSAGE(sample_set{ "sample_1 YCAT TGGA" },
+                       parsing_error,
+                       "Unsupported character found in mate 1 barcode sequence "
+                       "'YCAT'. Only bases A, C, G, and T, are supported; "
+                       "please fix before continuing");
+
   CHECK_THROWS_MESSAGE(sample_set{ "sample_1 ACCT TNGA" },
                        parsing_error,
-                       "Degenerate base (N) found in mate 2 barcode sequence "
-                       "'TNGA'. Degenerate bases are not supported for "
-                       "demultiplexing; please remove before continuing!");
+                       "Unsupported character found in mate 2 barcode sequence "
+                       "'TNGA'. Only bases A, C, G, and T, are supported; "
+                       "please fix before continuing");
+  CHECK_THROWS_MESSAGE(sample_set{ "sample_1 ACCT TAGX" },
+                       parsing_error,
+                       "Unsupported character found in mate 2 barcode sequence "
+                       "'TAGX'. Only bases A, C, G, and T, are supported; "
+                       "please fix before continuing");
 }
 
 TEST_CASE("Overlapping SE barcodes fail #1", "[sample_set]")

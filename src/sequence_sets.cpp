@@ -8,7 +8,6 @@
 #include "sequence.hpp"      // for dna_sequence
 #include "strutils.hpp"      // for log_escape
 #include "table_reader.hpp"  // for table_reader
-#include "utilities.hpp"     // for underlying_value
 #include <algorithm>         // for max, sort, find
 #include <cstddef>           // for size_t
 #include <initializer_list>  // for initializer_list
@@ -44,20 +43,35 @@ validate_sample_name(std::string_view name)
   }
 }
 
-void
-validate_barcode_sequence(std::string_view seq,
-                          const size_t expected_length,
-                          const int mate)
+dna_sequence
+parse_barcode_sequence(const std::string_view seq, const int mate)
 {
-  if (seq.find('N') != std::string::npos) {
-    std::ostringstream error;
-    error << "Degenerate base (N) found in mate " << mate << " barcode "
-          << "sequence " << log_escape(seq) << ". Degenerate bases are not "
-          << "supported for demultiplexing; please remove before continuing!";
+  for (const auto nuc : seq) {
+    switch (to_upper(nuc)) {
+      case 'A':
+      case 'C':
+      case 'G':
+      case 'T':
+        break;
 
-    throw parsing_error(error.str());
+      default:
+        std::ostringstream error;
+        error << "Unsupported character found in mate " << mate << " barcode "
+              << "sequence " << log_escape(seq) << ". Only bases A, C, G, "
+              << "and T, are supported; please fix before continuing";
+
+        throw parsing_error(error.str());
+    }
   }
 
+  return dna_sequence{ seq };
+}
+
+void
+validate_barcode_length(const std::string_view seq,
+                        const size_t expected_length,
+                        const int mate)
+{
   if (seq.length() != expected_length) {
     std::ostringstream error;
     error << "Inconsistent mate " << mate << " barcode lengths found: Last "
@@ -157,8 +171,8 @@ check_barcode_sequences(const std::vector<sample>& samples,
         mate_2_len = it.barcode_2.length();
       }
 
-      validate_barcode_sequence(it.barcode_1, mate_1_len, 1);
-      validate_barcode_sequence(it.barcode_2, mate_2_len, 2);
+      validate_barcode_length(it.barcode_1, mate_1_len, 1);
+      validate_barcode_length(it.barcode_2, mate_2_len, 2);
     }
   }
 }
@@ -666,11 +680,11 @@ sample_set::load(line_reader_base& reader, const barcode_config& config)
   std::vector<sample> samples;
   for (const auto& row : barcodes) {
     const auto& name = row.at(0);
-    const dna_sequence barcode_1{ row.at(1) };
+    const auto barcode_1 = parse_barcode_sequence(row.at(1), 1);
     dna_sequence barcode_2;
 
     if (row.size() > 2) {
-      barcode_2 = dna_sequence{ row.at(2) };
+      barcode_2 = parse_barcode_sequence(row.at(2), 2);
     }
 
     auto orientation = barcode_orientation::unspecified;
