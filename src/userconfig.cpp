@@ -32,24 +32,16 @@ namespace adapterremoval {
 
 namespace {
 
-const char* HELPTEXT =
-  "This program searches for and removes remnant adapter sequences, poly-X "
-  "tails and low-quality base from FASTQ reads. For detailed explanation of "
-  "the parameters, please refer to the man page. For comments, suggestions "
-  "and feedback please use\n"
+const std::string_view HELPTEXT =
+  "AdapterRemoval searches for and removes remnant adapter sequences, poly-X "
+  "tails and low-quality base from FASTQ reads. See `man adapterremoval3` or "
+  "https://adapterremoval.readthedocs.io/ for more information\n"
   "\n"
+  "For comments, suggestions, or other feedback please use\n"
   "  https://github.com/MikkelSchubert/adapterremoval/issues/new\n"
   "\n"
-  "If you use the program, please cite the paper\n"
-  "\n"
-  "  Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid\n"
-  "  adapter trimming, identification, and read merging. BMC Research\n"
-  "  Notes, 12;9(1):88. https://doi.org/10.1186/s13104-016-1900-2\n"
-  "\n"
-  "Use the filename '-' to read from STDIN or to write to STDOUT. If the same "
-  "filenames are used for two or more of the --out-* options (excluding "
-  "--out-json and --out-html), then the combined output is written to that "
-  "file in interleaved mode.\n";
+  "If you use this program, then please cite Schubert et al. 2016:\n"
+  "  https://doi.org/10.1186/s13104-016-1900-2\n";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions

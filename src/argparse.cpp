@@ -53,25 +53,25 @@ parser::parser()
 }
 
 void
-parser::set_name(const std::string& name)
+parser::set_name(const std::string_view& name)
 {
   m_name = name;
 }
 
 void
-parser::set_version(const std::string& version)
+parser::set_version(const std::string_view& version)
 {
   m_version = version;
 }
 
 void
-parser::set_preamble(const std::string& text)
+parser::set_preamble(const std::string_view& text)
 {
   m_preamble = text;
 }
 
 void
-parser::set_licenses(const std::string& text)
+parser::set_licenses(const std::string_view& text)
 {
   m_licenses = text;
 }

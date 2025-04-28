@@ -77,13 +77,13 @@ public:
   ~parser() = default;
 
   /** Sets the name used in --help and --version messages */
-  void set_name(const std::string& name);
+  void set_name(const std::string_view& name);
   /** Sets the version string used in --help and --version messages */
-  void set_version(const std::string& version);
+  void set_version(const std::string_view& version);
   /** Sets the preamble text used in --help */
-  void set_preamble(const std::string& text);
+  void set_preamble(const std::string_view& text);
   /** Sets the license text used in --licenses */
-  void set_licenses(const std::string& text);
+  void set_licenses(const std::string_view& text);
 
   /** Parses a set of command-line options as passed to main(argc, argv). */
   parse_result parse_args(const string_vec& args);
