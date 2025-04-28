@@ -4,10 +4,10 @@
 #include "fastq.hpp"      // declarations
 #include "debug.hpp"      // for AR_REQUIRE, AR_FAIL
 #include "errors.hpp"     // for fastq_error
+#include "fastq_enc.hpp"  // for fastq_encoding
 #include "linereader.hpp" // for line_reader_base
 #include "strutils.hpp"   // for log_escape
 #include <algorithm>      // for reverse, count, max, min
-#include <cmath>          // for log10, pow
 #include <numeric>        // for accumulate
 #include <sstream>        // for ostringstream
 #include <string_view>    // for string_view
@@ -21,7 +21,7 @@ init_phred_to_p_values()
 {
   std::vector<double> result;
   for (size_t i = PHRED_SCORE_MIN; i <= PHRED_SCORE_MAX; ++i) {
-    result.push_back(std::pow(10.0, static_cast<double>(i) / -10.0));
+    result.push_back(fastq_encoding::phred_to_p(i));
   }
 
   return result;
@@ -558,16 +558,6 @@ fastq::read_unsafe(line_reader_base& reader)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public helper functions
-
-char
-fastq::p_to_phred_33(double p)
-{
-  // Lowest possible error rate representable is '~' (~5e-10)
-  const auto min_p = std::max(5e-10, p);
-  const auto raw_score = static_cast<int>(-10.0 * std::log10(min_p));
-
-  return std::min<int>(PHRED_OFFSET_MAX, PHRED_OFFSET_MIN + raw_score);
-}
 
 char
 fastq::guess_mate_separator(const std::vector<fastq>& reads_1,

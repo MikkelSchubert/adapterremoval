@@ -18,7 +18,6 @@
 #include "strutils.hpp"    // for shell_escape, str_to_u32
 #include <algorithm>       // for find, max, min
 #include <cerrno>          // for errno
-#include <cmath>           // for pow
 #include <cstdlib>         // for getenv
 #include <cstring>         // for size_t, strerror, strcmp
 #include <filesystem>      // for weakly_canonical
@@ -1115,7 +1114,7 @@ userconfig::parse_args(const string_vec& argvec)
     const auto strategy = argparser.value("--quality-trimming");
     if (strategy == "mott") {
       trim = trimming_strategy::mott;
-      trim_mott_rate = std::pow(10.0, trim_mott_rate / -10.0);
+      trim_mott_rate = fastq_encoding::phred_to_p(trim_mott_rate);
     } else if (strategy == "window") {
       trim = trimming_strategy::window;
     } else if (strategy == "per-base") {

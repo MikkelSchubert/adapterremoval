@@ -10,6 +10,7 @@ unit_tests = executable(
     'counts_test.cpp',
     'debug_test.cpp',
     'errors_test.cpp',
+    'fastq_enc_test.cpp',
     'fastq_test.cpp',
     'json_test.cpp',
     'linereader_test.cpp',

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_id.hpp" // declarations
+#include "fastq_enc.hpp"  // for fastq_encoding
 #include "utilities.hpp"  // for merge
 #include <algorithm>      // for max, copy, min, reverse
 #include <queue>          // for priority_queue
@@ -97,7 +98,7 @@ build_consensus_sequence(const indexed_counts<ACGTN>& consensus)
       qualities << static_cast<char>(PHRED_OFFSET_MIN);
     } else {
       const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
-      qualities << fastq::p_to_phred_33(pvalue);
+      qualities << fastq_encoding::p_to_phred_33(pvalue);
     }
   }
 
