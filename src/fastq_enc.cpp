@@ -426,4 +426,29 @@ fastq_encoding::process_qualities(std::string& qualities) const
   }
 }
 
+double
+fastq_encoding::phred_to_p(double phred)
+{
+  AR_REQUIRE(phred >= 0.0);
+  return std::pow(10.0, phred / -10.0);
+}
+
+double
+fastq_encoding::p_to_phred(double p)
+{
+  AR_REQUIRE(p >= 0.0 && p <= 1.0);
+  // max(0.0, ...) to avoid returning -0.0 for p = 1
+  return std::max(0.0, -10.0 * std::log10(p));
+}
+
+char
+fastq_encoding::p_to_phred_33(double p)
+{
+  AR_REQUIRE(p >= 0.0);
+
+  // Lowest error rate that can be represented is 93 (~5e-10), encoded as '~'
+  const auto raw_score = p_to_phred(std::max(5e-10, p));
+  return std::min<int>(PHRED_OFFSET_MAX, PHRED_OFFSET_MIN + raw_score);
+}
+
 } // namespace adapterremoval

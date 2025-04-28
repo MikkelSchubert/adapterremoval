@@ -2,10 +2,12 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "commontypes.hpp" // for trimming_strategy, trimming_strategy::mott
 #include "debug.hpp"       // for AR_FAIL
+#include "fastq_enc.hpp"   // for fastq_encoding
 #include "logging.hpp"     // for info, log_stream, error, warn
 #include "reports.hpp"     // for print_terminal_postamble, print_terminal_...
 #include "simd.hpp"        // for name, instruction_set, instruction_set::none
 #include "userconfig.hpp"  // for userconfig, ar_command, ar_command::demul...
+#include <iomanip>         // for fixed, setprecision
 #include <string>          // for string
 
 namespace adapterremoval {
@@ -15,8 +17,9 @@ print_trimming_parameters(const userconfig& config)
 {
   switch (config.trim) {
     case trimming_strategy::mott:
-      log::info() << "  - Mott based quality based trimming with max "
-                  << "error-rate " << config.trim_mott_rate;
+      log::info() << "  - Mott based trimming with Phred encoded quality score "
+                  << std::fixed << std::setprecision(1)
+                  << fastq_encoding::p_to_phred(config.trim_mott_rate);
       break;
     case trimming_strategy::window:
       log::info() << "  - Window based quality based trimming with window size "

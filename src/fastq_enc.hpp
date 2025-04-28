@@ -64,6 +64,15 @@ public:
   /** Validates/converts a string of ASCII encoded PHRED values in-place */
   void process_qualities(std::string& qualities) const;
 
+  /** Converts a Phred score (>= 0) to an error probability */
+  static double phred_to_p(double phred);
+
+  /** Converts a error probability (>= 0) to a Phred score */
+  static double p_to_phred(double p);
+
+  /** Converts a error probability (>= 0) to a Phred+33 encoded score */
+  static char p_to_phred_33(double p);
+
 private:
   //! Mask or reject degenerate bases
   bool m_mask_degenerate;
