@@ -52,6 +52,12 @@ jobs:
         with:
           version: "latest"
 
+      # Use mold for faster linking
+      - uses: rui314/setup-mold@45c2b085bbc0283c8e1443d4a511aaa1eda5a3a1 # v1
+        with:
+            mold-version: 2.38.0
+            make-default: true
+
       - name: ccache
         uses: hendrikmuhs/ccache-action@a1209f81afb8c005c13b4296c32e363431bffea5 # v1.2.17
         with:
