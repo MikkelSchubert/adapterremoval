@@ -1,0 +1,9 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "output",
+    "--compression-level",
+    "2"
+  ],
+  "inherit_from": "test_defaults.json"
+}

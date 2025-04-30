@@ -1,0 +1,27 @@
+{
+  "description": "Test of default and non-default compression levels",
+  "exhaustive": true,
+  "arguments": [
+    "--out-prefix",
+    "output"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "output.r1.fastq.gz",
+      "output.r2.fastq.gz",
+      "output.singleton.fastq.gz"
+    ],
+    "ignore": [
+      "output.json"
+    ],
+    "html": [
+      "output.html"
+    ]
+  }
+}
