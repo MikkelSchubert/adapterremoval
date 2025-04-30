@@ -633,7 +633,7 @@ write_fastq::process(chunk_ptr chunk)
 
       m_output.write(trailer, flush::on);
     }
-  } catch (const std::ios_base::failure&) {
+  } catch (const io_error&) {
     std::ostringstream msg;
     msg << "Error writing to FASTQ file " << shell_escape(m_output.filename());
 
@@ -652,7 +652,7 @@ write_fastq::finalize()
   // Close file to trigger any exceptions due to badbit / failbit
   try {
     m_output.close();
-  } catch (const std::ios_base::failure&) {
+  } catch (const io_error&) {
     std::ostringstream msg;
     msg << "Error closing FASTQ file " << shell_escape(m_output.filename());
 
