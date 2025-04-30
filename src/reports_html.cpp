@@ -3,6 +3,7 @@
 #include "adapter_id.hpp"            // for adapter_id_statistics
 #include "counts.hpp"                // for counts, indexed_count, counts_tmpl
 #include "debug.hpp"                 // for AR_REQUIRE
+#include "errors.hpp"                // for io_error
 #include "fastq.hpp"                 // for ACGT, ACGT::values, fastq, ACGTN
 #include "json.hpp"                  // for json_dict, json_list, json_ptr
 #include "logging.hpp"               // for log_stream, error
@@ -1269,7 +1270,7 @@ write_html_report(const userconfig& config,
     managed_writer writer{ filename };
     writer.write(output.str());
     writer.close();
-  } catch (const std::ios_base::failure& error) {
+  } catch (const io_error& error) {
     log::error() << "Error writing JSON report to '" << filename << "':\n"
                  << indent_lines(error.what());
     return false;

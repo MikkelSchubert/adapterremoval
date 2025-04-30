@@ -56,8 +56,7 @@ format_io_error(const std::string& message, const int error_number)
 {
   if (error_number) {
     std::ostringstream stream;
-    stream << message << " ('" << strerror_r_wrapper(::strerror_r, error_number)
-           << "')";
+    stream << message << ": " << strerror_r_wrapper(::strerror_r, error_number);
 
     return stream.str();
   } else {
@@ -70,10 +69,13 @@ assert_failed::assert_failed(const std::string& what)
 {
 }
 
+io_error::io_error(const std::string& message)
+  : std::runtime_error(message)
+{
+}
+
 io_error::io_error(const std::string& message, int error_number)
-  : std::ios_base::failure(
-      message,
-      std::error_code(error_number, std::generic_category()))
+  : std::runtime_error(format_io_error(message, error_number))
 {
 }
 

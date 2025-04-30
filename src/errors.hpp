@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <ios>       // for ios_base::failure
 #include <iosfwd>    // for ostream
 #include <stdexcept> // for runtime_error
 #include <string>    // for string
@@ -21,11 +20,14 @@ public:
 };
 
 /** Represents errors during basic IO. */
-class io_error : public std::ios_base::failure
+class io_error : public std::runtime_error
 {
 public:
+  /** Produces an error without an associated error code */
+  explicit io_error(const std::string& message);
+
   /** Produces a combined error including a description of the error code */
-  explicit io_error(const std::string& message, int error_number = 0);
+  explicit io_error(const std::string& message, int error_number);
 };
 
 /** Represents errors during GZip (de)compression. */
