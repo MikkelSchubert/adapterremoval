@@ -84,10 +84,13 @@ harden = get_option('harden')
 if harden
     add_project_arguments(
         compiler.get_supported_arguments(
-            '-D_FORTIFY_SOURCE=2',
+            '-D_FORTIFY_SOURCE=3',
+            '-D_GLIBCXX_ASSERTIONS',
             '-fPIE',
-            '-fstack-protector-all',
+            '-fcf-protection=full',
             '-fstack-clash-protection',
+            '-fstack-protector-strong',
+            '-ftrivial-auto-var-init=zero',
         ),
         language: 'cpp',
     )

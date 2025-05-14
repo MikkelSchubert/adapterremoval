@@ -16,6 +16,6 @@ option(
 option(
     'harden',
     type: 'boolean',
-    value: false,
+    value: true,
     description: 'Build executable with hardening flags',
 )
