@@ -1120,22 +1120,23 @@ write_html_demultiplexing_table(const userconfig& config,
       .write(output);
 
     if (sample.size() > 1) {
-      const auto total = barcode_counts.sum();
+      const auto total_count = barcode_counts.sum();
 
       for (size_t j = 0; j < sample.size(); j++) {
         const auto& it = sample.at(j);
         const auto count = barcode_counts.get(j);
 
-        html_demultiplexing_barcode_row row;
-        row.set_barcode_1(std::string{ it.barcode_1 })
+        html_demultiplexing_barcode_row barcode_row;
+        barcode_row.set_barcode_1(std::string{ it.barcode_1 })
           .set_barcode_2(std::string{ it.barcode_2 })
-          .set_barcode_pct_row(format_percentage(count, total, 2));
+          .set_barcode_pct_row(format_percentage(count, total_count, 2));
 
         if (mixed_orientation) {
-          row.set_orientation("<td>" + orientation_to_label(it) + "</td>");
+          barcode_row.set_orientation("<td>" + orientation_to_label(it) +
+                                      "</td>");
         }
 
-        row.write(output);
+        barcode_row.write(output);
       }
     }
 
