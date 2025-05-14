@@ -14,7 +14,7 @@ DEBUG := ${COVERAGE}
 SANITIZE := false
 
 # Enable hardening flags
-HARDEN := false
+HARDEN := true
 
 # Generate statically linked binary
 # It is recommended to use the included Containerfile to build the static binary
