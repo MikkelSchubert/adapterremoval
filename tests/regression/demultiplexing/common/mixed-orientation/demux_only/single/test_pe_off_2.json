@@ -5,7 +5,7 @@
     "--barcode-list",
     "barcodes.txt",
     "--demultiplex-only",
-    "--mixed-orientation",
+    "--barcode-orientation",
     "unspecified"
   ],
   "inherit_from": "test_pe_off_1.json"

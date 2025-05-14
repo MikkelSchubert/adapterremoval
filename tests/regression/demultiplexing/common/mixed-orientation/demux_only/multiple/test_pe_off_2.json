@@ -5,7 +5,7 @@
     "--barcode-list",
     "barcodes.txt",
     "--demultiplex-only",
-    "--mixed-orientation",
+    "--barcode-orientation",
     "unspecified",
     "--multiple-barcodes"
   ],
