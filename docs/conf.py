@@ -11,7 +11,7 @@
 
 # General information about the project.
 project = "AdapterRemoval3"
-copyright = "2017, Mikkel Schubert; Stinus Lindgreen"
+copyright = "2025, Mikkel Schubert; Stinus Lindgreen"
 author = "Mikkel Schubert; Stinus Lindgreen"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -21,7 +21,7 @@ author = "Mikkel Schubert; Stinus Lindgreen"
 # The short X.Y version.
 version = "3.0"
 # The full version, including alpha/beta/rc tags.
-release = "3.0.0-alpha2"
+release = "3.0.0-alpha3"
 
 
 # -- General configuration ---------------------------------------------------
@@ -55,6 +55,5 @@ html_sidebars = {
         "navigation.html",
         "relations.html",  # needs 'show_related': True theme option to display
         "searchbox.html",
-        "donate.html",
     ]
 }
