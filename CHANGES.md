@@ -2,8 +2,10 @@
 
 ## [3.0.0-alpha3] - 2025-05-19
 
-This is the third alpha release of AdapterRemoval v3. As with the previous alpha releases, changes that affect how AdapterRemoval is used (e.g. by
-removing options) or that result in different output compared to previous versions are marked with the label "[**BREAKING**]".
+This is the third alpha release of AdapterRemoval v3. As with the previous alpha
+releases, changes that affect how AdapterRemoval is used (e.g. by removing
+options) or that result in different output compared to previous versions are
+marked with the label "[**BREAKING**]".
 
 AdapterRemoval now uses `meson` for its build process, and `meson` is therefore
 a formal requirement. A `Makefile` is still provided to simplify setting up and
@@ -21,7 +23,8 @@ TODO
   via the `--multiple-barcodes` flag. The number of hits per barcode/barcode
   pair is reported in the HTML/JSON reports.
 - Added support for handling barcodes that may ligate in different orientations
-  (via `--barcode-orientation`) and for normalizing the orientation of merged reads (via `--normalize-orientation`).
+  (via `--barcode-orientation`) and for normalizing the orientation of merged
+  reads (via `--normalize-orientation`).
 - The `--use-colors` parameter may now be used to controls color output.
   Options are auto (default; enabled when run interactively), always, or never.
 - The title of the HTML report can now be set via `--report-title`.
@@ -31,17 +34,17 @@ TODO
   a roughly 3-fold increase in throughput.
 - A duplication plot is now included in the HTML report if this is enabled,
   instead of only being reported in the JSON file.
-- Fixed use of `CO` tags for comments/descriptions in SAM/BAM output, where the
-  `DS` (description) tags should have been used [**BREAKING**].
+- [**BREAKING**] Fixed use of `CO` tags for comments/descriptions in SAM/BAM
+  output, where the `DS` (description) tags should have been used.
 
 ### Changed
 
 - Improved checks for conflicting command-line options.
 - Barcodes are now recorded in FASTQ headers demultiplexing without trimming.
 - The `$schema` URL is now included in the JSON report
-- A number of changes have been made to the JSON report layout, including the
-  moving, removal, and addition of sections. The layout is described in
-  `schema.json` [**BREAKING**].
+- [**BREAKING**] A number of changes have been made to the JSON report layout,
+  including the moving, removal, and addition of sections. The layout is
+  described in `schema.json`.
 - Makefile features are now enabled/disable with `true`/`false` instead of
   `yes`/`no`.
 - Vega-lite is now loaded in the background, when opening the HTML reports,
@@ -54,28 +57,30 @@ TODO
 - The old Makefile was replaced with the Meson build system, but a wrapper
   Makefile is still provided/used as a convenience for setting the recommended
   build options.
-- The minimum allowed/default value for `--min-adapter-overlap` was set to 1.
-  In practice this has no effect, since length 0 alignments were never
-  considered, but may break scripts running AdapterRemoval [**BREAKING**].
+- [**BREAKING**] The minimum allowed/default value for `--min-adapter-overlap`
+  was set to 1. In practice this has no effect, since length 0 alignments were
+  never considered, but may break scripts running AdapterRemoval.
 - A number of small improvements were made to the `--help` text.
-- Drop support for raw error-rates to `--trim-mott-rate`, which was renamed to
-  `--trim-mott-quality` to match other trimming options [**BREAKING**].
-- SAM/BAM output is now combined into a single file by default, including
-  discarded reads. This can be overridden by setting the individual `--out-*`
-  options [**BREAKING**].
-- Dropped `PG` tag from read-groups/records in SAM/BAM output [**BREAKING**].
-- Dropped (minimal) read-groups for SAM/BAM output. If desired, read-group
-  information can be added with `--read-group` [**BREAKING**].
+- [**BREAKING**] Drop support for raw error-rates to `--trim-mott-rate`, which
+  was renamed to `--trim-mott-quality` to match other trimming options.
+- [**BREAKING**] SAM/BAM output is now combined into a single file by default,
+  including discarded reads. This can be overridden by setting the individual
+  `--out-*` options.
+- [**BREAKING**] Dropped `PG` tag from read-groups/records in SAM/BAM output.
+- [**BREAKING**] Dropped (minimal) read-groups for SAM/BAM output. If desired,
+  read-group information can be added with `--read-group`.
 - Improved error messages when mismatching (paired) read names are detected.
-- The `--report-duplication` option now supports k/m/g suffixes, and defaults
-  to `100k` if used without an explicit value.
+- [**BREAKING**] The `--report-duplication` option now supports k/m/g suffixes,
+  and defaults to `100k` if used without an explicit value.
 - Singleton reads are now included in the overall summary statistics in
-  JSON/HTML reports [**BREAKING**].
+  JSON/HTML reports.
 - Hardening flags are now enabled by default during compilation. This comes with
   a small performance cost, but most distros are also expected to enable similar
   flags by default.
-- The `--read-group` option no longer attempts to unescape special characters.
-  Instead, tags must be separated using embedded tabs (`--read-group $'ID:A\tSM:B'`) or provided as individual arguments (`--read-group 'ID:A' 'SM:B'`) [**BREAKING**].
+- [**BREAKING**] The `--read-group` option no longer attempts to unescape
+  special characters. Instead, tags must be separated using embedded tabs
+  (`--read-group $'ID:A\tSM:B'`) or provided as individual arguments
+  (`--read-group 'ID:A' 'SM:B'`).
 
 ### Fixed
 
