@@ -4,7 +4,7 @@
     "out_off",
     "--barcode-list",
     "barcodes.txt",
-    "--mixed-orientation",
+    "--barcode-orientation",
     "--multiple-barcodes",
     "--merge"
   ],
