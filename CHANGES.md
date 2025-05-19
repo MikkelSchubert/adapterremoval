@@ -8,14 +8,15 @@ options) or that result in different output compared to previous versions are
 marked with the label "[**BREAKING**]".
 
 AdapterRemoval now uses `meson` for its build process, and `meson` is therefore
-a formal requirement. A `Makefile` is still provided to simplify setting up and
-running the build. See the installation instructions for more information.
+a build-time requirement. A `Makefile` is still provided to simplify setting up
+and running the build. See the installation instructions in the documentation
+for more information.
 
-Major changes include support for hardware accelerated alignments on Apple
-M1/M2/M3 hardware, support for samples being identified by multiple barcodes,
-support for handling barcodes in that may ligate in different orientations,
-improved support for SAM/BAM output, (optional) duplication plot in HTML report,
-TODO
+Major changes include support for hardware accelerated alignments using NEON on
+modern Apple hardware, support for samples being identified by multiple
+barcodes, support for handling barcodes in that may ligate in different
+orientations, improved support for SAM/BAM output, and (optional) duplication
+plot in HTML report.
 
 ### Added
 
@@ -34,17 +35,34 @@ TODO
   a roughly 3-fold increase in throughput.
 - A duplication plot is now included in the HTML report if this is enabled,
   instead of only being reported in the JSON file.
-- [**BREAKING**] Fixed use of `CO` tags for comments/descriptions in SAM/BAM
-  output, where the `DS` (description) tags should have been used.
 
 ### Changed
 
-- Improved checks for conflicting command-line options.
-- Barcodes are now recorded in FASTQ headers demultiplexing without trimming.
-- The `$schema` URL is now included in the JSON report
+- [**BREAKING**] Changed  `CO` tags for read-groups in SAM/BAM files to `DS`
+  (description) tags, in order to match the specification.
 - [**BREAKING**] A number of changes have been made to the JSON report layout,
   including the moving, removal, and addition of sections. The layout is
   described in `schema.json`.
+- [**BREAKING**] The minimum allowed/default value for `--min-adapter-overlap`
+  was set to 1. In practice this has no effect, since length 0 alignments were
+  never considered, but may break scripts running AdapterRemoval.
+- [**BREAKING**] Drop support for raw error-rates to `--trim-mott-rate`, which
+  was renamed to `--trim-mott-quality` to match other trimming options.
+- [**BREAKING**] SAM/BAM output is now combined into a single file by default,
+  including discarded reads. This can be overridden by setting the individual
+  `--out-*` options.
+- [**BREAKING**] Dropped `PG` tag from read-groups/records in SAM/BAM output.
+- [**BREAKING**] Dropped (minimal) read-groups for SAM/BAM output. If desired,
+  read-group information can be added with `--read-group`.
+- [**BREAKING**] The `--report-duplication` option now supports k/m/g suffixes,
+  and defaults to `100k` if used without an explicit value.
+- [**BREAKING**] The `--read-group` option no longer attempts to unescape
+  special characters. Instead, tags must be separated using embedded tabs
+  (`--read-group $'ID:A\tSM:B'`) or provided as individual arguments
+  (`--read-group 'ID:A' 'SM:B'`).
+- Improved checks for conflicting command-line options.
+- Barcodes are now recorded in FASTQ headers demultiplexing without trimming.
+- The `$schema` URL is now included in the JSON report
 - Makefile features are now enabled/disable with `true`/`false` instead of
   `yes`/`no`.
 - Vega-lite is now loaded in the background, when opening the HTML reports,
@@ -57,30 +75,13 @@ TODO
 - The old Makefile was replaced with the Meson build system, but a wrapper
   Makefile is still provided/used as a convenience for setting the recommended
   build options.
-- [**BREAKING**] The minimum allowed/default value for `--min-adapter-overlap`
-  was set to 1. In practice this has no effect, since length 0 alignments were
-  never considered, but may break scripts running AdapterRemoval.
 - A number of small improvements were made to the `--help` text.
-- [**BREAKING**] Drop support for raw error-rates to `--trim-mott-rate`, which
-  was renamed to `--trim-mott-quality` to match other trimming options.
-- [**BREAKING**] SAM/BAM output is now combined into a single file by default,
-  including discarded reads. This can be overridden by setting the individual
-  `--out-*` options.
-- [**BREAKING**] Dropped `PG` tag from read-groups/records in SAM/BAM output.
-- [**BREAKING**] Dropped (minimal) read-groups for SAM/BAM output. If desired,
-  read-group information can be added with `--read-group`.
 - Improved error messages when mismatching (paired) read names are detected.
-- [**BREAKING**] The `--report-duplication` option now supports k/m/g suffixes,
-  and defaults to `100k` if used without an explicit value.
 - Singleton reads are now included in the overall summary statistics in
   JSON/HTML reports.
 - Hardening flags are now enabled by default during compilation. This comes with
   a small performance cost, but most distros are also expected to enable similar
   flags by default.
-- [**BREAKING**] The `--read-group` option no longer attempts to unescape
-  special characters. Instead, tags must be separated using embedded tabs
-  (`--read-group $'ID:A\tSM:B'`) or provided as individual arguments
-  (`--read-group 'ID:A' 'SM:B'`).
 
 ### Fixed
 
@@ -271,9 +272,9 @@ Feedback is very welcome in the mean time.
   instead of `Q_match ~= Q_a + Q_b`, and that same-quality mismatches are
   assigned 'N' instead of one being picked at random. Motivated in part by
   `doi:10.1186/s12859-018-2579-2`. This can be changed using `--merge-strategy`.
-- The `--merge` option no longer has any effect when processing SE data;
-  previously this option would treat reads with at `--minalignmentlength`
-  adapter as pseudo-merged reads.
+- [**BREAKING**] The `--merge` option no longer has any effect when processing
+  SE data; previously this option would treat reads with at
+  `--minalignmentlength` adapter as pseudo-merged reads.
 - [**BREAKING**] Merged reads are no longer given a `M_` name prefix and merged
   reads that have been trimmed after merging are no longer given an `MT_` name
   prefix. Instead, see the new option `--prefix-merged`.
