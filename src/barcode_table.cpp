@@ -315,14 +315,14 @@ barcode_table::lookup_with_mm(const char* seq,
 std::ostream&
 operator<<(std::ostream& os, const barcode_key& value)
 {
-  const auto to_str_ = [](int32_t value) -> std::string {
-    switch (value) {
+  const auto to_str_ = [](int32_t idx) -> std::string {
+    switch (idx) {
       case barcode_key::unidentified:
         return "unidentified";
       case barcode_key::ambiguous:
         return "ambiguous";
       default:
-        return std::to_string(value);
+        return std::to_string(idx);
     }
   };
 

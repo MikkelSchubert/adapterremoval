@@ -162,8 +162,8 @@ read_fastq::add_steps(scheduler& sch,
                       size_t next_step,
                       statistics& stats)
 {
-  const auto add_step = [&sch, &config, &stats](auto next_step, auto type) {
-    return sch.add<read_fastq>(config, next_step, type, stats);
+  const auto add_step = [&sch, &config, &stats](auto next, auto type) {
+    return sch.add<read_fastq>(config, next, type, stats);
   };
 
   if (config.interleaved_input) {
