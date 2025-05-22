@@ -3,9 +3,12 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <array>  // for array
-#include <string> // for string
-#include <vector> // for vector
+#include <array>     // for array
+#include <cstddef>   // for size_t
+#include <stdexcept> // for invalid_argument
+#include <string>    // for string
+#include <utility>   // for pair
+#include <vector>    // for vector
 
 #define CATCH_CONFIG_FAST_COMPILE
 #define CATCH_CONFIG_FALLBACK_STRINGIFIER ::Catch::fallbackStringifier

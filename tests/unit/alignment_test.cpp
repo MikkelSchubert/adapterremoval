@@ -11,10 +11,8 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for size_t, instruction_set, supported, get_c...
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
-#include <cstddef>           // for size_t
-#include <cstdint>           // for int64_t
-#include <sstream>
-#include <string> // for string, basic_string, operator<<
+#include <sstream>           // for ostringstream
+#include <string>            // for string, basic_string, operator<<
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g

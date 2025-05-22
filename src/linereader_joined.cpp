@@ -6,7 +6,8 @@
 
 namespace adapterremoval {
 
-joined_line_readers::joined_line_readers(const string_vec& filenames)
+joined_line_readers::joined_line_readers(
+  const std::vector<std::string>& filenames)
   : m_filenames(filenames.rbegin(), filenames.rend())
 {
 }

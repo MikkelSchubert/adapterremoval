@@ -2,11 +2,13 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include "buffer.hpp"         // for buffer
 #include "debug.hpp"          // for AR_REQUIRE
+#include "fastq.hpp"          // for fastq
 #include <algorithm>          // for copy, max, copy_backward
-#include <atomic>             // for atomic_bool
 #include <condition_variable> // for condition_variable
 #include <cstddef>            // for size_t
+#include <cstdint>            // for uint32_t
 #include <memory>             // for unique_ptr, shared_ptr, make_unique
 #include <mutex>              // for mutex, lock_guard
 #include <queue>              // for queue
@@ -106,7 +108,7 @@ public:
   analytical_chunk() = default;
 
   /** Destructor; does nothing. */
-  ~analytical_chunk() = default;
+  ~analytical_chunk();
 
   //! Indicates that this is the first chunk
   bool first = false;

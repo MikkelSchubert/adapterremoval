@@ -3,6 +3,7 @@
 #include "errors.hpp"    // for assert_failed
 #include "mathutils.hpp" // for arithmetic_mean, standard_deviation
 #include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
+#include <cstdint>       // for uint64_t
 #include <vector>        // for vector
 
 namespace adapterremoval {

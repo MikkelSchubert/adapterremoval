@@ -4,7 +4,6 @@
 
 #include <cstddef>     // for size_t
 #include <cstdint>     // for uint64_t
-#include <ostream>     // for ostream
 #include <sstream>     // for ostringstream
 #include <string>      // for string
 #include <string_view> // for string_view

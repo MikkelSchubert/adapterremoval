@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "counts.hpp"  // for counts, indexed_counts, counts_tmpl, indexed_c...
-#include "errors.hpp"  // for assert_failed
-#include "fastq.hpp"   // for ACGT, ACGTN, ACGT::indices
-#include "testing.hpp" // for TEST_CASE, REQUIRE, ...
-#include <cmath>       // for isnan
-#include <cstddef>     // for size_t
-#include <string>      // for basic_string, operator==
+#include "counts.hpp"    // for counts, indexed_counts, counts_tmpl, ...
+#include "errors.hpp"    // for assert_failed
+#include "fastq_enc.hpp" // for ACGT, ACGTN, ACGT::indices
+#include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
+#include <cmath>         // for isnan
+#include <cstddef>       // for size_t
+#include <string>        // for basic_string, operator==
 
 namespace adapterremoval {
 

@@ -206,6 +206,8 @@ processed_reads::processed_reads(const sample_output_files& map)
   }
 }
 
+processed_reads::~processed_reads() = default;
+
 void
 processed_reads::set_sample(const sample& value)
 {
@@ -237,6 +239,12 @@ processed_reads::write_headers(const string_vec& args)
   for (size_t i = 0; i < m_chunks.size(); ++i) {
     m_serializers.at(i).header(get_buffer(m_chunks.at(i)), args);
   }
+}
+
+void
+processed_reads::add(const fastq& read, read_type flags, size_t barcode)
+{
+  add(read, read_meta(flags).barcode(barcode));
 }
 
 void

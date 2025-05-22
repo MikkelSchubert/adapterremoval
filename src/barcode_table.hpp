@@ -3,12 +3,11 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "sequence.hpp" // for sequence_pair_vec
-#include <array>        // for array
-#include <cstddef>      // for size_t
-#include <cstdint>      // for int32_t
-#include <iosfwd>       // for ostream
-#include <vector>       // for vector
+#include <array>   // for array
+#include <cstddef> // for size_t
+#include <cstdint> // for int32_t
+#include <iosfwd>  // for ostream
+#include <vector>  // for vector
 
 namespace adapterremoval {
 
@@ -39,9 +38,6 @@ struct barcode_key
            (sample == other.sample && barcode < other.barcode);
   }
 };
-
-using barcode_pair = std::pair<sequence_pair, barcode_key>;
-using barcode_vec = std::vector<barcode_pair>;
 
 /**
  * Struct representing node in quad-tree; children are referenced using the

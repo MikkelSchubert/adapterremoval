@@ -3,12 +3,12 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "commontypes.hpp" // for barcode_orientation
-#include <iosfwd>          // for ostream
-#include <string>          // for string
-#include <string_view>     // for string_view
+#include <iosfwd>      // for ostream
+#include <string>      // for string
+#include <string_view> // for string_view
 
 namespace adapterremoval {
+enum class barcode_orientation;
 
 /** Contains SAM/BAM read-group information */
 class read_group

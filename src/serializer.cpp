@@ -8,15 +8,17 @@
 #include "fastq.hpp"       // for fastq
 #include "fastq_enc.hpp"   // for PHRED_OFFSET_MIN
 #include "main.hpp"        // for VERSION
+#include "read_group.hpp"  // for read_group
+#include "sequence.hpp"    // for dna_sequence
 #include "strutils.hpp"    // for join_text
+#include <cstdint>         // for uint16_t, uint8_t
 #include <sstream>         // for ostringstream
+#include <string>          // for string, operator<<, string
 #include <string_view>     // for string_view
 
 namespace adapterremoval {
 
 using namespace std::literals;
-
-class userconfig;
 
 namespace {
 

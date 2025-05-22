@@ -4,20 +4,27 @@
 #pragma once
 
 #include "barcode_table.hpp" // for barcode_table
-#include "fastq_io.hpp"      // for chunk_ptr
 #include "output.hpp"        // for demultiplexed_reads
-#include "scheduler.hpp"     // for chunk_vec, chunk_ptr, analytical_step
-#include "statistics.hpp"    // for demux_stats_ptr
+#include "scheduler.hpp"     // for analytical_step
+#include "statistics.hpp"    // for fastq_statistics, trimming_statistics
 #include <cstddef>           // for size_t
+#include <memory>            // for shared_ptr
 #include <mutex>             // for mutex
+#include <utility>           // for pair
 #include <vector>            // for vector
 
 namespace adapterremoval {
 
-class sample_set;
+class demux_statistics;
 class output_files;
 class post_demux_steps;
+class sample_set;
+class trimming_statistics;
 class userconfig;
+class fastq_statistics;
+
+using demux_stats_ptr = std::shared_ptr<demux_statistics>;
+using trim_stats_ptr = std::shared_ptr<trimming_statistics>;
 
 /**
  * Base-class for demultiplexing of reads; responsible for building the

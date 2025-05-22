@@ -2,15 +2,16 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 // SPDX-FileCopyrightText: 2010-17 Simon Andrews
-#include "statistics.hpp"
+#include "statistics.hpp" // declarations
 #include "adapter_id.hpp" // for adapter_id_statistics
-#include "debug.hpp"      // for AR_REQUIRE
 #include "fastq.hpp"      // for ACGTN, fastq, ACGT
 #include "fastq_enc.hpp"  // for PHRED_OFFSET_MIN, PHRED_SCORE_MAX
-#include "simd.hpp"       // for size_t
+#include "robin_hood.hpp" // for unordered_flat_map
 #include "utilities.hpp"  // for prng_seed
 #include <algorithm>      // for max, min
+#include <array>          // for array
 #include <cstdlib>        // for size_t
+#include <functional>     // for equal_to
 #include <memory>         // for make_shared, __shared_ptr_access, __shared_...
 #include <string>         // for basic_string, string
 #include <string_view>    // for string_view
@@ -20,10 +21,12 @@ namespace adapterremoval {
 ////////////////////////////////////////////////////////////////////////////////
 
 const size_t DUPLICATION_LEVELS = 16;
-const string_vec DUPLICATION_LABELS = { "1",    "2",   "3",   "4",
-                                        "5",    "6",   "7",   "8",
-                                        "9",    ">10", ">50", ">100",
-                                        ">500", ">1k", ">5k", ">10k" };
+const std::array<std::string_view, DUPLICATION_LEVELS> DUPLICATION_LABELS = {
+  "1", "2",   "3",   "4",    "5",    "6",   "7",   "8",
+  "9", ">10", ">50", ">100", ">500", ">1k", ">5k", ">10k"
+};
+
+namespace {
 
 size_t
 duplication_level(size_t count)
@@ -47,8 +50,56 @@ duplication_level(size_t count)
   }
 }
 
+} // namespace
+
+class string_counts
+{
+  using map = robin_hood::unordered_flat_map<std::string, size_t>;
+
+public:
+  explicit string_counts(size_t max_unique_sequences)
+    : m_max_unique_sequences(max_unique_sequences)
+  {
+    m_counts.reserve(max_unique_sequences);
+  }
+
+  void add(const std::string& key)
+  {
+    m_counted++;
+    m_counted_at_max++;
+
+    const auto unique_seqs = m_counts.size();
+    if (unique_seqs >= m_max_unique_sequences) {
+      auto it = m_counts.find(key);
+      if (it != m_counts.end()) {
+        it->second++;
+      }
+    } else {
+      m_counts[key]++;
+    }
+  }
+
+  [[nodiscard]] auto counted() const { return m_counted; }
+
+  [[nodiscard]] auto counted_at_max() const { return m_counted_at_max; }
+
+  [[nodiscard]] auto begin() const { return m_counts.begin(); }
+
+  [[nodiscard]] auto end() const { return m_counts.end(); }
+
+private:
+  /** Maximum size of m_sequence_counts. */
+  size_t m_max_unique_sequences{};
+  /** Total number of sequences counted */
+  size_t m_counted{};
+  /** Number of sequences counted after max unique sequences recorded */
+  size_t m_counted_at_max{};
+  /** Map of truncated sequences to sequence counts. */
+  map m_counts{};
+};
+
 duplication_statistics::summary::summary()
-  : labels(DUPLICATION_LABELS)
+  : labels(DUPLICATION_LABELS.begin(), DUPLICATION_LABELS.end())
   , total_sequences(DUPLICATION_LEVELS)
   , unique_sequences(DUPLICATION_LEVELS)
   , unique_frac()
@@ -56,22 +107,26 @@ duplication_statistics::summary::summary()
 }
 
 duplication_statistics::duplication_statistics(size_t max_unique_sequences)
-  : m_max_unique_sequences(max_unique_sequences)
-  , m_sequence_counts()
-  , m_sequences_counted()
-  , m_sequences_counted_at_max()
+  : m_sequence_counts()
 {
-  m_sequence_counts.reserve(max_unique_sequences);
+  if (max_unique_sequences) {
+    m_sequence_counts = std::make_unique<string_counts>(max_unique_sequences);
+  }
+}
+
+duplication_statistics::~duplication_statistics()
+{
+  m_sequence_counts.reset();
 }
 
 void
 duplication_statistics::process(const fastq& read)
 {
-  if (m_max_unique_sequences) {
+  if (m_sequence_counts) {
     if (read.length() > 75) {
-      insert(read.sequence().substr(0, 50));
+      m_sequence_counts->add(read.sequence().substr(0, 50));
     } else {
-      insert(read.sequence());
+      m_sequence_counts->add(read.sequence());
     }
   }
 }
@@ -81,7 +136,7 @@ duplication_statistics::summarize() const
 {
   // Histogram of sequence duplication counts
   robin_hood::unordered_flat_map<size_t, size_t> histogram;
-  for (const auto& it : m_sequence_counts) {
+  for (const auto& it : *m_sequence_counts) {
     histogram[it.second]++;
   }
 
@@ -119,14 +174,17 @@ duplication_statistics::correct_count(size_t bin, size_t count) const
   // Adapted from
   //   https://github.com/s-andrews/FastQC/blob/v0.11.9/uk/ac/babraham/FastQC/Modules/DuplicationLevel.java#L158
 
+  const auto sequences_counted = m_sequence_counts->counted();
+  const auto sequences_counted_at_max = m_sequence_counts->counted_at_max();
+
   // See if we can bail out early
-  if (m_sequences_counted_at_max == m_sequences_counted) {
+  if (sequences_counted_at_max == sequences_counted) {
     return count;
   }
 
   // If there aren't enough sequences left to hide another sequence with this
   // count then we can also skip the calculation
-  if (m_sequences_counted - count < m_sequences_counted_at_max) {
+  if (sequences_counted - count < sequences_counted_at_max) {
     return count;
   }
 
@@ -147,9 +205,9 @@ duplication_statistics::correct_count(size_t bin, size_t count) const
   // just return that instead.
   const double limit_of_caring = 1.0 - (count / (count + 0.01));
 
-  for (size_t i = 0; i < m_sequences_counted_at_max; i++) {
-    p_not_seeing_at_limit *= ((m_sequences_counted - i) - bin) /
-                             static_cast<double>(m_sequences_counted - i);
+  for (size_t i = 0; i < sequences_counted_at_max; i++) {
+    p_not_seeing_at_limit *= ((sequences_counted - i) - bin) /
+                             static_cast<double>(sequences_counted - i);
 
     if (p_not_seeing_at_limit < limit_of_caring) {
       p_not_seeing_at_limit = 0;
@@ -159,23 +217,6 @@ duplication_statistics::correct_count(size_t bin, size_t count) const
 
   // Scale by the chance of seeing
   return count / (1 - p_not_seeing_at_limit);
-}
-
-void
-duplication_statistics::insert(const std::string& key)
-{
-  m_sequences_counted++;
-
-  const auto unique_seqs = m_sequence_counts.size();
-  if (unique_seqs >= m_max_unique_sequences) {
-    auto it = m_sequence_counts.find(key);
-    if (it != m_sequence_counts.end()) {
-      it->second++;
-    }
-  } else {
-    m_sequence_counts[key]++;
-    m_sequences_counted_at_max++;
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

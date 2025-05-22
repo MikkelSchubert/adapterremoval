@@ -7,6 +7,7 @@
 #include "sequence_sets.hpp" // for sample_set
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <string>            // for string
+#include <string_view>       // for string_view
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g

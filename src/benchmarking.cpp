@@ -4,14 +4,18 @@
 #include "debug.hpp"        // for AR_REQUIRE
 #include "logging.hpp"      // for log
 #include "mathutils.hpp"    // for arithmetic_mean, standard_deviation
-#include "simd.hpp"         // for supported
 #include "strutils.hpp"     // for to_lower
 #include <algorithm>        // for find, accumulate
 #include <array>            // for array
 #include <cmath>            // for round
+#include <cstdint>          // for uint64_t
 #include <iomanip>          // for fixed, setsetprecision
 #include <iostream>         // for cout
 #include <numeric>          // for accumulate
+#include <sstream>          // for ostringstream
+#include <string>           // for string, to_string
+#include <utility>          // for move
+#include <vector>           // for vector
 
 namespace adapterremoval {
 
@@ -32,7 +36,7 @@ const size_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
 
 } // namespace
 
-benchmark_toggles::benchmark_toggles(string_vec keys)
+benchmark_toggles::benchmark_toggles(std::vector<std::string> keys)
   : m_toggles(std::move(keys))
   , m_enabled(m_toggles.size(), false)
   , m_defaults()
@@ -40,7 +44,7 @@ benchmark_toggles::benchmark_toggles(string_vec keys)
 }
 
 bool
-benchmark_toggles::update_toggles(const string_vec& keys)
+benchmark_toggles::update_toggles(const std::vector<std::string>& keys)
 {
   bool any_errors = false;
   m_defaults = keys.empty();
@@ -73,7 +77,7 @@ benchmark_toggles::is_set(const std::string& key) const
   return m_enabled.at(it - m_toggles.begin());
 }
 
-benchmarker::benchmarker(std::string desc, string_vec toggles)
+benchmarker::benchmarker(std::string desc, std::vector<std::string> toggles)
   : m_description(std::move(desc))
   , m_toggles(std::move(toggles))
 {
@@ -90,7 +94,9 @@ benchmarker::run_if_toggled(const benchmark_toggles& toggles)
 
 /** Called before `setup` to perform any per batch setup */
 void
-benchmarker::setup() {};
+benchmarker::setup()
+{
+}
 
 strategy
 benchmarker::enabled(const benchmark_toggles& toggles) const

@@ -4,25 +4,25 @@
 // SPDX-FileCopyrightText: 2010-17 Simon Andrews
 #pragma once
 
-#include "commontypes.hpp" // for string_vec
-#include "counts.hpp"      // for counts, indexed_count, indexed_counts, rates
-#include "fastq.hpp"       // for ACGTN, ACGT
-#include "robin_hood.hpp"  // for unordered_flat_map
-#include <cstdint>         // for uint64_t
-#include <cstdlib>         // for size_t
-#include <memory>          // for shared_ptr
-#include <random>          // for mt19937
-#include <string>          // for string
-#include <vector>          // for vector
+#include "counts.hpp"    // for counts, indexed_count, indexed_counts, rates
+#include "fastq_enc.hpp" // for ACGTN, ACGT
+#include <cstdint>       // for uint64_t
+#include <cstdlib>       // for size_t
+#include <memory>        // for shared_ptr
+#include <random>        // for mt19937
+#include <string>        // for string
+#include <vector>        // for vector
 
 namespace adapterremoval {
 
+class adapter_id_statistics;
 class demux_statistics;
 class duplication_statistics;
 class fastq_statistics;
+class fastq;
 class statistics;
+class string_counts;
 class trimming_statistics;
-class adapter_id_statistics;
 
 using demux_stats_ptr = std::shared_ptr<demux_statistics>;
 using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
@@ -74,7 +74,7 @@ public:
     summary();
 
     //! X-axis labels; the number of duplicates : 1, 2, .., >10, >50, >100, ..
-    string_vec labels;
+    std::vector<std::string> labels;
     //! Fraction of sequences for X-axis label
     rates total_sequences;
     //! Fraction of sequences for X-axis label after de-duplication
@@ -84,29 +84,24 @@ public:
   };
 
   explicit duplication_statistics(size_t max_unique_sequences);
+  ~duplication_statistics();
+
+  duplication_statistics(const duplication_statistics&) = delete;
+  duplication_statistics(duplication_statistics&&) = delete;
+  duplication_statistics& operator=(const duplication_statistics&) = delete;
+  duplication_statistics& operator=(duplication_statistics&&) = delete;
 
   /** **/
   void process(const fastq& read);
 
   summary summarize() const;
 
-  size_t max_unique() const { return m_max_unique_sequences; }
-
 private:
-  void insert(const std::string& key);
-
   /** Attempts to correct the number of observations for a given bin */
   double correct_count(size_t bin, size_t count) const;
 
-  using string_counts = robin_hood::unordered_flat_map<std::string, size_t>;
-
-  /** Maximum size of m_sequence_counts. */
-  size_t m_max_unique_sequences;
   /** Map of truncated sequences to sequence counts. */
-  string_counts m_sequence_counts;
-
-  size_t m_sequences_counted;
-  size_t m_sequences_counted_at_max;
+  std::unique_ptr<string_counts> m_sequence_counts;
 };
 
 /** Class used to collect statistics about pre/post-processed FASTQ reads. */

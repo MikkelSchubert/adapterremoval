@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "read_group.hpp" // declarations
-#include "debug.hpp"      // for AR_REQUIRE
-#include "strutils.hpp"   // for string_vec, indent_lines
-#include <stdexcept>      // for invalid_argument
-#include <string>         // for to_string
-#include <string_view>    // for string_view
+#include "read_group.hpp"  // declarations
+#include "commontypes.hpp" // for barcode_orientation
+#include "debug.hpp"       // for AR_REQUIRE
+#include "strutils.hpp"    // for string_vec, indent_lines
+#include <ostream>         // for ostream
+#include <stdexcept>       // for invalid_argument
+#include <string>          // for to_string
+#include <string_view>     // for string_view
+#include <vector>          // for vector
 
 namespace adapterremoval {
 

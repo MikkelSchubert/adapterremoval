@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "commontypes.hpp" // for fastq_vec
-#include "errors.hpp"      // for fastq_error
-#include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
-#include "fastq_enc.hpp"   // for FASTQ_ENCODING_33
-#include "linereader.hpp"  // for vec_reader
-#include "strutils.hpp"    // for string_vec
-#include "testing.hpp"     // for TEST_CASE, REQUIRE, ...
-#include <cstddef>         // for size_t
-#include <limits>          // for numeric_limits
-#include <string>          // for operator==, basic_string, string, operator+
-#include <utility>         // for operator==, pair, move
-#include <vector>          // for vector, vector<>::const_iterator
+#include "errors.hpp"     // for fastq_error
+#include "fastq.hpp"      // for fastq, fastq::ntrimmed, ACGTN, ACGT
+#include "fastq_enc.hpp"  // for FASTQ_ENCODING_33
+#include "linereader.hpp" // for vec_reader
+#include "strutils.hpp"   // for string_vec
+#include "testing.hpp"    // for TEST_CASE, REQUIRE, ...
+#include <cstddef>        // for size_t
+#include <limits>         // for numeric_limits
+#include <string>         // for operator==, basic_string, string, operator+
+#include <string_view>    // for basic_string_view, operator==
+#include <utility>        // for operator==, pair, move
+#include <vector>         // for vector, vector<>::const_iterator
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g
@@ -1332,13 +1332,14 @@ TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
 
 TEST_CASE("guess_mate_separator__empty_lists", "[fastq::guess_mate_separator]")
 {
-  REQUIRE(fastq::guess_mate_separator(fastq_vec(), fastq_vec()) == '/');
+  REQUIRE(fastq::guess_mate_separator(std::vector<fastq>(),
+                                      std::vector<fastq>()) == '/');
 }
 
 TEST_CASE("guess_mate_separator asserts on mismatching input lengths")
 {
-  const fastq_vec reads_1{ fastq("foo", "") };
-  const fastq_vec reads_2;
+  const std::vector<fastq> reads_1{ fastq("foo", "") };
+  const std::vector<fastq> reads_2;
 
   REQUIRE_THROWS_AS(fastq::guess_mate_separator(reads_1, reads_2),
                     assert_failed);
@@ -1349,7 +1350,7 @@ TEST_CASE("guess_mate_separator asserts on mismatching input lengths")
 
 TEST_CASE("guess_mate_separator should default to / if there are no separators")
 {
-  const fastq_vec reads{ fastq("foo", "") };
+  const std::vector<fastq> reads{ fastq("foo", "") };
 
   REQUIRE(fastq::guess_mate_separator(reads, reads) == '/');
 }
@@ -1358,48 +1359,48 @@ TEST_CASE("guess_mate_separator should return valid separator")
 {
   const std::string name = "foo";
   const char sep = GENERATE('/', '.', ':');
-  const fastq_vec reads_1{ fastq(name + sep + '1', "A") };
-  const fastq_vec reads_2{ fastq(name + sep + '2', "A") };
+  const std::vector<fastq> reads_1{ fastq(name + sep + '1', "A") };
+  const std::vector<fastq> reads_2{ fastq(name + sep + '2', "A") };
 
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == sep);
 }
 
 TEST_CASE("guess_mate_separator fails on mismatching separators")
 {
-  const fastq_vec reads_1{ fastq("foo/1", "") };
-  const fastq_vec reads_2{ fastq("foo.2", "") };
+  const std::vector<fastq> reads_1{ fastq("foo/1", "") };
+  const std::vector<fastq> reads_2{ fastq("foo.2", "") };
 
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
 }
 
 TEST_CASE("guess_mate_separator fails on mismatching mates")
 {
-  const fastq_vec reads_1{ fastq("foo/1", "A") };
-  const fastq_vec reads_2{ fastq("foo/1", "A") };
+  const std::vector<fastq> reads_1{ fastq("foo/1", "A") };
+  const std::vector<fastq> reads_2{ fastq("foo/1", "A") };
 
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
 }
 
 TEST_CASE("guess_mate_separator returns separator for partial information")
 {
-  const fastq_vec reads_1{ fastq("foo/1", "") };
-  const fastq_vec reads_2{ fastq("foo", "") };
+  const std::vector<fastq> reads_1{ fastq("foo/1", "") };
+  const std::vector<fastq> reads_2{ fastq("foo", "") };
 
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == '/');
 }
 
 TEST_CASE("guess_mate_separator fails on inconsistent data")
 {
-  const fastq_vec reads_1{ fastq("foo/1", ""), fastq("foo.1", "") };
-  const fastq_vec reads_2{ fastq("foo/2", ""), fastq("foo.2", "") };
+  const std::vector<fastq> reads_1{ fastq("foo/1", ""), fastq("foo.1", "") };
+  const std::vector<fastq> reads_2{ fastq("foo/2", ""), fastq("foo.2", "") };
 
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
 }
 
 TEST_CASE("guess_mate_separator fails on malformed data")
 {
-  const fastq_vec reads_1{ fastq("foo/1", ""), fastq("foo/1", "") };
-  const fastq_vec reads_2{ fastq("foo/2", ""), fastq("foox", "") };
+  const std::vector<fastq> reads_1{ fastq("foo/1", ""), fastq("foo/1", "") };
+  const std::vector<fastq> reads_2{ fastq("foo/2", ""), fastq("foox", "") };
 
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
 }
@@ -1549,10 +1550,11 @@ TEST_CASE("normalize_paired_reads__throws_if_mate_is_misnumbered",
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/3", "ACGT", "!!#$");
-  REQUIRE_THROWS_WITH(fastq::normalize_paired_reads(mate1, mate2),
-                      Catch::Contains("AdapterRemoval expected the mate "
-                                      "numbers (1 or 2) to be found at the end "
-                                      "of the read name"));
+  REQUIRE_THROWS_WITH(
+    fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR),
+    Catch::Contains("AdapterRemoval expected the mate "
+                    "numbers (1 or 2) to be found at the end "
+                    "of the read name"));
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_same_mate_numbers",
@@ -1560,21 +1562,23 @@ TEST_CASE("normalize_paired_reads__throws_if_same_mate_numbers",
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/1", "ACGT", "!!#$");
-  REQUIRE_THROWS_MESSAGE(fastq::normalize_paired_reads(mate1, mate2),
-                         fastq_error,
-                         "Inconsistent mate numbering; please verify data:\n\n"
-                         "Read 1 identified as mate 1: Mate/1\nRead 2 "
-                         "identified as mate 1: Mate/1");
+  REQUIRE_THROWS_MESSAGE(
+    fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR),
+    fastq_error,
+    "Inconsistent mate numbering; please verify data:\n\n"
+    "Read 1 identified as mate 1: Mate/1\nRead 2 "
+    "identified as mate 1: Mate/1");
 }
 
 TEST_CASE("normalize_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
-  REQUIRE_THROWS_MESSAGE(fastq::normalize_paired_reads(mate1, mate2),
-                         fastq_error,
-                         "Could not normalize paired read names:\n"
-                         " - '@Mate'\n - '@WrongName'");
+  REQUIRE_THROWS_MESSAGE(
+    fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR),
+    fastq_error,
+    "Could not normalize paired read names:\n"
+    " - '@Mate'\n - '@WrongName'");
 }
 
 TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
@@ -1583,7 +1587,7 @@ TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
   fastq mate1 = fastq(name, "GCTAA", "$!@#$");
   fastq mate2 = fastq(name, "ACGTA", "@$!$#");
 
-  fastq::normalize_paired_reads(mate1, mate2);
+  fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR);
 
   const auto name_s = std::string("@") + name;
   REQUIRE(mate1.header() == name_s);

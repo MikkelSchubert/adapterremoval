@@ -3,17 +3,18 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "scheduler.hpp"     // for chunk_vec, chunk_ptr, threadstate, analyt...
-#include "sequence_sets.hpp" // for adapter_set
-#include "statistics.hpp"    // for trimming_statistics, trim_stats_ptr
-#include <cstddef>           // for size_t
-#include <vector>            // for vector
+#include "scheduler.hpp" // for chunk_vec, chunk_ptr, threadstate, analyt...
+#include <cstddef>       // for size_t
+#include <memory>        // for shared_ptr
 
 namespace adapterremoval {
 
-enum class read_file : size_t;
 class sample_output_files;
+class trimming_statistics;
 class userconfig;
+enum class read_type;
+
+using trim_stats_ptr = std::shared_ptr<trimming_statistics>;
 
 class reads_processor : public analytical_step
 {

@@ -2,9 +2,11 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include <cstddef>     // for size_t
 #include <ostream>     // for ostream
 #include <string>      // for string
 #include <string_view> // for string_view
+#include <utility>     // for pair
 #include <vector>      // for vector
 
 namespace adapterremoval {

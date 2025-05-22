@@ -7,21 +7,25 @@
 #include "debug.hpp"         // for AR_REQUIRE
 #include "errors.hpp"        // for io_error
 #include "fastq.hpp"         // for ACGT, fastq, ACGT::values
+#include "fastq_enc.hpp"     // for ACGT, ACGTN
 #include "json.hpp"          // for json_dict, json_dict_ptr, json_list
 #include "logging.hpp"       // for log_stream, error
 #include "main.hpp"          // for NAME, VERSION
 #include "managed_io.hpp"    // for managed_writer
 #include "output.hpp"        // for sample_output_files
 #include "reports.hpp"       // for write_json_report
+#include "sequence.hpp"      // for dna_sequence
 #include "sequence_sets.hpp" // for adapter_set
-#include "simd.hpp"          // for size_t
 #include "statistics.hpp"    // for fastq_stats_ptr, trimming_statistics
 #include "strutils.hpp"      // for string_vec, to_lower, indent_lines
 #include "userconfig.hpp"    // for userconfig, output_files, output_sampl...
-#include <cerrno>            // for errno
+#include <array>             // for array
+#include <cstdint>           // for int64_t
 #include <cstring>           // for size_t, strerror
 #include <memory>            // for __shared_ptr_access, shared_ptr, make_...
+#include <sstream>           // for basic_ostringstream, basic_ostream, bas...
 #include <string>            // for basic_string, string, operator+, char_...
+#include <string_view>       // for string_view, operator!=, operator==
 #include <utility>           // for pair
 #include <vector>            // for vector
 
@@ -254,11 +258,11 @@ write_report_demultiplexing(const userconfig& config,
 
     const auto samples = demultiplexing->dict("samples");
     for (size_t i = 0; i < demux.samples.size(); ++i) {
-      const auto sample = samples->dict(config.samples.at(i).name());
+      const auto sample = samples->dict(config.samples->at(i).name());
       const auto& stats = *sample_stats.trimming.at(i);
       const auto& files = out_files.get_sample(i);
 
-      const auto& barcodes = config.samples.at(i);
+      const auto& barcodes = config.samples->at(i);
       const auto barcode_list = sample->list("barcodes");
       for (size_t j = 0; j < barcodes.size(); ++j) {
         const auto it = barcodes.at(j);
@@ -442,7 +446,7 @@ write_report_processing(const userconfig& config,
     dict->u64("reads", reads);
     dict->u64("bases", bases);
 
-    const auto adapters = config.samples.adapters().to_read_orientation();
+    const auto adapters = config.samples->adapters().to_read_orientation();
     const auto adapter_list = dict->list("adapter_list");
     for (size_t i = 0; i < adapters.size(); ++i) {
       const auto adapter = adapter_list->inline_dict();

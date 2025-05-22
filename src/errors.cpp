@@ -3,7 +3,6 @@
 #include "errors.hpp"   // declarations
 #include "strutils.hpp" // for log_escape
 #include <array>        // for array
-#include <cerrno>       // for errno
 #include <cstdio>       // for sys_errlist, sys_nerr
 #include <cstring>      // for strerror_r
 #include <exception>    // for exception

@@ -5,12 +5,14 @@
 #include "commontypes.hpp"   // for merge_strategy
 #include "debug.hpp"         // for AR_REQUIRE
 #include "fastq.hpp"         // for fastq
+#include "fastq_enc.hpp"     // for PHRED_OFFSET_MIN
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for size_t, get_compare_subsequences_func
 #include <algorithm>         // for max, min
 #include <limits>            // for numeric_limits
 #include <ostream>           // for ostream
 #include <string>            // for string, operator+
+#include <string_view>       // for string_view
 #include <utility>           // for swap, pair
 
 namespace adapterremoval {

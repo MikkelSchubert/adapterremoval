@@ -7,8 +7,6 @@
 
 namespace adapterremoval {
 
-using std::size_t;
-
 namespace simd {
 
 enum class instruction_set

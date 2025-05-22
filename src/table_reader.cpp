@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "table_reader.hpp" // declarations
-#include "debug.hpp"
-#include "errors.hpp"     // for parsing_error
-#include "linereader.hpp" // for line_reader
-#include "strutils.hpp"   // for trim_ascii_whitespace
-#include <sstream>
-#include <string_view> // for string_view
+#include "debug.hpp"        // for AR_REQUIRE
+#include "errors.hpp"       // for io_error, parsing_error
+#include "linereader.hpp"   // for line_reader_base
+#include "strutils.hpp"     // for trim_ascii_whitespace
+#include <sstream>          // for ostringstream
+#include <string_view>      // for operator<<, string_view
+#include <utility>          // for move
 
 namespace adapterremoval {
 

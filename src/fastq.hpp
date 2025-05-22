@@ -3,18 +3,17 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "fastq_enc.hpp" // for FASTQ_ENCODING_33, MATE_SEPARATOR
-#include <array>         // for array
-#include <cstddef>       // for size_t
-#include <iosfwd>        // for ostream
-#include <string>        // for string
-#include <string_view>   // for string_view
-#include <utility>       // for pair
-#include <vector>        // for vector
+#include <cstddef>     // for size_t
+#include <iosfwd>      // for ostream
+#include <string>      // for string
+#include <string_view> // for string_view
+#include <utility>     // for pair
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
 class buffer;
+class fastq_encoding;
 class line_reader_base;
 
 /**
@@ -32,7 +31,6 @@ public:
    * @param header FASTQ header, including read name and meta information.
    * @param sequence nucleotide sequence containing the letters "acgtnACGTN."
    * @param qualities phred encoded quality scores
-   * @param encoding the encoding used for the quality scores.
    *
    * Nucleotides are converted to uppercase, and dots are replaced with N.
    * Phred scores are converted to to Phred+33 scores, if not already Phred+33.
@@ -40,10 +38,13 @@ public:
    * The quality scores are expected to be in the range of 0 .. 40, unless
    * the format is Phred+33, in which case the range 0 .. 41 is accepted.
    */
+  fastq(std::string_view header, std::string sequence, std::string qualities);
+
+  /**  Create a new FASTQ record (as above) using the quality encoding */
   fastq(std::string_view header,
         std::string sequence,
         std::string qualities,
-        const fastq_encoding& encoding = FASTQ_ENCODING_33);
+        const fastq_encoding& encoding);
 
   /**
    * Create FASTQ record from a sequence alone.
@@ -180,7 +181,7 @@ public:
    **/
   static void normalize_paired_reads(fastq& mate1,
                                      fastq& mate2,
-                                     char mate_separator = MATE_SEPARATOR);
+                                     char mate_separator);
 
   /**
    * Finalizes read, validates sequence and transforms qualities. This function
@@ -205,52 +206,6 @@ private:
 
   //! Needs access to merge sequence/qualities to in-place
   friend class sequence_merger;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ACGT
-{
-  using value_type = char;
-
-  //! The number of possible index values
-  static constexpr size_t indices = 4;
-  //! Nucleotides supported by hashing function
-  static constexpr std::array<value_type, 4> values{ 'A', 'C', 'G', 'T' };
-
-  /**
-   * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
-   * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
-   * only) will result in hash collisions.
-   */
-  static constexpr auto to_index(value_type nt) { return (nt >> 1) & 0x3; }
-
-  /**
-   * Inverse of to_index. Only values in the range 0 to 3 are allowed.
-   */
-  static constexpr value_type to_value(size_t idx) { return "ACTG"[idx]; }
-};
-
-struct ACGTN
-{
-  using value_type = char;
-
-  //! The number of possible index values
-  static constexpr size_t indices = 8;
-  //! Nucleotides supported by hashing function
-  static constexpr std::array<value_type, 5> values{ 'A', 'C', 'G', 'T', 'N' };
-
-  /**
-   * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
-   * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
-   * only) will result in hash collisions.
-   */
-  static constexpr auto to_index(value_type nt) { return nt & 0x7; }
-
-  /**
-   * Inverse of to_index. Only values in the range 0 to 4 are allowed.
-   */
-  static constexpr value_type to_value(size_t idx) { return "-A-CT-NG"[idx]; }
 };
 
 using fastq_pair = std::pair<fastq, fastq>;

@@ -8,6 +8,7 @@
 #include "linereader.hpp" // for line_reader_base
 #include "strutils.hpp"   // for log_escape
 #include <algorithm>      // for reverse, count, max, min
+#include <cstdint>        // for int64_t
 #include <numeric>        // for accumulate
 #include <sstream>        // for ostringstream
 #include <string_view>    // for string_view
@@ -151,6 +152,13 @@ fastq::fastq()
   : m_header("@")
   , m_sequence()
   , m_qualities()
+{
+}
+
+fastq::fastq(std::string_view header,
+             std::string sequence,
+             std::string qualities)
+  : fastq(header, sequence, qualities, FASTQ_ENCODING_33)
 {
 }
 

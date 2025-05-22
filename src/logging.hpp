@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include <cstddef> // for size_t
 #include <sstream> // for ostringstream
 #include <string>  // for string
 

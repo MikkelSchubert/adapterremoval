@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "main.hpp"
+#include "main.hpp"       // declarations
 #include "argparse.hpp"   // for parse_result, parse_result::error, parse_...
 #include "debug.hpp"      // for AR_FAIL
 #include "logging.hpp"    // for log_stream, error
@@ -10,6 +10,7 @@
 #include <cstdlib>        // for abort, size_t
 #include <exception>      // for set_terminate
 #include <ios>            // for ios_base
+#include <vector>         // for vector
 
 namespace adapterremoval {
 

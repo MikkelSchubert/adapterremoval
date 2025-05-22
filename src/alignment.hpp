@@ -7,6 +7,8 @@
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
 #include <iosfwd>        // for ostream
 #include <string>        // for string
+#include <string_view>   // for string_view
+#include <vector>        // for vector
 
 namespace adapterremoval {
 

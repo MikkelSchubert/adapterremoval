@@ -2,14 +2,23 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "alignment.hpp"         // for alignment_info, sequence_aligner
 #include "benchmarking.hpp"      // for benchmarker
+#include "debug.hpp"             // for AR_REQUIRE
 #include "fastq.hpp"             // for fastq
+#include "fastq_enc.hpp"         // for FASTQ_ENCODING_33
+#include "linereader.hpp"        // for vec_reader
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "logging.hpp"           // for log
 #include "sequence_sets.hpp"     // for adapter_set
+#include "simd.hpp"              // for name, supported, instruction_set (p...
 #include "statistics.hpp"        // for fastq_statistics
 #include "strutils.hpp"          // for to_lower
 #include "userconfig.hpp"        // for userconfig
-#include <cstdint>               // for size_t
+#include <cstddef>               // for size_t
+#include <cstdint>               // for uint64_t
+#include <limits>                // for numeric_limits
+#include <memory>                // for unique_ptr
+#include <string>                // for string+, char_traits
+#include <utility>               // for move
 #include <vector>                // for vector
 
 namespace adapterremoval {
@@ -98,15 +107,15 @@ public:
     set_required();
   }
 
-  const fastq_vec& records_1() const { return m_records_1; }
+  const std::vector<fastq>& records_1() const { return m_records_1; }
 
-  const fastq_vec& records_2() const { return m_records_2; }
+  const std::vector<fastq>& records_2() const { return m_records_2; }
 
 protected:
   void setup() override
   {
-    m_records_1 = fastq_vec();
-    m_records_2 = fastq_vec();
+    m_records_1 = std::vector<fastq>();
+    m_records_2 = std::vector<fastq>();
   }
 
   void execute() override
@@ -133,14 +142,15 @@ protected:
 private:
   const string_vec& m_lines_1;
   const string_vec& m_lines_2;
-  fastq_vec m_records_1{};
-  fastq_vec m_records_2{};
+  std::vector<fastq> m_records_1{};
+  std::vector<fastq> m_records_2{};
 };
 
 class reverse_complement_benchmarker : public benchmarker
 {
 public:
-  reverse_complement_benchmarker(fastq_vec records_1, fastq_vec records_2)
+  reverse_complement_benchmarker(std::vector<fastq> records_1,
+                                 std::vector<fastq> records_2)
     : benchmarker("reverse complement", { "revcompl" })
     , m_records_1(std::move(records_1))
     , m_records_2(std::move(records_2))
@@ -160,14 +170,15 @@ protected:
   }
 
 private:
-  fastq_vec m_records_1{};
-  fastq_vec m_records_2{};
+  std::vector<fastq> m_records_1{};
+  std::vector<fastq> m_records_2{};
 };
 
 class complexity_benchmarker : public benchmarker
 {
 public:
-  complexity_benchmarker(const fastq_vec& records_1, const fastq_vec& records_2)
+  complexity_benchmarker(const std::vector<fastq>& records_1,
+                         const std::vector<fastq>& records_2)
     : benchmarker("read complexity", { "complexity" })
     , m_records_1(records_1)
     , m_records_2(records_2)
@@ -185,7 +196,7 @@ protected:
   }
 
 private:
-  static double complexity(const fastq_vec& records)
+  static double complexity(const std::vector<fastq>& records)
   {
     double total = 0.0;
     for (const auto& it : records) {
@@ -195,8 +206,8 @@ private:
     return total;
   }
 
-  const fastq_vec& m_records_1;
-  const fastq_vec& m_records_2;
+  const std::vector<fastq>& m_records_1;
+  const std::vector<fastq>& m_records_2;
 };
 
 class trimming_benchmarker : public benchmarker
@@ -204,8 +215,8 @@ class trimming_benchmarker : public benchmarker
 public:
   trimming_benchmarker(const std::string& desc,
                        const std::string& toggle,
-                       const fastq_vec& records_1,
-                       const fastq_vec& records_2)
+                       const std::vector<fastq>& records_1,
+                       const std::vector<fastq>& records_2)
     : benchmarker(desc, { "trim", "trim:" + toggle })
     , m_records_1(records_1)
     , m_records_2(records_2)
@@ -228,26 +239,26 @@ protected:
     blackbox(m_trimmed_records_2);
   }
 
-  virtual void trim(fastq_vec& reads) const = 0;
+  virtual void trim(std::vector<fastq>& reads) const = 0;
 
 private:
-  const fastq_vec& m_records_1;
-  const fastq_vec& m_records_2;
-  fastq_vec m_trimmed_records_1{};
-  fastq_vec m_trimmed_records_2{};
+  const std::vector<fastq>& m_records_1;
+  const std::vector<fastq>& m_records_2;
+  std::vector<fastq> m_trimmed_records_1{};
+  std::vector<fastq> m_trimmed_records_2{};
 };
 
 class basic_trimming_benchmarker : public trimming_benchmarker
 {
 public:
-  basic_trimming_benchmarker(const fastq_vec& records_1,
-                             const fastq_vec& records_2)
+  basic_trimming_benchmarker(const std::vector<fastq>& records_1,
+                             const std::vector<fastq>& records_2)
     : trimming_benchmarker("basic trimming", "basic", records_1, records_2)
   {
   }
 
 protected:
-  void trim(fastq_vec& reads) const override
+  void trim(std::vector<fastq>& reads) const override
   {
     for (auto& read : reads) {
       read.trim_trailing_bases(true, 2);
@@ -258,14 +269,14 @@ protected:
 class mott_trimming_benchmarker : public trimming_benchmarker
 {
 public:
-  mott_trimming_benchmarker(const fastq_vec& records_1,
-                            const fastq_vec& records_2)
+  mott_trimming_benchmarker(const std::vector<fastq>& records_1,
+                            const std::vector<fastq>& records_2)
     : trimming_benchmarker("mott trimming", "mott", records_1, records_2)
   {
   }
 
 protected:
-  void trim(fastq_vec& reads) const override
+  void trim(std::vector<fastq>& reads) const override
   {
     for (auto& read : reads) {
       read.mott_trimming(0.05);
@@ -276,14 +287,14 @@ protected:
 class window_trimming_benchmarker : public trimming_benchmarker
 {
 public:
-  window_trimming_benchmarker(const fastq_vec& records_1,
-                              const fastq_vec& records_2)
+  window_trimming_benchmarker(const std::vector<fastq>& records_1,
+                              const std::vector<fastq>& records_2)
     : trimming_benchmarker("window trimming", "window", records_1, records_2)
   {
   }
 
 protected:
-  void trim(fastq_vec& reads) const override
+  void trim(std::vector<fastq>& reads) const override
   {
     for (auto& read : reads) {
       read.trim_windowed_bases(true, 2, 0.1);
@@ -295,8 +306,8 @@ protected:
 class fastq_statistics_benchmarker : public benchmarker
 {
 public:
-  fastq_statistics_benchmarker(const fastq_vec& records_1,
-                               const fastq_vec& records_2)
+  fastq_statistics_benchmarker(const std::vector<fastq>& records_1,
+                               const std::vector<fastq>& records_2)
     : benchmarker("read statistics", { "stats" })
     , m_records_1(records_1)
     , m_records_2(records_2)
@@ -310,7 +321,7 @@ public:
   }
 
 private:
-  static void collect_statistics(const fastq_vec& records)
+  static void collect_statistics(const std::vector<fastq>& records)
   {
     fastq_statistics stats;
     for (const auto& it : records) {
@@ -320,8 +331,8 @@ private:
     blackbox(stats);
   }
 
-  const fastq_vec& m_records_1;
-  const fastq_vec& m_records_2;
+  const std::vector<fastq>& m_records_1;
+  const std::vector<fastq>& m_records_2;
 };
 
 /** Base-class for benchmarking SE/PE alignments */
@@ -372,12 +383,12 @@ class benchmarker_se_alignment : public alignment_benchmarker
 {
 public:
   benchmarker_se_alignment(const userconfig& config,
-                           const fastq_vec& reads,
+                           const std::vector<fastq>& reads,
                            const simd::instruction_set is)
     : alignment_benchmarker("se", is)
     , m_config(config)
     , m_reads(reads)
-    , m_adapters(config.samples.adapters())
+    , m_adapters(config.samples->adapters())
     , m_aligner(m_adapters, is)
   {
   }
@@ -401,7 +412,7 @@ protected:
 
 private:
   const userconfig& m_config;
-  const fastq_vec& m_reads;
+  const std::vector<fastq>& m_reads;
   const adapter_set m_adapters;
   sequence_aligner m_aligner;
 };
@@ -411,14 +422,14 @@ class pe_alignment_benchmarker : public alignment_benchmarker
 {
 public:
   pe_alignment_benchmarker(const userconfig& config,
-                           const fastq_vec& mate_1,
-                           const fastq_vec& mate_2,
+                           const std::vector<fastq>& mate_1,
+                           const std::vector<fastq>& mate_2,
                            const simd::instruction_set is)
     : alignment_benchmarker("pe", is)
     , m_config(config)
     , m_mate_1(mate_1)
     , m_mate_2(mate_2)
-    , m_adapters(config.samples.adapters())
+    , m_adapters(config.samples->adapters())
     , m_aligner(m_adapters, is)
   {
   }
@@ -461,9 +472,9 @@ protected:
 
 private:
   const userconfig& m_config;
-  const fastq_vec& m_mate_1;
-  const fastq_vec& m_mate_2;
-  fastq_vec m_mate_2_reversed{};
+  const std::vector<fastq>& m_mate_1;
+  const std::vector<fastq>& m_mate_2;
+  std::vector<fastq> m_mate_2_reversed{};
   adapter_set m_adapters;
   sequence_aligner m_aligner;
 };

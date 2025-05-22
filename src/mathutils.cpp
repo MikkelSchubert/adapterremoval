@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "mathutils.hpp" // declarations
 #include "debug.hpp"     // for AR_REQUIRES
+#include <algorithm>     // for min
 #include <array>         // for array
 #include <cmath>         // for sqrt
 #include <numeric>       // for accumulate

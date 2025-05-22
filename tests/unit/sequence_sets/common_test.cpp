@@ -5,6 +5,7 @@
 #include "sequence_sets.hpp" // for read_group
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <stdexcept>         // for invalid_argument
+#include <string>            // for string==
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
 

@@ -3,7 +3,9 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <string> // for string
+#include <array>   // for array
+#include <cstddef> // for size_t
+#include <string>  // for string
 
 namespace adapterremoval {
 
@@ -90,5 +92,51 @@ static const fastq_encoding FASTQ_ENCODING_33{ quality_encoding::phred_33 };
 static const fastq_encoding FASTQ_ENCODING_64{ quality_encoding::phred_64 };
 static const fastq_encoding FASTQ_ENCODING_SAM{ quality_encoding::sam };
 static const fastq_encoding FASTQ_ENCODING_SOLEXA{ quality_encoding::solexa };
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ACGT
+{
+  using value_type = char;
+
+  //! The number of possible index values
+  static constexpr size_t indices = 4;
+  //! Nucleotides supported by hashing function
+  static constexpr std::array<value_type, 4> values{ 'A', 'C', 'G', 'T' };
+
+  /**
+   * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', returning
+   * numbers in the range 0-3. Passing characters other than "ACGT" (uppercase
+   * only) will result in hash collisions.
+   */
+  static constexpr auto to_index(value_type nt) { return (nt >> 1) & 0x3; }
+
+  /**
+   * Inverse of to_index. Only values in the range 0 to 3 are allowed.
+   */
+  static constexpr value_type to_value(size_t idx) { return "ACTG"[idx]; }
+};
+
+struct ACGTN
+{
+  using value_type = char;
+
+  //! The number of possible index values
+  static constexpr size_t indices = 8;
+  //! Nucleotides supported by hashing function
+  static constexpr std::array<value_type, 5> values{ 'A', 'C', 'G', 'T', 'N' };
+
+  /**
+   * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
+   * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
+   * only) will result in hash collisions.
+   */
+  static constexpr auto to_index(value_type nt) { return nt & 0x7; }
+
+  /**
+   * Inverse of to_index. Only values in the range 0 to 4 are allowed.
+   */
+  static constexpr value_type to_value(size_t idx) { return "-A-CT-NG"[idx]; }
+};
 
 } // namespace adapterremoval
