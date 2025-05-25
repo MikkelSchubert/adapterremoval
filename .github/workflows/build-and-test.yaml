@@ -18,19 +18,15 @@ jobs:
         include:
           - os: ubuntu-latest
             cxx: g++
-            coverage: "true"
           - os: ubuntu-latest
             cxx: clang++
-            coverage: "false"
           - os: macos-latest
             cxx: clang++
-            coverage: "false"
       # Do not auto-cancel other runners if one fails
       fail-fast: false
 
     env:
       CXX: ${{ matrix.cxx }}
-      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
       UV_SYSTEM_PYTHON: 1
 
     steps:
@@ -78,10 +74,10 @@ jobs:
         run: uv pip install meson ninja jsonschema sphinx
 
       - name: setup
-        run: make setup DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
+        run: make setup DEBUG=true SANITIZE=true
 
       - name: compile
-        run: make executables DEBUG=true SANITIZE=true COVERAGE=${{ matrix.coverage }}
+        run: make executables DEBUG=true SANITIZE=true
 
       - name: install
         run: make install DESTDIR=${PWD}/install
@@ -89,29 +85,8 @@ jobs:
       - name: examples
         run: make -C examples EXE=${PWD}/build/src/adapterremoval3
 
-      - name: regression tests
+      - name: tests
         run: make regression-tests
-
-      # Unit tests are run last to enable cleanup of coverage data from other
-      # actions before running coveralls
-      - name: unit tests
-        run: |
-          find . -name '*.gcda' -print -delete
-          make unit-tests
-
-      - name: coveralls
-        if: ${{ matrix.coverage == 'true' && github.event_name == 'push' }}
-        run: |
-          sudo apt-get install -y gcovr
-          uv pip install cpp-coveralls
-          coveralls \
-            --exclude build/src/reports_template_html.cpp \
-            --exclude build/src/reports_template_html.hpp \
-            --exclude src/robin_hood.hpp \
-            --exclude tests/unit/catch.hpp \
-            --build-root build \
-            --root . \
-            --gcov-options '\-lpbc'
 
       - name: CCache cleanup
       # Manual ccache cleanup, using the ccache-action default max size

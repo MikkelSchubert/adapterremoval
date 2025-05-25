@@ -1,6 +1,6 @@
 # AdapterRemoval v3 - Dang fast(Q) processing
 
-[![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yaml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![docs](https://readthedocs.org/projects/adapterremoval/badge/?version=latest)](https://adapterremoval.readthedocs.io/) [![coverage](https://coveralls.io/repos/github/MikkelSchubert/adapterremoval/badge.svg?branch=master)](https://coveralls.io/github/MikkelSchubert/adapterremoval)
+[![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yaml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![docs](https://readthedocs.org/projects/adapterremoval/badge/?version=latest)](https://adapterremoval.readthedocs.io/)
 
 AdapterRemoval trims adapter sequences and low quality bases from High-Throughput Sequencing (HTS) data in FASTQ format. For paired-end data, AdapterRemoval can merge overlapping paired-ended reads into (longer) consensus sequences. Additionally, AdapterRemoval can demultiplex FASTQ reads, and construct a consensus adapter sequence for paired-ended reads, if this information is not available.
 
