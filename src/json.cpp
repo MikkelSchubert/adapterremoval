@@ -3,7 +3,6 @@
 #include "json.hpp"
 #include "debug.hpp"    // for AR_REQUIRE
 #include "strutils.hpp" // for join_text
-#include <algorithm>    // for max, find
 #include <cmath>        // for isinf, isnan
 #include <memory>       // for make_shared, __shared_ptr_access, shar...
 #include <sstream>      // for ostringstream

@@ -12,6 +12,7 @@
 #include <string>           // for string
 #include <string_view>      // for string_view
 #include <utility>          // for move
+#include <vector>           // for vector
 
 namespace adapterremoval {
 

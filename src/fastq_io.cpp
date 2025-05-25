@@ -1,25 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "fastq_io.hpp"      // declarations
-#include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "errors.hpp"        // for io_error, gzip_error, fastq_error
-#include "fastq.hpp"         // for fastq
-#include "fastq_enc.hpp"     // for MATE_SEPARATOR
-#include "output.hpp"        // for output_file
-#include "simd.hpp"          // for size_t
-#include "statistics.hpp"    // for fastq_statistics, fastq_stats_ptr, stat...
-#include "strutils.hpp"      // for shell_escape, string_vec, ends_with
-#include "userconfig.hpp"    // for userconfig
-#include "utilities.hpp"     // for prng_seed
-#include <algorithm>         // for max, min
-#include <cerrno>            // for errno
-#include <cstring>           // for size_t, memcpy
-#include <isa-l/crc.h>       // for crc32_gzip_refl
-#include <isa-l/igzip_lib.h> // for isal_zstream, isal_deflate_init, isal_d...
-#include <libdeflate.h>      // for libdeflate_alloc_compressor, libdeflate...
-#include <memory>            // for unique_ptr, make_unique, __shared_ptr_a...
-#include <sstream>           // for basic_ostream, basic_ostringstream, ope...
-#include <utility>           // for move, swap
+#include "fastq_io.hpp"    // declarations
+#include "commontypes.hpp" // for output_format
+#include "debug.hpp"       // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "errors.hpp"      // for io_error, gzip_error, fastq_error
+#include "fastq.hpp"       // for fastq
+#include "fastq_enc.hpp"   // for MATE_SEPARATOR
+#include "output.hpp"      // for output_file
+#include "progress.hpp"    // for progress_timer
+#include "statistics.hpp"  // for fastq_statistics, fastq_stats_ptr, stat...
+#include "strutils.hpp"    // for shell_escape, string_vec, ends_with
+#include "userconfig.hpp"  // for userconfig
+#include "utilities.hpp"   // for prng_seed
+#include <algorithm>       // for max, min
+#include <cerrno>          // for errno
+#include <isa-l.h>         // for isal_gzip_header
+#include <libdeflate.h>    // for libdeflate_alloc_compressor, libdeflate...
+#include <memory>          // for unique_ptr, make_unique, __shared_ptr_a...
+#include <sstream>         // for basic_ostream, basic_ostringstream, ope...
+#include <string>          // for string<<
+#include <string_view>     // for string_view
+#include <utility>         // for move, swap
 
 namespace adapterremoval {
 
@@ -83,7 +84,7 @@ enum class read_fastq::file_type
 namespace {
 
 bool
-read_record(joined_line_readers& reader, fastq_vec& chunk)
+read_record(joined_line_readers& reader, std::vector<fastq>& chunk)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
@@ -236,7 +237,8 @@ read_fastq::process(chunk_ptr chunk)
 }
 
 void
-read_fastq::read_single_end(fastq_vec& reads, duplication_statistics& stats)
+read_fastq::read_single_end(std::vector<fastq>& reads,
+                            duplication_statistics& stats)
 {
   for (; reads.size() < INPUT_READS && m_head && !m_eof; m_head--) {
     if (read_record(m_reader, reads)) {
@@ -248,7 +250,8 @@ read_fastq::read_single_end(fastq_vec& reads, duplication_statistics& stats)
 }
 
 void
-read_fastq::read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2)
+read_fastq::read_interleaved(std::vector<fastq>& reads_1,
+                             std::vector<fastq>& reads_2)
 {
   for (; reads_1.size() < INPUT_READS && m_head && !m_eof; m_head--) {
     if (read_record(m_reader, reads_1)) {
@@ -272,6 +275,16 @@ read_fastq::finalize()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'post_process_fastq_stats'
+
+post_process_fastq::stats_pair::stats_pair(double sample_rate,
+                                           unsigned int seed)
+  : stats_1(std::make_unique<fastq_statistics>(sample_rate, seed))
+  , stats_2(std::make_unique<fastq_statistics>(sample_rate, seed))
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
 post_process_fastq::post_process_fastq(const userconfig& config,
@@ -282,7 +295,7 @@ post_process_fastq::post_process_fastq(const userconfig& config,
   , m_statistics_2(stats.input_2)
   , m_next_step(next_step)
   , m_encoding(config.io_encoding)
-  , m_timer(config.log_progress)
+  , m_timer(std::make_unique<progress_timer>(config.log_progress))
 {
   AR_REQUIRE(m_statistics_1 && m_statistics_2);
 
@@ -290,6 +303,9 @@ post_process_fastq::post_process_fastq(const userconfig& config,
     m_stats.emplace_back(config.report_sample_rate, prng_seed());
   }
 }
+
+// Ensure that progress_timer definition is available to unique_ptr destructor
+post_process_fastq::~post_process_fastq() = default;
 
 chunk_vec
 post_process_fastq::process(chunk_ptr chunk)
@@ -304,7 +320,7 @@ post_process_fastq::process(chunk_ptr chunk)
   if (reads_2.empty()) {
     for (auto& read_1 : reads_1) {
       read_1.post_process(m_encoding);
-      stats->stats_1.process(read_1);
+      stats->stats_1->process(read_1);
     }
   } else {
     auto it_1 = reads_1.begin();
@@ -313,10 +329,10 @@ post_process_fastq::process(chunk_ptr chunk)
       fastq::normalize_paired_reads(*it_1, *it_2, chunk->mate_separator);
 
       it_1->post_process(m_encoding);
-      stats->stats_1.process(*it_1);
+      stats->stats_1->process(*it_1);
 
       it_2->post_process(m_encoding);
-      stats->stats_2.process(*it_2);
+      stats->stats_2->process(*it_2);
     }
 
     // fastq::normalize_paired_reads replaces the mate separator if present
@@ -329,7 +345,7 @@ post_process_fastq::process(chunk_ptr chunk)
 
   {
     std::unique_lock<std::mutex> lock(m_timer_lock);
-    m_timer.increment(reads_1.size() + reads_2.size());
+    m_timer->increment(reads_1.size() + reads_2.size());
   }
 
   chunk_vec chunks;
@@ -344,11 +360,11 @@ post_process_fastq::finalize()
   AR_REQUIRE_SINGLE_THREAD(m_timer_lock);
 
   while (auto it = m_stats.try_acquire()) {
-    *m_statistics_1 += it->stats_1;
-    *m_statistics_2 += it->stats_2;
+    *m_statistics_1 += *it->stats_1;
+    *m_statistics_2 += *it->stats_2;
   }
 
-  m_timer.finalize();
+  m_timer->finalize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

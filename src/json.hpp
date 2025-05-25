@@ -6,11 +6,11 @@
 #include "counts.hpp"      // for counts, rates
 #include <cstddef>         // for size_t
 #include <cstdint>         // for int64_t
-#include <functional>      // for less
-#include <map>             // for map
 #include <memory>          // for shared_ptr
 #include <ostream>         // for ostream
 #include <string>          // for string, basic_string
+#include <string_view>     // for string_view
+#include <utility>         // for pair
 #include <vector>          // for vector
 
 namespace adapterremoval {

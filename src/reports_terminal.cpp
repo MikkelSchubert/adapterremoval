@@ -7,8 +7,8 @@
 #include "reports.hpp"     // for print_terminal_postamble, print_terminal_...
 #include "simd.hpp"        // for name, instruction_set, instruction_set::none
 #include "userconfig.hpp"  // for userconfig, ar_command, ar_command::demul...
-#include <iomanip>         // for fixed, setprecision
-#include <string>          // for string
+#include <iomanip>         // for setprecision
+#include <ios>             // for fixed
 
 namespace adapterremoval {
 

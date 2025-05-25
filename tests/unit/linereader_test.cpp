@@ -3,7 +3,6 @@
 #include "errors.hpp"     // for io_error
 #include "linereader.hpp" // declarations
 #include "logging.hpp"    // for log_capture
-#include "strutils.hpp"   // for log_escape
 #include "testing.hpp"    // for TEST_CASE, REQUIRE, ...
 #include <array>          // for array
 #include <cstdio>         // for fclose, fwrite, rewind, tmpfile, FILE, fread

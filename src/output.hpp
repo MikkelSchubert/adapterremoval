@@ -9,6 +9,7 @@
 #include <memory>          // for unique_ptr
 #include <string>          // for string
 #include <string_view>     // for string_view
+#include <utility>         // for pair
 #include <vector>          // for vector
 
 namespace adapterremoval {
@@ -16,9 +17,9 @@ namespace adapterremoval {
 class analytical_chunk;
 class buffer;
 class fastq;
+class read_meta;
 class sample;
 class scheduler;
-class serializer;
 class userconfig;
 enum class read_type;
 
@@ -154,6 +155,8 @@ class processed_reads
 public:
   explicit processed_reads(const sample_output_files& map);
 
+  ~processed_reads();
+
   /** Set the sample; used to serialize header/records for SAM/BAM */
   void set_sample(const sample& value);
 
@@ -167,11 +170,7 @@ public:
   void write_headers(const string_vec& args);
 
   /** Adds a read of the given type to be processed with simple meta-data */
-  void add(const fastq& read, read_type flags, size_t barcode = 0)
-  {
-    add(read, read_meta(flags).barcode(barcode));
-  }
-
+  void add(const fastq& read, read_type flags, size_t barcode = 0);
   /** Adds a read of the given type to be processed */
   void add(const fastq& read, const read_meta& meta);
 

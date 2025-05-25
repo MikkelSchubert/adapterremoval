@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 
-#include "errors.hpp" // for assertion_failed
-#include "fastq.hpp"
+#include "errors.hpp"    // for assert_failed
 #include "fastq_enc.hpp" // for fastq_encoding
-#include "testing.hpp"   // for Catch
+#include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 
 namespace adapterremoval {
 

@@ -3,28 +3,30 @@
 #pragma once
 
 #include "buffer.hpp"            // for buffer, buffer_vec
-#include "commontypes.hpp"       // for fastq_vec
-#include "fastq.hpp"             // for fastq
 #include "fastq_enc.hpp"         // for fastq_encoding
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_io.hpp"        // for managed_writer
-#include "progress.hpp"          // for progress_timer
 #include "scheduler.hpp"         // for analytical_step, chunk_ptr, chunk_vec
-#include "statistics.hpp"        // for fastq_stats_ptr
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint32_t, uint64_t
 #include <limits>                // for numeric_limits
 #include <memory>                // for unique_ptr
 #include <mutex>                 // for mutex
-#include <string>                // for string
+#include <vector>                // for vector
 
 namespace adapterremoval {
 
-class analytical_chunk;
+class duplication_statistics;
+class fastq_statistics;
+class fastq;
+class progress_timer;
+class statistics;
 class userconfig;
 struct output_file;
+enum class output_format;
 
-using chunk_ptr = std::unique_ptr<analytical_chunk>;
+using fastq_stats_ptr = std::shared_ptr<fastq_statistics>;
+using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
 
 //! Number of reads to load every cycle
 const size_t INPUT_READS = 1024;
@@ -72,9 +74,11 @@ public:
 
 private:
   /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
-  void read_single_end(fastq_vec& reads, duplication_statistics& stats);
+  void read_single_end(std::vector<fastq>& reads,
+                       duplication_statistics& stats);
   /** Fills a chunk of interleaved reads; stops on EOF or after `head` reads. */
-  void read_interleaved(fastq_vec& reads_1, fastq_vec& reads_2);
+  void read_interleaved(std::vector<fastq>& reads_1,
+                        std::vector<fastq>& reads_2);
 
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_reader;
@@ -116,7 +120,7 @@ public:
                      size_t next_step,
                      statistics& stats);
 
-  ~post_process_fastq() override = default;
+  ~post_process_fastq() override;
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr chunk) override;
@@ -133,14 +137,10 @@ private:
   /** Linked mate 1/2 statistics to synchronize sampling of reads */
   struct stats_pair
   {
-    stats_pair(double sample_rate, unsigned int seed)
-      : stats_1(sample_rate, seed)
-      , stats_2(sample_rate, seed)
-    {
-    }
+    stats_pair(double sample_rate, unsigned int seed);
 
-    fastq_statistics stats_1;
-    fastq_statistics stats_2;
+    fastq_stats_ptr stats_1;
+    fastq_stats_ptr stats_2;
   };
 
   //! Per thread statistics collected from raw reads
@@ -157,7 +157,7 @@ private:
   //! Lock used to control access to progress timer
   std::mutex m_timer_lock{};
   //! Timer for displaying read progress.
-  progress_timer m_timer;
+  std::unique_ptr<progress_timer> m_timer;
 };
 
 /**

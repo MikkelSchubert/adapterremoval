@@ -1,32 +1,36 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "userconfig.hpp"  // declarations
-#include "alignment.hpp"   // for alignment_info
-#include "commontypes.hpp" // for string_vec, DEV_STDOUT, DEV_STDERR, ...
-#include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
-#include "errors.hpp"      // for fastq_error
-#include "fastq.hpp"       // for ACGT, ACGT::indices, ACGT::values
-#include "fastq_enc.hpp"   // for PHRED_SCORE_MAX
-#include "licenses.hpp"    // for LICENSES
-#include "logging.hpp"     // for log_stream, error, set_level, set_colors, info
-#include "main.hpp"        // for HELPTEXT, NAME, VERSION
-#include "output.hpp"      // for DEV_NULL, output_files, output_file
-#include "progress.hpp"    // for progress_type, progress_type::simple, progr...
-#include "sequence.hpp"    // for dna_sequence
-#include "simd.hpp"        // for size_t, name, supported, instruction_set
-#include "strutils.hpp"    // for shell_escape, str_to_u32
-#include <algorithm>       // for find, max, min
-#include <cerrno>          // for errno
-#include <cstdlib>         // for getenv
-#include <cstring>         // for size_t, strerror, strcmp
-#include <filesystem>      // for weakly_canonical
-#include <limits>          // for numeric_limits
-#include <stdexcept>       // for invalid_argument
-#include <string>          // for string, basic_string, operator==, operator+
-#include <string_view>     // for string_view
-#include <tuple>           // for get, tuple
-#include <unistd.h>        // for access, isatty, R_OK, STDERR_FILENO
+#include "userconfig.hpp"    // declarations
+#include "alignment.hpp"     // for alignment_info
+#include "argparse.hpp"      // for parser, parse_result
+#include "commontypes.hpp"   // for string_vec, DEV_STDOUT, DEV_STDERR, ...
+#include "debug.hpp"         // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"        // for fastq_error
+#include "fastq_enc.hpp"     // for PHRED_SCORE_MAX
+#include "licenses.hpp"      // for LICENSES
+#include "logging.hpp"       // for log_stream, error, set_level, set_colors, ..
+#include "main.hpp"          // for HELPTEXT, NAME, VERSION
+#include "output.hpp"        // for DEV_NULL, output_files, output_file
+#include "progress.hpp"      // for progress_type, progress_type::simple, ...
+#include "sequence.hpp"      // for dna_sequence
+#include "sequence_sets.hpp" // for sample_set
+#include "simd.hpp"          // for size_t, name, supported, instruction_set
+#include "strutils.hpp"      // for shell_escape, str_to_u32
+#include <algorithm>         // for find, max, min
+#include <array>             // for array
+#include <cerrno>            // for errno
+#include <cstdlib>           // for getenv
+#include <cstring>           // for size_t, strerror, strcmp
+#include <exception>         // for exception
+#include <filesystem>        // for weakly_canonical
+#include <limits>            // for numeric_limits
+#include <memory>            // for unique_ptr, make_unique
+#include <stdexcept>         // for invalid_argument
+#include <string>            // for string, basic_string, operator==, operator+
+#include <string_view>       // for string_view
+#include <tuple>             // for get, tuple
+#include <unistd.h>          // for access, isatty, R_OK, STDERR_FILENO
 
 namespace adapterremoval {
 
@@ -444,7 +448,10 @@ parse_output_formats(const argparse::parser& argparser,
 std::string userconfig::start_time = timestamp("%FT%T%z");
 
 userconfig::userconfig()
+  : samples(std::make_unique<sample_set>())
+  , m_argparser(std::make_unique<argparse::parser>())
 {
+  auto& argparser = *m_argparser;
   argparser.set_name(NAME);
   argparser.set_version(VERSION);
   argparser.set_preamble(HELPTEXT);
@@ -1050,10 +1057,14 @@ userconfig::userconfig()
     .with_default("auto");
 }
 
+// Must be implemented out of line for unique ptrs
+userconfig::~userconfig() = default;
+
 argparse::parse_result
 userconfig::parse_args(const string_vec& argvec)
 {
   args = argvec;
+  auto& argparser = *m_argparser;
   if (args.size() <= 1) {
     argparser.print_help();
     return argparse::parse_result::error;
@@ -1187,7 +1198,7 @@ userconfig::parse_args(const string_vec& argvec)
     auto merged_tags = join_text(read_group, "\t");
 
     try {
-      samples.set_read_group(merged_tags);
+      samples->set_read_group(merged_tags);
     } catch (const std::invalid_argument& error) {
       log::error() << "Invalid argument --read-group "
                    << log_escape(merged_tags) << ": " << error.what();
@@ -1409,7 +1420,7 @@ userconfig::get_output_filenames() const
     }
   }
 
-  for (const auto& sample : samples) {
+  for (const auto& sample : *samples) {
     const auto& name = sample.name();
     sample_output_files map;
 
@@ -1464,8 +1475,8 @@ userconfig::new_output_file(const std::string& key,
                                 out_file_format == output_format::fastq_gzip;
 
   std::string out;
-  if (argparser.is_set(key)) {
-    out = argparser.value(key);
+  if (m_argparser->is_set(key)) {
+    out = m_argparser->value(key);
 
     // global files, e.g. reports and unidentified reads
     if (sample.empty()) {
@@ -1635,7 +1646,7 @@ bool
 userconfig::setup_adapter_sequences()
 {
   adapter_set adapters;
-  if (argparser.is_set("--adapter-list")) {
+  if (m_argparser->is_set("--adapter-list")) {
     try {
       adapters.load(adapter_list, paired_ended_mode);
     } catch (const std::exception& error) {
@@ -1657,7 +1668,7 @@ userconfig::setup_adapter_sequences()
     }
   }
 
-  samples.set_adapters(std::move(adapters));
+  samples->set_adapters(std::move(adapters));
 
   return true;
 }
@@ -1665,6 +1676,7 @@ userconfig::setup_adapter_sequences()
 bool
 userconfig::setup_demultiplexing()
 {
+  auto& argparser = *m_argparser;
   if (!argparser.is_set("--barcode-mm")) {
     barcode_mm = barcode_mm_r1 + barcode_mm_r2;
   }
@@ -1693,14 +1705,14 @@ userconfig::setup_demultiplexing()
       .orientation(orientation);
 
     try {
-      samples.load(barcode_list, config);
+      samples->load(barcode_list, config);
     } catch (const std::exception& error) {
       log::error() << "Error reading barcodes from " << log_escape(barcode_list)
                    << ": " << error.what();
       return false;
     }
 
-    log::info() << "Read " << samples.size() << " sets of barcodes from "
+    log::info() << "Read " << samples->size() << " sets of barcodes from "
                 << shell_escape(barcode_list);
   }
 

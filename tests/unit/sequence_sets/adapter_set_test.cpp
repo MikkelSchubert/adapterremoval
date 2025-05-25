@@ -6,6 +6,9 @@
 #include "sequence.hpp"      // for dna_sequence
 #include "sequence_sets.hpp" // for read_group
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include <string>            // for string==, string
+#include <string_view>       // for basic_string_view
+#include <utility>           // for pair, operator==
 #include <vector>            // for vector
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;

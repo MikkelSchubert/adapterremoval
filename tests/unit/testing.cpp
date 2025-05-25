@@ -3,6 +3,8 @@
 #include "testing.hpp"  // declarations
 #include "strutils.hpp" // for log_escape
 #include <cctype>       // for isprint
+#include <exception>    // for exception
+#include <string_view>  // for string_view
 
 namespace {
 

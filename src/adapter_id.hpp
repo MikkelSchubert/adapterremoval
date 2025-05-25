@@ -2,11 +2,14 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "counts.hpp" // for indexed_counts
-#include "fastq.hpp"  // for ACGTN
-#include <cstddef>    // for size_t
-#include <utility>    // for pair
-#include <vector>     // for vector
+#include "counts.hpp"    // for indexed_counts
+#include "fastq.hpp"     // for fastq
+#include "fastq_enc.hpp" // for ACGTN
+#include <cstddef>       // for size_t
+#include <cstdint>       // for uint32_t
+#include <string>        // for string
+#include <utility>       // for pair
+#include <vector>        // for vector
 
 namespace adapterremoval {
 

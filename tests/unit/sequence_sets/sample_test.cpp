@@ -2,12 +2,13 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "commontypes.hpp"   // for barcode_orientation
-#include "errors.hpp"        // for parsing_error
+#include "errors.hpp"        // for assert_failed
 #include "read_group.hpp"    // for read_group
 #include "sequence.hpp"      // for dna_sequence
-#include "sequence_sets.hpp" // for read_group
+#include "sequence_sets.hpp" // for sample_sequences, sample
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <sstream>           // for ostringstream
+#include <string>            // for string
 #include <vector>            // for vector
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;

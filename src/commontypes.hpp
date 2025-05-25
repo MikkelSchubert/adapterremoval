@@ -9,14 +9,10 @@
 
 namespace adapterremoval {
 
-class fastq;
-
 using string_vec = std::vector<std::string>;
 using string_vec_citer = string_vec::const_iterator;
 using string_pair = std::pair<std::string, std::string>;
 using string_pair_vec = std::vector<string_pair>;
-
-using fastq_vec = std::vector<fastq>;
 
 /** Different read files read or written by AdapterRemoval */
 enum class read_file : size_t

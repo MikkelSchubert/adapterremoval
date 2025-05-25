@@ -2,12 +2,12 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "buffer.hpp" // for buffer_vec
-#include <array>      // for array
-#include <cstdio>     // for FILE
-#include <string>     // for string
+#include <cstdio> // for FILE
+#include <string> // for string
+#include <vector> // for vector
 
 namespace adapterremoval {
+class buffer;
 
 /** Indicates if the writes should be flushed */
 enum class flush
@@ -72,7 +72,7 @@ public:
 
   /** Write buffers, opening/creating the file as needed */
   void write(const buffer& buf, flush mode = flush::off);
-  void write(const buffer_vec& buffers, flush mode = flush::off);
+  void write(const std::vector<buffer>& buffers, flush mode = flush::off);
   void write(const std::string& buffer, flush mode = flush::off);
 
   /** Closes the handle; no-op if the handle has been closed already */

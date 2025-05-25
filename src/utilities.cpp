@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Mikkel Schubert <mikkelsch@gmail.com>
+#include "utilities.hpp"
 #include <mutex>  // for mutex
 #include <random> // for random_device
-
-#include "utilities.hpp"
 
 namespace adapterremoval {
 

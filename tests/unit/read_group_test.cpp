@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "commontypes.hpp"
-#include "read_group.hpp" // for read_group
-#include "testing.hpp"    // for TEST_CASE, REQUIRE, ...
-#include <stdexcept>      // for invalid_argument
+#include "commontypes.hpp" // for barcode_orientation
+#include "read_group.hpp"  // for read_group
+#include "testing.hpp"     // for TEST_CASE, REQUIRE, ...
+#include <stdexcept>       // for invalid_argument
+#include <string>          // for string
+#include <string_view>     // for string_view
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
 

@@ -4,7 +4,6 @@
 #include "errors.hpp"   // for assert_failed
 #include "strutils.hpp" // for format_rough_number, wrap_text, str_to_u32
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
-#include <algorithm>    // for find
 #include <cstdint>      // for INT64_MAX, INTPTR_MAX
 #include <limits>       // for numeric_limits
 #include <stdexcept>    // for invalid_argument

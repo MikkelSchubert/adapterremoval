@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
-#include "sequence.hpp"
-#include "testing.hpp"
-#include "testing.hpp" // for TEST_CASE, REQUIRE, ...
-#include <sstream>     // for ostringstream
-#include <string_view>
+#include "sequence.hpp" // for dna_sequence
+#include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
+#include <string_view>  // string_view
 
 namespace adapterremoval {
 

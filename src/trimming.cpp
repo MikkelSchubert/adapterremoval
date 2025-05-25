@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "trimming.hpp"
+#include "trimming.hpp"      // declarations
 #include "alignment.hpp"     // for alignment_info, sequence_merger, ...
-#include "commontypes.hpp"   // for read_file, trimming_strategy, ...
+#include "commontypes.hpp"   // for read_type, trimming_strategy, ...
 #include "counts.hpp"        // for counts, indexed_count
 #include "debug.hpp"         // for AR_FAIL, AR_REQUIRE
-#include "fastq_io.hpp"      // for chunk_ptr, fastq_...
+#include "fastq.hpp"         // for fastq
+#include "fastq_enc.hpp"     // for ACGT
 #include "output.hpp"        // for sample_output_files, processed_reads
+#include "scheduler.hpp"     // for analytical_step, processing_order
 #include "sequence_sets.hpp" // for adapter_set
 #include "serializer.hpp"    // for read_type
-#include "simd.hpp"          // for size_t
 #include "statistics.hpp"    // for trimming_statistics, reads_and_bases, ...
 #include "userconfig.hpp"    // for userconfig
-#include <cstddef>           // for size_t
 #include <memory>            // for unique_ptr, __shared_ptr_access, make_unique
 #include <string>            // for string
 #include <utility>           // for pair, move
+#include <vector>            // for vector
 
 namespace adapterremoval {
 
@@ -309,7 +310,7 @@ se_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_config.samples.at(m_sample));
+  chunks.set_sample(m_config.samples->at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -317,12 +318,14 @@ se_reads_processor::process(chunk_ptr chunk)
   }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(m_config.samples.adapters().size());
-  stats->adapter_trimmed_bases.resize_up_to(m_config.samples.adapters().size());
+  stats->adapter_trimmed_reads.resize_up_to(
+    m_config.samples->adapters().size());
+  stats->adapter_trimmed_bases.resize_up_to(
+    m_config.samples->adapters().size());
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  for (const auto& it : m_config.samples.at(m_sample)) {
+  for (const auto& it : m_config.samples->at(m_sample)) {
     aligners.emplace_back(it.adapters, m_config.simd);
   }
 
@@ -431,7 +434,7 @@ pe_reads_processor::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_config.samples.at(m_sample));
+  chunks.set_sample(m_config.samples->at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -444,14 +447,16 @@ pe_reads_processor::process(chunk_ptr chunk)
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  const auto& sample = m_config.samples.at(m_sample);
+  const auto& sample = m_config.samples->at(m_sample);
   for (const auto& it : sample) {
     aligners.emplace_back(it.adapters, m_config.simd);
   }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(m_config.samples.adapters().size());
-  stats->adapter_trimmed_bases.resize_up_to(m_config.samples.adapters().size());
+  stats->adapter_trimmed_reads.resize_up_to(
+    m_config.samples->adapters().size());
+  stats->adapter_trimmed_bases.resize_up_to(
+    m_config.samples->adapters().size());
 
   AR_REQUIRE(!aligners.empty());
   AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());

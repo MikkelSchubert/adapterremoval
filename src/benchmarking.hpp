@@ -2,9 +2,11 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "commontypes.hpp" // for string, string_vec
-#include <chrono>          // for high_resolution_clock
-#include <vector>          // for vector
+#include <chrono>  // for high_resolution_clock
+#include <cstddef> // for size_t
+#include <cstdint> // for uint64_t
+#include <string>  // for string
+#include <vector>  // for vector
 
 namespace adapterremoval {
 
@@ -23,10 +25,10 @@ enum class strategy
 class benchmark_toggles
 {
 public:
-  explicit benchmark_toggles(string_vec keys);
+  explicit benchmark_toggles(std::vector<std::string> keys);
 
   /** Parses user-supplied toggles and returns true if valid */
-  bool update_toggles(const string_vec& keys);
+  bool update_toggles(const std::vector<std::string>& keys);
 
   /** Returns true if the default (most) benchmarks should be run */
   bool defaults() const { return m_defaults; }
@@ -36,7 +38,7 @@ public:
 
 private:
   //! Vector of supported toggles
-  const string_vec m_toggles;
+  const std::vector<std::string> m_toggles;
   //! Vector indicating whether the user set a specific toggle
   std::vector<bool> m_enabled;
   //! Indicates if default toggles should be used (benchmark specific)
@@ -47,7 +49,7 @@ private:
 class benchmarker
 {
 public:
-  benchmarker(std::string desc, string_vec toggles);
+  benchmarker(std::string desc, std::vector<std::string> toggles);
 
   virtual ~benchmarker() = default;
 
@@ -81,7 +83,7 @@ private:
 
   const std::string m_description;
   std::vector<uint64_t> m_durations{};
-  string_vec m_toggles{};
+  std::vector<std::string> m_toggles{};
   bool m_required = false;
 };
 

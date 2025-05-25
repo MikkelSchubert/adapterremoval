@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "logging.hpp"
+#include "logging.hpp"  // declarations
 #include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
 #include "main.hpp"     // for NAME, VERSION
 #include "strutils.hpp" // for split_lines, cli_formatter, string_vec
 #include <algorithm>    // for max, min
-#include <iomanip>      // for operator<<, put_time
 #include <iostream>     // for cerr
 #include <limits>       // for numeric_limits
 #include <mutex>        // for mutex, unique_lock
 #include <sys/ioctl.h>  // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>     // for size_t, STDERR_FILENO
-#include <vector>       // for vector
 
 namespace adapterremoval {
 

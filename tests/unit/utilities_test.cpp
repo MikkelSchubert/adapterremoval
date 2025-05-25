@@ -4,6 +4,8 @@
 #include "utilities.hpp" // for merge
 #include <array>         // for array, operator==
 #include <cstddef>       // for size_t
+#include <string>        // for string
+#include <type_traits>   // for is_same_v
 #include <vector>        // for vector, allocator, operator==
 
 namespace adapterremoval {

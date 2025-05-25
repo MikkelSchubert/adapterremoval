@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "managed_io.hpp"  // declarations
+#include "buffer.hpp"      // for buffer
 #include "commontypes.hpp" // for DEV_STDOUT, DEV_STDERR, ...
 #include "debug.hpp"       // for AR_REQUIRE
 #include "errors.hpp"      // for io_error
@@ -14,7 +15,10 @@
 #include <fcntl.h>         // for posix_fadvise
 #include <mutex>           // for mutex, lock_guard
 #include <string>          // for string
+#include <string_view>     // for operator==, operator!=
 #include <sys/stat.h>      // for fstat
+#include <utility>         // for move
+#include <vector>          // for vector
 
 namespace adapterremoval {
 
@@ -315,7 +319,7 @@ private:
 namespace {
 
 bool
-any_nonempty_buffers(const buffer_vec& buffers)
+any_nonempty_buffers(const std::vector<buffer>& buffers)
 {
   return std::any_of(buffers.begin(), buffers.end(), [](const auto& it) {
     return it.size() != 0;
@@ -353,7 +357,7 @@ managed_writer::write(const buffer& buf, const flush mode)
 }
 
 void
-managed_writer::write(const buffer_vec& buffers, const flush mode)
+managed_writer::write(const std::vector<buffer>& buffers, const flush mode)
 {
   if (mode == flush::on || any_nonempty_buffers(buffers)) {
     writer_lock writer{ this };

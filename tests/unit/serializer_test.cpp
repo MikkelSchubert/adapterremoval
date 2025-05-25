@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "buffer.hpp"      // for buffer
-#include "commontypes.hpp" // for fastq_vec
-#include "fastq.hpp"       // for fastq, fastq::ntrimmed, ACGTN, ACGT
-#include "main.hpp"        // for VERSION
-#include "read_group.hpp"  // for read_group
-#include "sequence.hpp"    // for dna_sequence
-#include "serializer.hpp"  // for serializer
-#include "testing.hpp"     // for TEST_CASE, REQUIRE, ...
-#include "utilities.hpp"   // for underlying_type
-#include <string>          // for string
-#include <string_view>     // for string_view
+#include "buffer.hpp"        // for buffer
+#include "fastq.hpp"         // for fastq, fastq::ntrimmed, ACGTN, ACGT
+#include "main.hpp"          // for VERSION
+#include "read_group.hpp"    // for read_group
+#include "sequence.hpp"      // for dna_sequence
+#include "sequence_sets.hpp" // for sample
+#include "serializer.hpp"    // for serializer
+#include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include <ostream>           // for basic_ostream, operator<<, ostream
+#include <string>            // for string
+#include <string_view>       // for string_view
 
 // Ignore nucleotide and quality strings
 // spell-checker:ignoreRegExp /"[!-~]+"/g

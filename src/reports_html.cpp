@@ -1,25 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_id.hpp"            // for adapter_id_statistics
+#include "commontypes.hpp"           // for barcode_orientation, DEV_NULL
 #include "counts.hpp"                // for counts, indexed_count, counts_tmpl
 #include "debug.hpp"                 // for AR_REQUIRE
 #include "errors.hpp"                // for io_error
 #include "fastq.hpp"                 // for ACGT, ACGT::values, fastq, ACGTN
+#include "fastq_enc.hpp"             // for ACGT, ACGTN
 #include "json.hpp"                  // for json_dict, json_list, json_ptr
 #include "logging.hpp"               // for log_stream, error
 #include "main.hpp"                  // for VERSION, NAME
 #include "managed_io.hpp"            // for managed_io
-#include "output.hpp"                // for DEV_NULL, output_files
 #include "reports.hpp"               // for write_html_report
 #include "reports_template_html.hpp" // for html_frequency_plot, html_demultiple...
+#include "sequence.hpp"              // for dna_sequence
 #include "sequence_sets.hpp"         // for adapter_set
-#include "simd.hpp"                  // for size_t
 #include "statistics.hpp"            // for fastq_stats_ptr, fastq_statistics
 #include "strutils.hpp"              // for format_percentage, format_rough...
 #include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
 #include <algorithm>                 // for max
+#include <array>                     // for array
 #include <cctype>                    // for toupper
-#include <cerrno>                    // for errno
 #include <cmath>                     // for fmod
 #include <cstdint>                   // for uint64_t
 #include <cstring>                   // for size_t, strerror
@@ -577,7 +578,7 @@ write_html_processing_section(const userconfig& config,
   uint64_t adapter_reads = 0;
   uint64_t adapter_bases = 0;
 
-  for (size_t i = 0; i < config.samples.adapters().size(); ++i) {
+  for (size_t i = 0; i < config.samples->adapters().size(); ++i) {
     adapter_reads += totals.adapter_trimmed_reads.get(i);
     adapter_bases += totals.adapter_trimmed_bases.get(i);
   }
@@ -922,7 +923,7 @@ write_html_analyses_section(const userconfig& config,
     // Consensus adapter sequences
     {
       const auto reference_adapters =
-        config.samples.adapters().to_read_orientation().front();
+        config.samples->adapters().to_read_orientation().front();
       std::string reference_adapter_1{ reference_adapters.first };
       std::string reference_adapter_2{ reference_adapters.second };
 
@@ -996,8 +997,8 @@ write_html_demultiplexing_barplot(const userconfig& config,
   const size_t input_reads = stats.input_1->number_of_input_reads() +
                              stats.input_2->number_of_input_reads();
 
-  for (size_t i = 0; i < config.samples.size(); ++i) {
-    const auto& sample = config.samples.at(i);
+  for (size_t i = 0; i < config.samples->size(); ++i) {
+    const auto& sample = config.samples->at(i);
 
     for (size_t j = 0; j < sample.size(); ++j) {
       auto count = stats.demultiplexing->samples.at(i).get(j);
@@ -1075,7 +1076,7 @@ write_html_demultiplexing_table(const userconfig& config,
   }
 
   size_t sample_idx = 0;
-  for (const auto& sample : config.samples) {
+  for (const auto& sample : *config.samples) {
     const auto& output_stats = *stats.trimming.at(sample_idx);
     const auto& barcode_counts = stats.demultiplexing->samples.at(sample_idx);
     const auto sample_reads = barcode_counts.sum();
@@ -1158,7 +1159,7 @@ write_html_demultiplexing_section(const userconfig& config,
 {
   bool multiple_barcodes = false;
   bool mixed_orientation = false;
-  for (const auto& sample : config.samples) {
+  for (const auto& sample : *config.samples) {
     multiple_barcodes |= sample.size() > 1;
     for (const auto& it : sample) {
       mixed_orientation |= it.orientation != barcode_orientation::unspecified;

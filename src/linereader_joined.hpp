@@ -2,11 +2,11 @@
 // SPDX-FileCopyrightText: 2017 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "commontypes.hpp" // for string_vec
-#include "linereader.hpp"  // for line_reader_base
-#include <cstddef>         // for size_t
-#include <memory>          // for unique_ptr
-#include <string>          // for string
+#include "linereader.hpp" // for line_reader_base
+#include <cstddef>        // for size_t
+#include <memory>         // for unique_ptr
+#include <string>         // for string
+#include <vector>         // for vector
 
 namespace adapterremoval {
 
@@ -21,7 +21,9 @@ class joined_line_readers : public line_reader_base
 {
 public:
   /** Creates line-reader over multiple files in the specified order. */
-  explicit joined_line_readers(const string_vec& filenames);
+  explicit joined_line_readers(const std::vector<std::string>& filenames);
+
+  ~joined_line_readers() override = default;
 
   /**
    * Reads a line from the currently open file; if EOF is encountered, the
@@ -49,7 +51,7 @@ private:
   bool open_next_file();
 
   //! Files left to read; stored in reverse order.
-  string_vec m_filenames{};
+  std::vector<std::string> m_filenames{};
   //! Currently open file, if any.
   std::unique_ptr<line_reader> m_reader{};
   //! The currently open file

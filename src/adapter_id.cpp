@@ -1,11 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_id.hpp" // declarations
-#include "fastq_enc.hpp"  // for fastq_encoding
+#include "counts.hpp"     // for indexed_counts
+#include "fastq.hpp"      // for ACGT, ACGTN, fastq
+#include "fastq_enc.hpp"  // for PHRED_OFFSET_MIN
 #include "utilities.hpp"  // for merge
 #include <algorithm>      // for max, copy, min, reverse
+#include <cstddef>        // for size_t
+#include <cstdint>        // for uint32_t
 #include <queue>          // for priority_queue
 #include <sstream>        // for basic_ostringstream
+#include <string>         // for string
+#include <utility>        // for pair
+#include <vector>         // for vector
 
 namespace adapterremoval {
 

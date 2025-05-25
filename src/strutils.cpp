@@ -12,7 +12,8 @@
 #include <sstream>      // for ostringstream, operator<<, basic_ostream, bas...
 #include <stdexcept>    // for invalid_argument
 #include <string_view>  // for string_view
-#include <unistd.h>     // for STDOUT_FILENO
+#include <system_error> // for errc
+#include <time.h>       // for localtime_r, tm
 #include <vector>       // for vector, swap
 
 namespace adapterremoval {

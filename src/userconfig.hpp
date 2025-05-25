@@ -3,22 +3,32 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "argparse.hpp"      // for parse_result, parser
-#include "commontypes.hpp"   // for string_vec, read_file, merge_strategy
-#include "fastq_enc.hpp"     // for fastq_encoding
+#include "argparse.hpp"      // for parser, parse_result (ptr only)
+#include "commontypes.hpp"   // for string_vec, output_format, merge_strategy
+#include "fastq_enc.hpp"     // for fastq_encoding, FASTQ_ENCODING_33
 #include "sequence_sets.hpp" // for sample_set
 #include "simd.hpp"          // for instruction_set
 #include "timer.hpp"         // for monotonic_timer
-#include <cstdint>           // for uint64_t
-#include <string>            // for string
+#include <cstdint>           // for uint32_t, uint64_t
+#include <memory>            // for unique_ptr
+#include <string>            // for basic_string, string
 #include <string_view>       // for string_view
 #include <utility>           // for pair
+#include <vector>            // for vector
 
 namespace adapterremoval {
 
-enum class progress_type;
+namespace argparse {
+
+class parser;
+enum class parse_result;
+
+} // namespace argparse
+
 class output_files;
 class sample_output_files;
+class sample_set;
+enum class progress_type;
 struct alignment_info;
 struct output_file;
 
@@ -38,7 +48,7 @@ class userconfig
 {
 public:
   userconfig();
-  ~userconfig() = default;
+  ~userconfig();
 
   /** Parses a set of command-line arguments. */
   argparse::parse_result parse_args(const string_vec& argvec);
@@ -175,7 +185,7 @@ public:
 
   //! Sample specific barcodes and adapters. In non-demultiplexing mode this
   //! set contains a single unnamed sample with empty barcodes
-  sample_set samples{};
+  std::unique_ptr<sample_set> samples{};
 
   //! Title used for HTML report
   std::string report_title{};
@@ -241,7 +251,7 @@ private:
                                             std::string_view ext) const;
 
   //! Argument parser setup to parse the arguments expected by AR
-  argparse::parser argparser{};
+  std::unique_ptr<argparse::parser> m_argparser{};
 
   //! Sink for --adapter1, adapter sequence expected at 3' of mate 1 reads
   std::string adapter_1{};

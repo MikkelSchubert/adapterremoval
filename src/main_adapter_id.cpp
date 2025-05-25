@@ -9,9 +9,12 @@
 #include "reports.hpp"       // for write_html_report, write_json_report
 #include "scheduler.hpp"     // for threadstate, scheduler, analytical_step
 #include "sequence_sets.hpp" // for adapter_set
+#include "statistics.hpp"    // for trimming_statistics
 #include "userconfig.hpp"    // for userconfig
 #include <cstddef>           // for size_t
+#include <memory>            // for unique_ptr, __shared_ptr_access, make_s...
 #include <string>            // for string, operator<<, char_traits
+#include <vector>            // for vector
 
 namespace adapterremoval {
 

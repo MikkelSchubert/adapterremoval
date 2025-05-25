@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "debug.hpp"
-#include <sstream> // for operator<<, basic_ostream, ostringstream
+#include "debug.hpp" // declarations
+#include <sstream>   // for ostringstream
+#include <string>    // for string
 
 namespace adapterremoval {
 

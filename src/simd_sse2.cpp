@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "simd.hpp"    // declarations
+#include <algorithm>   // for min
 #include <bitset>      // for bitset
 #include <cstddef>     // for size_t
 #include <emmintrin.h> // for _mm_cmpeq_epi8, __m128i, _mm_loadu_s...

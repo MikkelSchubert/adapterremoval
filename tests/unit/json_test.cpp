@@ -6,7 +6,9 @@
 #include "strutils.hpp" // for string_vec
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cmath>        // for nan
+#include <cstdint>      // for int64_t, uint64_t
 #include <limits>       // for numeric_limits
+#include <memory>       // for shared_ptr
 #include <sstream>      // for ostringstream
 #include <string>       // for basic_string, operator==, string
 

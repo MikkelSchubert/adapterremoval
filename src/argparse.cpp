@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "argparse.hpp"
+#include "argparse.hpp" // declarations
 #include "debug.hpp"    // for AR_REQUIRE
 #include "logging.hpp"  // for log_stream, error, cerr, warn
 #include "strutils.hpp" // for string_vec, shell_escape, to_lower
 #include <algorithm>    // for max, copy, find, min, sort
+#include <cstddef>      // for size_t
+#include <cstdint>      // for uint32_t
 #include <limits>       // for numeric_limits
-#include <memory>       // for __shared_ptr_access, unique_ptr, share...
+#include <memory>       // for unique_ptr, shared_ptr, ...
 #include <sstream>      // for operator<<, basic_ostream, ostringstream
 #include <stdexcept>    // for invalid_argument
+#include <string>       // for string, to_string
 #include <utility>      // for pair
 
 namespace adapterremoval {

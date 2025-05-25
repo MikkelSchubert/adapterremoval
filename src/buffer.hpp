@@ -6,10 +6,11 @@
 #include <algorithm>   // for max
 #include <cstddef>     // for size_t
 #include <cstdint>     // for uint32_t
+#include <cstdlib>     // for free, realloc
 #include <cstring>     // for memcpy
 #include <iosfwd>      // for ostream
 #include <string_view> // for string_view
-#include <vector>      // for vector
+#include <utility>     // for swap
 
 namespace adapterremoval {
 
@@ -198,7 +199,5 @@ private:
 /** Initializes a buffer from a string literal; for testing */
 buffer
 operator""_buffer(const char* s, size_t l);
-
-using buffer_vec = std::vector<buffer>;
 
 } // namespace adapterremoval

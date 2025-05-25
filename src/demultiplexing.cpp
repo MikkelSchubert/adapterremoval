@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "demultiplexing.hpp"
-#include "barcode_table.hpp" // for barcode_table
-#include "debug.hpp"         // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "fastq_io.hpp"      // for chunk_ptr, fastq...
-#include "output.hpp"        // for output_files
-#include "sequence_sets.hpp" // for adapter_set
-#include "userconfig.hpp"    // for userconfig, ar_command, ar_command::demul...
-#include <cstddef>           // for size_t
-#include <memory>            // for make_unique, unique_ptr
-#include <utility>           // for move
+#include "demultiplexing.hpp" // declarations
+#include "barcode_table.hpp"  // for barcode_table
+#include "commontypes.hpp"    // for read_type, read_file
+#include "counts.hpp"         // for counts
+#include "debug.hpp"          // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "fastq.hpp"          // for fastq
+#include "output.hpp"         // for output_files
+#include "sequence_sets.hpp"  // for adapter_set
+#include "statistics.hpp"     // for demux_statistics
+#include "userconfig.hpp"     // for userconfig, ar_command, ar_command...
+#include <cstddef>            // for size_t
+#include <memory>             // for unique_ptr
+#include <string>             // for basic_string
+#include <utility>            // for move
 
 namespace adapterremoval {
 
@@ -21,7 +25,7 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
                                      demux_stats_ptr stats)
   : analytical_step(processing_order::ordered, "demultiplex_reads")
-  , m_samples(config.samples)
+  , m_samples(*config.samples)
   , m_barcode_table(m_samples,
                     config.barcode_mm,
                     config.barcode_mm_r1,
@@ -149,7 +153,7 @@ process_demultiplexed::process_demultiplexed(const userconfig& config,
   : analytical_step(processing_order::unordered, "process_demultiplexed")
   , m_config(config)
   , m_output(output)
-  , m_samples(config.samples)
+  , m_samples(*config.samples)
   , m_sample(sample)
   , m_stats_sink(std::move(sink))
 {
@@ -238,7 +242,7 @@ processes_unidentified::process(chunk_ptr chunk)
 {
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_config.samples.unidentified());
+  chunks.set_sample(m_config.samples->unidentified());
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {

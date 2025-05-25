@@ -2,7 +2,8 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "buffer.hpp"   // declarations
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
-#include <cstring>      // for memset
+#include <ostream>      // for ostream
+#include <string>       // for string
 #include <strutils.hpp> // for log_escape
 #include <utility>      // for move
 

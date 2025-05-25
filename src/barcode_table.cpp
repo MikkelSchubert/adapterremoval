@@ -5,12 +5,20 @@
 #include "debug.hpp"         // for AR_REQUIRE
 #include "errors.hpp"        // for parsing_error
 #include "fastq.hpp"         // for fastq
+#include "fastq_enc.hpp"     // for ACGT
+#include "sequence.hpp"      // for sequence_pair
 #include "sequence_sets.hpp" // for sample_set
 #include <algorithm>         // for min, max, sort
+#include <cstddef>           // for size_t
+#include <cstdint>           // for int32_t, uint32_t
+#include <ostream>           // for ostream
 #include <string>            // for std::string
 #include <utility>           // for pair
 
 namespace adapterremoval {
+
+using barcode_pair = std::pair<sequence_pair, barcode_key>;
+using barcode_vec = std::vector<barcode_pair>;
 
 struct barcode_match
 {

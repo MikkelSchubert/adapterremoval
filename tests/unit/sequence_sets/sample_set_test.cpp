@@ -10,7 +10,10 @@
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <initializer_list>  // for initializer_list
 #include <sstream>           // for ostringstream
+#include <string>            // for string, operator==
 #include <string_view>       // for string_view
+#include <utility>           // for pair
+#include <vector>            // for vector, operator==
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
 
