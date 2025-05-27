@@ -13,7 +13,7 @@
 #include <iostream>         // for cout
 #include <numeric>          // for accumulate
 #include <sstream>          // for ostringstream
-#include <string>           // for string, to_string
+#include <string>           // for string
 #include <string_view>      // for string_view
 #include <utility>          // for move
 #include <vector>           // for vector
@@ -184,8 +184,8 @@ benchmarker::summarize(size_t loops) const
     "",
     "",
     "",
-    std::to_string(m_durations.size()),
-    std::to_string(loops - m_durations.size()),
+    stringify(m_durations.size()),
+    stringify(loops - m_durations.size()),
   };
 
   if (!m_durations.empty()) {

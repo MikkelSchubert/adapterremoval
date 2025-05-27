@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "json.hpp"
+#include "json.hpp"     // declarations
 #include "debug.hpp"    // for AR_REQUIRE
-#include "strutils.hpp" // for join_text
+#include "strutils.hpp" // for join_text, stringify
 #include <cmath>        // for isinf, isnan
 #include <memory>       // for make_shared, __shared_ptr_access, shar...
 #include <sstream>      // for ostringstream
@@ -109,7 +109,7 @@ json_token::from_str_vec(const string_vec& values)
 json_ptr
 json_token::from_i64(const int64_t value)
 {
-  return std::make_shared<json_token>(std::to_string(value));
+  return std::make_shared<json_token>(stringify(value));
 }
 
 json_ptr
@@ -117,7 +117,7 @@ json_token::from_i64_vec(const counts& values)
 {
   string_vec strings;
   for (size_t i = 0; i < values.size(); ++i) {
-    strings.push_back(std::to_string(values.get(i)));
+    strings.push_back(stringify(values.get(i)));
   }
 
   return json_token::from_raw_vec(strings);
@@ -126,7 +126,7 @@ json_token::from_i64_vec(const counts& values)
 json_ptr
 json_token::from_u64(const uint64_t value)
 {
-  return std::make_shared<json_token>(std::to_string(value));
+  return std::make_shared<json_token>(stringify(value));
 }
 
 json_ptr

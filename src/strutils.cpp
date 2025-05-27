@@ -3,6 +3,7 @@
 #include "strutils.hpp" // declarations
 #include "debug.hpp"    // for AR_REQUIRE
 #include <algorithm>    // for min, reverse, max
+#include <array>        // for array
 #include <cctype>       // for isprint, isalnum, tolower, toupper
 #include <charconv>     // for from_chars
 #include <cmath>        // for log10, pow, round
@@ -58,6 +59,77 @@ levenshtein(const std::string_view s, const std::string_view t)
   }
 
   return v0.back();
+}
+
+namespace {
+
+template<typename T>
+inline std::string
+stringify_int(T value)
+{
+  std::array<char, 20> buffer{};
+
+  auto result =
+    std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
+  AR_REQUIRE(result.ec == std::errc(),
+             std::make_error_code(result.ec).message());
+
+  return std::string(buffer.data(), result.ptr - buffer.data());
+}
+
+} // namespace
+
+std::string
+stringify(int value)
+{
+  return stringify_int(static_cast<long long>(value));
+}
+
+std::string
+stringify(long value)
+{
+  return stringify_int(static_cast<long long>(value));
+}
+
+std::string
+stringify(long long value)
+{
+  return stringify_int(value);
+}
+
+std::string
+stringify(unsigned value)
+{
+  return stringify_int(static_cast<unsigned long long>(value));
+}
+
+std::string
+stringify(unsigned long value)
+{
+  return stringify_int(static_cast<unsigned long long>(value));
+}
+
+std::string
+stringify(unsigned long long value)
+{
+  return stringify_int(value);
+}
+
+std::string
+stringify(double value)
+{
+  // Largest possible value should require 317 chars
+  std::array<char, 320> buffer{};
+
+  auto result = std::to_chars(buffer.data(),
+                              buffer.data() + buffer.size(),
+                              value,
+                              std::chars_format::fixed,
+                              6);
+  AR_REQUIRE(result.ec == std::errc(),
+             std::make_error_code(result.ec).message());
+
+  return std::string(buffer.data(), result.ptr - buffer.data());
 }
 
 namespace {
@@ -419,7 +491,7 @@ format_rough_number(size_t value, size_t out_digits)
   auto rounded = static_cast<double>(value);
   auto in_digits = static_cast<size_t>(std::log10(rounded));
   if (out_digits > in_digits) {
-    return std::to_string(value);
+    return stringify(value);
   }
 
   // Round to desired number of significant digits

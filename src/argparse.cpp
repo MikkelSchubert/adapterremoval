@@ -12,7 +12,7 @@
 #include <memory>       // for unique_ptr, shared_ptr, ...
 #include <sstream>      // for operator<<, basic_ostream, ostringstream
 #include <stdexcept>    // for invalid_argument
-#include <string>       // for string, to_string
+#include <string>       // for string
 #include <string_view>  // for string_view
 #include <utility>      // for pair
 
@@ -774,14 +774,14 @@ u32_sink::with_default(uint32_t value)
 std::string
 u32_sink::value() const
 {
-  return std::to_string(*m_sink);
+  return stringify(*m_sink);
 }
 
 std::string
 u32_sink::default_value() const
 {
   AR_REQUIRE(has_default());
-  return std::to_string(m_default);
+  return stringify(m_default);
 }
 
 u32_sink&
@@ -808,10 +808,10 @@ u32_sink::consume(string_vec_citer start, const string_vec_citer& end)
   const auto value = str_to_u32(preprocess(*start));
   if (value < m_minimum) {
     throw std::invalid_argument("value must be at least " +
-                                std::to_string(m_minimum));
+                                stringify(m_minimum));
   } else if (value > m_maximum) {
     throw std::invalid_argument("value must be at most " +
-                                std::to_string(m_maximum));
+                                stringify(m_maximum));
   }
 
   *m_sink = value;
@@ -846,7 +846,7 @@ namespace {
 std::string
 double_to_string(double value)
 {
-  auto s = std::to_string(value);
+  auto s = stringify(value);
   s.erase(s.find_last_not_of('0') + 1, std::string::npos);
   s.erase(s.find_last_not_of('.') + 1, std::string::npos);
 

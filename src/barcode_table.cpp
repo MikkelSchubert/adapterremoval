@@ -8,6 +8,7 @@
 #include "fastq_enc.hpp"     // for ACGT
 #include "sequence.hpp"      // for sequence_pair
 #include "sequence_sets.hpp" // for sample_set
+#include "strutils.hpp"      // for stringify
 #include <algorithm>         // for min, max, sort
 #include <cstddef>           // for size_t
 #include <cstdint>           // for int32_t, uint32_t
@@ -330,7 +331,7 @@ operator<<(std::ostream& os, const barcode_key& value)
       case barcode_key::ambiguous:
         return "ambiguous";
       default:
-        return std::to_string(idx);
+        return stringify(idx);
     }
   };
 

@@ -7,7 +7,7 @@
 #include "strutils.hpp"    // for string_vec, indent_lines
 #include <ostream>         // for ostream
 #include <stdexcept>       // for invalid_argument
-#include <string>          // for to_string
+#include <string>          // for string
 #include <string_view>     // for string_view
 #include <vector>          // for vector
 

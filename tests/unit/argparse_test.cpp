@@ -4,7 +4,7 @@
 #include "argparse.hpp" // for argument, parser, str_sink, parse_result
 #include "errors.hpp"   // for assert_failed
 #include "logging.hpp"  // for log_capture
-#include "strutils.hpp" // for string_vec
+#include "strutils.hpp" // for string_vec, stringify
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cstddef>      // for size_t
 #include <cstdint>      // for uint32_t
@@ -242,7 +242,7 @@ TEST_CASE("with uint minimum", "[argparse::u32_sink]")
   SECTION("pass")
   {
     const auto expected = GENERATE(100LU, 101LU, 4294967295LU);
-    string_vec values{ std::to_string(expected) };
+    string_vec values{ stringify(expected) };
     REQUIRE(sink.consume(values.begin(), values.end()) == 1);
     REQUIRE(value == expected);
   }
@@ -286,7 +286,7 @@ TEST_CASE("with uint maximum", "[argparse::u32_sink]")
   SECTION("pass")
   {
     const auto expected = GENERATE(0LU, 99LU, 100LU);
-    string_vec values{ std::to_string(expected) };
+    string_vec values{ stringify(expected) };
     REQUIRE(sink.consume(values.begin(), values.end()) == 1);
     REQUIRE(value == expected);
   }
