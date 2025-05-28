@@ -35,12 +35,14 @@ jobs:
         # This speeds up apt-get, by preventing the man-db step from running
         run: sudo rm -vf /var/lib/man-db/auto-update
 
-      - name: Audit all outbound calls
-        uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
+      - name: harden runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: "3.x"
@@ -51,8 +53,8 @@ jobs:
       # Use mold for faster linking
       - uses: rui314/setup-mold@45c2b085bbc0283c8e1443d4a511aaa1eda5a3a1 # v1
         with:
-            mold-version: 2.38.0
-            make-default: true
+          mold-version: 2.38.0
+          make-default: true
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@a1209f81afb8c005c13b4296c32e363431bffea5 # v1.2.17
@@ -89,5 +91,5 @@ jobs:
         run: make regression-tests
 
       - name: CCache cleanup
-      # Manual ccache cleanup, using the ccache-action default max size
+        # Manual ccache cleanup, using the ccache-action default max size
         run: env CCACHE_MAXSIZE=500M ccache --cleanup
