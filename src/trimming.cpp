@@ -326,7 +326,11 @@ se_reads_processor::process(chunk_ptr chunk)
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
   for (const auto& it : m_config.samples->at(m_sample)) {
-    aligners.emplace_back(it.adapters, m_config.simd);
+    aligners.emplace_back(it.adapters,
+                          m_config.simd,
+                          m_config.mismatch_threshold);
+
+    aligners.back().set_min_se_overlap(m_config.min_adapter_overlap);
   }
 
   AR_REQUIRE(!aligners.empty());
@@ -348,12 +352,12 @@ se_reads_processor::process(chunk_ptr chunk)
     const auto alignment =
       aligners.at(barcode).align_single_end(read, m_config.shift);
 
-    if (m_config.is_good_alignment(alignment)) {
+    if (alignment.is_good()) {
       const auto length = read.length();
       alignment.truncate_single_end(read);
 
-      stats->adapter_trimmed_reads.inc(alignment.adapter_id);
-      stats->adapter_trimmed_bases.inc(alignment.adapter_id,
+      stats->adapter_trimmed_reads.inc(alignment.adapter_id());
+      stats->adapter_trimmed_bases.inc(alignment.adapter_id(),
                                        length - read.length());
     }
 
@@ -449,7 +453,11 @@ pe_reads_processor::process(chunk_ptr chunk)
   std::vector<sequence_aligner> aligners;
   const auto& sample = m_config.samples->at(m_sample);
   for (const auto& it : sample) {
-    aligners.emplace_back(it.adapters, m_config.simd);
+    aligners.emplace_back(it.adapters,
+                          m_config.simd,
+                          m_config.mismatch_threshold);
+
+    aligners.back().set_merge_threshold(m_config.merge_threshold);
   }
 
   auto stats = m_stats.acquire();
@@ -490,10 +498,9 @@ pe_reads_processor::process(chunk_ptr chunk)
     const auto alignment =
       aligners.at(barcode).align_paired_end(read_1, read_2, m_config.shift);
 
-    if (m_config.is_good_alignment(alignment)) {
+    if (alignment.is_good()) {
       const size_t insert_size = alignment.insert_size(read_1, read_2);
-      const bool can_merge_alignment = m_config.can_merge_alignment(alignment);
-      if (can_merge_alignment) {
+      if (alignment.can_merge()) {
         // Insert size calculated from untrimmed reads
         stats->insert_sizes.resize_up_to(insert_size + 1);
         stats->insert_sizes.inc(insert_size);
@@ -503,11 +510,11 @@ pe_reads_processor::process(chunk_ptr chunk)
       const size_t n_adapters = alignment.truncate_paired_end(read_1, read_2);
       const size_t post_trimmed_bp = read_1.length() + read_2.length();
 
-      stats->adapter_trimmed_reads.inc(alignment.adapter_id, n_adapters);
-      stats->adapter_trimmed_bases.inc(alignment.adapter_id,
+      stats->adapter_trimmed_reads.inc(alignment.adapter_id(), n_adapters);
+      stats->adapter_trimmed_bases.inc(alignment.adapter_id(),
                                        pre_trimmed_bp - post_trimmed_bp);
 
-      if (m_config.merge != merge_strategy::none && can_merge_alignment) {
+      if (m_config.merge != merge_strategy::none && alignment.can_merge()) {
         // Track if one or both source reads are trimmed post merging
         merged_reads mstats(read_1, read_2, insert_size);
 

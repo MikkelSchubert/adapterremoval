@@ -55,7 +55,9 @@ public:
 
     const adapter_set adapters = { { "", "" } };
 
-    auto aligner = sequence_aligner(adapters, m_config.simd);
+    auto aligner =
+      sequence_aligner(adapters, m_config.simd, m_config.mismatch_threshold);
+    aligner.set_merge_threshold(m_config.merge_threshold);
 
     auto stats_id = m_stats_id.acquire();
     auto stats_ins = m_stats_ins.acquire();
@@ -74,14 +76,14 @@ public:
       const auto alignment =
         aligner.align_paired_end(read_1, read_2, m_config.shift);
 
-      if (m_config.is_good_alignment(alignment)) {
+      if (alignment.is_good()) {
         stats_id->aligned_pairs++;
-        if (m_config.can_merge_alignment(alignment)) {
+        if (alignment.can_merge()) {
           const size_t insert_size = alignment.insert_size(read_1, read_2);
           stats_ins->insert_sizes.resize_up_to(insert_size + 1);
           stats_ins->insert_sizes.inc(insert_size);
 
-          if (extract_adapter_sequences(alignment, read_1, read_2)) {
+          if (alignment.extract_adapter_sequences(read_1, read_2)) {
             stats_id->pairs_with_adapters++;
 
             stats_id->adapter1.process(read_1.sequence());

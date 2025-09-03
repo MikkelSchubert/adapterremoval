@@ -389,8 +389,9 @@ public:
     , m_config(config)
     , m_reads(reads)
     , m_adapters(config.samples->adapters())
-    , m_aligner(m_adapters, is)
+    , m_aligner(m_adapters, is, config.mismatch_threshold)
   {
+    m_aligner.set_min_se_overlap(config.min_adapter_overlap);
   }
 
 protected:
@@ -430,7 +431,7 @@ public:
     , m_mate_1(mate_1)
     , m_mate_2(mate_2)
     , m_adapters(config.samples->adapters())
-    , m_aligner(m_adapters, is)
+    , m_aligner(m_adapters, is, config.mismatch_threshold)
   {
   }
 

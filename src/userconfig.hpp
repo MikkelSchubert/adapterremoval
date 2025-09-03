@@ -25,11 +25,11 @@ enum class parse_result;
 
 } // namespace argparse
 
+class alignment_info;
 class output_files;
 class sample_output_files;
 class sample_set;
 enum class progress_type;
-struct alignment_info;
 struct output_file;
 
 enum class ar_command
@@ -54,12 +54,6 @@ public:
   argparse::parse_result parse_args(const string_vec& argvec);
 
   output_files get_output_filenames() const;
-
-  /** Characterize an alignment based on user settings. */
-  bool is_good_alignment(const alignment_info& alignment) const;
-
-  /** Returns true if the alignment is sufficient for merge. */
-  bool can_merge_alignment(const alignment_info& alignment) const;
 
   /** Returns runtime in seconds. */
   double runtime() const { return m_runtime.duration(); }

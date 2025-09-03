@@ -55,12 +55,12 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
       std::min(seq1_len - initial_seq1_offset, seq2_len - initial_seq2_offset);
 
     alignment_info current;
-    current.offset = offset;
-    current.length = length;
+    current.m_offset = offset;
+    current.m_length = length;
 
     AR_REQUIRE(static_cast<int>(length) >= alignment.score());
-    if (m_compare_func(current.n_mismatches,
-                       current.n_ambiguous,
+    if (m_compare_func(current.m_n_mismatches,
+                       current.m_n_ambiguous,
                        seq1 + initial_seq1_offset,
                        seq2 + initial_seq2_offset,
                        length,
@@ -79,17 +79,16 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
 }
 
 void
-sequence_aligner::finalize_alignment(alignment_info& alignment,
-                                     const int max_offset)
+sequence_aligner::update_index(alignment_info& alignment, const int max_offset)
 {
-  if (alignment.adapter_id >= 0) {
-    // Convert prioritized adapter index to user-supplied index
-    int index = alignment.adapter_id;
+  // Convert prioritized adapter index to user-supplied index
+  int index = alignment.adapter_id();
+  if (index >= 0) {
     AR_REQUIRE(index < static_cast<int>(m_adapters.size()));
-    alignment.adapter_id = m_adapters.at(index).adapter_id;
+    alignment.m_adapter_id = m_adapters.at(index).adapter_id;
 
     // Prioritize alignments if they involve adapter sequence
-    if (alignment.offset < max_offset) {
+    if (alignment.m_offset < max_offset) {
       m_adapters.at(index).hits++;
 
       while (index > 0 &&
@@ -97,6 +96,35 @@ sequence_aligner::finalize_alignment(alignment_info& alignment,
         std::swap(m_adapters.at(index), m_adapters.at(index - 1));
         index--;
       }
+    }
+  }
+}
+
+void
+sequence_aligner::update_flags(alignment_info& alignment,
+                               const bool paired_end) const
+{
+  AR_REQUIRE(alignment.m_length >=
+             alignment.m_n_ambiguous + alignment.m_n_mismatches);
+
+  alignment.m_is_good = false;
+  alignment.m_can_merge = false;
+
+  // Only pairs of called bases are considered part of the alignment
+  const size_t n_aligned = alignment.m_length - alignment.m_n_ambiguous;
+
+  if (alignment.score() > 0 && (paired_end || n_aligned >= m_min_se_overlap)) {
+    auto mm_threshold = static_cast<size_t>(m_mismatch_threshold * n_aligned);
+    if (n_aligned < 6) {
+      mm_threshold = 0;
+    } else if (n_aligned < 10) {
+      // Allow at most 1 mismatch, possibly set to 0 by the user
+      mm_threshold = std::min<size_t>(1, mm_threshold);
+    }
+
+    if (alignment.m_n_mismatches <= mm_threshold) {
+      alignment.m_can_merge = paired_end && (n_aligned >= m_merge_threshold);
+      alignment.m_is_good = true;
     }
   }
 }
@@ -110,10 +138,10 @@ alignment_info::is_better_than(const alignment_info& other) const
   if (score() > other.score()) {
     return true;
   } else if (score() == other.score()) {
-    if (length > other.length) {
+    if (m_length > other.m_length) {
       return true;
-    } else if (length == other.length) {
-      return n_ambiguous < other.n_ambiguous;
+    } else if (m_length == other.m_length) {
+      return m_n_ambiguous < other.m_n_ambiguous;
     }
   }
 
@@ -125,7 +153,7 @@ alignment_info::truncate_single_end(fastq& read) const
 {
   // Given a shift, the alignment of the adapter may start one or more
   // bases before the start of the sequence, leading to a negative offset
-  const size_t len = std::max<int>(0, offset);
+  const size_t len = std::max<int>(0, m_offset);
 
   return read.truncate(0, len);
 }
@@ -136,7 +164,7 @@ alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
   size_t had_adapter = 0;
   const size_t isize = insert_size(read1, read2);
 
-  if (offset >= 0) {
+  if (m_offset >= 0) {
     // Read1 can potentially extend past read2, but by definition read2
     // cannot extend past read1 when the offset is not negative, so there
     // is no need to edit read2.
@@ -153,21 +181,49 @@ alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
   return had_adapter;
 }
 
+bool
+alignment_info::extract_adapter_sequences(fastq& read1, fastq& read2) const
+{
+  AR_REQUIRE(m_offset <= static_cast<int>(read1.length()));
+  const int template_length =
+    std::max(0, static_cast<int>(read2.length()) + m_offset);
+
+  read1.truncate(std::min<size_t>(read1.length(), template_length));
+  read2.truncate(
+    0,
+    std::max<int>(0, static_cast<int>(read2.length()) - template_length));
+
+  return read1.sequence().length() || read2.sequence().length();
+}
+
 size_t
 alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 {
-  AR_REQUIRE(offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(m_offset <= static_cast<int>(read1.length()));
 
-  return std::max<int>(0, static_cast<int>(read2.length()) + offset);
+  return std::max<int>(0, static_cast<int>(read2.length()) + m_offset);
+}
+
+bool
+alignment_info::operator==(const alignment_info& other) const
+{
+  return (m_offset == other.m_offset) && (m_length == other.m_length) &&
+         (m_n_mismatches == other.m_n_mismatches) &&
+         (m_n_ambiguous == other.m_n_ambiguous) &&
+         (m_adapter_id == other.m_adapter_id) &&
+         (m_is_good == other.m_is_good) && (m_can_merge == other.m_can_merge);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `sequence_aligner`
 
 sequence_aligner::sequence_aligner(const adapter_set& adapters,
-                                   simd::instruction_set is)
+                                   simd::instruction_set is,
+                                   double mismatch_threshold)
   : m_compare_func(simd::get_compare_subsequences_func(is))
   , m_padding(simd::padding(is))
+  , m_mismatch_threshold(mismatch_threshold)
+  , m_merge_threshold(std::numeric_limits<decltype(m_merge_threshold)>::max())
 {
   for (const auto& it : adapters) {
     m_adapters.push_back(
@@ -199,14 +255,15 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift)
                                  adapter.length(),
                                  -max_shift,
                                  read.length())) {
-      alignment.adapter_id = adapter_id;
+      alignment.m_adapter_id = adapter_id;
     }
 
     ++adapter_id;
   }
 
   // All single-end alignments involves adapter sequence
-  finalize_alignment(alignment, std::numeric_limits<int>::max());
+  update_index(alignment, std::numeric_limits<int>::max());
+  update_flags(alignment, false);
 
   return alignment;
 }
@@ -253,16 +310,17 @@ sequence_aligner::align_paired_end(const fastq& read1,
                                  sequence2_len,
                                  min_offset,
                                  max_offset)) {
-      alignment.adapter_id = adapter_id;
+      alignment.m_adapter_id = adapter_id;
       // Convert the alignment into an alignment between read 1 & 2 only
-      alignment.offset -= adapter2.length();
+      alignment.m_offset -= adapter2.length();
       max_adapter_offset = adapter2.length();
     }
 
     adapter_id++;
   }
 
-  finalize_alignment(alignment, max_adapter_offset);
+  update_index(alignment, max_adapter_offset);
+  update_flags(alignment, true);
 
   return alignment;
 }
@@ -315,13 +373,14 @@ sequence_merger::merge(const alignment_info& alignment,
   AR_REQUIRE(m_merge_strategy != merge_strategy::none);
 
   // Gap between the two reads is not allowed
-  AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(alignment.offset() <= static_cast<int>(read1.length()));
 
   // Offset to the first base overlapping read 2
-  const auto read_1_offset = static_cast<size_t>(std::max(0, alignment.offset));
+  const auto read_1_offset =
+    static_cast<size_t>(std::max(0, alignment.offset()));
   // Offset to the last base overlapping read 1
   const size_t read_2_offset =
-    static_cast<int>(read1.length()) - std::max(0, alignment.offset);
+    static_cast<int>(read1.length()) - std::max(0, alignment.offset());
 
   AR_REQUIRE(read1.length() - read_1_offset == read_2_offset);
 
@@ -377,31 +436,16 @@ sequence_merger::merge(const alignment_info& alignment,
   }
 }
 
-bool
-extract_adapter_sequences(const alignment_info& alignment,
-                          fastq& read1,
-                          fastq& read2)
-{
-  AR_REQUIRE(alignment.offset <= static_cast<int>(read1.length()));
-  const int template_length =
-    std::max(0, static_cast<int>(read2.length()) + alignment.offset);
-
-  read1.truncate(std::min<size_t>(read1.length(), template_length));
-  read2.truncate(
-    0,
-    std::max<int>(0, static_cast<int>(read2.length()) - template_length));
-
-  return read1.sequence().length() || read2.sequence().length();
-}
-
 std::ostream&
 operator<<(std::ostream& os, const alignment_info& value)
 {
   return os << "alignment_info{score=" << value.score()
-            << ", adapter_id=" << value.adapter_id
-            << ", offset=" << value.offset << ", length=" << value.length
-            << ", n_mismatches=" << value.n_mismatches
-            << ", n_ambiguous=" << value.n_ambiguous << "}";
+            << ", adapter_id=" << value.m_adapter_id
+            << ", offset=" << value.m_offset << ", length=" << value.m_length
+            << ", n_mismatches=" << value.m_n_mismatches
+            << ", n_ambiguous=" << value.m_n_ambiguous
+            << ", is_good=" << static_cast<int>(value.m_is_good)
+            << ", can_merge=" << static_cast<int>(value.m_can_merge) << "}";
 }
 
 } // namespace adapterremoval
