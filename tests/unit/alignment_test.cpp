@@ -798,7 +798,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 6 disallows mismatches (good)")
   {
-    std::string seq = adapter.substr(0, { GENERATE(2, 3, 4, 5) });
+    std::string seq = adapter.substr(0, GENERATE(2, 3, 4, 5));
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
     REQUIRE(result == ALN().length(seq.length()).is_good());
@@ -806,7 +806,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 6 disallows mismatches (not good)")
   {
-    std::string seq = adapter.substr(0, { GENERATE(2, 3, 4, 5) });
+    std::string seq = adapter.substr(0, GENERATE(2, 3, 4, 5));
     seq.at(0) = 'C'; // single mismatch
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
@@ -815,7 +815,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 10 allows 1 mismatch (good, mm = 0)")
   {
-    std::string seq = adapter.substr(0, { GENERATE(6, 7, 8, 9) });
+    std::string seq = adapter.substr(0, GENERATE(6, 7, 8, 9));
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
     REQUIRE(result == ALN().length(seq.length()).is_good());
@@ -823,7 +823,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 10 allows 1 mismatch (good, mm = 1)")
   {
-    std::string seq = adapter.substr(0, { GENERATE(6, 7, 8, 9) });
+    std::string seq = adapter.substr(0, GENERATE(6, 7, 8, 9));
     seq.at(0) = 'C'; // single mismatch
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
@@ -832,7 +832,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 10 allows 1 mismatch (bad, mm = 2)")
   {
-    std::string seq = adapter.substr(0, { GENERATE(6, 7, 8, 9) });
+    std::string seq = adapter.substr(0, GENERATE(6, 7, 8, 9));
     seq.at(0) = seq.at(3) = 'C'; // two mismatch
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
