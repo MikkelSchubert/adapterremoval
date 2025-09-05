@@ -720,6 +720,21 @@ TEST_CASE("Adapter only sequences, with missing base",
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Misc
+
+// Test for bug where SE alignments would occasionally test sequences with fewer
+// bp than the current score, that therefore could never be picked.
+TEST_CASE("Pointless SE alignments", "[alignment::single_end]")
+{
+  // Subsequent candidates can never be better than the best previous alignment
+  const adapter_set adapters{ { "TT", "" }, { "T", "" }, {} };
+  sequence_aligner aligner{ adapters, simd::instruction_set::none };
+  const alignment_info expected = ALN().length(2).adapter_id(0);
+  const auto result = aligner.align_single_end({ "Rec", "TTT" }, 0);
+  REQUIRE(result == expected);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 //
 
 TEST_CASE("Invalid alignment", "[alignment::paired_end]")
