@@ -7,6 +7,7 @@
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_io.hpp"        // for managed_writer
 #include "scheduler.hpp"         // for analytical_step, chunk_ptr, chunk_vec
+#include <atomic>                // for atomic_size_t
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint32_t, uint64_t
 #include <limits>                // for numeric_limits
@@ -117,7 +118,7 @@ class post_process_fastq : public analytical_step
 public:
   /** Constructor. */
   post_process_fastq(const userconfig& config,
-                     size_t next_step,
+                     std::shared_ptr<std::atomic_size_t> next_step,
                      statistics& stats);
 
   ~post_process_fastq() override;
@@ -150,7 +151,7 @@ private:
   //! Destination for statistics collected from raw mate 2 reads
   fastq_stats_ptr m_statistics_2;
   //! The analytical step following this step
-  const size_t m_next_step;
+  const std::shared_ptr<std::atomic_size_t> m_next_step;
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
 

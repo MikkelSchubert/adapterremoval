@@ -57,6 +57,15 @@ enum class read_type
   merged_fail,
 };
 
+/** Differentiate between mate 1 (including SE) and mate 2 reads */
+enum class read_mate
+{
+  //! Forward orientation
+  _1 = 1,
+  //! Reverse orientation
+  _2 = 2,
+};
+
 /** Enum describing the user-requested output format for processed reads */
 enum class output_format
 {
@@ -119,6 +128,22 @@ enum class barcode_table_orientation
   reverse,
   //! The user has provided an oritentation per barcode
   explicit_,
+};
+
+/** Strategies for selecting the adapter sequences to trim, if any */
+enum class adapter_selection
+{
+  manual,    // use user-provided adapter sequence(s)
+  automatic, // attempt to detect adapters in sequence data automatically
+  none,      // data is assumed to not contain adapters
+};
+
+/** Strategies for how to handle no adapters being auto-selected */
+enum class adapter_fallback
+{
+  abort,   // an adapter must be identified, otherwise abort
+  unknown, // fallback to unspecified (empty) adapter, if not found
+  none,    // fallback to `adapter_select_strategy::none`, if not found
 };
 
 //! Path used to indicate that a file is not needed

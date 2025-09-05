@@ -106,7 +106,7 @@ class analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  analytical_chunk() = default;
+  analytical_chunk();
 
   /** Destructor; does nothing. */
   ~analytical_chunk();
@@ -139,12 +139,44 @@ public:
   //! Size of (uncompressed) data in buffers;
   size_t uncompressed_size = 0;
 
+  /** Class used to contain adapter  */
+  struct adapter_selection_stats
+  //! Number of matches for each forward adapter candidate
+  {
+    struct values
+    {
+      size_t hits = 0;
+      size_t length = 0;
+      size_t mismatches = 0;
+
+      void inc(size_t length_, size_t mismatches_)
+      {
+        hits++;
+        length += length_;
+        mismatches += mismatches_;
+      }
+    };
+
+    //! Matches for each adapter candidate for mate 1 reads
+    std::vector<values> mate_1{};
+    //! Matches for each adapter candidate for mate 2 reads
+    std::vector<values> mate_2{};
+
+    //! Indicates if this is the the last chunk to run detection on
+    bool is_last = false;
+  };
+
+  //! (Optional) adapter detection stats
+  std::unique_ptr<adapter_selection_stats> adapters{};
+
   analytical_chunk(const analytical_chunk&) = delete;
   analytical_chunk(analytical_chunk&&) = delete;
   analytical_chunk& operator=(const analytical_chunk&) = delete;
   analytical_chunk& operator=(analytical_chunk&&) = delete;
 };
 
+using adapter_selection_values =
+  std::vector<analytical_chunk::adapter_selection_stats::values>;
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
 using chunk_pair = std::pair<size_t, chunk_ptr>;
 using chunk_vec = std::vector<chunk_pair>;

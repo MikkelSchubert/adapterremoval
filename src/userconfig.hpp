@@ -9,6 +9,7 @@
 #include "sequence_sets.hpp" // for sample_set
 #include "simd.hpp"          // for instruction_set
 #include "timer.hpp"         // for monotonic_timer
+#include <atomic>            // for atomic
 #include <cstdint>           // for uint32_t, uint64_t
 #include <memory>            // for unique_ptr
 #include <string>            // for basic_string, string
@@ -177,9 +178,15 @@ public:
   //! Normalize the orientation of merged reads to forward
   bool normalize_orientation{};
 
+  //! Strategy for selecting what adapters to trim
+  mutable std::atomic<adapter_selection> adapter_selection_strategy =
+    adapter_selection::manual;
+  //! Fallback strategy if the adapters could not be detected automatically
+  adapter_fallback adapter_fallback_strategy = adapter_fallback::abort;
   //! Sample specific barcodes and adapters. In non-demultiplexing mode this
   //! set contains a single unnamed sample with empty barcodes
-  std::unique_ptr<sample_set> samples{};
+  // FIXME! Should preferably not be mutable
+  mutable std::unique_ptr<sample_set> samples{};
 
   //! Title used for HTML report
   std::string report_title{};

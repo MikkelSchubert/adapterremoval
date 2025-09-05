@@ -764,8 +764,8 @@ TEST_CASE("set adapters for non-demultiplexing", "[sample_set]")
   ss.set_adapters(as);
   CHECK(ss.adapters() == as);
 
-  CHECK(ss.at(0).at(0).adapters == as);
-  CHECK(ss.unidentified().at(0).adapters == as);
+  CHECK(ss.at(0).at(0).adapters() == as);
+  CHECK(ss.unidentified().at(0).adapters() == as);
 }
 
 TEST_CASE("set adapters for demultiplexing", "[sample_set]")
@@ -779,9 +779,9 @@ TEST_CASE("set adapters for demultiplexing", "[sample_set]")
   ss.set_adapters(as);
 
   CHECK(ss.adapters() == as);
-  CHECK(ss.at(0).at(0).adapters ==
+  CHECK(ss.at(0).at(0).adapters() ==
         adapter_set{ { "GACAAACGTA", "TACGTTGGAT" } });
-  CHECK(ss.at(1).at(0).adapters ==
+  CHECK(ss.at(1).at(0).adapters() ==
         adapter_set{ { "ATCGGACGTA", "ATGCATGGAT" } });
 }
 
@@ -793,7 +793,7 @@ TEST_CASE("set adapters for demultiplexing before loading", "[sample_set]")
   vec_reader reader{ { "sample_1 ACGTA TTGTC" } };
   ss.load(reader, barcode_config{});
 
-  CHECK(ss.at(0).at(0).adapters ==
+  CHECK(ss.at(0).at(0).adapters() ==
         adapter_set{ { "GACAAACGTA", "TACGTTGGAT" } });
 }
 

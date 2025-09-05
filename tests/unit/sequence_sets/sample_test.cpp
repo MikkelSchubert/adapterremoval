@@ -78,7 +78,7 @@ TEST_CASE("sample_sequences equality operator", "[sample_sequences]")
   SECTION("adapters")
   {
     auto set_2 = set_1;
-    set_2.adapters = adapter_set{ { "AAAA", "TTTT" } };
+    set_2.set_adapters({ { "AAAA", "TTTT" } });
     CHECK_FALSE(set_1 == set_2);
   }
 }
@@ -181,7 +181,7 @@ TEST_CASE("set adapters for sample", "[sample]")
   sample_sequences ss{ dna_sequence{ "TTAC" },
                        dna_sequence{ "GATG" },
                        barcode_orientation::forward };
-  ss.adapters = adapter_set{ { "CATCAAAA", "GTAAGGGG" } };
+  ss.set_adapters({ { "CATCAAAA", "GTAAGGGG" } });
 
   CHECK(std::vector(s.begin(), s.end()) == std::vector{ ss });
 }

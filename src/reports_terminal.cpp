@@ -23,7 +23,7 @@ print_trimming_parameters(const userconfig& config)
       break;
     case trimming_strategy::window:
       log::info() << "  - Window based quality based trimming with window size "
-                  << config.trim_window_length << "and minimum quality score "
+                  << config.trim_window_length << " and minimum quality score "
                   << config.trim_quality_score
                   << (config.trim_ambiguous_bases ? " (including Ns)" : "");
       break;

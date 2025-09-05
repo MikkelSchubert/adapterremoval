@@ -103,7 +103,7 @@ disallow_multiple_barcodes(const sample& s)
         AR_REQUIRE(ss_0.orientation != barcode_orientation::unspecified);
         AR_REQUIRE(ss_1.orientation != barcode_orientation::unspecified);
         AR_REQUIRE(ss_0.has_read_group == ss_1.has_read_group);
-        AR_REQUIRE(ss_0.adapters == ss_1.adapters);
+        AR_REQUIRE(ss_0.adapters() == ss_1.adapters());
         AR_REQUIRE(ss_0.read_group_ == ss_1.read_group_);
         return;
       }
@@ -492,6 +492,17 @@ operator<<(std::ostream& os, const adapter_set& value)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'sample_sequences' class
 
+sample_sequences::sample_sequences(const sample_sequences& other)
+  : has_read_group(other.has_read_group)
+  , read_group_(other.read_group_)
+  , barcode_1(other.barcode_1)
+  , barcode_2(other.barcode_2)
+  , orientation(other.orientation)
+  , m_adapters(other.m_adapters)
+  , m_uninitialized_adapters(other.m_uninitialized_adapters.load())
+{
+}
+
 sample_sequences::sample_sequences(dna_sequence barcode_1_,
                                    dna_sequence barcode_2_,
                                    barcode_orientation orientation_)
@@ -499,6 +510,26 @@ sample_sequences::sample_sequences(dna_sequence barcode_1_,
   , barcode_2(std::move(barcode_2_))
   , orientation(orientation_)
 {
+}
+
+sample_sequences&
+sample_sequences::operator=(const sample_sequences& other)
+{
+  has_read_group = other.has_read_group;
+  read_group_ = other.read_group_;
+  barcode_1 = other.barcode_1;
+  barcode_2 = other.barcode_2;
+  orientation = other.orientation;
+  m_adapters = other.m_adapters;
+  m_uninitialized_adapters = other.m_uninitialized_adapters.load();
+  return *this;
+}
+
+const adapter_set&
+sample_sequences::adapters() const
+{
+  AR_REQUIRE(!m_uninitialized_adapters);
+  return m_adapters;
 }
 
 bool
@@ -509,7 +540,7 @@ sample_sequences::operator==(const sample_sequences& other) const
          this->barcode_1 == other.barcode_1 &&
          this->barcode_2 == other.barcode_2 &&
          this->orientation == other.orientation &&
-         this->adapters == other.adapters;
+         this->adapters() == other.adapters();
 }
 
 std::ostream&
@@ -521,7 +552,7 @@ operator<<(std::ostream& os, const sample_sequences& value)
             << ", barcode_1=" << value.barcode_1
             << ", barcode_2=" << value.barcode_2
             << ", orientation=" << value.orientation
-            << ", adapters=" << value.adapters << "}";
+            << ", adapters=" << value.adapters() << "}";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -559,7 +590,7 @@ void
 sample::set_adapters(const adapter_set& adapters)
 {
   for (auto& it : m_barcodes) {
-    it.adapters = adapters.add_barcodes(it.barcode_1, it.barcode_2);
+    it.m_adapters = adapters.add_barcodes(it.barcode_1, it.barcode_2);
   }
 }
 
@@ -596,6 +627,14 @@ sample::set_read_group(const read_group& read_group_)
     }
 
     it->read_group_.set_orientation(it->orientation);
+  }
+}
+
+void
+sample::set_uninitialized_adapters(bool value)
+{
+  for (auto& it : m_barcodes) {
+    it.m_uninitialized_adapters = value;
   }
 }
 
@@ -716,6 +755,29 @@ sample_set::load(line_reader_base& reader, const barcode_config& config)
   }
 
   std::swap(m_samples, samples);
+}
+
+const adapter_set&
+sample_set::adapters() const
+{
+  AR_REQUIRE(!m_uninitialized_adapters);
+  return m_adapters;
+}
+
+void
+sample_set::set_uninitialized_adapters(bool value)
+{
+  m_uninitialized_adapters = value;
+  for (auto& it : m_samples) {
+    it.set_uninitialized_adapters(value);
+  }
+}
+
+const adapter_set&
+sample_set::uninitialized_adapters() const
+{
+  AR_REQUIRE(m_uninitialized_adapters);
+  return m_adapters;
 }
 
 void

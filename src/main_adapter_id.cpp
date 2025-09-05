@@ -11,10 +11,11 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "statistics.hpp"    // for trimming_statistics
 #include "userconfig.hpp"    // for userconfig
-#include <cstddef>           // for size_t
-#include <memory>            // for unique_ptr, __shared_ptr_access, make_s...
-#include <string>            // for string, operator<<, char_traits
-#include <vector>            // for vector
+#include <atomic>
+#include <cstddef> // for size_t
+#include <memory>  // for unique_ptr, __shared_ptr_access, make_s...
+#include <string>  // for string, operator<<, char_traits
+#include <vector>  // for vector
 
 namespace adapterremoval {
 
@@ -147,8 +148,10 @@ identify_adapter_sequences(const userconfig& config)
   }
 
   // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
-  const size_t postproc_step =
-    sch.add<post_process_fastq>(config, final_step, stats);
+  const size_t postproc_step = sch.add<post_process_fastq>(
+    config,
+    std::make_unique<std::atomic_size_t>(final_step),
+    stats);
 
   // Step 1: Read input file(s)
   read_fastq::add_steps(sch, config, postproc_step, stats);

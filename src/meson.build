@@ -104,6 +104,8 @@ libcore = static_library(
 exe = executable(
     meson.project_name(),
     'adapter_id.cpp',
+    'adapter_select.cpp',
+    'adapters.cpp',
     'benchmarking.cpp',
     'demultiplexing.cpp',
     'fastq_io.cpp',

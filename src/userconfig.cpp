@@ -395,6 +395,34 @@ configure_encoding(const std::string& value,
   AR_FAIL("unhandled qualitybase value");
 }
 
+adapter_selection
+configure_adapter_selection(const std::string& value)
+{
+  if (value == "auto") {
+    return adapter_selection::automatic;
+  } else if (value == "manual") {
+    return adapter_selection::manual;
+  } else if (value == "none") {
+    return adapter_selection::none;
+  }
+
+  AR_FAIL("unhandled qualitybase value");
+}
+
+adapter_fallback
+configure_adapter_fallback(const std::string& value)
+{
+  if (value == "abort") {
+    return adapter_fallback::abort;
+  } else if (value == "none") {
+    return adapter_fallback::none;
+  } else if (value == "unknown") {
+    return adapter_fallback::unknown;
+  }
+
+  AR_FAIL("unhandled qualitybase value");
+}
+
 bool
 parse_output_formats(const argparse::parser& argparser,
                      output_format& file_format,
@@ -678,7 +706,7 @@ userconfig::userconfig()
     .with_default(5);
 
   //////////////////////////////////////////////////////////////////////////////
-  argparser.add_header("PROCESSING:");
+  argparser.add_header("ADAPTER SELECTION:");
 
   argparser.add("--adapter1", "SEQ")
     .help("Adapter sequence expected to be found in mate 1 reads. Any 'N' in "
@@ -698,6 +726,28 @@ userconfig::userconfig()
     .conflicts_with("--adapter1")
     .conflicts_with("--adapter2")
     .bind_str(&adapter_list);
+
+  argparser.add("--adapter-selection", "X")
+    .help(
+      "How to select the adapters to trim. If 'auto', attempt to "
+      "determinate adapter sequences automatically from the input data, if "
+      "'manual' use the user-defined adapter sequences, and if 'none', assume "
+      "that the data contains no adapter sequences [default: 'manual' if "
+      "--adapter1, --adapter2, or --adapter-list were used, otherwise 'auto']")
+    .bind_str(nullptr)
+    .with_choices({ "auto", "manual", "none" });
+
+  argparser.add("--adapter-fallback", "X")
+    .help(
+      "If '--adapter-select auto' is used, and no adapter sequences could be "
+      "identified, either 'abort' trimming, assume that there are 'none', or "
+      "trim 'unknown' adapter sequences based on overlap analyses (PE only)")
+    .bind_str(nullptr)
+    .with_choices({ "abort", "none", "unknown" })
+    .with_default("abort");
+
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("PROCESSING:");
 
   argparser.add_separator();
   argparser.add("--min-adapter-overlap", "N")
@@ -1609,6 +1659,25 @@ userconfig::is_low_complexity_filtering_enabled() const
 bool
 userconfig::setup_adapter_sequences()
 {
+  if (m_argparser->is_set("--adapter-selection")) {
+    adapter_selection_strategy =
+      configure_adapter_selection(m_argparser->value("--adapter-selection"));
+  } else if (m_argparser->is_set("--adapter1") ||
+             m_argparser->is_set("--adapter2") ||
+             m_argparser->is_set("--adapter-list")) {
+    adapter_selection_strategy = adapter_selection::manual;
+  } else {
+    adapter_selection_strategy = adapter_selection::manual;
+    // FIXME: Tests must be updated
+    // adapter_selection_strategy = adapter_selection::automatic;
+  }
+
+  // FIXME: Warn/abort if 'unknown' is used with SE reads? Default to 'abort'
+  // for SE?
+
+  adapter_fallback_strategy =
+    configure_adapter_fallback(m_argparser->value("--adapter-fallback"));
+
   adapter_set adapters;
   if (m_argparser->is_set("--adapter-list")) {
     try {

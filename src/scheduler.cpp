@@ -25,7 +25,8 @@ enum class threadtype
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_chunk
 
-// Out of line implementation to avoid adding dependency on fastq to every file
+// Out of line implementation to avoid adding dependencies to every file
+analytical_chunk::analytical_chunk() = default;
 analytical_chunk::~analytical_chunk() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
