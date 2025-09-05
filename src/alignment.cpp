@@ -36,7 +36,7 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
   // the maximum possible score is `length` when all bases match
   int end_offset =
     std::min(max_offset,
-             static_cast<int>(seq1_len) - std::max(1, alignment.score()));
+             static_cast<int>(seq1_len) - std::max(0, alignment.score()) - 1);
 
   bool alignment_found = false;
   for (; offset <= end_offset; ++offset) {
