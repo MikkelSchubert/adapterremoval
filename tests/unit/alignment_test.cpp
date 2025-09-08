@@ -31,13 +31,6 @@ struct ALN;
     return *this;                                                              \
   }
 
-#define TEST_ALIGNMENT_FLAG(NAME)                                              \
-  ALN& NAME()                                                                  \
-  {                                                                            \
-    info.m_##NAME = true;                                                      \
-    return *this;                                                              \
-  }
-
 // Parameterize tests over supported SIMD instruction sets
 #define PARAMETERIZE_IS GENERATE(from_range(simd::supported()))
 
@@ -57,9 +50,19 @@ struct ALN
   TEST_ALIGNMENT_SETTER(size_t, length);
   TEST_ALIGNMENT_SETTER(size_t, n_mismatches);
   TEST_ALIGNMENT_SETTER(size_t, n_ambiguous);
-  TEST_ALIGNMENT_FLAG(is_good);
-  TEST_ALIGNMENT_FLAG(can_merge);
   TEST_ALIGNMENT_SETTER(int, adapter_id);
+
+  ALN& is_good()
+  {
+    info.m_type = alignment_type::good;
+    return *this;
+  }
+
+  ALN& can_merge()
+  {
+    info.m_type = alignment_type::mergeable;
+    return *this;
+  }
 
   // NOLINTNEXTLINE(hicpp-explicit-conversions)
   operator const alignment_info&() const { return info; }
@@ -891,7 +894,7 @@ TEST_CASE("can_merge requires good alignment", "[alignment:flags]")
     // A threshold of 0 is functionally identical to 1
     aligner.set_merge_threshold(GENERATE(0, 1, 2, 3, 4, 5, 6));
     const auto result = aligner.align_paired_end(read1, read2, 0);
-    REQUIRE(result == ALN().offset(2).length(6).is_good().can_merge());
+    REQUIRE(result == ALN().offset(2).length(6).can_merge());
   }
 
   SECTION("cannot merge when threshold greater than")
@@ -914,8 +917,7 @@ TEST_CASE("can_merge threshold ignores Ns", "[alignment:flags]")
     // A threshold of 0 is functionally identical to 1
     aligner.set_merge_threshold(GENERATE(4, 5));
     const auto result = aligner.align_paired_end(read1, read2, 0);
-    REQUIRE(result ==
-            ALN().offset(2).length(6).n_ambiguous(1).is_good().can_merge());
+    REQUIRE(result == ALN().offset(2).length(6).n_ambiguous(1).can_merge());
   }
 
   SECTION("cannot merge when threshold greater than")
@@ -1692,21 +1694,24 @@ TEST_CASE("stringmaker for empty alignment_info")
   os << alignment_info{};
 
   REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
-                      "length=0, n_mismatches=0, n_ambiguous=0, is_good=0, "
-                      "can_merge=0}");
+                      "length=0, n_mismatches=0, n_ambiguous=0, m_type=bad}");
 }
 
 TEST_CASE("stringmaker for alignment_info")
 {
-  alignment_info info =
-    ALN().offset(2).length(3).n_mismatches(4).n_ambiguous(5).adapter_id(1);
+  alignment_info info = ALN()
+                          .offset(2)
+                          .length(3)
+                          .n_mismatches(4)
+                          .n_ambiguous(5)
+                          .adapter_id(1)
+                          .is_good();
 
   std::ostringstream os;
   os << info;
 
   REQUIRE(os.str() == "alignment_info{score=-10, adapter_id=1, offset=2, "
-                      "length=3, n_mismatches=4, n_ambiguous=5, is_good=0, "
-                      "can_merge=0}");
+                      "length=3, n_mismatches=4, n_ambiguous=5, m_type=good}");
 }
 
 TEST_CASE("stringmaker for ALN")
@@ -1715,8 +1720,7 @@ TEST_CASE("stringmaker for ALN")
   os << alignment_info{};
 
   REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
-                      "length=0, n_mismatches=0, n_ambiguous=0, is_good=0, "
-                      "can_merge=0}");
+                      "length=0, n_mismatches=0, n_ambiguous=0, m_type=bad}");
 }
 
 TEST_CASE("stringmaker for MMNs")

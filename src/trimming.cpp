@@ -352,7 +352,7 @@ se_reads_processor::process(chunk_ptr chunk)
     const auto alignment =
       aligners.at(barcode).align_single_end(read, m_config.shift);
 
-    if (alignment.is_good()) {
+    if (alignment.type() >= alignment_type::good) {
       const auto length = read.length();
       alignment.truncate_single_end(read);
 
@@ -498,9 +498,9 @@ pe_reads_processor::process(chunk_ptr chunk)
     const auto alignment =
       aligners.at(barcode).align_paired_end(read_1, read_2, m_config.shift);
 
-    if (alignment.is_good()) {
+    if (alignment.type() >= alignment_type::good) {
       const size_t insert_size = alignment.insert_size(read_1, read_2);
-      if (alignment.can_merge()) {
+      if (alignment.type() == alignment_type::mergeable) {
         // Insert size calculated from untrimmed reads
         stats->insert_sizes.resize_up_to(insert_size + 1);
         stats->insert_sizes.inc(insert_size);
@@ -514,7 +514,8 @@ pe_reads_processor::process(chunk_ptr chunk)
       stats->adapter_trimmed_bases.inc(alignment.adapter_id(),
                                        pre_trimmed_bp - post_trimmed_bp);
 
-      if (m_config.merge != merge_strategy::none && alignment.can_merge()) {
+      if (m_config.merge != merge_strategy::none &&
+          alignment.type() == alignment_type::mergeable) {
         // Track if one or both source reads are trimmed post merging
         merged_reads mstats(read_1, read_2, insert_size);
 

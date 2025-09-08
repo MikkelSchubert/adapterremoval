@@ -76,9 +76,9 @@ public:
       const auto alignment =
         aligner.align_paired_end(read_1, read_2, m_config.shift);
 
-      if (alignment.is_good()) {
+      if (alignment.type() >= alignment_type::good) {
         stats_id->aligned_pairs++;
-        if (alignment.can_merge()) {
+        if (alignment.type() == alignment_type::mergeable) {
           const size_t insert_size = alignment.insert_size(read_1, read_2);
           stats_ins->insert_sizes.resize_up_to(insert_size + 1);
           stats_ins->insert_sizes.inc(insert_size);

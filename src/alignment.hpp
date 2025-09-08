@@ -16,6 +16,17 @@ enum class merge_strategy;
 class adapter_set;
 class fastq;
 
+/** Alignment evaluation from user-specified error-rate and merge threshold */
+enum class alignment_type
+{
+  //! Either unaligned or a poor alignment
+  bad = 0,
+  //! Good alignment, but cannot be merged (if PE)
+  good,
+  //! Good alignment that can be merged (if PE)
+  mergeable,
+};
+
 /**
  * Summarizes an alignment.
  *
@@ -117,10 +128,7 @@ public:
   [[nodiscard]] int offset() const { return m_offset; }
 
   /** Returns true if the alignment meets minimum requirements */
-  [[nodiscard]] bool is_good() const { return m_is_good; }
-
-  /** Returns true if the alignment can be merged */
-  [[nodiscard]] bool can_merge() const { return m_is_good && m_can_merge; }
+  [[nodiscard]] alignment_type type() const { return m_type; }
 
   /** Compares two alignments for equality. This also compares quality flags */
   bool operator==(const alignment_info& other) const;
@@ -145,9 +153,7 @@ private:
   size_t m_n_ambiguous = 0;
 
   //! Specifies if the alignment is considered a "good" alignment
-  bool m_is_good = false;
-  //! Specifies if the alignment can be merged (must be good)
-  bool m_can_merge = false;
+  alignment_type m_type = alignment_type::bad;
 
   /** Creates debug representation of an adapter set */
   friend std::ostream& operator<<(std::ostream&, const alignment_info&);

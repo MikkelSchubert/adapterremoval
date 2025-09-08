@@ -107,8 +107,7 @@ sequence_aligner::update_flags(alignment_info& alignment,
   AR_REQUIRE(alignment.m_length >=
              alignment.m_n_ambiguous + alignment.m_n_mismatches);
 
-  alignment.m_is_good = false;
-  alignment.m_can_merge = false;
+  alignment.m_type = alignment_type::bad;
 
   // Only pairs of called bases are considered part of the alignment
   const size_t n_aligned = alignment.m_length - alignment.m_n_ambiguous;
@@ -123,8 +122,9 @@ sequence_aligner::update_flags(alignment_info& alignment,
     }
 
     if (alignment.m_n_mismatches <= mm_threshold) {
-      alignment.m_can_merge = paired_end && (n_aligned >= m_merge_threshold);
-      alignment.m_is_good = true;
+      alignment.m_type = (paired_end && (n_aligned >= m_merge_threshold))
+                           ? alignment_type::mergeable
+                           : alignment_type::good;
     }
   }
 }
@@ -210,8 +210,7 @@ alignment_info::operator==(const alignment_info& other) const
   return (m_offset == other.m_offset) && (m_length == other.m_length) &&
          (m_n_mismatches == other.m_n_mismatches) &&
          (m_n_ambiguous == other.m_n_ambiguous) &&
-         (m_adapter_id == other.m_adapter_id) &&
-         (m_is_good == other.m_is_good) && (m_can_merge == other.m_can_merge);
+         (m_adapter_id == other.m_adapter_id) && (m_type == other.m_type);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -439,13 +438,27 @@ sequence_merger::merge(const alignment_info& alignment,
 std::ostream&
 operator<<(std::ostream& os, const alignment_info& value)
 {
+  std::string_view type;
+  switch (value.type()) {
+    case alignment_type::bad:
+      type = "bad";
+      break;
+    case alignment_type::good:
+      type = "good";
+      break;
+    case alignment_type::mergeable:
+      type = "mergeable";
+      break;
+    default:
+      AR_FAIL("invalid alignment_type");
+  }
+
   return os << "alignment_info{score=" << value.score()
             << ", adapter_id=" << value.m_adapter_id
             << ", offset=" << value.m_offset << ", length=" << value.m_length
             << ", n_mismatches=" << value.m_n_mismatches
-            << ", n_ambiguous=" << value.m_n_ambiguous
-            << ", is_good=" << static_cast<int>(value.m_is_good)
-            << ", can_merge=" << static_cast<int>(value.m_can_merge) << "}";
+            << ", n_ambiguous=" << value.m_n_ambiguous << ", m_type=" << type
+            << "}";
 }
 
 } // namespace adapterremoval
