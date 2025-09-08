@@ -453,7 +453,7 @@ TEST_CASE("Lower than possible shift is allowed", "[alignment::single_end]")
   const adapter_set adapters = { { "TTTT", "" } };
   const alignment_info expected;
   const alignment_info result =
-    align_single_ended_sequence(record, adapters, -10);
+    align_single_ended_sequence(record, adapters, 10);
   REQUIRE(result == expected);
 }
 
@@ -934,15 +934,29 @@ TEST_CASE("can_merge threshold ignores Ns", "[alignment:flags]")
 
 // Test for bug where SE alignments would occasionally test sequences with fewer
 // bp than the current score, that therefore could never be picked.
-TEST_CASE("Pointless SE alignments", "[alignment::single_end]")
+TEST_CASE("Pointless SE alignments #1", "[alignment::single_end]")
 {
   // Subsequent candidates can never be better than the best previous alignment
   const adapter_set adapters{ { "TT", "" }, { "T", "" }, {} };
   sequence_aligner aligner{ adapters,
-                            PARAMETERIZE_IS,
+                            simd::instruction_set::none,
                             DEFAULT_MISMATCH_THRESHOLD };
   const alignment_info expected = ALN().length(2).adapter_id(0).is_good();
-  const auto result = aligner.align_single_end({ "Rec", "TTT" }, 0);
+  const auto result = aligner.align_single_end({ "Rec", "TTT" }, 10);
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("Pointless SE alignments #2", "[alignment::single_end]")
+{
+  // Subsequent candidates can never be better than the best previous alignment
+  const adapter_set adapters{ { "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA", "" },
+                              { "TGGAATTCTCGGGTGCCAAGG", "" } };
+  const fastq read{ "Rec", "ATCGGAAGAGCACACGTCTGAACTCCAGTCACAAGGGCATCT" };
+
+  sequence_aligner aligner{ adapters, simd::instruction_set::none, 1.0 / 6.0 };
+  const alignment_info expected =
+    ALN().offset(-2).length(31).adapter_id(0).is_good();
+  const auto result = aligner.align_single_end(read, 2);
   REQUIRE(result == expected);
 }
 

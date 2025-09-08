@@ -187,7 +187,7 @@ public:
    *
    * The best alignment is selected using alignment_info::is_better_than.
    */
-  alignment_info align_single_end(const fastq& read, int max_shift);
+  alignment_info align_single_end(const fastq& read, unsigned max_shift);
 
   /**
    * Attempts to align PE mates, along with any adapter pairs.
@@ -210,7 +210,7 @@ public:
    */
   alignment_info align_paired_end(const fastq& read1,
                                   const fastq& read2,
-                                  int max_shift);
+                                  unsigned max_shift);
 
 private:
   /**
