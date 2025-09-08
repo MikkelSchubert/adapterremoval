@@ -36,7 +36,7 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
   // the maximum possible score is `length` when all bases match
   int end_offset =
     std::min(max_offset,
-             static_cast<int>(seq1_len) - std::max(0, alignment.score()) - 1);
+             static_cast<int>(seq1_len) - std::max(1, alignment.score()));
 
   bool alignment_found = false;
   for (; offset <= end_offset; ++offset) {
@@ -58,7 +58,6 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     current.m_offset = offset;
     current.m_length = length;
 
-    AR_REQUIRE(static_cast<int>(length) >= alignment.score());
     if (m_compare_func(current.m_n_mismatches,
                        current.m_n_ambiguous,
                        seq1 + initial_seq1_offset,
@@ -231,13 +230,16 @@ sequence_aligner::sequence_aligner(const adapter_set& adapters,
 }
 
 alignment_info
-sequence_aligner::align_single_end(const fastq& read, int max_shift)
+sequence_aligner::align_single_end(const fastq& read, unsigned max_shift)
 {
   int adapter_id = 0;
   alignment_info alignment;
 
   for (const auto& it : m_adapters) {
     const std::string_view adapter = it.adapter1;
+    if (std::min<int>(read.length(), adapter.length()) < alignment.score()) {
+      continue;
+    }
 
     m_buffer.clear();
     m_buffer += read.sequence();
@@ -270,7 +272,7 @@ sequence_aligner::align_single_end(const fastq& read, int max_shift)
 alignment_info
 sequence_aligner::align_paired_end(const fastq& read1,
                                    const fastq& read2,
-                                   int max_shift)
+                                   unsigned max_shift)
 {
   int adapter_id = 0;
   int max_adapter_offset = std::numeric_limits<int>::min();
@@ -279,6 +281,13 @@ sequence_aligner::align_paired_end(const fastq& read1,
   for (const auto& it : m_adapters) {
     const std::string_view adapter1 = it.adapter1;
     const std::string_view adapter2 = it.adapter2;
+
+    const auto max_score = std::min<int>(read1.length(), adapter1.length()) +
+                           std::min<int>(read2.length(), adapter2.length());
+    // Shifting may align additional bases, depending on read lengths
+    if (max_score + static_cast<int>(max_shift) < alignment.score()) {
+      continue;
+    }
 
     m_buffer.clear();
     m_buffer += adapter2;
