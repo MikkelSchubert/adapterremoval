@@ -1164,8 +1164,6 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   if (paired_ended_mode) {
-    min_adapter_overlap = 0;
-
     // merge related options implies --merge
     if (argparser.is_set("--collapse-deterministic")) {
       merge = merge_strategy::additive;
@@ -1340,40 +1338,6 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   return argparse::parse_result::ok;
-}
-
-bool
-userconfig::is_good_alignment(const alignment_info& alignment) const
-{
-  if (!alignment.length || alignment.score() <= 0) {
-    return false;
-  }
-
-  // Only pairs of called bases are considered part of the alignment
-  const size_t n_aligned = alignment.length - alignment.n_ambiguous;
-  if (n_aligned < min_adapter_overlap && !paired_ended_mode) {
-    return false;
-  }
-
-  auto mm_threshold = static_cast<size_t>(mismatch_threshold * n_aligned);
-  if (n_aligned < 6) {
-    mm_threshold = 0;
-  } else if (n_aligned < 10) {
-    // Allow at most 1 mismatch, possibly set to 0 by the user
-    mm_threshold = std::min<size_t>(1, mm_threshold);
-  }
-
-  return alignment.n_mismatches <= mm_threshold;
-}
-
-bool
-userconfig::can_merge_alignment(const alignment_info& alignment) const
-{
-  if (alignment.length < alignment.n_ambiguous) {
-    throw std::invalid_argument("#ambiguous bases > read length");
-  }
-
-  return alignment.length - alignment.n_ambiguous >= merge_threshold;
 }
 
 output_format

@@ -16,6 +16,17 @@ enum class merge_strategy;
 class adapter_set;
 class fastq;
 
+/** Alignment evaluation from user-specified error-rate and merge threshold */
+enum class alignment_type
+{
+  //! Either unaligned or a poor alignment
+  bad = 0,
+  //! Good alignment, but cannot be merged (if PE)
+  good,
+  //! Good alignment that can be merged (if PE)
+  mergeable,
+};
+
 /**
  * Summarizes an alignment.
  *
@@ -63,8 +74,11 @@ class fastq;
  * Offset: -12
  *
  */
-struct alignment_info
+class alignment_info
 {
+public:
+  alignment_info() = default;
+
   /**
    * Returns true if this is a better alignment than other.
    *
@@ -73,7 +87,7 @@ struct alignment_info
    * 2. If score is equal, the longest alignment is preferred.
    * 3. If score and length is equal, the alignment with fewest Ns is preferred.
    */
-  bool is_better_than(const alignment_info& other) const;
+  [[nodiscard]] bool is_better_than(const alignment_info& other) const;
 
   /**
    * Truncates a SE read according to the alignment, such that the second read
@@ -90,37 +104,78 @@ struct alignment_info
    */
   size_t truncate_paired_end(fastq& read1, fastq& read2) const;
 
+  /**
+   * Truncates reads such that only adapter sequence remains, returning true if
+   * either read contained any adapter sequence.
+   */
+  bool extract_adapter_sequences(fastq& read1, fastq& read2) const;
+
   /** Calculates the insert size given a pair of un-truncated reads. */
-  size_t insert_size(const fastq& read1, const fastq& read2) const;
+  [[nodiscard]] size_t insert_size(const fastq& read1,
+                                   const fastq& read2) const;
 
   /** Returns the score used to compare alignments */
-  inline int score() const
+  [[nodiscard]] int score() const
   {
-    return static_cast<int>(length) -
-           static_cast<int>(n_ambiguous + 2 * n_mismatches);
+    return static_cast<int>(m_length) -
+           static_cast<int>(m_n_ambiguous + (2 * m_n_mismatches));
   }
 
+  /** Returns the 0-based ID of best matching adapter or a negative value  */
+  [[nodiscard]] int adapter_id() const { return m_adapter_id; }
+
+  /** Returns the offset of the sequence in the pairwise alignment  */
+  [[nodiscard]] int offset() const { return m_offset; }
+
+  /** Returns true if the alignment meets minimum requirements */
+  [[nodiscard]] alignment_type type() const { return m_type; }
+
+  /** Compares two alignments for equality. This also compares quality flags */
+  bool operator==(const alignment_info& other) const;
+
+private:
   //! 0-based ID of best matching adapter or a negative value if not set.
-  int adapter_id = -1;
+  int m_adapter_id = -1;
+
   //! Zero based id of the adapter which offered the best alignment. Is less
   //! than zero if no alignment was found.
-  int offset = 0;
+  int m_offset = 0;
+
   //! The number of base-pairs included in the alignment. This number
   //! includes both bases aligned between the two mates (in PE mode) and the
   //! number of bases aligned between mates and adapter sequences.
-  size_t length = 0;
+  size_t m_length = 0;
+
   //! Number of positions in the alignment in which the two sequences were
   //! both called (not N) but differed
-  size_t n_mismatches = 0;
+  size_t m_n_mismatches = 0;
   //! Number of positions in the alignment where one or both bases were N.
-  size_t n_ambiguous = 0;
+  size_t m_n_ambiguous = 0;
+
+  //! Specifies if the alignment is considered a "good" alignment
+  alignment_type m_type = alignment_type::bad;
+
+  /** Creates debug representation of an adapter set */
+  friend std::ostream& operator<<(std::ostream&, const alignment_info&);
+
+  /** Class responsible for setting up `alignment_info` instances */
+  friend class sequence_aligner;
+  /** Required for testing */
+  friend struct ALN;
 };
 
 class sequence_aligner
 {
 public:
   explicit sequence_aligner(const adapter_set& adapters,
-                            simd::instruction_set is);
+                            simd::instruction_set is,
+                            double mismatch_threshold);
+
+  /** Sets the minimum required overlap for "good" SE alignments */
+  void set_min_se_overlap(size_t n) { m_min_se_overlap = n; }
+
+  /** Sets the minimum number of non-N aligned bases required to merge */
+  void set_merge_threshold(size_t n) { m_merge_threshold = n; }
 
   /**
    * Attempts to align adapters sequences against a SE read.
@@ -179,12 +234,21 @@ private:
                                 int max_offset) const;
 
   /** Sets the user-facing adapter ID and prioritizes adapter sequences */
-  void finalize_alignment(alignment_info& alignment, int max_offset);
+  void update_index(alignment_info& alignment, int max_offset);
+  /** Sets "is_good" and "can_merge" based on thresholds */
+  void update_flags(alignment_info& alignment, bool paired_end) const;
 
   //! SIMD instruction set to use for sequence comparisons
   const simd::compare_subsequences_func m_compare_func;
   //! Padding required by chosen SIMD instructions
   const size_t m_padding;
+  //! Max error rate allowed for "good" alignments
+  const double m_mismatch_threshold;
+  //! Number of aligned (non-N, including adapters) bases required for merging
+  size_t m_merge_threshold;
+  //! Minimum alignment length for "good" SE alignments, including Ns
+  size_t m_min_se_overlap = 1;
+
   //! Internal buffer used to combine adapters and reads
   std::string m_buffer{};
 
@@ -263,19 +327,6 @@ private:
   //! The number of mismatches where there was no higher quality base
   size_t m_mismatches_unresolved = 0;
 };
-
-/**
- * Truncates reads such that only adapter sequence remains.
- *
- * @return True if either or both reads contained adapter sequence.
- *
- * Reads that do not contain any adapter sequence are completely truncated,
- * such no bases remain of the original sequence.
- */
-bool
-extract_adapter_sequences(const alignment_info& alignment,
-                          fastq& read1,
-                          fastq& read2);
 
 /** Stream operator for debugging output */
 std::ostream&
