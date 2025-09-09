@@ -18,6 +18,7 @@ unit_tests = executable(
     'main_test.cpp',
     'mathutils_test.cpp',
     'read_group_test.cpp',
+    'scheduler_test.cpp',
     'sequence_sets' / 'adapter_set_test.cpp',
     'sequence_sets' / 'common_test.cpp',
     'sequence_sets' / 'sample_set_test.cpp',

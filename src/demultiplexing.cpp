@@ -201,7 +201,7 @@ process_demultiplexed::process(chunk_ptr chunk)
     }
   }
 
-  m_stats.release(stats);
+  m_stats.release(std::move(stats));
 
   return chunks.finalize(chunk->eof);
 }
@@ -276,8 +276,8 @@ processes_unidentified::process(chunk_ptr chunk)
     }
   }
 
-  m_stats_1.release(stats_1);
-  m_stats_2.release(stats_2);
+  m_stats_1.release(std::move(stats_1));
+  m_stats_2.release(std::move(stats_2));
 
   return chunks.finalize(chunk->eof);
 }

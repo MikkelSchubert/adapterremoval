@@ -383,7 +383,7 @@ se_reads_processor::process(chunk_ptr chunk)
     }
   }
 
-  m_stats.release(stats);
+  m_stats.release(std::move(stats));
 
   return chunks.finalize(chunk->eof);
 }
@@ -619,7 +619,7 @@ pe_reads_processor::process(chunk_ptr chunk)
   stats->reads_merged.inc_reads(merger.reads_merged());
   stats->reads_merged.inc_bases(merger.bases_merged());
 
-  m_stats.release(stats);
+  m_stats.release(std::move(stats));
 
   return chunks.finalize(chunk->eof);
 }

@@ -341,7 +341,7 @@ post_process_fastq::process(chunk_ptr chunk)
     }
   }
 
-  m_stats.release(stats);
+  m_stats.release(std::move(stats));
 
   {
     std::unique_lock<std::mutex> lock(m_timer_lock);
