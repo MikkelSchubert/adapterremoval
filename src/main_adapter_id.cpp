@@ -94,8 +94,8 @@ public:
       }
     }
 
-    m_stats_id.release(stats_id);
-    m_stats_ins.release(stats_ins);
+    m_stats_id.release(std::move(stats_id));
+    m_stats_ins.release(std::move(stats_ins));
 
     return {};
   }

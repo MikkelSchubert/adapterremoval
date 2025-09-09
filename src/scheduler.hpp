@@ -31,7 +31,8 @@ class threadstate
 public:
   threadstate() = default;
 
-  using pointer = std::unique_ptr<T>;
+  using value_type = T;
+  using pointer = std::unique_ptr<value_type>;
 
   /** Create a new state value **/
   template<class... Args>
@@ -76,7 +77,7 @@ public:
   }
 
   /** Release ownership of a value. **/
-  void release(pointer& value)
+  void release(pointer value)
   {
     AR_REQUIRE(value);
     std::lock_guard<std::mutex> lock(m_mutex);
