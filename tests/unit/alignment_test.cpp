@@ -960,6 +960,89 @@ TEST_CASE("Pointless SE alignments #2", "[alignment::single_end]")
   REQUIRE(result == expected);
 }
 
+TEST_CASE("Adapter-skipping for SE adapters", "[alignment::single_end]")
+{
+  const adapter_set adapters = {
+    { "AAAAA", "" },
+    { "AAAA", "" },
+    { "AAAAAA", "" },
+  };
+
+  auto align = [&adapters](std::string seq) {
+    return align_single_ended_sequence({ "R1", seq }, adapters, 0);
+  };
+
+  CHECK(align("AAAAA") == ALN().length(5).adapter_id(0).is_good());
+  CHECK(align("AAAAAA") == ALN().length(6).adapter_id(2).is_good());
+}
+
+TEST_CASE("Adapter-skipping for PE adapters", "[alignment::single_end]")
+{
+  const adapter_set adapters = {
+    { "AAAAA", "AAAAA" },
+    { "AAAA", "AAAA" },
+    { "AAAAAA", "AAAAAA" },
+  };
+
+  auto align = [&adapters](std::string seq1, std::string seq2) {
+    return align_paired_ended_sequences({ "R1", seq1 },
+                                        { "R2", seq2 },
+                                        adapters,
+                                        0);
+  };
+
+  CHECK(align("AAAAA", "TTTTT") ==
+        ALN().length(10).offset(-5).adapter_id(0).is_good());
+  CHECK(align("AAAAAA", "TTTTTT") ==
+        ALN().length(12).offset(-6).adapter_id(2).is_good());
+}
+
+TEST_CASE("Adapter-sorting for SE adapters", "[alignment::single_end]")
+{
+  const adapter_set adapters = {
+    { "AAAAA", "" },
+    { "TTTTT", "" },
+  };
+
+  sequence_aligner aligner{ adapters,
+                            PARAMETERIZE_IS,
+                            DEFAULT_MISMATCH_THRESHOLD };
+  auto align = [&aligner](std::string seq) {
+    return aligner.align_single_end({ "R1", seq }, 0);
+  };
+
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 0
+  REQUIRE(align("TTTTT").adapter_id() == 1); // pos 1; swap
+  REQUIRE(align("TTTTT").adapter_id() == 1); // pos 0
+  REQUIRE(align("TTTTT").adapter_id() == 1); // pos 0
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 1
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 1; swap
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 0
+}
+
+TEST_CASE("Adapter-sorting for PE adapters", "[alignment::single_end]")
+{
+  const adapter_set adapters = {
+    { "AAAAA", "TTTTT" },
+    { "TTTTT", "AAAAA" },
+  };
+
+  sequence_aligner aligner{ adapters,
+                            PARAMETERIZE_IS,
+                            DEFAULT_MISMATCH_THRESHOLD };
+  auto align = [&aligner](std::string seq) {
+    return aligner.align_paired_end({ "R1", seq }, { "R2", seq }, 0);
+  };
+
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 0
+  REQUIRE(align("TTTTT").adapter_id() == 1); // pos 1; swap
+  REQUIRE(align("TTTTT").adapter_id() == 1); // pos 0
+  REQUIRE(align("TTTTT").adapter_id() == 1); // pos 0
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 1
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 1; swap
+  REQUIRE(align("AAAAA").adapter_id() == 0); // pos 0
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 
