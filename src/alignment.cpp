@@ -238,6 +238,7 @@ sequence_aligner::align_single_end(const fastq& read, unsigned max_shift)
   for (const auto& it : m_adapters) {
     const std::string_view adapter = it.adapter1;
     if (std::min<int>(read.length(), adapter.length()) < alignment.score()) {
+      ++adapter_id;
       continue;
     }
 
@@ -286,6 +287,7 @@ sequence_aligner::align_paired_end(const fastq& read1,
                            std::min<int>(read2.length(), adapter2.length());
     // Shifting may align additional bases, depending on read lengths
     if (max_score + static_cast<int>(max_shift) < alignment.score()) {
+      ++adapter_id;
       continue;
     }
 
