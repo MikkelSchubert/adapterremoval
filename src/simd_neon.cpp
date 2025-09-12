@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "simd.hpp"   // declarations
-#include <algorithm>  //
+#include <algorithm>  // for min
 #include <arm_neon.h> // for vdupq_n_u8, vld1q_u8, vorrq_u8, ...
 #include <cstddef>    // for size_t
 
