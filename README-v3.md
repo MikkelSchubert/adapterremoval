@@ -35,7 +35,7 @@ AdapterRemoval v3 features greatly increased throughput compared to AdapterRemov
 
 Please note that these results are preliminary:
 
-![Throughput for ARv2, ARv3, and fastp](https://raw.githubusercontent.com/MikkelSchubert/adapterremoval/master/docs/images/throughput.svg)
+![Throughput for ARv2, ARv3, and fastp](https://raw.githubusercontent.com/MikkelSchubert/adapterremoval/main/docs/images/throughput.svg)
 
 Point labels indicate the number of worker threads configured for each program, while the X-axis indicates observed CPU-usage for a given number of worker threads. The Y-axis indicates millions of 150bp paired-end reads processed per second, for gzipped input and output, with merging enabled and duplication estimation disabled.
 
