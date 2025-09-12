@@ -11,7 +11,7 @@ repos:
       # Should maybe be added, but causes some amount of churn
       # - id: end-of-file-fixer
       - id: no-commit-to-branch
-        args: [--branch, master, --branch, 2.3.x]
+        args: [--branch, main, --branch, 2.3.x]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: a8c7c3ac16eabd3b958952ea0d6bf1dceeab6411 # v19.1.2
     hooks:
