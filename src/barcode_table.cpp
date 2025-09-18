@@ -158,8 +158,8 @@ barcode_table::barcode_table(const sample_set& samples,
 
     std::string barcode;
     barcode.reserve(m_barcode_1_len + m_barcode_2_len);
-    barcode.append(sequences.first);
-    barcode.append(sequences.second);
+    barcode.append(sequences.first.as_string());
+    barcode.append(sequences.second.as_string());
 
     add_sequence_to_tree(m_nodes, barcode, key);
   }

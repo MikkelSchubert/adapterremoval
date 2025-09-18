@@ -16,7 +16,7 @@ TEST_CASE("empty sequence", "[dna_sequence]")
   CHECK(seq.length() == 0);
   CHECK(seq == seq);
   CHECK(seq.reverse_complement() == seq);
-  CHECK(static_cast<std::string_view>(seq) == "");
+  CHECK(seq.as_string() == "");
   CHECK(fallbackStringifier(seq) == "dna_sequence{''}");
 }
 
@@ -27,7 +27,7 @@ TEST_CASE("non-empty dna_sequence", "[dna_sequence]")
   CHECK(!seq.empty());
   CHECK(seq.length() == 7);
   CHECK(seq.reverse_complement() == dna_sequence{ "ATANGGT" });
-  CHECK(static_cast<std::string_view>(seq) == "ACCNTAT");
+  CHECK(seq.as_string() == "ACCNTAT");
   CHECK(fallbackStringifier(seq) == "dna_sequence{'ACCNTAT'}");
 }
 

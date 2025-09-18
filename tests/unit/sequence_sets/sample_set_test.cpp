@@ -760,7 +760,7 @@ TEST_CASE("set read group for demultiplexing before loading", "[sample_set]")
 TEST_CASE("set adapters for non-demultiplexing", "[sample_set]")
 {
   sample_set ss;
-  const adapter_set as{ { dna_sequence{ "ACGTA" }, dna_sequence{ "TGGAT" } } };
+  const adapter_set as{ { "ACGTA", "TGGAT" } };
   ss.set_adapters(as);
   CHECK(ss.adapters() == as);
 
@@ -775,29 +775,26 @@ TEST_CASE("set adapters for demultiplexing", "[sample_set]")
     "sample_2 TGCAT CCGAT",
   });
 
-  adapter_set as{ { dna_sequence{ "ACGTA" }, dna_sequence{ "TGGAT" } } };
+  adapter_set as{ { "ACGTA", "TGGAT" } };
   ss.set_adapters(as);
 
   CHECK(ss.adapters() == as);
   CHECK(ss.at(0).at(0).adapters ==
-        adapter_set{
-          { dna_sequence{ "GACAAACGTA" }, dna_sequence{ "TACGTTGGAT" } } });
+        adapter_set{ { "GACAAACGTA", "TACGTTGGAT" } });
   CHECK(ss.at(1).at(0).adapters ==
-        adapter_set{
-          { dna_sequence{ "ATCGGACGTA" }, dna_sequence{ "ATGCATGGAT" } } });
+        adapter_set{ { "ATCGGACGTA", "ATGCATGGAT" } });
 }
 
 TEST_CASE("set adapters for demultiplexing before loading", "[sample_set]")
 {
   sample_set ss;
-  ss.set_adapters({ { dna_sequence{ "ACGTA" }, dna_sequence{ "TGGAT" } } });
+  ss.set_adapters({ { "ACGTA", "TGGAT" } });
 
   vec_reader reader{ { "sample_1 ACGTA TTGTC" } };
   ss.load(reader, barcode_config{});
 
   CHECK(ss.at(0).at(0).adapters ==
-        adapter_set{
-          { dna_sequence{ "GACAAACGTA" }, dna_sequence{ "TACGTTGGAT" } } });
+        adapter_set{ { "GACAAACGTA", "TACGTTGGAT" } });
 }
 
 ////////////////////////////////////////////////////////////////////////////////

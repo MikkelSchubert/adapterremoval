@@ -171,8 +171,8 @@ check_barcode_sequences(const std::vector<sample>& samples,
         mate_2_len = it.barcode_2.length();
       }
 
-      validate_barcode_length(it.barcode_1, mate_1_len, 1);
-      validate_barcode_length(it.barcode_2, mate_2_len, 2);
+      validate_barcode_length(it.barcode_1.as_string(), mate_1_len, 1);
+      validate_barcode_length(it.barcode_2.as_string(), mate_2_len, 2);
     }
   }
 }
@@ -235,8 +235,8 @@ check_barcode_overlap(const std::vector<sample>& samples, bool paired_end)
   std::vector<barcode_key> sequences;
   for (const auto& sample : samples) {
     for (const auto& it : sample) {
-      sequences.emplace_back(barcode_key{ it.barcode_1,
-                                          it.barcode_2,
+      sequences.emplace_back(barcode_key{ it.barcode_1.as_string(),
+                                          it.barcode_2.as_string(),
                                           it.orientation,
                                           sample.name() });
     }
@@ -586,10 +586,10 @@ sample::set_read_group(const read_group& read_group_)
 
     if (it->barcode_1.length() || it->barcode_2.length()) {
       std::string barcodes;
-      barcodes.append(it->barcode_1);
+      barcodes.append(it->barcode_1.as_string());
       if (it->barcode_2.length()) {
         barcodes.push_back('-');
-        barcodes.append(it->barcode_2);
+        barcodes.append(it->barcode_2.as_string());
       }
 
       it->read_group_.set_barcodes(barcodes);

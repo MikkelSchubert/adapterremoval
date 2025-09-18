@@ -924,8 +924,8 @@ write_html_analyses_section(const userconfig& config,
     {
       const auto reference_adapters =
         config.samples->adapters().to_read_orientation().front();
-      std::string reference_adapter_1{ reference_adapters.first };
-      std::string reference_adapter_2{ reference_adapters.second };
+      auto reference_adapter_1 = reference_adapters.first.as_string();
+      auto reference_adapter_2 = reference_adapters.second.as_string();
 
       html_consensus_adapter_head()
         .set_overlapping_pairs(
@@ -1004,10 +1004,10 @@ write_html_demultiplexing_barplot(const userconfig& config,
       auto count = stats.demultiplexing->samples.at(i).get(j);
 
       const auto& sequences = sample.at(j);
-      std::string key{ sequences.barcode_1 };
+      auto key = sequences.barcode_1.as_string();
       if (!sequences.barcode_2.empty()) {
         key.push_back('-');
-        key.append(sequences.barcode_2);
+        key.append(sequences.barcode_2.as_string());
       }
 
       auto m = data.dict();
@@ -1096,8 +1096,8 @@ write_html_demultiplexing_table(const userconfig& config,
     html_demultiplexing_row row;
     if (sample.size() < 2) {
       const auto& it = sample.at(0);
-      row.set_barcode_1(std::string{ it.barcode_1 })
-        .set_barcode_2(std::string{ it.barcode_2 });
+      row.set_barcode_1(it.barcode_1.as_string())
+        .set_barcode_2(it.barcode_2.as_string());
 
       if (mixed_orientation) {
         row.set_orientation("<td>" + orientation_to_label(it) + "</td>");
@@ -1128,8 +1128,8 @@ write_html_demultiplexing_table(const userconfig& config,
         const auto count = barcode_counts.get(j);
 
         html_demultiplexing_barcode_row barcode_row;
-        barcode_row.set_barcode_1(std::string{ it.barcode_1 })
-          .set_barcode_2(std::string{ it.barcode_2 })
+        barcode_row.set_barcode_1(it.barcode_1.as_string())
+          .set_barcode_2(it.barcode_2.as_string())
           .set_barcode_pct_row(format_percentage(count, total_count, 2));
 
         if (mixed_orientation) {

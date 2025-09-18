@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
+#include "commontypes.hpp"
 #include "errors.hpp"        // for parsing_error
 #include "linereader.hpp"    // for vec_reader
 #include "sequence.hpp"      // for dna_sequence
@@ -30,8 +31,7 @@ TEST_CASE("default constructor", "[adapter_set]")
 TEST_CASE("initializer list", "[adapter_set]")
 {
   // read orientation
-  adapter_set set{ { dna_sequence{ "ACGTA" }, dna_sequence{ "TGGAT" } },
-                   { dna_sequence{ "CCGAT" }, dna_sequence{ "AGAGT" } } };
+  adapter_set set{ { "ACGTA", "TGGAT" }, { "CCGAT", "AGAGT" } };
 
   // alignment orientation
   const auto pair_1 =
@@ -156,8 +156,8 @@ TEST_CASE("add barcodes to adapters", "[adapter_set]")
 {
   // adapter_set add_barcodes(const dna_sequence& barcode1, const dna_sequence&
   // barcode2) const;
-  const sequence_pair set_1{ dna_sequence{ "ACT" }, dna_sequence{ "CTA" } };
-  const sequence_pair set_2{ dna_sequence{ "ATT" }, dna_sequence{ "CTT" } };
+  const string_pair set_1{ "ACT", "CTA" };
+  const string_pair set_2{ "ATT", "CTT" };
   const dna_sequence barcode_1{ "AAAA" };
   const dna_sequence barcode_2{ "GGGG" };
 
@@ -195,24 +195,23 @@ TEST_CASE("add barcodes to adapters", "[adapter_set]")
 
 TEST_CASE("to read orientation", "[adapter_set]")
 {
-  const auto set_1 =
-    sequence_pair{ dna_sequence{ "ACT" }, dna_sequence{ "CTA" } };
-  const auto set_2 =
-    sequence_pair{ dna_sequence{ "ATT" }, dna_sequence{ "CTT" } };
+  const auto set_1 = string_pair{ "ACT", "CTA" };
+  const auto set_2 = string_pair{ "ATT", "CTT" };
 
   CHECK(adapter_set{}.to_read_orientation() == sequence_pair_vec{});
   CHECK(adapter_set{ set_1 }.to_read_orientation() ==
-        sequence_pair_vec{ set_1 });
+        sequence_pair_vec{ sequence_pair{ "ACT", "CTA" } });
   CHECK(adapter_set{ set_1, set_2 }.to_read_orientation() ==
-        sequence_pair_vec{ set_1, set_2 });
+        sequence_pair_vec{ sequence_pair{ "ACT", "CTA" },
+                           sequence_pair{ "ATT", "CTT" } });
 }
 
 TEST_CASE("equality operator", "[adapter_set]")
 {
   auto empty = adapter_set{};
-  auto set_1a = adapter_set{ { dna_sequence{ "ACT" }, dna_sequence{ "CTA" } } };
+  auto set_1a = adapter_set{ { "ACT", "CTA" } };
   auto set_1b = set_1a;
-  auto set_2 = adapter_set{ { dna_sequence{ "ATT" }, dna_sequence{ "CTT" } } };
+  auto set_2 = adapter_set{ { "ATT", "CTT" } };
 
   CHECK(empty == empty);
   CHECK(empty == adapter_set{});

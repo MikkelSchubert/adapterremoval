@@ -180,10 +180,10 @@ serializer::fastq_record(buffer& buf,
   buf.append(record.header());
   if (m_demultiplexing_only && !sequences.barcode_1.empty()) {
     buf.append(" BC:");
-    buf.append(sequences.barcode_1);
+    buf.append(sequences.barcode_1.as_string());
     if (sequences.barcode_2.length()) {
       buf.append_u8('-');
-      buf.append(sequences.barcode_2);
+      buf.append(sequences.barcode_2.as_string());
     }
   }
 

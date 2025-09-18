@@ -126,7 +126,7 @@ TEST_CASE("SE: Unalignable sequence yields default alignment",
           "[alignment::single_end]")
 {
   const fastq record("Rec", "AAAA", "!!!!");
-  const adapter_set adapters = { { dna_sequence{ "TTTT" }, "" } };
+  const adapter_set adapters = { { "TTTT", "" } };
 
   REQUIRE(align_single_ended_sequence(record, adapters, 0) == alignment_info());
 }
