@@ -259,9 +259,9 @@ private:
     //! The number of best alignments that included this adapter
     int hits = 0;
     //! The forward adapter sequence
-    std::string_view adapter1{};
+    std::string adapter1{};
     //! The reverse adapter sequence
-    std::string_view adapter2{};
+    std::string adapter2{};
   };
 
   //! Vector of adapter IDs and number of matching alignments with that adapter
