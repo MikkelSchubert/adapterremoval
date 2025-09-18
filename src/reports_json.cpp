@@ -268,8 +268,8 @@ write_report_demultiplexing(const userconfig& config,
         const auto it = barcodes.at(j);
 
         const auto dict = barcode_list->inline_dict();
-        dict->str("barcode1", it.barcode_1);
-        dict->str("barcode2", it.barcode_2);
+        dict->str("barcode1", it.barcode_1.as_string());
+        dict->str("barcode2", it.barcode_2.as_string());
 
         switch (it.orientation) {
           case barcode_orientation::unspecified:
@@ -451,8 +451,8 @@ write_report_processing(const userconfig& config,
     for (size_t i = 0; i < adapters.size(); ++i) {
       const auto adapter = adapter_list->inline_dict();
 
-      adapter->str("adapter1", adapters.at(i).first);
-      adapter->str("adapter2", adapters.at(i).second);
+      adapter->str("adapter1", adapters.at(i).first.as_string());
+      adapter->str("adapter2", adapters.at(i).second.as_string());
       adapter->i64("reads", totals.adapter_trimmed_reads.get(i));
       adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
     }

@@ -224,8 +224,10 @@ sequence_aligner::sequence_aligner(const adapter_set& adapters,
   , m_merge_threshold(std::numeric_limits<decltype(m_merge_threshold)>::max())
 {
   for (const auto& it : adapters) {
-    m_adapters.push_back(
-      { static_cast<int>(m_adapters.size()), 0, it.first, it.second });
+    m_adapters.push_back({ static_cast<int>(m_adapters.size()),
+                           0,
+                           it.first.as_string(),
+                           it.second.as_string() });
   }
 }
 

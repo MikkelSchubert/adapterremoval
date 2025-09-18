@@ -45,7 +45,7 @@ dna_sequence::reverse_complement() const
 std::ostream&
 operator<<(std::ostream& os, const dna_sequence& value)
 {
-  return os << "dna_sequence{" << log_escape(value) << "}";
+  return os << "dna_sequence{" << log_escape(value.as_string()) << "}";
 }
 
 } // namespace adapterremoval

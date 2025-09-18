@@ -47,8 +47,6 @@ public:
 
   dna_sequence operator+(const dna_sequence& other) const;
 
-  operator std::string_view() const noexcept { return m_sequence; }
-
   /** Returns true if the sequence is empty. */
   [[nodiscard]] bool empty() const noexcept { return m_sequence.empty(); }
 
@@ -61,6 +59,8 @@ public:
 
   /** Returns the reverse complements of the sequence */
   [[nodiscard]] dna_sequence reverse_complement() const;
+
+  [[nodiscard]] const std::string& as_string() const { return m_sequence; }
 
 private:
   //! Nucleotide sequence; contains only uppercase letters "ACGTN"
