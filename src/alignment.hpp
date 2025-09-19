@@ -3,12 +3,13 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "fastq_enc.hpp" // for MATE_SEPARATOR
-#include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
-#include <iosfwd>        // for ostream
-#include <string>        // for string
-#include <string_view>   // for string_view
-#include <vector>        // for vector
+#include "commontypes.hpp" // for string_view_pair
+#include "fastq_enc.hpp"   // for MATE_SEPARATOR
+#include "simd.hpp"        // for size_t, compare_subsequences_func, instru...
+#include <iosfwd>          // for ostream
+#include <string>          // for string
+#include <string_view>     // for string_view
+#include <vector>          // for vector
 
 namespace adapterremoval {
 
@@ -127,6 +128,15 @@ public:
   /** Returns the offset of the sequence in the pairwise alignment  */
   [[nodiscard]] int offset() const { return m_offset; }
 
+  /** The length of the alignment, including mismatches and Ns */
+  [[nodiscard]] int length() const { return m_length; }
+
+  /** The number of Ns in the alignment  */
+  [[nodiscard]] int n_ambiguous() const { return m_n_ambiguous; }
+
+  /** The number of mismatches in the alignment (not counting Ns) */
+  [[nodiscard]] int n_mismatches() const { return m_n_mismatches; }
+
   /** Returns true if the alignment meets minimum requirements */
   [[nodiscard]] alignment_type type() const { return m_type; }
 
@@ -211,6 +221,9 @@ public:
   alignment_info align_paired_end(const fastq& read1,
                                   const fastq& read2,
                                   unsigned max_shift);
+
+  /** Returns the number of adapters in the underlying adapter set */
+  [[nodiscard]] size_t size() const { return m_adapters.size(); }
 
 private:
   /**

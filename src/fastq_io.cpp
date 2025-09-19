@@ -287,13 +287,14 @@ post_process_fastq::stats_pair::stats_pair(double sample_rate,
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'post_process_fastq'
 
-post_process_fastq::post_process_fastq(const userconfig& config,
-                                       size_t next_step,
-                                       statistics& stats)
+post_process_fastq::post_process_fastq(
+  const userconfig& config,
+  std::shared_ptr<std::atomic_size_t> next_step,
+  statistics& stats)
   : analytical_step(processing_order::unordered, "post_process_fastq")
   , m_statistics_1(stats.input_1)
   , m_statistics_2(stats.input_2)
-  , m_next_step(next_step)
+  , m_next_step(std::move(next_step))
   , m_encoding(config.io_encoding)
   , m_timer(std::make_unique<progress_timer>(config.log_progress))
 {
@@ -349,7 +350,7 @@ post_process_fastq::process(chunk_ptr chunk)
   }
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(chunk));
+  chunks.emplace_back(*m_next_step, std::move(chunk));
 
   return chunks;
 }

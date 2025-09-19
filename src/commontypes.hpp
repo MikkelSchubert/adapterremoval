@@ -11,6 +11,7 @@ namespace adapterremoval {
 
 using string_vec = std::vector<std::string>;
 using string_vec_citer = string_vec::const_iterator;
+using string_view_pair = std::pair<std::string_view, std::string_view>;
 using string_pair = std::pair<std::string, std::string>;
 using string_pair_vec = std::vector<string_pair>;
 
@@ -55,6 +56,15 @@ enum class read_type
   merged,
   //! Merged PE reads that failed QC
   merged_fail,
+};
+
+/** Differentiate between mate 1 (including SE) and mate 2 reads */
+enum class read_mate
+{
+  //! Forward orientation
+  _1 = 1,
+  //! Reverse orientation
+  _2 = 2,
 };
 
 /** Enum describing the user-requested output format for processed reads */

@@ -23,6 +23,7 @@ class buffer;
 class fastq;
 class scheduler_step;
 enum class threadtype;
+struct adapter_detection_stats;
 
 /** Simple thread-safe storage backed by a vector. **/
 template<typename T>
@@ -106,7 +107,7 @@ class analytical_chunk
 {
 public:
   /** Constructor; does nothing. */
-  analytical_chunk() = default;
+  analytical_chunk();
 
   /** Destructor; does nothing. */
   ~analytical_chunk();
@@ -138,6 +139,11 @@ public:
 
   //! Size of (uncompressed) data in buffers;
   size_t uncompressed_size = 0;
+
+  //! (Optional) adapter detection stats
+  std::unique_ptr<adapter_detection_stats> adapters{};
+  //! Indicates if this is the the last chunk to run detection on
+  bool last_adapter_selection_block = false;
 
   analytical_chunk(const analytical_chunk&) = delete;
   analytical_chunk(analytical_chunk&&) = delete;
