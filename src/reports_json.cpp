@@ -193,7 +193,6 @@ struct io_section
         for (const auto nuc : ACGTN::values) {
           const auto bases = m_stats->nucleotides_pos(nuc);
 
-          // FIXME: Should be raw counts instead of fractions
           content_curves->f64_vec(std::string(1, to_lower(nuc)),
                                   bases / total_bases);
         }
@@ -214,7 +213,7 @@ private:
   const fastq_stats_ptr m_stats;
   //! Name of the section
   const std::string m_name;
-  //! Filenames (if any) generated for this file type
+  //! Filenames (if any) generated for this filetype
   string_vec m_filenames;
 };
 
@@ -512,7 +511,7 @@ write_report_processing(const userconfig& config,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Analyses
+// Analyzes
 
 void
 write_report_duplication(json_dict_ptr json,

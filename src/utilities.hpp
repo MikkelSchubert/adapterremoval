@@ -60,7 +60,7 @@ underlying_value(T value)
 
 /**
  * Perform dynamic cast on pointer stored in unique_ptr. If the cast succeeds,
- * overship of the pointer transferred is the new unique_ptr, otherwise the
+ * ownership of the pointer transferred is the new unique_ptr, otherwise the
  * source pointer remains unchanged.
  */
 template<typename T, typename U>

@@ -89,7 +89,7 @@ public:
   //! Buffers of (compressed) FASTQ reads
   std::vector<buffer> buffers{};
 
-  //! CRC32 of (uncompressed) data; only set if eof is true
+  //! CRC32 of (uncompressed) data; only set if EOF is true
   uint32_t crc32 = 0;
 
   //! Size of (uncompressed) data in buffers;
@@ -198,7 +198,7 @@ private:
 /**
  * Multithreaded scheduler.
  *
- * See 'analytical_step' for information on implementing analyses.
+ * See 'analytical_step' for information on implementing analyzes.
  */
 class scheduler
 {

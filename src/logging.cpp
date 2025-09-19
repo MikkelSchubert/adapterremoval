@@ -129,7 +129,7 @@ log_header(level l, bool colors = false)
 size_t
 log_linewidth(const std::ostream& out)
 {
-  // Piped logs are not pretty-printed, to make analyses easier
+  // Piped logs are not pretty-printed, to make analyzes easier
   if (&out == &std::cerr) {
     return get_terminal_width();
   }

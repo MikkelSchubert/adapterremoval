@@ -105,9 +105,9 @@ public:
   uint32_t max_genomic_length{};
   //! The minimum required overlap before trimming single-end reads.
   uint32_t min_adapter_overlap{};
-  //! Rate of mismatches determining the threshold for a an acceptable
-  //! alignment, depending on the length of the alignment. But see also the
-  //! limits set in the function 'is_good_alignment'.
+  //! Rate of mismatches determining the threshold for an acceptable alignment,
+  //! depending on the length of the alignment. But see also the limits set in
+  //! the function 'is_good_alignment'.
   double mismatch_threshold{};
 
   //! Quality format expected in input files.
@@ -137,7 +137,7 @@ public:
   //! Minimum number of bases in poly-X tails.
   uint32_t trim_poly_x_threshold{};
 
-  //! The maximum number of ambiguous bases (N) in an read; reads exceeding
+  //! The maximum number of ambiguous bases (N) in a read; reads exceeding
   //! this number following trimming (optionally) are discarded.
   uint32_t max_ambiguous_bases{};
   //! The maximum fraction of ambiguous bases (N) in an read.
@@ -245,7 +245,7 @@ private:
     std::string_view filename) const;
 
   /**
-   * Generates filename + format for a output (FQ/SAM/BAM/HTML/JSON) file.
+   * Generates filename + format for an output (FQ/SAM/BAM/HTML/JSON) file.
    * sample_name may optionally contain a sample name, otherwise the file is
    * expected to be used by all samples (if any); keys contain filename parts
    * such as "r1", from which the final filename is constructed. The last key is

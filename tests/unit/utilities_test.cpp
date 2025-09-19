@@ -185,7 +185,9 @@ class test_sub_class_1 : public test_base_class
 {
 public:
   explicit test_sub_class_1(int value_)
-    : value(value_) {};
+    : value(value_)
+  {
+  }
 
   test_sub_class_1(const test_sub_class_1&) = delete;
   test_sub_class_1(test_sub_class_1&&) = delete;

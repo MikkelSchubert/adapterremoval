@@ -41,7 +41,7 @@ protected:
   //! Maximum shift allowed in alignments
   uint32_t m_shift;
 
-  /** Reads processed in total nano-seconds */
+  /** Reads processed in total nanoseconds */
   using stats = std::pair<size_t, clock::duration>;
   //! Per candidate statistics
   std::vector<stats> m_candidates{};

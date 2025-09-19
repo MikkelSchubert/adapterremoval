@@ -72,7 +72,7 @@ sample_output_files::set_file(const read_file rtype, output_file file)
   const auto index = static_cast<size_t>(rtype);
   AR_REQUIRE(m_offsets.at(index) == sample_output_files::disabled);
 
-  // If the file type isn't being saved, then there is no need to process the
+  // If the filetype isn't being saved, then there is no need to process the
   // reads. This saves time especially when output compression is enabled.
   if (file.name != DEV_NULL) {
     // This assumes that filenames are normalized and do not differ only by case

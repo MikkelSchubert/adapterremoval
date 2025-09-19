@@ -77,7 +77,6 @@ main(int argc, char* argv[])
       return 0;
 
     case argparse::parse_result::ok:
-      // Ok
       break;
 
     default:

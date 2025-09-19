@@ -73,20 +73,20 @@ public:
   void record(buffer& buf, const fastq& record, read_meta meta) const;
 
 private:
-  /** Write record to buffer in in FASTQ format */
+  /** Write record to buffer in FASTQ format */
   void fastq_record(buffer& buf,
                     const fastq& record,
                     const read_meta& meta,
                     const sample_sequences& sequences) const;
 
-  /** Write header to buffer in in SAM format */
+  /** Write header to buffer in SAM format */
   static void sam_header(buffer& buf, const string_vec& args, const sample& s);
   void sam_record(buffer& buf,
                   const fastq& record,
                   const read_meta& meta,
                   const sample_sequences& sequences) const;
 
-  /** Write header to buffer in in BAM format (uncompressed) */
+  /** Write header to buffer in BAM format (uncompressed) */
   static void bam_header(buffer& buf, const string_vec& args, const sample& s);
   void bam_record(buffer& buf,
                   const fastq& record,

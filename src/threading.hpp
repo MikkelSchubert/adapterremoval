@@ -23,9 +23,9 @@ public:
   /** Creates empty container */
   threadstate() = default;
 
-  //! The underlying data type stored in the container
+  //! The underlying datatype stored in the container
   using value_type = T;
-  //! Exclusive pointer to the underlying data type
+  //! Exclusive pointer to the underlying datatype
   using pointer = std::unique_ptr<value_type>;
 
   /** Create a new state value with the given arguments **/

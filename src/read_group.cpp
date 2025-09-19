@@ -23,7 +23,7 @@ read_group::read_group(std::string_view value)
 {
   using invalid = std::invalid_argument;
 
-  // It's not unreasonable to except users to try to specify a full @RG line
+  // It's reasonable to except users to try to specify a full "@RG" line
   if (starts_with(value, "@RG\t")) {
     value = value.substr(4);
   }

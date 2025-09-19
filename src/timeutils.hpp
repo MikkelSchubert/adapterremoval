@@ -7,7 +7,7 @@
 
 namespace adapterremoval {
 
-/** Returns the timepoint for start of execution  */
+/** Returns the time point for start of execution  */
 const std::chrono::system_clock::time_point&
 start_time();
 

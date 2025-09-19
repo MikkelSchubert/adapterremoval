@@ -117,11 +117,11 @@ public:
 
   //! Filename for unidentified mate 1 reads (demultiplexing)
   output_file unidentified_1{ std::string{ DEV_NULL } };
-  //! Pipeline step responsible for compresssing/writing unidentified 1 reads
+  //! Pipeline step responsible for compressing/writing unidentified 1 reads
   size_t unidentified_1_step = disabled;
   //! Filename for unidentified mate 1 reads (demultiplexing)
   output_file unidentified_2{ std::string{ DEV_NULL } };
-  //! Pipeline step responsible for compresssing/writing unidentified 2 reads
+  //! Pipeline step responsible for compressing/writing unidentified 2 reads
   size_t unidentified_2_step = disabled;
 
   using sample_output_vec = std::vector<sample_output_files>;
@@ -145,7 +145,7 @@ private:
   sample_output_vec m_samples{};
 };
 
-/** Helper class used to generate per file-type chunks for processed reads . */
+/** Helper class used to generate per file-type chunks for processed reads */
 class processed_reads
 {
 public:
@@ -198,7 +198,7 @@ public:
   std::vector<size_t> samples{};
 };
 
-/** Helper class used to generate per file-type chunks for processed reads . */
+/** Helper class used to generate per file-type chunks for processed reads */
 class demultiplexed_reads
 {
 public:
