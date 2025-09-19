@@ -77,9 +77,11 @@ remove_adapter_sequences(const userconfig& config)
     processing_step = steps.samples.back();
   }
 
-  // Step 2: Post-process, validate, and collect statistics on FASTQ reads
-  const size_t postproc_step =
-    sch.add<post_process_fastq>(config, processing_step, stats);
+  // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
+  const size_t postproc_step = sch.add<post_process_fastq>(
+    config,
+    std::make_unique<std::atomic_size_t>(processing_step),
+    stats);
 
   // Step 1: Read input file(s)
   read_fastq::add_steps(sch, config, postproc_step, stats);

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "scheduler.hpp" // declarations
-#include "buffer.hpp"    // for buffer
-#include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
-#include "fastq.hpp"     // for fastq
-#include "logging.hpp"   // for error, log_stream, debug
-#include <exception>     // for exception
-#include <functional>    // for greater
-#include <memory>        // for __shared_ptr_access, operator<, unique...
-#include <system_error>  // for system_error
-#include <thread>        // for thread
+#include "adapter_detect.hpp"
+#include "buffer.hpp"   // for buffer
+#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
+#include "fastq.hpp"    // for fastq
+#include "logging.hpp"  // for error, log_stream, debug
+#include <exception>    // for exception
+#include <functional>   // for greater
+#include <memory>       // for __shared_ptr_access, operator<, unique...
+#include <system_error> // for system_error
+#include <thread>       // for thread
 
 namespace adapterremoval {
 
@@ -25,7 +26,8 @@ enum class threadtype
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_chunk
 
-// Out of line implementation to avoid adding dependency on fastq to every file
+// Out of line implementation to avoid adding dependencies to every file
+analytical_chunk::analytical_chunk() = default;
 analytical_chunk::~analytical_chunk() = default;
 
 ///////////////////////////////////////////////////////////////////////////////

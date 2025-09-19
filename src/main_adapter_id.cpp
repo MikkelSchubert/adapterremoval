@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "adapter_id.hpp"    // for adapter_id_statistics
-#include "alignment.hpp"     // for extract_adapter_sequences, sequence_aligner
-#include "debug.hpp"         // for AR_REQUIRE
-#include "fastq.hpp"         // for ACGTN, fastq, ACGT, ACGT:...
-#include "fastq_io.hpp"      // for read_fastq, read_chunk
-#include "output.hpp"        // for output_files
-#include "reports.hpp"       // for write_html_report, write_json_report
-#include "scheduler.hpp"     // for threadstate, scheduler, analytical_step
-#include "sequence_sets.hpp" // for adapter_set
-#include "statistics.hpp"    // for trimming_statistics
-#include "userconfig.hpp"    // for userconfig
-#include <cstddef>           // for size_t
-#include <memory>            // for unique_ptr, __shared_ptr_access, make_s...
-#include <string>            // for string, operator<<, char_traits
-#include <vector>            // for vector
+#include "adapter_id.hpp"     // for adapter_id_statistics
+#include "adapter_select.hpp" // for adapter_preselector, ...
+#include "alignment.hpp"      // for extract_adapter_sequences, sequence_aligner
+#include "debug.hpp"          // for AR_REQUIRE
+#include "fastq.hpp"          // for ACGTN, fastq, ACGT, ACGT:...
+#include "fastq_io.hpp"       // for read_fastq, read_chunk
+#include "output.hpp"         // for output_files
+#include "reports.hpp"        // for write_html_report, write_json_report
+#include "scheduler.hpp"      // for threadstate, scheduler, analytical_step
+#include "sequence_sets.hpp"  // for adapter_set
+#include "statistics.hpp"     // for trimming_statistics
+#include "userconfig.hpp"     // for userconfig
+#include <atomic>             // for atomic_size_t
+#include <cstddef>            // for size_t
+#include <memory>             // for unique_ptr, __shared_ptr_access, make_s...
+#include <string>             // for string, operator<<, char_traits
+#include <vector>             // for vector
 
 namespace adapterremoval {
 
@@ -146,9 +148,16 @@ identify_adapter_sequences(const userconfig& config)
     final_step = sch.add<reads_sink>();
   }
 
+  // This processing step may be changed at runtime
+  auto mutable_step = std::make_shared<std::atomic_size_t>(final_step);
+
+  final_step = sch.add<adapter_finalizer>(config, final_step, mutable_step);
+  final_step = sch.add<adapter_selector>(config, final_step);
+  *mutable_step = sch.add<adapter_preselector>(final_step);
+
   // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
   const size_t postproc_step =
-    sch.add<post_process_fastq>(config, final_step, stats);
+    sch.add<post_process_fastq>(config, mutable_step, stats);
 
   // Step 1: Read input file(s)
   read_fastq::add_steps(sch, config, postproc_step, stats);
