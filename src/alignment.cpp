@@ -203,6 +203,17 @@ alignment_info::insert_size(const fastq& read1, const fastq& read2) const
   return std::max<int>(0, static_cast<int>(read2.length()) + m_offset);
 }
 
+alignment_info
+alignment_info::add(const alignment_info& other) const
+{
+  alignment_info merged;
+  merged.m_length = m_length + other.m_length;
+  merged.m_n_mismatches = m_n_mismatches + other.m_n_mismatches;
+  merged.m_n_ambiguous = m_n_ambiguous + other.m_n_ambiguous;
+
+  return merged;
+}
+
 bool
 alignment_info::operator==(const alignment_info& other) const
 {
@@ -210,6 +221,29 @@ alignment_info::operator==(const alignment_info& other) const
          (m_n_mismatches == other.m_n_mismatches) &&
          (m_n_ambiguous == other.m_n_ambiguous) &&
          (m_adapter_id == other.m_adapter_id) && (m_type == other.m_type);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+alignment_info
+simple_alignment(const dna_sequence& seq1, const dna_sequence& seq2)
+{
+  alignment_info alignment;
+  alignment.m_length = std::min(seq1.length(), seq2.length());
+
+  // SIMD acceleration is not used. This removes the need to pad the sequences
+  const auto func =
+    simd::get_compare_subsequences_func(simd::instruction_set::none);
+
+  func(alignment.m_n_mismatches,
+       alignment.m_n_ambiguous,
+       seq1.as_string().data(),
+       seq2.as_string().data(),
+       alignment.m_length,
+       // prevent early termination of the alignment
+       std::numeric_limits<size_t>::max());
+
+  return alignment;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -449,29 +483,29 @@ sequence_merger::merge(const alignment_info& alignment,
 }
 
 std::ostream&
+operator<<(std::ostream& os, const alignment_type& value)
+{
+  switch (value) {
+    case alignment_type::bad:
+      return os << "alignment_type::bad";
+    case alignment_type::good:
+      return os << "alignment_type::good";
+    case alignment_type::mergeable:
+      return os << "alignment_type::mergeable";
+    default:                             // GCOVR_EXCL_LINE
+      AR_FAIL("invalid alignment_type"); // GCOVR_EXCL_LINE
+  }
+}
+
+std::ostream&
 operator<<(std::ostream& os, const alignment_info& value)
 {
-  std::string_view type;
-  switch (value.type()) {
-    case alignment_type::bad:
-      type = "bad";
-      break;
-    case alignment_type::good:
-      type = "good";
-      break;
-    case alignment_type::mergeable:
-      type = "mergeable";
-      break;
-    default:
-      AR_FAIL("invalid alignment_type");
-  }
-
   return os << "alignment_info{score=" << value.score()
             << ", adapter_id=" << value.m_adapter_id
             << ", offset=" << value.m_offset << ", length=" << value.m_length
             << ", n_mismatches=" << value.m_n_mismatches
-            << ", n_ambiguous=" << value.m_n_ambiguous << ", m_type=" << type
-            << "}";
+            << ", n_ambiguous=" << value.m_n_ambiguous
+            << ", m_type=" << value.type() << "}";
 }
 
 } // namespace adapterremoval
