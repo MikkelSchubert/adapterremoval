@@ -8,7 +8,6 @@
 #include <cmath>        // for nan
 #include <cstdint>      // for int64_t, uint64_t
 #include <limits>       // for numeric_limits
-#include <memory>       // for shared_ptr
 #include <sstream>      // for ostringstream
 #include <string>       // for basic_string, operator==, string
 

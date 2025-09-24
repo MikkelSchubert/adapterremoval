@@ -25,26 +25,30 @@ TEST_CASE("non-empty dna_sequence", "[dna_sequence]")
 
   CHECK(!seq.empty());
   CHECK(seq.length() == 7);
-  CHECK(seq.reverse_complement() == dna_sequence{ "ATANGGT" });
+  CHECK(seq.reverse_complement() == "ATANGGT"_dna);
   CHECK(seq.as_string() == "ACCNTAT");
   CHECK(fallbackStringifier(seq) == "dna_sequence{'ACCNTAT'}");
 }
 
 TEST_CASE("dna_equence addition", "[dna_sequence]")
 {
-  CHECK(dna_sequence{ "ACCGTAT" } + dna_sequence{} ==
-        dna_sequence{ "ACCGTAT" });
-  CHECK(dna_sequence{ "ACCGTAT" } + dna_sequence{ "CCGT" } ==
-        dna_sequence{ "ACCGTATCCGT" });
+  CHECK("ACCGTAT"_dna + dna_sequence{} == "ACCGTAT"_dna);
+  CHECK("ACCGTAT"_dna + "CCGT"_dna == "ACCGTATCCGT"_dna);
 }
 
 TEST_CASE("dna_sequence equality")
 {
   CHECK(dna_sequence{} == dna_sequence{});
-  CHECK_FALSE(dna_sequence{ "ACCNTAT" } == dna_sequence{});
-  CHECK(dna_sequence{ "ACCNTAT" } == dna_sequence{ "ACCNTAT" });
-  CHECK_FALSE(dna_sequence{ "ACCNTAT" } == dna_sequence{ "CGTGGTA" });
-  CHECK_FALSE(dna_sequence{ "ACCNTAT" } == dna_sequence{ "CC" });
+  CHECK_FALSE("ACCNTAT"_dna == dna_sequence{});
+  CHECK("ACCNTAT"_dna == "ACCNTAT"_dna);
+  CHECK_FALSE("ACCNTAT"_dna == "CGTGGTA"_dna);
+  CHECK_FALSE("ACCNTAT"_dna == "CC"_dna);
+}
+
+TEST_CASE("dna_sequence literal")
+{
+  CHECK(""_dna == dna_sequence{});
+  CHECK("ACCNTAT"_dna == "ACCNTAT"_dna);
 }
 
 } // namespace adapterremoval
