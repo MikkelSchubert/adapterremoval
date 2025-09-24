@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "sequence.hpp" // for dna_sequence
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
-#include <string_view>  // string_view
 
 namespace adapterremoval {
 

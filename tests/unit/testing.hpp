@@ -30,7 +30,7 @@ fallbackStringifier(const T& value);
 
 } // namespace Catch
 
-#include "catch.hpp" // for Catch, StringMaker, stringify
+#include "catch.hpp" // IWYU pragma: export
 
 namespace Catch {
 
