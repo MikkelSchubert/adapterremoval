@@ -14,4 +14,9 @@ terminate(const std::string& message)
   throw assert_failed(message);
 }
 
+TEST_CASE("terminate")
+{
+  REQUIRE_THROWS_MESSAGE(terminate("foobar"), assert_failed, "foobar");
+}
+
 } // namespace adapterremoval
