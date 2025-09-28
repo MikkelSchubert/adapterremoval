@@ -3,9 +3,7 @@
 #pragma once
 
 #include "buffer.hpp"         // for buffer
-#include "debug.hpp"          // for AR_REQUIRE
 #include "fastq.hpp"          // for fastq
-#include <algorithm>          // for copy, max, copy_backward
 #include <condition_variable> // for condition_variable
 #include <cstddef>            // for size_t
 #include <cstdint>            // for uint32_t
@@ -23,81 +21,6 @@ class buffer;
 class fastq;
 class scheduler_step;
 enum class threadtype;
-
-/** Simple thread-safe storage backed by a vector. **/
-template<typename T>
-class threadstate
-{
-public:
-  threadstate() = default;
-
-  using value_type = T;
-  using pointer = std::unique_ptr<value_type>;
-
-  /** Create a new state value **/
-  template<class... Args>
-  void emplace_back(Args&&... args)
-  {
-    emplace_back_n(1, std::forward<Args>(args)...);
-  }
-
-  /** Create N new state values **/
-  template<class... Args>
-  void emplace_back_n(size_t n, Args&&... args)
-  {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    for (; n; n--) {
-      m_values.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
-    }
-  }
-
-  /** Attempt to acquire ownership of a value. **/
-  pointer try_acquire()
-  {
-    {
-      std::lock_guard<std::mutex> lock(m_mutex);
-      if (!m_values.empty()) {
-        pointer value = std::move(m_values.back());
-        m_values.pop_back();
-        return value;
-      }
-    }
-
-    return pointer{};
-  }
-
-  /** Acquire ownership of a value. **/
-  pointer acquire()
-  {
-    if (auto value = try_acquire()) {
-      return value;
-    }
-
-    AR_FAIL("could not acquire thread state");
-  }
-
-  /** Release ownership of a value. **/
-  void release(pointer value)
-  {
-    AR_REQUIRE(value);
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    m_values.push_back(std::move(value));
-  }
-
-  void merge_into(T& value)
-  {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    while (!m_values.empty()) {
-      value += *m_values.back();
-      m_values.pop_back();
-    }
-  }
-
-private:
-  std::mutex m_mutex{};
-  std::vector<pointer> m_values{};
-};
 
 /**
  * Base-class for data-chunks produced, processed and consumed by a pipeline.
