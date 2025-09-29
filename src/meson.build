@@ -76,6 +76,7 @@ config_inc = configure_file(output: 'config-ar3.hpp', configuration: config)
 # Library containing objects shared between the executable and unit tests
 libcore = static_library(
     'core',
+    'adapter_database.cpp',
     'alignment.cpp',
     'argparse.cpp',
     'barcode_table.cpp',

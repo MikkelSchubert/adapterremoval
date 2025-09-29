@@ -57,6 +57,15 @@ enum class read_type
   merged_fail,
 };
 
+/** Differentiate between mate 1 (including SE) and mate 2 reads */
+enum class read_mate
+{
+  //! Forward orientation
+  _1 = 1,
+  //! Reverse orientation
+  _2 = 2,
+};
+
 /** Enum describing the user-requested output format for processed reads */
 enum class output_format
 {

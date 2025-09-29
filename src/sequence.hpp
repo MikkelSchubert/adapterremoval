@@ -67,6 +67,7 @@ private:
   std::string m_sequence{};
 };
 
+using sequence_vec = std::vector<dna_sequence>;
 using sequence_pair = std::pair<dna_sequence, dna_sequence>;
 using sequence_pair_vec = std::vector<sequence_pair>;
 
