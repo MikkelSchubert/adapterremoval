@@ -7,6 +7,7 @@
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "managed_io.hpp"        // for managed_writer
 #include "scheduler.hpp"         // for analytical_step, chunk_ptr, chunk_vec
+#include "threading.hpp"         // for threadstate
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint32_t, uint64_t
 #include <limits>                // for numeric_limits

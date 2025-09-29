@@ -7,6 +7,7 @@
 #include "output.hpp"        // for demultiplexed_reads
 #include "scheduler.hpp"     // for analytical_step
 #include "statistics.hpp"    // for fastq_statistics, trimming_statistics
+#include "threading.hpp"     // for threadstate
 #include <cstddef>           // for size_t
 #include <memory>            // for shared_ptr
 #include <mutex>             // for mutex

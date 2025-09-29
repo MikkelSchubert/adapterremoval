@@ -3,7 +3,8 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "scheduler.hpp" // for chunk_vec, chunk_ptr, threadstate, analyt...
+#include "scheduler.hpp" // for chunk_vec, chunk_ptr, analytical_step
+#include "threading.hpp" // for threadstate
 #include <cstddef>       // for size_t
 #include <memory>        // for shared_ptr
 
