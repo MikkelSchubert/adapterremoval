@@ -11,6 +11,7 @@ namespace adapterremoval {
 
 using string_vec = std::vector<std::string>;
 using string_vec_citer = string_vec::const_iterator;
+using string_view_pair = std::pair<std::string_view, std::string_view>;
 using string_pair = std::pair<std::string, std::string>;
 using string_pair_vec = std::vector<string_pair>;
 

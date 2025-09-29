@@ -11,14 +11,11 @@
 #include <iosfwd>           // for ostream
 #include <string>           // for string
 #include <string_view>      // for string_view
-#include <utility>          // for move
 #include <vector>           // for vector
 
 namespace adapterremoval {
 
 class line_reader_base;
-
-using string_view_pair = std::pair<std::string_view, std::string_view>;
 
 /** Maps a name to the corresponding barcode_table_orientation enum */
 barcode_table_orientation

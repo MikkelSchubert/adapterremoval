@@ -77,6 +77,7 @@ config_inc = configure_file(output: 'config-ar3.hpp', configuration: config)
 libcore = static_library(
     'core',
     'adapter_database.cpp',
+    'adapter_detector.cpp',
     'alignment.cpp',
     'argparse.cpp',
     'barcode_table.cpp',
