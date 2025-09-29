@@ -4,6 +4,7 @@
 unit_tests = executable(
     'unit_tests',
     'adapter_database_test.cpp',
+    'adapter_detector_test.cpp',
     'alignment_test.cpp',
     'argparse_test.cpp',
     'barcodes_test.cpp',
