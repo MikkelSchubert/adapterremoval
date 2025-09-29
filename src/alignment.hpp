@@ -7,13 +7,13 @@
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
 #include <iosfwd>        // for ostream
 #include <string>        // for string
-#include <string_view>   // for string_view
 #include <vector>        // for vector
 
 namespace adapterremoval {
 
 enum class merge_strategy;
 class adapter_set;
+class dna_sequence;
 class fastq;
 
 /** Alignment evaluation from user-specified error-rate and merge threshold */
@@ -114,6 +114,9 @@ public:
   [[nodiscard]] size_t insert_size(const fastq& read1,
                                    const fastq& read2) const;
 
+  /** Returned combined alignment scores. Resets offset and adapter id */
+  [[nodiscard]] alignment_info add(const alignment_info& other) const;
+
   /** Returns the score used to compare alignments */
   [[nodiscard]] int score() const
   {
@@ -126,6 +129,15 @@ public:
 
   /** Returns the offset of the sequence in the pairwise alignment  */
   [[nodiscard]] int offset() const { return m_offset; }
+
+  /** The length of the alignment, including mismatches and Ns */
+  [[nodiscard]] int length() const { return m_length; }
+
+  /** The number of Ns in the alignment  */
+  [[nodiscard]] int n_ambiguous() const { return m_n_ambiguous; }
+
+  /** The number of mismatches in the alignment (not counting Ns) */
+  [[nodiscard]] int n_mismatches() const { return m_n_mismatches; }
 
   /** Returns true if the alignment meets minimum requirements */
   [[nodiscard]] alignment_type type() const { return m_type; }
@@ -158,11 +170,24 @@ private:
   /** Creates debug representation of an adapter set */
   friend std::ostream& operator<<(std::ostream&, const alignment_info&);
 
+  /** Perform unaccelerated gapless alignment at offset 0 */
+  friend alignment_info simple_alignment(const dna_sequence& seq1,
+                                         const dna_sequence& seq2);
+
   /** Class responsible for setting up `alignment_info` instances */
   friend class sequence_aligner;
   /** Required for testing */
   friend struct ALN;
 };
+
+/**
+ * Perform unaccelerated gapless alignment at offset 0, i.e. between the
+ * first N bases in each sequence, where N = min(seq1.length(), seq2.length()).
+ * Unlike the sequence_aligner class, this alignment does not terminate early
+ * if the predicted score is < 0. Alignment type and adapter IDs are not set.
+ */
+alignment_info
+simple_alignment(const dna_sequence& seq1, const dna_sequence& seq2);
 
 class sequence_aligner
 {
@@ -211,6 +236,9 @@ public:
   alignment_info align_paired_end(const fastq& read1,
                                   const fastq& read2,
                                   unsigned max_shift);
+
+  /** Returns the number of adapters in the underlying adapter set */
+  [[nodiscard]] size_t size() const { return m_adapters.size(); }
 
 private:
   /**
@@ -327,6 +355,10 @@ private:
   //! The number of mismatches where there was no higher quality base
   size_t m_mismatches_unresolved = 0;
 };
+
+/** Stream operator for debugging output */
+std::ostream&
+operator<<(std::ostream& os, const alignment_type& value);
 
 /** Stream operator for debugging output */
 std::ostream&

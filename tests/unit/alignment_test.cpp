@@ -100,6 +100,19 @@ REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// alignment info getter functions
+
+TEST_CASE("alignment_info getters")
+{
+  const alignment_info info =
+    ALN().adapter_id(3).offset(17).length(23).n_ambiguous(9).n_mismatches(7);
+
+  CHECK(info.adapter_id() == 3);
+  CHECK(info.offset() == 17);
+  CHECK(info.length() == 23);
+  CHECK(info.n_ambiguous() == 9);
+  CHECK(info.n_mismatches() == 7);
+}
 
 TEST_CASE("alignment_info::score")
 {
@@ -109,6 +122,71 @@ TEST_CASE("alignment_info::score")
   REQUIRE(ALN().length(13).n_mismatches(5).info.score() == 3);
   REQUIRE(ALN().length(13).n_ambiguous(5).info.score() == 8);
   REQUIRE(ALN().length(13).n_ambiguous(6).n_mismatches(5).info.score() == -3);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// alignment info merge
+
+TEST_CASE("alignment_info add")
+{
+  const alignment_info info_1 = ALN()
+                                  .adapter_id(3)
+                                  .offset(17)
+                                  .length(23)
+                                  .n_ambiguous(9)
+                                  .n_mismatches(7)
+                                  .is_good();
+  const alignment_info info_2 = ALN()
+                                  .adapter_id(6)
+                                  .offset(5)
+                                  .length(11)
+                                  .n_ambiguous(2)
+                                  .n_mismatches(3)
+                                  .can_merge();
+  const auto merged = info_1.add(info_2);
+
+  CHECK(merged.adapter_id() == -1);
+  CHECK(merged.offset() == 0);
+  CHECK(merged.length() == 34);
+  CHECK(merged.n_ambiguous() == 11);
+  CHECK(merged.n_mismatches() == 10);
+  CHECK(merged.type() == alignment_type::bad);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// simple_alignment
+
+TEST_CASE("simple alignment of empty sequences")
+{
+  const dna_sequence empty;
+  const dna_sequence non_empty{ "ACGTTA" };
+  const alignment_info expected;
+
+  CHECK(simple_alignment(empty, empty) == expected);
+  CHECK(simple_alignment(empty, non_empty) == expected);
+  CHECK(simple_alignment(non_empty, empty) == expected);
+}
+
+TEST_CASE("simple alignment does not set adapter id")
+{
+  const dna_sequence seq1{ "ATGGTACTCTTACCGTCTGCTCCCCTCGTCGCA" };
+  const dna_sequence seq2{ "ATGNTACTCTTACCGACTGCTCCCATCGTCGCA" };
+  const alignment_info expected =
+    ALN().length(33).n_mismatches(2).n_ambiguous(1).adapter_id(-1);
+
+  CHECK(simple_alignment(seq1, seq2) == expected);
+}
+
+TEST_CASE("simple alignment should not terminate early")
+{
+  const dna_sequence seq1{ "ATATATATATATATATATATATATATATATATATATATATATATATATATA"
+                           "TATATATATATATATATATATATATATATATATATATATATANAN" };
+  const dna_sequence seq2{ "GCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCG"
+                           "CGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCACNC" };
+  const alignment_info expected =
+    ALN().length(96).n_mismatches(92).n_ambiguous(3).adapter_id(-1);
+
+  CHECK(simple_alignment(seq1, seq2) == expected);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1783,13 +1861,24 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
   }
 }
 
+TEST_CASE("stringmaker for empty alignment_type")
+{
+  REQUIRE(Catch::fallbackStringifier(alignment_type::good) ==
+          "alignment_type::good");
+  REQUIRE(Catch::fallbackStringifier(alignment_type::bad) ==
+          "alignment_type::bad");
+  REQUIRE(Catch::fallbackStringifier(alignment_type::mergeable) ==
+          "alignment_type::mergeable");
+}
+
 TEST_CASE("stringmaker for empty alignment_info")
 {
   std::ostringstream os;
   os << alignment_info{};
 
   REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
-                      "length=0, n_mismatches=0, n_ambiguous=0, m_type=bad}");
+                      "length=0, n_mismatches=0, n_ambiguous=0, "
+                      "m_type=alignment_type::bad}");
 }
 
 TEST_CASE("stringmaker for alignment_info")
@@ -1806,7 +1895,8 @@ TEST_CASE("stringmaker for alignment_info")
   os << info;
 
   REQUIRE(os.str() == "alignment_info{score=-10, adapter_id=1, offset=2, "
-                      "length=3, n_mismatches=4, n_ambiguous=5, m_type=good}");
+                      "length=3, n_mismatches=4, n_ambiguous=5, "
+                      "m_type=alignment_type::good}");
 }
 
 TEST_CASE("stringmaker for ALN")
@@ -1815,7 +1905,8 @@ TEST_CASE("stringmaker for ALN")
   os << alignment_info{};
 
   REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
-                      "length=0, n_mismatches=0, n_ambiguous=0, m_type=bad}");
+                      "length=0, n_mismatches=0, n_ambiguous=0, "
+                      "m_type=alignment_type::bad}");
 }
 
 TEST_CASE("stringmaker for MMNs")
