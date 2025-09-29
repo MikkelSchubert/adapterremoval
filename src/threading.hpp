@@ -136,13 +136,15 @@ public:
     /** Default destructor */
     ~reader() = default;
 
-    const U& operator*() const noexcept
+    /** Returns (shared) reference to the inner data */
+    const U& operator*() const
     {
       AR_REQUIRE(m_inner);
       return m_inner->data;
     }
 
-    const U* operator->() const noexcept
+    /** Returns (shared) pointer to the inner data */
+    const U* operator->() const
     {
       AR_REQUIRE(m_inner);
       return &m_inner->data;
@@ -181,13 +183,15 @@ public:
     /** Default destructor */
     ~writer() = default;
 
-    U& operator*() noexcept
+    /** Returns exclusive reference to the inner data */
+    U& operator*()
     {
       AR_REQUIRE(m_inner);
       return m_inner->data;
     }
 
-    U* operator->() noexcept
+    /** Returns exclusive pointer to the inner data */
+    U* operator->()
     {
       AR_REQUIRE(m_inner);
       return &m_inner->data;
@@ -214,30 +218,43 @@ public:
     std::unique_lock<std::shared_mutex> m_lock;
   };
 
-  /** Create thread-safe shared data */
-  template<class... Args>
-  explicit threadsafe_data(Args&&... args)
-    : m_inner(std::make_unique<inner>(std::forward<Args>(args)...))
+  /** Create default initialized thread-safe shared data */
+  threadsafe_data()
+    : m_inner(std::make_unique<inner>())
   {
   }
+
+  /** Create thread-safe shared data */
+  explicit threadsafe_data(T value)
+    : m_inner(std::make_unique<inner>(std::move(value)))
+  {
+  }
+
+  /** Move and copy construction behaves like a shared_ptr */
+  threadsafe_data(const threadsafe_data&) = default;
+  /** Move and copy construction behaves like a shared_ptr */
+  threadsafe_data& operator=(threadsafe_data&&) = default;
+  /** Move and copy construction behaves like a shared_ptr */
+  threadsafe_data(threadsafe_data&&) = default;
+  /** Move and copy construction behaves like a shared_ptr */
+  threadsafe_data& operator=(const threadsafe_data&) = default;
 
   /** Default destructor */
   ~threadsafe_data() = default;
 
-  /** For simplicity, moves and copies are disallowed */
-  threadsafe_data(const threadsafe_data&) = delete;
-  /** For simplicity, moves and copies are disallowed */
-  threadsafe_data(threadsafe_data&&) = delete;
-  /** For simplicity, moves and copies are disallowed */
-  threadsafe_data& operator=(const threadsafe_data&) = delete;
-  /** For simplicity, moves and copies are disallowed */
-  threadsafe_data& operator=(threadsafe_data&&) = delete;
-
   /** Returns a smart pointer that provides shared (read) access */
-  reader<T> get_reader() const { return reader<T>{ m_inner }; }
+  [[nodiscard]] reader<T> get_reader() const
+  {
+    AR_REQUIRE(m_inner);
+    return reader<T>{ m_inner };
+  }
 
   /** Returns a smart pointer that provides exclusive (write) access */
-  writer<T> get_writer() const { return writer<T>{ m_inner }; }
+  [[nodiscard]] writer<T> get_writer() const
+  {
+    AR_REQUIRE(m_inner);
+    return writer<T>{ m_inner };
+  }
 
 private:
   //! Shared pointer to inner data; shared_ptr is used to prevent use-after-free

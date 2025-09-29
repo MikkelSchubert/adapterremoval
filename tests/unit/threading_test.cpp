@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
+#include "catch.hpp"
 #include "errors.hpp"    // for assertion_failed
 #include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp" // for threadsafe_data
@@ -130,6 +131,70 @@ TEST_CASE("threadstate merg into", "[scheduler::threadstate]")
 ////////////////////////////////////////////////////////////////////////////////
 // threadsafe_data
 
+TEST_CASE("threadsafe_data default construction")
+{
+  threadsafe_data<std::string> data;
+
+  {
+    auto reader = data.get_reader();
+    REQUIRE(*reader == "");
+  }
+
+  {
+    auto writer = data.get_writer();
+    REQUIRE(*writer == "");
+  }
+}
+
+TEST_CASE("threadsafe_data are smart pointers")
+{
+  threadsafe_data<std::string> data_1{ "example" };
+  threadsafe_data<std::string> data_2{ data_1 };
+  threadsafe_data<std::string> data_3{ "other" };
+  data_3 = data_2;
+
+  {
+    auto reader_1 = data_1.get_reader();
+    REQUIRE(*reader_1 == "example");
+    REQUIRE(reader_1->size() == 7);
+    auto reader_2 = data_2.get_reader();
+    REQUIRE(*reader_2 == "example");
+    REQUIRE(reader_2->size() == 7);
+    auto reader_3 = data_3.get_reader();
+    REQUIRE(*reader_3 == "example");
+    REQUIRE(reader_3->size() == 7);
+  }
+
+  *data_2.get_writer() = "modified";
+
+  {
+    auto reader_1 = data_1.get_reader();
+    REQUIRE(*reader_1 == "modified");
+    REQUIRE(reader_1->size() == 8);
+    auto reader_2 = data_2.get_reader();
+    REQUIRE(*reader_2 == "modified");
+    REQUIRE(reader_2->size() == 8);
+    auto reader_3 = data_3.get_reader();
+    REQUIRE(*reader_3 == "modified");
+    REQUIRE(reader_3->size() == 8);
+  }
+}
+
+TEST_CASE("threadsafe_data moves are checked")
+{
+  threadsafe_data<std::string> data_1{ "example" };
+  threadsafe_data<std::string> data_2{ std::move(data_1) };
+  threadsafe_data<std::string> data_3{ data_1 };
+
+  REQUIRE_THROWS_AS(data_1.get_reader(), assert_failed);
+  REQUIRE_THROWS_AS(data_1.get_writer(), assert_failed);
+
+  REQUIRE_THROWS_AS(data_3.get_reader(), assert_failed);
+  REQUIRE_THROWS_AS(data_3.get_writer(), assert_failed);
+
+  REQUIRE(*data_2.get_reader() == "example");
+}
+
 TEST_CASE("threadsafe_data readers are shared")
 {
   threadsafe_data<std::string> data{ "example" };
@@ -151,12 +216,12 @@ TEST_CASE("threadsafe_data writers are exclusive #1")
     auto writer = data.get_writer();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     REQUIRE(*writer == "example");
-    *writer = "updated";
+    *writer = "modified";
   };
 
   const auto read_func = [&data]() {
     const auto reader = data.get_reader();
-    REQUIRE(*reader == "updated");
+    REQUIRE(*reader == "modified");
   };
 
   std::vector<std::thread> threads;
@@ -195,6 +260,62 @@ TEST_CASE("threadsafe_data writers are exclusive #2")
   }
 
   REQUIRE(*data.get_reader() == "example!?");
+}
+
+TEST_CASE("threadsafe_data writers are exclusive #3")
+{
+  threadsafe_data<std::string> data_1{ "example" };
+  auto data_2 = data_1;
+
+  const auto write_func_1 = [&data_1]() {
+    auto writer = data_1.get_writer();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    writer->push_back('!');
+  };
+
+  const auto write_func_2 = [&data_2]() {
+    auto writer = data_2.get_writer();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    writer->push_back('?');
+  };
+
+  std::vector<std::thread> threads;
+  threads.emplace_back(write_func_1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  threads.emplace_back(write_func_2);
+
+  for (auto& it : threads) {
+    it.join();
+  }
+
+  REQUIRE(*data_1.get_reader() == "example!?");
+  REQUIRE(*data_2.get_reader() == "example!?");
+}
+
+TEST_CASE("readers can be moved")
+{
+  threadsafe_data<std::string> data{ "example" };
+
+  auto reader_1 = data.get_reader();
+  decltype(reader_1) reader_2{ std::move(reader_1) };
+
+  REQUIRE_THROWS_AS(*reader_1, assert_failed);
+  REQUIRE_THROWS_AS(reader_1->size(), assert_failed);
+  REQUIRE(*reader_2 == "example");
+  REQUIRE(reader_2->size() == 7);
+}
+
+TEST_CASE("writers can be moved")
+{
+  threadsafe_data<std::string> data{ "example" };
+
+  auto writer_1 = data.get_writer();
+  decltype(writer_1) writer_2{ std::move(writer_1) };
+
+  REQUIRE_THROWS_AS(*writer_1, assert_failed);
+  REQUIRE_THROWS_AS(writer_1->size(), assert_failed);
+  REQUIRE(*writer_2 == "example");
+  REQUIRE(writer_2->size() == 7);
 }
 
 } // namespace adapterremoval
