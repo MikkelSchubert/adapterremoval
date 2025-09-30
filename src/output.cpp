@@ -219,7 +219,6 @@ processed_reads::set_sample(const sample& value)
 void
 processed_reads::set_mate_separator(char value)
 {
-  m_mate_separator = value;
   for (auto& it : m_serializers) {
     it.set_mate_separator(value);
   }
@@ -254,7 +253,6 @@ processed_reads::add(const fastq& read, const read_meta& meta)
   if (offset != sample_output_files::disabled) {
     auto& buffer = get_buffer(m_chunks.at(offset));
     m_serializers.at(offset).record(buffer, read, meta);
-    m_chunks.at(offset)->reads++;
   }
 }
 

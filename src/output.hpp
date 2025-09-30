@@ -187,8 +187,6 @@ public:
 private:
   const sample_output_files& m_map;
 
-  //! Mate separator found in reads
-  char m_mate_separator = '\0';
   //! A set of output chunks being created; typically fewer than read_file::max.
   output_chunk_ptr_vec m_chunks{};
   //! The serializer used for each chunk
