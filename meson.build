@@ -29,7 +29,6 @@ not_found = dependency('', required: false)
 
 add_project_arguments(
     compiler.get_supported_arguments(
-        '-fno-rtti',
         # abort when sanitizers trigger
         '-fno-sanitize-recover=all',
         # Treat non-ISO-conforming code and the use of extensions as errors

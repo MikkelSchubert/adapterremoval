@@ -4,10 +4,10 @@
 #include "demultiplexing.hpp" // declarations
 #include "barcode_table.hpp"  // for barcode_table
 #include "commontypes.hpp"    // for read_type, read_file
-#include "counts.hpp"         // for counts
 #include "debug.hpp"          // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "fastq.hpp"          // for fastq
 #include "output.hpp"         // for output_files
+#include "scheduler.hpp"      // for fastq_chunk
 #include "sequence_sets.hpp"  // for adapter_set
 #include "statistics.hpp"     // for demux_statistics
 #include "userconfig.hpp"     // for userconfig, ar_command, ar_command...
@@ -63,8 +63,9 @@ demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
 }
 
 chunk_vec
-demultiplex_se_reads::process(chunk_ptr chunk)
+demultiplex_se_reads::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   for (auto& read : chunk->reads_1) {
@@ -104,8 +105,9 @@ demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
 }
 
 chunk_vec
-demultiplex_pe_reads::process(chunk_ptr chunk)
+demultiplex_pe_reads::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
@@ -161,8 +163,9 @@ process_demultiplexed::process_demultiplexed(const userconfig& config,
 }
 
 chunk_vec
-process_demultiplexed::process(chunk_ptr chunk)
+process_demultiplexed::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
   chunks.set_sample(m_samples.at(m_sample));
@@ -238,8 +241,9 @@ processes_unidentified::processes_unidentified(const userconfig& config,
 }
 
 chunk_vec
-processes_unidentified::process(chunk_ptr chunk)
+processes_unidentified::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
   chunks.set_sample(m_config.samples->unidentified());

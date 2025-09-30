@@ -17,7 +17,7 @@ class userconfig;
 namespace {
 
 buffer&
-get_buffer(chunk_ptr& chunk)
+get_buffer(output_chunk_ptr& chunk)
 {
   AR_REQUIRE(chunk);
   if (chunk->buffers.empty()) {
@@ -201,7 +201,7 @@ processed_reads::processed_reads(const sample_output_files& map)
   : m_map(map)
 {
   for (size_t i = 0; i < map.size(); ++i) {
-    m_chunks.emplace_back(std::make_unique<analytical_chunk>());
+    m_chunks.emplace_back(std::make_unique<output_chunk>());
     m_serializers.emplace_back(map.format(i));
   }
 }
@@ -265,7 +265,6 @@ processed_reads::finalize(bool eof)
 
   for (size_t i = 0; i < m_chunks.size(); ++i) {
     auto& chunk = m_chunks.at(i);
-    chunk->mate_separator = m_mate_separator;
     chunk->eof = eof;
 
     chunks.emplace_back(m_map.step(i), std::move(chunk));
@@ -286,16 +285,16 @@ namespace {
 
 void
 flush_chunk(chunk_vec& output,
-            chunk_ptr& ptr,
+            fastq_chunk_ptr& ptr,
             size_t step,
             const bool eof,
             const char mate_separator)
 {
-  if (eof || ptr->reads >= INPUT_READS) {
+  if (eof || ptr->reads() >= INPUT_READS) {
     ptr->eof = eof;
     ptr->mate_separator = mate_separator;
     output.emplace_back(step, std::move(ptr));
-    ptr = std::make_unique<analytical_chunk>();
+    ptr = std::make_unique<fastq_chunk>();
   }
 }
 
@@ -305,12 +304,12 @@ demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
   : m_steps(steps)
 {
   // Position 0 is used for unidentified reads
-  m_cache.push_back(std::make_unique<analytical_chunk>());
+  m_cache.push_back(std::make_unique<fastq_chunk>());
 
   for (const auto next_step : m_steps.samples) {
     AR_REQUIRE(next_step != post_demux_steps::disabled);
 
-    m_cache.push_back(std::make_unique<analytical_chunk>());
+    m_cache.push_back(std::make_unique<fastq_chunk>());
   }
 
   // The first chunks should have headers written depending on format
