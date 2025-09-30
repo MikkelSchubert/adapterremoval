@@ -63,7 +63,7 @@ public:
                         statistics& stats);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
 
   /** Finalizer; checks that all input has been processed. */
   void finalize() override;
@@ -124,7 +124,7 @@ public:
   ~post_process_fastq() override;
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
 
   /** Finalizer; checks that all input has been processed. */
   void finalize() override;
@@ -174,7 +174,7 @@ public:
 
   ~split_fastq() override = default;
 
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
   void finalize() override;
 
   split_fastq(const split_fastq&) = delete;
@@ -214,7 +214,7 @@ public:
   ~gzip_split_fastq() override = default;
 
   /** Compresses input lines, saving compressed chunks to chunk->buffers. */
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
 
   gzip_split_fastq(const gzip_split_fastq&) = delete;
   gzip_split_fastq(gzip_split_fastq&&) = delete;
@@ -245,7 +245,7 @@ public:
   write_fastq(const userconfig& config, const output_file& file);
 
   /** Writes the reads of the type specified in the constructor. */
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
 
   /** Flushes the output file and prints progress report (if enabled). */
   void finalize() override;

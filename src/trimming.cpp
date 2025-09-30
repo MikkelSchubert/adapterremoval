@@ -306,8 +306,9 @@ se_reads_processor::se_reads_processor(const userconfig& config,
 }
 
 chunk_vec
-se_reads_processor::process(chunk_ptr chunk)
+se_reads_processor::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
   chunks.set_sample(m_config.samples->at(m_sample));
@@ -434,8 +435,9 @@ pe_reads_processor::pe_reads_processor(const userconfig& config,
 }
 
 chunk_vec
-pe_reads_processor::process(chunk_ptr chunk)
+pe_reads_processor::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
   chunks.set_sample(m_config.samples->at(m_sample));

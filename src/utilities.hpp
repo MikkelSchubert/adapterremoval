@@ -4,8 +4,9 @@
 
 #include <array>       // for array
 #include <cstddef>     // for size_t
-#include <memory>      // for allocator
+#include <memory>      // for allocator, unique_ptr
 #include <type_traits> // for enable_if_t, is_floating_point, is_integral
+#include <utility>     // for ignore
 
 namespace adapterremoval {
 
@@ -55,6 +56,23 @@ constexpr auto
 underlying_value(T value)
 {
   return static_cast<std::underlying_type_t<T>>(value);
+}
+
+/**
+ * Perform dynamic cast on pointer stored in unique_ptr. If the cast succeeds,
+ * overship of the pointer transferred is the new unique_ptr, otherwise the
+ * source pointer remains unchanged.
+ */
+template<typename T, typename U>
+std::unique_ptr<T, std::default_delete<T>>
+dynamic_cast_unique(std::unique_ptr<U, std::default_delete<U>>& src)
+{
+  if (auto* dst = dynamic_cast<T*>(src.get())) {
+    std::ignore = src.release();      // noexcept, silence warning
+    return std::unique_ptr<T>{ dst }; // noexcept
+  }
+
+  return {};
 }
 
 } // namespace adapterremoval

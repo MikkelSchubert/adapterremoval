@@ -44,7 +44,7 @@ public:
                      size_t nth,
                      trim_stats_ptr sink);
 
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
 };
 
 class pe_reads_processor : public reads_processor
@@ -55,7 +55,7 @@ public:
                      size_t nth,
                      trim_stats_ptr sink);
 
-  chunk_vec process(chunk_ptr chunk) override;
+  chunk_vec process(chunk_ptr data) override;
 };
 
 } // namespace adapterremoval

@@ -4,6 +4,7 @@
 #include "utilities.hpp" // for merge
 #include <array>         // for array, operator==
 #include <cstddef>       // for size_t
+#include <memory>        // for unique_ptr
 #include <string>        // for string
 #include <type_traits>   // for is_same_v
 #include <vector>        // for vector, allocator, operator==
@@ -161,6 +162,79 @@ TEST_CASE("underlying_value returns same type", "[underlying_value]")
     auto uvalue = underlying_value(my_enum{});
     static_assert(std::is_same_v<decltype(uvalue), unsigned long>);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// dynamic_cast_unique
+
+namespace {
+
+class test_base_class
+{
+public:
+  test_base_class() = default;
+  test_base_class(const test_base_class&) = delete;
+  test_base_class(test_base_class&&) = delete;
+  virtual ~test_base_class() = default;
+
+  test_base_class& operator=(const test_base_class&) = delete;
+  test_base_class& operator=(test_base_class&&) = delete;
+};
+
+class test_sub_class_1 : public test_base_class
+{
+public:
+  explicit test_sub_class_1(int value_)
+    : value(value_) {};
+
+  test_sub_class_1(const test_sub_class_1&) = delete;
+  test_sub_class_1(test_sub_class_1&&) = delete;
+  ~test_sub_class_1() override = default;
+
+  test_sub_class_1& operator=(const test_sub_class_1&) = delete;
+  test_sub_class_1& operator=(test_sub_class_1&&) = delete;
+
+  int value = 0;
+};
+
+class test_sub_class_2 : public test_base_class
+{
+public:
+  explicit test_sub_class_2() = default;
+  test_sub_class_2(const test_sub_class_2&) = delete;
+  test_sub_class_2(test_sub_class_2&&) = delete;
+  ~test_sub_class_2() override = default;
+
+  test_sub_class_2& operator=(const test_sub_class_2&) = delete;
+  test_sub_class_2& operator=(test_sub_class_2&&) = delete;
+};
+
+} // namespace
+
+TEST_CASE("dynamic_cast_unique on nulllptr returns nullptr")
+{
+  std::unique_ptr<test_base_class> ptr;
+  REQUIRE_FALSE(ptr.get());
+  REQUIRE_FALSE(dynamic_cast_unique<test_sub_class_1>(ptr).get());
+  REQUIRE_FALSE(ptr.get());
+  REQUIRE_FALSE(dynamic_cast_unique<test_sub_class_2>(ptr).get());
+  REQUIRE_FALSE(ptr.get());
+}
+
+TEST_CASE("dynamic_cast_unique on wrong type returns nullptr")
+{
+  auto ptr = std::make_unique<test_sub_class_1>(12345);
+  REQUIRE_FALSE(dynamic_cast_unique<test_sub_class_2>(ptr).get());
+  REQUIRE(ptr.get());
+}
+
+TEST_CASE("dynamic_cast_unique on correct type casts")
+{
+  auto ptr = std::make_unique<test_sub_class_1>(12345);
+  auto data = dynamic_cast_unique<test_sub_class_1>(ptr);
+  REQUIRE(data.get());
+  REQUIRE(data->value == 12345);
+  REQUIRE_FALSE(ptr.get());
 }
 
 } // namespace adapterremoval

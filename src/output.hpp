@@ -16,7 +16,9 @@ namespace adapterremoval {
 
 class analytical_chunk;
 class buffer;
+class fastq_chunk;
 class fastq;
+class output_chunk;
 class read_meta;
 class sample;
 class scheduler;
@@ -24,9 +26,14 @@ class userconfig;
 enum class read_type;
 
 using chunk_ptr = std::unique_ptr<analytical_chunk>;
-using chunk_ptr_vec = std::vector<chunk_ptr>;
 using chunk_pair = std::pair<size_t, chunk_ptr>;
 using chunk_vec = std::vector<chunk_pair>;
+
+using fastq_chunk_ptr = std::unique_ptr<fastq_chunk>;
+using fastq_chunk_ptr_vec = std::vector<fastq_chunk_ptr>;
+
+using output_chunk_ptr = std::unique_ptr<output_chunk>;
+using output_chunk_ptr_vec = std::vector<output_chunk_ptr>;
 
 struct output_file
 {
@@ -180,10 +187,8 @@ public:
 private:
   const sample_output_files& m_map;
 
-  //! Mate separator found in reads
-  char m_mate_separator = '\0';
   //! A set of output chunks being created; typically fewer than read_file::max.
-  chunk_ptr_vec m_chunks{};
+  output_chunk_ptr_vec m_chunks{};
   //! The serializer used for each chunk
   std::vector<serializer> m_serializers{};
 };
@@ -220,7 +225,7 @@ private:
   const post_demux_steps& m_steps;
 
   //! Cache of demultiplex reads, including unidentified reads
-  chunk_ptr_vec m_cache{};
+  fastq_chunk_ptr_vec m_cache{};
 };
 
 } // namespace adapterremoval

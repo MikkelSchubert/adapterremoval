@@ -8,6 +8,7 @@
 #include "fastq_enc.hpp"   // for MATE_SEPARATOR
 #include "output.hpp"      // for output_file
 #include "progress.hpp"    // for progress_timer
+#include "scheduler.hpp"   // for provides analytical_step, chunk_ptr, ...
 #include "statistics.hpp"  // for fastq_statistics, fastq_stats_ptr, stat...
 #include "strutils.hpp"    // for shell_escape, string_vec, ends_with
 #include "userconfig.hpp"  // for userconfig
@@ -178,8 +179,9 @@ read_fastq::add_steps(scheduler& sch,
 }
 
 chunk_vec
-read_fastq::process(chunk_ptr chunk)
+read_fastq::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
 
   if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
@@ -188,7 +190,7 @@ read_fastq::process(chunk_ptr chunk)
       return {};
     }
 
-    chunk = std::make_unique<analytical_chunk>();
+    chunk = std::make_unique<fastq_chunk>();
   } else {
     AR_REQUIRE(!m_eof && chunk);
   }
@@ -308,8 +310,9 @@ post_process_fastq::post_process_fastq(const userconfig& config,
 post_process_fastq::~post_process_fastq() = default;
 
 chunk_vec
-post_process_fastq::process(chunk_ptr chunk)
+post_process_fastq::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   auto& reads_1 = chunk->reads_1;
   auto& reads_2 = chunk->reads_2;
@@ -389,8 +392,9 @@ split_fastq::finalize()
 }
 
 chunk_vec
-split_fastq::process(const chunk_ptr chunk)
+split_fastq::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<output_chunk>(data);
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
@@ -406,7 +410,7 @@ split_fastq::process(const chunk_ptr chunk)
       src_offset += n;
 
       if (m_buffer.size() == BGZF_BLOCK_SIZE) {
-        auto block = std::make_unique<analytical_chunk>();
+        auto block = std::make_unique<output_chunk>();
 
         if (m_isal_stream) {
           m_isal_crc32 =
@@ -425,7 +429,7 @@ split_fastq::process(const chunk_ptr chunk)
   }
 
   if (m_eof) {
-    auto block = std::make_unique<analytical_chunk>();
+    auto block = std::make_unique<output_chunk>();
     block->eof = true;
 
     if (m_isal_stream) {
@@ -508,8 +512,9 @@ gzip_split_fastq::gzip_split_fastq(const userconfig& config,
 }
 
 chunk_vec
-gzip_split_fastq::process(chunk_ptr chunk)
+gzip_split_fastq::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<output_chunk>(data);
   AR_REQUIRE(chunk);
   AR_REQUIRE(chunk->buffers.size() == 1);
 
@@ -628,8 +633,9 @@ write_fastq::write_fastq(const userconfig& config, const output_file& file)
 }
 
 chunk_vec
-write_fastq::process(chunk_ptr chunk)
+write_fastq::process(chunk_ptr data)
 {
+  auto chunk = dynamic_cast_unique<output_chunk>(data);
   AR_REQUIRE(chunk);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);

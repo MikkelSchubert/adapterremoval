@@ -49,8 +49,9 @@ public:
 
   ~adapter_identification() override = default;
 
-  chunk_vec process(chunk_ptr chunk) override
+  chunk_vec process(chunk_ptr data) override
   {
+    auto chunk = dynamic_cast_unique<fastq_chunk>(data);
     AR_REQUIRE(chunk);
 
     const adapter_set adapters = { { "", "" } };
