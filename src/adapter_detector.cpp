@@ -14,7 +14,6 @@
 #include <cstddef>              // for size_t
 #include <limits>               // for numeric_limits
 #include <string_view>          // for string_view
-#include <vector>               // for vector
 
 namespace adapterremoval {
 
@@ -57,15 +56,8 @@ collect_unique(sequence_vec adapters)
 
 /** Collect all unique adapter sequence as read 1 adapters */
 sequence_vec
-collect_adapters(const adapter_set& adapters,
-                 adapter_detector::include_known inc)
+collect_adapters(const adapter_database& database)
 {
-  adapter_database database;
-  database.add(adapters);
-  if (inc == adapter_detector::include_known::yes) {
-    database.add_known();
-  }
-
   sequence_vec sequences;
   for (const auto& it : database) {
     sequences.insert(sequences.end(),
@@ -139,6 +131,7 @@ select_best_match(const read_mate mate,
                   const adapter_detection_stats::values& values,
                   const size_t total_reads)
 {
+  AR_REQUIRE(values.empty() || values.size() == adapters.size());
   if (values.empty()) {
     // no reads were processed, due to empty input or SE mode
     return {};
@@ -232,15 +225,14 @@ operator<<(std::ostream& os, const adapter_detection_stats::hits& value)
 ////////////////////////////////////////////////////////////////////////////////
 // adapter_detector
 
-adapter_detector::adapter_detector(const adapter_set& sequences,
+adapter_detector::adapter_detector(adapter_database database,
                                    const simd::instruction_set is,
-                                   const double mismatch_threshold,
-                                   const adapter_detector::include_known inc)
-  : m_adapters(collect_adapters(sequences, inc))
+                                   const double mismatch_threshold)
+  : m_database(std::move(database))
+  , m_adapters(collect_adapters(m_database))
   , m_aligner(adapters_to_set(m_adapters), is, mismatch_threshold)
   , m_common_prefixes(common_prefixes(m_adapters, ADAPTER_DETECT_MIN_OVERLAP))
 {
-  AR_REQUIRE(!m_adapters.empty());
   m_aligner.set_min_se_overlap(ADAPTER_DETECT_MIN_OVERLAP);
 }
 
@@ -263,19 +255,19 @@ adapter_detector::detect_pe(adapter_detection_stats& stats,
   detect_adapters(read_2, stats.m_mate_2);
 }
 
-sequence_pair
+identified_adapter_pair
 adapter_detector::select_best(const adapter_detection_stats& stats) const
 {
-  return {
-    select_best_match(read_mate::_1,
-                      m_adapters,
-                      stats.m_mate_1,
-                      stats.m_reads_1),
-    select_best_match(read_mate::_2,
-                      m_adapters,
-                      stats.m_mate_2,
-                      stats.m_reads_2),
-  };
+  const auto seq_1 = select_best_match(read_mate::_1,
+                                       m_adapters,
+                                       stats.m_mate_1,
+                                       stats.m_reads_1);
+  const auto seq_2 = select_best_match(read_mate::_2,
+                                       m_adapters,
+                                       stats.m_mate_2,
+                                       stats.m_reads_2);
+
+  return m_database.identify_exact(seq_1, seq_2);
 }
 
 void

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
+#include "adapter_database.hpp" // for adapter_database
 #include "adapter_detector.hpp" // declarations
+#include "commontypes.hpp"      // for read_mate
 #include "fastq.hpp"            // for fastq
 #include "logging.hpp"          // for log_capture
 #include "sequence.hpp"         // for dna_sequence
@@ -22,10 +24,12 @@ const double DEFAULT_MISMATCH_THRESHOLD = 1.0 / 6.0;
 inline adapter_detector
 simple_detector(std::initializer_list<string_view_pair> args)
 {
-  return adapter_detector{ args,
+  adapter_database database;
+  database.add(args);
+
+  return adapter_detector{ database,
                            PARAMETERIZE_IS,
-                           DEFAULT_MISMATCH_THRESHOLD,
-                           adapter_detector::include_known::no };
+                           DEFAULT_MISMATCH_THRESHOLD };
 }
 
 using hits_vec = std::vector<adapter_detection_stats::hits>;
@@ -143,21 +147,29 @@ TEST_CASE("adapter sets are flattened and sorted")
 
 TEST_CASE("adapter_detector including known adapters")
 {
+  const auto is = PARAMETERIZE_IS;
   std::initializer_list<string_view_pair> seqs{
     { "ACGTGTTA", "GTTATTTA" },
     { "ACGGACGT", "GGCAGTTA" },
   };
 
   // known adapters only
-  adapter_detector ad_1{ {}, PARAMETERIZE_IS, DEFAULT_MISMATCH_THRESHOLD };
+  adapter_database database_1;
+  database_1.add_known();
+  adapter_detector ad_1{ database_1, is, DEFAULT_MISMATCH_THRESHOLD };
   REQUIRE(ad_1.size() > 10);
 
   // user specified adapters only
-  auto ad_2 = simple_detector(seqs);
+  adapter_database database_2;
+  database_2.add(seqs);
+  adapter_detector ad_2{ database_2, is, DEFAULT_MISMATCH_THRESHOLD };
   REQUIRE(ad_2.size() == 4);
 
   // known and user specified adapters
-  adapter_detector ad_3{ seqs, PARAMETERIZE_IS, DEFAULT_MISMATCH_THRESHOLD };
+  adapter_database database_3;
+  database_3.add_known();
+  database_3.add(seqs);
+  adapter_detector ad_3{ database_3, is, DEFAULT_MISMATCH_THRESHOLD };
   REQUIRE(ad_3.size() == ad_1.size() + ad_2.size());
 }
 
@@ -169,7 +181,7 @@ TEST_CASE("adapter_detector returns empty sequences if no stats")
     { "ACGGACGT", "GGCAGTTA" },
   });
 
-  REQUIRE(ad.select_best(stats) == sequence_pair{});
+  REQUIRE(ad.select_best(stats) == identified_adapter_pair{});
 }
 
 TEST_CASE("only unique adapters are collected")
@@ -417,18 +429,22 @@ TEST_CASE("selection requires 10 hits")
     { "AGATCGGAAGAGCACACGTCT", {} },
   });
 
+  const std::string name{ "User adapters #1" };
+  const dna_sequence sequence{ "AGATCGGAAGAGCACACGTCT" };
+  const identified_adapter expected_1{ name, sequence, read_mate::_1 };
+  const identified_adapter expected_2{ name, sequence, read_mate::_2 };
+
   log::log_capture _;
-  REQUIRE(ad.select_best({ 9, { { 9 } } }) == sequence_pair{});
-  REQUIRE(ad.select_best({ 9, {}, { { 9 } } }) == sequence_pair{});
+  REQUIRE(ad.select_best({ 9, { { 9 } } }) == identified_adapter_pair{});
+  REQUIRE(ad.select_best({ 9, {}, { { 9 } } }) == identified_adapter_pair{});
 
   REQUIRE(ad.select_best({ 10, { { 10 } } }) ==
-          sequence_pair{ "AGATCGGAAGAGCACACGTCT"_dna, {} });
+          identified_adapter_pair{ expected_1, {} });
   REQUIRE(ad.select_best({ 10, {}, { { 10 } } }) ==
-          sequence_pair{ {}, "AGATCGGAAGAGCACACGTCT"_dna });
+          identified_adapter_pair{ {}, expected_2 });
 
-  REQUIRE(
-    ad.select_best({ 10, { { 10 } }, { { 10 } } }) ==
-    sequence_pair{ "AGATCGGAAGAGCACACGTCT"_dna, "AGATCGGAAGAGCACACGTCT"_dna });
+  REQUIRE(ad.select_best({ 10, { { 10 } }, { { 10 } } }) ==
+          identified_adapter_pair{ expected_1, expected_2 });
 }
 
 TEST_CASE("selection requires 1/0.1 percent sequences")
@@ -438,19 +454,26 @@ TEST_CASE("selection requires 1/0.1 percent sequences")
     { "AGATCGGAAGAGCACACGTCT", {} },
   });
 
+  const identified_adapter expected{ "User adapters #1",
+                                     "AGATCGGAAGAGCACACGTCT"_dna,
+                                     read_mate::_1 };
+
   log::log_capture _;
   // Common sequences require >= 1% hits
-  REQUIRE(ad.select_best({ 10000, { { 99, 9900, 990 } } }) == sequence_pair{});
+  REQUIRE(ad.select_best({ 10000, { { 99, 9900, 990 } } }) ==
+          identified_adapter_pair{});
   REQUIRE(ad.select_best({ 10000, { { 100, 10000, 1000 } } }) ==
-          sequence_pair{ "AGATCGGAAGAGCACACGTCT"_dna, {} });
+          identified_adapter_pair{ expected, {} });
 
   // Rare sequences rare >= 0.1% sequences and <= 5% errors
-  REQUIRE(ad.select_best({ 100000, { { 99, 9900, 990 } } }) == sequence_pair{});
-  REQUIRE(ad.select_best({ 100000, { { 99, 9900, 500 } } }) == sequence_pair{});
+  REQUIRE(ad.select_best({ 100000, { { 99, 9900, 990 } } }) ==
+          identified_adapter_pair{});
+  REQUIRE(ad.select_best({ 100000, { { 99, 9900, 500 } } }) ==
+          identified_adapter_pair{});
   REQUIRE(ad.select_best({ 100000, { { 100, 10000, 1000 } } }) ==
-          sequence_pair{});
+          identified_adapter_pair{});
   REQUIRE(ad.select_best({ 100000, { { 100, 10000, 500 } } }) ==
-          sequence_pair{ "AGATCGGAAGAGCACACGTCT"_dna, {} });
+          identified_adapter_pair{ expected, {} });
 }
 
 TEST_CASE("selection prefers the most aligned bases for same hits")
@@ -464,11 +487,17 @@ TEST_CASE("selection prefers the most aligned bases for same hits")
 
   log::log_capture _;
   // Prefer sequence with the most hits
-  REQUIRE(ad.select_best({ 100, { { 30, 400 }, { 10, 50 }, { 40, 300 } } }) ==
-          sequence_pair{ "AGATCGGAAGAGCGTCGTGTAGGGA"_dna, {} });
+  REQUIRE(
+    ad.select_best({ 100, { { 30, 400 }, { 10, 50 }, { 40, 300 } } }) ==
+    identified_adapter_pair{
+      { "User adapters #3", "AGATCGGAAGAGCGTCGTGTAGGGA"_dna, read_mate::_1 },
+      {} });
+
   // Prefer sequence with the most bases, for same number of hits
   REQUIRE(ad.select_best({ 100, { { 40, 400 }, { 10, 50 }, { 40, 300 } } }) ==
-          sequence_pair{ "AGATCGGAAGAGCACACGTCT"_dna, {} });
+          identified_adapter_pair{
+            { "User adapters #1", "AGATCGGAAGAGCACACGTCT"_dna, read_mate::_1 },
+            {} });
 }
 
 } // namespace adapterremoval

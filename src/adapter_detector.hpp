@@ -2,15 +2,16 @@
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "alignment.hpp"     // for sequence_aligner
-#include "sequence.hpp"      // for dna_sequence
-#include "sequence_sets.hpp" // for adapter_set
-#include <vector>            // for vector
+#include "adapter_database.hpp" // for adapter_database
+#include "alignment.hpp"        // for sequence_aligner
+#include "sequence.hpp"         // for dna_sequence
+#include <vector>               // for vector
 
 namespace adapterremoval {
 
 class fastq;
 class userconfig;
+class adapter_database;
 
 /**
  * Class used to record adapter detection statistics; these statistics are
@@ -85,18 +86,10 @@ private:
 class adapter_detector
 {
 public:
-  /** Specifies whether or not to include known adapter sequences */
-  enum class include_known
-  {
-    no,
-    yes,
-  };
-
   /** Create selector based on known and user-specified adapters */
-  adapter_detector(const adapter_set& sequences,
+  adapter_detector(adapter_database database,
                    simd::instruction_set is,
-                   double mismatch_threshold,
-                   include_known inc = include_known::yes);
+                   double mismatch_threshold);
 
   /** Detect adapters based only on mate 1 reads, writing results to `stats` */
   void detect_se(adapter_detection_stats& stats, const fastq& read);
@@ -106,7 +99,7 @@ public:
                  const fastq& read_2);
 
   /** Selects the best candidate(s) for the provided stats */
-  [[nodiscard]] sequence_pair select_best(
+  [[nodiscard]] identified_adapter_pair select_best(
     const adapter_detection_stats& stats) const;
 
   /** Returns the number of unique adapter sequences */
@@ -123,6 +116,8 @@ private:
   void detect_adapters(const fastq& read,
                        adapter_detection_stats::values& stats);
 
+  //! Database of known and/or user-provided adapter sequences
+  adapter_database m_database;
   //! Unique known and user-provided adapters, all stored as read 1 adapters
   sequence_vec m_adapters;
   //! Aligner for full set of adapter sequences, all stored as read 1 adapters
