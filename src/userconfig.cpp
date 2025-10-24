@@ -448,7 +448,7 @@ parse_output_formats(const argparse::parser& argparser,
 std::string userconfig::start_time = timestamp("%FT%T%z");
 
 userconfig::userconfig()
-  : samples(std::make_unique<sample_set>())
+  : samples()
   , m_argparser(std::make_unique<argparse::parser>())
 {
   auto& argparser = *m_argparser;
@@ -1196,7 +1196,7 @@ userconfig::parse_args(const string_vec& argvec)
     auto merged_tags = join_text(read_group, "\t");
 
     try {
-      samples->set_read_group(merged_tags);
+      samples.get_writer()->set_read_group(merged_tags);
     } catch (const std::invalid_argument& error) {
       log::error() << "Invalid argument --read-group "
                    << log_escape(merged_tags) << ": " << error.what();
@@ -1384,7 +1384,8 @@ userconfig::get_output_filenames() const
     }
   }
 
-  for (const auto& sample : *samples) {
+  auto reader = samples.get_reader();
+  for (const auto& sample : *reader) {
     const auto& name = sample.name();
     sample_output_files map;
 
@@ -1632,7 +1633,7 @@ userconfig::setup_adapter_sequences()
     }
   }
 
-  samples->set_adapters(std::move(adapters));
+  samples.get_writer()->set_adapters(std::move(adapters));
 
   return true;
 }
@@ -1668,15 +1669,16 @@ userconfig::setup_demultiplexing()
       .allow_multiple_barcodes(argparser.is_set("--multiple-barcodes"))
       .orientation(orientation);
 
+    auto writer = samples.get_writer();
     try {
-      samples->load(barcode_list, config);
+      writer->load(barcode_list, config);
     } catch (const std::exception& error) {
       log::error() << "Error reading barcodes from " << log_escape(barcode_list)
                    << ": " << error.what();
       return false;
     }
 
-    log::info() << "Read " << samples->size() << " sets of barcodes from "
+    log::info() << "Read " << writer->size() << " sets of barcodes from "
                 << shell_escape(barcode_list);
   }
 

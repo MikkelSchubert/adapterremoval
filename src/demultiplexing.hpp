@@ -42,7 +42,7 @@ public:
 
 protected:
   //! Set of samples to be demultiplexed
-  const sample_set& m_samples;
+  const threadsafe_data<sample_set> m_samples;
   //! Quad-tree representing all mate 1 adapters; for search with n mismatches
   const barcode_table m_barcode_table;
   //! Pointer to user settings used for output format for unidentified reads
@@ -113,7 +113,7 @@ private:
   const userconfig& m_config;
   const sample_output_files& m_output;
   //! Set of samples to be demultiplexed
-  const sample_set& m_samples;
+  const threadsafe_data<sample_set> m_samples;
   //! The sample processed by this step
   const size_t m_sample;
 

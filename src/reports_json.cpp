@@ -237,6 +237,7 @@ write_report_input(const userconfig& config,
 
 void
 write_report_demultiplexing(const userconfig& config,
+                            const sample_set& samples,
                             json_dict& report,
                             const statistics& sample_stats)
 {
@@ -256,13 +257,13 @@ write_report_demultiplexing(const userconfig& config,
     demultiplexing->u64("ambiguous_reads", demux.ambiguous);
     demultiplexing->u64("unassigned_reads", demux.unidentified);
 
-    const auto samples = demultiplexing->dict("samples");
+    const auto sample_dict = demultiplexing->dict("samples");
     for (size_t i = 0; i < demux.samples.size(); ++i) {
-      const auto sample = samples->dict(config.samples->at(i).name());
+      const auto sample = sample_dict->dict(samples.at(i).name());
       const auto& stats = *sample_stats.trimming.at(i);
       const auto& files = out_files.get_sample(i);
 
-      const auto& barcodes = config.samples->at(i);
+      const auto& barcodes = samples.at(i);
       const auto barcode_list = sample->list("barcodes");
       for (size_t j = 0; j < barcodes.size(); ++j) {
         const auto it = barcodes.at(j);
@@ -400,6 +401,7 @@ write_report_poly_x(json_dict& json,
 
 void
 write_report_processing(const userconfig& config,
+                        const sample_set& samples,
                         json_dict_ptr report,
                         const statistics& stats)
 {
@@ -446,7 +448,7 @@ write_report_processing(const userconfig& config,
     dict->u64("reads", reads);
     dict->u64("bases", bases);
 
-    const auto adapters = config.samples->adapters().to_read_orientation();
+    const auto adapters = samples.adapters().to_read_orientation();
     const auto adapter_list = dict->list("adapter_list");
     for (size_t i = 0; i < adapters.size(); ++i) {
       const auto adapter = adapter_list->inline_dict();
@@ -687,6 +689,7 @@ write_json_report(const userconfig& config,
   std::ostringstream output;
 
   {
+    auto samples = config.samples.get_reader();
     json_dict_ptr report = std::make_shared<json_dict>();
     report->str("$schema",
                 "https://MikkelSchubert.github.io/adapterremoval/schemas/" +
@@ -695,8 +698,8 @@ write_json_report(const userconfig& config,
     write_report_meta(config, *report);
     write_report_summary(config, *report, stats);
     write_report_input(config, *report, stats);
-    write_report_demultiplexing(config, *report, stats);
-    write_report_processing(config, report, stats);
+    write_report_demultiplexing(config, *samples, *report, stats);
+    write_report_processing(config, *samples, report, stats);
     write_report_analyses(config, report, stats);
     write_report_output(config, *report, stats);
     report->write(output);

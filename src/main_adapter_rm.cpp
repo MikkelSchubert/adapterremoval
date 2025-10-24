@@ -6,14 +6,12 @@
 #include "output.hpp"         // for outpuT_file, DEV_NULL
 #include "reports.hpp"        // for write_html_report, write_json_report
 #include "scheduler.hpp"      // for scheduler
-#include "sequence_sets.hpp"  // for adapter_set
 #include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
 #include "trimming.hpp"       // for pe_reads_processor, se_reads_processor
 #include "userconfig.hpp"     // for userconfig, output_files, DEV_NULL
 #include <cstring>            // for size_t
 #include <limits>             // for numeric_limits
 #include <memory>             // for make_shared
-#include <vector>             // for vector
 
 namespace adapterremoval {
 
@@ -21,11 +19,10 @@ int
 remove_adapter_sequences(const userconfig& config)
 {
   scheduler sch;
-
   statistics stats = statistics_builder()
                        .sample_rate(config.report_sample_rate)
                        .estimate_duplication(config.report_duplication)
-                       .demultiplexing(config.samples->size())
+                       .demultiplexing(config.samples.get_reader()->size())
                        .initialize();
 
   auto output = config.get_output_filenames();
