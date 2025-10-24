@@ -61,6 +61,9 @@ executables: ${NINJAFILE}
 clean:
 	rm -rf "${BUILDDIR}"
 
+clean-coverage:
+	test ! -d "${BUILDDIR}" || find "${BUILDDIR}" -name '*.gcda' -delete
+
 coverage: ${NINJAFILE}
 	ninja -C "${BUILDDIR}" coverage-text
 	cat build/meson-logs/coverage.txt
@@ -100,6 +103,6 @@ update-regression-tests: ${NINJAFILE}
 
 tests: executables unit-tests regression-tests
 
-.PHONY: clean coverage-xml coverage executable executables install \
-	regression-tests setup static-container static unit-tests \
-	unit-tests-executable update-regression-tests tests
+.PHONY: clean clean-coverage coverage-xml coverage executable executables \
+	install regression-tests setup static-container static tests unit-tests \
+	unit-tests-executable update-regression-tests
