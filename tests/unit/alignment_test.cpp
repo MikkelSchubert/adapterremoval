@@ -189,6 +189,30 @@ TEST_CASE("simple alignment should not terminate early")
   CHECK(simple_alignment(seq1, seq2) == expected);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// sequence_aligner
+
+TEST_CASE("sequence aligner requires adapters")
+{
+  REQUIRE_THROWS_AS(sequence_aligner(adapter_set{},
+                                     PARAMETERIZE_IS,
+                                     DEFAULT_MISMATCH_THRESHOLD),
+                    assert_failed);
+}
+
+TEST_CASE("sequence aligner size")
+{
+  adapter_set adapters{
+    { "CTGCTA", "TATATC" },
+    { "CGAGAC", "CTAAGG" },
+    { "TCATAC", "ATTTCG" },
+  };
+  sequence_aligner aligner(adapters,
+                           PARAMETERIZE_IS,
+                           DEFAULT_MISMATCH_THRESHOLD);
+  REQUIRE(aligner.size() == 3);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Single end alignment using `align_single_ended_sequence`
 
