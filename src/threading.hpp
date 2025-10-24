@@ -250,7 +250,7 @@ public:
   }
 
   /** Returns a smart pointer that provides exclusive (write) access */
-  [[nodiscard]] writer<T> get_writer() const
+  [[nodiscard]] writer<T> get_writer()
   {
     AR_REQUIRE(m_inner);
     return writer<T>{ m_inner };
