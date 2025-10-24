@@ -257,6 +257,7 @@ sequence_aligner::sequence_aligner(const adapter_set& adapters,
   , m_mismatch_threshold(mismatch_threshold)
   , m_merge_threshold(std::numeric_limits<decltype(m_merge_threshold)>::max())
 {
+  AR_REQUIRE(!adapters.empty());
   for (const auto& it : adapters) {
     m_adapters.push_back({ static_cast<int>(m_adapters.size()),
                            0,
