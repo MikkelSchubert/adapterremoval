@@ -310,8 +310,11 @@ se_reads_processor::process(chunk_ptr data)
 {
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
+
+  const auto samples = m_config.samples.get_reader();
+
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_config.samples->at(m_sample));
+  chunks.set_sample(samples->at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -319,14 +322,12 @@ se_reads_processor::process(chunk_ptr data)
   }
 
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(
-    m_config.samples->adapters().size());
-  stats->adapter_trimmed_bases.resize_up_to(
-    m_config.samples->adapters().size());
+  stats->adapter_trimmed_reads.resize_up_to(samples->adapters().size());
+  stats->adapter_trimmed_bases.resize_up_to(samples->adapters().size());
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  for (const auto& it : m_config.samples->at(m_sample)) {
+  for (const auto& it : samples->at(m_sample)) {
     aligners.emplace_back(it.adapters,
                           m_config.simd,
                           m_config.mismatch_threshold);
@@ -439,8 +440,11 @@ pe_reads_processor::process(chunk_ptr data)
 {
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
+
+  const auto samples = m_config.samples.get_reader();
+
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_config.samples->at(m_sample));
+  chunks.set_sample(samples->at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -453,7 +457,7 @@ pe_reads_processor::process(chunk_ptr data)
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  const auto& sample = m_config.samples->at(m_sample);
+  const auto& sample = samples->at(m_sample);
   for (const auto& it : sample) {
     aligners.emplace_back(it.adapters,
                           m_config.simd,
@@ -462,11 +466,10 @@ pe_reads_processor::process(chunk_ptr data)
     aligners.back().set_merge_threshold(m_config.merge_threshold);
   }
 
+  // Read processing statistics
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(
-    m_config.samples->adapters().size());
-  stats->adapter_trimmed_bases.resize_up_to(
-    m_config.samples->adapters().size());
+  stats->adapter_trimmed_reads.resize_up_to(samples->adapters().size());
+  stats->adapter_trimmed_bases.resize_up_to(samples->adapters().size());
 
   AR_REQUIRE(!aligners.empty());
   AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());

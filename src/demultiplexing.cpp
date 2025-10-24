@@ -25,8 +25,8 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
                                      demux_stats_ptr stats)
   : analytical_step(processing_order::ordered, "demultiplex_reads")
-  , m_samples(*config.samples)
-  , m_barcode_table(m_samples,
+  , m_samples(config.samples)
+  , m_barcode_table(*m_samples.get_reader(),
                     config.barcode_mm,
                     config.barcode_mm_r1,
                     config.barcode_mm_r2)
@@ -35,16 +35,17 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   , m_cache(steps)
   , m_statistics(std::move(stats))
 {
-  AR_REQUIRE(m_samples.size());
-  AR_REQUIRE(m_samples.size() == m_steps.samples.size());
+  auto samples = m_samples.get_reader();
+  AR_REQUIRE(samples->size());
+  AR_REQUIRE(samples->size() == m_steps.samples.size());
   AR_REQUIRE(m_statistics);
 
   AR_REQUIRE(m_statistics->samples.empty());
-  m_statistics->samples.resize(m_samples.size());
+  m_statistics->samples.resize(samples->size());
 
   // Map global barcode offsets to sample and relative barcode offsets
-  for (size_t i = 0; i < m_samples.size(); ++i) {
-    const size_t barcodes = m_samples.at(i).size();
+  for (size_t i = 0; i < samples->size(); ++i) {
+    const size_t barcodes = samples->at(i).size();
 
     m_statistics->samples.at(i).resize_up_to(barcodes);
     for (size_t j = 0; j < barcodes; ++j) {
@@ -155,7 +156,7 @@ process_demultiplexed::process_demultiplexed(const userconfig& config,
   : analytical_step(processing_order::unordered, "process_demultiplexed")
   , m_config(config)
   , m_output(output)
-  , m_samples(*config.samples)
+  , m_samples(config.samples)
   , m_sample(sample)
   , m_stats_sink(std::move(sink))
 {
@@ -168,7 +169,7 @@ process_demultiplexed::process(chunk_ptr data)
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_samples.at(m_sample));
+  chunks.set_sample(m_samples.get_reader()->at(m_sample));
   chunks.set_mate_separator(chunk->mate_separator);
   chunks.set_demultiplexing_only(true);
 
@@ -246,7 +247,7 @@ processes_unidentified::process(chunk_ptr data)
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_config.samples->unidentified());
+  chunks.set_sample(m_config.samples.get_reader()->unidentified());
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {

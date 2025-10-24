@@ -567,6 +567,7 @@ build_polyx_trimming_rows(std::vector<trimming_stats>& out,
 
 void
 write_html_processing_section(const userconfig& config,
+                              const sample_set& samples,
                               const statistics& stats,
                               std::ostream& output)
 {
@@ -578,7 +579,7 @@ write_html_processing_section(const userconfig& config,
   uint64_t adapter_reads = 0;
   uint64_t adapter_bases = 0;
 
-  for (size_t i = 0; i < config.samples->adapters().size(); ++i) {
+  for (size_t i = 0; i < samples.adapters().size(); ++i) {
     adapter_reads += totals.adapter_trimmed_reads.get(i);
     adapter_bases += totals.adapter_trimmed_bases.get(i);
   }
@@ -807,6 +808,7 @@ write_html_input_section(const userconfig& config,
 
 void
 write_html_analyses_section(const userconfig& config,
+                            const sample_set& samples,
                             const statistics& stats,
                             std::ostream& output)
 
@@ -820,8 +822,8 @@ write_html_analyses_section(const userconfig& config,
       insert_sizes += it->insert_sizes;
     }
 
-    json_list samples;
-    const auto sample = samples.dict();
+    json_list sample_list;
+    const auto sample = sample_list.dict();
     sample->str("group", "insert_sizes");
     sample->i64("offset", 0);
     sample->i64_vec("y", insert_sizes);
@@ -844,7 +846,7 @@ write_html_analyses_section(const userconfig& config,
       .set_y_axis("Frequency"_json)
       .set_legend("null")
       .set_width(FIGURE_WIDTH)
-      .set_values(samples.to_string())
+      .set_values(sample_list.to_string())
       .write(output);
 
     if (config.run_type == ar_command::report_only) {
@@ -923,7 +925,7 @@ write_html_analyses_section(const userconfig& config,
     // Consensus adapter sequences
     {
       const auto reference_adapters =
-        config.samples->adapters().to_read_orientation().front();
+        samples.adapters().to_read_orientation().front();
       auto reference_adapter_1 = reference_adapters.first.as_string();
       auto reference_adapter_2 = reference_adapters.second.as_string();
 
@@ -988,7 +990,7 @@ write_html_analyses_section(const userconfig& config,
 }
 
 void
-write_html_demultiplexing_barplot(const userconfig& config,
+write_html_demultiplexing_barplot(const sample_set& samples,
                                   const statistics& stats,
                                   std::ostream& output)
 {
@@ -997,8 +999,8 @@ write_html_demultiplexing_barplot(const userconfig& config,
   const size_t input_reads = stats.input_1->number_of_input_reads() +
                              stats.input_2->number_of_input_reads();
 
-  for (size_t i = 0; i < config.samples->size(); ++i) {
-    const auto& sample = config.samples->at(i);
+  for (size_t i = 0; i < samples.size(); ++i) {
+    const auto& sample = samples.at(i);
 
     for (size_t j = 0; j < sample.size(); ++j) {
       auto count = stats.demultiplexing->samples.at(i).get(j);
@@ -1041,7 +1043,7 @@ write_html_demultiplexing_barplot(const userconfig& config,
 }
 
 void
-write_html_demultiplexing_table(const userconfig& config,
+write_html_demultiplexing_table(const sample_set& samples,
                                 const statistics& stats,
                                 std::ostream& output,
                                 const bool multiple_barcodes,
@@ -1076,7 +1078,7 @@ write_html_demultiplexing_table(const userconfig& config,
   }
 
   size_t sample_idx = 0;
-  for (const auto& sample : *config.samples) {
+  for (const auto& sample : samples) {
     const auto& output_stats = *stats.trimming.at(sample_idx);
     const auto& barcode_counts = stats.demultiplexing->samples.at(sample_idx);
     const auto sample_reads = barcode_counts.sum();
@@ -1152,14 +1154,14 @@ write_html_demultiplexing_table(const userconfig& config,
 }
 
 void
-write_html_demultiplexing_section(const userconfig& config,
+write_html_demultiplexing_section(const sample_set& samples,
                                   const statistics& stats,
                                   std::ostream& output)
 
 {
   bool multiple_barcodes = false;
   bool mixed_orientation = false;
-  for (const auto& sample : *config.samples) {
+  for (const auto& sample : samples) {
     multiple_barcodes |= sample.size() > 1;
     for (const auto& it : sample) {
       mixed_orientation |= it.orientation != barcode_orientation::unspecified;
@@ -1168,8 +1170,8 @@ write_html_demultiplexing_section(const userconfig& config,
 
   write_html_section_title("Demultiplexing", output);
   html_demultiplexing_head().write(output);
-  write_html_demultiplexing_barplot(config, stats, output);
-  write_html_demultiplexing_table(config,
+  write_html_demultiplexing_barplot(samples, stats, output);
+  write_html_demultiplexing_table(samples,
                                   stats,
                                   output,
                                   multiple_barcodes,
@@ -1243,23 +1245,24 @@ write_html_report(const userconfig& config,
   }
 
   std::ostringstream output;
+  auto samples = config.samples.get_reader();
 
   write_html_summary_section(config, stats, output);
 
   if (config.run_type != ar_command::demultiplex_only &&
       config.run_type != ar_command::report_only) {
-    write_html_processing_section(config, stats, output);
+    write_html_processing_section(config, *samples, stats, output);
   }
 
   write_html_input_section(config, stats, output);
 
   if (config.paired_ended_mode || config.report_duplication ||
       config.run_type == ar_command::report_only) {
-    write_html_analyses_section(config, stats, output);
+    write_html_analyses_section(config, *samples, stats, output);
   }
 
   if (config.is_demultiplexing_enabled()) {
-    write_html_demultiplexing_section(config, stats, output);
+    write_html_demultiplexing_section(*samples, stats, output);
   }
 
   if (config.run_type != ar_command::report_only) {

@@ -8,6 +8,7 @@
 #include "fastq_enc.hpp"     // for fastq_encoding, FASTQ_ENCODING_33
 #include "sequence_sets.hpp" // for sample_set
 #include "simd.hpp"          // for instruction_set
+#include "threading.hpp"     // for threadsafe_data
 #include "timer.hpp"         // for monotonic_timer
 #include <cstdint>           // for uint32_t, uint64_t
 #include <memory>            // for unique_ptr
@@ -179,7 +180,7 @@ public:
 
   //! Sample specific barcodes and adapters. In non-demultiplexing mode this
   //! set contains a single unnamed sample with empty barcodes
-  std::unique_ptr<sample_set> samples{};
+  threadsafe_data<sample_set> samples{};
 
   //! Title used for HTML report
   std::string report_title{};

@@ -12,11 +12,11 @@
 #include "simd.hpp"              // for name, supported, instruction_set (p...
 #include "statistics.hpp"        // for fastq_statistics
 #include "strutils.hpp"          // for to_lower
+#include "threading.hpp"         // for threadsafe_data
 #include "userconfig.hpp"        // for userconfig
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint64_t
 #include <limits>                // for numeric_limits
-#include <memory>                // for unique_ptr
 #include <string>                // for string+, char_traits
 #include <utility>               // for move
 #include <vector>                // for vector
@@ -379,7 +379,6 @@ private:
 
 /** Benchmarking of SE alignments */
 class benchmarker_se_alignment : public alignment_benchmarker
-
 {
 public:
   benchmarker_se_alignment(const userconfig& config,
@@ -388,7 +387,7 @@ public:
     : alignment_benchmarker("se", is)
     , m_config(config)
     , m_reads(reads)
-    , m_adapters(config.samples->adapters())
+    , m_adapters(config.samples.get_reader()->adapters())
     , m_aligner(m_adapters, is, config.mismatch_threshold)
   {
     m_aligner.set_min_se_overlap(config.min_adapter_overlap);
@@ -430,7 +429,7 @@ public:
     , m_config(config)
     , m_mate_1(mate_1)
     , m_mate_2(mate_2)
-    , m_adapters(config.samples->adapters())
+    , m_adapters(config.samples.get_reader()->adapters())
     , m_aligner(m_adapters, is, config.mismatch_threshold)
   {
   }
