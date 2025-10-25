@@ -105,8 +105,15 @@ struct sample_sequences
   dna_sequence barcode_2{};
   //! User specified orientation of the barcodes
   barcode_orientation orientation = barcode_orientation::unspecified;
-  //! Adapter set with the above barcodes added
-  adapter_set adapters{};
+
+  /** Returns the sample adapters. Aborts if the adapters are uninitialized */
+  [[nodiscard]] const adapter_set& adapters() const;
+
+  /** Replaces the current adapters and clears the uninitialized flag, if set */
+  void set_adapters(adapter_set as);
+
+  /** Mark adapters as uninitialized; see `adapters()` */
+  void flag_uninitialized_adapters();
 
   /** Returns true if all members are identical */
   [[nodiscard]] bool operator==(const sample_sequences& other) const;
@@ -114,6 +121,12 @@ struct sample_sequences
   /** Creates debug representation of sample sequences */
   friend std::ostream& operator<<(std::ostream& os,
                                   const sample_sequences& value);
+
+private:
+  //! Adapter set with the above barcodes added
+  adapter_set m_adapters{};
+  //! The adapters have yet to be determined, and accessing those are prohibited
+  bool m_uninitialized_adapters = false;
 };
 
 /** Represents a (demultiplexing) sample with one or more barcodes */
@@ -134,7 +147,10 @@ public:
                     dna_sequence barcode2,
                     barcode_orientation orientation);
 
-  /** Assigns adapter sequences for each pair of barcodes */
+  /**
+   * Assigns adapter sequences for each pair of barcodes. If the adapters have
+   * been flagged as uninitialized, then this clears that flag
+   */
   void set_adapters(const adapter_set& adapters);
 
   /** Assigns read groups for each pair of barcodes */
@@ -154,6 +170,12 @@ public:
 
   /** Returns the nth barcode / pair of barcodes */
   [[nodiscard]] const auto& at(size_t n) const { return m_barcodes.at(n); }
+
+  /**
+   * Mark adapters as uninitialized, i.e. before automatic selection is done.
+   * When set, adapters may not be accessed until set_adapters` has been called
+   */
+  void flag_uninitialized_adapters();
 
   /** Returns true if name and barcodes are identical */
   [[nodiscard]] bool operator==(const sample& other) const;
@@ -228,7 +250,8 @@ public:
 
   /**
    * Sets adapter sequences for all samples, generating unique sequences for
-   * each set of adapters for each set of barcodes
+   * each set of adapters for each set of barcodes. If the adapters have been
+   * flagged as uninitialized, then calling `set_adapters` clears that flag
    */
   void set_adapters(adapter_set adapters);
 
@@ -257,7 +280,7 @@ public:
   [[nodiscard]] const auto& at(size_t n) const { return m_samples.at(n); }
 
   /** Returns the original, user-supplied adapter sequences */
-  [[nodiscard]] const adapter_set& adapters() const { return m_adapters; }
+  [[nodiscard]] const adapter_set& adapters() const;
 
   /** Returns the original, user-supplied adapter sequences */
   [[nodiscard]] const read_group& readgroup() const { return m_read_group; }
@@ -267,6 +290,15 @@ public:
 
   /** Returns the vector of samples */
   [[nodiscard]] const auto& samples() const { return m_samples; }
+
+  /**
+   * Mark adapters as uninitialized, i.e. before automatic selection is done.
+   * When set, adapters may not be accessed until set_adapters` has been called
+   */
+  void flag_uninitialized_adapters();
+
+  /** Access partially initialized adapters; for adapter selection only */
+  [[nodiscard]] const adapter_set& uninitialized_adapters() const;
 
   /** Creates debug representation of a sample set */
   friend std::ostream& operator<<(std::ostream& os, const sample_set& value);
@@ -283,6 +315,8 @@ private:
   read_group m_read_group{};
   //! User-supplied adapter sequences used to generate per-barcode adapters
   adapter_set m_adapters{};
+  //! The adapters have yet to be determined, and read-access is prohibited
+  bool m_uninitialized_adapters = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -103,7 +103,7 @@ disallow_multiple_barcodes(const sample& s)
         AR_REQUIRE(ss_0.orientation != barcode_orientation::unspecified);
         AR_REQUIRE(ss_1.orientation != barcode_orientation::unspecified);
         AR_REQUIRE(ss_0.has_read_group == ss_1.has_read_group);
-        AR_REQUIRE(ss_0.adapters == ss_1.adapters);
+        AR_REQUIRE(ss_0.adapters() == ss_1.adapters());
         AR_REQUIRE(ss_0.read_group_ == ss_1.read_group_);
         return;
       }
@@ -501,6 +501,26 @@ sample_sequences::sample_sequences(dna_sequence barcode_1_,
 {
 }
 
+const adapter_set&
+sample_sequences::adapters() const
+{
+  AR_REQUIRE(!m_uninitialized_adapters);
+  return m_adapters;
+}
+
+void
+sample_sequences::set_adapters(adapter_set as)
+{
+  m_adapters = std::move(as);
+  m_uninitialized_adapters = false;
+}
+
+void
+sample_sequences::flag_uninitialized_adapters()
+{
+  m_uninitialized_adapters = true;
+}
+
 bool
 sample_sequences::operator==(const sample_sequences& other) const
 {
@@ -509,7 +529,8 @@ sample_sequences::operator==(const sample_sequences& other) const
          this->barcode_1 == other.barcode_1 &&
          this->barcode_2 == other.barcode_2 &&
          this->orientation == other.orientation &&
-         this->adapters == other.adapters;
+         this->m_adapters == other.m_adapters &&
+         this->m_uninitialized_adapters == other.m_uninitialized_adapters;
 }
 
 std::ostream&
@@ -521,7 +542,8 @@ operator<<(std::ostream& os, const sample_sequences& value)
             << ", barcode_1=" << value.barcode_1
             << ", barcode_2=" << value.barcode_2
             << ", orientation=" << value.orientation
-            << ", adapters=" << value.adapters << "}";
+            << ", adapters=" << value.m_adapters << ", uninitialized_adapters="
+            << (value.m_uninitialized_adapters ? "true" : "false") << "}";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -559,7 +581,7 @@ void
 sample::set_adapters(const adapter_set& adapters)
 {
   for (auto& it : m_barcodes) {
-    it.adapters = adapters.add_barcodes(it.barcode_1, it.barcode_2);
+    it.set_adapters(adapters.add_barcodes(it.barcode_1, it.barcode_2));
   }
 }
 
@@ -596,6 +618,14 @@ sample::set_read_group(const read_group& read_group_)
     }
 
     it->read_group_.set_orientation(it->orientation);
+  }
+}
+
+void
+sample::flag_uninitialized_adapters()
+{
+  for (auto& it : m_barcodes) {
+    it.flag_uninitialized_adapters();
   }
 }
 
@@ -641,6 +671,7 @@ sample_set::set_adapters(adapter_set adapters)
   }
 
   m_unidentified.set_adapters(m_adapters);
+  m_uninitialized_adapters = false;
 }
 
 void
@@ -712,10 +743,37 @@ sample_set::load(line_reader_base& reader, const barcode_config& config)
   // Update read-group information and generate adapters based on all barcodes
   for (auto& s : samples) {
     s.set_read_group(m_read_group);
-    s.set_adapters(m_adapters);
+    if (m_uninitialized_adapters) {
+      s.flag_uninitialized_adapters();
+    } else {
+      s.set_adapters(m_adapters);
+    }
   }
 
   std::swap(m_samples, samples);
+}
+
+const adapter_set&
+sample_set::adapters() const
+{
+  AR_REQUIRE(!m_uninitialized_adapters);
+  return m_adapters;
+}
+
+void
+sample_set::flag_uninitialized_adapters()
+{
+  m_uninitialized_adapters = true;
+  for (auto& it : m_samples) {
+    it.flag_uninitialized_adapters();
+  }
+}
+
+const adapter_set&
+sample_set::uninitialized_adapters() const
+{
+  AR_REQUIRE(m_uninitialized_adapters);
+  return m_adapters;
 }
 
 void
@@ -748,8 +806,8 @@ operator<<(std::ostream& os, const barcode_orientation& value)
       return os << "barcode_orientation::forward";
     case barcode_orientation::reverse:
       return os << "barcode_orientation::reverse";
-    default:
-      return os << "barcode_orientation{?}";
+    default:                                 // GCOVR_EXCL_LINE
+      return os << "barcode_orientation{?}"; // GCOVR_EXCL_LINE
   }
 }
 
@@ -765,8 +823,8 @@ operator<<(std::ostream& os, const barcode_table_orientation& value)
       return os << "barcode_table_orientation::reverse";
     case barcode_table_orientation::explicit_:
       return os << "barcode_table_orientation::explicit_";
-    default:
-      return os << "barcode_table_orientation{?}";
+    default:                                       // GCOVR_EXCL_LINE
+      return os << "barcode_table_orientation{?}"; // GCOVR_EXCL_LINE
   }
 }
 
