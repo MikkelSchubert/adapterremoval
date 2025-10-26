@@ -1,36 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "userconfig.hpp"    // declarations
-#include "alignment.hpp"     // for alignment_info
-#include "argparse.hpp"      // for parser, parse_result
-#include "commontypes.hpp"   // for string_vec, DEV_STDOUT, DEV_STDERR, ...
-#include "debug.hpp"         // for AR_REQUIRE, AR_FAIL
-#include "errors.hpp"        // for fastq_error
-#include "fastq_enc.hpp"     // for PHRED_SCORE_MAX
-#include "licenses.hpp"      // for LICENSES
-#include "logging.hpp"       // for log_stream, error, set_level, set_colors, ..
-#include "main.hpp"          // for HELPTEXT, NAME, VERSION
-#include "output.hpp"        // for DEV_NULL, output_files, output_file
-#include "progress.hpp"      // for progress_type, progress_type::simple, ...
-#include "sequence.hpp"      // for dna_sequence
-#include "sequence_sets.hpp" // for sample_set
-#include "simd.hpp"          // for size_t, name, supported, instruction_set
-#include "strutils.hpp"      // for shell_escape, str_to_u32
-#include <algorithm>         // for find, max, min
-#include <array>             // for array
-#include <cerrno>            // for errno
-#include <cstdlib>           // for getenv
-#include <cstring>           // for size_t, strerror, strcmp
-#include <exception>         // for exception
-#include <filesystem>        // for weakly_canonical
-#include <limits>            // for numeric_limits
-#include <memory>            // for unique_ptr, make_unique
-#include <stdexcept>         // for invalid_argument
-#include <string>            // for string, basic_string, operator==, operator+
-#include <string_view>       // for string_view
-#include <tuple>             // for get, tuple
-#include <unistd.h>          // for access, isatty, R_OK, STDERR_FILENO
+#include "userconfig.hpp"       // declarations
+#include "adapter_database.hpp" // for adapter_database
+#include "alignment.hpp"        // for alignment_info
+#include "argparse.hpp"         // for parser, parse_result
+#include "commontypes.hpp"      // for string_vec, DEV_STDOUT, DEV_STDERR, ...
+#include "debug.hpp"            // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"           // for fastq_error
+#include "fastq_enc.hpp"        // for PHRED_SCORE_MAX
+#include "licenses.hpp"         // for LICENSES
+#include "logging.hpp"          // for log_stream, error, set_level, ...
+#include "main.hpp"             // for HELPTEXT, NAME, VERSION
+#include "output.hpp"           // for DEV_NULL, output_files, output_file
+#include "progress.hpp"         // for progress_type, progress_type::simple, ...
+#include "sequence.hpp"         // for dna_sequence
+#include "sequence_sets.hpp"    // for sample_set
+#include "simd.hpp"             // for size_t, name, supported, instruction_set
+#include "strutils.hpp"         // for shell_escape, str_to_u32
+#include <algorithm>            // for find, max, min
+#include <array>                // for array
+#include <cerrno>               // for errno
+#include <cstdlib>              // for getenv
+#include <cstring>              // for size_t, strerror, strcmp
+#include <exception>            // for exception
+#include <filesystem>           // for weakly_canonical
+#include <limits>               // for numeric_limits
+#include <memory>               // for unique_ptr, make_unique
+#include <stdexcept>            // for invalid_argument
+#include <string>               // for string, basic_string, operator==, ...
+#include <string_view>          // for string_view
+#include <tuple>                // for get, tuple
+#include <unistd.h>             // for access, isatty, R_OK, STDERR_FILENO
 
 namespace adapterremoval {
 
@@ -395,6 +396,34 @@ configure_encoding(const std::string& value,
   AR_FAIL("unhandled qualitybase value");
 }
 
+adapter_selection
+configure_adapter_selection(const std::string& value)
+{
+  if (value == "auto") {
+    return adapter_selection::automatic;
+  } else if (value == "manual") {
+    return adapter_selection::manual;
+  } else if (value == "none") {
+    return adapter_selection::none;
+  }
+
+  AR_FAIL("unhandled qualitybase value");
+}
+
+adapter_fallback
+configure_adapter_fallback(const std::string& value)
+{
+  if (value == "abort") {
+    return adapter_fallback::abort;
+  } else if (value == "none") {
+    return adapter_fallback::none;
+  } else if (value == "unknown") {
+    return adapter_fallback::unknown;
+  }
+
+  AR_FAIL("unhandled qualitybase value");
+}
+
 bool
 parse_output_formats(const argparse::parser& argparser,
                      output_format& file_format,
@@ -678,7 +707,7 @@ userconfig::userconfig()
     .with_default(5);
 
   //////////////////////////////////////////////////////////////////////////////
-  argparser.add_header("PROCESSING:");
+  argparser.add_header("ADAPTER SELECTION:");
 
   argparser.add("--adapter1", "SEQ")
     .help("Adapter sequence expected to be found in mate 1 reads. Any 'N' in "
@@ -698,6 +727,29 @@ userconfig::userconfig()
     .conflicts_with("--adapter1")
     .conflicts_with("--adapter2")
     .bind_str(&adapter_list);
+
+  argparser.add("--adapter-selection", "X")
+    .help("How to select the adapters to trim. If 'auto', attempt to "
+          "determinate adapter sequences automatically from the input data, if "
+          "'manual' use the user-defined adapter sequences, and if 'none', "
+          "assume that the data contains no adapter sequences")
+    .bind_str(nullptr)
+    .with_choices({ "auto", "manual", "none" })
+    .with_default("manual");
+
+  argparser.add("--adapter-fallback", "X")
+    .help("If '--adapter-select auto' is used, and no adapter sequences could "
+          "be identified, trim 'unknown' adapter sequences based on overlap "
+          "analyses (PE only) and/or 5' barcodes (SE if mate 2 barcodes are "
+          "are provided), or assume that there are no adapter or barcode "
+          "sequences in the reads ('none'), or 'abort' the program [default: "
+          "'unknown' if possible, otherwise 'none']")
+    .bind_str(nullptr)
+    .with_choices({ "unknown", "none", "abort" })
+    .with_default("unknown");
+
+  //////////////////////////////////////////////////////////////////////////////
+  argparser.add_header("PROCESSING:");
 
   argparser.add_separator();
   argparser.add("--min-adapter-overlap", "N")
@@ -1182,13 +1234,14 @@ userconfig::parse_args(const string_vec& argvec)
     }
   }
 
-  // (Optionally) read adapters from file and validate
-  if (!setup_adapter_sequences()) {
+  // (Optionally) read barcodes from file and validate. Must be done before
+  // setting up adapters, to allow the appropriate fallback to be selected.
+  if (!setup_demultiplexing()) {
     return argparse::parse_result::error;
   }
 
-  // (Optionally) read barcodes from file and validate
-  if (!setup_demultiplexing()) {
+  // (Optionally) read adapters from file and validate
+  if (!setup_adapter_sequences()) {
     return argparse::parse_result::error;
   }
 
@@ -1500,6 +1553,18 @@ check_and_set_barcode_mm(const argparse::parser& argparser,
   return true;
 }
 
+adapter_database
+userconfig::known_adapters() const
+{
+  adapter_database adapters;
+  adapters.add_known();
+
+  // Duplicates are automatically ignored, so just add the default sequences
+  adapters.add(samples.get_reader()->uninitialized_adapters());
+
+  return adapters;
+}
+
 bool
 userconfig::is_adapter_trimming_enabled() const
 {
@@ -1633,7 +1698,41 @@ userconfig::setup_adapter_sequences()
     }
   }
 
-  samples.get_writer()->set_adapters(std::move(adapters));
+  if (run_type == ar_command::report_only) {
+    adapter_selection_strategy = adapter_selection::automatic;
+    adapter_fallback_strategy = adapter_fallback::none;
+  } else {
+    adapter_fallback_strategy =
+      configure_adapter_fallback(m_argparser->value("--adapter-fallback"));
+
+    adapter_selection_strategy =
+      configure_adapter_selection(m_argparser->value("--adapter-selection"));
+  }
+
+  if (adapter_selection_strategy == adapter_selection::none) {
+    adapters = adapter_set{};
+  } else if (!paired_ended_mode &&
+             adapter_fallback_strategy == adapter_fallback::unknown &&
+             samples.get_reader()->at(0).at(0).barcode_2.empty()) {
+    // Don't warn unless the user has explicitly asked for 'unknown'
+    if (m_argparser->is_set("--adapter-fallback")) {
+      log::warn() << "'--adapter-fallback unknown' cannot be used in SE mode, "
+                     "unless demultiplexing is enabled and mate 2 barcodes are "
+                     "specified; using '--adapter-fallback none' instead";
+    }
+
+    adapter_fallback_strategy = adapter_fallback::none;
+  }
+
+  {
+    auto writer = samples.get_writer();
+    writer->set_adapters(std::move(adapters));
+
+    // Ensure that adapter sequences are not used until detection has completed
+    if (adapter_selection_strategy == adapter_selection::automatic) {
+      writer->flag_uninitialized_adapters();
+    }
+  }
 
   return true;
 }

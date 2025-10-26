@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "demultiplexing.hpp" // for demultiplex_pe_reads, demultiplex_se_r...
-#include "fastq_io.hpp"       // for gzip_split_fastq, post_process_fastq
-#include "output.hpp"         // for outpuT_file, DEV_NULL
-#include "reports.hpp"        // for write_html_report, write_json_report
-#include "scheduler.hpp"      // for scheduler
-#include "statistics.hpp"     // for trim_stats_ptr, trimming_statistics
-#include "trimming.hpp"       // for pe_reads_processor, se_reads_processor
-#include "userconfig.hpp"     // for userconfig, output_files, DEV_NULL
-#include <cstring>            // for size_t
-#include <limits>             // for numeric_limits
-#include <memory>             // for make_shared
+#include "adapter_selector.hpp" // for select_adapter
+#include "commontypes.hpp"      // for adapter_selection
+#include "demultiplexing.hpp"   // for demultiplex_pe_reads, demultiplex_se_r...
+#include "fastq_io.hpp"         // for gzip_split_fastq, post_process_fastq
+#include "logging.hpp"          // for log
+#include "output.hpp"           // for outpuT_file, DEV_NULL
+#include "reports.hpp"          // for write_html_report, write_json_report
+#include "scheduler.hpp"        // for scheduler
+#include "statistics.hpp"       // for trim_stats_ptr, trimming_statistics
+#include "trimming.hpp"         // for pe_reads_processor, se_reads_processor
+#include "userconfig.hpp"       // for userconfig, output_files, DEV_NULL
+#include <cstring>              // for size_t
+#include <limits>               // for numeric_limits
+#include <memory>               // for make_shared
 
 namespace adapterremoval {
 
@@ -57,29 +60,41 @@ remove_adapter_sequences(const userconfig& config)
   }
 
   // Step 3: Parse and demultiplex reads based on single or double indices
-  size_t processing_step = std::numeric_limits<size_t>::max();
+  size_t step = std::numeric_limits<size_t>::max();
   if (config.is_demultiplexing_enabled()) {
     // Statistics and serialization of unidentified reads
     steps.unidentified =
       sch.add<processes_unidentified>(config, output, stats.demultiplexing);
 
     if (config.paired_ended_mode) {
-      processing_step =
-        sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
+      step = sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
     } else {
-      processing_step =
-        sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
+      step = sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
     }
   } else {
-    processing_step = steps.samples.back();
+    step = steps.samples.back();
+  }
+
+  if (config.adapter_selection_strategy == adapter_selection::automatic) {
+    const auto database = config.known_adapters();
+
+    step = sch.add<adapter_finalizer>(database,
+                                      config.samples,
+                                      config.adapter_fallback_strategy,
+                                      step);
+    step = sch.add<adapter_selector>(database,
+                                     config.simd,
+                                     config.mismatch_threshold,
+                                     step,
+                                     config.max_threads);
+    step = sch.add<adapter_preselector>(step);
   }
 
   // Step 2: Post-process, validate, and collect statistics on FASTQ reads
-  const size_t postproc_step =
-    sch.add<post_process_fastq>(config, processing_step, stats);
+  step = sch.add<post_process_fastq>(config, step, stats);
 
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, postproc_step, stats);
+  read_fastq::add_steps(sch, config, step, stats);
 
   if (!sch.run(config.max_threads)) {
     return 1;

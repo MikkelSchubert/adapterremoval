@@ -924,10 +924,15 @@ write_html_analyses_section(const userconfig& config,
 
     // Consensus adapter sequences
     {
-      const auto reference_adapters =
-        samples.adapters().to_read_orientation().front();
-      auto reference_adapter_1 = reference_adapters.first.as_string();
-      auto reference_adapter_2 = reference_adapters.second.as_string();
+      std::string reference_adapter_1;
+      std::string reference_adapter_2;
+
+      if (!samples.adapters().empty()) {
+        const auto reference_adapters =
+          samples.adapters().to_read_orientation().front();
+        reference_adapter_1 = reference_adapters.first.as_string();
+        reference_adapter_2 = reference_adapters.second.as_string();
+      }
 
       html_consensus_adapter_head()
         .set_overlapping_pairs(

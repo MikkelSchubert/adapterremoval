@@ -15,6 +15,13 @@ namespace adapterremoval {
 void
 print_trimming_parameters(const userconfig& config)
 {
+  // Most information is displayed by the adapter_selector
+  if (config.adapter_selection_strategy == adapter_selection::automatic) {
+    log::info() << "  - Adapters sequences will be selected automatically";
+  } else if (config.adapter_selection_strategy == adapter_selection::none) {
+    log::info() << "  - Reads are assumed to not contain adapters";
+  }
+
   switch (config.trim) {
     case trimming_strategy::mott:
       log::info() << "  - Mott based trimming with Phred encoded quality score "
