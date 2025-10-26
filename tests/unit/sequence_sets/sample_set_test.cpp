@@ -12,7 +12,6 @@
 #include <sstream>           // for ostringstream
 #include <string>            // for string, operator==
 #include <string_view>       // for string_view
-#include <utility>           // for pair
 #include <vector>            // for vector, operator==
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
@@ -764,8 +763,8 @@ TEST_CASE("set adapters for non-demultiplexing", "[sample_set]")
   ss.set_adapters(as);
   CHECK(ss.adapters() == as);
 
-  CHECK(ss.at(0).at(0).adapters == as);
-  CHECK(ss.unidentified().at(0).adapters == as);
+  CHECK(ss.at(0).at(0).adapters() == as);
+  CHECK(ss.unidentified().at(0).adapters() == as);
 }
 
 TEST_CASE("set adapters for demultiplexing", "[sample_set]")
@@ -779,9 +778,9 @@ TEST_CASE("set adapters for demultiplexing", "[sample_set]")
   ss.set_adapters(as);
 
   CHECK(ss.adapters() == as);
-  CHECK(ss.at(0).at(0).adapters ==
+  CHECK(ss.at(0).at(0).adapters() ==
         adapter_set{ { "GACAAACGTA", "TACGTTGGAT" } });
-  CHECK(ss.at(1).at(0).adapters ==
+  CHECK(ss.at(1).at(0).adapters() ==
         adapter_set{ { "ATCGGACGTA", "ATGCATGGAT" } });
 }
 
@@ -793,7 +792,7 @@ TEST_CASE("set adapters for demultiplexing before loading", "[sample_set]")
   vec_reader reader{ { "sample_1 ACGTA TTGTC" } };
   ss.load(reader, barcode_config{});
 
-  CHECK(ss.at(0).at(0).adapters ==
+  CHECK(ss.at(0).at(0).adapters() ==
         adapter_set{ { "GACAAACGTA", "TACGTTGGAT" } });
 }
 
@@ -812,6 +811,59 @@ TEST_CASE("get samples", "[sample_set]")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Sample set -- uninitialized adapters
+
+TEST_CASE("set and clear uninitialized adapters in sample set", "[sample_set]")
+{
+  auto ss = sample_set_pe({
+    "sample_1 TT GG",
+    "sample_2 AA CC",
+  });
+
+  adapter_set as_1{ { "TGGAT", "ACGTA" } };
+  ss.set_adapters(as_1);
+
+  REQUIRE(ss.adapters() == as_1);
+  REQUIRE(ss.at(0).at(0).adapters() == adapter_set{ { "CCTGGAT", "AAACGTA" } });
+  REQUIRE(ss.at(1).at(0).adapters() == adapter_set{ { "GGTGGAT", "TTACGTA" } });
+  REQUIRE_THROWS_AS(ss.uninitialized_adapters(), assert_failed);
+
+  ss.flag_uninitialized_adapters();
+  REQUIRE_THROWS_AS(ss.adapters(), assert_failed);
+  REQUIRE_THROWS_AS(ss.at(0).at(0).adapters(), assert_failed);
+  REQUIRE_THROWS_AS(ss.at(1).at(0).adapters(), assert_failed);
+  REQUIRE(ss.uninitialized_adapters() == as_1);
+
+  adapter_set as_2{ { "ACGTA", "TGGAT" } };
+  ss.set_adapters(as_2);
+  REQUIRE(ss.adapters() == as_2);
+  REQUIRE(ss.at(0).at(0).adapters() == adapter_set{ { "CCACGTA", "AATGGAT" } });
+  REQUIRE(ss.at(1).at(0).adapters() == adapter_set{ { "GGACGTA", "TTTGGAT" } });
+  REQUIRE_THROWS_AS(ss.uninitialized_adapters(), assert_failed);
+}
+
+TEST_CASE("loading sample set with uninitialized adapters", "[sample_set]")
+{
+  sample_set ss;
+
+  adapter_set as_1{ { "TGGAT", "ACGTA" } };
+  ss.set_adapters(as_1);
+  ss.flag_uninitialized_adapters();
+
+  vec_reader reader{ { "sample_1 TT GG" } };
+  ss.load(reader, barcode_config{});
+
+  REQUIRE_THROWS_AS(ss.at(0).at(0).adapters(), assert_failed);
+  REQUIRE(ss.uninitialized_adapters() == as_1);
+
+  adapter_set as_2{ { "ACGTA", "TGGAT" } };
+  ss.set_adapters(as_2);
+  REQUIRE(ss.adapters() == as_2);
+  REQUIRE(ss.at(0).at(0).adapters() == adapter_set{ { "CCACGTA", "AATGGAT" } });
+  REQUIRE_THROWS_AS(ss.uninitialized_adapters(), assert_failed);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Sample set -- debug string
 
 TEST_CASE("sample set to string", "[sample_set]")
@@ -819,19 +871,20 @@ TEST_CASE("sample set to string", "[sample_set]")
   std::ostringstream os;
   os << sample_set{};
 
-  CHECK(os.str() ==
-        "sample_set{samples=[sample{name='', "
-        "barcodes=[sample_sequences{has_read_group=false, "
-        "read_group=read_group{id='1', header='@RG\\tID:1'}, "
-        "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
-        "orientation=barcode_orientation::unspecified, "
-        "adapters=adapter_set{[]}}]}], unidentified=sample{name='', "
-        "barcodes=[sample_sequences{has_read_group=true, "
-        "read_group=read_group{id='1', header='@RG\\tID:1\\tDS:unidentified'}, "
-        "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
-        "orientation=barcode_orientation::unspecified, "
-        "adapters=adapter_set{[]}}]}, read_group=read_group{id='1', "
-        "header='@RG\\tID:1'}, adapters=adapter_set{[]}}");
+  CHECK(
+    os.str() ==
+    "sample_set{samples=[sample{name='', "
+    "barcodes=[sample_sequences{has_read_group=false, "
+    "read_group=read_group{id='1', header='@RG\\tID:1'}, "
+    "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
+    "orientation=barcode_orientation::unspecified, adapters=adapter_set{[]}, "
+    "uninitialized_adapters=false}]}], unidentified=sample{name='', "
+    "barcodes=[sample_sequences{has_read_group=true, "
+    "read_group=read_group{id='1', header='@RG\\tID:1\\tDS:unidentified'}, "
+    "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
+    "orientation=barcode_orientation::unspecified, adapters=adapter_set{[]}, "
+    "uninitialized_adapters=false}]}, read_group=read_group{id='1', "
+    "header='@RG\\tID:1'}, adapters=adapter_set{[]}}");
 }
 
 } // namespace adapterremoval

@@ -328,7 +328,7 @@ se_reads_processor::process(chunk_ptr data)
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
   for (const auto& it : samples->at(m_sample)) {
-    aligners.emplace_back(it.adapters,
+    aligners.emplace_back(it.adapters(),
                           m_config.simd,
                           m_config.mismatch_threshold);
 
@@ -459,7 +459,7 @@ pe_reads_processor::process(chunk_ptr data)
   std::vector<sequence_aligner> aligners;
   const auto& sample = samples->at(m_sample);
   for (const auto& it : sample) {
-    aligners.emplace_back(it.adapters,
+    aligners.emplace_back(it.adapters(),
                           m_config.simd,
                           m_config.mismatch_threshold);
 

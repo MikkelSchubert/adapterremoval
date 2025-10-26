@@ -76,9 +76,26 @@ TEST_CASE("sample_sequences equality operator", "[sample_sequences]")
   SECTION("adapters")
   {
     auto set_2 = set_1;
-    set_2.adapters = adapter_set{ { "AAAA", "TTTT" } };
+    set_2.set_adapters({ { "AAAA", "TTTT" } });
     CHECK_FALSE(set_1 == set_2);
   }
+
+  SECTION("uninitialized adapters")
+  {
+    auto set_2 = set_1;
+    set_2.flag_uninitialized_adapters();
+    CHECK_FALSE(set_1 == set_2);
+  }
+}
+
+TEST_CASE("sample_sequences with uninitialized adapters", "[sample_sequences]")
+{
+  sample_sequences ss{ "ACGT"_dna, "TTAA"_dna, barcode_orientation::reverse };
+  REQUIRE(ss.adapters() == adapter_set{});
+  ss.flag_uninitialized_adapters();
+  REQUIRE_THROWS_AS(ss.adapters(), assert_failed);
+  ss.set_adapters({ { "ACGT", "GTCA" } });
+  REQUIRE(ss.adapters() == adapter_set{ { "ACGT", "GTCA" } });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,7 +118,8 @@ TEST_CASE("sample_sequences to string", "[sample_sequences]")
         "sample_sequences{has_read_group=true, read_group=read_group{id='1', "
         "header='@RG\\tID:1\\tSM:foo'}, barcode_1=dna_sequence{'AGAA'}, "
         "barcode_2=dna_sequence{'TCTT'}, "
-        "orientation=barcode_orientation::forward, adapters=adapter_set{[]}}");
+        "orientation=barcode_orientation::forward, adapters=adapter_set{[]}, "
+        "uninitialized_adapters=false}");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +176,7 @@ TEST_CASE("set adapters for sample", "[sample]")
   s.set_adapters(adapter_set{ { "AAAA", "GGGG" } });
 
   sample_sequences ss{ "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
-  ss.adapters = adapter_set{ { "CATCAAAA", "GTAAGGGG" } };
+  ss.set_adapters(adapter_set{ { "CATCAAAA", "GTAAGGGG" } });
 
   CHECK(std::vector(s.begin(), s.end()) == std::vector{ ss });
 }
@@ -246,6 +264,28 @@ TEST_CASE("sample equality operator", "[sample]")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Sample  -- flag uninitialized adapters
+
+TEST_CASE("sample with uninitialized adapters", "[sample]")
+{
+  sample s{ "foo", "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
+
+  for (const auto& ss : s) {
+    REQUIRE(ss.adapters() == adapter_set{});
+  }
+
+  s.flag_uninitialized_adapters();
+  for (const auto& ss : s) {
+    REQUIRE_THROWS_AS(ss.adapters(), assert_failed);
+  }
+
+  s.set_adapters(adapter_set{ { "ACGT", "TCGA" } });
+  for (const auto& ss : s) {
+    REQUIRE(ss.adapters() == adapter_set{ { "CATCACGT", "GTAATCGA" } });
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Sample  -- operator<<
 
 TEST_CASE("sample to string", "[sample]")
@@ -255,12 +295,12 @@ TEST_CASE("sample to string", "[sample]")
   std::ostringstream os;
   os << ss;
 
-  CHECK(
-    os.str() ==
-    "sample{name='foo', barcodes=[sample_sequences{has_read_group=false, "
-    "read_group=read_group{id='1', header='@RG\\tID:1'}, "
-    "barcode_1=dna_sequence{'ACGT'}, barcode_2=dna_sequence{'TTAA'}, "
-    "orientation=barcode_orientation::reverse, adapters=adapter_set{[]}}]}");
+  CHECK(os.str() ==
+        "sample{name='foo', barcodes=[sample_sequences{has_read_group=false, "
+        "read_group=read_group{id='1', header='@RG\\tID:1'}, "
+        "barcode_1=dna_sequence{'ACGT'}, barcode_2=dna_sequence{'TTAA'}, "
+        "orientation=barcode_orientation::reverse, adapters=adapter_set{[]}, "
+        "uninitialized_adapters=false}]}");
 }
 
 } // namespace adapterremoval
