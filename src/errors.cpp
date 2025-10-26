@@ -7,6 +7,7 @@
 #include <cstring>      // for strerror_r
 #include <exception>    // for exception
 #include <ostream>      // for ostream
+#include <stdexcept>    // for logic_error, runtime_error
 #include <string>       // for string
 #include <string_view>  // for string_view
 
@@ -98,6 +99,11 @@ fastq_error::fastq_error(const std::string& message)
 {
 }
 
+fatal_error::fatal_error(const std::string& message)
+  : std::runtime_error(message)
+{
+}
+
 std::ostream&
 operator<<(std::ostream& os, const assert_failed& value)
 {
@@ -126,6 +132,12 @@ std::ostream&
 operator<<(std::ostream& os, const fastq_error& value)
 {
   return format_exception(os, "fastq_error", value);
+}
+
+std::ostream&
+operator<<(std::ostream& os, const fatal_error& value)
+{
+  return format_exception(os, "fatal_error", value);
 }
 
 } // namespace adapterremoval

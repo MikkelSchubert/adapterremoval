@@ -5,6 +5,7 @@
 #include "adapter_detector.hpp" // for adapter_detection_stats, adapter_detector
 #include "alignment.hpp"        // for sequence_aligner
 #include "debug.hpp"            // AR_REQUIRE
+#include "errors.hpp"           // for fatal_error
 #include "logging.hpp"          // for log
 #include "scheduler.hpp"        // for analytical_step, chunk_ptr, ...
 #include "sequence.hpp"         // for dna_sequence
@@ -139,9 +140,11 @@ describe_best_match(const identified_adapter& match,
 
 adapter_finalizer::adapter_finalizer(adapter_database database,
                                      threadsafe_data<sample_set> samples,
+                                     const adapter_fallback fallback,
                                      const size_t next_step)
   : analytical_step(processing_order::ordered, "adapter_finalizer")
   , m_next_step(next_step)
+  , m_fallback(fallback)
   , m_database(std::move(database))
   , m_samples(std::move(samples))
 {
@@ -161,22 +164,47 @@ adapter_finalizer::process(chunk_ptr data)
     if (chunk->last_adapter_selection_block) {
       m_done = true;
 
-      const adapter_detector detector{ m_database,
-                                       simd::instruction_set::none,
-                                       0.0 };
-      const auto [seq_1, seq_2] = detector.select_best(m_stats);
+      if (m_stats.reads_1() == 0 && m_stats.reads_2() == 0) {
+        // Adapters must be set to *something*, so later steps can use them, but
+        // there's no point in printing diagnostics if there is no data
+        m_samples.get_writer()->set_adapters(adapter_set{});
+      } else {
+        const adapter_detector detector{ m_database,
+                                         simd::instruction_set::none,
+                                         0.0 };
+        const auto [seq_1, seq_2] = detector.select_best(m_stats);
 
-      adapter_set adapters{ { seq_1.sequence.as_string(),
-                              seq_2.sequence.as_string() } };
-      m_samples.get_writer()->set_adapters(std::move(adapters));
-
-      // there's no point in diagnostic messages if no data was processed
-      if (m_stats.reads_1() || m_stats.reads_2()) {
         if (seq_1.sequence.empty() && seq_2.sequence.empty()) {
-          log::info() << "Could not identify adapter sequences automatically. "
-                         "Trimming will be performed without pre-defined "
-                         "adapter sequences, equivalent to `--adapter1 ''` and "
-                         "`--adapter2 ''`";
+          switch (m_fallback) {
+            case adapter_fallback::abort: {
+              throw fatal_error(
+                "Could not select adapter sequences automatically; aborting "
+                "since '--adapter-fallback' is set to 'abort'. To proceed, "
+                "either select a different fallback strategy, or manually "
+                "specify adapter sequences using --adapter1 / --adapter2");
+            }
+            case adapter_fallback::unknown: {
+              log::warn()
+                << "Could not select adapter sequences automatically; falling "
+                   "back to trimming putative adapter sequences based on "
+                   "overlap between read pairs, equivalent to `--adapter1 ''` "
+                   "and `--adapter2 ''";
+
+              m_samples.get_writer()->set_adapters(adapter_set{ { "", "" } });
+              break;
+            }
+            case adapter_fallback::none: {
+              log::warn()
+                << "Could not select adapter sequences automatically; falling "
+                   "back to assuming that reads do not contain adapter "
+                   "sequences";
+
+              m_samples.get_writer()->set_adapters(adapter_set{});
+              break;
+            }
+            default:                                     // GCOVR_EXCL_LINE
+              AR_FAIL("invalid adapter_fallback value"); // GCOVR_EXCL_LINE
+          }
         } else {
           describe_best_match(seq_1, "--adapter1", true);
           describe_best_match(seq_2, "--adapter2", m_stats.reads_2());
@@ -189,6 +217,10 @@ adapter_finalizer::process(chunk_ptr data)
                            "--in-file2 files (if any). Input files may be "
                            "swapped";
           }
+
+          adapter_set adapters{ { seq_1.sequence.as_string(),
+                                  seq_2.sequence.as_string() } };
+          m_samples.get_writer()->set_adapters(std::move(adapters));
         }
       }
 
