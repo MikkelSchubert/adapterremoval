@@ -192,9 +192,15 @@ simple_alignment(const dna_sequence& seq1, const dna_sequence& seq2);
 class sequence_aligner
 {
 public:
-  explicit sequence_aligner(const adapter_set& adapters,
-                            simd::instruction_set is,
-                            double mismatch_threshold);
+  /**
+   * Create an aligner for zero or more adapter sequences; for zero adapter
+   * sequences, SE alignments become a NOP and the offset of PE alignments are
+   * capped, meaning that the insert size can be no less than the lengths of
+   * read 1 and read 2.
+   */
+  sequence_aligner(const adapter_set& adapters,
+                   simd::instruction_set is,
+                   double mismatch_threshold);
 
   /** Sets the minimum required overlap for "good" SE alignments */
   void set_min_se_overlap(size_t n) { m_min_se_overlap = n; }
@@ -276,6 +282,8 @@ private:
   size_t m_merge_threshold;
   //! Minimum alignment length for "good" SE alignments, including Ns
   size_t m_min_se_overlap = 1;
+  //! PE sequences are assumed to have been trimmed already
+  bool m_assume_pretrimmed = false;
 
   //! Internal buffer used to combine adapters and reads
   std::string m_buffer{};

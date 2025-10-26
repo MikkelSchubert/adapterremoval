@@ -33,7 +33,7 @@ struct ALN;
 #define PARAMETERIZE_IS GENERATE(from_range(simd::supported()))
 
 // Dummy mismatch threshold
-const double DEFAULT_MISMATCH_THRESHOLD = 0.0;
+const double NO_MISMATCHES = 0.0;
 
 struct ALN
 {
@@ -73,7 +73,7 @@ align_single_ended_sequence(const fastq& read,
                             const adapter_set& adapters,
                             int max_shift)
 {
-  return sequence_aligner(adapters, PARAMETERIZE_IS, DEFAULT_MISMATCH_THRESHOLD)
+  return sequence_aligner(adapters, PARAMETERIZE_IS, NO_MISMATCHES)
     .align_single_end(read, max_shift);
 }
 
@@ -83,7 +83,7 @@ align_paired_ended_sequences(const fastq& read1,
                              const adapter_set& adapters,
                              int max_shift)
 {
-  return sequence_aligner(adapters, PARAMETERIZE_IS, DEFAULT_MISMATCH_THRESHOLD)
+  return sequence_aligner(adapters, PARAMETERIZE_IS, NO_MISMATCHES)
     .align_paired_end(read1, read2, max_shift);
 }
 
@@ -192,14 +192,6 @@ TEST_CASE("simple alignment should not terminate early")
 ////////////////////////////////////////////////////////////////////////////////
 // sequence_aligner
 
-TEST_CASE("sequence aligner requires adapters")
-{
-  REQUIRE_THROWS_AS(sequence_aligner(adapter_set{},
-                                     PARAMETERIZE_IS,
-                                     DEFAULT_MISMATCH_THRESHOLD),
-                    assert_failed);
-}
-
 TEST_CASE("sequence aligner size")
 {
   adapter_set adapters{
@@ -207,9 +199,7 @@ TEST_CASE("sequence aligner size")
     { "CGAGAC", "CTAAGG" },
     { "TCATAC", "ATTTCG" },
   };
-  sequence_aligner aligner(adapters,
-                           PARAMETERIZE_IS,
-                           DEFAULT_MISMATCH_THRESHOLD);
+  sequence_aligner aligner(adapters, PARAMETERIZE_IS, NO_MISMATCHES);
   REQUIRE(aligner.size() == 3);
 }
 
@@ -535,9 +525,7 @@ TEST_CASE("Longest valid alignment is returned", "[alignment::single_end]")
   const fastq record("Rec", "AAATAAAAA");
   const adapter_set adapters = { { "AAAAAAAAA", "" } };
 
-  sequence_aligner aligner(adapters,
-                           PARAMETERIZE_IS,
-                           DEFAULT_MISMATCH_THRESHOLD);
+  sequence_aligner aligner(adapters, PARAMETERIZE_IS, NO_MISMATCHES);
   const auto result = aligner.align_single_end(record, 0);
   const alignment_info expected = ALN().length(9).n_mismatches(1);
 
@@ -1040,7 +1028,7 @@ TEST_CASE("Pointless SE alignments #1", "[alignment::single_end]")
   const adapter_set adapters{ { "TT", "" }, { "T", "" }, {} };
   sequence_aligner aligner{ adapters,
                             simd::instruction_set::none,
-                            DEFAULT_MISMATCH_THRESHOLD };
+                            NO_MISMATCHES };
   const alignment_info expected = ALN().length(2).adapter_id(0).is_good();
   const auto result = aligner.align_single_end({ "Rec", "TTT" }, 10);
   REQUIRE(result == expected);
@@ -1104,9 +1092,7 @@ TEST_CASE("Adapter-sorting for SE adapters", "[alignment::single_end]")
     { "TTTTT", "" },
   };
 
-  sequence_aligner aligner{ adapters,
-                            PARAMETERIZE_IS,
-                            DEFAULT_MISMATCH_THRESHOLD };
+  sequence_aligner aligner{ adapters, PARAMETERIZE_IS, NO_MISMATCHES };
   auto align = [&aligner](std::string seq) {
     return aligner.align_single_end({ "R1", seq }, 0);
   };
@@ -1127,9 +1113,7 @@ TEST_CASE("Adapter-sorting for PE adapters", "[alignment::single_end]")
     { "TTTTT", "AAAAA" },
   };
 
-  sequence_aligner aligner{ adapters,
-                            PARAMETERIZE_IS,
-                            DEFAULT_MISMATCH_THRESHOLD };
+  sequence_aligner aligner{ adapters, PARAMETERIZE_IS, NO_MISMATCHES };
   auto align = [&aligner](std::string seq) {
     return aligner.align_paired_end({ "R1", seq }, { "R2", seq }, 0);
   };
@@ -1739,6 +1723,65 @@ TEST_CASE("Extracting both sequences extending past each other",
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "CCC", "GHI"));
   REQUIRE(read2 == fastq("read2", "AA", "12"));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Alignments without adapter sequences or with empty adapter sequences
+
+TEST_CASE("SE alignment is NOP with no adapters", "[alignment::no_adapters]")
+{
+  auto adapters = GENERATE(adapter_set{}, adapter_set{ {} });
+  sequence_aligner aligner{ adapters, PARAMETERIZE_IS, NO_MISMATCHES };
+  REQUIRE(aligner.size() == 1);
+
+  const auto result = aligner.align_single_end(fastq{ "read1", "ACGT" }, 0);
+  REQUIRE(result == ALN().adapter_id(-1));
+}
+
+TEST_CASE("PE alignments without adapters cannot extend past 5' of read 1",
+          "[alignment::no_adapters]")
+{
+  sequence_aligner aligner{ adapter_set{}, PARAMETERIZE_IS, NO_MISMATCHES };
+  REQUIRE(aligner.size() == 1);
+
+  const auto result = aligner.align_paired_end(fastq{ "read1", "AAAAAA" },
+                                               fastq{ "read2", "GAAAAAA" },
+                                               GENERATE(0, 1, 2));
+  REQUIRE(result == ALN().length(6).n_mismatches(1));
+}
+
+TEST_CASE("PE alignments with empty adapters can extend past 5' of read 1",
+          "[alignment::no_adapters]")
+{
+  sequence_aligner aligner{ adapter_set{ {} }, PARAMETERIZE_IS, NO_MISMATCHES };
+
+  const auto result = aligner.align_paired_end(fastq{ "read1", "AAAAAA" },
+                                               fastq{ "read2", "GAAAAAA" },
+                                               GENERATE(0, 1, 2));
+  REQUIRE(result == ALN().offset(-1).length(6).is_good());
+}
+
+TEST_CASE("PE alignments without adapters cannot extend past 5' of read 2",
+          "[alignment::no_adapters]")
+{
+  sequence_aligner aligner{ adapter_set{}, PARAMETERIZE_IS, NO_MISMATCHES };
+  REQUIRE(aligner.size() == 1);
+
+  const auto result = aligner.align_paired_end(fastq{ "read1", "AAAAAT" },
+                                               fastq{ "read2", "AAAA" },
+                                               GENERATE(0, 1, 2));
+  REQUIRE(result == ALN().offset(2).length(4).n_mismatches(1));
+}
+
+TEST_CASE("PE alignments with empty adapters can extend past 5' of read 2",
+          "[alignment::no_adapters]")
+{
+  sequence_aligner aligner{ adapter_set{ {} }, PARAMETERIZE_IS, NO_MISMATCHES };
+
+  const auto result = aligner.align_paired_end(fastq{ "read1", "AAAAAT" },
+                                               fastq{ "read2", "AAAA" },
+                                               GENERATE(0, 1, 2));
+  REQUIRE(result == ALN().length(4).is_good());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

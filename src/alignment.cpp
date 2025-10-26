@@ -257,12 +257,17 @@ sequence_aligner::sequence_aligner(const adapter_set& adapters,
   , m_mismatch_threshold(mismatch_threshold)
   , m_merge_threshold(std::numeric_limits<decltype(m_merge_threshold)>::max())
 {
-  AR_REQUIRE(!adapters.empty());
-  for (const auto& it : adapters) {
-    m_adapters.push_back({ static_cast<int>(m_adapters.size()),
-                           0,
-                           it.first.as_string(),
-                           it.second.as_string() });
+  if (adapters.empty()) {
+    // Assumes that reads do not container adapter sequences
+    m_adapters.emplace_back();
+    m_assume_pretrimmed = true;
+  } else {
+    for (const auto& it : adapters) {
+      m_adapters.push_back({ static_cast<int>(m_adapters.size()),
+                             0,
+                             it.first.as_string(),
+                             it.second.as_string() });
+    }
   }
 }
 
@@ -274,7 +279,8 @@ sequence_aligner::align_single_end(const fastq& read, unsigned max_shift)
 
   for (const auto& it : m_adapters) {
     const std::string_view adapter = it.adapter1;
-    if (std::min<int>(read.length(), adapter.length()) < alignment.score()) {
+    if (adapter.empty() ||
+        std::min<int>(read.length(), adapter.length()) < alignment.score()) {
       ++adapter_id;
       continue;
     }
@@ -344,7 +350,10 @@ sequence_aligner::align_paired_end(const fastq& read1,
     // Only consider alignments where at least one nucleotide from each read
     // is aligned against the other, included shifted alignments to account
     // for missing bases at the 5' ends of the reads.
-    const int min_offset = adapter2.length() - read2.length() - max_shift;
+    const int min_offset =
+      m_assume_pretrimmed
+        ? read1.length() - std::min(read1.length(), read2.length())
+        : adapter2.length() - read2.length() - max_shift;
 
     // Only check for end/end overlaps during the first alignment; subsequent
     // alignments need only consider offsets involving the current adapters
