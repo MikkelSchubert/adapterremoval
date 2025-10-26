@@ -442,9 +442,10 @@ pe_reads_processor::process(chunk_ptr data)
   AR_REQUIRE(chunk);
 
   const auto samples = m_config.samples.get_reader();
+  const auto& sample = samples->at(m_sample);
 
   processed_reads chunks{ m_output };
-  chunks.set_sample(samples->at(m_sample));
+  chunks.set_sample(sample);
   chunks.set_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
@@ -457,7 +458,7 @@ pe_reads_processor::process(chunk_ptr data)
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  const auto& sample = samples->at(m_sample);
+  AR_REQUIRE(sample.size() > 0);
   for (const auto& it : sample) {
     aligners.emplace_back(it.adapters(),
                           m_config.simd,
@@ -468,10 +469,9 @@ pe_reads_processor::process(chunk_ptr data)
 
   // Read processing statistics
   auto stats = m_stats.acquire();
-  stats->adapter_trimmed_reads.resize_up_to(samples->adapters().size());
-  stats->adapter_trimmed_bases.resize_up_to(samples->adapters().size());
+  stats->adapter_trimmed_reads.resize_up_to(aligners.at(0).size());
+  stats->adapter_trimmed_bases.resize_up_to(aligners.at(0).size());
 
-  AR_REQUIRE(!aligners.empty());
   AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
   AR_REQUIRE(chunk->barcodes.empty() ||
              chunk->barcodes.size() == chunk->reads_1.size());

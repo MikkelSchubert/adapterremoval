@@ -131,6 +131,14 @@ enum class barcode_table_orientation
   explicit_,
 };
 
+/** Strategies for selecting the adapter sequences to trim, if any */
+enum class adapter_selection
+{
+  manual,    // use user-provided adapter sequence(s)
+  automatic, // attempt to detect adapters in sequence data automatically
+  none,      // data is assumed to not contain adapters
+};
+
 /** Strategies for how to handle no adapters being auto-selected */
 enum class adapter_fallback
 {

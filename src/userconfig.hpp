@@ -26,6 +26,7 @@ enum class parse_result;
 
 } // namespace argparse
 
+class adapter_database;
 class alignment_info;
 class output_files;
 class sample_output_files;
@@ -178,9 +179,16 @@ public:
   //! Normalize the orientation of merged reads to forward
   bool normalize_orientation{};
 
+  //! Strategy for selecting what adapters to trim
+  adapter_selection adapter_selection_strategy = adapter_selection::manual;
+  //! Fallback strategy if the adapters could not be detected automatically
+  adapter_fallback adapter_fallback_strategy = adapter_fallback::abort;
   //! Sample specific barcodes and adapters. In non-demultiplexing mode this
   //! set contains a single unnamed sample with empty barcodes
   threadsafe_data<sample_set> samples{};
+
+  /** For auto-adapter selection; returns known and user adapters sequences */
+  [[nodiscard]] adapter_database known_adapters() const;
 
   //! Title used for HTML report
   std::string report_title{};
