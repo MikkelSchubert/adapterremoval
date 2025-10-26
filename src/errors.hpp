@@ -58,6 +58,13 @@ public:
   explicit fastq_error(const std::string& message);
 };
 
+/** Exception raised to trigger a generic (testable) fatal error */
+class fatal_error : public std::runtime_error
+{
+public:
+  explicit fatal_error(const std::string& message);
+};
+
 std::ostream&
 operator<<(std::ostream& os, const assert_failed& value);
 
@@ -72,5 +79,8 @@ operator<<(std::ostream& os, const parsing_error& value);
 
 std::ostream&
 operator<<(std::ostream& os, const fastq_error& value);
+
+std::ostream&
+operator<<(std::ostream& os, const fatal_error& value);
 
 } // namespace adapterremoval

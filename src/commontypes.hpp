@@ -131,6 +131,14 @@ enum class barcode_table_orientation
   explicit_,
 };
 
+/** Strategies for how to handle no adapters being auto-selected */
+enum class adapter_fallback
+{
+  abort,   // an adapter must be identified, otherwise abort
+  unknown, // fallback to unspecified (empty) adapter, if not found
+  none,    // fallback to `adapter_select_strategy::none`, if not found
+};
+
 //! Path used to indicate that a file is not needed
 const std::string_view DEV_NULL = "/dev/null";
 //! Path used to indicate that data should be read from STDIN

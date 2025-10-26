@@ -4,6 +4,7 @@
 
 #include "adapter_database.hpp" // for adapter_database
 #include "adapter_detector.hpp" // for adapter_detector_stats
+#include "commontypes.hpp"      // for adapter_fallback
 #include "scheduler.hpp"        // for analytical_step
 #include "sequence_sets.hpp"    // for adapter_set
 #include "simd.hpp"             // for instruction_set
@@ -108,6 +109,7 @@ class adapter_finalizer : public analytical_step
 public:
   adapter_finalizer(adapter_database database,
                     threadsafe_data<sample_set> sample,
+                    adapter_fallback fallback,
                     size_t next_step);
   ~adapter_finalizer() override = default;
 
@@ -125,6 +127,8 @@ public:
 private:
   //! Next step in the pipeline, either demultiplexing or trimming
   const size_t m_next_step;
+  //! Fallback strategy if no adapters could be identified
+  const adapter_fallback m_fallback;
   //! Set of adapters to potentially detect
   adapter_database m_database;
   //! Sampleset for which adapters should be configured

@@ -2,17 +2,18 @@
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_database.hpp" // for adapter_database
 #include "adapter_selector.hpp" // for adapter_chunk, adapter_finalizer, ...
-#include "catch.hpp"
-#include "errors.hpp"        // for assertion_failed
-#include "fastq.hpp"         // for fastq
-#include "logging.hpp"       // for log_capture
-#include "scheduler.hpp"     // for fastq_chunk
-#include "sequence_sets.hpp" // for sample_set
-#include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
-#include "threading.hpp"     // for threadsafe_data
-#include "utilities.hpp"     // for dynamic_cast_unique
-#include <cstdint>
-#include <memory> // for make_shared, make_unique
+#include "commontypes.hpp"      // for adapter_fallback
+#include "errors.hpp"           // for assertion_failed
+#include "fastq.hpp"            // for fastq
+#include "logging.hpp"          // for log_capture
+#include "scheduler.hpp"        // for fastq_chunk
+#include "sequence_sets.hpp"    // for sample_set
+#include "testing.hpp"          // for TEST_CASE, REQUIRE, ...
+#include "threading.hpp"        // for threadsafe_data
+#include "utilities.hpp"        // for dynamic_cast_unique
+#include <cstdint>              // for uintptr_t
+#include <memory>               // for make_shared, make_unique
+#include <stdexcept>            // for runtime_error
 
 namespace adapterremoval {
 
@@ -20,6 +21,10 @@ namespace {
 
 // Parameterize tests over supported SIMD instruction sets
 #define PARAMETERIZE_IS GENERATE(from_range(simd::supported()))
+#define PARAMETERIZE_FALLBACK                                                  \
+  GENERATE(adapter_fallback::unknown,                                          \
+           adapter_fallback::none,                                             \
+           adapter_fallback::abort)
 
 constexpr size_t DEFAULT_NEXT_STEP = 12345;
 
@@ -260,7 +265,8 @@ namespace {
 
 chunk_vec
 test_finalizer_on_chunks(threadsafe_data<sample_set> samples,
-                         std::vector<chunk_ptr>& chunks)
+                         std::vector<chunk_ptr>& chunks,
+                         adapter_fallback fallback)
 {
 
   REQUIRE(samples.get_reader()->adapters() == adapter_set{});
@@ -272,7 +278,7 @@ test_finalizer_on_chunks(threadsafe_data<sample_set> samples,
   adapter_database database;
   database.add(adapters);
 
-  adapter_finalizer step(database, samples, DEFAULT_NEXT_STEP);
+  adapter_finalizer step(database, samples, fallback, DEFAULT_NEXT_STEP);
   REQUIRE(samples.get_reader()->adapters() == adapter_set{});
 
   chunk_vec results;
@@ -299,7 +305,11 @@ TEST_CASE("post adapter-selection chunks are passed as is")
 {
   adapter_database database;
   threadsafe_data<sample_set> samples;
-  adapter_finalizer step(database, samples, DEFAULT_NEXT_STEP);
+  adapter_finalizer step(database,
+                         samples,
+                         PARAMETERIZE_FALLBACK,
+                         DEFAULT_NEXT_STEP);
+
   const std::vector<fastq> reads{
     fastq{ "read1", "AGTGTTATTTAA" },
     fastq{ "read1", "ACGGACGTTTA" },
@@ -333,7 +343,7 @@ TEST_CASE("no notifications before final chunk")
                                              { {}, {}, {}, { 7, 0 } },
                                              { {}, { 3, 0 }, {}, {} } };
   chunks.emplace_back(std::move(chunk));
-  results = test_finalizer_on_chunks(samples, chunks);
+  results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
   REQUIRE_THAT(cap.str(), !Contains("adapter"));
 }
@@ -350,22 +360,21 @@ TEST_CASE("user is notified when adapters are selected for SE data")
   chunk->last_adapter_selection_block = true;
   const auto ptr_before = ptr_to_id(chunk->data);
 
-  SECTION("not enough matches")
+  SECTION("not enough matches, fallback to none")
   {
     chunk->adapters = adapter_detection_stats{ 10, { {}, {}, {}, { 7, 0 } } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
-    REQUIRE_THAT(
-      cap.str(),
-      Contains("Could not identify adapter sequences automatically"));
-    REQUIRE(samples.get_reader()->adapters() == adapter_set{ { "", "" } });
+    results = test_finalizer_on_chunks(samples, chunks, adapter_fallback::none);
+    REQUIRE_THAT(cap.str(),
+                 Contains("Could not select adapter sequences automatically"));
+    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
   }
 
   SECTION("sufficient hits for --adapter1")
   {
     chunk->adapters = adapter_detection_stats{ 10, { {}, {}, {}, { 10, 0 } } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
+    results = test_finalizer_on_chunks(samples, chunks, adapter_fallback::none);
 
     REQUIRE_THAT(cap.str(),
                  Contains("Using 'User adapters #1' read 1 adapter for "
@@ -398,23 +407,35 @@ TEST_CASE("user is notified when adapters are selected for PE data")
   SECTION("no reads, no messages")
   {
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
+    results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE_THAT(cap.str(), !Contains("adapter"));
-    REQUIRE(samples.get_reader()->adapters() == adapter_set{ { "", "" } });
+    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
   }
 
-  SECTION("not enough matches")
+  SECTION("not enough matches, fallback to unknown")
   {
     chunk->adapters = adapter_detection_stats{ 10,
                                                { {}, {}, {}, { 7, 0 } },
                                                { {}, { 3, 0 }, {}, {} } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
-    REQUIRE_THAT(
-      cap.str(),
-      Contains("Could not identify adapter sequences automatically"));
+    results =
+      test_finalizer_on_chunks(samples, chunks, adapter_fallback::unknown);
+    REQUIRE_THAT(cap.str(),
+                 Contains("Could not select adapter sequences automatically"));
     REQUIRE(samples.get_reader()->adapters() == adapter_set{ { "", "" } });
+  }
+
+  SECTION("not enough matches, fallback to none")
+  {
+    chunk->adapters = adapter_detection_stats{ 10,
+                                               { {}, {}, {}, { 7, 0 } },
+                                               { {}, { 3, 0 }, {}, {} } };
+    chunks.emplace_back(std::move(chunk));
+    results = test_finalizer_on_chunks(samples, chunks, adapter_fallback::none);
+    REQUIRE_THAT(cap.str(),
+                 Contains("Could not select adapter sequences automatically"));
+    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
   }
 
   SECTION("sufficient hits for --adapter1")
@@ -423,7 +444,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
                                                { {}, {}, {}, { 10, 0 } },
                                                { {}, { 9, 0 }, {}, {} } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
+    results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE_THAT(cap.str(),
                  Contains("Using 'User adapters #1' read 1 adapter for "
@@ -439,7 +460,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
                                                { {}, {}, {}, { 9, 0 } },
                                                { {}, { 10, 0 }, {}, {} } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
+    results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE_THAT(cap.str(), Contains("Could not identify --adapter1 sequence"));
     REQUIRE_THAT(cap.str(),
@@ -455,7 +476,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
                                                { {}, {}, {}, { 10, 0 } },
                                                { {}, { 10, 0 }, {}, {} } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
+    results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE_THAT(cap.str(),
                  Contains("Using 'User adapters #1' read 1 adapter for "
@@ -473,7 +494,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
                                                { {}, { 10, 0 }, {}, {} },
                                                { {}, {}, {}, { 10, 0 } } };
     chunks.emplace_back(std::move(chunk));
-    results = test_finalizer_on_chunks(samples, chunks);
+    results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE_THAT(cap.str(),
                  Contains("Using 'User adapters #1' read 2 adapter for "
@@ -491,6 +512,31 @@ TEST_CASE("user is notified when adapters are selected for PE data")
   REQUIRE(results.size() == 1);
   REQUIRE(results.at(0).first == DEFAULT_NEXT_STEP);
   REQUIRE(ptr_before == ptr_to_id(results.at(0).second));
+}
+
+TEST_CASE("abort on insufficient matches if configured")
+{
+  std::vector<chunk_ptr> chunks;
+  threadsafe_data<sample_set> samples;
+  auto chunk = std::make_unique<adapter_chunk>();
+  chunk->data = std::make_unique<fastq_chunk>();
+  chunk->last_adapter_selection_block = true;
+  chunk->adapters =
+    GENERATE(adapter_detection_stats{ 10, { {}, {}, {}, { 7, 0 } } },
+             adapter_detection_stats{ 10,
+                                      { {}, {}, {}, { 7, 0 } },
+                                      { {}, { 3, 0 }, {}, {} } });
+
+  chunks.emplace_back(std::move(chunk));
+
+  log::log_capture cap;
+  REQUIRE_THROWS_MESSAGE(
+    test_finalizer_on_chunks(samples, chunks, adapter_fallback::abort),
+    fatal_error,
+    "Could not select adapter sequences automatically; aborting since "
+    "'--adapter-fallback' is set to 'abort'. To proceed, either select a "
+    "different fallback strategy, or manually specify adapter sequences "
+    "using --adapter1 / --adapter2");
 }
 
 TEST_CASE("stats are merged across chunks")
@@ -517,7 +563,7 @@ TEST_CASE("stats are merged across chunks")
   {
     threadsafe_data<sample_set> samples;
     chunks.emplace_back(std::move(chunk_1));
-    test_finalizer_on_chunks(samples, chunks);
+    test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE(samples.get_reader()->adapters() == adapter_set{});
   }
@@ -527,7 +573,7 @@ TEST_CASE("stats are merged across chunks")
     threadsafe_data<sample_set> samples;
     chunks.emplace_back(std::move(chunk_1));
     chunks.emplace_back(std::move(chunk_2));
-    test_finalizer_on_chunks(samples, chunks);
+    test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
     REQUIRE(samples.get_reader()->adapters() ==
             adapter_set{ { "GTTATTTA", "ACGTGTTA" } });
   }
@@ -539,7 +585,10 @@ TEST_CASE("final chunk must be final adapter_chunk")
   database.add_known();
 
   threadsafe_data<sample_set> samples;
-  adapter_finalizer step(database, samples, DEFAULT_NEXT_STEP);
+  adapter_finalizer step(database,
+                         samples,
+                         adapter_fallback::unknown,
+                         DEFAULT_NEXT_STEP);
 
   auto chunk = std::make_unique<adapter_chunk>();
   chunk->data = std::make_unique<fastq_chunk>();
@@ -560,7 +609,10 @@ TEST_CASE("finalize checks that last chunk was observed")
   database.add_known();
 
   threadsafe_data<sample_set> samples;
-  adapter_finalizer step(database, samples, DEFAULT_NEXT_STEP);
+  adapter_finalizer step(database,
+                         samples,
+                         adapter_fallback::unknown,
+                         DEFAULT_NEXT_STEP);
 
   SECTION("before final chunk #1")
   {
