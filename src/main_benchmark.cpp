@@ -339,8 +339,10 @@ private:
 class alignment_benchmarker : public benchmarker
 {
 public:
-  alignment_benchmarker(const std::string& key, const simd::instruction_set is)
-    : benchmarker(to_upper(key) + " alignment (" + simd::name(is) + ")", {})
+  alignment_benchmarker(std::string_view key, const simd::instruction_set is)
+    : benchmarker(to_upper(key) + " alignment (" +
+                    std::string{ simd::name(is) } + ")",
+                  {})
     , m_key(key)
     , m_is(is)
   {

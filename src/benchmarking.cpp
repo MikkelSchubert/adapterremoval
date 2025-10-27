@@ -72,8 +72,7 @@ benchmark_toggles::update_toggles(const std::vector<std::string>& keys)
 bool
 benchmark_toggles::is_set(std::string_view key) const
 {
-  const auto it =
-    std::find(m_toggles.begin(), m_toggles.end(), to_lower(std::string{ key }));
+  const auto it = std::find(m_toggles.begin(), m_toggles.end(), to_lower(key));
 
   AR_REQUIRE(it != m_toggles.end());
   return m_enabled.at(it - m_toggles.begin());

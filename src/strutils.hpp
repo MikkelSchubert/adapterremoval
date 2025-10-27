@@ -67,6 +67,13 @@ std::string
 to_lower(std::string str);
 
 /** Uppercase letters in the range a-z */
+inline std::string
+to_lower(std::string_view str)
+{
+  return to_lower(std::string{ str });
+}
+
+/** Uppercase letters in the range a-z */
 constexpr char
 to_upper(char c)
 {
@@ -76,6 +83,13 @@ to_upper(char c)
 /** Uppercase letters in the range a-z */
 std::string
 to_upper(std::string str);
+
+/** Uppercase letters in the range a-z */
+inline std::string
+to_upper(std::string_view str)
+{
+  return to_upper(std::string{ str });
+}
 
 /** Returns true if str1 ends with str2 (case sensitive) */
 bool

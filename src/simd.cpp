@@ -3,6 +3,7 @@
 #include "simd.hpp"       // declarations
 #include "config-ar3.hpp" // for HAVE_SSE2, HAVE_AVX2, HAVE_AVX512...
 #include "debug.hpp"      // for AR_FAIL
+#include <string_view>    // for string_view
 
 namespace adapterremoval {
 
@@ -78,7 +79,7 @@ supported()
   return choices;
 }
 
-const char*
+std::string_view
 name(instruction_set value)
 {
   switch (value) {

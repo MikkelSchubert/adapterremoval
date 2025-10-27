@@ -26,7 +26,7 @@ void
 validate_sample_name(std::string_view name)
 {
   AR_REQUIRE(!name.empty());
-  if (to_lower(std::string{ name }) == "unidentified") {
+  if (to_lower(name) == "unidentified") {
     throw parsing_error("The sample name 'unidentified' is a reserved "
                         "name, and cannot be used!");
   }
@@ -374,7 +374,7 @@ barcode_table_orientation
 parse_table_orientation(std::string_view value)
 {
   value = trim_ascii_whitespace(value);
-  auto value_l = to_lower(std::string{ value });
+  const auto value_l = to_lower(value);
 
   if (value_l == "forward") {
     return barcode_table_orientation::forward;
