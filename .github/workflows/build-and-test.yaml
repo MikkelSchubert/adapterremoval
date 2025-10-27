@@ -27,6 +27,7 @@ jobs:
 
     env:
       CXX: ${{ matrix.cxx }}
+      CXXFLAGS: -Werror
       UV_SYSTEM_PYTHON: 1
 
     steps:
