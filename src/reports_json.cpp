@@ -679,7 +679,7 @@ write_report_output(const userconfig& config,
 bool
 write_json_report(const userconfig& config,
                   const statistics& stats,
-                  const std::string& filename)
+                  std::string_view filename)
 {
   if (filename == DEV_NULL) {
     // User disabled the report
@@ -708,7 +708,7 @@ write_json_report(const userconfig& config,
   output << std::endl;
 
   try {
-    managed_writer writer{ filename };
+    managed_writer writer{ std::string{ filename } };
     writer.write(output.str());
     writer.close();
   } catch (const io_error& error) {

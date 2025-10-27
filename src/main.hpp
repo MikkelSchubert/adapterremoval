@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <string>
+#include <string> // for string
 
 #ifdef __FAST_MATH__
 #error "AdapterRemoval cannot be compiled with -ffast-math"

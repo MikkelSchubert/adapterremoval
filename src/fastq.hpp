@@ -128,7 +128,7 @@ public:
    * @param min_length The minimum length of of a poly-G tail.
    * @return The number of 3' bases trimmed for the best matching nucleotide.
    */
-  std::pair<char, size_t> poly_x_trimming(const std::string& nucleotides,
+  std::pair<char, size_t> poly_x_trimming(std::string_view nucleotides,
                                           size_t min_length);
 
   /**
@@ -143,7 +143,7 @@ public:
   void reverse_complement();
 
   /** Adds a prefix to the name. */
-  void add_prefix_to_name(const std::string& prefix);
+  void add_prefix_to_name(std::string_view prefix);
 
   /**
    * Reads a FASTQ record from a list of lines (without newlines).

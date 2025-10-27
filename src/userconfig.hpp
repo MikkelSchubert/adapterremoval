@@ -238,7 +238,7 @@ private:
 
   /** Returns the file format in which to write the give file */
   [[nodiscard]] output_format infer_output_format(
-    const std::string& filename) const;
+    std::string_view filename) const;
 
   /**
    * Generates filename + format for a output (FQ/SAM/BAM/HTML/JSON) file.
@@ -248,7 +248,7 @@ private:
    * ignored by formats that aggregate output by default; ext is the mandatory
    * file extension.
    */
-  [[nodiscard]] output_file new_output_file(const std::string& key,
+  [[nodiscard]] output_file new_output_file(std::string_view key,
                                             std::string_view sample,
                                             std::vector<std::string_view> keys,
                                             std::string_view ext) const;

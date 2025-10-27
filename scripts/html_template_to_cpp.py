@@ -222,6 +222,7 @@ def write_header(sections: dict[str, Section]) -> str:
     tprint("#pragma once\n")
     tprint("#include <ostream>")
     tprint("#include <string>")
+    tprint("#include <string_view>")
     tprint("#include <vector>")
     tprint("")
     tprint("namespace adapterremoval {{")
@@ -249,10 +250,8 @@ def write_header(sections: dict[str, Section]) -> str:
             tprint("")
 
         for field in props.variables:
-            if field.kind == FieldType.REPEATED:
-                tprint("  {}& add_{}(const std::string& value);", classname, field.name)
-            else:
-                tprint("  {}& set_{}(const std::string& value);", classname, field.name)
+            act = "add" if field.kind == FieldType.REPEATED else "set"
+            tprint("  {}& {}_{}(std::string_view value);", classname, act, field.name)
 
         tprint("\n  void write(std::ostream& out) override;")
 
@@ -307,15 +306,15 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
         for field in props.variables:
             tprint("{}&", classname)
             if field.kind == FieldType.REPEATED:
-                tprint("{}::add_{}(const std::string& value)", classname, field.name)
+                tprint("{}::add_{}(std::string_view value)", classname, field.name)
                 tprint("{{")
 
                 if field.escape:
                     tprint("  m_{}.push_back(html_escape(value));", field.name)
                 else:
-                    tprint("  m_{}.push_back(value);", field.name)
+                    tprint("  m_{}.emplace_back( value );", field.name)
             else:
-                tprint("{}::set_{}(const std::string& value)", classname, field.name)
+                tprint("{}::set_{}(std::string_view value)", classname, field.name)
                 tprint("{{")
                 if field.escape:
                     tprint("  m_{} = html_escape(value);", field.name)

@@ -52,7 +52,7 @@ format_exception(std::ostream& os,
 } // namespace
 
 std::string
-format_io_error(const std::string& message, const int error_number)
+format_io_error(std::string_view message, const int error_number)
 {
   if (error_number) {
     std::ostringstream stream;
@@ -60,7 +60,7 @@ format_io_error(const std::string& message, const int error_number)
 
     return stream.str();
   } else {
-    return message;
+    return std::string{ message };
   }
 }
 

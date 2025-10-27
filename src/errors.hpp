@@ -2,14 +2,15 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <iosfwd>    // for ostream
-#include <stdexcept> // for runtime_error
-#include <string>    // for string
+#include <iosfwd>      // for ostream
+#include <stdexcept>   // for runtime_error
+#include <string>      // for string
+#include <string_view> // for string_view
 
 namespace adapterremoval {
 
 std::string
-format_io_error(const std::string& message, int error_number);
+format_io_error(std::string_view message, int error_number);
 
 /** Exception explaining 'abort' calls when running unit-tests. */
 class assert_failed : public std::logic_error

@@ -8,6 +8,7 @@
 #include <cstddef>       // for size_t
 #include <cstdint>       // for uint32_t
 #include <string>        // for string
+#include <string_view>   // for string_view
 #include <utility>       // for pair
 #include <vector>        // for vector
 
@@ -34,7 +35,7 @@ public:
    * pipes ('|') and mismatches with spaces (' '). Only overlapping bases are
    * compared.
    */
-  std::string compare_with(const std::string& other) const;
+  [[nodiscard]] std::string compare_with(std::string_view other) const;
 
   /** Returns the consensus adapter sequence */
   inline const fastq& adapter() const { return m_adapter; }
@@ -73,7 +74,7 @@ public:
   size_t max_length() const { return m_max_length; }
 
   /** Process an adapter fragment, assumed to only contain bases ACGTN */
-  void process(const std::string& sequence);
+  void process(std::string_view sequence);
   /** Constructs consensus adapter sequence and selects the top N kmers */
   consensus_adapter summarize(size_t n_kmers = top_n_kmers) const;
 

@@ -19,7 +19,6 @@
 #include "strutils.hpp"              // for format_percentage, format_rough...
 #include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
 #include <algorithm>                 // for max
-#include <array>                     // for array
 #include <cctype>                    // for toupper
 #include <cmath>                     // for fmod
 #include <cstdint>                   // for uint64_t
@@ -40,11 +39,11 @@ using fastq_stats_vec = std::vector<fastq_stats_ptr>;
 using template_ptr = std::unique_ptr<html_template>;
 
 //! Size chosen to allow fitting two pages side-by-side on a 1920 width display
-const char* const FIGURE_WIDTH = "736";
+constexpr std::string_view FIGURE_WIDTH = "736";
 //! Per figure width for two-column facet figures; approximate
-const char* const FACET_WIDTH_2 = "351";
+constexpr std::string_view FACET_WIDTH_2 = "351";
 //! Per figure width for one-column facet figures; approximate
-const char* const FACET_WIDTH_1 = FIGURE_WIDTH;
+constexpr std::string_view FACET_WIDTH_1 = FIGURE_WIDTH;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -703,7 +702,7 @@ write_html_io_section(const userconfig& config,
 
   write_html_section_title(title, output);
 
-  const char* dynamic_width =
+  const std::string_view dynamic_width =
     config.paired_ended_mode || merged ? FACET_WIDTH_2 : FACET_WIDTH_1;
 
   html_plot_title()
@@ -1242,7 +1241,7 @@ write_html_output_section(const userconfig& config,
 bool
 write_html_report(const userconfig& config,
                   const statistics& stats,
-                  const std::string& filename)
+                  std::string_view filename)
 {
   if (filename == DEV_NULL) {
     // User disabled the report
@@ -1277,7 +1276,7 @@ write_html_report(const userconfig& config,
   html_body_end().write(output);
 
   try {
-    managed_writer writer{ filename };
+    managed_writer writer{ std::string{ filename } };
     writer.write(output.str());
     writer.close();
   } catch (const io_error& error) {
