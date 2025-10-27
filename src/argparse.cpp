@@ -13,6 +13,7 @@
 #include <sstream>      // for operator<<, basic_ostream, ostringstream
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for string, to_string
+#include <string_view>  // for string_view
 #include <utility>      // for pair
 
 namespace adapterremoval {
@@ -26,8 +27,8 @@ const size_t invalid_choice = static_cast<size_t>(-2);
 
 /** Detect similar arguments based on prefixes or max edit distance. */
 bool
-is_similar_argument(const std::string& user,
-                    const std::string& ref,
+is_similar_argument(std::string_view user,
+                    std::string_view ref,
                     size_t max_distance)
 {
   const auto overlap = std::min(user.size(), ref.size());
@@ -139,7 +140,7 @@ parser::parse_args(const string_vec& args)
 }
 
 bool
-parser::is_set(const std::string& key) const
+parser::is_set(std::string_view key) const
 {
   const auto it = m_keys.find(key);
   AR_REQUIRE(it != m_keys.end(), shell_escape(key));
@@ -148,7 +149,7 @@ parser::is_set(const std::string& key) const
 }
 
 std::string
-parser::value(const std::string& key) const
+parser::value(std::string_view key) const
 {
   const auto it = m_keys.find(key);
   AR_REQUIRE(it != m_keys.end(), shell_escape(key));
@@ -157,7 +158,7 @@ parser::value(const std::string& key) const
 }
 
 argument&
-parser::add(const std::string& name, const std::string& metavar)
+parser::add(std::string_view name, std::string_view metavar)
 {
   AR_REQUIRE(starts_with(name, "--"), name);
   auto ptr = std::make_shared<argument>(name, metavar);
@@ -173,10 +174,10 @@ parser::add_separator()
 }
 
 void
-parser::add_header(const std::string& header)
+parser::add_header(std::string_view header)
 {
   add_separator();
-  m_args.push_back({ header, argument_ptr() });
+  m_args.push_back({ std::string{ header }, argument_ptr() });
 }
 
 void
@@ -344,7 +345,7 @@ parser::update_argument_map()
 }
 
 argument_ptr
-parser::find_argument(const std::string& key)
+parser::find_argument(std::string_view key)
 {
   auto it = m_keys.find(key);
   if (it != m_keys.end()) {
@@ -383,16 +384,16 @@ parser::find_argument(const std::string& key)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-argument::argument(const std::string& key, std::string metavar)
+argument::argument(std::string_view key, std::string_view metavar)
   : m_key_long(key)
-  , m_metavar(std::move(metavar))
+  , m_metavar(metavar)
   , m_sink(std::make_unique<bool_sink>(&m_default_sink))
 {
   AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
 }
 
 argument&
-argument::help(const std::string& text)
+argument::help(std::string_view text)
 {
   // Enforce this the style of help text
   AR_REQUIRE(!ends_with(text, "."),
@@ -510,7 +511,7 @@ argument::abbreviation(char key)
 }
 
 argument&
-argument::deprecated_alias(const std::string& key)
+argument::deprecated_alias(std::string_view key)
 {
   AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
   m_deprecated_keys.emplace_back(key);
@@ -535,27 +536,29 @@ argument::hidden()
 }
 
 argument&
-argument::depends_on(const std::string& key)
+argument::depends_on(std::string key)
 {
   AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
-  m_depends_on.push_back(key);
+  m_depends_on.emplace_back(std::move(key));
 
   return *this;
 }
 
 argument&
-argument::conflicts_with(const std::string& key)
+argument::conflicts_with(std::string key)
 {
   AR_REQUIRE(!key.empty() && key.at(0) == '-', shell_escape(key));
-  m_conflicts_with.push_back(key);
+  m_conflicts_with.emplace_back(std::move(key));
 
   return *this;
 }
 
+namespace {
+
 void
 n_args_error(const std::string& key,
              size_t limit,
-             const char* relation,
+             const std::string_view relation,
              size_t n)
 {
   auto out = log::error();
@@ -573,6 +576,8 @@ n_args_error(const std::string& key,
     out << ", but " << n << " values were provided!";
   }
 }
+
+} // namespace
 
 size_t
 argument::parse(string_vec_citer start, const string_vec_citer& end)
@@ -667,7 +672,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
 }
 
 bool
-argument::is_deprecated_alias(const std::string& key) const
+argument::is_deprecated_alias(std::string_view key) const
 {
   return std::find(m_deprecated_keys.begin(), m_deprecated_keys.end(), key) !=
          m_deprecated_keys.end();

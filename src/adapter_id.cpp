@@ -11,6 +11,7 @@
 #include <queue>          // for priority_queue
 #include <sstream>        // for basic_ostringstream
 #include <string>         // for string
+#include <string_view>    // for string_view
 #include <utility>        // for pair
 #include <vector>         // for vector
 
@@ -31,7 +32,7 @@ using adapter_kmer_vec = std::vector<adapter_kmer>;
  * in hash collisions.
  */
 inline size_t
-kmer_to_size_t(const std::string& kmer)
+kmer_to_size_t(std::string_view kmer)
 {
   size_t index = 0;
   for (const char c : kmer) {
@@ -149,7 +150,7 @@ consensus_adapter::consensus_adapter(const indexed_counts<ACGTN>& consensus,
 }
 
 std::string
-consensus_adapter::compare_with(const std::string& other) const
+consensus_adapter::compare_with(std::string_view other) const
 {
   const auto& adapter = m_adapter.sequence();
   const auto size = std::min(adapter.size(), other.size());
@@ -185,7 +186,7 @@ consensus_adapter_stats::operator+=(const consensus_adapter_stats& other)
 }
 
 void
-consensus_adapter_stats::process(const std::string& sequence)
+consensus_adapter_stats::process(std::string_view sequence)
 {
   const auto length = std::min(m_max_length, sequence.length());
 
@@ -195,8 +196,7 @@ consensus_adapter_stats::process(const std::string& sequence)
   }
 
   if (sequence.length() >= consensus_adapter_stats::kmer_length) {
-    const std::string kmer =
-      sequence.substr(0, consensus_adapter_stats::kmer_length);
+    const auto kmer = sequence.substr(0, consensus_adapter_stats::kmer_length);
     if (kmer.find('N') == std::string::npos) {
       m_kmers.at(kmer_to_size_t(kmer)) += 1;
     }

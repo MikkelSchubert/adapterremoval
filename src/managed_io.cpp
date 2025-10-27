@@ -15,7 +15,7 @@
 #include <fcntl.h>         // for posix_fadvise
 #include <mutex>           // for mutex, lock_guard
 #include <string>          // for string
-#include <string_view>     // for operator==, operator!=
+#include <string_view>     // for string_view
 #include <sys/stat.h>      // for fstat
 #include <utility>         // for move
 #include <vector>          // for vector
@@ -373,7 +373,7 @@ managed_writer::write(const std::vector<buffer>& buffers, const flush mode)
 }
 
 void
-managed_writer::write(const std::string& buf, const flush mode)
+managed_writer::write(std::string_view buf, const flush mode)
 {
   if (!buf.empty() || mode == flush::on) {
     writer_lock writer{ this };

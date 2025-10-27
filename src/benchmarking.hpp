@@ -2,11 +2,12 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <chrono>  // for high_resolution_clock
-#include <cstddef> // for size_t
-#include <cstdint> // for uint64_t
-#include <string>  // for string
-#include <vector>  // for vector
+#include <chrono>      // for high_resolution_clock
+#include <cstddef>     // for size_t
+#include <cstdint>     // for uint64_t
+#include <string>      // for string
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -34,7 +35,7 @@ public:
   bool defaults() const { return m_defaults; }
 
   /** Returns true if the specified benchmark toggle is set */
-  bool is_set(const std::string& key) const;
+  [[nodiscard]] bool is_set(std::string_view key) const;
 
 private:
   //! Vector of supported toggles

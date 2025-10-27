@@ -1394,7 +1394,7 @@ userconfig::parse_args(const string_vec& argvec)
 }
 
 output_format
-userconfig::infer_output_format(const std::string& filename) const
+userconfig::infer_output_format(std::string_view filename) const
 {
   if (filename == DEV_STDOUT) {
     return out_stdout_format;
@@ -1483,7 +1483,7 @@ userconfig::get_output_filenames() const
 }
 
 output_file
-userconfig::new_output_file(const std::string& key,
+userconfig::new_output_file(std::string_view key,
                             std::string_view sample,
                             std::vector<std::string_view> keys,
                             std::string_view ext) const

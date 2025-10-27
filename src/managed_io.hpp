@@ -2,9 +2,10 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <cstdio> // for FILE
-#include <string> // for string
-#include <vector> // for vector
+#include <cstdio>      // for FILE
+#include <string>      // for string
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
 namespace adapterremoval {
 class buffer;
@@ -73,7 +74,7 @@ public:
   /** Write buffers, opening/creating the file as needed */
   void write(const buffer& buf, flush mode = flush::off);
   void write(const std::vector<buffer>& buffers, flush mode = flush::off);
-  void write(const std::string& buffer, flush mode = flush::off);
+  void write(std::string_view buffer, flush mode = flush::off);
 
   /** Closes the handle; no-op if the handle has been closed already */
   void close();

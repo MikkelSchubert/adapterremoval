@@ -458,7 +458,7 @@ fastq::mott_trimming(const double error_limit, const bool preserve5p)
 }
 
 std::pair<char, size_t>
-fastq::poly_x_trimming(const std::string& nucleotides, size_t min_length)
+fastq::poly_x_trimming(std::string_view nucleotides, size_t min_length)
 {
   size_t best_count = 0;
   char best_nucleotide = 'N';
@@ -501,14 +501,16 @@ fastq::reverse_complement()
   std::reverse(m_qualities.begin(), m_qualities.end());
 
   // Lookup table for complementary bases based only on the last 4 bits
-  static const char complements[] = "-T-GA--C------N-";
+  constexpr std::array complements{ '-', 'T', '-', 'G', 'A', '-', '-', 'C',
+                                    '-', '-', '-', '-', '-', '-', 'N', '-' };
+
   for (auto& nuc : m_sequence) {
     nuc = complements[nuc & 0xf];
   }
 }
 
 void
-fastq::add_prefix_to_name(const std::string& prefix)
+fastq::add_prefix_to_name(std::string_view prefix)
 {
   AR_REQUIRE(!m_header.empty());
   if (!prefix.empty()) {

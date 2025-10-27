@@ -91,18 +91,18 @@ public:
   parse_result parse_args(const string_vec& args);
 
   /** Returns true if the option with the given key has been set. */
-  bool is_set(const std::string& key) const;
+  [[nodiscard]] bool is_set(std::string_view key) const;
   /** Returns the value associated with the argument as a string. */
-  std::string value(const std::string& key) const;
+  std::string value(std::string_view key) const;
 
   /** Add argument with metavar. By default this takes no values. */
-  argument& add(const std::string& name, const std::string& metavar = "");
+  argument& add(std::string_view name, std::string_view metavar = {});
 
   /** Add a blank line between the previous and the next command. */
   void add_separator();
 
   /** Add a blank line and a header between the previous and next command. */
-  void add_header(const std::string& header);
+  void add_header(std::string_view header);
 
   /** Helper function; prints the program name and version string. */
   void print_version() const;
@@ -122,7 +122,7 @@ public:
 private:
   void update_argument_map();
 
-  argument_ptr find_argument(const std::string& key);
+  argument_ptr find_argument(std::string_view key);
 
   struct argument_entry
   {
@@ -162,7 +162,7 @@ public:
     bool deprecated;
   };
 
-  explicit argument(const std::string& key, std::string metavar = "");
+  explicit argument(std::string_view key, std::string_view metavar = {});
   ~argument() = default;
 
   /** Returns true if the consumer has consumed a value. */
@@ -183,7 +183,7 @@ public:
   /** Returns long, short, and deprecated argument keys. */
   string_vec keys() const;
   /** Returns true if this key is a deprecated alias for this argument. */
-  bool is_deprecated_alias(const std::string& key) const;
+  bool is_deprecated_alias(std::string_view key) const;
 
   /** Returns the meta-variable. May be an empty string. */
   const std::string& metavar() const { return m_metavar; }
@@ -208,22 +208,22 @@ public:
   std::string default_value() const;
 
   /** Set the metavar for this argument. */
-  argument& metavar(const std::string& metavar);
+  argument& metavar(std::string_view metavar);
   /** Set help string for this argument. */
-  argument& help(const std::string& text);
+  argument& help(std::string_view text);
   /** Create a short form of the argument. */
   argument& abbreviation(char key);
   /** Create deprecated alias for the argument. */
-  argument& deprecated_alias(const std::string& key);
+  argument& deprecated_alias(std::string_view key);
   /** The argument is deprecated. Implies `hidden()` */
   argument& deprecated();
   /** The argument will not be printed by -h/--help */
   argument& hidden();
 
   /** Option `key` MUST be specified along with this argument. */
-  argument& depends_on(const std::string& key);
+  argument& depends_on(std::string key);
   /** Option `key` must NOT be specified along with this argument. */
-  argument& conflicts_with(const std::string& key);
+  argument& conflicts_with(std::string key);
 
   bool_sink& bind_bool(bool* ptr);
   u32_sink& bind_u32(uint32_t* ptr);

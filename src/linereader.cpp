@@ -15,13 +15,15 @@
 namespace adapterremoval {
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implementations for 'gzip_error'
+// Helper functions
+
+namespace {
 
 [[noreturn]] void
-throw_gzip_error(const std::string& filename,
-                 const char* action,
-                 const char* error,
-                 const char* diagnosis = "file is likely corrupt")
+throw_gzip_error(const std::string_view filename,
+                 const std::string_view action,
+                 const std::string_view error,
+                 const std::string_view diagnosis = "file is likely corrupt")
 {
   std::ostringstream stream;
   stream << "Error while " << action << " " << shell_escape(filename) << ": "
@@ -30,13 +32,10 @@ throw_gzip_error(const std::string& filename,
   throw gzip_error(stream.str());
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Helper functions for isa-l
-
 void
 check_isal_return_code(int returncode,
-                       const std::string& file,
-                       const char* action)
+                       const std::string_view file,
+                       const std::string_view action)
 {
   switch (returncode) {
     case ISAL_DECOMP_OK:
@@ -82,6 +81,8 @@ check_isal_return_code(int returncode,
       throw_gzip_error(file, action, "unknown error");
   }
 }
+
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'vec_reader'

@@ -420,9 +420,9 @@ adapter_set::add_barcodes(const dna_sequence& barcode1,
 }
 
 void
-adapter_set::load(const std::string& filename, bool paired_end_mode)
+adapter_set::load(std::string filename, bool paired_end_mode)
 {
-  line_reader reader(filename);
+  line_reader reader(std::move(filename));
   load(reader, paired_end_mode);
 }
 
@@ -686,9 +686,9 @@ sample_set::set_read_group(std::string_view value)
 }
 
 void
-sample_set::load(const std::string& filename, const barcode_config& config)
+sample_set::load(std::string filename, const barcode_config& config)
 {
-  line_reader reader(filename);
+  line_reader reader(std::move(filename));
   load(reader, config);
 }
 

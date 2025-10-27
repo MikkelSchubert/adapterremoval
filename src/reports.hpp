@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <string>
-#include <vector>
+#include <string_view> // for string_view
 
 namespace adapterremoval {
 
@@ -14,12 +13,12 @@ class userconfig;
 bool
 write_json_report(const userconfig& config,
                   const statistics& stats,
-                  const std::string& filename);
+                  std::string_view filename);
 
 bool
 write_html_report(const userconfig& config,
                   const statistics& stats,
-                  const std::string& filename);
+                  std::string_view filename);
 
 void
 print_terminal_preamble(const userconfig& config);

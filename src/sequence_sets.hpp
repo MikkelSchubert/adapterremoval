@@ -50,7 +50,7 @@ public:
    * Loads adapters in read orientation, clearing existing adapters. Two adapter
    * sequences are expected if 'paired_end_mode' is set.
    */
-  void load(const std::string& filename, bool paired_end_mode);
+  void load(std::string filename, bool paired_end_mode);
   /**
    * Loads adapters in read orientation, clearing existing adapters. Two adapter
    * sequences are expected if 'paired_end_mode' is set.
@@ -263,7 +263,7 @@ public:
    * containing a name column, and one or two barcode columns. Samples are
    * updated with the current read group and adapters set.
    */
-  void load(const std::string& filename, const barcode_config& config);
+  void load(std::string filename, const barcode_config& config);
   /** See `load(const std::string&, const barcode_config&)` */
   void load(line_reader_base& reader, const barcode_config& config);
 

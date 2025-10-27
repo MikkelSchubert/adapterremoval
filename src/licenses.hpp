@@ -2,14 +2,13 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <array>  // for array
-#include <string> // for string
+#include <string_view> // for string_view
 
 namespace adapterremoval {
 
 //! Collection of licenses for libraries, etc. used by adapterremoval, including
 //! both libraries bundled with the source code and purely external libraries.
-const char* const LICENSES =
+constexpr std::string_view const LICENSES =
 
   // AdapterRemoval itself
   "AdapterRemoval is licensed under the GPL v3 or later:\n"
