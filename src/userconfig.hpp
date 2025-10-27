@@ -160,8 +160,11 @@ public:
 
   //! The maximum number of threads used by the program
   uint32_t max_threads{};
+
+  //! Automatically determine most suitable SIMD instruction set
+  bool simd_auto_select = false;
   //! SIMD instruction set used for alignments
-  simd::instruction_set simd = simd::instruction_set::none;
+  threadsafe_data<simd::instruction_set> simd{ simd::instruction_set::none };
 
   //! The format in which in which output reads are written to files
   output_format out_file_format = output_format::fastq_gzip;

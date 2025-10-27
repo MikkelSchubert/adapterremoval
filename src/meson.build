@@ -107,6 +107,7 @@ libcore = static_library(
     'sequence_sets.cpp',
     'sequence.cpp',
     'serializer.cpp',
+    'simd_selector.cpp',
     'simd_std.cpp',
     'simd.cpp',
     'strutils.cpp',

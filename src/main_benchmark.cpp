@@ -15,6 +15,7 @@
 #include "strutils.hpp"          // for to_lower
 #include "threading.hpp"         // for threadsafe_data
 #include "userconfig.hpp"        // for userconfig
+#include "utilities.hpp"         // for blackbox
 #include <cstddef>               // for size_t
 #include <cstdint>               // for uint64_t
 #include <limits>                // for numeric_limits
@@ -25,21 +26,6 @@
 namespace adapterremoval {
 
 namespace {
-
-#ifdef __clang__
-#define NO_OPTIMIZE_CLANG __attribute__((optnone))
-#define NO_OPTIMIZE_GCC
-#else
-#define NO_OPTIMIZE_CLANG
-#define NO_OPTIMIZE_GCC __attribute__((optimize("O0")))
-#endif
-
-/** Unoptimized to prevent calculations from being elided by the compiler */
-template<typename T>
-void NO_OPTIMIZE_GCC
-blackbox(T& /* unused */) NO_OPTIMIZE_CLANG
-{
-}
 
 class readlines_benchmarker : public benchmarker
 {
