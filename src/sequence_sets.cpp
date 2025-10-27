@@ -26,7 +26,7 @@ void
 validate_sample_name(std::string_view name)
 {
   AR_REQUIRE(!name.empty());
-  if (name == "unidentified") {
+  if (to_lower(std::string{ name }) == "unidentified") {
     throw parsing_error("The sample name 'unidentified' is a reserved "
                         "name, and cannot be used!");
   }
