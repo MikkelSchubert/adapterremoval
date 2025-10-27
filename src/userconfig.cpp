@@ -1701,6 +1701,8 @@ userconfig::setup_adapter_sequences()
   if (run_type == ar_command::report_only) {
     adapter_selection_strategy = adapter_selection::automatic;
     adapter_fallback_strategy = adapter_fallback::none;
+  } else if (run_type == ar_command::benchmark) {
+    adapter_selection_strategy = adapter_selection::manual;
   } else {
     adapter_fallback_strategy =
       configure_adapter_fallback(m_argparser->value("--adapter-fallback"));
