@@ -119,7 +119,7 @@ const size_t output_files::disabled = static_cast<size_t>(-1);
 bool
 output_files::parse_format(std::string_view filename, output_format& sink)
 {
-  const std::string value = to_lower(std::string(filename));
+  const std::string value = to_lower(filename);
   // ubam is tested separately, to avoid supporting non-standard file extensions
   if (value == "ubam") {
     sink = output_format::ubam;
@@ -132,7 +132,7 @@ output_files::parse_format(std::string_view filename, output_format& sink)
 bool
 output_files::parse_extension(std::string_view filename, output_format& sink)
 {
-  const std::string value = to_lower(std::string(filename));
+  const std::string value = to_lower(filename);
   if (ends_with(value, ".fq.gz") || ends_with(value, ".fastq.gz")) {
     sink = output_format::fastq_gzip;
   } else if (ends_with(value, ".fq") || ends_with(value, ".fastq")) {

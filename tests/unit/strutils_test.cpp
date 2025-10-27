@@ -9,9 +9,10 @@
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string
 #include <string_view>  // for string_view
-#include <vector>       // for operator==, vector
 
 namespace adapterremoval {
+
+using namespace std::string_view_literals;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for 'levenshtein'
@@ -37,8 +38,8 @@ TEST_CASE("Levenshtein distance", "[strutils::levenshtein]")
 
 TEST_CASE("ASCII letters are lowercased", "[strutils::to_lower]")
 {
-  REQUIRE(to_lower("").empty());
-  REQUIRE(to_lower("a1{2BZ`zAdeK") == "a1{2bz`zadek");
+  REQUIRE(to_lower(""sv).empty());
+  REQUIRE(to_lower("a1{2BZ`zAdeK"sv) == "a1{2bz`zadek");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,8 +47,8 @@ TEST_CASE("ASCII letters are lowercased", "[strutils::to_lower]")
 
 TEST_CASE("ASCII letters are uppercased", "[strutils::to_upper]")
 {
-  REQUIRE(to_upper("").empty());
-  REQUIRE(to_upper("a1{2BZ`zAdeK") == "A1{2BZ`ZADEK");
+  REQUIRE(to_upper(""sv).empty());
+  REQUIRE(to_upper("a1{2BZ`zAdeK"sv) == "A1{2BZ`ZADEK");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

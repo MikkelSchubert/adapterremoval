@@ -2,8 +2,9 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <cstddef> // for size_t
-#include <vector>  // for vector
+#include <cstddef>     // for size_t
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -23,7 +24,7 @@ std::vector<instruction_set>
 supported();
 
 /** Returns human-readable name of instruction set */
-const char*
+std::string_view
 name(instruction_set value);
 
 /** Returns the amount of padding expected when using this instruction set */

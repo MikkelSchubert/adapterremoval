@@ -1873,7 +1873,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
     "AGGGGATCTTGGAATTGGATCCAAAAAGTGCTGGGGAATGCGGATTCCATTATGAGACCTGT";
 
   // The SECTION identifies the instruction set in failure messages
-  SECTION(simd::name(is))
+  SECTION(std::string{ simd::name(is) })
   {
     compare(func, "", "", 0, MMNs{ 0, 0 });
 
