@@ -14,9 +14,7 @@
 #include <string_view>     // for string_view
 #include <vector>          // for vector
 
-namespace adapterremoval {
-
-namespace argparse {
+namespace adapterremoval::argparse {
 
 class argument;
 
@@ -28,7 +26,7 @@ class str_sink;
 class vec_sink;
 
 using argument_ptr = std::shared_ptr<argument>;
-using preprocess_ptr = void (*)(std::string&);
+using preprocess_func = std::function<void(std::string&)>;
 
 //! Parse results for command-line arguments
 enum class parse_result
@@ -93,7 +91,7 @@ public:
   /** Returns true if the option with the given key has been set. */
   [[nodiscard]] bool is_set(std::string_view key) const;
   /** Returns the value associated with the argument as a string. */
-  std::string value(std::string_view key) const;
+  [[nodiscard]] std::string value(std::string_view key) const;
 
   /** Add argument with metavar. By default this takes no values. */
   argument& add(std::string_view name, std::string_view metavar = {});
@@ -120,8 +118,10 @@ public:
   parser& operator=(parser&&) = delete;
 
 private:
+  /** Collect and validate all arguments */
   void update_argument_map();
 
+  /** Return matching argument or log lexiographically similar arguments */
   argument_ptr find_argument(std::string_view key);
 
   struct argument_entry
@@ -156,6 +156,9 @@ private:
 class argument
 {
 public:
+  static constexpr size_t parsing_failed = static_cast<size_t>(-1);
+  static constexpr size_t invalid_choice = static_cast<size_t>(-2);
+
   struct argument_key
   {
     std::string name;
@@ -166,46 +169,52 @@ public:
   ~argument() = default;
 
   /** Returns true if the consumer has consumed a value. */
-  bool is_set() const { return m_times_set; }
+  [[nodiscard]] bool is_set() const { return m_times_set; }
 
   /** Returns true if the argument is deprecated. */
-  bool is_deprecated() const { return m_deprecated; }
+  [[nodiscard]] bool is_deprecated() const { return m_deprecated; }
+
+  /** Returns true if the argument has been completely removed. */
+  [[nodiscard]] bool is_removed() const { return m_removed; }
 
   /** Returns true if the argument is hidden. */
-  bool is_hidden() const { return m_hidden; }
+  [[nodiscard]] bool is_hidden() const { return m_hidden; }
 
   /** Returns the canonical argument key. */
-  const std::string& key() const { return m_key_long; }
+  [[nodiscard]] const std::string& key() const { return m_key_long; }
 
   /** Returns the short argument key; may be an empty string. */
-  const std::string& short_key() const { return m_key_short; }
+  [[nodiscard]] const std::string& short_key() const { return m_key_short; }
 
   /** Returns long, short, and deprecated argument keys. */
-  string_vec keys() const;
+  [[nodiscard]] string_vec keys() const;
   /** Returns true if this key is a deprecated alias for this argument. */
-  bool is_deprecated_alias(std::string_view key) const;
+  [[nodiscard]] bool is_deprecated_alias(std::string_view key) const;
 
   /** Returns the meta-variable. May be an empty string. */
-  const std::string& metavar() const { return m_metavar; }
+  [[nodiscard]] const std::string& metavar() const { return m_metavar; }
 
   /** Returns help string with %default replaced with the default (if any). */
-  std::string help() const;
+  [[nodiscard]] std::string help() const;
 
   /** Indicates the minimum number of values taken by this argument */
-  size_t min_values() const;
+  [[nodiscard]] size_t min_values() const;
   /** Indicates the maximum number of values taken by this argument */
-  size_t max_values() const;
+  [[nodiscard]] size_t max_values() const;
 
   /** Options that MUST be specified along with this argument. */
-  const string_vec& depends_on() const { return m_depends_on; }
+  [[nodiscard]] const string_vec& depends_on() const { return m_depends_on; }
 
   /** Options that must NOT be specified along with this argument. */
-  const string_vec& conflicts_with() const { return m_conflicts_with; }
+  [[nodiscard]] const string_vec& conflicts_with() const
+  {
+    return m_conflicts_with;
+  }
 
   /** Returns the value associated with the argument as a string. */
-  std::string value() const;
+  [[nodiscard]] std::string value() const;
   /** Returns the default value associated as a string. */
-  std::string default_value() const;
+  [[nodiscard]] std::string default_value() const;
 
   /** Set the metavar for this argument. */
   argument& metavar(std::string_view metavar);
@@ -217,6 +226,8 @@ public:
   argument& deprecated_alias(std::string_view key);
   /** The argument is deprecated. Implies `hidden()` */
   argument& deprecated();
+  /** The argument is deprecated. Implies `hidden()` */
+  argument& removed();
   /** The argument will not be printed by -h/--help */
   argument& hidden();
 
@@ -246,6 +257,8 @@ private:
   bool m_default_sink{};
   //! Indicates if the argument is deprecated
   bool m_deprecated{};
+  //! Indicates if the argument has been removed
+  bool m_removed{};
   //! Deprecated keys (long and short) for this argument
   string_vec m_deprecated_keys{};
   //! Indicates if the argument is hidden
@@ -280,28 +293,28 @@ public:
   virtual ~sink() = default;
 
   /** Returns the current argument value as a string. **/
-  virtual std::string value() const = 0;
+  [[nodiscard]] virtual std::string value() const = 0;
   /** Returns string-representation of the default value */
-  virtual std::string default_value() const;
+  [[nodiscard]] virtual std::string default_value() const = 0;
 
   /** Indicates if the sink has been supplied with a default value. */
-  virtual bool has_default() const { return m_has_default; }
+  [[nodiscard]] virtual bool has_default() const { return m_has_default; }
 
   /** See argument::consume */
   virtual size_t consume(string_vec_citer start,
                          const string_vec_citer& end) = 0;
 
   /** Returns the list of valid choices, if any, formatted as strings */
-  virtual string_vec choices() const { return {}; };
+  [[nodiscard]] virtual string_vec choices() const { return {}; };
 
   /** Indicates the minimum number of values taken by this sink */
-  size_t min_values() const { return m_min_values; };
+  [[nodiscard]] size_t min_values() const { return m_min_values; };
 
   /** Indicates the maximum number of values taken by this sink */
-  size_t max_values() const { return m_max_values; };
+  [[nodiscard]] size_t max_values() const { return m_max_values; };
 
   /** Sets pre-processor function used before validating input  */
-  sink& with_preprocessor(preprocess_ptr func)
+  sink& with_preprocessor(preprocess_func func)
   {
     m_preprocess = func;
     return *this;
@@ -330,7 +343,7 @@ private:
   //! The maximum number of values taken by this sink
   size_t m_max_values{};
   //! Function used to pre-process the user supplied arguments
-  preprocess_ptr m_preprocess = nullptr;
+  preprocess_func m_preprocess{};
 };
 
 class bool_sink : public sink
@@ -341,6 +354,9 @@ public:
 
   std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
+
+  /** Not implemented */
+  [[nodiscard]] std::string default_value() const override;
 
   bool_sink(const bool_sink&) = delete;
   bool_sink(bool_sink&&) = delete;
@@ -360,14 +376,14 @@ public:
   ~u32_sink() override = default;
 
   u32_sink& with_default(uint32_t value);
-  std::string default_value() const override;
+  [[nodiscard]] std::string default_value() const override;
 
   /** Set minimum allowed value (inclusive) */
   u32_sink& with_minimum(uint32_t value);
   /** Set maximum allowed value (inclusive) */
   u32_sink& with_maximum(uint32_t value);
 
-  std::string value() const override;
+  [[nodiscard]] std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   u32_sink(const u32_sink&) = delete;
@@ -392,14 +408,14 @@ public:
   ~double_sink() override = default;
 
   double_sink& with_default(double value);
-  std::string default_value() const override;
+  [[nodiscard]] std::string default_value() const override;
 
   /** Set minimum allowed value (inclusive) */
   double_sink& with_minimum(double value);
   /** Set maximum allowed value (inclusive) */
   double_sink& with_maximum(double value);
 
-  std::string value() const override;
+  [[nodiscard]] std::string value() const override;
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   double_sink(const double_sink&) = delete;
@@ -425,14 +441,14 @@ public:
 
   str_sink& with_default(std::string_view value);
   str_sink& with_choices(const string_vec& choices);
-  std::string default_value() const override;
+  [[nodiscard]] std::string default_value() const override;
 
   /** Implicit argument if the user does not supply one */
   str_sink& with_implicit_argument(std::string_view value);
 
-  std::string value() const override;
+  [[nodiscard]] std::string value() const override;
 
-  string_vec choices() const override { return m_choices; }
+  [[nodiscard]] string_vec choices() const override { return m_choices; }
 
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
@@ -465,7 +481,12 @@ public:
   /** The maximum number of values expected on the command-line (default inf) */
   vec_sink& with_max_values(size_t n);
 
-  std::string value() const override;
+  /** Returns string representation of user-provided values */
+  [[nodiscard]] std::string value() const override;
+  /** Not implemented */
+  [[nodiscard]] std::string default_value() const override;
+
+  /** Consumes the provided values, using the specified pre-processor, if any */
   size_t consume(string_vec_citer start, const string_vec_citer& end) override;
 
   vec_sink(const vec_sink&) = delete;
@@ -481,6 +502,4 @@ private:
 std::ostream&
 operator<<(std::ostream& os, const parse_result& value);
 
-} // namespace argparse
-
-} // namespace adapterremoval
+} // namespace adapterremoval::argparse
