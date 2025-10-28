@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.7"
-# dependencies = [
-#     "fastjsonschema==2.21.1",
-# ]
-# [tool.uv]
-# exclude-newer = "2025-02-26T00:00:00Z"
-# ///
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 from __future__ import annotations

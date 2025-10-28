@@ -1,0 +1,12 @@
+[project]
+name = "AdapterRemoval"
+version = "3.0.0-alpha3"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = ["fastjsonschema==2.21.2"]
+
+[dependency-groups]
+dev = [
+    "typing-extensions>=4.7.1",
+]
