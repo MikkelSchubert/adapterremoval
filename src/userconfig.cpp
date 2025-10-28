@@ -1107,6 +1107,34 @@ userconfig::userconfig()
     .bind_str(nullptr)
     .with_choices({ "auto", "log", "spin", "never" })
     .with_default("auto");
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Removed options
+
+  argparser.add("--bzip2")
+    .help("BZip compression is no longer supported")
+    .removed();
+  argparser.add("--bzip2-level")
+    .help("BZip compression is no longer supported")
+    .removed();
+  argparser.add("--combined-output")
+    .help("Use the same filename with multiple '--out' options to combine "
+          "multiple output types in the same output file")
+    .removed();
+  argparser.add("--outputcollapsedtruncated")
+    .help("Truncated, merged reads are no longer handled separately from other "
+          "merged reads")
+    .removed();
+  argparser.add("--qualitybase-output")
+    .help("Output is now always written using Phred+33 encoding")
+    .removed();
+  argparser.add("--seed")
+    .help("All read processing is now deterministic. Use '--report-sample-rate "
+          "1.0' to make report generation deterministic")
+    .removed();
+  argparser.add("--settings")
+    .help("See --out-json or --out-html for machine and human readable reports")
+    .removed();
 }
 
 // Must be implemented out of line for unique ptrs

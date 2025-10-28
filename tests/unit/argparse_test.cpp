@@ -7,6 +7,7 @@
 #include "strutils.hpp" // for string_vec
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cstddef>      // for size_t
+#include <cstdint>      // for uint32_t
 #include <limits>       // for numeric_limits
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string, allocator
@@ -70,6 +71,15 @@ TEST_CASE("bool sink rejects values", "[argparse::bool_sink]")
   REQUIRE_THROWS_AS(sink.consume(values.begin(), values.end()), assert_failed);
 }
 
+TEST_CASE("bool does not support default values", "[argparse::bool_sink]")
+{
+  bool value = false;
+  argparse::bool_sink sink(&value);
+
+  REQUIRE_FALSE(sink.has_default());
+  REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // uint sink
 
@@ -100,9 +110,11 @@ TEST_CASE("uint sink with_default", "[argparse::u32_sink]")
   argparse::u32_sink sink(&value);
 
   REQUIRE_FALSE(sink.has_default());
+  REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
   sink.with_default(1234567);
 
   REQUIRE(sink.has_default());
+  REQUIRE(sink.default_value() == "1234567");
   REQUIRE(value == 1234567);
 }
 
@@ -329,8 +341,21 @@ TEST_CASE("double sink has_default", "[argparse::double_sink]")
   double value = 0;
   argparse::double_sink sink(&value);
   REQUIRE_FALSE(sink.has_default());
+  REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
   sink.with_default(12345.67);
   REQUIRE(sink.has_default());
+  REQUIRE(sink.default_value() == "12345.67");
+}
+
+TEST_CASE("double sink trims trailing zeroes in default value",
+          "[argparse::double_sink]")
+{
+  double value = 0;
+  argparse::double_sink sink(&value);
+
+  REQUIRE_FALSE(sink.has_default());
+  sink.with_default(1.0);
+  REQUIRE(sink.default_value() == "1");
 }
 
 TEST_CASE("double sink require value", "[argparse::double_sink]")
@@ -387,6 +412,44 @@ TEST_CASE("double requires valid double #2", "[argparse::double_sink]")
   REQUIRE(value == 0);
 }
 
+TEST_CASE("double with min/max value", "[argparse::double_sink]")
+{
+  double value = 0;
+  argparse::double_sink sink(&value);
+
+  string_vec values{ "0" };
+  REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+  REQUIRE(value == Approx(0));
+
+  SECTION("minimum")
+  {
+    sink.with_minimum(-5.0);
+
+    values = string_vec{ "-5.0" };
+    REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+    REQUIRE(value == Approx(-5.0));
+
+    values = string_vec{ "-5.1" };
+    REQUIRE_THROWS_MESSAGE(sink.consume(values.begin(), values.end()),
+                           std::invalid_argument,
+                           "value must be at least -5");
+  }
+
+  SECTION("maximum")
+  {
+    sink.with_maximum(5.0);
+
+    values = string_vec{ "5.0" };
+    REQUIRE(sink.consume(values.begin(), values.end()) == 1);
+    REQUIRE(value == Approx(5.0));
+
+    values = string_vec{ "5.1" };
+    REQUIRE_THROWS_MESSAGE(sink.consume(values.begin(), values.end()),
+                           std::invalid_argument,
+                           "value must be at most 5");
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // str sink
 
@@ -417,8 +480,11 @@ TEST_CASE("str sink with_default (char*)", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
+  REQUIRE(value == "");
+  REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
   sink.with_default("foobar");
   REQUIRE(value == "foobar");
+  REQUIRE(sink.default_value() == "foobar");
 }
 
 TEST_CASE("str sink has_default (char*)", "[argparse::str_sink]")
@@ -505,7 +571,7 @@ TEST_CASE("str sink accepts value in choices", "[argparse::str_sink]")
   argparse::str_sink sink(&value);
   sink.with_choices({ "abc", "def", "ghi" });
 
-  string_vec values{ "ghi" };
+  string_vec values{ GENERATE("ghi", "GHI") };
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
   REQUIRE(value == "ghi");
 }
@@ -556,6 +622,18 @@ TEST_CASE("str sink with implicit argument", "[argparse::str_sink]")
 
   REQUIRE(sink.consume(values.end(), values.end()) == 0);
   REQUIRE(value == "foo");
+}
+
+TEST_CASE("str with pre-processor returns modified value", "[argparse::parser]")
+{
+  std::string sink;
+  argparse::parser p;
+  auto& arg = p.add("--foo").bind_str(&sink).with_preprocessor(
+    [](std::string& value) { value = to_lower(value); });
+
+  REQUIRE(p.parse_args({ "exe", "--foo", "ABC" }) ==
+          argparse::parse_result::ok);
+  REQUIRE(arg.value() == "abc");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -663,6 +741,15 @@ TEST_CASE("vec sink with maximum n values", "[argparse::vec_sink]")
   REQUIRE(sink.max_values() == 2);
 }
 
+TEST_CASE("vec does not support default values", "[argparse::vec_sink]")
+{
+  string_vec value;
+  argparse::vec_sink sink(&value);
+
+  REQUIRE_FALSE(sink.has_default());
+  REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // argument
 
@@ -748,6 +835,45 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
                   "removed in the future.\n");
 }
 
+TEST_CASE("removed argument without help", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+
+  REQUIRE_FALSE(arg.is_removed());
+  REQUIRE_FALSE(arg.is_hidden());
+  arg.removed();
+  REQUIRE(arg.is_removed());
+  REQUIRE(arg.is_hidden());
+
+  log::log_capture ss;
+
+  string_vec values{ "--12345" };
+  REQUIRE(arg.parse(values.begin(), values.end()) ==
+          argparse::argument::parsing_failed);
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Option --12345 has been removed in AdapterRemoval v3. For more "
+    "information, see "
+    "https://adapterremoval.readthedocs.io/en/stable/migrating.html\n");
+}
+
+TEST_CASE("removed argument with help", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+  arg.help("additional help text").removed();
+
+  log::log_capture ss;
+
+  string_vec values{ "--12345" };
+  REQUIRE(arg.parse(values.begin(), values.end()) ==
+          argparse::argument::parsing_failed);
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Option --12345 has been removed in AdapterRemoval v3: additional "
+    "help text. For more information, see "
+    "https://adapterremoval.readthedocs.io/en/stable/migrating.html\n");
+}
+
 TEST_CASE("hidden argument", "[argparse::argument]")
 {
   argparse::argument arg("--12345");
@@ -805,6 +931,18 @@ TEST_CASE("argument requires", "[argparse::argument]")
   arg.depends_on("--zod");
 
   REQUIRE(arg.depends_on() == string_vec{ "--bar", "--zod" });
+}
+
+TEST_CASE("required option does not exist", "[argparse::parser]")
+{
+  log::log_capture ss;
+  argparse::parser p;
+  p.add("--foo").depends_on("--bar");
+
+  REQUIRE_THROWS_AS(p.parse_args({ "exe", "--foo" }), assert_failed);
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Option --foo requires unknown command-line option --bar\n");
 }
 
 TEST_CASE("argument conflicts with", "[argparse::argument]")
@@ -914,6 +1052,19 @@ TEST_CASE("bind vec", "[argparse::argument]")
   REQUIRE(arg.parse(values.begin(), values.end()) == 3);
   REQUIRE(arg.is_set());
   REQUIRE(sink == string_vec{ "abcdef", "7913" });
+}
+
+TEST_CASE("bind vec clears previous values", "[argparse::argument]")
+{
+  string_vec sink;
+  argparse::argument arg("--12345");
+  arg.bind_vec(&sink);
+
+  string_vec values_1{ "--12345", "abcdef", "7913" };
+  REQUIRE(arg.parse(values_1.begin(), values_1.end()) == 3);
+  string_vec values_2{ "--12345", "foo", "bar" };
+  REQUIRE(arg.parse(values_2.begin(), values_2.end()) == 3);
+  REQUIRE(sink == string_vec{ "foo", "bar" });
 }
 
 TEST_CASE("parse wrong argument asserts", "[argparse::argument]")
@@ -1292,6 +1443,18 @@ TEST_CASE("conflicting option supplied", "[argparse::parser]")
     "[ERROR] Option --bar cannot be used together with option --foo\n");
 }
 
+TEST_CASE("conflicting option does not exist", "[argparse::parser]")
+{
+  log::log_capture ss;
+  argparse::parser p;
+  p.add("--foo").conflicts_with("--bar");
+
+  REQUIRE_THROWS_AS(p.parse_args({ "exe", "--foo" }), assert_failed);
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Option --foo conflicts with unknown command-line option --bar\n");
+}
+
 TEST_CASE("missing value", "[argparse::parser]")
 {
   uint32_t sink = 0;
@@ -1303,6 +1466,74 @@ TEST_CASE("missing value", "[argparse::parser]")
   REQUIRE_POSTFIX(ss.str(),
                   "[ERROR] Command-line argument --foo takes 1 value, but 0 "
                   "values were provided!\n");
+}
+
+TEST_CASE("missing values, singular", "[argparse::parser]")
+{
+  string_vec sink;
+  log::log_capture ss;
+  argparse::parser p;
+  p.add("--foo").bind_vec(&sink).with_min_values(1).with_max_values(2);
+
+  REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::error);
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Command-line argument --foo takes at least 1 value, but 0 "
+    "values were provided!\n");
+}
+
+TEST_CASE("missing values, plural", "[argparse::parser]")
+{
+  string_vec sink;
+  log::log_capture ss;
+  argparse::parser p;
+  p.add("--foo").bind_vec(&sink).with_min_values(2).with_max_values(3);
+
+  REQUIRE(p.parse_args({ "exe", "--foo", "bar" }) ==
+          argparse::parse_result::error);
+  REQUIRE_POSTFIX(
+    ss.str(),
+    "[ERROR] Command-line argument --foo takes at least 2 values, but 1 "
+    "value was provided!\n");
+}
+
+TEST_CASE("excessive values, takes zero", "[argparse::parser]")
+{
+  log::log_capture ss;
+  argparse::parser p;
+  p.add("--foo");
+
+  SECTION("singular")
+  {
+    REQUIRE(p.parse_args({ "exe", "--foo", "foo" }) ==
+            argparse::parse_result::error);
+    REQUIRE_POSTFIX(ss.str(),
+                    "[ERROR] Command-line argument --foo takes 0 values, but 1 "
+                    "value was provided!\n");
+  }
+
+  SECTION("plural")
+  {
+    REQUIRE(p.parse_args({ "exe", "--foo", "foo", "bar" }) ==
+            argparse::parse_result::error);
+    REQUIRE_POSTFIX(ss.str(),
+                    "[ERROR] Command-line argument --foo takes 0 values, but 2 "
+                    "values were provided!\n");
+  }
+}
+
+TEST_CASE("excessive values, takes non-zero", "[argparse::parser]")
+{
+  string_vec vec;
+  log::log_capture ss;
+  argparse::parser p;
+  p.add("--foo").bind_vec(&vec).with_max_values(2);
+
+  REQUIRE(p.parse_args({ "exe", "--foo", "foo", "bar", "zod" }) ==
+          argparse::parse_result::error);
+  REQUIRE_POSTFIX(ss.str(),
+                  "[ERROR] Command-line argument --foo takes at most 2 values, "
+                  "but 3 values were provided!\n");
 }
 
 TEST_CASE("invalid value", "[argparse::parser]")
@@ -1317,6 +1548,20 @@ TEST_CASE("invalid value", "[argparse::parser]")
   REQUIRE_POSTFIX(ss.str(),
                   "[ERROR] Invalid command-line argument --foo one: value is "
                   "not a valid number\n");
+}
+
+TEST_CASE("invalid choice", "[argparse::parser]")
+{
+  std::string sink;
+  log::log_capture cap;
+  argparse::parser p;
+  p.add("--foo").bind_str(&sink).with_choices({ "abc", "def", "ghi" });
+
+  REQUIRE(p.parse_args({ "exe", "--foo", "one" }) ==
+          argparse::parse_result::error);
+  REQUIRE_POSTFIX(cap.str(),
+                  "[ERROR] Invalid command-line argument --foo one: Valid "
+                  "values for --foo are abc, def, and ghi\n");
 }
 
 TEST_CASE("help with finite max number of values", "[argparse::parser]")

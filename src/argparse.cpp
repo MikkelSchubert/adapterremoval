@@ -16,14 +16,9 @@
 #include <string_view>  // for string_view
 #include <utility>      // for pair
 
-namespace adapterremoval {
-
-namespace argparse {
+namespace adapterremoval::argparse {
 
 namespace {
-
-const size_t parsing_failed = static_cast<size_t>(-1);
-const size_t invalid_choice = static_cast<size_t>(-2);
 
 /** Detect similar arguments based on prefixes or max edit distance. */
 bool
@@ -91,12 +86,14 @@ parser::parse_args(const string_vec& args)
     if (argument) {
       const size_t consumed = argument->parse(it, args.end());
 
-      if (consumed == parsing_failed) {
-        return parse_result::error;
+      switch (consumed) {
+        case argument::parsing_failed:
+        case argument::invalid_choice:
+          return parse_result::error;
+        default:
+          it += static_cast<string_vec::iterator::difference_type>(consumed);
+          AR_REQUIRE(it <= args.end());
       }
-
-      it += static_cast<string_vec::iterator::difference_type>(consumed);
-      AR_REQUIRE(it <= args.end());
     } else {
       return parse_result::error;
     }
@@ -326,7 +323,7 @@ parser::update_argument_map()
       for (const auto& key : it.argument->conflicts_with()) {
         if (!m_keys.count(key)) {
           any_errors = true;
-          log::error() << it.argument->key() << " conflicts with "
+          log::error() << "Option " << it.argument->key() << " conflicts with "
                        << "unknown command-line option " << key;
         }
       }
@@ -334,7 +331,7 @@ parser::update_argument_map()
       for (const auto& key : it.argument->depends_on()) {
         if (!m_keys.count(key)) {
           any_errors = true;
-          log::error() << it.argument->key() << " requires "
+          log::error() << "Option " << it.argument->key() << " requires "
                        << "unknown command-line option " << key;
         }
       }
@@ -354,7 +351,7 @@ parser::find_argument(std::string_view key)
 
   if (key.size() > 1 && key.front() == '-' && key.back() != '-') {
     string_vec candidates;
-    const size_t max_distance = 1 + key.size() / 4;
+    const size_t max_distance = 1 + (key.size() / 4);
 
     for (const auto& arg : m_args) {
       if (arg.argument) {
@@ -459,6 +456,8 @@ argument::default_value() const
   return m_sink->default_value();
 }
 
+namespace {
+
 template<typename A, typename B>
 A&
 bind(std::unique_ptr<sink>& ptr, B* sink)
@@ -467,6 +466,8 @@ bind(std::unique_ptr<sink>& ptr, B* sink)
 
   return static_cast<A&>(*ptr);
 }
+
+} // namespace
 
 bool_sink&
 argument::bind_bool(bool* ptr)
@@ -523,6 +524,14 @@ argument&
 argument::deprecated()
 {
   m_deprecated = true;
+
+  return hidden();
+}
+
+argument&
+argument::removed()
+{
+  m_removed = true;
 
   return hidden();
 }
@@ -588,7 +597,19 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
   AR_REQUIRE(deprecated_alias || *start == m_key_long ||
              (!m_key_short.empty() && *start == m_key_short));
 
-  if (m_deprecated) {
+  if (m_removed) {
+    auto err = log::error();
+    err << "Option " << *start << " has been removed in AdapterRemoval v3";
+
+    if (!m_help.empty()) {
+      err << ": " << m_help;
+    }
+
+    err << ". For more information, see "
+           "https://adapterremoval.readthedocs.io/en/stable/migrating.html";
+
+    return parsing_failed;
+  } else if (m_deprecated) {
     log::warn() << "Option " << *start << " is deprecated and will "
                 << "be removed in the future.";
   } else if (deprecated_alias) {
@@ -642,7 +663,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
     error_message = error.what();
   }
 
-  if (result == parsing_failed) {
+  if (result == parsing_failed || result == invalid_choice) {
     auto error = log::error();
 
     error << "Invalid command-line argument " << *start;
@@ -650,21 +671,14 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
       error << " " << shell_escape(*it);
     }
 
-    if (!error_message.empty()) {
+    if (result == invalid_choice) {
+      error << ": Valid values for " << *start << " are "
+            << join_text(m_sink->choices(), ", ", ", and ");
+    } else if (!error_message.empty()) {
       error << ": " << error_message;
     }
 
     return result;
-  } else if (result == invalid_choice) {
-    auto error = log::error();
-
-    error << "Invalid command-line argument " << *start;
-    for (auto it = start + 1; it != end_of_values; ++it) {
-      error << " " << shell_escape(*it);
-    }
-
-    error << ". Valid values for " << *start << " are "
-          << join_text(m_sink->choices(), ", ", ", and ");
   }
 
   m_times_set++;
@@ -693,12 +707,6 @@ sink::sink(size_t min_values, size_t max_values)
 }
 
 std::string
-sink::default_value() const
-{
-  AR_FAIL("sink::default_value not implemented");
-}
-
-std::string
 sink::preprocess(std::string value) const
 {
   if (m_preprocess) {
@@ -722,6 +730,12 @@ std::string
 bool_sink::value() const
 {
   return *m_sink ? "on" : "off";
+}
+
+std::string
+bool_sink::default_value() const
+{
+  AR_FAIL("not implemented");
 }
 
 size_t
@@ -970,7 +984,7 @@ str_sink::consume(string_vec_citer start, const string_vec_citer& end)
       }
     }
 
-    return invalid_choice;
+    return argument::invalid_choice;
   }
 }
 
@@ -1006,6 +1020,8 @@ vec_sink::consume(string_vec_citer start, const string_vec_citer& end)
 {
   AR_REQUIRE(static_cast<size_t>(end - start) >= min_values());
   AR_REQUIRE(static_cast<size_t>(end - start) <= max_values());
+
+  m_sink->clear();
   for (auto it = start; it != end; ++it) {
     m_sink->emplace_back(preprocess(*it));
   }
@@ -1029,6 +1045,12 @@ vec_sink::value() const
   return output;
 }
 
+std::string
+vec_sink::default_value() const
+{
+  AR_FAIL("not implemented");
+}
+
 std::ostream&
 operator<<(std::ostream& os, const parse_result& value)
 {
@@ -1044,6 +1066,4 @@ operator<<(std::ostream& os, const parse_result& value)
   }
 }
 
-} // namespace argparse
-
-} // namespace adapterremoval
+} // namespace adapterremoval::argparse
