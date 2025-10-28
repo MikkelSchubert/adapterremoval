@@ -17,18 +17,23 @@ namespace adapterremoval {
 
 namespace {
 
-std::vector<double>
+//! Convert Phred scores to int64_t by scaling them by this number
+constexpr int64_t PHRED_SCALE = int64_t(2) << 48;
+//! Number of possible Phred scores
+constexpr size_t PHRED_SCORE_COUNT = PHRED_SCORE_MAX - PHRED_SCORE_MIN + 1;
+
+std::array<size_t, PHRED_SCORE_COUNT>
 init_phred_to_p_values()
 {
-  std::vector<double> result;
-  for (size_t i = PHRED_SCORE_MIN; i <= PHRED_SCORE_MAX; ++i) {
-    result.push_back(fastq_encoding::phred_to_p(i));
+  std::array<size_t, PHRED_SCORE_COUNT> result{};
+  for (size_t i = 0; i < result.size(); ++i) {
+    result.at(i) = fastq_encoding::phred_to_p(i) * PHRED_SCALE;
   }
 
   return result;
 }
 
-const std::vector<double> g_phred_to_p = init_phred_to_p_values();
+const auto g_phred_to_p = init_phred_to_p_values();
 
 enum class read_mate
 {
@@ -421,13 +426,14 @@ fastq::ntrimmed
 fastq::mott_trimming(const double error_limit, const bool preserve5p)
 {
   AR_REQUIRE(error_limit >= 0 && error_limit <= 1);
+  const int64_t error_limit_i = error_limit * PHRED_SCALE;
 
   size_t left_inclusive_temp = 0;
   size_t left_inclusive = 0;
   size_t right_exclusive = 0;
 
-  double error_sum = 0.0;
-  double error_sum_max = 0.0;
+  int64_t error_sum = 0;
+  int64_t error_sum_max = 0;
 
   for (size_t i = 0; i < length(); i++) {
     char phred = m_qualities.at(i) - PHRED_OFFSET_MIN;
@@ -439,9 +445,9 @@ fastq::mott_trimming(const double error_limit, const bool preserve5p)
       phred = 3;
     }
 
-    error_sum += error_limit - g_phred_to_p.at(phred);
+    error_sum += error_limit_i - g_phred_to_p.at(phred);
 
-    if (error_sum < 0.0) {
+    if (error_sum < 0) {
       // End of current segment (if any)
       left_inclusive_temp = i + 1;
       error_sum = 0;
