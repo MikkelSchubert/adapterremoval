@@ -59,7 +59,7 @@ executables: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" adapterremoval3 unit_tests
 
 clean:
-	rm -rf "${BUILDDIR}"
+	rm -rf "${BUILDDIR}" ".venv"
 
 clean-coverage:
 	test ! -d "${BUILDDIR}" || find "${BUILDDIR}" -name '*.gcda' -delete
