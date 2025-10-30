@@ -22,7 +22,7 @@ namespace adapterremoval {
 
 namespace {
 
-//! The program version with the leading 'v' removed; e.g. "3.0.1"
+//! The program version with the leading 'v' removed
 const std::string VERSION_NO_V{ VERSION.substr(1) };
 
 constexpr std::string_view EXTREMELY_LONG_NAME =
