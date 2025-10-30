@@ -159,7 +159,7 @@ if container_runner.found()
             'DESTDIR=/host/out/static/install',
             'DEBUG=@0@'.format(get_option('debug')),
             'COVERAGE=@0@'.format(get_option('b_coverage')),
-            # Compilation with sanitize flags fails with alpine 3.20.1, but support is
+            # Compilation with sanitize flags fails with alpine, but support is
             # left in to avoid giving the false impression that they were enabled
             'SANITIZE=@0@'.format(get_option('b_sanitize') != 'none'),
             'HARDEN=@0@'.format(get_option('harden')),

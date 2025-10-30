@@ -26,3 +26,11 @@ repos:
     rev: 63c8f8312b7559622c0d82815639671ae42132ac # v2.4.1
     hooks:
       - id: codespell
+  # Check that all version numbers correspond to that in src/main.hpp
+  - repo: local
+    hooks:
+      - id: version-check
+        name: version-check
+        entry: ./scripts/version_check.py
+        language: python
+        types: ["text"]
