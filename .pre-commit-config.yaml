@@ -2,16 +2,20 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b # v5.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-toml
       - id: check-yaml
         args: [--allow-multiple-documents]
       # Should maybe be added, but causes some amount of churn
       # - id: end-of-file-fixer
       - id: no-commit-to-branch
         args: [--branch, main, --branch, 2.3.x]
+      - id: trailing-whitespace
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: a8c7c3ac16eabd3b958952ea0d6bf1dceeab6411 # v19.1.2
     hooks:
