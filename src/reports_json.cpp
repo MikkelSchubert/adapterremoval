@@ -551,7 +551,11 @@ write_report_analyses(const userconfig& config,
     auto dict = json->dict("duplication");
 
     write_report_duplication(dict, "read1", stats.duplication_1);
-    write_report_duplication(dict, "read2", stats.duplication_2);
+    if (config.paired_ended_mode) {
+      write_report_duplication(dict, "read2", stats.duplication_2);
+    } else {
+      dict->null("read2");
+    }
   } else {
     json->null("duplication");
   }
