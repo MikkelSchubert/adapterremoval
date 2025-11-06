@@ -21,6 +21,7 @@
 #include <algorithm>            // for find, max, min
 #include <array>                // for array
 #include <cerrno>               // for errno
+#include <cmath>                // for round
 #include <cstdlib>              // for getenv
 #include <cstring>              // for size_t, strerror, strcmp
 #include <exception>            // for exception
@@ -769,13 +770,10 @@ userconfig::userconfig()
     .with_default(1)
     .with_minimum(1);
   argparser.add("--mismatch-rate", "X")
-    .help("Max error-rate when aligning reads and/or adapters. If > 1, the max "
-          "error-rate is set to 1 / X; if < 0, the defaults are used, "
-          "otherwise the user-supplied value is used directly [default: 1/6 "
-          "for trimming; 1/10 when identifying adapters]")
+    .help("Max error-rate allowed when aligning reads and/or adapters")
     .deprecated_alias("--mm")
     .bind_double(&mismatch_threshold)
-    .with_default(-1.0);
+    .with_default(0.1667);
   argparser.add("--shift", "N")
     .help("Consider alignments where up to N nucleotides are missing from the "
           "5' termini")
@@ -1310,14 +1308,17 @@ userconfig::parse_args(const string_vec& argvec)
 
   // Set mismatch threshold
   if (mismatch_threshold > 1) {
+    log::warn()
+      << "--mismatch-rate with values > 1 are deprecated; please use a value "
+         "in the range 0 to 0.5, e.g. '--mismatch-rate "
+      << std::round(1000.0 / mismatch_threshold) / 1000.0
+      << "'. This will be an error in the future.";
+
     mismatch_threshold = 1.0 / mismatch_threshold;
-  } else if (mismatch_threshold < 0) {
-    if (run_type == ar_command::report_only) {
-      mismatch_threshold = 1.0 / 10.0;
-    } else {
-      // Defaults for PE / SE trimming (changed in v3)
-      mismatch_threshold = 1.0 / 6.0;
-    }
+  } else if (mismatch_threshold > 0.5) {
+    log::warn() << "A --mismatch-rate value greater than 0.5 and less than or "
+                   "equal to 1.0 has no effect; this will be an error in the "
+                   "future.";
   }
 
   {

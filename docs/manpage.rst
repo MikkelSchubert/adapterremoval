@@ -173,7 +173,8 @@ FASTQ processing options
 
 .. option:: --mismatch-rate rate
 
-    The allowed fraction of mismatches allowed in the aligned region. If the value is less than 1, then the value is used directly. If ``--mismatch-rate`` is greater than 1, the rate is set to 1 / ``rate``. The default setting is 6 when trimming adapters, corresponding to a maximum mismatch rate of 1/6, and 10 when using ``--identify-adapters``.
+    Max error-rate allowed when aligning reads and/or adapters. The default
+    value of 0.1667 corresponds to approximately 1 error every 6 bases.
 
 .. option:: --shift n
 
