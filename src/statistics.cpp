@@ -66,13 +66,19 @@ public:
   void add(const std::string& key)
   {
     m_counted++;
-    m_counted_at_max++;
 
     const auto unique_seqs = m_counts.size();
     if (unique_seqs >= m_max_unique_sequences) {
       auto it = m_counts.find(key);
       if (it != m_counts.end()) {
         it->second++;
+      } else if (!m_counted_at_max_set) {
+        // Small difference from FastQC: Continue counting until the max unique
+        // sequence count is exceeded, rather than until the max unique sequence
+        // count is reached. For unique counts close to the max, this should
+        // give slightly more accurate results
+        m_counted_at_max_set = true;
+        m_counted_at_max = m_counted;
       }
     } else {
       m_counts[key]++;
@@ -81,7 +87,10 @@ public:
 
   [[nodiscard]] auto counted() const { return m_counted; }
 
-  [[nodiscard]] auto counted_at_max() const { return m_counted_at_max; }
+  [[nodiscard]] auto counted_at_max() const
+  {
+    return m_counted_at_max_set ? m_counted_at_max : m_counted;
+  }
 
   [[nodiscard]] auto begin() const { return m_counts.begin(); }
 
@@ -92,8 +101,11 @@ private:
   size_t m_max_unique_sequences{};
   /** Total number of sequences counted */
   size_t m_counted{};
-  /** Number of sequences counted after max unique sequences recorded */
+  /** Sequences counted before max number of unique sequences was exceeded */
   size_t m_counted_at_max{};
+  /** If m_counted_at_max has been set, when capacity is first exceeded */
+  bool m_counted_at_max_set = false;
+
   /** Map of truncated sequences to sequence counts. */
   map m_counts{};
 };
