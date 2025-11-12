@@ -203,9 +203,6 @@ public:
   //! Sink for benchmark
   string_vec benchmarks{};
 
-  //! Timestamp from start of execution
-  static std::string start_time;
-
   /* Helper functions for logging / reporting */
   bool is_adapter_trimming_enabled() const;
   bool is_demultiplexing_enabled() const;

@@ -17,6 +17,7 @@
 #include "sequence_sets.hpp"         // for adapter_set
 #include "statistics.hpp"            // for fastq_stats_ptr, fastq_statistics
 #include "strutils.hpp"              // for format_percentage, format_rough...
+#include "timeutils.hpp"             // for format_time, start_time
 #include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
 #include <algorithm>                 // for max
 #include <cctype>                    // for toupper
@@ -318,7 +319,7 @@ write_html_summary_section(const userconfig& config,
   // Basic information about the executable / call
   {
     html_summary()
-      .set_date_and_time(userconfig::start_time)
+      .set_date_and_time(format_time(start_time(), "%F %T %Z"))
       .set_version(VERSION)
       .set_command(shell_escape_command(config.args))
       .set_runtime(runtime_to_str(config.runtime()))

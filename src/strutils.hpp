@@ -20,13 +20,6 @@ const size_t DEFAULT_INDENTATION = 4;
 size_t
 levenshtein(std::string_view s, std::string_view t);
 
-/**
- * Returns a timestamp in the specified format, see
- * https://en.cppreference.com/w/cpp/io/manip/put_time
- */
-std::string
-timestamp(const char* format, bool milliseconds = false);
-
 /** Returns true if character is a simple letter */
 constexpr bool
 is_ascii_letter(const char c)
