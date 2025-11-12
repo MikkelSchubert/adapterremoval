@@ -25,6 +25,7 @@
 #include <cstring>              // for size_t, strerror, strcmp
 #include <exception>            // for exception
 #include <filesystem>           // for weakly_canonical
+#include <iostream>             // for cout
 #include <limits>               // for numeric_limits
 #include <memory>               // for unique_ptr, make_unique
 #include <stdexcept>            // for invalid_argument
@@ -748,6 +749,13 @@ userconfig::userconfig()
     .with_choices({ "unknown", "none", "abort" })
     .with_default("unknown");
 
+  argparser.add("--adapter-database", "FORMAT")
+    .help("Output TSV table/JSON file of adapters used for automatic adapter "
+          "selection. If adapter 2 is omitted, the same value is used for both "
+          "adapter 1 and adapter 2")
+    .bind_str(nullptr)
+    .with_choices({ "tsv", "json" });
+
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("PROCESSING:");
 
@@ -1157,6 +1165,20 @@ userconfig::parse_args(const string_vec& argvec)
   const argparse::parse_result result = argparser.parse_args(args);
   if (result != argparse::parse_result::ok) {
     return result;
+  } else if (argparser.is_set("--adapter-database")) {
+    const auto format_name = argparser.value("--adapter-database");
+    adapter_database::export_fmt format;
+    if (format_name == "tsv") {
+      format = adapter_database::export_fmt::tsv;
+    } else if (format_name == "json") {
+      format = adapter_database::export_fmt::json;
+    } else {
+      AR_FAIL("invalid --adapter-database argument");
+    }
+
+    std::cout << adapter_database::export_known(format) << std::endl;
+
+    return argparse::parse_result::exit;
   }
 
   configure_log_colors(log_color);

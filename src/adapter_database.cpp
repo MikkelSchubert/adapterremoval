@@ -4,6 +4,7 @@
 #include "alignment.hpp"        // for simple_alignment
 #include "commontypes.hpp"      // for read_mate
 #include "debug.hpp"            // for AR_FAIL, AR_REQUIRE
+#include "json.hpp"             // for json
 #include "sequence.hpp"         // for dna_sequence
 #include "sequence_sets.hpp"    // for adapter_set
 #include "strutils.hpp"         // for log_escape
@@ -429,6 +430,59 @@ adapter_database::identify_exact(const dna_sequence& seq_1,
 
   // This function is intended to be used to pick among known sequences
   AR_FAIL("attempted to look up unknown adapter sequences");
+}
+
+std::string
+adapter_database::export_known(export_fmt format)
+{
+  auto to_vec = [&](const sequence_vec& seqs) {
+    string_vec sequences;
+    for (const auto& seq : seqs) {
+      sequences.emplace_back(seq.as_string());
+    }
+
+    return sequences;
+  };
+
+  auto adapters = ADAPTER_DATABASE;
+  std::sort(adapters.begin(), adapters.end(), [](const auto& a, const auto& b) {
+    return a.source() < b.source();
+  });
+
+  if (format == export_fmt::tsv) {
+    std::ostringstream os;
+
+    os << "Name\tAdapter1\tAdapter2";
+    for (const auto& it : adapters) {
+      os << "\n"
+         << it.source() << "\t" << join_text(to_vec(it.adapter_1()), ",");
+
+      if (it.has_adapter_2()) {
+        os << "\t" << join_text(to_vec(it.adapter_2()), ",");
+      } else {
+        os << "\t.";
+      }
+    }
+
+    return os.str();
+  } else if (format == export_fmt::json) {
+    json_list values;
+    for (const auto& it : adapters) {
+      auto entry = values.dict();
+      entry->str("name", it.source());
+      entry->str_vec("adapter1", to_vec(it.adapter_1()));
+
+      if (it.has_adapter_2()) {
+        entry->str_vec("adapter2", to_vec(it.adapter_2()));
+      } else {
+        entry->null("adapter2");
+      }
+    }
+
+    return values.to_string();
+  } else {
+    AR_FAIL("invalid dump_format");
+  }
 }
 
 std::ostream&
