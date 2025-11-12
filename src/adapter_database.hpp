@@ -16,24 +16,18 @@ namespace adapterremoval {
 class known_adapters
 {
 public:
-  known_adapters(std::string source,
+  known_adapters(std::string name,
                  dna_sequence adapter_1,
                  dna_sequence adapter_2 = {},
                  bool user_provided = false);
 
-  known_adapters(std::vector<std::string> sources,
+  known_adapters(std::string name,
                  std::initializer_list<std::string_view> adapter_1,
                  std::initializer_list<std::string_view> adapter_2 = {},
                  bool user_provided = false);
 
   /** Returns the canonnical company / technology for these sequences */
-  [[nodiscard]] const std::string& source() const { return m_sources.front(); }
-
-  /** Returns sources using the following adapter trimming sequences  */
-  [[nodiscard]] const std::vector<std::string>& sources() const
-  {
-    return m_sources;
-  }
+  [[nodiscard]] const std::string& name() const { return m_name; }
 
   /** Adapter sequences used to trim mate 1 reads */
   [[nodiscard]] const sequence_vec& adapter_1() const { return m_adapter_1; }
@@ -51,7 +45,7 @@ public:
 
 private:
   //! The name of sequencing companies / technologies that use these adapters
-  std::vector<std::string> m_sources;
+  std::string m_name;
   //! Adapter 1 sequences
   sequence_vec m_adapter_1;
   //! Optional adapter 2 sequences; if unspecified, adapter 1 sequences are used
@@ -63,8 +57,8 @@ private:
 /** A lookup match, either exact or closest. May be empty for no match */
 struct identified_adapter
 {
-  //! The canonical source of the adapter sequence
-  std::string source{};
+  //! The canonical name of the adapter sequence
+  std::string name{};
   //! The published adapter sequence matching the detected adapter sequence
   dna_sequence sequence{};
   //! Is this adapter expected to be found in mate 1 or mate 2 reads?

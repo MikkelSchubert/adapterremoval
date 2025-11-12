@@ -24,81 +24,48 @@ const std::array ADAPTER_DATABASE = {
   // https://knowledge.illumina.com/library-preparation/general/library-preparation-general-reference_material-list/000001314
   // https://web.archive.org/web/20240819030322/https://knowledge.illumina.com/library-preparation/general/library-preparation-general-reference_material-list/000001314
   known_adapters{
-    {
-      "Illumina TruSeq",
-      "Illumina TruSeq DNA and RNA CD",
-      "Illumina TruSeq DNA and RNA UD",
-      "Illumina TruSeq DNA HT",
-      "Illumina TruSeq DNA LT",
-      "Illumina TruSeq single index",
-      "Illumina TruSight Oncology 500",
-      "Illumina TruSight Oncology ctDNA",
-      "Illumina TruSight RNA Pan-Cancer Panel",
-      "Illumina TruSight Tumor 170",
-    },
+    "Illumina TruSeq",
     { "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA" },
     { "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT" },
   },
   // https://support-docs.illumina.com/SHARE/AdapterSequences/Content/SHARE/FrontPages/AdapterSeq.htm
   // https://web.archive.org/web/20250920194612/https://support-docs.illumina.com/SHARE/AdapterSequences/1000000002694_21_illumina_adapter_sequences.pdf
   known_adapters{
-    {
-      "Illumina AmpliSeq",
-      "Illumina DNA Prep (M) Tagmentation",
-      "Illumina DNA Prep with Enrichment (S) Tagmentation",
-      "Illumina RNA Prep with Enrichment, Ligation",
-      "Illumina Stranded mRNA Prep, Ligation",
-      "Illumina Stranded Total RNA Prep, Ligation with Ribo-Zero Plus",
-      "Illumina Nextera DNA Flex",
-      "Illumina Nextera DNA",
-      "Illumina Nextera Enrichment",
-      "Illumina Nextera Flex for Enrichment",
-      "Illumina Nextera Rapid Capture Enrichment",
-      "Illumina Nextera XT",
-      "Illumina TruSight Enrichment",
-      "Illumina TruSight HLA",
-      "Illumina TruSight Rapid Capture Enrichment",
-    },
+    "Illumina AmpliSeq",
     { "CTGTCTCTTATACACATCT" },
   },
   known_adapters{
-    { "Illumina DNA PCR-Free Prep, Tagmentation" },
+    "Illumina DNA PCR-Free Prep, Tagmentation",
     {
       "CTGTCTCTTATACACATCT",
       "ATGTGTATAAGAGACA",
     },
   },
   known_adapters{
-    {
-      "Illumina ScriptSeq",
-      "Illumina TruSeq DNA Methylation",
-    },
+    "Illumina ScriptSeq",
     { "AGATCGGAAGAGCACACGTCTGAAC" },
     { "AGATCGGAAGAGCGTCGTGTAGGGA" },
   },
   known_adapters{
-    { "Illumina TruSeq Small RNA" },
+    "Illumina TruSeq Small RNA",
     { "TGGAATTCTCGGGTGCCAAGG" },
   },
   // Example data = PRJEB8559 / ERR760535
   known_adapters{
-    { "Illumina Nextera Mate Pair" },
+    "Illumina Nextera Mate Pair",
     {
       "CTGTCTCTTATACACATCT",
       "AGATGTGTATAAGAGACAG",
     },
   },
   known_adapters{
-    {
-      "Illumina Stranded mRNA",
-      "Illumina Stranded Total RNA",
-    },
+    "Illumina Stranded mRNA",
     {
       "ACTGTCTCTTATACACATCT",
     },
   },
   known_adapters{
-    { "Illumina TruSeq Ribo Profile" },
+    "Illumina TruSeq Ribo Profile",
     {
       "AGATCGGAAGAGCACACGTCT",
     },
@@ -106,18 +73,14 @@ const std::array ADAPTER_DATABASE = {
   // Sourced from
   // https://support.illumina.com/content/dam/illumina-support/documents/documentation/system_documentation/miseq/miseq-sample-sheet-quick-ref-guide-15028392-j.pdf
   known_adapters{
-    { "Illumina MiSeq" },
+    "Illumina MiSeq",
     { "TGGAATTCTCGGGTGCCAAGGC" },
   },
   // Sourced from
   // https://en.mgitech.cn/Download/download_file/id/71
   // https://web.archive.org/web/20240528231846/https://en.mgitech.cn/Download/download_file/id/71
   known_adapters{
-    {
-      "MGI Tech BGISEQ",
-      "MGI Tech DNBSEQ",
-      "MGI Tech MGISEQ",
-    },
+    "MGI Tech DNBSEQ",
     { "AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA" },
     { "AAGTCGGATCGTAGCCATGTCGTTCTGTGAGCCAAGGAGTTG" },
   },
@@ -126,31 +89,31 @@ const std::array ADAPTER_DATABASE = {
   // https://web.archive.org/web/20240908090002/https://www.qiagen.com/us/resources/faq?id=f12b85b4-df4f-43b5-9e82-a4fd0ddbdcc0
   // Example data = SRR8557389
   known_adapters{
-    { "QIAGEN QIAseq miRNA" },
+    "QIAGEN QIAseq miRNA",
     { "AACTGTAGGCACCATCAAT" },
   },
   // Example data = PRJNA162397 / SRR491337
   known_adapters{
-    { "Life Technologies SOLiD small RNA" },
+    "Life Technologies SOLiD small RNA",
     { "CGCCTTGGCCGTACAGCAG" },
   },
   // Sourced from
   // https://www.mdpi.com/2311-553X/5/4/49
   known_adapters{
-    { "Diagenode CATS small RNA-seq Kit" },
+    "Diagenode CATS small RNA-seq Kit",
     { "GATCGGAAGAGCACACGTCTG" },
   },
   // Sourced from
   // https://faqs.lexogen.com/faq/what-is-the-adapter-sequence-i-need-to-use-for-t-2
   // https://web.archive.org/web/20250719105852/https://faqs.lexogen.com/faq/what-is-the-adapter-sequence-i-need-to-use-for-t-2
   known_adapters{
-    { "Lexogen Small RNA-Seq" },
+    "Lexogen Small RNA-Seq",
     { "TGGAATTCTCGGGTGCCAAGGAACTCCAGTCAC" },
   }
 #ifdef TAKARA_SMARTER
   // Not included due to high probability of false positives
   known_adapters{
-    { "Takara SMARTer smRNA-Seq" },
+    "Takara SMARTer smRNA-Seq",
     { "AAAAAAAAAA" },
   },
 #endif
@@ -164,16 +127,16 @@ const std::array FALSE_AND_TRUE{ false, true };
 ////////////////////////////////////////////////////////////////////////////////
 // known_adapters
 
-known_adapters::known_adapters(std::string sources,
+known_adapters::known_adapters(std::string name,
                                dna_sequence adapter_1,
                                dna_sequence adapter_2,
                                bool user_provided)
-  : m_sources({ std::move(sources) })
+  : m_name(std::move(name))
   , m_adapter_1()
   , m_adapter_2()
   , m_user_provided(user_provided)
 {
-  AR_REQUIRE(!m_sources.empty() && !m_sources.front().empty());
+  AR_REQUIRE(!m_name.empty());
   AR_REQUIRE(!adapter_1.empty());
   m_adapter_1.emplace_back(std::move(adapter_1));
 
@@ -183,23 +146,22 @@ known_adapters::known_adapters(std::string sources,
 }
 
 known_adapters::known_adapters(
-  std::vector<std::string> sources,
+  std::string name,
   std::initializer_list<std::string_view> adapter_1,
   std::initializer_list<std::string_view> adapter_2,
   bool user_provided)
-  : m_sources(std::move(sources))
+  : m_name(std::move(name))
   , m_adapter_1(adapter_1.begin(), adapter_1.end())
   , m_adapter_2(adapter_2.begin(), adapter_2.end())
   , m_user_provided(user_provided)
 {
-  AR_REQUIRE(m_sources.size());
+  AR_REQUIRE(!m_name.empty());
 
   // read 1 adapters are required, but read 2 adapters may be missing / implicit
   AR_REQUIRE(!m_adapter_1.empty());
 
   // if any source or sequence is empty, then I probably made a mistake
   const auto empty = [](const std::string_view& it) { return it.empty(); };
-  AR_REQUIRE(std::none_of(m_sources.begin(), m_sources.end(), empty));
   AR_REQUIRE(std::none_of(adapter_1.begin(), adapter_1.end(), empty));
   AR_REQUIRE(std::none_of(adapter_2.begin(), adapter_2.end(), empty));
 }
@@ -210,14 +172,14 @@ known_adapters::known_adapters(
 bool
 identified_adapter::operator==(const identified_adapter& other) const noexcept
 {
-  return (this->source == other.source) && (this->sequence == other.sequence) &&
+  return (this->name == other.name) && (this->sequence == other.sequence) &&
          (this->mate == other.mate);
 }
 
 std::ostream&
 operator<<(std::ostream& os, const identified_adapter& match)
 {
-  return os << "identified_adapter{source=" << log_escape(match.source)
+  return os << "identified_adapter{source=" << log_escape(match.name)
             << ", sequence=" << match.sequence << ", mate=" << match.mate
             << "}";
 }
@@ -296,8 +258,8 @@ exact_match_pe(const std::vector<known_adapters>& candidates,
             const auto mate_2 = swapped ? read_mate::_1 : read_mate::_2;
 
             return std::pair{
-              possible_match(it.source(), seq_1, mate_1),
-              possible_match(it.source(), seq_2, mate_2),
+              possible_match(it.name(), seq_1, mate_1),
+              possible_match(it.name(), seq_2, mate_2),
             };
           }
         }
@@ -341,8 +303,8 @@ best_match_pe(const std::vector<known_adapters>& candidates,
             const auto mate_1 = swapped ? read_mate::_2 : read_mate::_1;
             const auto mate_2 = swapped ? read_mate::_1 : read_mate::_2;
 
-            best_seq_1 = possible_match(it.source(), match_1, mate_1);
-            best_seq_2 = possible_match(it.source(), match_2, mate_2);
+            best_seq_1 = possible_match(it.name(), match_1, mate_1);
+            best_seq_2 = possible_match(it.name(), match_2, mate_2);
             best_aln = merged_aln;
             best_len = merged_len;
           }
@@ -446,7 +408,7 @@ adapter_database::export_known(export_fmt format)
 
   auto adapters = ADAPTER_DATABASE;
   std::sort(adapters.begin(), adapters.end(), [](const auto& a, const auto& b) {
-    return a.source() < b.source();
+    return a.name() < b.name();
   });
 
   if (format == export_fmt::tsv) {
@@ -454,8 +416,7 @@ adapter_database::export_known(export_fmt format)
 
     os << "Name\tAdapter1\tAdapter2";
     for (const auto& it : adapters) {
-      os << "\n"
-         << it.source() << "\t" << join_text(to_vec(it.adapter_1()), ",");
+      os << "\n" << it.name() << "\t" << join_text(to_vec(it.adapter_1()), ",");
 
       if (it.has_adapter_2()) {
         os << "\t" << join_text(to_vec(it.adapter_2()), ",");
@@ -469,7 +430,7 @@ adapter_database::export_known(export_fmt format)
     json_list values;
     for (const auto& it : adapters) {
       auto entry = values.dict();
-      entry->str("name", it.source());
+      entry->str("name", it.name());
       entry->str_vec("adapter1", to_vec(it.adapter_1()));
 
       if (it.has_adapter_2()) {
