@@ -3,7 +3,7 @@
     "arguments": [
         "--out-prefix",
         "/dev/null",
-        "--barcode-list",
+        "--barcode-table",
         "barcodes.txt"
     ],
     "files": {

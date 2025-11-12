@@ -30,7 +30,7 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
     // The alignment must involve at least one base from seq2,
     std::max(std::max(min_offset, -static_cast<int>(seq2_len) + 1),
              // but there's no point aligning pairs too short to matter. This
-             // currently only applies to --adapter-list mode.
+             // currently only applies to --adapter-table mode.
              alignment.score() - static_cast<int>(seq2_len));
   // Alignments involving fewer than `score` bases are not interesting, since
   // the maximum possible score is `length` when all bases match

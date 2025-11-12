@@ -19,7 +19,7 @@
         "/dev/null",
         "--out-html",
         "/dev/null",
-        "--barcode-list",
+        "--barcode-table",
         "barcodes.txt",
         "--merge"
     ],

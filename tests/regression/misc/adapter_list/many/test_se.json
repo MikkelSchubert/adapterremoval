@@ -3,7 +3,7 @@
   "arguments": [
     "--out-prefix",
     "output",
-    "--adapter-list",
+    "--adapter-table",
     "adapters.txt",
     "--out-json",
     "output.se.json"

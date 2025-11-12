@@ -3,7 +3,7 @@
   "arguments": [
     "--out-prefix",
     "your_output",
-    "--adapter-list",
+    "--adapter-table",
     "adapters.txt"
   ],
   "files": {

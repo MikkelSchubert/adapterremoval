@@ -3,7 +3,7 @@
   "arguments": [
     "--out-prefix",
     "output_pe",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes.txt",
     "--demultiplex-only",
     "--out-format",

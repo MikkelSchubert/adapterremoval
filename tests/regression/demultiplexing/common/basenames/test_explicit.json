@@ -22,7 +22,7 @@
         "basename_6",
         "--out-html",
         "basename_7.html",
-        "--barcode-list",
+        "--barcode-table",
         "barcodes.txt",
         "--merge"
     ],

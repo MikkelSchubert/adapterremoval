@@ -3,7 +3,7 @@
   "arguments": [
     "--out-prefix",
     "your_output",
-    "--barcode-list",
+    "--barcode-table",
     "not_found.txt",
     "--in-file1",
     "/dev/null"
