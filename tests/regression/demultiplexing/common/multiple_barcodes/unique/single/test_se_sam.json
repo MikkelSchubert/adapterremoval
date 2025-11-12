@@ -2,7 +2,7 @@
   "arguments": [
     "--out-prefix",
     "output_se",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes.txt",
     "--multiple-barcodes",
     "--out-format",

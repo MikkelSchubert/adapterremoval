@@ -17,7 +17,7 @@ When specifying paired reads, the FASTQ record names are expected to be identica
  Table of adapters
 *******************
 
-The table used with ``--adapter-list`` is expected to be a plain-text table containing one or two whitespace separated columns, with each line containing the same number of columns:
+The table used with ``--adapter-table`` is expected to be a plain-text table containing one or two whitespace separated columns, with each line containing the same number of columns:
 
 .. code::
 
@@ -30,7 +30,7 @@ Column one corresponds to ``--adapter1`` and column two corresponds to ``--adapt
  Table of barcodes
 *******************
 
-The table used with ``--barcode-list`` is expected to be a plain-text table containing two or three whitespace separated columns, with each line containing the same number of columns:
+The table used with ``--barcode-table`` is expected to be a plain-text table containing two or three whitespace separated columns, with each line containing the same number of columns:
 
 .. code::
 

@@ -163,7 +163,7 @@ FASTQ processing options
 
     Adapter sequence expected to be found in mate 2 reads, specified in read direction. For a detailed description of how to provide the appropriate adapter sequences, see the "Adapters" section of the online documentation. Default is ``AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT``, intended for Illumina TruSeq and similar data.
 
-.. option:: --adapter-list filename
+.. option:: --adapter-table filename
 
     Read one or more adapter sequences from a table. The first two columns (separated by whitespace) of each line in the file are expected to correspond to values passed to --adapter1 and --adapter2. In single-end mode, only column one is required. Lines starting with '#' are ignored. When multiple rows are found in the table, AdapterRemoval will try each adapter (pair), and select the best aligning adapters for each FASTQ read processed.
 
@@ -289,7 +289,7 @@ Filtering options
 Demultiplexing options
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. option:: --barcode-list filename
+.. option:: --barcode-table filename
 
     Perform demultiplexing using table of one or two fixed-length barcodes for SE or PE reads. The table is expected to contain 2 or 3 white-space separated columns, the first of which represent the name of a given sample, and the second and third of which represent the mate 1 and (optionally) the mate 2 barcode sequence. For a detailed description, see the "Demultiplexing" section of the online documentation.
 
@@ -318,7 +318,7 @@ Demultiplexing options
 
 .. option:: --demultiplex-only
 
-    Only carry out demultiplexing using the list of barcodes supplied with --barcode-list. No other processing is done.
+    Only carry out demultiplexing using the list of barcodes supplied with --barcode-table. No other processing is done.
 
 
 Reporting options

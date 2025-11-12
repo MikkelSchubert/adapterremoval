@@ -1,12 +1,11 @@
 {
+  "description": "Demultiplexing of SE reads without adapter-trimming/post-processing",
   "arguments": [
     "--out-prefix",
     "output_se",
-    "--barcode-table",
+    "--barcode-list",
     "barcodes.txt",
-    "--multiple-barcodes",
-    "--out-format",
-    "sam"
+    "--demultiplex-only"
   ],
   "files": {
     "input_1": [
@@ -16,14 +15,14 @@
       "barcodes.txt"
     ],
     "output": [
-      "output_se.sample_1.sam",
-      "output_se.sample_2.sam",
-      "output_se.unidentified.sam"
+      "output_se.sample_1.r1.fastq.gz",
+      "output_se.sample_2.r1.fastq.gz",
+      "output_se.unidentified.r1.fastq.gz"
     ],
     "json": [
       "output_se.json"
     ],
-    "ignore": [
+    "html": [
       "output_se.html"
     ]
   }

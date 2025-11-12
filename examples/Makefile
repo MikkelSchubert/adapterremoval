@@ -33,13 +33,13 @@ merged:
 	$(EXE) --merge-quality-max 50 --in-file1 reads_1.fastq --in-file2 reads_2.fastq --merge --out-prefix output_merged
 
 multiple_adapters:
-	$(EXE) --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_multi --adapter-list adapters.txt
+	$(EXE) --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_multi --adapter-table adapters.txt
 
 identify_adapters:
 	$(EXE) --report-only --in-file1 reads_1.fastq --in-file2 reads_2.fastq --out-prefix output_adapters
 
 demultiplexing:
-	$(EXE) --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_demux --barcode-list barcodes.txt
+	$(EXE) --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_demux --barcode-table barcodes.txt
 
 demultiplexing_only:
-	$(EXE) --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_only_demux --barcode-list barcodes.txt --demultiplex-only
+	$(EXE) --in-file1 demux_1.fastq --in-file2 demux_2.fastq --out-prefix output_only_demux --barcode-table barcodes.txt --demultiplex-only

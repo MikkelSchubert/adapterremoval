@@ -2,7 +2,7 @@
   "arguments": [
     "--out-prefix",
     "out_on",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes.txt",
     "--barcode-orientation",
     "--normalize-orientation",

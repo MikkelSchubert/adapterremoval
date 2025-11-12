@@ -5,7 +5,7 @@
         "/dev/null",
         "--out-json",
         "basename_null.json",
-        "--barcode-list",
+        "--barcode-table",
         "barcodes.txt",
         "--merge"
     ],

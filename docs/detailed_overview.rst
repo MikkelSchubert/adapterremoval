@@ -22,7 +22,7 @@ If specified, the ``--head`` option limits the total number of reads (in single 
  2. Demultiplexing
 *******************
 
-If a table of barcodes is specified using the ``--barcode-list``, then demultiplexing of the data is performed prior to trimming. By default, each barcode or pair of barcodes is expected to identify a unique sample, but this restriction can be loosened using the ``--multiple-barcodes`` option.
+If a table of barcodes is specified using the ``--barcode-table``, then demultiplexing of the data is performed prior to trimming. By default, each barcode or pair of barcodes is expected to identify a unique sample, but this restriction can be loosened using the ``--multiple-barcodes`` option.
 
 By default, these barcodes are considered to be in a ``unspecified`` orientation. An orientation may be specified with ``--barcode-orientation``, and if either ``forward`` or ``reverse`` is used, then the corresponding reverse or forward barcode pairs are automatically generated.
 
@@ -46,7 +46,7 @@ The reads and adapters (single end mode) or reads + adapters (paired end mode) a
    PE: [Adapter 2' ----][Read 1 ------------]
                  [Read 2' ------------][Adapter 1 ----]
 
-Note that adapter 2 and read 2 are both reverse complemented in the above. If multiple adapters are specified using ``--adapter-list``, then alignment is carried out with each adapter or adapter pair to find the best alignment.
+Note that adapter 2 and read 2 are both reverse complemented in the above. If multiple adapters are specified using ``--adapter-table``, then alignment is carried out with each adapter or adapter pair to find the best alignment.
 
 If the best alignment covers at least ``--merge-threshold`` bases, then the sequences are considered to be overlapping. For paired end reads the inferred adapter sequences are always trimmed, while for single end reads the overlap must be at least ``--min-adapter-overlap`` bases before the sequence is trimmed (if specified). If the ``--merge`` option is set and the best alignment is at least ``--merge-threshold`` long, then the two reads are merged into a single sequence (paired end mode only).
 

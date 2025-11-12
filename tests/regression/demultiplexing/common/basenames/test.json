@@ -14,7 +14,7 @@
     "basename_5",
     "--out-file2",
     "basename_6",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes.txt",
     "--merge"
   ],

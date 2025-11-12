@@ -257,11 +257,11 @@ private:
   std::string adapter_1{};
   //! Sink for --adapter2, adapter sequence expected at 3' of mate 2 reads
   std::string adapter_2{};
-  //! Sink for --adapter-list; list of adapter #1 and #2 sequences
-  std::string adapter_list{};
+  //! Sink for --adapter-table; list of adapter #1 and #2 sequences
+  std::string adapter_table{};
 
-  //! Sink for --barcode-list; list of barcode #1 (and #2 sequences)
-  std::string barcode_list{};
+  //! Sink for --barcode-table; list of barcode #1 (and #2 sequences)
+  std::string barcode_table{};
 
   //! Sink for user-supplied quality score formats; use quality_input_fmt.
   std::string quality_input_base{};

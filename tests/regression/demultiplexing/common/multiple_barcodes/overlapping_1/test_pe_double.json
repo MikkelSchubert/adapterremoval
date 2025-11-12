@@ -2,7 +2,7 @@
   "arguments": [
     "--out-prefix",
     "output",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes_double.txt"
   ],
   "files": {

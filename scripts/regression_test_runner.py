@@ -683,10 +683,14 @@ class TestConfig(NamedTuple):
         def has_filetype(filetype: str) -> bool:
             return any(it.kind == filetype for it in self.files)
 
-        if has_filetype("barcodes") and "--barcode-list" not in self.arguments:
-            raise TestError(f"Missing --barcode-list in {quote(filepath)}")
-        if has_filetype("adapters") and "--adapter-list" not in self.arguments:
-            raise TestError(f"Missing --adapter-list in {quote(filepath)}")
+        table_args = {
+            "barcodes": ["--barcode-list", "--barcode-table"],
+            "adapters": ["--adapter-list", "--adapter-table"],
+        }
+
+        for filetype, keys in table_args.items():
+            if has_filetype(filetype) and not set(self.arguments).intersection(keys):
+                raise TestError(f"Missing {filetype}-table option in {quote(filepath)}")
 
         return self
 

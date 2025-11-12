@@ -4,7 +4,7 @@
   "arguments": [
     "--out-prefix",
     "output_merge",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes.txt",
     "--out-format",
     "sam",
