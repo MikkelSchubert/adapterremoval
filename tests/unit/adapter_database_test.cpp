@@ -15,49 +15,45 @@ namespace adapterremoval {
 
 TEST_CASE("simple known adapter requirements")
 {
-  REQUIRE_NOTHROW((known_adapters{ { "src" }, dna_sequence{ "ACGT" } }));
-  REQUIRE_NOTHROW((known_adapters{ { "src" }, dna_sequence{ "ACGT" }, {} }));
-  REQUIRE_NOTHROW((known_adapters{ { "src" },
-                                   dna_sequence{ "ACGT" },
-                                   dna_sequence{ "TATA" } }));
+  REQUIRE_NOTHROW((known_adapters{ "src", dna_sequence{ "ACGT" } }));
+  REQUIRE_NOTHROW((known_adapters{ "src", dna_sequence{ "ACGT" }, {} }));
+  REQUIRE_NOTHROW(
+    (known_adapters{ "src", dna_sequence{ "ACGT" }, dna_sequence{ "TATA" } }));
 
   // Non-empty source is required
   REQUIRE_THROWS_AS((known_adapters{ {}, dna_sequence{ "ACGT" } }),
                     assert_failed);
 
   // Non-empty adapter 1 sequence is required
-  REQUIRE_THROWS_AS((known_adapters{ { "src" }, dna_sequence{} }),
-                    assert_failed);
+  REQUIRE_THROWS_AS((known_adapters{ "src", dna_sequence{} }), assert_failed);
 }
 
 TEST_CASE("complex known adapter requirements")
 {
-  REQUIRE_NOTHROW((known_adapters{ { "src" }, { "ACGT" } }));
-  REQUIRE_NOTHROW((known_adapters{ { "src" }, { "ACGT" }, {} }));
-  REQUIRE_NOTHROW((known_adapters{ { "src" }, { "ACGT" }, { "TATA" } }));
+  REQUIRE_NOTHROW((known_adapters{ "src", { "ACGT" } }));
+  REQUIRE_NOTHROW((known_adapters{ "src", { "ACGT" }, {} }));
+  REQUIRE_NOTHROW((known_adapters{ "src", { "ACGT" }, { "TATA" } }));
 
-  // Non-empty sources are required
+  // Non-empty name is required
   REQUIRE_THROWS_AS((known_adapters{ {}, { "ACGT" } }), assert_failed);
-  REQUIRE_THROWS_AS((known_adapters{ { "" }, { "ACGT" } }), assert_failed);
 
   // Non-empty adapter 1 sequences are required
-  REQUIRE_THROWS_AS((known_adapters{ { "src" }, {} }), assert_failed);
-  REQUIRE_THROWS_AS((known_adapters{ { "src" }, { "" } }), assert_failed);
+  REQUIRE_THROWS_AS((known_adapters{ "src", {} }), assert_failed);
+  REQUIRE_THROWS_AS((known_adapters{ "src", { "" } }), assert_failed);
 
   // (Optional) adapter 2 sequences must be non-empty
-  REQUIRE_THROWS_AS((known_adapters{ { "src" }, { "ACGT" }, { "" } }),
+  REQUIRE_THROWS_AS((known_adapters{ "src", { "ACGT" }, { "" } }),
                     assert_failed);
 }
 
 TEST_CASE("test known adapters constructor with implicit read 2")
 {
   known_adapters adapters{
-    { "foo", "bar" },
+    "foo",
     { "ACGT", "TTTT" },
   };
 
-  REQUIRE(adapters.source() == "foo");
-  REQUIRE(adapters.sources() == std::vector<std::string>{ "foo", "bar" });
+  REQUIRE(adapters.name() == "foo");
   REQUIRE(adapters.adapter_1() ==
           std::vector{ dna_sequence{ "ACGT" }, dna_sequence{ "TTTT" } });
   REQUIRE(adapters.adapter_2() ==
@@ -68,13 +64,12 @@ TEST_CASE("test known adapters constructor with implicit read 2")
 TEST_CASE("test known adapters constructor with explicitg read 2")
 {
   known_adapters adapters{
-    { "foo", "bar" },
+    "foo",
     { "ACGT", "TTTT" },
     { "TATA", "GTGT" },
   };
 
-  REQUIRE(adapters.source() == "foo");
-  REQUIRE(adapters.sources() == std::vector<std::string>{ "foo", "bar" });
+  REQUIRE(adapters.name() == "foo");
   REQUIRE(adapters.adapter_1() ==
           std::vector{ dna_sequence{ "ACGT" }, dna_sequence{ "TTTT" } });
   REQUIRE(adapters.adapter_2() ==
@@ -85,14 +80,13 @@ TEST_CASE("test known adapters constructor with explicitg read 2")
 TEST_CASE("test known adapters constructor for user-provided sequences")
 {
   known_adapters adapters{
-    { "foo", "bar" },
+    "foo",
     { "ACGT", "TTTT" },
     { "TATA", "GTGT" },
     true,
   };
 
-  REQUIRE(adapters.source() == "foo");
-  REQUIRE(adapters.sources() == std::vector<std::string>{ "foo", "bar" });
+  REQUIRE(adapters.name() == "foo");
   REQUIRE(adapters.adapter_1() ==
           std::vector{ dna_sequence{ "ACGT" }, dna_sequence{ "TTTT" } });
   REQUIRE(adapters.adapter_2() ==

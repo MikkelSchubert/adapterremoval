@@ -131,7 +131,7 @@ describe_best_match(const identified_adapter& match,
       log::warn() << "Could not identify " << key << " sequence";
     }
   } else {
-    log::info() << "Using '" << match.source << "' " << match.mate
+    log::info() << "Using '" << match.name << "' " << match.mate
                 << " adapter for " << key << ": " << match.sequence.as_string();
   }
 }
