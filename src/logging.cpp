@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "logging.hpp"  // declarations
-#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
-#include "main.hpp"     // for NAME, VERSION
-#include "strutils.hpp" // for split_lines, cli_formatter, string_vec
-#include <algorithm>    // for max, min
-#include <iostream>     // for cerr
-#include <limits>       // for numeric_limits
-#include <mutex>        // for mutex, unique_lock
-#include <sys/ioctl.h>  // for ioctl, winsize, TIOCGWINSZ
-#include <unistd.h>     // for size_t, STDERR_FILENO
+#include "logging.hpp"   // declarations
+#include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
+#include "main.hpp"      // for NAME, VERSION
+#include "strutils.hpp"  // for split_lines, cli_formatter, string_vec
+#include "timeutils.hpp" // for timestamp
+#include <algorithm>     // for max, min
+#include <chrono>        // for system_clock
+#include <iostream>      // for cerr
+#include <limits>        // for numeric_limits
+#include <mutex>         // for mutex, unique_lock
+#include <sys/ioctl.h>   // for ioctl, winsize, TIOCGWINSZ
+#include <unistd.h>      // for size_t, STDERR_FILENO
 
 namespace adapterremoval {
 
@@ -108,7 +110,8 @@ log_header(level l, bool colors = false)
 {
   std::ostringstream header;
   if (g_log_timestamps) {
-    header << timestamp("%Y-%m-%d %X", true) << " ";
+    const auto time = std::chrono::system_clock::now();
+    header << format_time(time, "%Y-%m-%d %X", true) << " ";
   }
 
   if (colors) {

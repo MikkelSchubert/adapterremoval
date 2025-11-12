@@ -18,8 +18,8 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "statistics.hpp"    // for fastq_stats_ptr, trimming_statistics
 #include "strutils.hpp"      // for string_vec, to_lower, indent_lines
+#include "timeutils.hpp"     // for format_time, start_time
 #include "userconfig.hpp"    // for userconfig, output_files, output_sampl...
-#include <array>             // for array
 #include <cstdint>           // for int64_t
 #include <cstring>           // for size_t, strerror
 #include <memory>            // for __shared_ptr_access, shared_ptr, make_...
@@ -44,7 +44,7 @@ write_report_meta(const userconfig& config, json_dict& report)
   meta->str("version", NAME + " " + VERSION);
   meta->str_vec("command", config.args);
   meta->f64("runtime", config.runtime());
-  meta->str("timestamp", userconfig::start_time);
+  meta->str("timestamp", format_time(start_time(), "%FT%T%z"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -100,6 +100,7 @@ libcore = static_library(
     'simd.cpp',
     'strutils.cpp',
     'table_reader.cpp',
+    'timeutils.cpp',
     'utilities.cpp',
     config_inc,
     dependencies: [libdeflate, libisal, libmimalloc, libthreads],

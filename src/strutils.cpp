@@ -5,7 +5,6 @@
 #include <algorithm>    // for min, reverse, max
 #include <cctype>       // for isprint, isalnum, tolower, toupper
 #include <charconv>     // for from_chars
-#include <chrono>       // for system_clock
 #include <cmath>        // for log10, pow, round
 #include <cstdint>      // for uint64_t, int64_t
 #include <iomanip>      // for operator<<, setprecision
@@ -13,7 +12,6 @@
 #include <stdexcept>    // for invalid_argument
 #include <string_view>  // for string_view
 #include <system_error> // for errc
-#include <time.h>       // for localtime_r, tm
 #include <vector>       // for vector, swap
 
 namespace adapterremoval {
@@ -60,28 +58,6 @@ levenshtein(const std::string_view s, const std::string_view t)
   }
 
   return v0.back();
-}
-
-std::string
-timestamp(const char* format, const bool milliseconds)
-{
-  AR_REQUIRE(format);
-  using namespace std::chrono;
-
-  const auto now = system_clock::now();
-  const auto in_time_t = system_clock::to_time_t(now);
-
-  tm in_localtime{};
-  std::ostringstream ss;
-  ss << std::put_time(localtime_r(&in_time_t, &in_localtime), format);
-
-  if (milliseconds) {
-    const auto ms =
-      duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-    ss << '.' << std::setfill('0') << std::setw(3) << (ms.count() % 1000);
-  }
-
-  return ss.str();
 }
 
 namespace {
