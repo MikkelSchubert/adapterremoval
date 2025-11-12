@@ -44,6 +44,8 @@ public:
     return m_adapter_2.empty() ? m_adapter_1 : m_adapter_2;
   }
 
+  [[nodiscard]] bool has_adapter_2() const { return !m_adapter_2.empty(); }
+
   /** Was the adapter(s) provided by the user? */
   [[nodiscard]] bool user_provided() const { return m_user_provided; }
 
@@ -119,6 +121,18 @@ public:
   [[nodiscard]] identified_adapter_pair identify_exact(
     const dna_sequence& seq_1,
     const dna_sequence& seq_2) const;
+
+  /** Specifies the output format when exporting the database */
+  enum class export_fmt
+  {
+    /** Tab separated values */
+    tsv,
+    /** Pretty printed JSON list of records */
+    json
+  };
+
+  /** Return table of known adapters as TSV or JSON */
+  [[nodiscard]] static std::string export_known(export_fmt format);
 
 private:
   //! List of known sequences used for adapter trimming
