@@ -5,6 +5,7 @@
 #include "debug.hpp"         // for AR_REQUIRE
 #include "errors.hpp"        // for fastq_error
 #include "linereader.hpp"    // for line_reader
+#include "logging.hpp"       // for log
 #include "sequence.hpp"      // for dna_sequence
 #include "strutils.hpp"      // for log_escape
 #include "table_reader.hpp"  // for table_reader
@@ -392,6 +393,42 @@ parse_table_orientation(std::string_view value)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'adapter_set' class
 
+namespace {
+
+void
+log_duplicate_adapters(const sequence_pair_vec& adapters, bool paired_end_mode)
+{
+  sequence_pair_vec sorted = adapters;
+  std::sort(sorted.begin(), sorted.end());
+
+  sequence_pair last;
+  for (size_t i = 1; i < sorted.size(); ++i) {
+    const auto& prev = sorted.at(i - 1);
+    const auto& curr = sorted.at(i);
+
+    if ((paired_end_mode && curr != last && prev == curr) ||
+        (!paired_end_mode && !(curr.first == last.first) &&
+         prev.first == curr.first)) {
+      auto warning = log::warn();
+
+      if (paired_end_mode) {
+        auto adapter_2 = curr.second.reverse_complement();
+
+        warning << "Adapter pair " << log_escape(curr.first.as_string())
+                << " / " << log_escape(adapter_2.as_string())
+                << " is not unique";
+      } else {
+        warning << "Adapter sequence " << log_escape(curr.first.as_string())
+                << " is not unique in single-end mode";
+      }
+
+      last = curr;
+    }
+  }
+}
+
+} // namespace
+
 adapter_set::adapter_set(std::initializer_list<string_view_pair> args)
 {
   for (const auto& [first, second] : args) {
@@ -440,16 +477,18 @@ adapter_set::load(line_reader_base& reader, bool paired_end_mode)
     dna_sequence adapter_1{ row.at(0) };
     dna_sequence adapter_2;
     if (row.size() > 1) {
-      adapter_2 = dna_sequence{ row.at(1) };
+      // Convert from read to alignment orientation
+      adapter_2 = dna_sequence{ row.at(1) }.reverse_complement();
     }
 
-    // Convert from read to alignment orientation
-    adapters.emplace_back(std::move(adapter_1), adapter_2.reverse_complement());
+    adapters.emplace_back(std::move(adapter_1), std::move(adapter_2));
   }
 
   if (adapters.empty()) {
     throw parsing_error("No adapter sequences in table");
   }
+
+  log_duplicate_adapters(adapters, paired_end_mode);
 
   std::swap(m_adapters, adapters);
 }
