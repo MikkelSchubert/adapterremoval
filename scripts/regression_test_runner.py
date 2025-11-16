@@ -1461,9 +1461,9 @@ def main(argv: list[str]) -> int:
             % (n_failures, n_failures + n_successes + n_skipped)
         )
     elif n_failures:
-        print_err("\n%i of %i tests failed." % (n_failures, len(exhaustive_tests)))
+        print_err("\n%i of %i tests failed." % (n_failures, len(tests)))
     else:
-        print("\nAll %i tests succeeded." % (len(exhaustive_tests),))
+        print("\nAll %i tests succeeded." % (len(tests),))
 
     if JSONValidator.can_validate():
         print("JSON file validation performed.")
