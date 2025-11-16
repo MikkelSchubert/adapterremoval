@@ -137,7 +137,6 @@ known_adapters::known_adapters(std::string name,
   , m_user_provided(user_provided)
 {
   AR_REQUIRE(!m_name.empty());
-  AR_REQUIRE(!adapter_1.empty());
   m_adapter_1.emplace_back(std::move(adapter_1));
 
   if (!adapter_2.empty()) {
