@@ -62,7 +62,7 @@
       "reads": 1,
       "bases": 25,
       "adapter_list": [
-        { "adapter1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA", "adapter2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT", "reads": 1, "bases": 25 }
+        { "adapter1": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA", "adapter2": "", "reads": 1, "bases": 25 }
       ]
     },
     { "step": "low_quality", "action": "trim", "reads": 5, "bases": 50 },

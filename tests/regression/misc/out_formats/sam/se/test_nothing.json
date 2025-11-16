@@ -2,6 +2,8 @@
   "description": "SAM output with no-output files",
   "exhaustive": false,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "/dev/null",
     "--out-format",

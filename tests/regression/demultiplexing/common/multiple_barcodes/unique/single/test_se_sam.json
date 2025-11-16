@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "output_se",
     "--barcode-table",

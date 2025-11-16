@@ -2,6 +2,8 @@
   "description": "Demultiplexing of single-indexed SE reads using 1-3 threads",
   "exhaustive": true,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "your_output",
     "--out-discarded",

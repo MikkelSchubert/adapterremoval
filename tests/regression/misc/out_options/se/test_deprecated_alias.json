@@ -1,6 +1,8 @@
 {
   "inherit_from": "test.json",
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--discarded",
     "disc.fq",
     "--output1",

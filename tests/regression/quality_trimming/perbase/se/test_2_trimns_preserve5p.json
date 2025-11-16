@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--quality-trimming",
     "per-base",
     "--trim-ns",

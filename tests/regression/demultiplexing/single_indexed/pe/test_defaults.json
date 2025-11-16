@@ -2,6 +2,10 @@
   "description": "Demultiplexing of single-indexed PE reads using 1-3 threads",
   "exhaustive": true,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
     "--out-prefix",
     "your_output",
     "--out-discarded",
