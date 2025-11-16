@@ -220,8 +220,6 @@ TEST_CASE("very short adapters are skipped")
   });
 
   REQUIRE(ad.sequences() == sequence_vec{ "ACGGACGT"_dna, "ACGTGTTA"_dna });
-  REQUIRE_CONTAINS(cap.str(), "Adapter sequence 'ACGTGTT' is too short");
-  REQUIRE_CONTAINS(cap.str(), "Adapter sequence 'ACGGAC' is too short");
 }
 
 TEST_CASE("adapters not detected")

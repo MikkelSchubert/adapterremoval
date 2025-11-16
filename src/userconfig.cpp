@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "userconfig.hpp"       // declarations
 #include "adapter_database.hpp" // for adapter_database
+#include "adapter_detector.hpp" // for ADAPTER_DETECT_MIN_OVERLAP
 #include "alignment.hpp"        // for alignment_info
 #include "argparse.hpp"         // for parser, parse_result
 #include "commontypes.hpp"      // for string_vec, DEV_STDOUT, DEV_STDERR, ...
@@ -1784,6 +1785,20 @@ userconfig::setup_adapter_sequences()
     // Ensure that adapter sequences are not used until detection has completed
     if (adapter_selection_strategy == adapter_selection::automatic) {
       writer->flag_uninitialized_adapters();
+
+      const auto check_adapter = [&](const dna_sequence& seq) {
+        if (!seq.empty() && seq.length() < ADAPTER_DETECT_MIN_OVERLAP) {
+          log::warn() << "Adapter sequence " << log_escape(seq.as_string())
+                      << " is too short for automatic adapter selection: "
+                         "candidate sequences must be at least "
+                      << ADAPTER_DETECT_MIN_OVERLAP << " bp long";
+        }
+      };
+
+      for (const auto& it : writer->uninitialized_adapters()) {
+        check_adapter(it.first);
+        check_adapter(it.second);
+      }
     }
   }
 
