@@ -1,0 +1,21 @@
+{
+  "description": "Automatic selection of adapters, matching (SE)",
+  "arguments": [
+    "--adapter-selection",
+    "auto",
+    "--out-prefix",
+    "output_auto_se"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "json": [
+      "output_auto_se.json"
+    ],
+    "ignore": [
+      "output_auto_se.r1.fastq.gz",
+      "output_auto_se.html"
+    ]
+  }
+}

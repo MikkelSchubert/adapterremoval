@@ -1,0 +1,26 @@
+{
+  "description": "Automatic selection of adapters, matching (PE)",
+  "arguments": [
+    "--adapter-selection",
+    "auto",
+    "--out-prefix",
+    "output_auto_pe"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "json": [
+      "output_auto_pe.json"
+    ],
+    "ignore": [
+      "output_auto_pe.r1.fastq.gz",
+      "output_auto_pe.r2.fastq.gz",
+      "output_auto_pe.singleton.fastq.gz",
+      "output_auto_pe.html"
+    ]
+  }
+}

@@ -15,6 +15,7 @@ namespace adapterremoval {
 
 TEST_CASE("simple known adapter requirements")
 {
+  REQUIRE_NOTHROW((known_adapters{ "src", dna_sequence{} }));
   REQUIRE_NOTHROW((known_adapters{ "src", dna_sequence{ "ACGT" } }));
   REQUIRE_NOTHROW((known_adapters{ "src", dna_sequence{ "ACGT" }, {} }));
   REQUIRE_NOTHROW(
@@ -23,9 +24,6 @@ TEST_CASE("simple known adapter requirements")
   // Non-empty source is required
   REQUIRE_THROWS_AS((known_adapters{ {}, dna_sequence{ "ACGT" } }),
                     assert_failed);
-
-  // Non-empty adapter 1 sequence is required
-  REQUIRE_THROWS_AS((known_adapters{ "src", dna_sequence{} }), assert_failed);
 }
 
 TEST_CASE("complex known adapter requirements")
