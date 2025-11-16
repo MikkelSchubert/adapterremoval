@@ -11,7 +11,6 @@
       "reads": 0,
       "bases": 0,
       "adapter_list": [
-        { "adapter1": "", "adapter2": "", "reads": 0, "bases": 0 }
       ]
     },
     { "step": "low_quality", "action": "trim", "reads": 2, "bases": 8 },

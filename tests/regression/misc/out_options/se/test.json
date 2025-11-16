@@ -1,6 +1,8 @@
 {
   "exhaustive": false,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-discarded",
     "disc.fq",
     "--out-file1",

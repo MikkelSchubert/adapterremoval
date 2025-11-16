@@ -1,6 +1,8 @@
 {
   "exhaustive": false,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "your_output",
     "--interleaved-output",

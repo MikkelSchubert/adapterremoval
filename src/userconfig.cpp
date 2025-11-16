@@ -410,7 +410,7 @@ configure_adapter_selection(const std::string& value)
     return adapter_selection::none;
   }
 
-  AR_FAIL("unhandled qualitybase value");
+  AR_FAIL("unhandled adapter_selection value");
 }
 
 adapter_fallback
@@ -713,13 +713,11 @@ userconfig::userconfig()
   argparser.add("--adapter1", "SEQ")
     .help("Adapter sequence expected to be found in mate 1 reads. Any 'N' in "
           "this sequence is treated as a wildcard")
-    .bind_str(&adapter_1)
-    .with_default("AGATCGGAAGAGCACACGTCTGAACTCCAGTCA");
+    .bind_str(&adapter_1);
   argparser.add("--adapter2", "SEQ")
     .help("Adapter sequence expected to be found in mate 2 reads. Any 'N' in "
           "this sequence is treated as a wildcard")
-    .bind_str(&adapter_2)
-    .with_default("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT");
+    .bind_str(&adapter_2);
   argparser.add("--adapter-table", "FILE")
     .help("Read adapter pairs from the first two columns of a white-space "
           "separated table. AdapterRemoval will then select the best matching "
@@ -734,10 +732,11 @@ userconfig::userconfig()
     .help("How to select the adapters to trim. If 'auto', attempt to "
           "determinate adapter sequences automatically from the input data, if "
           "'manual' use the user-defined adapter sequences, and if 'none', "
-          "assume that the data contains no adapter sequences")
+          "assume that the data contains no adapter sequences. Defaults to "
+          "'auto', unless --adapter1, --adapter2, or --adapter-table are used, "
+          "in which case the default is 'manual'")
     .bind_str(nullptr)
-    .with_choices({ "auto", "manual", "none" })
-    .with_default("manual");
+    .with_choices({ "auto", "manual", "none" });
 
   argparser.add("--adapter-fallback", "X")
     .help("If '--adapter-select auto' is used, and no adapter sequences could "
@@ -1750,17 +1749,35 @@ userconfig::setup_adapter_sequences()
     }
   }
 
+  adapter_fallback_strategy =
+    configure_adapter_fallback(m_argparser->value("--adapter-fallback"));
+
   if (run_type == ar_command::report_only) {
     adapter_selection_strategy = adapter_selection::automatic;
     adapter_fallback_strategy = adapter_fallback::none;
   } else if (run_type == ar_command::benchmark) {
     adapter_selection_strategy = adapter_selection::manual;
-  } else {
-    adapter_fallback_strategy =
-      configure_adapter_fallback(m_argparser->value("--adapter-fallback"));
-
+    adapter_fallback_strategy = adapter_fallback::none;
+  } else if (m_argparser->is_set("--adapter-selection")) {
     adapter_selection_strategy =
       configure_adapter_selection(m_argparser->value("--adapter-selection"));
+  } else if (m_argparser->is_set("--adapter1") ||
+             m_argparser->is_set("--adapter1")) {
+    if (adapter_1.empty() && !paired_ended_mode) {
+      log::warn() << "It is not possible to trim adapters from single-end "
+                     "reads if an empty --adapter1 sequence has been set; "
+                     "AdapterRemoval will asusume that no adapters can be "
+                     "found in the input. Use '--adapter-selection none' to "
+                     "explicitly enable this behavior and silence this warning";
+
+      adapter_selection_strategy = adapter_selection::none;
+    } else {
+      adapter_selection_strategy = adapter_selection::manual;
+    }
+  } else if (m_argparser->is_set("--adapter-table")) {
+    adapter_selection_strategy = adapter_selection::manual;
+  } else {
+    adapter_selection_strategy = adapter_selection::automatic;
   }
 
   if (adapter_selection_strategy == adapter_selection::none) {

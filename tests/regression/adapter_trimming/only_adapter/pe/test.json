@@ -1,5 +1,9 @@
 {
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
     "--out-prefix",
     "your_output",
     "--out-discarded",

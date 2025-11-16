@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "your_output",
     "--preserve5p"

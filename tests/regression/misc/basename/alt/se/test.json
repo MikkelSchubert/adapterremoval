@@ -1,6 +1,8 @@
 {
   "exhaustive": true,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "alternative"
   ],

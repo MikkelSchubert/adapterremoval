@@ -2,6 +2,8 @@
   "description": "SAM output with default parameters",
   "exhaustive": false,
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "output_defaults",
     "--out-format",

@@ -1,6 +1,8 @@
 {
   "description": "Filtering by minimum length, all reads excluded",
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--out-prefix",
     "your_output",
     "--out-discarded",

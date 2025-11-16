@@ -1,6 +1,8 @@
 {
   "description": "User-supplied prefixes must be added to trimmed and demultiplexed reads (SE)",
   "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--barcode-list",
     "barcodes.txt",
     "--out-prefix",
