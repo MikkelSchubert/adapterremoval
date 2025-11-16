@@ -41,7 +41,7 @@ write_report_meta(const userconfig& config, json_dict& report)
 {
   const auto meta = report.dict("meta");
 
-  meta->str("version", NAME + " " + VERSION);
+  meta->str("version", FULL_NAME);
   meta->str_vec("command", config.args);
   meta->f64("runtime", config.runtime());
   meta->str("timestamp", format_time(start_time(), "%FT%T%z"));
@@ -693,11 +693,13 @@ write_json_report(const userconfig& config,
   std::ostringstream output;
 
   {
+    std::ostringstream url;
+    url << "https://MikkelSchubert.github.io/adapterremoval/schemas/" << VERSION
+        << ".json";
+
     auto samples = config.samples.get_reader();
     json_dict_ptr report = std::make_shared<json_dict>();
-    report->str("$schema",
-                "https://MikkelSchubert.github.io/adapterremoval/schemas/" +
-                  VERSION + ".json");
+    report->str("$schema", url.str());
 
     write_report_meta(config, *report);
     write_report_summary(config, *report, stats);

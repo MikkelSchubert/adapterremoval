@@ -1140,7 +1140,7 @@ TEST_CASE("--version", "[argparse::parser]")
 {
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
 
   log::log_capture ss;
 
@@ -1166,7 +1166,7 @@ TEST_CASE("--help", "[argparse::parser]")
 {
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.set_preamble("basic help");
 
   log::log_capture ss;
@@ -1309,7 +1309,7 @@ TEST_CASE("user supplied argument", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.set_preamble("basic help");
   p.add("--test");
 
@@ -1324,7 +1324,7 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.set_preamble("basic help");
   p.add("--test", "META").bind_u32(&sink);
 
@@ -1345,7 +1345,7 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.set_preamble("basic help");
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
@@ -1374,7 +1374,7 @@ TEST_CASE("help with default value", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.set_preamble("basic help");
   p.add("--test", "META")
     .help("A long help message that exceeds the limit of 60 characters by some "
@@ -1570,7 +1570,7 @@ TEST_CASE("help with finite max number of values", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.add("--test", "X")
     .help("Help text")
     .bind_vec(&sink)
@@ -1594,7 +1594,7 @@ TEST_CASE("help with infinite number of values", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.add("--test", "X").help("Help text").bind_vec(&sink).with_min_values(0);
 
   p.set_terminal_width(60);
@@ -1615,7 +1615,7 @@ TEST_CASE("help with lower bound of values", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.add("--test", "X").help("Help text").bind_vec(&sink).with_min_values(1);
 
   p.set_terminal_width(60);
@@ -1636,7 +1636,7 @@ TEST_CASE("help with lower and upper bound of values", "[argparse::parser]")
   log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
-  p.set_version("v1234");
+  p.set_version("1234");
   p.add("--test", "X")
     .help("Help text")
     .bind_vec(&sink)

@@ -3,7 +3,6 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "buffer.hpp"        // for buffer
 #include "fastq.hpp"         // for fastq, fastq::ntrimmed, ACGTN, ACGT
-#include "main.hpp"          // for VERSION
 #include "read_group.hpp"    // for read_group
 #include "sequence.hpp"      // for dna_sequence
 #include "sequence_sets.hpp" // for sample
@@ -21,9 +20,6 @@
 namespace adapterremoval {
 
 namespace {
-
-//! The program version with the leading 'v' removed
-const std::string VERSION_NO_V{ VERSION.substr(1) };
 
 constexpr std::string_view EXTREMELY_LONG_NAME =
   "123456789-123456789-123456789-123456789-123456789-123456789-123456789-"

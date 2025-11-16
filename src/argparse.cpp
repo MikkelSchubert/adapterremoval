@@ -180,7 +180,7 @@ parser::add_header(std::string_view header)
 void
 parser::print_version() const
 {
-  log::cerr() << m_name << " " << m_version << "\n";
+  log::cerr() << m_name << " v" << m_version << "\n";
 }
 
 void
