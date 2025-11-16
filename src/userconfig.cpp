@@ -406,6 +406,8 @@ configure_adapter_selection(const std::string& value)
     return adapter_selection::automatic;
   } else if (value == "manual") {
     return adapter_selection::manual;
+  } else if (value == "undefined") {
+    return adapter_selection::undefined;
   } else if (value == "none") {
     return adapter_selection::none;
   }
@@ -418,13 +420,13 @@ configure_adapter_fallback(const std::string& value)
 {
   if (value == "abort") {
     return adapter_fallback::abort;
+  } else if (value == "undefined") {
+    return adapter_fallback::undefined;
   } else if (value == "none") {
     return adapter_fallback::none;
-  } else if (value == "unknown") {
-    return adapter_fallback::unknown;
   }
 
-  AR_FAIL("unhandled qualitybase value");
+  AR_FAIL("unhandled adapter_fallback value");
 }
 
 bool
@@ -729,25 +731,25 @@ userconfig::userconfig()
     .bind_str(&adapter_table);
 
   argparser.add("--adapter-selection", "X")
-    .help("How to select the adapters to trim. If 'auto', attempt to "
-          "determinate adapter sequences automatically from the input data, if "
-          "'manual' use the user-defined adapter sequences, and if 'none', "
-          "assume that the data contains no adapter sequences. Defaults to "
-          "'auto', unless --adapter1, --adapter2, or --adapter-table are used, "
-          "in which case the default is 'manual'")
+    .help("How to select the adapters to trim: If 'auto', attempt to "
+          "determinate adapter sequences from the input data; if 'manual' use "
+          "the user-defined adapter sequences; if 'undefined' trim based on "
+          "overlap analyses (PE only) and/or 5' barcodes (SE if mate 2 "
+          "barcodes are are provided); and if 'none', assume that the data "
+          "contains no adapter sequences. Defaults to 'auto', unless "
+          "--adapter1, --adapter2, or --adapter-table are used, in which case "
+          "the default is 'manual'")
     .bind_str(nullptr)
-    .with_choices({ "auto", "manual", "none" });
+    .with_choices({ "auto", "manual", "undefined", "none" });
 
   argparser.add("--adapter-fallback", "X")
-    .help("If '--adapter-select auto' is used, and no adapter sequences could "
-          "be identified, trim 'unknown' adapter sequences based on overlap "
-          "analyses (PE only) and/or 5' barcodes (SE if mate 2 barcodes are "
-          "are provided), or assume that there are no adapter or barcode "
-          "sequences in the reads ('none'), or 'abort' the program [default: "
-          "'unknown' if possible, otherwise 'none']")
+    .help("If '--adapter-select auto' is used and no adapter sequences could "
+          "be identified, either 'abort' the program, or fall back to one of "
+          "the other possible --adapter-selection options [default: "
+          "'undefined' if possible, otherwise 'none']")
     .bind_str(nullptr)
-    .with_choices({ "unknown", "none", "abort" })
-    .with_default("unknown");
+    .with_choices({ "undefined", "none", "abort" })
+    .with_default("undefined");
 
   argparser.add("--adapter-database", "FORMAT")
     .help("Output TSV table/JSON file of adapters used for automatic adapter "
@@ -1752,6 +1754,10 @@ userconfig::setup_adapter_sequences()
   adapter_fallback_strategy =
     configure_adapter_fallback(m_argparser->value("--adapter-fallback"));
 
+  // It is not possible to trim undefined (empty) adapter sequences in all cases
+  const bool can_use_undefined =
+    paired_ended_mode || !samples.get_reader()->at(0).at(0).barcode_2.empty();
+
   if (run_type == ar_command::report_only) {
     adapter_selection_strategy = adapter_selection::automatic;
     adapter_fallback_strategy = adapter_fallback::none;
@@ -1761,6 +1767,17 @@ userconfig::setup_adapter_sequences()
   } else if (m_argparser->is_set("--adapter-selection")) {
     adapter_selection_strategy =
       configure_adapter_selection(m_argparser->value("--adapter-selection"));
+
+    if (adapter_selection_strategy == adapter_selection::undefined &&
+        !can_use_undefined) {
+      // This check can be avoided by using '--adapter1 ""'
+      log::error() << "'--adapter-selection undefined' cannot be used in SE "
+                      "mode unless demultiplexing is enabled and mate 2 "
+                      "barcodes are specified. Use '--adapter-selection none' "
+                      "if this is intended";
+
+      return false;
+    }
   } else if (m_argparser->is_set("--adapter1") ||
              m_argparser->is_set("--adapter1")) {
     if (adapter_1.empty() && !paired_ended_mode) {
@@ -1781,18 +1798,33 @@ userconfig::setup_adapter_sequences()
   }
 
   if (adapter_selection_strategy == adapter_selection::none) {
-    adapters = adapter_set{};
-  } else if (!paired_ended_mode &&
-             adapter_fallback_strategy == adapter_fallback::unknown &&
-             samples.get_reader()->at(0).at(0).barcode_2.empty()) {
-    // Don't warn unless the user has explicitly asked for 'unknown'
-    if (m_argparser->is_set("--adapter-fallback")) {
-      log::warn() << "'--adapter-fallback unknown' cannot be used in SE mode, "
-                     "unless demultiplexing is enabled and mate 2 barcodes are "
-                     "specified; using '--adapter-fallback none' instead";
-    }
+    adapters = adapter_set{}; // no adapters sequences
+  } else if (adapter_selection_strategy == adapter_selection::undefined) {
+    adapters = adapter_set{ { "", "" } }; // empty adapter sequences
+  } else if (adapter_selection_strategy == adapter_selection::manual) {
+    if (!m_argparser->is_set("--adapter1") &&
+        !m_argparser->is_set("--adapter2") &&
+        !m_argparser->is_set("--adapter-table")) {
+      // Probably a user error
+      log::error() << "Manual adapter selection chosen with "
+                      "'--adapter-selection manual', but no adapter sequences "
+                      "have been specified with --adapter1/--adapter2 or "
+                      "--adapter-table";
 
-    adapter_fallback_strategy = adapter_fallback::none;
+      return false;
+    }
+  } else if (adapter_fallback_strategy == adapter_fallback::undefined) {
+    if (!can_use_undefined) {
+      // Don't warn unless the user has explicitly asked for 'undefined'
+      if (m_argparser->is_set("--adapter-fallback")) {
+        log::warn()
+          << "'--adapter-fallback undefined' cannot be used in SE mode "
+             "unless demultiplexing is enabled and mate 2 barcodes are "
+             "specified; using '--adapter-fallback none' instead";
+      }
+
+      adapter_fallback_strategy = adapter_fallback::none;
+    }
   }
 
   {

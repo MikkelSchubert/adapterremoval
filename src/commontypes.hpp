@@ -134,17 +134,18 @@ enum class barcode_table_orientation
 /** Strategies for selecting the adapter sequences to trim, if any */
 enum class adapter_selection
 {
-  manual,    // use user-provided adapter sequence(s)
   automatic, // attempt to detect adapters in sequence data automatically
+  manual,    // use user-provided adapter sequence(s)
+  undefined, // use unspecified (empty) adapters for PE trimming
   none,      // data is assumed to not contain adapters
 };
 
 /** Strategies for how to handle no adapters being auto-selected */
 enum class adapter_fallback
 {
-  abort,   // an adapter must be identified, otherwise abort
-  unknown, // fallback to unspecified (empty) adapter, if not found
-  none,    // fallback to `adapter_select_strategy::none`, if not found
+  abort,     // an adapter must be identified, otherwise abort
+  undefined, // fallback to unspecified (empty) adapters, if not found (PE only)
+  none,      // fallback to `adapter_select_strategy::none`, if not found
 };
 
 //! Path used to indicate that a file is not needed
