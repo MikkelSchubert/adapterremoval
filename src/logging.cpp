@@ -179,7 +179,7 @@ log_preamble()
   std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
   if (!g_preamble_logged) {
     g_preamble_logged = true;
-    log::info() << NAME << " " << VERSION;
+    log::info() << FULL_NAME;
   }
 }
 

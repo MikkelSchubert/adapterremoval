@@ -135,7 +135,7 @@ create_sam_header(const string_vec& args, const sample& s)
   header.append("@PG\tID:adapterremoval\tPN:adapterremoval\tCL:");
   header.append(join_text(args, " "));
   header.append("\tVN:");
-  header.append(VERSION.substr(1)); // version without leading v
+  header.append(VERSION);
   header.append("\n");
 
   return header;
