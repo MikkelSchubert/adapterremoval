@@ -1,0 +1,13 @@
+{
+  "inherit_from": "test_auto_pe.json",
+  "arguments": [
+    "--adapter-selection",
+    "auto",
+    "--adapter1",
+    "",
+    "--adapter2",
+    "",
+    "--out-prefix",
+    "output_auto_pe"
+  ]
+}
