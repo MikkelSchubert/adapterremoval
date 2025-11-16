@@ -13,6 +13,9 @@ class fastq;
 class userconfig;
 class adapter_database;
 
+//! Minimum overlap required for adapter fragments
+const size_t ADAPTER_DETECT_MIN_OVERLAP = 8;
+
 /**
  * Class used to record adapter detection statistics; these statistics are
  * external to the detector to enable parallelization

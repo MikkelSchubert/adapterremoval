@@ -19,9 +19,6 @@ namespace adapterremoval {
 
 namespace {
 
-//! Minimum overlap required for adapter fragments
-const size_t ADAPTER_DETECT_MIN_OVERLAP = 8;
-
 //! The minimum number of hits required for a successful detection
 const double DETECTION_THRESHOLD = 10;
 //! The fraction of hits/reads required for detection of common sequences
@@ -43,11 +40,6 @@ collect_unique(sequence_vec adapters)
       if (unique.empty() || !(unique.back() == it)) {
         unique.emplace_back(std::move(it));
       }
-    } else {
-      // Check is here to avoid repeat messages for copies of the same sequence
-      log::warn() << "Adapter sequence " << log_escape(it.as_string())
-                  << " is too short for auto-detection; adapters must be at "
-                  << ADAPTER_DETECT_MIN_OVERLAP << " bp long";
     }
   }
 
