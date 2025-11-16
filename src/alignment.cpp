@@ -263,10 +263,27 @@ sequence_aligner::sequence_aligner(const adapter_set& adapters,
     m_assume_pretrimmed = true;
   } else {
     for (const auto& it : adapters) {
+      // Empty sequences are only useful for pair-wise alignment of mate pairs
+      auto unique =
+        it.first.empty() ? unique_adapter::paired_end : unique_adapter::always;
+
+      // This is O(n^2), but trimming throughput craters before this matters
+      for (const auto& other : m_adapters) {
+        if (it.first.as_string() == other.adapter1) {
+          if (it.second.as_string() == other.adapter2) {
+            unique = unique_adapter::never;
+            break;
+          } else {
+            unique = unique_adapter::paired_end;
+          }
+        }
+      }
+
       m_adapters.push_back({ static_cast<int>(m_adapters.size()),
                              0,
                              it.first.as_string(),
-                             it.second.as_string() });
+                             it.second.as_string(),
+                             unique });
     }
   }
 }
@@ -279,7 +296,8 @@ sequence_aligner::align_single_end(const fastq& read, unsigned max_shift)
 
   for (const auto& it : m_adapters) {
     const std::string_view adapter = it.adapter1;
-    if (adapter.empty() ||
+    if (it.unique == unique_adapter::never ||
+        it.unique == unique_adapter::paired_end || adapter.empty() ||
         std::min<int>(read.length(), adapter.length()) < alignment.score()) {
       ++adapter_id;
       continue;
@@ -323,6 +341,10 @@ sequence_aligner::align_paired_end(const fastq& read1,
   alignment_info alignment;
 
   for (const auto& it : m_adapters) {
+    if (it.unique == unique_adapter::never) {
+      continue;
+    }
+
     const std::string_view adapter1 = it.adapter1;
     const std::string_view adapter2 = it.adapter2;
 

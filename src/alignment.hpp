@@ -288,6 +288,17 @@ private:
   //! Internal buffer used to combine adapters and reads
   std::string m_buffer{};
 
+  /** Specify whether an adapter (pair) is unique */
+  enum class unique_adapter
+  {
+    //! Adapter is unique when performing SE or PE alignments
+    always,
+    //! Adapter is unique when performing PE alignments
+    paired_end,
+    //! Adapter (pair) is a 1:1 copy of another pair
+    never,
+  };
+
   struct adapter_pair
   {
     //! The original adapter ID
@@ -298,6 +309,9 @@ private:
     std::string adapter1{};
     //! The reverse adapter sequence
     std::string adapter2{};
+
+    //! Indicate when/if the adapter pair is worth aligning against
+    unique_adapter unique = unique_adapter::always;
   };
 
   //! Vector of adapter IDs and number of matching alignments with that adapter
