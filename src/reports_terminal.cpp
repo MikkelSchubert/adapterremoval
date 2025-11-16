@@ -18,6 +18,9 @@ print_trimming_parameters(const userconfig& config)
   // Most information is displayed by the adapter_selector
   if (config.adapter_selection_strategy == adapter_selection::automatic) {
     log::info() << "  - Adapters sequences will be selected automatically";
+  } else if (config.adapter_selection_strategy ==
+             adapter_selection::undefined) {
+    log::info() << "  - Adapters will be identified based on overlap analyses";
   } else if (config.adapter_selection_strategy == adapter_selection::none) {
     log::info() << "  - Reads are assumed to not contain adapters";
   }

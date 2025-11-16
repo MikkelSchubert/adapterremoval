@@ -183,7 +183,7 @@ adapter_finalizer::process(chunk_ptr data)
                 "either select a different fallback strategy, or manually "
                 "specify adapter sequences using --adapter1 / --adapter2");
             }
-            case adapter_fallback::unknown: {
+            case adapter_fallback::undefined: {
               log::warn()
                 << "Could not select adapter sequences automatically; falling "
                    "back to trimming putative adapter sequences based on "

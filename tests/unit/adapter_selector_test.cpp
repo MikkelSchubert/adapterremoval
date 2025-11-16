@@ -22,7 +22,7 @@ namespace {
 // Parameterize tests over supported SIMD instruction sets
 #define PARAMETERIZE_IS GENERATE(from_range(simd::supported()))
 #define PARAMETERIZE_FALLBACK                                                  \
-  GENERATE(adapter_fallback::unknown,                                          \
+  GENERATE(adapter_fallback::undefined,                                        \
            adapter_fallback::none,                                             \
            adapter_fallback::abort)
 
@@ -413,14 +413,14 @@ TEST_CASE("user is notified when adapters are selected for PE data")
     REQUIRE(samples.get_reader()->adapters() == adapter_set{});
   }
 
-  SECTION("not enough matches, fallback to unknown")
+  SECTION("not enough matches, fallback to undefined")
   {
     chunk->adapters = adapter_detection_stats{ 10,
                                                { {}, {}, {}, { 7, 0 } },
                                                { {}, { 3, 0 }, {}, {} } };
     chunks.emplace_back(std::move(chunk));
     results =
-      test_finalizer_on_chunks(samples, chunks, adapter_fallback::unknown);
+      test_finalizer_on_chunks(samples, chunks, adapter_fallback::undefined);
     REQUIRE_THAT(cap.str(),
                  Contains("Could not select adapter sequences automatically"));
     REQUIRE(samples.get_reader()->adapters() == adapter_set{ { "", "" } });
@@ -587,7 +587,7 @@ TEST_CASE("final chunk must be final adapter_chunk")
   threadsafe_data<sample_set> samples;
   adapter_finalizer step(database,
                          samples,
-                         adapter_fallback::unknown,
+                         adapter_fallback::undefined,
                          DEFAULT_NEXT_STEP);
 
   auto chunk = std::make_unique<adapter_chunk>();
@@ -611,7 +611,7 @@ TEST_CASE("finalize checks that last chunk was observed")
   threadsafe_data<sample_set> samples;
   adapter_finalizer step(database,
                          samples,
-                         adapter_fallback::unknown,
+                         adapter_fallback::undefined,
                          DEFAULT_NEXT_STEP);
 
   SECTION("before final chunk #1")

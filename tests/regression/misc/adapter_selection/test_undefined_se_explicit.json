@@ -3,21 +3,19 @@
   "arguments": [
     "--adapter1",
     "",
-    "--adapter2",
-    "",
     "--out-prefix",
-    "output_unknown_se"
+    "output_undefined_se"
   ],
   "files": {
     "input_1": [
       "input_1.fastq"
     ],
     "json": [
-      "output_unknown_se.json"
+      "output_undefined_se.json"
     ],
     "ignore": [
-      "output_unknown_se.r1.fastq.gz",
-      "output_unknown_se.html"
+      "output_undefined_se.r1.fastq.gz",
+      "output_undefined_se.html"
     ]
   }
 }

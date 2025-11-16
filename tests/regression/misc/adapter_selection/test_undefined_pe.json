@@ -1,0 +1,26 @@
+{
+  "description": "Trimming of unknown adapters (PE)",
+  "arguments": [
+    "--adapter-selection",
+    "undefined",
+    "--out-prefix",
+    "output_undefined_pe"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "json": [
+      "output_undefined_pe.json"
+    ],
+    "ignore": [
+      "output_undefined_pe.r1.fastq.gz",
+      "output_undefined_pe.r2.fastq.gz",
+      "output_undefined_pe.singleton.fastq.gz",
+      "output_undefined_pe.html"
+    ]
+  }
+}
