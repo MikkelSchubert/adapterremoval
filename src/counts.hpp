@@ -7,7 +7,7 @@
 #include <algorithm>        // for max, min
 #include <array>            // for operator==, array
 #include <cstddef>          // for size_t
-#include <cstdint>          // for int64_t
+#include <cstdint>          // for uint64_t
 #include <initializer_list> // for initializer_list
 #include <limits>           // for numeric_limits, numeric_limits<>::is_iec559
 #include <ostream>          // for ostream
@@ -154,7 +154,7 @@ private:
   std::vector<T> m_counts;
 };
 
-template<typename I, typename T = int64_t>
+template<typename I, typename T = uint64_t>
 class indexed_count
 {
   static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value,
@@ -221,7 +221,7 @@ private:
  * comes at the cost of making retrieval of counter objects for each value type
  * more expensive, since a new instance has to be created.
  */
-template<typename I, typename T = int64_t>
+template<typename I, typename T = uint64_t>
 class indexed_counts
 {
 public:
@@ -336,7 +336,7 @@ private:
 };
 
 //! Standard class for counts data
-using counts = counts_tmpl<int64_t>;
+using counts = counts_tmpl<uint64_t>;
 //! Standard class for rates, averages, etc.
 using rates = counts_tmpl<double>;
 

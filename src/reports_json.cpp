@@ -20,7 +20,7 @@
 #include "timeutils.hpp"     // for format_time, start_time
 #include "userconfig.hpp"    // for userconfig, output_files, output_sampl...
 #include "version.hpp"       // for version, short_version
-#include <cstdint>           // for int64_t
+#include <cstdint>           // for uint64_t
 #include <cstring>           // for size_t, strerror
 #include <memory>            // for __shared_ptr_access, shared_ptr, make_...
 #include <sstream>           // for basic_ostringstream, basic_ostream, bas...
@@ -286,7 +286,7 @@ write_report_demultiplexing(const userconfig& config,
             AR_FAIL("invalid barcode orientation");
         }
 
-        dict->i64("reads", demux.samples.at(i).get(j));
+        dict->u64("reads", demux.samples.at(i).get(j));
       }
 
       const auto output = sample->dict("output");
@@ -362,7 +362,6 @@ write_report_count(const json_list_ptr& json,
 
     dict->str("step", it.key);
     dict->str("action", feature_name(action));
-    dict->str("step", it.key);
     dict->u64("reads", it.count.reads());
     dict->u64("bases", it.count.bases());
   }
@@ -387,15 +386,15 @@ write_report_poly_x(json_dict& json,
 {
   json.str("step", step);
   json.str("action", "trim");
-  json.i64("reads", reads.sum());
-  json.i64("bases", bases.sum());
+  json.u64("reads", reads.sum());
+  json.u64("bases", bases.sum());
 
   const auto dict = json.dict("x");
   for (const auto nuc : nucleotides) {
     const auto nuc_stats = dict->inline_dict(std::string(1, to_lower(nuc)));
 
-    nuc_stats->i64("reads", reads.get(nuc));
-    nuc_stats->i64("bases", bases.get(nuc));
+    nuc_stats->u64("reads", reads.get(nuc));
+    nuc_stats->u64("bases", bases.get(nuc));
   }
 }
 
@@ -434,8 +433,8 @@ write_report_processing(const userconfig& config,
     AR_REQUIRE(totals.adapter_trimmed_reads.size() ==
                totals.adapter_trimmed_bases.size());
 
-    int64_t reads = 0;
-    int64_t bases = 0;
+    uint64_t reads = 0;
+    uint64_t bases = 0;
     for (size_t i = 0; i < totals.adapter_trimmed_reads.size(); ++i) {
       reads += totals.adapter_trimmed_reads.get(i);
       bases += totals.adapter_trimmed_bases.get(i);
@@ -455,8 +454,8 @@ write_report_processing(const userconfig& config,
 
       adapter->str("adapter1", adapters.at(i).first.as_string());
       adapter->str("adapter2", adapters.at(i).second.as_string());
-      adapter->i64("reads", totals.adapter_trimmed_reads.get(i));
-      adapter->i64("bases", totals.adapter_trimmed_bases.get(i));
+      adapter->u64("reads", totals.adapter_trimmed_reads.get(i));
+      adapter->u64("bases", totals.adapter_trimmed_bases.get(i));
     }
   }
 
@@ -543,7 +542,7 @@ write_report_consensus_adapter(json_dict_ptr json,
 
   auto kmer_dict = dict->dict("kmers");
   for (const auto& it : adapter.top_kmers()) {
-    kmer_dict->i64(it.first, it.second);
+    kmer_dict->u64(it.first, it.second);
   }
 }
 
@@ -581,8 +580,8 @@ write_report_analyses(const userconfig& config,
   if (stats.adapter_id) {
     auto consensus = json->dict("consensus_adapters");
 
-    consensus->i64("aligned_pairs", stats.adapter_id->aligned_pairs);
-    consensus->i64("pairs_with_adapters",
+    consensus->u64("aligned_pairs", stats.adapter_id->aligned_pairs);
+    consensus->u64("pairs_with_adapters",
                    stats.adapter_id->pairs_with_adapters);
 
     write_report_consensus_adapter(consensus,

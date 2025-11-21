@@ -534,10 +534,8 @@ reads_and_bases
 summarize_input(const fastq_stats_ptr& ptr)
 {
   const auto n_bases = ptr->length_dist().product();
-  AR_REQUIRE(n_bases >= 0);
 
-  return reads_and_bases{ ptr->number_of_input_reads(),
-                          static_cast<uint64_t>(n_bases) };
+  return reads_and_bases{ ptr->number_of_input_reads(), n_bases };
 }
 
 void
