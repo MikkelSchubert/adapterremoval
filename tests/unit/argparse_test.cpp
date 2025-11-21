@@ -1056,6 +1056,8 @@ TEST_CASE("bind vec", "[argparse::argument]")
 
 TEST_CASE("bind vec clears previous values", "[argparse::argument]")
 {
+  log::log_capture ss;
+
   string_vec sink;
   argparse::argument arg("--12345");
   arg.bind_vec(&sink);
