@@ -15,24 +15,8 @@
 
 namespace adapterremoval {
 
-// See main_adapter_rm.cpp
-int
-remove_adapter_sequences(const userconfig& config);
-// See main_adapter_id.cpp
-int
-identify_adapter_sequences(const userconfig& config);
-// See main_demultiplex.cpp
-int
-demultiplex_sequences(const userconfig& config);
-// See main_fastq_ro.cpp
-int
-fastq_report_only(const userconfig& config);
-// See main_benchmark.cpp
-int
-benchmark(const userconfig& config);
-
 [[noreturn]] void
-terminate(const std::string& message)
+terminate(std::string_view message)
 {
   log::error()
     << message << "\n"
@@ -43,6 +27,8 @@ terminate(const std::string& message)
 
   std::abort();
 }
+
+namespace {
 
 [[noreturn]] void
 terminate_on_exception()
@@ -66,6 +52,8 @@ terminate_on_exception()
 
   std::exit(1);
 }
+
+} // namespace
 
 } // namespace adapterremoval
 
@@ -112,7 +100,7 @@ main(int argc, char* argv[])
     }
 
     case ar_command::report_only: {
-      returncode = identify_adapter_sequences(config);
+      returncode = generate_reports(config);
       break;
     }
 

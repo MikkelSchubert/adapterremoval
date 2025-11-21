@@ -8,6 +8,7 @@
 #include "linereader.hpp"        // for vec_reader
 #include "linereader_joined.hpp" // for joined_line_readers
 #include "logging.hpp"           // for log
+#include "main.hpp"              // declarations
 #include "sequence_sets.hpp"     // for adapter_set
 #include "simd.hpp"              // for name, supported, instruction_set (p...
 #include "statistics.hpp"        // for fastq_statistics
