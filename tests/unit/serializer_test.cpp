@@ -8,6 +8,7 @@
 #include "sequence_sets.hpp" // for sample
 #include "serializer.hpp"    // for serializer
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include "version.hpp"       // for version
 #include <ostream>           // for basic_ostream, operator<<, ostream
 #include <string>            // for string
 #include <string_view>       // for string_view
@@ -200,9 +201,13 @@ TEST_CASE("Writing SAM header to buffer", "[serializer::fastq]")
   }
 
   s.header(buf, { "adapterremoval3", "--blah" });
-  REQUIRE(buf == "@HD\tVN:1.6\tSO:unsorted\n@PG\tID:adapterremoval\t"
-                 "PN:adapterremoval\tCL:adapterremoval3 --blah\t"
-                 "VN:3.0.0-alpha3\n"_buffer);
+
+  auto expected = "@HD\tVN:1.6\tSO:unsorted\n@PG\tID:adapterremoval\t"
+                  "PN:adapterremoval\tCL:adapterremoval3 --blah\tVN:"_buffer;
+  expected.append(program::long_version());
+  expected.append_u8('\n');
+
+  REQUIRE(buf == expected);
 }
 
 TEST_CASE("Writing SAM read-group header to buffer", "[serializer::fastq]")
@@ -215,10 +220,14 @@ TEST_CASE("Writing SAM read-group header to buffer", "[serializer::fastq]")
   s.set_sample(sample);
 
   s.header(buf, { "adapterremoval3", "--blah" });
-  REQUIRE(buf == "@HD\tVN:1.6\tSO:unsorted\n@RG\tID:foo\tSM:foo\t"
-                 "BC:ACGT-TGCA\n@PG\tID:adapterremoval\t"
-                 "PN:adapterremoval\tCL:adapterremoval3 --blah\t"
-                 "VN:3.0.0-alpha3\n"_buffer);
+
+  auto expected = "@HD\tVN:1.6\tSO:unsorted\n@RG\tID:foo\tSM:foo\t"
+                  "BC:ACGT-TGCA\n@PG\tID:adapterremoval\tPN:adapterremoval\t"
+                  "CL:adapterremoval3 --blah\tVN:"_buffer;
+  expected.append(program::long_version());
+  expected.append_u8('\n');
+
+  REQUIRE(buf == expected);
 }
 
 TEST_CASE("Writing SAM read-group header to buffer with multiple barcodes",
@@ -233,10 +242,15 @@ TEST_CASE("Writing SAM read-group header to buffer with multiple barcodes",
   s.set_sample(sample);
 
   s.header(buf, { "adapterremoval3", "--blah" });
-  REQUIRE(buf == "@HD\tVN:1.6\tSO:unsorted\n@RG\tID:foo.1\tSM:foo\t"
-                 "BC:ACGT-TGCA\n@RG\tID:foo.2\tSM:foo\tBC:TTGG-AGTT\n"
-                 "@PG\tID:adapterremoval\tPN:adapterremoval\t"
-                 "CL:adapterremoval3 --blah\tVN:3.0.0-alpha3\n"_buffer);
+
+  auto expected = "@HD\tVN:1.6\tSO:unsorted\n@RG\tID:foo.1\tSM:foo\t"
+                  "BC:ACGT-TGCA\n@RG\tID:foo.2\tSM:foo\tBC:TTGG-AGTT\n"
+                  "@PG\tID:adapterremoval\tPN:adapterremoval\t"
+                  "CL:adapterremoval3 --blah\tVN:"_buffer;
+  expected.append(program::long_version());
+  expected.append_u8('\n');
+
+  REQUIRE(buf == expected);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -419,10 +433,18 @@ TEST_CASE("Writing BAM header to buffer", "[serializer::fastq]")
 
   buffer buf;
   s.header(buf, { "adapterremoval3", "--blah" });
-  REQUIRE(buf == "BAM\x01i\x00\x00\x00@HD\tVN:1.6\tSO:unsorted\n"
-                 "@PG\tID:adapterremoval\tPN:adapterremoval\t"
-                 "CL:adapterremoval3 --blah\tVN:3.0.0-alpha3\n"
-                 "\x00\x00\x00\x00"_buffer);
+
+  const auto header = "@HD\tVN:1.6\tSO:unsorted\n"
+                      "@PG\tID:adapterremoval\tPN:adapterremoval\t"
+                      "CL:adapterremoval3 --blah\tVN:"_buffer;
+
+  auto expected = "BAM\x01"_buffer;
+  expected.append_u32(header.size() + program::long_version().length() + 1);
+  expected.append(header);
+  expected.append(program::long_version());
+  expected.append("\n\x00\x00\x00\x00"_buffer);
+
+  REQUIRE(buf == expected);
 }
 
 TEST_CASE("Writing BAM read-group header to buffer", "[serializer::fastq]")
@@ -436,11 +458,19 @@ TEST_CASE("Writing BAM read-group header to buffer", "[serializer::fastq]")
 
   buffer buf;
   s.header(buf, { "adapterremoval3", "--blah" });
-  REQUIRE(buf == "BAM\x01\x8f\x00\x00\x00@HD\tVN:1.6\tSO:unsorted\n@RG\t"
-                 "ID:foo\tLB:lib\tSM:foo\tBC:ACGT-TGCA\n@PG\t"
-                 "ID:adapterremoval\tPN:adapterremoval\tCL:"
-                 "adapterremoval3 --blah\tVN:3.0.0-alpha3\n"
-                 "\x00\x00\x00\x00"_buffer);
+
+  const auto header = "@HD\tVN:1.6\tSO:unsorted\n@RG\t"
+                      "ID:foo\tLB:lib\tSM:foo\tBC:ACGT-TGCA\n@PG\t"
+                      "ID:adapterremoval\tPN:adapterremoval\tCL:"
+                      "adapterremoval3 --blah\tVN:"_buffer;
+
+  auto expected = "BAM\x01"_buffer;
+  expected.append_u32(header.size() + program::long_version().length() + 1);
+  expected.append(header);
+  expected.append(program::long_version());
+  expected.append("\n\x00\x00\x00\x00"_buffer);
+
+  REQUIRE(buf == expected);
 }
 
 TEST_CASE("Writing BAM read-group header to buffer with multiple barcodes",
@@ -455,11 +485,20 @@ TEST_CASE("Writing BAM read-group header to buffer with multiple barcodes",
 
   buffer buf;
   s.header(buf, { "adapterremoval3", "--blah" });
-  REQUIRE(buf == "BAM\x01\xab\x00\x00\x00@HD\tVN:1.6\tSO:unsorted\n@RG\t"
-                 "ID:foo.1\tSM:foo\tBC:ACGT-TGCA\n@RG\tID:foo.2\t"
-                 "SM:foo\tBC:TTGG-AGTT\n@PG\tID:adapterremoval\t"
-                 "PN:adapterremoval\tCL:adapterremoval3 "
-                 "--blah\tVN:3.0.0-alpha3\n\x00\x00\x00\x00"_buffer);
+
+  const auto header = "@HD\tVN:1.6\tSO:unsorted\n@RG\t"
+                      "ID:foo.1\tSM:foo\tBC:ACGT-TGCA\n@RG\tID:foo.2\t"
+                      "SM:foo\tBC:TTGG-AGTT\n@PG\tID:adapterremoval\t"
+                      "PN:adapterremoval\tCL:adapterremoval3 "
+                      "--blah\tVN:"_buffer;
+
+  auto expected = "BAM\x01"_buffer;
+  expected.append_u32(header.size() + program::long_version().length() + 1);
+  expected.append(header);
+  expected.append(program::long_version());
+  expected.append("\n\x00\x00\x00\x00"_buffer);
+
+  REQUIRE(buf == expected);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -10,7 +10,6 @@
 #include "fastq_enc.hpp"     // for ACGT, ACGTN
 #include "json.hpp"          // for json_dict, json_dict_ptr, json_list
 #include "logging.hpp"       // for log_stream, error
-#include "main.hpp"          // for NAME, VERSION
 #include "managed_io.hpp"    // for managed_writer
 #include "output.hpp"        // for sample_output_files
 #include "reports.hpp"       // for write_json_report
@@ -20,6 +19,7 @@
 #include "strutils.hpp"      // for string_vec, to_lower, indent_lines
 #include "timeutils.hpp"     // for format_time, start_time
 #include "userconfig.hpp"    // for userconfig, output_files, output_sampl...
+#include "version.hpp"       // for version, short_version
 #include <cstdint>           // for int64_t
 #include <cstring>           // for size_t, strerror
 #include <memory>            // for __shared_ptr_access, shared_ptr, make_...
@@ -41,7 +41,7 @@ write_report_meta(const userconfig& config, json_dict& report)
 {
   const auto meta = report.dict("meta");
 
-  meta->str("version", FULL_NAME);
+  meta->str("version", program::long_version());
   meta->str_vec("command", config.args);
   meta->f64("runtime", config.runtime());
   meta->str("timestamp", format_time(start_time(), "%FT%T%z"));
@@ -694,8 +694,8 @@ write_json_report(const userconfig& config,
 
   {
     std::ostringstream url;
-    url << "https://MikkelSchubert.github.io/adapterremoval/schemas/" << VERSION
-        << ".json";
+    url << "https://MikkelSchubert.github.io/adapterremoval/schemas/"
+        << program::short_version() << ".json";
 
     auto samples = config.samples.get_reader();
     json_dict_ptr report = std::make_shared<json_dict>();

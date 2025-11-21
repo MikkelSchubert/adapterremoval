@@ -9,7 +9,6 @@
 #include "fastq_enc.hpp"             // for ACGT, ACGTN
 #include "json.hpp"                  // for json_dict, json_list, json_ptr
 #include "logging.hpp"               // for log_stream, error
-#include "main.hpp"                  // for VERSION, NAME
 #include "managed_io.hpp"            // for managed_io
 #include "reports.hpp"               // for write_html_report
 #include "reports_template_html.hpp" // for html_frequency_plot, html_demultiple...
@@ -19,6 +18,7 @@
 #include "strutils.hpp"              // for format_percentage, format_rough...
 #include "timeutils.hpp"             // for format_time, start_time
 #include "userconfig.hpp"            // for userconfig, ar_command, DEV_NULL
+#include "version.hpp"               // for version
 #include <algorithm>                 // for max
 #include <cctype>                    // for toupper
 #include <cmath>                     // for fmod
@@ -320,7 +320,7 @@ write_html_summary_section(const userconfig& config,
   {
     html_summary()
       .set_date_and_time(format_time(start_time(), "%F %T %Z"))
-      .set_version(VERSION)
+      .set_version(program::long_version())
       .set_command(shell_escape_command(config.args))
       .set_runtime(runtime_to_str(config.runtime()))
       .write(output);

@@ -470,4 +470,19 @@ format_percentage(uint64_t num, uint64_t denom, size_t precision)
   }
 }
 
+std::string_view
+prune_git_description(std::string_view desc)
+{
+  auto idx = desc.find('-');
+  while (idx != std::string_view::npos) {
+    if (!starts_with(desc.substr(idx), "-alpha")) {
+      break;
+    }
+
+    idx = desc.find('-', idx + 1);
+  }
+
+  return desc.substr(0, idx);
+}
+
 } // namespace adapterremoval

@@ -233,4 +233,8 @@ format_fraction(uint64_t num, uint64_t denom, size_t precision = 2);
 std::string
 format_percentage(uint64_t num, uint64_t denom, size_t precision = 1);
 
+/** Prune `git describe` derived tags from a verstion string */
+std::string_view
+prune_git_description(std::string_view desc);
+
 } // namespace adapterremoval

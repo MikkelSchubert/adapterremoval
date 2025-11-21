@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "simd.hpp"       // declarations
-#include "config-ar3.hpp" // for HAVE_SSE2, HAVE_AVX2, HAVE_AVX512...
-#include "debug.hpp"      // for AR_FAIL
-#include <string_view>    // for string_view
+#include "simd.hpp"        // declarations
+#include "debug.hpp"       // for AR_FAIL
+#include "simd-config.hpp" // for HAVE_SSE2, HAVE_AVX2, HAVE_AVX512...
+#include <string_view>     // for string_view
 
 namespace adapterremoval {
 
