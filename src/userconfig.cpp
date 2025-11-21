@@ -12,13 +12,13 @@
 #include "fastq_enc.hpp"        // for PHRED_SCORE_MAX
 #include "licenses.hpp"         // for LICENSES
 #include "logging.hpp"          // for log_stream, error, set_level, ...
-#include "main.hpp"             // for HELPTEXT, NAME, VERSION
 #include "output.hpp"           // for DEV_NULL, output_files, output_file
 #include "progress.hpp"         // for progress_type, progress_type::simple, ...
 #include "sequence.hpp"         // for dna_sequence
 #include "sequence_sets.hpp"    // for sample_set
 #include "simd.hpp"             // for size_t, name, supported, instruction_set
 #include "strutils.hpp"         // for shell_escape, str_to_u32
+#include "version.hpp"          // for name, version
 #include <algorithm>            // for find, max, min
 #include <array>                // for array
 #include <cerrno>               // for errno
@@ -484,8 +484,8 @@ userconfig::userconfig()
   , m_argparser(std::make_unique<argparse::parser>())
 {
   auto& argparser = *m_argparser;
-  argparser.set_name(NAME);
-  argparser.set_version(VERSION);
+  argparser.set_name(program::name());
+  argparser.set_version(program::long_version());
   argparser.set_preamble(HELPTEXT);
   argparser.set_licenses(LICENSES);
   argparser.set_terminal_width(log::get_terminal_width());
@@ -1075,7 +1075,7 @@ userconfig::userconfig()
   argparser.add("--report-title", "X")
     .help("Title used for HTML report")
     .bind_str(&report_title)
-    .with_default(FULL_NAME);
+    .with_default(program::short_name());
   argparser.add("--report-sample-rate", "X")
     .help("Fraction of reads to use when generating base quality/composition "
           "curves for trimming reports. Using all data (--report-sample-nth "

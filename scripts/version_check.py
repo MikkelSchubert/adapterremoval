@@ -24,11 +24,14 @@ IGNORED_FILES = (
 )
 
 
-def collect_version_strings(filepath: Path) -> list[str]:
+def collect_version_strings(filepath: Path, n: int | None = None) -> list[str]:
     text = filepath.read_text()
     matches: set[str] = set()
 
     for match in SEMVER_RE.finditer(text):
+        if n is not None and len(matches) >= n:
+            break
+
         value = match.group(0)
 
         # Trim what are typically file extensions
@@ -73,10 +76,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
-    # the version specified in main.hpp is considered the authoritative version; this is
-    # a bit arbitrary, but the check just needs to trigger if any version has changed
-    reference = Path("src") / "main.hpp"
-    versions = collect_version_strings(reference)
+    # the version specified in meson.build is considered the authoritative version; this
+    # is a bit arbitrary, but the check just needs to trigger if any version has changed
+    reference = Path("meson.build")
+    versions = collect_version_strings(reference, n=1)
     if len(versions) != 1:
         print(f"ERROR getting version from {reference}: {versions}", file=sys.stderr)
         return 1

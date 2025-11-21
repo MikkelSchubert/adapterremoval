@@ -7,10 +7,10 @@
 #include "errors.hpp"      // for serializing_error
 #include "fastq.hpp"       // for fastq
 #include "fastq_enc.hpp"   // for PHRED_OFFSET_MIN
-#include "main.hpp"        // for VERSION
 #include "read_group.hpp"  // for read_group
 #include "sequence.hpp"    // for dna_sequence
 #include "strutils.hpp"    // for join_text
+#include "version.hpp"     // for version
 #include <cstdint>         // for uint16_t, uint8_t
 #include <sstream>         // for ostringstream
 #include <string>          // for string, operator<<, string
@@ -135,7 +135,7 @@ create_sam_header(const string_vec& args, const sample& s)
   header.append("@PG\tID:adapterremoval\tPN:adapterremoval\tCL:");
   header.append(join_text(args, " "));
   header.append("\tVN:");
-  header.append(VERSION);
+  header.append(program::long_version());
   header.append("\n");
 
   return header;

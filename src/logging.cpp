@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "logging.hpp"   // declarations
 #include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
-#include "main.hpp"      // for NAME, VERSION
 #include "strutils.hpp"  // for split_lines, cli_formatter, string_vec
 #include "timeutils.hpp" // for timestamp
+#include "version.hpp"   // for name, version
 #include <algorithm>     // for max, min
 #include <chrono>        // for system_clock
 #include <iostream>      // for cerr
@@ -179,7 +179,7 @@ log_preamble()
   std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
   if (!g_preamble_logged) {
     g_preamble_logged = true;
-    log::info() << FULL_NAME;
+    log::info() << program::long_name();
   }
 }
 

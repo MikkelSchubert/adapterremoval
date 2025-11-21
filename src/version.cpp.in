@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
+#include "strutils.hpp" // for prune_git_description
+#include "version.hpp"  // declarations
+#include <string>       // for string
+#include <string_view>  // for string_view
+
+namespace adapterremoval::program {
+
+namespace {
+
+constexpr std::string_view PROGRAM_NAME = "AdapterRemoval";
+constexpr std::string_view GIT_VERSION = "PLACEHOLDER";
+
+} // namespace
+
+std::string_view
+name()
+{
+  return PROGRAM_NAME;
+}
+
+std::string_view
+long_version()
+{
+  // Generated version string always starts with 'v'
+  return GIT_VERSION.substr(1);
+}
+
+std::string_view
+short_version()
+{
+  return prune_git_description(long_version());
+}
+
+std::string
+short_name()
+{
+  std::string desc{ PROGRAM_NAME };
+  desc.append(" v");
+  desc.append(short_version());
+
+  return desc;
+}
+
+std::string
+long_name()
+{
+  std::string desc{ PROGRAM_NAME };
+  desc.push_back(' ');
+  desc.append(GIT_VERSION);
+
+  return desc;
+}
+
+} // namespace adapterremoval::program

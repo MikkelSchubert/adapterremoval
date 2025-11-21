@@ -7,6 +7,7 @@
 #include "logging.hpp"    // for log_stream, error
 #include "reports.hpp"    // for print_terminal_postamble, print_terminal_...
 #include "userconfig.hpp" // for ar_command, userconfig, ar_command::demul...
+#include "version.hpp"    // for version
 #include <cstdlib>        // for abort, size_t
 #include <exception>      // for set_terminate
 #include <ios>            // for ios_base
@@ -37,8 +38,8 @@ terminate(const std::string& message)
     << message << "\n"
     << "This should not happen! Please file a bug-report at\n"
     << "    https://github.com/MikkelSchubert/adapterremoval/issues/new\n\n"
-    << "Please specify the AdapterRemoval version used (" << VERSION << ")\n"
-    << "and if possible describe the steps taken to reproduce this problem.";
+    << "Please specify the AdapterRemoval version (" << program::long_version()
+    << ")\nand if possible describe the steps taken to reproduce this problem.";
 
   std::abort();
 }

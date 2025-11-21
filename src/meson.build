@@ -18,8 +18,19 @@ html_template = custom_target(
 )
 
 ################################################################################
+# Creation of version.cpp
 
-# To be replaced with `simd` module once stable
+version_cpp = vcs_tag(
+    command: ['git', 'describe', '--long', '--tags', '--dirty', '--broken'],
+    fallback: 'v' + meson.project_version(),
+    input: 'version.cpp.in',
+    output: 'version.cpp',
+    replace_string: 'PLACEHOLDER',
+)
+
+################################################################################
+# Creation of simd-config.hpp; to be replaced with `simd` module once stable
+
 config = configuration_data(
     {
         'HAVE_SSE2': '0',
@@ -69,7 +80,7 @@ foreach key, simd_config : libsimd_config
     endif
 endforeach
 
-config_inc = configure_file(output: 'config-ar3.hpp', configuration: config)
+config_inc = configure_file(output: 'simd-config.hpp', configuration: config)
 
 ################################################################################
 
@@ -103,6 +114,7 @@ libcore = static_library(
     'timeutils.cpp',
     'utilities.cpp',
     config_inc,
+    version_cpp,
     dependencies: [libdeflate, libisal, libmimalloc, libthreads],
 )
 
