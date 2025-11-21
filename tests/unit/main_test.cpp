@@ -4,14 +4,14 @@
 
 #include "errors.hpp"  // for assert_failed
 #include "testing.hpp" // for TEST_CASE, REQUIRE, ...
-#include <string>      // for string
+#include <string_view> // for string_view
 
 namespace adapterremoval {
 
 [[noreturn]] void
-terminate(const std::string& message)
+terminate(std::string_view message) // NOLINT(misc-use-internal-linkage)
 {
-  throw assert_failed(message);
+  throw assert_failed(std::string{ message });
 }
 
 TEST_CASE("terminate")

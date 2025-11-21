@@ -5,7 +5,7 @@
 #include "commontypes.hpp"      // for adapter_selection
 #include "demultiplexing.hpp"   // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq_io.hpp"         // for gzip_split_fastq, post_process_fastq
-#include "logging.hpp"          // for log
+#include "main.hpp"             // declarations
 #include "output.hpp"           // for outpuT_file, DEV_NULL
 #include "reports.hpp"          // for write_html_report, write_json_report
 #include "scheduler.hpp"        // for scheduler

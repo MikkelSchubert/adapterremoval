@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "debug.hpp" // declarations
+#include "main.hpp"  // for terminate
 #include <sstream>   // for ostringstream
-#include <string>    // for string
 
 namespace adapterremoval {
-
-[[noreturn]] void
-terminate(const std::string& message);
 
 void
 debug_raise_assert(std::string_view funcname,
