@@ -429,6 +429,9 @@
                     },
                     {
                         "$ref": "#/definitions/processing-step-statistics-poly-x"
+                    },
+                    {
+                        "$ref": "#/definitions/processing-step-statistics-merging"
                     }
                 ]
             }
@@ -631,7 +634,6 @@
                     "description": "The action performed by the step",
                     "enum": [
                         "filter",
-                        "merge",
                         "trim"
                     ]
                 },
@@ -780,6 +782,49 @@
                 "reads",
                 "bases",
                 "x"
+            ]
+        },
+        "processing-step-statistics-merging": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "step": {
+                    "description": "The name of the processing step",
+                    "$ref": "#/definitions/non-empty-string"
+                },
+                "action": {
+                    "description": "The action performed by the step",
+                    "const": "merge"
+                },
+                "reads": {
+                    "description": "Number of reads modified by the processing step",
+                    "$ref": "#/definitions/count"
+                },
+                "bases": {
+                    "description": "Number of bases modified by the processing step",
+                    "$ref": "#/definitions/count"
+                },
+                "corrected": {
+                    "description": "Number of mismatches where a higher-quality base was picked",
+                    "$ref": "#/definitions/count"
+                },
+                "masked": {
+                    "description": "Number of unresolvable mismatches where an 'N' was assigned",
+                    "$ref": "#/definitions/count"
+                },
+                "unmasked": {
+                    "description": "Number of 'N's that could be replaced by a base",
+                    "$ref": "#/definitions/count"
+                }
+            },
+            "required": [
+                "step",
+                "action",
+                "reads",
+                "bases",
+                "corrected",
+                "masked",
+                "unmasked"
             ]
         },
         "duplication-statistics": {

@@ -354,6 +354,9 @@ public:
   /* Returns number of bases merged */
   size_t bases_merged() const { return m_bases_merged; }
 
+  /* Returns the number of Ns that could be replaced by an actual base */
+  size_t ns_resolved() const { return m_ns_resolved; }
+
   /* Returns number of mismatches where a higher quality base was selected */
   size_t mismatches_resolved() const { return m_mismatches_resolved; }
 
@@ -372,6 +375,8 @@ private:
   size_t m_reads_merged = 0;
   //! The  number of bases merged
   size_t m_bases_merged = 0;
+  //! The number of 'N's in either read replaced by a base from the other read
+  size_t m_ns_resolved = 0;
   //! The number of mismatches where a higher quality base was selected
   size_t m_mismatches_resolved = 0;
   //! The number of mismatches where there was no higher quality base

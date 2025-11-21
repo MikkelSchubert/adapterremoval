@@ -623,6 +623,9 @@ pe_reads_processor::process(chunk_ptr data)
   // Track amount of overlapping bases "lost" due to read merging
   stats->reads_merged.inc_reads(merger.reads_merged());
   stats->reads_merged.inc_bases(merger.bases_merged());
+  stats->mismatches_resolved += merger.mismatches_resolved();
+  stats->mismatches_unresolved += merger.mismatches_unresolved();
+  stats->ns_resolved += merger.ns_resolved();
 
   m_stats.release(std::move(stats));
 

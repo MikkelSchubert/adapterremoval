@@ -477,9 +477,13 @@ sequence_merger::merge(const alignment_info& alignment,
     if (nt_2 == 'N' || nt_1 == 'N') {
       if (nt_1 == 'N' && nt_2 == 'N') {
         qual_1 = PHRED_OFFSET_MIN;
-      } else if (nt_1 == 'N') {
-        nt_1 = nt_2;
-        qual_1 = qual_2;
+      } else {
+        if (nt_1 == 'N') {
+          nt_1 = nt_2;
+          qual_1 = qual_2;
+        }
+
+        m_ns_resolved++;
       }
     } else if (nt_1 == nt_2) {
       if (m_merge_strategy == merge_strategy::maximum) {
