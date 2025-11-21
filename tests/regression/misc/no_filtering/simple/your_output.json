@@ -87,7 +87,7 @@
         { "adapter1": "", "adapter2": "", "reads": 2, "bases": 100 }
       ]
     },
-    { "step": "merging", "action": "merge", "reads": 2, "bases": 50 },
+    { "step": "merging", "action": "merge", "reads": 2, "bases": 50, "corrected": 1, "masked": 0, "unmasked": 0 },
     { "step": "low_quality", "action": "trim", "reads": 0, "bases": 0 }
   ],
   "analyses": {

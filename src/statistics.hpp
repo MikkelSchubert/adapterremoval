@@ -224,6 +224,12 @@ public:
 
   //! Total number of reads/bases merged
   reads_and_bases reads_merged{};
+  //! Number of mismatches where a higher quality base was picked during merging
+  size_t mismatches_resolved = 0;
+  //! Number of mismatches not resolved during merging; bases set to 'N'
+  size_t mismatches_unresolved = 0;
+  //! Number of 'N's that could be resolved using the other base
+  size_t ns_resolved = 0;
 
   //! Number of reads/bases trimmed with --pre-trim5p/3p
   reads_and_bases terminal_pre_trimmed{};

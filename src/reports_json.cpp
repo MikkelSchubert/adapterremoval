@@ -460,10 +460,17 @@ write_report_processing(const userconfig& config,
     }
   }
 
-  write_report_count(
-    json,
-    feature_type::merge,
-    { "merging", config.is_read_merging_enabled(), totals.reads_merged });
+  if (config.is_read_merging_enabled()) {
+    const auto dict = json->inline_dict();
+
+    dict->str("step", "merging");
+    dict->str("action", feature_name(feature_type::merge));
+    dict->u64("reads", totals.reads_merged.reads());
+    dict->u64("bases", totals.reads_merged.bases());
+    dict->u64("corrected", totals.mismatches_resolved);
+    dict->u64("masked", totals.mismatches_unresolved);
+    dict->u64("unmasked", totals.ns_resolved);
+  }
 
   write_report_count(json,
                      feature_type::trim,
