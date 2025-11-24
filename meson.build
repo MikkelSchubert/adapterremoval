@@ -59,6 +59,7 @@ add_project_arguments(
         '-Wstrict-overflow=2',
         '-Wswitch-default', # Require a default: statement in a switch, to catch corruption
         '-Wundef', # Undefined variables used in #if pragmas
+        '-Wnrvo',
     ),
     language: 'cpp',
 )

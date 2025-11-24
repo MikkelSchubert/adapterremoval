@@ -451,20 +451,21 @@ html_escape(std::string_view s)
 std::string
 format_thousand_sep(size_t count)
 {
-  if (!count) {
-    return "0";
-  }
 
   std::string ss;
-  for (size_t i = 0; count; ++i) {
-    ss.push_back('0' + (count % 10));
-    count /= 10;
-    if (count && i && i % 3 == 2) {
-      ss.push_back(',');
+  if (count) {
+    for (size_t i = 0; count; ++i) {
+      ss.push_back('0' + (count % 10));
+      count /= 10;
+      if (count && i && i % 3 == 2) {
+        ss.push_back(',');
+      }
     }
-  }
 
-  std::reverse(ss.begin(), ss.end());
+    std::reverse(ss.begin(), ss.end());
+  } else {
+    ss.push_back('0');
+  }
 
   return ss;
 }

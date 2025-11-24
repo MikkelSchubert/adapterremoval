@@ -148,7 +148,6 @@ read_fastq::read_fastq(const userconfig& config,
   : analytical_step(processing_order::ordered, "read_fastq")
   , m_reader(select_filenames(config, mode))
   , m_next_step(next_step)
-  , m_single_end(!config.paired_ended_mode)
   , m_mode(mode)
   , m_head(config.head)
 {
@@ -179,10 +178,11 @@ read_fastq::process(chunk_ptr data)
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
 
+  chunk_vec chunks;
   if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
     // The scheduler only terminates when the first step stops returning chunks
     if (m_eof) {
-      return {};
+      return chunks;
     }
 
     chunk = std::make_unique<fastq_chunk>();
@@ -217,7 +217,6 @@ read_fastq::process(chunk_ptr data)
   chunk->first = m_first;
   m_first = false;
 
-  chunk_vec chunks;
   chunks.emplace_back(m_next_step, std::move(chunk));
   return chunks;
 }

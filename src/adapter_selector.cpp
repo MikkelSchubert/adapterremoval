@@ -224,7 +224,7 @@ adapter_finalizer::process(chunk_ptr data)
         }
       }
 
-      return std::move(m_cache);
+      std::swap(m_cache, chunks);
     }
   } else if (auto fq_chunk = dynamic_cast_unique<fastq_chunk>(data)) {
     chunks.emplace_back(m_next_step, std::move(fq_chunk));
