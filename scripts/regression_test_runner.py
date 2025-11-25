@@ -209,32 +209,8 @@ def pretty_returncode(returncode: int) -> str:
         return str(returncode)
 
 
-def filter_errors(
-    text: str,
-    _re: re.Pattern[str] = re.compile(r"(\[(?:ERROR|WARNING)\] .*)"),
-) -> list[str]:
-    lines = text.rstrip().split("\n")
-    errors: list[str] = []
-    for line in lines:
-        match = _re.search(line)
-        if match:
-            errors.append(match.group())
-
-    return errors if errors else lines
-
-
-def print_long_err(
-    prefix: str,
-    error: str,
-    *,
-    max_lines: int | None = None,
-    tail: bool = False,
-):
-    lines = filter_errors(error)
-    if max_lines is not None:
-        lines = truncate_lines(lines, max_lines=max_lines, tail=tail)
-
-    for line in lines:
+def pretty_error(prefix: str, message: str):
+    for line in message.splitlines():
         print_err(prefix, line)
         prefix = " " * len(prefix)
 
@@ -694,10 +670,21 @@ class TestConfig(NamedTuple):
 
         return self
 
-    def build_command(self, executable: Path) -> list[str | Path]:
-        command: list[str | Path] = [executable, *self.arguments]
+    def build_command(self, executable: Path, valgrind: str | None) -> list[str | Path]:
         input_1: list[str] = []
         input_2: list[str] = []
+        command: list[str | Path] = []
+        if valgrind is not None:
+            command += [
+                "valgrind",
+                "--quiet",
+                f"--tool={valgrind}",
+                "--exit-on-first-error=yes",
+                "--error-exitcode=1",
+            ]
+
+        command.append(executable)
+        command.extend(self.arguments)
 
         for it in self.files:
             if it.kind == "input_1":
@@ -869,12 +856,16 @@ class TestRunner:
         test: TestConfig,
         root: Path,
         executable: Path,
+        valgrind: str | None,
         keep_all: bool = False,
+        timeout: float | None,
     ) -> None:
         self._test = test
 
+        self.timeout = timeout
         self.keep_all = keep_all
         self.executable = executable
+        self.valgrind = valgrind
         self.name = " / ".join(test.name)
 
         variant = test.variant if test.variant else ("basic",)
@@ -897,7 +888,7 @@ class TestRunner:
 
     @property
     def command(self) -> list[str | Path]:
-        return self._test.build_command(self.executable)
+        return self._test.build_command(self.executable, valgrind=self.valgrind)
 
     def run(self) -> None:
         if self.skip:
@@ -919,10 +910,7 @@ class TestRunner:
             # Write observed terminal output
             write_data(self._test_path / "_stdout.txt", stdout)
             write_data(self._test_path / "_stderr.txt", stderr)
-
-            command = self.command
-            command = [os.path.abspath(command[0]), *command[1:]]
-            command_s = cmd_to_s(command)
+            command_s = cmd_to_s(self.command)
 
             write_data(
                 self._test_path / "_run.sh",
@@ -965,7 +953,7 @@ class TestRunner:
         )
 
         try:
-            stdout, stderr = proc.communicate(timeout=3)
+            stdout, stderr = proc.communicate(timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             raise TestError("Test took too long to run") from error
         finally:
@@ -1044,12 +1032,15 @@ class TestUpdater:
         self,
         test: TestConfig,
         executable: Path,
+        *,
+        timeout: float | None,
     ) -> None:
         self.executable = executable
         self.name = " / ".join(test.name)
         self.path = test.path.parent
         self.spec_path = test.path
         self.skip = test.skip or test.return_code or not test.files
+        self.timeout = timeout
         self._test = test
 
     @property
@@ -1058,7 +1049,7 @@ class TestUpdater:
 
     @property
     def command(self) -> list[str | Path]:
-        return self._test.build_command(self.executable)
+        return self._test.build_command(self.executable, valgrind=None)
 
     def run(self) -> None:
         if not self.skip:
@@ -1077,7 +1068,7 @@ class TestUpdater:
         )
 
         try:
-            proc.wait(timeout=3)
+            proc.wait(timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             raise TestError("Test took too long to run") from error
         finally:
@@ -1170,7 +1161,9 @@ def build_test_runners(args: Args, tests: list[TestConfig]) -> list[TestRunner]:
                 test=test,
                 root=args.work_dir,
                 executable=args.executable,
+                valgrind=args.valgrind,
                 keep_all=args.keep_all,
+                timeout=args.timeout,
             )
 
             result.append(test)
@@ -1179,7 +1172,11 @@ def build_test_runners(args: Args, tests: list[TestConfig]) -> list[TestRunner]:
 
 
 def build_test_updaters(args: Args, tests: list[TestConfig]) -> list[TestUpdater]:
-    return [TestUpdater(test, args.executable) for test in tests if not test.skip]
+    return [
+        TestUpdater(test, args.executable, timeout=args.timeout)
+        for test in tests
+        if not test.skip
+    ]
 
 
 def collect_unused_files(root: Path, tests: list[TestConfig]) -> set[Path]:
@@ -1216,10 +1213,13 @@ def run_test(
 ################################################################################
 
 
-class Args(argparse.Namespace):
+@dataclass
+class Args:
     work_dir: Path
     source_dir: Path
+    source_root: Path
     executable: Path
+    valgrind: str | None
     max_failures: float
     keep_all: bool
     exhaustive: bool
@@ -1229,6 +1229,7 @@ class Args(argparse.Namespace):
     threads: int
     verbose: bool
     use_colors: str
+    timeout: float | None
 
 
 def parse_args(argv: list[str]) -> Args:
@@ -1315,7 +1316,23 @@ def parse_args(argv: list[str]) -> Args:
         help="Source root used to construct relative paths",
     )
 
-    return parser.parse_args(argv, namespace=Args())
+    parser.add_argument(
+        "--valgrind",
+        nargs="?",
+        default=None,
+        choices=("memcheck", "helgrind"),
+        help="Run tests through valgrind 'memcheck' or 'helgrind'",
+    )
+    parser.add_argument(
+        "--timeout",
+        metavar="SEC",
+        type=float,
+        default=None,
+        help="Timeout when running tests; defaults to 3 seconds if --vagrind is not "
+        "used, otherwise no timeout",
+    )
+
+    return Args(**vars(parser.parse_args(argv)))
 
 
 def main(argv: list[str]) -> int:
@@ -1339,6 +1356,13 @@ def main(argv: list[str]) -> int:
         return 1
     elif not args.source_dir.is_dir():
         print_err(f"ERROR: {quote(args.source_dir)} is not a directory")
+        return 1
+
+    if args.valgrind is None:
+        if args.timeout is None:
+            args.timeout = 3.0
+    elif not shutil.which("valgrind"):
+        print_err("ERROR: Could not find `valgrind` executable")
         return 1
 
     if args.max_failures <= 0:
@@ -1448,9 +1472,9 @@ def main(argv: list[str]) -> int:
         print_err("  Directory     =", relative_to(args.source_root, test.path))
         print_err("  Command       =", simplify_cmd(test.command))
 
-        print_long_err("  Error         =", str(error))
+        pretty_error("  Error         =", str(error))
         if isinstance(error, TestError) and error.output is not None:
-            print_long_err("  Output        =", error.output, max_lines=4, tail=True)
+            pretty_error("  Output        =", error.output)
 
     if not (n_failures or args.create_updated_reference):
         args.work_dir.rmdir()
