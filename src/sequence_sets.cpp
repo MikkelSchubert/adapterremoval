@@ -7,14 +7,14 @@
 #include "linereader.hpp"    // for line_reader
 #include "logging.hpp"       // for log
 #include "sequence.hpp"      // for dna_sequence
-#include "strutils.hpp"      // for log_escape
+#include "strutils.hpp"      // for log_escape, stringify
 #include "table_reader.hpp"  // for table_reader
 #include <algorithm>         // for max, sort, find
 #include <cstddef>           // for size_t
 #include <initializer_list>  // for initializer_list
 #include <sstream>           // for operator<<, basic_ostream, ostringstream
 #include <stdexcept>         // for invalid_argument
-#include <string>            // for to_string
+#include <string>            // for string
 #include <string_view>       // for string_view
 #include <utility>           // for pair
 #include <vector>            // for vector, vector<>::const_iterator
@@ -637,7 +637,7 @@ sample::set_read_group(const read_group& read_group_)
       if (m_barcodes.size() > 1) {
         std::string id = m_name;
         id.push_back('.');
-        id.append(std::to_string((it - m_barcodes.begin()) + 1));
+        id.append(stringify((it - m_barcodes.begin()) + 1));
 
         it->read_group_.set_id(id);
       } else {

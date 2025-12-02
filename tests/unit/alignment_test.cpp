@@ -9,6 +9,7 @@
 #include "fastq_enc.hpp"     // for FASTQ_ENCODING_SAM
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for size_t, instruction_set, supported, get_c...
+#include "strutils.hpp"      // for stringify
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <sstream>           // for ostringstream
 #include <string>            // for string, basic_string, operator<<
@@ -1878,7 +1879,7 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
     compare(func, "", "", 0, MMNs{ 0, 0 });
 
     for (size_t length = 1; length < reference.size(); ++length) {
-      SECTION(std::to_string(length))
+      SECTION(stringify(length))
       {
         std::string seq_1 = reference.substr(0, length);
         seq_1.resize(length + padding, 'N');

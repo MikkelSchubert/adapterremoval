@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "errors.hpp"   // declarations
-#include "strutils.hpp" // for log_escape
+#include "strutils.hpp" // for log_escape, stringify
 #include <array>        // for array
 #include <cstdio>       // for sys_errlist, sys_nerr
 #include <cstring>      // for strerror_r
@@ -35,7 +35,7 @@ strerror_r_wrapper(posix_strerror_r f, int error_number)
 {
   strerror_buf buf{};
   if (f(error_number, buf.data(), buf.size())) {
-    return "unknown error " + std::to_string(error_number);
+    return "unknown error " + stringify(error_number);
   }
 
   return buf.data();

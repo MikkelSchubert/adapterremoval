@@ -35,6 +35,38 @@ is_ascii_letter_or_digit(const char c)
 }
 
 /**
+ * Custom implementations of to_string to work around linking error involving
+ * vsnprintf on Alpine, when lto is enabled. See e.g.
+ *   https://gitlab.alpinelinux.org/alpine/aports/-/issues/13735
+ */
+std::string
+stringify(int value);
+std::string
+stringify(long value);
+std::string
+stringify(long long value);
+std::string
+stringify(unsigned value);
+std::string
+stringify(unsigned long value);
+std::string
+stringify(unsigned long long value);
+std::string
+stringify(double value);
+
+/* Deleted to prevent ambiguity */
+std::string
+stringify(bool value) = delete;
+std::string
+stringify(char value) = delete;
+std::string
+stringify(unsigned char value) = delete;
+std::string
+stringify(float value) = delete;
+std::string
+stringify(long double value) = delete;
+
+/**
  * Convert a string to a uint32_t.
  *
  * Throws std::invalid_argument if the string does not contain a proper number,

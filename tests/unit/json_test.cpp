@@ -114,17 +114,17 @@ TEST_CASE("json_token::from_<int> limits")
   {
     REQUIRE(
       json_token::from_i64(std::numeric_limits<int64_t>::min())->to_string() ==
-      std::to_string(std::numeric_limits<int64_t>::min()));
+      stringify(std::numeric_limits<int64_t>::min()));
     REQUIRE(
       json_token::from_i64(std::numeric_limits<int64_t>::max())->to_string() ==
-      std::to_string(std::numeric_limits<int64_t>::max()));
+      stringify(std::numeric_limits<int64_t>::max()));
   }
 
   SECTION("u64")
   {
     REQUIRE(
       json_token::from_u64(std::numeric_limits<uint64_t>::max())->to_string() ==
-      std::to_string(std::numeric_limits<uint64_t>::max()));
+      stringify(std::numeric_limits<uint64_t>::max()));
   }
 }
 

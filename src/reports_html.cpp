@@ -27,7 +27,7 @@
 #include <iomanip>                   // for operator<<, setprecision, setw
 #include <memory>                    // for __shared_ptr_access, shared_ptr
 #include <sstream>                   // for ostringstream
-#include <string>                    // for string, operator==, to_string
+#include <string>                    // for string, operator==
 #include <string_view>               // for string_view
 #include <utility>                   // for pair
 #include <vector>                    // for vector
@@ -96,7 +96,7 @@ mean_of_bp_counts(const counts& count)
   }
 
   if (bases % reads == 0) {
-    return std::to_string(bases / reads) + " bp";
+    return stringify(bases / reads) + " bp";
   }
 
   std::ostringstream ss;
@@ -512,10 +512,10 @@ write_html_trimming_stats(std::ostream& output,
   }
 
   html_summary_trimming_tail()
-    .set_n_enabled_filt(std::to_string(n_filtering_steps_on))
-    .set_n_total_filt(std::to_string(n_filtering_steps))
-    .set_n_enabled_proc(std::to_string(n_processing_steps_on))
-    .set_n_total_proc(std::to_string(n_processing_steps))
+    .set_n_enabled_filt(stringify(n_filtering_steps_on))
+    .set_n_total_filt(stringify(n_filtering_steps))
+    .set_n_enabled_proc(stringify(n_processing_steps_on))
+    .set_n_total_proc(stringify(n_processing_steps))
     .write(output);
 }
 
@@ -959,14 +959,14 @@ write_html_analyses_section(const userconfig& config,
       const auto& top_kmers_2 = adapter_2.top_kmers();
 
       html_consensus_adapter_kmer_head()
-        .set_n_kmers(std::to_string(consensus_adapter_stats::top_n_kmers))
-        .set_kmer_length(std::to_string(consensus_adapter_stats::kmer_length))
+        .set_n_kmers(stringify(consensus_adapter_stats::top_n_kmers))
+        .set_kmer_length(stringify(consensus_adapter_stats::kmer_length))
         .write(output);
 
       const auto kmers = std::max(top_kmers_1.size(), top_kmers_2.size());
       for (size_t i = 0; i < kmers; ++i) {
         html_consensus_adapter_kmer_row row;
-        row.set_index(std::to_string(i + 1));
+        row.set_index(stringify(i + 1));
 
         if (top_kmers_1.size() > i) {
           const auto& kmer = top_kmers_1.at(i);
@@ -1108,7 +1108,7 @@ write_html_demultiplexing_table(const sample_set& samples,
         row.set_orientation("<td>" + orientation_to_label(it) + "</td>");
       }
     } else {
-      const auto cell = "<i>" + std::to_string(sample.size()) + " barcodes</i>";
+      const auto cell = "<i>" + stringify(sample.size()) + " barcodes</i>";
       row.set_barcode_1(cell).set_barcode_2(cell);
 
       if (mixed_orientation) {
@@ -1116,7 +1116,7 @@ write_html_demultiplexing_table(const sample_set& samples,
       }
     }
 
-    row.set_n(std::to_string(sample_idx + 1))
+    row.set_n(stringify(sample_idx + 1))
       .set_name(sample.name())
       .set_sample_pct(format_percentage(sample_reads, input_reads, 2))
       .set_reads(format_rough_number(output_reads))
