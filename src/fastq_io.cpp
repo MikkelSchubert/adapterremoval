@@ -89,7 +89,7 @@ read_record(joined_line_readers& reader, std::vector<fastq>& chunk)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
-  const auto line_number = reader.linenumber();
+  const auto start = reader.linenumber();
 
   try {
     chunk.emplace_back();
@@ -103,9 +103,9 @@ read_record(joined_line_readers& reader, std::vector<fastq>& chunk)
     }
   } catch (const fastq_error& error) {
     std::ostringstream stream;
-    stream << "Error reading FASTQ record from '" << reader.filename()
-           << "' at line " << line_number << "; aborting:\n"
-           << indent_lines(error.what());
+    stream << "Error reading FASTQ record from "
+           << reader.filenames(start, reader.linenumber()) << ": "
+           << error.what();
 
     throw fastq_error(stream.str());
   }

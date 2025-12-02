@@ -21,7 +21,7 @@ class joined_line_readers : public line_reader_base
 {
 public:
   /** Creates line-reader over multiple files in the specified order. */
-  explicit joined_line_readers(const std::vector<std::string>& filenames);
+  explicit joined_line_readers(std::vector<std::string> filenames);
 
   ~joined_line_readers() override = default;
 
@@ -32,11 +32,11 @@ public:
    */
   bool getline(std::string& dst) override;
 
-  /** Currently open file; empty if no file is open. */
-  const std::string& filename() const { return m_filename; }
+  /** Global line number representing the current position across all files. */
+  [[nodiscard]] size_t linenumber() const { return m_current_line; }
 
-  /** Line number in the current file (1-based); 0 if no file is open. */
-  size_t linenumber() const { return m_current_line; }
+  /** List filenames covering range of lines; must not exceed `linenumber()` */
+  [[nodiscard]] std::string filenames(size_t start, size_t end) const;
 
   joined_line_readers(const joined_line_readers&) = delete;
   joined_line_readers(joined_line_readers&&) = delete;
@@ -50,14 +50,14 @@ private:
    */
   bool open_next_file();
 
-  //! Files left to read; stored in reverse order.
-  std::vector<std::string> m_filenames{};
+  //! Files (to be) read and the number of lines read, if any
+  std::vector<std::pair<std::string, size_t>> m_filenames{};
   //! Currently open file, if any.
   std::unique_ptr<line_reader> m_reader{};
   //! The currently open file
-  std::string m_filename{};
-  //! Current line across all files.
-  size_t m_current_line = 0;
+  size_t m_current_file = 0;
+  //! Current line across all files
+  size_t m_current_line = 1;
 };
 
 } // namespace adapterremoval
