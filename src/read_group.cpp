@@ -4,12 +4,11 @@
 #include "read_group.hpp"  // declarations
 #include "commontypes.hpp" // for barcode_orientation
 #include "debug.hpp"       // for AR_REQUIRE
-#include "strutils.hpp"    // for string_vec, indent_lines
+#include "strutils.hpp"    // for string_vec, indent_lines, stringify
 #include <ostream>         // for ostream
 #include <stdexcept>       // for invalid_argument
 #include <string>          // for string
 #include <string_view>     // for string_view
-#include <vector>          // for vector
 
 namespace adapterremoval {
 

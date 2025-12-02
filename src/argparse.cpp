@@ -4,7 +4,7 @@
 #include "argparse.hpp" // declarations
 #include "debug.hpp"    // for AR_REQUIRE
 #include "logging.hpp"  // for log_stream, error, cerr, warn
-#include "strutils.hpp" // for string_vec, shell_escape, to_lower
+#include "strutils.hpp" // for string_vec, shell_escape, to_lower, stringify
 #include <algorithm>    // for max, copy, find, min, sort
 #include <cstddef>      // for size_t
 #include <cstdint>      // for uint32_t

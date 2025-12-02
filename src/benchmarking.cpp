@@ -4,7 +4,7 @@
 #include "debug.hpp"        // for AR_REQUIRE
 #include "logging.hpp"      // for log
 #include "mathutils.hpp"    // for arithmetic_mean, standard_deviation
-#include "strutils.hpp"     // for to_lower
+#include "strutils.hpp"     // for to_lower, stringify
 #include <algorithm>        // for find, accumulate
 #include <array>            // for array
 #include <cmath>            // for round
