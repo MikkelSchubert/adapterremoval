@@ -13,6 +13,8 @@ project(
         'debug': 'false',
         'optimization': '2',
         'warning_level': '3',
+        'b_lto': true,
+        'b_lto_mode': 'thin',
     },
 )
 
@@ -71,6 +73,21 @@ if static
         ),
         language: 'cpp',
     )
+
+    section_options = compiler.get_supported_link_arguments(
+        '-ffunction-sections',
+        '-fdata-sections',
+    )
+
+    section_linker_options = compiler.get_supported_link_arguments(
+        '-Wl,--gc-sections',
+    )
+
+    # -f*sections + --gc-sections reduce the size of the static build by 25%
+    if section_options.length() == 2 and section_linker_options.length() == 1
+        add_project_arguments(section_options, language: 'cpp')
+        add_project_link_arguments(section_linker_options, language: 'cpp')
+    endif
 endif
 
 # Build static binary, forcing linking against static libraries
