@@ -35,6 +35,6 @@ repos:
     hooks:
       - id: version-check
         name: version-check
-        entry: ./scripts/version_check.py
+        entry: python3 ./scripts/version_check.py
         language: python
         types: ["text"]
