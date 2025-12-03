@@ -414,7 +414,7 @@ split_fastq::process(chunk_ptr data)
 
         if (m_isal_stream) {
           m_isal_crc32 =
-            crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
+            libdeflate_crc32(m_isal_crc32, m_buffer.data(), m_buffer.size());
         }
 
         block->uncompressed_size = m_buffer.size();
@@ -434,7 +434,7 @@ split_fastq::process(chunk_ptr data)
 
     if (m_isal_stream) {
       m_isal_crc32 =
-        crc32_gzip_refl(m_isal_crc32, m_buffer.data(), m_buffer.size());
+        libdeflate_crc32(m_isal_crc32, m_buffer.data(), m_buffer.size());
     }
 
     block->crc32 = m_isal_crc32;
