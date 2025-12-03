@@ -3,7 +3,7 @@
     "--out-prefix",
     "output",
     "--compression-level",
-    "13"
+    "12"
   ],
   "inherit_from": "test_defaults.json"
 }

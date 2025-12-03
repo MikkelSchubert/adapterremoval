@@ -698,16 +698,15 @@ userconfig::userconfig()
     .bind_vec(&read_group)
     .with_min_values(0);
   argparser.add("--compression-level", "N")
-    .help(
-      "Sets the compression level for compressed output. Valid values are 0 to "
-      "13: Level 0 is uncompressed but includes gzip headers/checksums, level "
-      "1 is streamed for SAM/FASTQ output (this may be required in rare cases "
-      "for compatibility), and levels 2 to 13 are block compressed using the "
-      "BGZF format")
+    .help("Sets the gzip compression level for compressed output. Level 0 is "
+          "uncompressed, but includes gzip headers and checksums; level 1 is "
+          "streamed when writing FASTQ/SAM files, which may be required for "
+          "compatibility in rare cases; and levels 2 to 12 and BAM output at "
+          "any level is block-compressed (BGZF)")
     .deprecated_alias("--gzip-level")
     .bind_u32(&compression_level)
-    .with_maximum(13)
-    .with_default(5);
+    .with_maximum(12)
+    .with_default(4);
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("ADAPTER SELECTION:");
