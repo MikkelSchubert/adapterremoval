@@ -228,9 +228,9 @@ Quality trimming options
 
     The method used for performing quality trimming; ``none`` to disable quality trimming, ``mott`` to enable trimming using the modified Mott's algorithm, ``window`` to perform window based quality trimming, and ``per-base`` to perform base-by-base trimming of low-quality bases and Ns (if enabled). Defaults to Mott's algorithm.
 
-.. option:: --trim-mott-quality phred
+.. option:: --trim-mott-rate phred
 
-    The threshold Phred score used when performing trimming quality based trimming using the modified Mott's algorithm. The value must be in the range 0 to 93, corresponding to Phred+33 encoded values of ``!`` to ``~``. Default to 13, which is an error rate of roughly 0.05.
+    The inclusive threshold value used when trimming low-quality bases using the modified Mott's algorithm. A value of zero disables trimming. Defaults to 0.05.
 
 .. option:: --trim-windows size
 
