@@ -38,6 +38,7 @@ public:
   (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
       posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_WILLNEED);
       posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_SEQUENTIAL);
+      posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_NOREUSE);
 #endif
     } else {
       // Merged I/O depends on filenames being identical
