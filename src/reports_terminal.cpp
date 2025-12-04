@@ -28,8 +28,7 @@ print_trimming_parameters(const userconfig& config)
   switch (config.trim) {
     case trimming_strategy::mott:
       log::info() << "  - Mott based trimming with Phred encoded quality score "
-                  << std::fixed << std::setprecision(1)
-                  << fastq_encoding::p_to_phred(config.trim_mott_rate);
+                  << config.trim_mott_rate;
       break;
     case trimming_strategy::window:
       log::info() << "  - Window based quality based trimming with window size "
