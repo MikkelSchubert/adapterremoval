@@ -1,10 +1,10 @@
 {
-  "description": "Trimming with default error rate. Should not trim additional bases compared to --trim-mott-quality 13",
+  "description": "Trimming with default error rate. Should not trim additional bases compared to --trim-mott-rate 0.05",
   "arguments": [
     "--quality-trimming",
     "mott",
-    "--trim-mott-quality",
-    "19",
+    "--trim-mott-rate",
+    "0.0125",
     "--out-prefix",
     "output_19"
   ],
