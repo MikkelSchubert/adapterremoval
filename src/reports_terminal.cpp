@@ -61,10 +61,10 @@ print_terminal_preamble(const userconfig& config)
 {
   log::log_preamble();
 
-  if (config.simd == simd::instruction_set::none) {
+  if (*config.simd.get_reader() == simd::instruction_set::none) {
     log::warn() << "Hardware accelerated alignments disabled!";
-  } else {
-    log::info() << "Using " << simd::name(config.simd)
+  } else if (!config.simd_auto_select) {
+    log::info() << "Using " << simd::name(*config.simd.get_reader())
                 << " accelerated alignments";
   }
 

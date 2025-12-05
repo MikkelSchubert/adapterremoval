@@ -498,18 +498,21 @@ userconfig::userconfig()
     .with_minimum(1);
 
   {
-    std::vector<std::string> choices;
+    std::vector<std::string> choices{ "auto" };
     for (const auto is : simd::supported()) {
       choices.emplace_back(simd::name(is));
     }
 
     AR_REQUIRE(!choices.empty());
     argparser.add("--simd", "NAME")
-      .help("SIMD instruction set to use; defaults to the most advanced "
-            "instruction set supported by this computer")
+      .help("SIMD instruction set to use; when multiple SIMD instruction sets"
+            "are supported, attempt to auto-select the optimal instruction set "
+            "for the current data")
       .bind_str(nullptr)
       .with_choices(choices)
-      .with_default(choices.back());
+      // SIMD implementations always appear to be faster than 'none', but on
+      // some systems AVX512 is for example not always faster than AVX2
+      .with_default(choices.size() <= 3 ? choices.back() : choices.front());
   }
 
   argparser.add("--benchmark")
@@ -1323,15 +1326,21 @@ userconfig::parse_args(const string_vec& argvec)
   {
     bool found = false;
     const auto simd_choice = argparser.value("--simd");
-    for (const auto is : simd::supported()) {
-      if (simd_choice == simd::name(is)) {
-        simd = is;
-        found = true;
-        break;
+    const auto supported = simd::supported();
+    if (simd_choice == "auto") {
+      simd_auto_select = true;
+      *simd.get_writer() = supported.back();
+    } else {
+      for (const auto is : supported) {
+        if (simd_choice == simd::name(is)) {
+          *simd.get_writer() = is;
+          found = true;
+          break;
+        }
       }
-    }
 
-    AR_REQUIRE(found);
+      AR_REQUIRE(found);
+    }
   }
 
   using fixed_trimming =

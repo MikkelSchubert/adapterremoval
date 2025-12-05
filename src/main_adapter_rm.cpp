@@ -9,6 +9,7 @@
 #include "output.hpp"           // for outpuT_file, DEV_NULL
 #include "reports.hpp"          // for write_html_report, write_json_report
 #include "scheduler.hpp"        // for scheduler
+#include "simd_selector.hpp"    // for simd_selector
 #include "statistics.hpp"       // for trim_stats_ptr, trimming_statistics
 #include "trimming.hpp"         // for pe_reads_processor, se_reads_processor
 #include "userconfig.hpp"       // for userconfig, output_files, DEV_NULL
@@ -59,7 +60,7 @@ remove_adapter_sequences(const userconfig& config)
     }
   }
 
-  // Step 3: Parse and demultiplex reads based on single or double indices
+  // Step 5: Parse and demultiplex reads based on single or double indices
   size_t step = std::numeric_limits<size_t>::max();
   if (config.is_demultiplexing_enabled()) {
     // Statistics and serialization of unidentified reads
@@ -75,6 +76,16 @@ remove_adapter_sequences(const userconfig& config)
     step = steps.samples.back();
   }
 
+  // Step 4: Determine optional SIMD instruction set for alignments
+  if (config.simd_auto_select) {
+    step = sch.add<simd_selector>(config.samples,
+                                  config.simd,
+                                  config.mismatch_threshold,
+                                  config.shift,
+                                  step);
+  }
+
+  // Step 3: Attempt to identify adapters based on known sequences
   if (config.adapter_selection_strategy == adapter_selection::automatic) {
     const auto database = config.known_adapters();
 
@@ -83,7 +94,7 @@ remove_adapter_sequences(const userconfig& config)
                                       config.adapter_fallback_strategy,
                                       step);
     step = sch.add<adapter_selector>(database,
-                                     config.simd,
+                                     *config.simd.get_reader(),
                                      config.mismatch_threshold,
                                      step,
                                      config.max_threads);

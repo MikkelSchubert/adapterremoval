@@ -327,11 +327,9 @@ se_reads_processor::process(chunk_ptr data)
 
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
+  const auto simd = *m_config.simd.get_reader();
   for (const auto& it : samples->at(m_sample)) {
-    aligners.emplace_back(it.adapters(),
-                          m_config.simd,
-                          m_config.mismatch_threshold);
-
+    aligners.emplace_back(it.adapters(), simd, m_config.mismatch_threshold);
     aligners.back().set_min_se_overlap(m_config.min_adapter_overlap);
   }
 
@@ -456,14 +454,12 @@ pe_reads_processor::process(chunk_ptr data)
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
 
+  AR_REQUIRE(sample.size() > 0);
   // A sequence aligner per barcode (pair)
   std::vector<sequence_aligner> aligners;
-  AR_REQUIRE(sample.size() > 0);
+  const auto simd = *m_config.simd.get_reader();
   for (const auto& it : sample) {
-    aligners.emplace_back(it.adapters(),
-                          m_config.simd,
-                          m_config.mismatch_threshold);
-
+    aligners.emplace_back(it.adapters(), simd, m_config.mismatch_threshold);
     aligners.back().set_merge_threshold(m_config.merge_threshold);
   }
 

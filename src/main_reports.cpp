@@ -11,6 +11,7 @@
 #include "reports.hpp"          // for write_html_report, write_json_report
 #include "scheduler.hpp"        // for threadstate, scheduler, analytical_step
 #include "sequence_sets.hpp"    // for adapter_set
+#include "simd_selector.hpp"    // for simd_selector
 #include "statistics.hpp"       // for trimming_statistics
 #include "userconfig.hpp"       // for userconfig
 #include <cstddef>              // for size_t
@@ -58,8 +59,9 @@ public:
 
     const adapter_set adapters = { { "", "" } };
 
-    auto aligner =
-      sequence_aligner(adapters, m_config.simd, m_config.mismatch_threshold);
+    auto aligner = sequence_aligner(adapters,
+                                    *m_config.simd.get_reader(),
+                                    m_config.mismatch_threshold);
     aligner.set_merge_threshold(m_config.merge_threshold);
 
     auto stats_id = m_stats_id.acquire();
@@ -139,7 +141,7 @@ generate_reports(const userconfig& config)
   // FIXME: Required for insert size statistics
   stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
-  // Step 3:
+  // Step 5: Identify adapters from pair-wise alignments and infer insert sizes
   size_t step = std::numeric_limits<size_t>::max();
   if (config.paired_ended_mode) {
     // Attempt to identify adapters through pair-wise alignments
@@ -149,6 +151,16 @@ generate_reports(const userconfig& config)
     step = sch.add<reads_sink>();
   }
 
+  // Step 4: Determine optional SIMD instruction set for alignments
+  if (config.simd_auto_select) {
+    step = sch.add<simd_selector>(config.samples,
+                                  config.simd,
+                                  config.mismatch_threshold,
+                                  config.shift,
+                                  step);
+  }
+
+  // Step 3: Attempt to identify adapters based on known sequences
   if (config.adapter_selection_strategy == adapter_selection::automatic) {
     const auto database = config.known_adapters();
 
@@ -157,7 +169,7 @@ generate_reports(const userconfig& config)
                                       config.adapter_fallback_strategy,
                                       step);
     step = sch.add<adapter_selector>(database,
-                                     config.simd,
+                                     *config.simd.get_reader(),
                                      config.mismatch_threshold,
                                      step,
                                      config.max_threads);
