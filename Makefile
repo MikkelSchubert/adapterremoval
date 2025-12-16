@@ -101,8 +101,8 @@ unit-tests: ${NINJAFILE}
 update-regression-tests: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" update-regression-tests
 
-tests: executables unit-tests regression-tests
+test tests: executables unit-tests regression-tests
 
 .PHONY: clean clean-coverage coverage-xml coverage executable executables \
-	install regression-tests setup static-container static tests unit-tests \
-	unit-tests-executable update-regression-tests
+	install regression-tests setup static-container static test tests \
+	unit-tests unit-tests-executable update-regression-tests
