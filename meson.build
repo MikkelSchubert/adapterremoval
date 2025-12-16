@@ -5,17 +5,17 @@ project(
     'adapterremoval3',
     'cpp',
     version: '3.0.0-alpha3',
-    meson_version: '>=1.2.0',
-    default_options: {
+    meson_version: '>=0.56.0',
+    default_options: [
         # Disable costly (libc++) assertions in release mode
-        'b_ndebug': 'true',
-        'cpp_std': 'c++17',
-        'debug': 'false',
-        'optimization': '2',
-        'warning_level': '3',
-        'b_lto': true,
-        'b_lto_mode': 'thin',
-    },
+        'b_ndebug=true',
+        'cpp_std=c++17',
+        'debug=false',
+        'optimization=2',
+        'warning_level=3',
+        'b_lto=true',
+        'b_lto_mode=thin',
+    ],
 )
 
 compiler = meson.get_compiler(
@@ -59,7 +59,6 @@ add_project_arguments(
         '-Wstrict-overflow=2',
         '-Wswitch-default', # Require a default: statement in a switch, to catch corruption
         '-Wundef', # Undefined variables used in #if pragmas
-        checked: 'off',
     ),
     language: 'cpp',
 )
@@ -93,7 +92,10 @@ endif
 # Build static binary, forcing linking against static libraries
 libmimalloc = not_found
 if get_option('mimalloc')
-    libmimalloc = dependency('libmimalloc', 'mimalloc', version: ['>=2', '<3'], static: static)
+    libmimalloc = dependency('libmimalloc', version: ['>=2', '<3'], static: static, required: false)
+    if not libmimalloc.found()
+        libmimalloc = dependency('mimalloc', version: ['>=2', '<3'], static: static)
+    endif
 endif
 
 # Hardening flags based on https://wiki.debian.org/Hardening
@@ -125,9 +127,30 @@ if harden
     )
 endif
 
-libisal = dependency('libisal', 'isal', version: ['>=2.30.0', '<3'], static: static)
-libdeflate = dependency('libdeflate', 'deflate', version: ['>=1', '<2'], static: static)
+libisal = dependency('libisal', version: ['>=2.30.0', '<3'], static: static, required: false)
+if not libisal.found()
+    libisal = dependency('isal', version: ['>=2.30.0', '<3'], static: static, required: false)
+
+    # WORKAROUND: Support for older distros lacking cmake/pkgconf support
+    if not libisal.found()
+        libisal = meson.get_compiler('cpp').find_library('libisal')
+    endif
+endif
+
+libdeflate = dependency('libdeflate', version: ['>=1', '<2'], static: static, required: false)
+if not libdeflate.found()
+    libdeflate = dependency('deflate', version: ['>=1', '<2'], static: static, required: false)
+
+    # WORKAROUND: Support for older distros lacking cmake/pkgconf support
+    if not libdeflate.found()
+        libdeflate = meson.get_compiler('cpp').find_library('libdeflate')
+    endif
+endif
+
 libthreads = dependency('threads', static: static)
+
+# WORKAROUND: Required for some old distros
+libcppfs = meson.get_compiler('cpp').find_library('stdc++fs', required: false)
 
 ################################################################################
 
