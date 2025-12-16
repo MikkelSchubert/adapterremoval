@@ -34,7 +34,7 @@ using hits_vec = std::vector<adapter_detection_stats::hits>;
 
 using Catch::Matchers::Contains;
 
-}; // namespace
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // adapter_preselector
