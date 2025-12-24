@@ -25,13 +25,15 @@ On Debian based systems, these may be installed as follows:
 
 .. code::
 
-   sudo apt-get install build-essential meson ninja-build libdeflate-dev libisal-dev python3 python3-sphinx
+   sudo apt-get install build-essential meson ninja-build libdeflate-dev libisal-dev python3 python3-sphinx pkgconf
 
 On OSX, these can be installed using Homebrew as follows:
 
 .. code::
 
    brew install llvm meson ninja isa-l libdeflate sphinx-doc
+
+Running AdapterRemoval requires only libdeflate and libisal.
 
 Building AdapterRemoval
 =======================

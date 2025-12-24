@@ -3,7 +3,6 @@
 #include "strutils.hpp" // declarations
 #include "debug.hpp"    // for AR_REQUIRE
 #include <algorithm>    // for min, reverse, max
-#include <array>        // for array
 #include <cctype>       // for isprint, isalnum, tolower, toupper
 #include <charconv>     // for from_chars
 #include <cmath>        // for log10, pow, round
@@ -67,14 +66,12 @@ template<typename T>
 inline std::string
 stringify_int(T value)
 {
-  std::array<char, 20> buffer{};
+  // WORKAROUND: ostringstream is used since to_chars is unavailable for some
+  //             older compilers, e.g. gcc-10  on Debian bullseye
+  std::ostringstream os;
+  os << value;
 
-  auto result =
-    std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
-  AR_REQUIRE(result.ec == std::errc(),
-             std::make_error_code(result.ec).message());
-
-  return std::string(buffer.data(), result.ptr - buffer.data());
+  return os.str();
 }
 
 } // namespace
@@ -118,18 +115,12 @@ stringify(unsigned long long value)
 std::string
 stringify(double value)
 {
-  // Largest possible value should require 317 chars
-  std::array<char, 320> buffer{};
+  // WORKAROUND: ostringstream is used since to_chars is unavailable for some
+  //             older compilers, e.g. gcc-10  on Debian bullseye
+  std::ostringstream os;
+  os << std::fixed << std::setprecision(6) << value;
 
-  auto result = std::to_chars(buffer.data(),
-                              buffer.data() + buffer.size(),
-                              value,
-                              std::chars_format::fixed,
-                              6);
-  AR_REQUIRE(result.ec == std::errc(),
-             std::make_error_code(result.ec).message());
-
-  return std::string(buffer.data(), result.ptr - buffer.data());
+  return os.str();
 }
 
 namespace {

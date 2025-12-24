@@ -395,7 +395,7 @@ TEST_CASE("adapter detection for PE adapters")
 
   REQUIRE(stats.reads_1() == 1);
   REQUIRE(stats.reads_2() == 1);
-};
+}
 
 TEST_CASE("mate 1 and mate 2 read counts are independent")
 {
@@ -415,7 +415,7 @@ TEST_CASE("mate 1 and mate 2 read counts are independent")
   REQUIRE(stats.mate_2() == hits_vec{ { 1, 17 }, { 1, 17 }, {} });
   REQUIRE(stats.reads_1() == 2);
   REQUIRE(stats.reads_2() == 1);
-};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // adapter_detector selection
