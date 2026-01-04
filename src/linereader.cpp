@@ -251,32 +251,31 @@ line_reader::refill_buffers_gzip()
   m_gzip_stream->avail_out = m_buffer->size();
   m_gzip_stream->next_out = reinterpret_cast<uint8_t*>(m_buffer->data());
 
-  // Refill the buffer if empty or if a block was finished. This ensures that we
-  // can properly identify additional gzip blocks and parse their headers.
+  // Refill the buffer if empty or if we need more data to properlyidentify
+  // additional gzip blocks and parse their headers. The number of bytes (64) is
+  // arbitrary, but should suffice.
   if (!m_gzip_stream->avail_in ||
-      m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
+      (m_gzip_stream->avail_in < 64 &&
+       m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH)) {
     refill_raw_buffer(m_gzip_stream->avail_in);
     m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
     m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
+  }
 
-    if (m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
-      if (is_raw_buffer_gzip()) {
-        isal_inflate_reset(m_gzip_stream.get());
+  if (m_gzip_stream->block_state == isal_block_state::ISAL_BLOCK_FINISH) {
+    if (m_gzip_stream->avail_in > 1 && m_gzip_stream->next_in[0] == 0x1f &&
+        m_gzip_stream->next_in[1] == 0x8b) {
+      isal_inflate_reset(m_gzip_stream.get());
+      // simplify by letting isa-l handle partly buffered headers
+      m_gzip_stream->crc_flag = ISAL_GZIP;
+    } else if (m_gzip_stream->avail_in) {
+      log::warn() << "Ignoring trailing garbage at the end of "
+                  << shell_escape(m_reader.filename());
 
-        const auto result =
-          isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-        check_isal_return_code(result,
-                               m_reader.filename(),
-                               "reading next gzip header from");
-      } else if (m_gzip_stream->avail_in) {
-        log::warn() << "Ignoring trailing garbage at the end of "
-                    << shell_escape(m_reader.filename());
-
-        m_buffer_ptr = m_buffer->data();
-        m_buffer_end = m_buffer_ptr;
-        m_eof = true;
-        return;
-      }
+      m_buffer_ptr = m_buffer->data();
+      m_buffer_end = m_buffer_ptr;
+      m_eof = true;
+      return;
     }
   }
 
