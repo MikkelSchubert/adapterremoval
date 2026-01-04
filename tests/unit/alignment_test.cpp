@@ -291,7 +291,8 @@ TEST_CASE("SE: Partial alignment with ambiguous between ends",
 TEST_CASE("SE: Completely overlapping sequences", "[alignment::single_end]")
 {
   const fastq record("Rec", "ACGTAGTA", "!!!!!!!!");
-  const adapter_set adapters = { { { record.sequence() }, "" } };
+  const auto adapters =
+    adapter_set{ { std::string_view{ record.sequence() }, "" } };
   const alignment_info expected = ALN().length(8).is_good();
   const alignment_info result =
     align_single_ended_sequence(record, adapters, 0);

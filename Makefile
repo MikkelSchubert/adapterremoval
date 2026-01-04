@@ -78,7 +78,10 @@ regression-tests: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" run-regression-tests
 
 setup ${NINJAFILE}:
-	meson setup "${BUILDDIR}" --reconfigure \
+	# WORKAROUND: `setup` fails on existing builddirs without `--reconfigure`,
+	#             but that option requires existing builddir in v1.0.0 or older
+	rm -rf "${BUILDDIR}"
+	meson setup "${BUILDDIR}" \
 		-Db_coverage=${COVERAGE} \
 		-Ddebug=${DEBUG} \
 		-Dharden=${HARDEN} \
