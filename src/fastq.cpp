@@ -163,6 +163,7 @@ fastq::parse_header(const char mate_separator) const
     mate = header.back();
     header = header.substr(0, header.length() - 2);
   }
+
   return { header, mate, meta };
 }
 
@@ -536,7 +537,7 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
       const auto info1 = it_1->parse_header(candidate);
       const auto info2 = it_2->parse_header(candidate);
 
-      if (info1.name != info2.name) {
+      if (info1.mate == '\0' || info1.name != info2.name) {
         any_failures = true;
         break;
       }

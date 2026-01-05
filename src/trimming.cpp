@@ -316,7 +316,8 @@ se_reads_processor::process(chunk_ptr data)
   processed_reads chunks{ m_output };
   chunks.set_sample(samples->at(m_sample));
   chunks.set_input_mate_separator(chunk->mate_separator);
-  chunks.set_output_mate_separator(chunk->mate_separator);
+  chunks.set_output_mate_separator(
+    m_config.get_output_mate_separator(chunk->mate_separator));
 
   if (chunk->first) {
     chunks.write_headers(m_config.args);
@@ -446,7 +447,8 @@ pe_reads_processor::process(chunk_ptr data)
   processed_reads chunks{ m_output };
   chunks.set_sample(sample);
   chunks.set_input_mate_separator(chunk->mate_separator);
-  chunks.set_output_mate_separator(chunk->mate_separator);
+  chunks.set_output_mate_separator(
+    m_config.get_output_mate_separator(chunk->mate_separator));
 
   if (chunk->first) {
     chunks.write_headers(m_config.args);

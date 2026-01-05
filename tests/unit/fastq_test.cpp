@@ -1348,11 +1348,11 @@ TEST_CASE("guess_mate_separator asserts on mismatching input lengths")
                     assert_failed);
 }
 
-TEST_CASE("guess_mate_separator should default to / if there are no separators")
+TEST_CASE("guess_mate_separator should default to 0 if there are no separators")
 {
   const std::vector<fastq> reads{ fastq("foo", "") };
 
-  REQUIRE(fastq::guess_mate_separator(reads, reads) == '/');
+  REQUIRE(fastq::guess_mate_separator(reads, reads) == '\0');
 }
 
 TEST_CASE("guess_mate_separator should return valid separator")
