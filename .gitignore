@@ -12,6 +12,9 @@ compile_commands.json
 /examples/your_output.*
 /your_output.*
 
+# Linters
+.harper-dictionary.txt
+
 # Misc files
 *.patch
 *.gcov
