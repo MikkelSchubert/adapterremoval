@@ -170,7 +170,8 @@ process_demultiplexed::process(chunk_ptr data)
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
   chunks.set_sample(m_samples.get_reader()->at(m_sample));
-  chunks.set_mate_separator(chunk->mate_separator);
+  chunks.set_input_mate_separator(chunk->mate_separator);
+  chunks.set_output_mate_separator(chunk->mate_separator);
   chunks.set_demultiplexing_only(true);
 
   if (chunk->first) {
@@ -248,7 +249,8 @@ processes_unidentified::process(chunk_ptr data)
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
   chunks.set_sample(m_config.samples.get_reader()->unidentified());
-  chunks.set_mate_separator(chunk->mate_separator);
+  chunks.set_input_mate_separator(chunk->mate_separator);
+  chunks.set_output_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
     chunks.write_headers(m_config.args);

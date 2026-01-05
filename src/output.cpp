@@ -217,10 +217,18 @@ processed_reads::set_sample(const sample& value)
 }
 
 void
-processed_reads::set_mate_separator(char value)
+processed_reads::set_input_mate_separator(char value)
 {
   for (auto& it : m_serializers) {
-    it.set_mate_separator(value);
+    it.set_input_mate_separator(value);
+  }
+}
+
+void
+processed_reads::set_output_mate_separator(char value)
+{
+  for (auto& it : m_serializers) {
+    it.set_output_mate_separator(value);
   }
 }
 

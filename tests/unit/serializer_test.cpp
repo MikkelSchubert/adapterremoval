@@ -125,7 +125,9 @@ TEST_CASE("Writing FASTQ with mate separator")
 
   serializer s{ output_format::fastq };
   // This shouldn't matter, as mate separators are not removed for FASTQ reads
-  s.set_mate_separator(GENERATE('\0', '/'));
+  const auto mate_sep = GENERATE('\0', '/');
+  s.set_input_mate_separator(mate_sep);
+  s.set_output_mate_separator(mate_sep);
 
   buffer buf;
   s.record(buf, record, read_meta(read_type::pe_1));
@@ -329,7 +331,8 @@ TEST_CASE("serialize SAM record with mate separator")
 
   SECTION("with mate sep")
   {
-    s.set_mate_separator('/');
+    s.set_input_mate_separator('/');
+    s.set_output_mate_separator('/');
     s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
                    "!$#$*68CGJ\n"_buffer);
@@ -602,7 +605,8 @@ TEST_CASE("serialize BAM record with mate separator")
 
   SECTION("with mate sep")
   {
-    s.set_mate_separator('/');
+    s.set_input_mate_separator('/');
+    s.set_output_mate_separator('/');
     s.record(buf, record, read_meta{ read_type::se });
     REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                    "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"

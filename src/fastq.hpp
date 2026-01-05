@@ -71,6 +71,20 @@ public:
   /** Returns the name (excluding the @ and other fields) of the header. **/
   [[nodiscard]] std::string_view name(char mate_separator = '\0') const;
 
+  /** Struct collecting basic information contained in a FASTQ header */
+  struct fastq_header
+  {
+    //! Read name without '@' and mate number (if separator is specified)
+    std::string_view name{};
+    //! Mate number, if separator is specified
+    char mate = '\0';
+    //! Meta information in the header
+    std::string_view meta{};
+  };
+
+  /** Returns the name (excluding the @ and other fields) of the header. **/
+  [[nodiscard]] fastq_header parse_header(char mate_separator = '\0') const;
+
   /** Returns the length of the sequence. */
   size_t length() const { return m_sequence.length(); }
 
@@ -173,15 +187,26 @@ public:
                                    const std::vector<fastq>& reads_2);
 
   /**
+   * Attempt to infer the mate separator from a single-end reads.
+   *
+   * A separator is considered valid if the reads contain this separator, and
+   * all reads contain a valid mate number (1 or 2). Unsorted and interleaved
+   * reads are allowed.
+   *
+   * Returns 0 if the separator could not be guessed.
+   */
+  static char guess_mate_separator(const std::vector<fastq>& reads);
+
+  /**
    * Validates a pair and normalizes the mate separator.
    *
    * The mate separator character is the character expected as the second-to-
    * last character, if the last character (either '1' or '2') specify the
    * mate number (must be 1 and 2, in that order).
    **/
-  static void normalize_paired_reads(fastq& mate1,
-                                     fastq& mate2,
-                                     char mate_separator);
+  static void validate_paired_reads(const fastq& mate1,
+                                    const fastq& mate2,
+                                    char mate_separator);
 
   /**
    * Finalizes read, validates sequence and transforms qualities. This function
