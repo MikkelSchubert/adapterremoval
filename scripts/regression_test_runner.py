@@ -530,10 +530,8 @@ class TestTextFile(TestFile):
                 fields = line.split("\t")
                 for idx, value in enumerate(fields):
                     if value.startswith("CL:"):
-                        # The location of the executable must be normalized
-                        command = value[3:].split(" ")
-                        command[0] = os.path.basename(command[0])
-                        fields[idx] = "CL:" + " ".join(command)
+                        # Ignore CL field to simplify testing command variants
+                        fields[idx] = "CL:adapterremoval3"
                     elif value.startswith("VN:"):
                         # Program version must be masked
                         fields[idx] = "VN:3.x.x"
