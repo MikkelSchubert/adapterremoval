@@ -30,66 +30,6 @@ init_phred_to_p_values()
 
 const std::vector<double> g_phred_to_p = init_phred_to_p_values();
 
-enum class read_mate
-{
-  unknown,
-  mate_1,
-  mate_2,
-};
-
-struct mate_info
-{
-  std::string_view desc() const
-  {
-    switch (mate) {
-      case read_mate::unknown:
-        return "unknown";
-      case read_mate::mate_1:
-        return "mate 1";
-      case read_mate::mate_2:
-        return "mate 2";
-      default:
-        AR_FAIL("Invalid mate in mate_info::desc");
-    }
-  }
-
-  //! Read name without mate number or meta-data
-  std::string_view name{};
-  //! Which mate in a pair, if identified
-  read_mate mate = read_mate::unknown;
-  //! Position of the separator character in the header (if any)
-  size_t sep_pos = std::string::npos;
-};
-
-mate_info
-get_mate_info(const fastq& read, char mate_separator)
-{
-  const std::string_view header = read.header();
-
-  size_t pos = header.find_first_of(' ');
-  if (pos == std::string::npos) {
-    pos = header.length();
-  }
-
-  mate_info info;
-  if (pos >= 2 && header.at(pos - 2) == mate_separator) {
-    const char digit = header.at(pos - 1);
-
-    if (digit == '1') {
-      info.mate = read_mate::mate_1;
-      pos -= 2;
-      info.sep_pos = pos;
-    } else if (digit == '2') {
-      info.mate = read_mate::mate_2;
-      pos -= 2;
-      info.sep_pos = pos;
-    }
-  }
-
-  info.name = header.substr(0, pos);
-  return info;
-}
-
 size_t
 count_poly_x_tail(const std::string& m_sequence,
                   const char nucleotide,
@@ -198,11 +138,20 @@ fastq::operator==(const fastq& other) const
 std::string_view
 fastq::name(const char mate_separator) const
 {
+  return parse_header(mate_separator).name;
+}
+
+fastq::fastq_header
+fastq::parse_header(const char mate_separator) const
+{
   AR_REQUIRE(!m_header.empty() && m_header.front() == '@');
 
+  char mate = '\0';
+  std::string_view meta;
   std::string_view header = m_header;
   const size_t pos = header.find_first_of(' ');
   if (pos != std::string::npos) {
+    meta = header.substr(pos + 1);
     header = header.substr(1, pos - 1);
   } else {
     header = header.substr(1);
@@ -211,10 +160,10 @@ fastq::name(const char mate_separator) const
   if (mate_separator && header.size() > 1 &&
       (header.back() == '1' || header.back() == '2') &&
       header.at(header.length() - 2) == mate_separator) {
+    mate = header.back();
     header = header.substr(0, header.length() - 2);
   }
-
-  return header;
+  return { header, mate, meta };
 }
 
 size_t
@@ -576,16 +525,16 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
   AR_REQUIRE(reads_1.size() == reads_2.size());
 
   // Commonly used characters
-  const std::string candidates = "/.:";
+  const std::string_view candidates = "/.:";
 
   for (auto candidate : candidates) {
     auto it_1 = reads_1.begin();
     auto it_2 = reads_2.begin();
 
     bool any_failures = false;
-    while (it_1 != reads_1.end()) {
-      const auto info1 = get_mate_info(*it_1++, candidate);
-      const auto info2 = get_mate_info(*it_2++, candidate);
+    for (; it_1 != reads_1.end(); it_1++, it_2++) {
+      const auto info1 = it_1->parse_header(candidate);
+      const auto info2 = it_2->parse_header(candidate);
 
       if (info1.name != info2.name) {
         any_failures = true;
@@ -595,14 +544,14 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
       const auto mate_1 = info1.mate;
       const auto mate_2 = info2.mate;
 
-      if (mate_1 != read_mate::unknown || mate_2 != read_mate::unknown) {
+      if (mate_1 != '\0' || mate_2 != '\0') {
         if (mate_1 == mate_2) {
           // This could be valid data that just happens to include a known
           // mate separator in the name. But this could also happen if the
           // same reads are used for both mate 1 and mate 2, so we cannot
           // safely guess.
           return 0;
-        } else if (mate_1 != read_mate::mate_1 || mate_2 != read_mate::mate_2) {
+        } else if (mate_1 != '1' || mate_2 != '2') {
           // The mate separator seems to be correct, but the mate information
           // does not match: One mate is missing information or the order is
           // wrong. Return the identified separator and raise an error later.
@@ -619,23 +568,63 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
   return 0;
 }
 
-void
-fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
+char
+fastq::guess_mate_separator(const std::vector<fastq>& reads)
 {
-  if (mate1.length() == 0 || mate2.length() == 0) {
-    throw fastq_error("Pair contains empty reads");
+  // Commonly used characters
+  const std::string_view candidates = "/.:";
+
+  for (auto candidate : candidates) {
+    bool any_failures = false;
+    for (const auto& read : reads) {
+      const auto info = read.parse_header(candidate);
+
+      if (info.mate == '\0') {
+        any_failures = true;
+        break;
+      }
+    }
+
+    if (!any_failures) {
+      return candidate;
+    }
   }
 
-  const auto info1 = get_mate_info(mate1, mate_separator);
-  const auto info2 = get_mate_info(mate2, mate_separator);
+  return 0;
+}
+
+namespace {
+
+std::string_view
+describe_mate(char value)
+{
+  switch (value) {
+    case '1':
+      return "mate 1";
+    case '2':
+      return "mate 2";
+    default:
+      return "unknown";
+  }
+}
+
+} // namespace
+
+void
+fastq::validate_paired_reads(const fastq& mate1,
+                             const fastq& mate2,
+                             const char mate_separator)
+{
+  const auto info1 = mate1.parse_header(mate_separator);
+  const auto info2 = mate2.parse_header(mate_separator);
 
   if (info1.name != info2.name) {
     std::ostringstream error;
-    error << "Could not normalize paired read names:\n"
+    error << "Could not validate paired read names:\n"
           << " - '" << info1.name << "'\n"
           << " - '" << info2.name << "'";
 
-    if (info1.mate == read_mate::unknown || info2.mate == read_mate::unknown) {
+    if (info1.mate == '\0' || info2.mate == '\0') {
       error << "\nAdapterRemoval expected the mate numbers (1 or 2) to be "
                "found at the end of the read name, ";
 
@@ -653,20 +642,16 @@ fastq::normalize_paired_reads(fastq& mate1, fastq& mate2, char mate_separator)
     throw fastq_error(error.str());
   }
 
-  if (info1.mate != read_mate::unknown || info2.mate != read_mate::unknown) {
-    if (info1.mate != read_mate::mate_1 || info2.mate != read_mate::mate_2) {
+  if (info1.mate != '\0' || info2.mate != '\0') {
+    if (info1.mate != '1' || info2.mate != '2') {
       std::ostringstream error;
       error << "Inconsistent mate numbering; please verify data:\n"
-            << "\nRead 1 identified as " << info1.desc() << ": " << mate1.name()
-            << "\nRead 2 identified as " << info2.desc() << ": "
-            << mate2.name();
+            << "\nRead 1 identified as " << describe_mate(info1.mate) << ": "
+            << mate1.name() << "\nRead 2 identified as "
+            << describe_mate(info2.mate) << ": " << mate2.name();
 
       throw fastq_error(error.str());
     }
-
-    AR_REQUIRE(info1.sep_pos == info2.sep_pos);
-    mate1.m_header.at(info1.sep_pos) = MATE_SEPARATOR;
-    mate2.m_header.at(info2.sep_pos) = MATE_SEPARATOR;
   }
 }
 

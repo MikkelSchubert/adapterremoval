@@ -1411,14 +1411,14 @@ TEST_CASE("guess_mate_separator fails on malformed data")
 namespace {
 
 void
-normalize_fastq_pair(fastq mate1, fastq mate2, char sep = MATE_SEPARATOR)
+validate_paired_reads(fastq mate1, fastq mate2, char sep = MATE_SEPARATOR)
 {
-  fastq::normalize_paired_reads(mate1, mate2, sep);
+  fastq::validate_paired_reads(mate1, mate2, sep);
 }
 
 } // namespace
 
-TEST_CASE("normalize_paired_reads__throws_if_order_or_number_is_wrong",
+TEST_CASE("validate_paired_reads__throws_if_order_or_number_is_wrong",
           "[fastq::fastq]")
 {
   const fastq mate0{ "Mate/0", "ACGT", "!!#$" };
@@ -1429,165 +1429,133 @@ TEST_CASE("normalize_paired_reads__throws_if_order_or_number_is_wrong",
   const fastq mateb{ "Mate/B", "ACGT", "!!#$" };
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  CHECK_THROWS_WITH(normalize_fastq_pair(mate0, mate1),
-                    Catch::Contains("Could not normalize paired read names"));
+  CHECK_THROWS_WITH(validate_paired_reads(mate0, mate1),
+                    Catch::Contains("Could not validate paired read names"));
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  CHECK_THROWS_WITH(normalize_fastq_pair(mate1, mate0),
-                    Catch::Contains("Could not normalize paired read names"));
+  CHECK_THROWS_WITH(validate_paired_reads(mate1, mate0),
+                    Catch::Contains("Could not validate paired read names"));
 
-  CHECK_NOTHROW(normalize_fastq_pair(mate1, mate2));
+  CHECK_NOTHROW(validate_paired_reads(mate1, mate2));
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  CHECK_THROWS_WITH(normalize_fastq_pair(mate2, mate1),
+  CHECK_THROWS_WITH(validate_paired_reads(mate2, mate1),
                     Catch::Contains("Inconsistent mate numbering"));
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  CHECK_THROWS_WITH(normalize_fastq_pair(mate2, mate3),
-                    Catch::Contains("Could not normalize paired read names"));
+  CHECK_THROWS_WITH(validate_paired_reads(mate2, mate3),
+                    Catch::Contains("Could not validate paired read names"));
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  CHECK_THROWS_WITH(normalize_fastq_pair(mate3, mate2),
-                    Catch::Contains("Could not normalize paired read names"));
+  CHECK_THROWS_WITH(validate_paired_reads(mate3, mate2),
+                    Catch::Contains("Could not validate paired read names"));
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  CHECK_THROWS_WITH(normalize_fastq_pair(matea, mateb),
-                    Catch::Contains("Could not normalize paired read names"));
+  CHECK_THROWS_WITH(validate_paired_reads(matea, mateb),
+                    Catch::Contains("Could not validate paired read names"));
 
-  CHECK_THROWS_WITH(normalize_fastq_pair(mateb, matea),
-                    Catch::Contains("Could not normalize paired read names"));
+  CHECK_THROWS_WITH(validate_paired_reads(mateb, matea),
+                    Catch::Contains("Could not validate paired read names"));
 }
 
-TEST_CASE("normalize_paired_reads__allows_other_separators", "[fastq::fastq]")
+TEST_CASE("validate_paired_reads__allows_other_separators", "[fastq::fastq]")
 {
   const fastq mate1{ "Mate:1", "ACGT", "!!#$" };
   const fastq mate2{ "Mate:2", "GCTAA", "$!@#$" };
 
-  normalize_fastq_pair(mate1, mate2, ':');
+  validate_paired_reads(mate1, mate2, ':');
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  REQUIRE_THROWS_WITH(normalize_fastq_pair(mate2, mate1),
-                      Catch::Contains("Could not normalize paired read name"));
+  REQUIRE_THROWS_WITH(validate_paired_reads(mate2, mate1),
+                      Catch::Contains("Could not validate paired read name"));
 }
 
-TEST_CASE("normalize_paired_reads__mate_separator_is_updated", "[fastq::fastq]")
-{
-  const fastq ref_mate_1 = fastq("Mate/1", "ACGT", "!!#$");
-  const fastq ref_mate_2 = fastq("Mate/2", "GCTAA", "$!@#$");
-
-  fastq mate1 = fastq("Mate:1", "ACGT", "!!#$");
-  fastq mate2 = fastq("Mate:2", "GCTAA", "$!@#$");
-  fastq::normalize_paired_reads(mate1, mate2, ':');
-
-  REQUIRE(ref_mate_1 == mate1);
-  REQUIRE(ref_mate_2 == mate2);
-}
-
-TEST_CASE("normalize_paired_reads__throws_if_mate_is_empty", "[fastq::fastq]")
-{
-  const fastq mate1 = fastq("Mate", "", "");
-  const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
-  const std::string error = "Pair contains empty reads";
-
-  REQUIRE_NOTHROW(normalize_fastq_pair(mate2, mate2));
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate1, mate2),
-                         fastq_error,
-                         error);
-  // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate2, mate1),
-                         fastq_error,
-                         error);
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate1, mate1),
-                         fastq_error,
-                         error);
-}
-
-TEST_CASE("normalize_paired_reads__throws_if_only_mate_1_is_numbered",
+TEST_CASE("validate_paired_reads__throws_if_only_mate_1_is_numbered",
           "[fastq::fastq]")
 {
   const fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
 
-  REQUIRE_NOTHROW(normalize_fastq_pair(mate2, mate2));
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate1, mate2),
+  REQUIRE_NOTHROW(validate_paired_reads(mate2, mate2));
+  REQUIRE_THROWS_MESSAGE(validate_paired_reads(mate1, mate2),
                          fastq_error,
                          "Inconsistent mate numbering; please verify data:\n\n"
                          "Read 1 identified as mate 1: Mate/1\nRead 2 "
                          "identified as unknown: Mate");
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate2, mate1),
+  REQUIRE_THROWS_MESSAGE(validate_paired_reads(mate2, mate1),
                          fastq_error,
                          "Inconsistent mate numbering; please verify data:\n\n"
                          "Read 1 identified as unknown: Mate\nRead 2 "
                          "identified as mate 1: Mate/1");
 }
 
-TEST_CASE("normalize_paired_reads__throws_if_only_mate_2_is_numbered",
+TEST_CASE("validate_paired_reads__throws_if_only_mate_2_is_numbered",
           "[fastq::fastq]")
 {
   const fastq mate1 = fastq("Mate", "GCTAA", "$!@#$");
   const fastq mate2 = fastq("Mate/2", "ACGT", "!!#$");
 
-  REQUIRE_NOTHROW(normalize_fastq_pair(mate1, mate1));
+  REQUIRE_NOTHROW(validate_paired_reads(mate1, mate1));
 
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate1, mate2),
+  REQUIRE_THROWS_MESSAGE(validate_paired_reads(mate1, mate2),
                          fastq_error,
                          "Inconsistent mate numbering; please verify data:\n\n"
                          "Read 1 identified as unknown: Mate\nRead 2 "
                          "identified as mate 2: Mate/2");
 
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
-  REQUIRE_THROWS_MESSAGE(normalize_fastq_pair(mate2, mate1),
+  REQUIRE_THROWS_MESSAGE(validate_paired_reads(mate2, mate1),
                          fastq_error,
                          "Inconsistent mate numbering; please verify data:\n\n"
                          "Read 1 identified as mate 2: Mate/2\nRead 2 "
                          "identified as unknown: Mate");
 }
 
-TEST_CASE("normalize_paired_reads__throws_if_mate_is_misnumbered",
+TEST_CASE("validate_paired_reads__throws_if_mate_is_misnumbered",
           "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/3", "ACGT", "!!#$");
   REQUIRE_THROWS_WITH(
-    fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR),
+    fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR),
     Catch::Contains("AdapterRemoval expected the mate "
                     "numbers (1 or 2) to be found at the end "
                     "of the read name"));
 }
 
-TEST_CASE("normalize_paired_reads__throws_if_same_mate_numbers",
+TEST_CASE("validate_paired_reads__throws_if_same_mate_numbers",
           "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("Mate/1", "ACGT", "!!#$");
   REQUIRE_THROWS_MESSAGE(
-    fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR),
+    fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR),
     fastq_error,
     "Inconsistent mate numbering; please verify data:\n\n"
     "Read 1 identified as mate 1: Mate/1\nRead 2 "
     "identified as mate 1: Mate/1");
 }
 
-TEST_CASE("normalize_paired_reads__throws_if_name_differs", "[fastq::fastq]")
+TEST_CASE("validate_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 {
   fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
   fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
   REQUIRE_THROWS_MESSAGE(
-    fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR),
+    fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR),
     fastq_error,
-    "Could not normalize paired read names:\n"
-    " - '@Mate'\n - '@WrongName'");
+    "Could not validate paired read names:\n"
+    " - 'Mate'\n - 'WrongName'");
 }
 
-TEST_CASE("normalize_paired_reads doesn't modify reads without mate numbers")
+TEST_CASE("validate_paired_reads doesn't modify reads without mate numbers")
 {
   const auto* name = GENERATE("Name", "Name and meta");
   fastq mate1 = fastq(name, "GCTAA", "$!@#$");
   fastq mate2 = fastq(name, "ACGTA", "@$!$#");
 
-  fastq::normalize_paired_reads(mate1, mate2, MATE_SEPARATOR);
+  fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR);
 
   const auto name_s = std::string("@") + name;
   REQUIRE(mate1.header() == name_s);

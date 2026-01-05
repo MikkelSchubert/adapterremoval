@@ -148,6 +148,7 @@ read_fastq::read_fastq(const userconfig& config,
   : analytical_step(processing_order::ordered, "read_fastq")
   , m_reader(select_filenames(config, mode))
   , m_next_step(next_step)
+  , m_single_end(!config.paired_ended_mode)
   , m_mode(mode)
   , m_head(config.head)
   , m_mate_separator(config.mate_separator)
@@ -210,7 +211,15 @@ read_fastq::process(chunk_ptr data)
     AR_FAIL("invalid file_type value");
   }
 
-  if (m_mode != file_type::read_1) {
+  if (m_single_end) {
+    AR_REQUIRE(m_mode == file_type::read_1);
+
+    if (!m_mate_separator_identified) {
+      // Attempt to determine the mate separator character
+      m_mate_separator = fastq::guess_mate_separator(reads_1);
+      m_mate_separator_identified = true;
+    }
+  } else if (m_mode != file_type::read_1) {
     if (reads_1.size() != reads_2.size()) {
       throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
                         "input files may be truncated. Please fix before "
@@ -329,18 +338,13 @@ post_process_fastq::process(chunk_ptr data)
     auto it_1 = reads_1.begin();
     auto it_2 = reads_2.begin();
     for (; it_1 != reads_1.end(); ++it_1, ++it_2) {
-      fastq::normalize_paired_reads(*it_1, *it_2, chunk->mate_separator);
+      fastq::validate_paired_reads(*it_1, *it_2, chunk->mate_separator);
 
       it_1->post_process(m_encoding);
       stats->stats_1->process(*it_1);
 
       it_2->post_process(m_encoding);
       stats->stats_2->process(*it_2);
-    }
-
-    // fastq::normalize_paired_reads replaces the mate separator if present
-    if (chunk->mate_separator) {
-      chunk->mate_separator = MATE_SEPARATOR;
     }
   }
 

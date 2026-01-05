@@ -177,7 +177,24 @@ serializer::fastq_record(buffer& buf,
                          const read_meta& /* meta */,
                          const sample_sequences& sequences) const
 {
-  buf.append(record.header());
+  if (m_mate_separator_in == m_mate_separator_out) {
+    buf.append(record.header());
+  } else {
+    const auto header = record.parse_header(m_mate_separator_in);
+
+    buf.append_u8('@');
+    buf.append(header.name);
+    if (m_mate_separator_out && header.mate) {
+      buf.append_u8(m_mate_separator_out);
+      buf.append_u8(header.mate);
+    }
+
+    if (!header.meta.empty()) {
+      buf.append_u8(' ');
+      buf.append(header.meta);
+    }
+  }
+
   if (m_demultiplexing_only && !sequences.barcode_1.empty()) {
     buf.append(" BC:");
     buf.append(sequences.barcode_1.as_string());
@@ -209,7 +226,7 @@ serializer::sam_record(buffer& buf,
                        const read_meta& meta,
                        const sample_sequences& sequences) const
 {
-  buf.append(prepare_name(record, m_mate_separator)); // 1. QNAME
+  buf.append(prepare_name(record, m_mate_separator_in)); // 1. QNAME
   buf.append_u8('\t');
   buf.append(read_type_to_sam(meta.m_type)); // 2. FLAG
   buf.append("\t"
@@ -265,7 +282,7 @@ serializer::bam_record(buffer& buf,
   buf.append_i32(-1); // refID
   buf.append_i32(-1); // pos
 
-  const auto name = prepare_name(record, m_mate_separator);
+  const auto name = prepare_name(record, m_mate_separator_in);
   buf.append_u8(name.length() + 1); // l_read_name
   buf.append_u8(0);                 // mapq
   buf.append_u16(4680);             // bin (c.f. specification 4.2.1)

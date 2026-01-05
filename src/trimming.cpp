@@ -315,7 +315,8 @@ se_reads_processor::process(chunk_ptr data)
 
   processed_reads chunks{ m_output };
   chunks.set_sample(samples->at(m_sample));
-  chunks.set_mate_separator(chunk->mate_separator);
+  chunks.set_input_mate_separator(chunk->mate_separator);
+  chunks.set_output_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
     chunks.write_headers(m_config.args);
@@ -444,7 +445,8 @@ pe_reads_processor::process(chunk_ptr data)
 
   processed_reads chunks{ m_output };
   chunks.set_sample(sample);
-  chunks.set_mate_separator(chunk->mate_separator);
+  chunks.set_input_mate_separator(chunk->mate_separator);
+  chunks.set_output_mate_separator(chunk->mate_separator);
 
   if (chunk->first) {
     chunks.write_headers(m_config.args);
@@ -453,6 +455,7 @@ pe_reads_processor::process(chunk_ptr data)
   sequence_merger merger;
   merger.set_merge_strategy(m_config.merge);
   merger.set_max_recalculated_score(m_config.merge_quality_max);
+  merger.set_mate_separator(chunk->mate_separator);
 
   AR_REQUIRE(sample.size() > 0);
   // A sequence aligner per barcode (pair)

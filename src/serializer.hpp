@@ -60,8 +60,11 @@ public:
   /** Set the sample; used to write headers/records for SAM/BAM */
   void set_sample(const sample& s) { m_sample = s; }
 
-  /** Set the mate separator; used to trim mate information for SAM/BAM */
-  void set_mate_separator(char value) { m_mate_separator = value; }
+  /** Set mate separator used to trim mate information for SAM/BAM */
+  void set_input_mate_separator(char value) { m_mate_separator_in = value; }
+
+  /** Set mate separator used to add/replace mate separators for FASTQ */
+  void set_output_mate_separator(char value) { m_mate_separator_out = value; }
 
   /** In demultiplexing only mode, barcodes must always be recorded */
   void set_demultiplexing_only(bool value) { m_demultiplexing_only = value; }
@@ -95,7 +98,9 @@ private:
   //! Sample information to be added to SAM/BAM records
   sample m_sample{};
   //! Mate separator in processed reads
-  char m_mate_separator = '\0';
+  char m_mate_separator_in = '\0';
+  //! Mate separator to write in FASTQ records
+  char m_mate_separator_out = '\0';
   //! Indicates if output has only been demultiplexed but not trimmed
   bool m_demultiplexing_only = false;
 };

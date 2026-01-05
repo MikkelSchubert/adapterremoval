@@ -153,8 +153,10 @@ public:
   /** Set the sample; used to serialize header/records for SAM/BAM */
   void set_sample(const sample& value);
 
-  /** Set the mate separator; used to trim mate information for some formats */
-  void set_mate_separator(char value);
+  /** Set input mate separator; used to trim mate info for some formats */
+  void set_input_mate_separator(char value);
+  /** Set output mate separator; used to add/replace mate info for FASTQ */
+  void set_output_mate_separator(char value);
 
   /** In demultiplexing only mode, barcodes must always be recorded in output */
   void set_demultiplexing_only(bool value);

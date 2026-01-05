@@ -7,7 +7,7 @@
   ],
   "return_code": 1,
   "stderr": [
-    "Could not normalize paired read names:"
+    "Could not validate paired read names:"
   ],
   "files": {
     "input_1": [
