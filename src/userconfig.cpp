@@ -474,10 +474,7 @@ parse_output_formats(const argparse::parser& argparser,
   return true;
 }
 
-/**
- * Parse --mate-separator and --normalize-mate-separator. `is_set` is set to
- * indicate that the late
- */
+/** Parser for --mate-separator and --normalize-mate-separator */
 bool
 parse_mate_separator(const argparse::parser& argparser,
                      std::string_view key,
