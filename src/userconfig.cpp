@@ -668,7 +668,7 @@ userconfig::userconfig()
     .bind_str(nullptr);
   argparser.add("--normalize-mate-separator", "CHAR")
     .help("Replace the mate separator in FASTQ reads with the specified "
-          "character ('/' if no character is specified). If read do not "
+          "character ('/' if no character is specified). If reads do not "
           "contain mate numbers, these are added. If 'strip', the mate "
           "separator is stripped from FASTQ reads")
     .bind_str(nullptr)
@@ -1232,7 +1232,9 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   m_normalize_mate_separator = argparser.is_set("--normalize-mate-separator");
-  if (!parse_mate_separator(argparser, "--mate-separator", mate_separator) ||
+  if (!parse_mate_separator(argparser,
+                            "--mate-separator",
+                            input_mate_separator) ||
       !parse_mate_separator(argparser,
                             "--normalize-mate-separator",
                             m_output_mate_separator)) {
