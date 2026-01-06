@@ -1,0 +1,10 @@
+{
+  "inherit_from": "test_pe.json",
+  "arguments": [
+    "--out-file1",
+    "output.pe.fastq",
+    "--out-file2",
+    "output.pe.fastq",
+    "--normalize-mate-separator"
+  ]
+}

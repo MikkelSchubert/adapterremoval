@@ -1,0 +1,20 @@
+{
+  "arguments": [
+    "--merge",
+    "--out-merged",
+    "output.merged.fastq",
+    "--normalize-mate-separator",
+    "/"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "output.merged.fastq"
+    ]
+  }
+}

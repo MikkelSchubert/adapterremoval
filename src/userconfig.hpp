@@ -92,7 +92,12 @@ public:
   uint64_t head = 0;
 
   //! Character separating the mate number from the read name in FASTQ reads.
-  char mate_separator{};
+  char input_mate_separator = '\0';
+
+  [[nodiscard]] char get_output_mate_separator(char value) const
+  {
+    return m_normalize_mate_separator ? m_output_mate_separator : value;
+  }
 
   //! The minimum length of trimmed reads (ie. genomic nts) to be retained
   uint32_t min_genomic_length{};
@@ -268,8 +273,6 @@ private:
 
   //! Sink for user-supplied quality score formats; use quality_input_fmt.
   std::string quality_input_base{};
-  //! Sink for the mate separator character; use mate separator
-  std::string mate_separator_str{};
   //! Sink for --interleaved
   bool interleaved = false;
 
@@ -296,6 +299,11 @@ private:
 
   //! Measures runtime since the program was started
   monotonic_timer m_runtime{};
+
+  //! Should the output mate separator be normalized
+  bool m_normalize_mate_separator = false;
+  //! Mate separator to use when writing FASTQ files
+  char m_output_mate_separator = '\0';
 };
 
 } // namespace adapterremoval

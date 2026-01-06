@@ -171,10 +171,35 @@ prepare_name(const fastq& record, const char mate_separator)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `fastq_serializer`
 
+namespace {
+
+char
+get_mate_number(const read_type type)
+{
+  switch (type) {
+    case read_type::se:
+    case read_type::se_fail:
+    case read_type::pe_1:
+    case read_type::pe_1_fail:
+    case read_type::singleton_1:
+      return '1';
+    case read_type::pe_2:
+    case read_type::pe_2_fail:
+    case read_type::singleton_2:
+      return '2';
+    case read_type::merged:
+    case read_type::merged_fail:
+    default:
+      return '\0';
+  }
+}
+
+} // namespace
+
 void
 serializer::fastq_record(buffer& buf,
                          const fastq& record,
-                         const read_meta& /* meta */,
+                         const read_meta& meta,
                          const sample_sequences& sequences) const
 {
   if (m_mate_separator_in == m_mate_separator_out) {
@@ -184,9 +209,17 @@ serializer::fastq_record(buffer& buf,
 
     buf.append_u8('@');
     buf.append(header.name);
-    if (m_mate_separator_out && header.mate) {
-      buf.append_u8(m_mate_separator_out);
-      buf.append_u8(header.mate);
+
+    if (m_mate_separator_out) {
+      // The mate number from the read is the preferred source of truth, since
+      // input files may be swapped (`--in-file1 input_r2.fq.gz` ) or
+      // AdapterRemoval may be run on mate 2 reads in SE mode. In those cases we
+      // do not want to replace the mate number
+      char mate = header.mate ? header.mate : get_mate_number(meta.m_type);
+      if (mate) {
+        buf.append_u8(m_mate_separator_out);
+        buf.append_u8(mate);
+      }
     }
 
     if (!header.meta.empty()) {

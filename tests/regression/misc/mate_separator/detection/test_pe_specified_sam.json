@@ -1,0 +1,21 @@
+{
+  "arguments": [
+    "--out-file1",
+    "output.pe.sam",
+    "--out-file2",
+    "output.pe.sam",
+    "--mate-separator",
+    "."
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "output.pe.sam"
+    ]
+  }
+}

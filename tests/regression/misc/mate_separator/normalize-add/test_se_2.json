@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--out-file1",
+    "output.se.r2.fastq",
+    "--normalize-mate-separator"
+  ],
+  "files": {
+    "input_1": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "output.se.r2.fastq"
+    ]
+  }
+}

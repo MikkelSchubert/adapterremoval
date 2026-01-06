@@ -1,0 +1,7 @@
+{
+  "inherit_from": "test_se_1_specified.json",
+  "arguments": [
+    "--out-file1",
+    "output.se.r1.fastq"
+  ]
+}

@@ -474,6 +474,33 @@ parse_output_formats(const argparse::parser& argparser,
   return true;
 }
 
+/** Parser for --mate-separator and --normalize-mate-separator */
+bool
+parse_mate_separator(const argparse::parser& argparser,
+                     std::string_view key,
+                     char& sink)
+{
+  if (argparser.is_set(key)) {
+    const auto value = argparser.value(key);
+
+    if (value.size() == 1) {
+      sink = value.at(0);
+    } else if (key == "--normalize-mate-separator" &&
+               to_lower(value) == "strip") {
+      sink = '\0';
+    } else {
+      log::error() << "The argument for " << key
+                   << " must be exactly one character long, not "
+                   << value.size() << " characters: " << log_escape(value);
+      return false;
+    }
+  } else {
+    sink = '\0';
+  }
+
+  return true;
+}
+
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -638,7 +665,14 @@ userconfig::userconfig()
   argparser.add("--mate-separator", "CHAR")
     .help("Character separating the mate number (1 or 2) from the read name in "
           "FASTQ records. Will be determined automatically if not specified")
-    .bind_str(&mate_separator_str);
+    .bind_str(nullptr);
+  argparser.add("--normalize-mate-separator", "CHAR")
+    .help("Replace the mate separator in FASTQ reads with the specified "
+          "character ('/' if no character is specified). If reads do not "
+          "contain mate numbers, these are added. If 'strip', the mate "
+          "separator is stripped from FASTQ reads")
+    .bind_str(nullptr)
+    .with_implicit_argument("/");
 
   argparser.add("--interleaved-input")
     .help("The (single) input file provided contains both the mate 1 and mate "
@@ -1197,15 +1231,14 @@ userconfig::parse_args(const string_vec& argvec)
     io_encoding = configure_encoding(quality_input_base, degenerate, uracils);
   }
 
-  if (argparser.is_set("--mate-separator")) {
-    if (mate_separator_str.size() != 1) {
-      log::error() << "The argument for --mate-separator must be "
-                      "exactly one character long, not "
-                   << mate_separator_str.size() << " characters!";
-      return argparse::parse_result::error;
-    } else {
-      mate_separator = mate_separator_str.at(0);
-    }
+  m_normalize_mate_separator = argparser.is_set("--normalize-mate-separator");
+  if (!parse_mate_separator(argparser,
+                            "--mate-separator",
+                            input_mate_separator) ||
+      !parse_mate_separator(argparser,
+                            "--normalize-mate-separator",
+                            m_output_mate_separator)) {
+    return argparse::parse_result::error;
   }
 
   if (argparser.is_set("--demultiplex-only")) {

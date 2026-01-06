@@ -151,8 +151,8 @@ read_fastq::read_fastq(const userconfig& config,
   , m_single_end(!config.paired_ended_mode)
   , m_mode(mode)
   , m_head(config.head)
-  , m_mate_separator(config.mate_separator)
-  , m_mate_separator_identified(config.mate_separator)
+  , m_mate_separator(config.input_mate_separator)
+  , m_mate_separator_identified(config.input_mate_separator)
   , m_duplication_1(stats.duplication_1)
   , m_duplication_2(stats.duplication_2)
 {

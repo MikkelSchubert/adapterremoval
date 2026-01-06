@@ -1,0 +1,18 @@
+{
+  "arguments": [
+    "--merge",
+    "--out-merged",
+    "output.pe.merged.fastq"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "output.pe.merged.fastq"
+    ]
+  }
+}
