@@ -1,7 +1,7 @@
 {
   "arguments": [
     "--out-file1",
-    "output.se.r2.fastq.gz",
+    "output.se.r2.fastq",
     "--normalize-mate-separator",
     "/"
   ],
@@ -10,7 +10,7 @@
       "input_2.fastq"
     ],
     "output": [
-      "output.se.r2.fastq.gz"
+      "output.se.r2.fastq"
     ]
   }
 }

@@ -92,7 +92,7 @@ public:
   uint64_t head = 0;
 
   //! Character separating the mate number from the read name in FASTQ reads.
-  char mate_separator{};
+  char mate_separator = '\0';
 
   [[nodiscard]] char get_output_mate_separator(char value) const
   {

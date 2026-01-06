@@ -2,8 +2,8 @@
   "inherit_from": "test_pe_specified.json",
   "arguments": [
     "--out-file1",
-    "output.pe.fastq.gz",
+    "output.pe.fastq",
     "--out-file2",
-    "output.pe.fastq.gz"
+    "output.pe.fastq"
   ]
 }

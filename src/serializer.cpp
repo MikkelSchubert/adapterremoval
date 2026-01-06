@@ -211,7 +211,10 @@ serializer::fastq_record(buffer& buf,
     buf.append(header.name);
 
     if (m_mate_separator_out) {
-      // Fall back to implied mate if read do not contain mate numbers
+      // The mate number from the read is the preferred source of truth, since
+      // input files may be swapped (`--in-file1 input_r2.fq.gz` ) or
+      // AdapterRemoval may be run on mate 2 reads in SE mode. In those cases we
+      // do not want to replace the mate number
       char mate = header.mate ? header.mate : get_mate_number(meta.m_type);
       if (mate) {
         buf.append_u8(m_mate_separator_out);

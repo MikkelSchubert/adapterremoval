@@ -474,18 +474,22 @@ parse_output_formats(const argparse::parser& argparser,
   return true;
 }
 
+/**
+ * Parse --mate-separator and --normalize-mate-separator. `is_set` is set to
+ * indicate that the late
+ */
 bool
 parse_mate_separator(const argparse::parser& argparser,
                      std::string_view key,
-                     char& sink,
-                     bool* normalize = nullptr)
+                     char& sink)
 {
   if (argparser.is_set(key)) {
     const auto value = argparser.value(key);
 
     if (value.size() == 1) {
       sink = value.at(0);
-    } else if (normalize != nullptr && to_lower(value) == "strip") {
+    } else if (key == "--normalize-mate-separator" &&
+               to_lower(value) == "strip") {
       sink = '\0';
     } else {
       log::error() << "The argument for " << key
@@ -493,16 +497,11 @@ parse_mate_separator(const argparse::parser& argparser,
                    << value.size() << " characters: " << log_escape(value);
       return false;
     }
-
-    if (normalize) {
-      *normalize = true;
-    }
-
-    return true;
   } else {
     sink = '\0';
-    return true;
   }
+
+  return true;
 }
 
 } // namespace
@@ -671,9 +670,10 @@ userconfig::userconfig()
           "FASTQ records. Will be determined automatically if not specified")
     .bind_str(nullptr);
   argparser.add("--normalize-mate-separator", "CHAR")
-    .help("Replace existing --mate-separator character with the specified "
-          "character, or '/' if no value is given. If 'strip', the mate "
-          "separator is stripped from output FASTQ reads")
+    .help("Replace the mate separator in FASTQ reads with the specified "
+          "character ('/' if no character is specified). If read do not "
+          "contain mate numbers, these are added. If 'strip', the mate "
+          "separator is stripped from FASTQ reads")
     .bind_str(nullptr)
     .with_implicit_argument("/");
 
@@ -1234,11 +1234,11 @@ userconfig::parse_args(const string_vec& argvec)
     io_encoding = configure_encoding(quality_input_base, degenerate, uracils);
   }
 
+  m_normalize_mate_separator = argparser.is_set("--normalize-mate-separator");
   if (!parse_mate_separator(argparser, "--mate-separator", mate_separator) ||
       !parse_mate_separator(argparser,
                             "--normalize-mate-separator",
-                            m_output_mate_separator,
-                            &m_normalize_mate_separator)) {
+                            m_output_mate_separator)) {
     return argparse::parse_result::error;
   }
 

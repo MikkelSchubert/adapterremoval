@@ -4,8 +4,6 @@
     "output.pe.sam",
     "--out-file2",
     "output.pe.sam",
-    "--out-format",
-    "sam",
     "--normalize-mate-separator",
     "/"
   ],
