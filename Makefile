@@ -16,6 +16,13 @@ SANITIZE := false
 # Enable hardening flags
 HARDEN := true
 
+# Enable link-time optimizations
+LTO := true
+
+# LTO mode; older systems may need to use `make LTO_MODE=default`
+LTO_MODE := thin
+
+
 # Generate statically linked binary
 # It is recommended to use the included Containerfile to build the static binary
 STATIC := false
@@ -83,6 +90,8 @@ setup ${NINJAFILE}:
 	rm -rf "${BUILDDIR}"
 	meson setup "${BUILDDIR}" \
 		-Db_coverage=${COVERAGE} \
+		-Db_lto=${LTO} \
+		-Db_lto_mode=${LTO_MODE} \
 		-Ddebug=${DEBUG} \
 		-Dharden=${HARDEN} \
 		-Dmimalloc=${MIMALLOC} \
