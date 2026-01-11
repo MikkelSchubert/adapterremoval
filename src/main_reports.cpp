@@ -141,7 +141,7 @@ generate_reports(const userconfig& config)
   // FIXME: Required for insert size statistics
   stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
-  // Step 5: Identify adapters from pair-wise alignments and infer insert sizes
+  // Step 6: Identify adapters from pair-wise alignments and infer insert sizes
   size_t step = std::numeric_limits<size_t>::max();
   if (config.paired_ended_mode) {
     // Attempt to identify adapters through pair-wise alignments
@@ -151,7 +151,7 @@ generate_reports(const userconfig& config)
     step = sch.add<reads_sink>();
   }
 
-  // Step 4: Determine optional SIMD instruction set for alignments
+  // Step 5: Determine optional SIMD instruction set for alignments
   if (config.simd_auto_select) {
     step = sch.add<simd_selector>(config.samples,
                                   config.simd,
@@ -160,7 +160,7 @@ generate_reports(const userconfig& config)
                                   step);
   }
 
-  // Step 3: Attempt to identify adapters based on known sequences
+  // Step 4: Attempt to identify adapters based on known sequences
   if (config.adapter_selection_strategy == adapter_selection::automatic) {
     const auto database = config.known_adapters();
 
@@ -176,11 +176,14 @@ generate_reports(const userconfig& config)
     step = sch.add<adapter_preselector>(step);
   }
 
-  // Step 2: Post-processing, validate, and collect statistics on FASTQ reads
+  // Step 3: Post-processing, validate, and collect statistics on FASTQ reads
   step = sch.add<post_process_fastq>(config, step, stats);
 
+  // Step 2: Determine read properties and collect duplication statistics
+  step = sch.add<scan_fastq>(config, step, stats);
+
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, step, stats);
+  read_fastq::add_steps(sch, config, step);
 
   if (!sch.run(config.max_threads)) {
     return 1;

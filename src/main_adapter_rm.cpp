@@ -35,7 +35,7 @@ remove_adapter_sequences(const userconfig& config)
 
   post_demux_steps steps;
 
-  // Step 4 - N: Trim and write (demultiplexed) reads
+  // Step 7 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < output.samples().size(); ++nth) {
     stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
@@ -60,7 +60,7 @@ remove_adapter_sequences(const userconfig& config)
     }
   }
 
-  // Step 5: Parse and demultiplex reads based on single or double indices
+  // Step 6: Parse and demultiplex reads based on single or double indices
   size_t step = std::numeric_limits<size_t>::max();
   if (config.is_demultiplexing_enabled()) {
     // Statistics and serialization of unidentified reads
@@ -76,7 +76,7 @@ remove_adapter_sequences(const userconfig& config)
     step = steps.samples.back();
   }
 
-  // Step 4: Determine optional SIMD instruction set for alignments
+  // Step 5: Determine optional SIMD instruction set for alignments
   if (config.simd_auto_select) {
     step = sch.add<simd_selector>(config.samples,
                                   config.simd,
@@ -85,7 +85,7 @@ remove_adapter_sequences(const userconfig& config)
                                   step);
   }
 
-  // Step 3: Attempt to identify adapters based on known sequences
+  // Step 4: Attempt to identify adapters based on known sequences
   if (config.adapter_selection_strategy == adapter_selection::automatic) {
     const auto database = config.known_adapters();
 
@@ -101,11 +101,14 @@ remove_adapter_sequences(const userconfig& config)
     step = sch.add<adapter_preselector>(step);
   }
 
-  // Step 2: Post-process, validate, and collect statistics on FASTQ reads
+  // Step 3: Post-process, validate, and collect statistics on FASTQ reads
   step = sch.add<post_process_fastq>(config, step, stats);
 
+  // Step 2: Determine read properties and collect duplication statistics
+  step = sch.add<scan_fastq>(config, step, stats);
+
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, step, stats);
+  read_fastq::add_steps(sch, config, step);
 
   if (!sch.run(config.max_threads)) {
     return 1;
