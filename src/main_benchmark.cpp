@@ -551,8 +551,8 @@ benchmark(const userconfig& config)
     .run_if_toggled(toggles);
 
   {
-    auto nucleotides = config.pre_trim_poly_x;
-    if (nucleotides.empty()) {
+    auto nucleotides = *config.pre_trim_poly_x.get_reader();
+    if (nucleotides == "auto") {
       nucleotides = "ACGT";
     }
 

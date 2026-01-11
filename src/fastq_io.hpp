@@ -81,12 +81,14 @@ private:
   void read_interleaved(std::vector<fastq>& reads_1,
                         std::vector<fastq>& reads_2);
 
+  void detect_two_color(const std::vector<fastq>& reads);
+
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_reader;
 
   const size_t m_next_step;
 
-  //! Indicates that output is single end
+  //! Indicates that input is single end
   bool m_single_end;
   //! The kind of data read by the reader (SE, PE, interleaved)
   file_type m_mode;
@@ -97,9 +99,15 @@ private:
   //! Number of reads to process
   uint64_t m_head = std::numeric_limits<uint64_t>::max();
   //! Character used to join read-names with mate numbers, e.g. '/'
-  char m_mate_separator;
-  //! Indicates if the mate separator is known / has been attempted identififed
-  bool m_mate_separator_identified;
+  char m_mate_separator = '\0';
+  //! Indicates if the mate separator is known / has been attempted identified
+  bool m_mate_separator_identified = false;
+  //! Poly-X tails to remove before trimming; for autodetection of 2-color tech
+  threadsafe_data<std::string> m_pre_trim_poly_x{};
+  //! Poly-X tails to remove afters trimming; for autodetection of 2-color tech
+  threadsafe_data<std::string> m_post_trim_poly_x{};
+  //! Indicates if automatic checks for 2-color systems have been performed
+  bool m_2_color_checked = false;
 
   //! Optional duplication stats for mate 1 reads
   duplication_stats_ptr m_duplication_1{};

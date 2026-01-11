@@ -67,9 +67,12 @@ pre_trim_poly_x_tail(const userconfig& config,
                      trimming_statistics& stats,
                      fastq& read)
 {
-  if (!config.pre_trim_poly_x.empty()) {
-    const auto result = read.poly_x_trimming(config.pre_trim_poly_x,
-                                             config.trim_poly_x_threshold);
+  auto nucleotides = config.pre_trim_poly_x.get_reader();
+  AR_REQUIRE(*nucleotides != "auto");
+
+  if (!nucleotides->empty()) {
+    const auto result =
+      read.poly_x_trimming(*nucleotides, config.trim_poly_x_threshold);
 
     if (result.second) {
       stats.poly_x_pre_trimmed_reads.inc(result.first);
@@ -84,9 +87,12 @@ post_trim_poly_x_tail(const userconfig& config,
                       trimming_statistics& stats,
                       fastq& read)
 {
-  if (!config.post_trim_poly_x.empty()) {
-    const auto result = read.poly_x_trimming(config.post_trim_poly_x,
-                                             config.trim_poly_x_threshold);
+  auto nucleotides = config.post_trim_poly_x.get_reader();
+  AR_REQUIRE(*nucleotides != "auto");
+
+  if (!nucleotides->empty()) {
+    const auto result =
+      read.poly_x_trimming(*nucleotides, config.trim_poly_x_threshold);
 
     if (result.second) {
       stats.poly_x_post_trimmed_reads.inc(result.first);

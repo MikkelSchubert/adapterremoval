@@ -135,9 +135,9 @@ public:
   bool trim_ambiguous_bases = false;
 
   //! Nucleotides to trim from poly-X tails prior to alignment/adapter trimming.
-  std::string pre_trim_poly_x{};
+  threadsafe_data<std::string> pre_trim_poly_x{};
   //! Nucleotides to trim from poly-X tails after alignment/adapter trimming.
-  std::string post_trim_poly_x{};
+  threadsafe_data<std::string> post_trim_poly_x{};
   //! Minimum number of bases in poly-X tails.
   uint32_t trim_poly_x_threshold{};
 

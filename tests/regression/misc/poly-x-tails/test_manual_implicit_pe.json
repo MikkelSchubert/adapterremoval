@@ -1,0 +1,12 @@
+{
+  "inherit_from": "test_manual_all_pe.json",
+  "arguments": [
+    "--out-file1",
+    "out_all.r1.fastq",
+    "--out-file2",
+    "out_all.r2.fastq",
+    "--out-json",
+    "out_all.pe.json",
+    "--pre-trim-polyx"
+  ]
+}

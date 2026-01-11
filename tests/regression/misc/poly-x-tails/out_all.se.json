@@ -1,0 +1,32 @@
+{
+  "$schema": "https://MikkelSchubert.github.io/adapterremoval/schemas/3.0.0-alpha3.json",
+  "meta": "...",
+  "summary": "...",
+  "input": "...",
+  "demultiplexing": null,
+  "processing": [
+    {
+      "step": "poly_x_pre",
+      "action": "trim",
+      "reads": 4,
+      "bases": 165,
+      "x": {
+        "a": { "reads": 1, "bases": 51 },
+        "c": { "reads": 1, "bases": 25 },
+        "g": { "reads": 1, "bases": 70 },
+        "t": { "reads": 1, "bases": 19 }
+      }
+    },
+    {
+      "step": "adapters",
+      "action": "trim",
+      "reads": 0,
+      "bases": 0,
+      "adapter_list": "..."
+    },
+    { "step": "low_quality", "action": "trim", "reads": 0, "bases": 0 },
+    { "step": "min_length", "action": "filter", "reads": 0, "bases": 0 }
+  ],
+  "analyses": "...",
+  "output": "..."
+}

@@ -424,7 +424,7 @@ write_report_processing(const userconfig& config,
   if (config.is_poly_x_tail_pre_trimming_enabled()) {
     write_report_poly_x(*json->dict(),
                         "poly_x_pre",
-                        config.pre_trim_poly_x,
+                        *config.pre_trim_poly_x.get_reader(),
                         totals.poly_x_pre_trimmed_reads,
                         totals.poly_x_pre_trimmed_bases);
   }
@@ -480,7 +480,7 @@ write_report_processing(const userconfig& config,
   if (config.is_poly_x_tail_post_trimming_enabled()) {
     write_report_poly_x(*json->dict(),
                         "poly_x_post",
-                        config.post_trim_poly_x,
+                        *config.post_trim_poly_x.get_reader(),
                         totals.poly_x_post_trimmed_reads,
                         totals.poly_x_post_trimmed_bases);
   }

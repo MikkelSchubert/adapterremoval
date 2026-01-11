@@ -281,6 +281,73 @@ fastq::mean_quality() const
   return static_cast<double>(sum) / static_cast<double>(m_qualities.length());
 }
 
+namespace {
+
+/** Checks if a read header matches the typical patterns for Illumina reads */
+bool
+illumina_name_pattern(std::string_view header,
+                      std::string_view prefix,
+                      size_t digits)
+{
+  if (header.size() < prefix.size() + digits + 1 ||
+      !starts_with(header, prefix)) {
+    return false;
+  }
+
+  const auto suffix = header.substr(prefix.size(), digits);
+  for (const char c : suffix) {
+    if (c < '0' || c > '9') {
+      return false;
+    }
+  }
+
+  return header.at(prefix.size() + digits) == ':';
+}
+
+} // namespace
+
+bool
+fastq::is_two_color() const
+{
+  // Sources
+  //   [1] https://github.com/nickp60/fcid
+  //   [2] Excluding "NA", for undetermined instrument types:
+  //        https://help.connected.illumina.com/tso500/dragen-tso-500-guides/dragen-tso-500-v2.6/launching-analysis/input-checks
+  //   [3]
+  //        https://knowledge.illumina.com/instrumentation/general/instrumentation-general-reference_material-list/000006351
+  //   [4]
+  //        https://knowledge.illumina.com/instrumentation/nextseq-1000-2000/instrumentation-nextseq-1000-2000-reference_material-list/000002388
+  //   [CoC] Certificates of Conformance published by Illumina
+  //   [ENA] https://www.ebi.ac.uk/ena/browser/advanced-search
+  //         query = instrument_model="X" AND submitted_format="fastq"
+  //
+  using pattern = std::pair<std::string_view, size_t>;
+  constexpr std::array patterns{
+    pattern{ "@A", 5 },   // NovaSeq 6000 [2, 3] / various [ENA]
+    pattern{ "@ADX", 5 }, // NovaSeq 6000Dx [3, CoC]
+    pattern{ "@FS", 8 },  // iSeq 100? [3, ENA]
+    pattern{ "@LH", 5 },  // NovaSeq X Plus [2, 3, ENA]
+    pattern{ "@LL", 5 },  // NovaSeq X [2] (digits set as other NovaSeq)
+    pattern{ "@MN", 5 },  // MiniSeq [3, ENA]
+    pattern{ "@NB", 6 },  // NextSeq 500 / 550 [2, 3, ENA]
+    pattern{ "@NDX", 6 }, // NextSeq 550Dx [2, CoC]
+    pattern{ "@NL", 6 },  // NextSeq 500 [2] (digits set as other NextSeq 5xx)
+    pattern{ "@NS", 6 },  // NextSeq 500 / 550 [2, ENA]
+    pattern{ "@SH", 5 },  // MiSeq i100 plus [3, Coc]
+    pattern{ "@SL", 5 },  // MiSeq i100 [Coc]
+    pattern{ "@VH", 5 },  // NextSeq 1000 / 2000 [3, 4, ENA]
+    pattern{ "@VL", 5 },  // NextSeq 1000 / 2000 [4, ENA]
+  };
+
+  for (const auto& [prefix, digits] : patterns) {
+    if (illumina_name_pattern(m_header, prefix, digits)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 fastq::ntrimmed
 fastq::trim_trailing_bases(const bool trim_ns,
                            char low_quality,
