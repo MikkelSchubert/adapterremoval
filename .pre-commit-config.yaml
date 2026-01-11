@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: clang-format
         types_or: [c++, c]
-        args: ["--dry-run", "-Werror"]
+        args: ["--dry-run", "--Werror"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 2c8dce6094fa2b4b668e74f694ca63ceffd38614 # v0.9.9
     hooks:
