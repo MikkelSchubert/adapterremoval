@@ -1,0 +1,25 @@
+{
+  "arguments": [
+    "--out-file1",
+    "out_auto.r1.fastq",
+    "--out-file2",
+    "out_auto.r2.fastq",
+    "--out-json",
+    "out_auto.pe.json"
+  ],
+  "files": {
+    "input_1": [
+      "input_1_named.fastq"
+    ],
+    "input_2": [
+      "input_2_named.fastq"
+    ],
+    "output": [
+      "out_auto.r1.fastq",
+      "out_auto.r2.fastq"
+    ],
+    "json": [
+      "out_auto.pe.json"
+    ]
+  }
+}

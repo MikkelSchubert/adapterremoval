@@ -606,7 +606,7 @@ write_html_processing_section(const userconfig& config,
   };
 
   build_polyx_trimming_rows(trimming,
-                            config.pre_trim_poly_x,
+                            *config.pre_trim_poly_x.get_reader(),
                             totals.poly_x_pre_trimmed_reads,
                             totals.poly_x_pre_trimmed_bases,
                             step_id++);
@@ -633,7 +633,7 @@ write_html_processing_section(const userconfig& config,
                        totals.terminal_post_trimmed });
 
   build_polyx_trimming_rows(trimming,
-                            config.post_trim_poly_x,
+                            *config.post_trim_poly_x.get_reader(),
                             totals.poly_x_post_trimmed_reads,
                             totals.poly_x_post_trimmed_bases,
                             step_id++);

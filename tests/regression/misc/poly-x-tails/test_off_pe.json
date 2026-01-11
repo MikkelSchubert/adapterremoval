@@ -1,0 +1,27 @@
+{
+  "arguments": [
+    "--out-file1",
+    "out_off.r1.fastq",
+    "--out-file2",
+    "out_off.r2.fastq",
+    "--out-json",
+    "out_off.json",
+    "--pre-trim-polyx",
+    "off"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "out_off.r1.fastq",
+      "out_off.r2.fastq"
+    ],
+    "json": [
+      "out_off.json"
+    ]
+  }
+}

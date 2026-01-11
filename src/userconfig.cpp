@@ -81,38 +81,61 @@ parse_trim_argument(const string_vec& values)
 bool
 parse_poly_x_option(const std::string& key,
                     const string_vec& values,
-                    std::string& out)
+                    threadsafe_data<std::string>& sink)
 {
-  out.clear();
+  auto writer = sink.get_writer();
+  writer->clear();
   if (values.empty()) {
-    out = "ACGT";
+    *writer = "ACGT";
     return true;
   }
 
+  bool has_off_toggle = false;
+  bool has_auto_toggle = false;
+  bool has_nucleotides = false;
   std::array<bool, ACGT::indices> enabled = {};
   for (const auto& value : values) {
-    for (const auto nuc : to_upper(value)) {
-      switch (nuc) {
-        case 'A':
-        case 'C':
-        case 'G':
-        case 'T':
-          enabled.at(ACGT::to_index(nuc)) = true;
-          break;
+    const auto normalized = to_upper(value);
+    if (normalized == "OFF") {
+      has_off_toggle = true;
+    } else if (normalized == "AUTO") {
+      has_auto_toggle = true;
+    } else {
+      for (const auto nuc : normalized) {
+        switch (nuc) {
+          case 'A':
+          case 'C':
+          case 'G':
+          case 'T':
+            has_nucleotides = true;
+            enabled.at(ACGT::to_index(nuc)) = true;
+            break;
 
-        default:
-          log::error() << "Option " << key << " called with invalid value "
-                       << shell_escape(value) << ". Only A, C, G, and T are "
-                       << "permitted!";
+          default:
+            log::error() << "Option " << key << " called with invalid value "
+                         << shell_escape(value) << ". Only A, C, G, and T are "
+                         << "permitted, as well as 'auto' and 'off'";
 
-          return false;
+            return false;
+        }
       }
     }
   }
 
+  if (has_auto_toggle + has_off_toggle + has_nucleotides > 1) {
+    log::error() << "Flags 'auto', 'off', or nucleotides (A, C, G, T) cannot "
+                    "be combined for option "
+                 << key << ". Use only one flag or only nucleotides";
+
+    return false;
+  } else if (has_auto_toggle) {
+    // replaced by `post_process_fastq`
+    *writer = "auto";
+  }
+
   for (const auto nuc : ACGT::values) {
     if (enabled.at(ACGT::to_index(nuc))) {
-      out.push_back(nuc);
+      writer->push_back(nuc);
     }
   }
 
@@ -967,19 +990,17 @@ userconfig::userconfig()
   argparser.add_separator();
   argparser.add("--pre-trim-polyx", "X")
     .help("Enable trimming of poly-X tails prior to read alignment and adapter "
-          "trimming. Zero or more nucleotides (A, C, G, T) may be specified. "
-          "Zero or more nucleotides may be specified after the option "
-          "separated by spaces, with zero nucleotides corresponding to all of "
-          "A, C, G, and T")
+          "trimming. Zero or more nucleotides may be specified after the "
+          "option, with zero nucleotides corresponding to all of A, C, G, and "
+          "T. The value 'auto' may be used to trim G-tails from known 2-color "
+          "systems, and 'off' to disable poly-X trimming [default: auto]")
     .bind_vec(&pre_trim_poly_x_sink)
     .with_min_values(0);
   argparser.add("--post-trim-polyx", "X")
     .help("Enable trimming of poly-X tails after read alignment and adapter "
           "trimming/merging, but before trimming of low-quality bases. Merged "
-          "reads are not trimmed by this option (both ends are 5'). Zero or "
-          "more nucleotides (A, C, G, T) may be specified. Zero or more "
-          "nucleotides may be specified after the option separated by spaces, "
-          "with zero nucleotides corresponding to all of A, C, G, and T")
+          "reads are not trimmed by this option, as both ends are 5'. See "
+          "--pre-trim-polyx for possible arguments [default: off]")
     .bind_vec(&post_trim_poly_x_sink)
     .with_min_values(0);
   argparser.add("--trim-polyx-threshold", "N")
@@ -1453,8 +1474,11 @@ userconfig::parse_args(const string_vec& argvec)
 
   {
     const std::string key = "--pre-trim-polyx";
-    if (argparser.is_set(key) &&
-        !parse_poly_x_option(key, pre_trim_poly_x_sink, pre_trim_poly_x)) {
+    if (!argparser.is_set(key)) {
+      pre_trim_poly_x_sink.emplace_back("auto");
+    }
+
+    if (!parse_poly_x_option(key, pre_trim_poly_x_sink, pre_trim_poly_x)) {
       return argparse::parse_result::error;
     }
   }
@@ -1712,13 +1736,13 @@ userconfig::is_terminal_base_post_trimming_enabled() const
 bool
 userconfig::is_poly_x_tail_pre_trimming_enabled() const
 {
-  return !pre_trim_poly_x.empty();
+  return !pre_trim_poly_x.get_reader()->empty();
 }
 
 bool
 userconfig::is_poly_x_tail_post_trimming_enabled() const
 {
-  return !post_trim_poly_x.empty();
+  return !post_trim_poly_x.get_reader()->empty();
 }
 
 bool

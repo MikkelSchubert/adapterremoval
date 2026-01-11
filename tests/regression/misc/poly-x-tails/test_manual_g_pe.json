@@ -1,0 +1,27 @@
+{
+  "arguments": [
+    "--out-file1",
+    "out_g.r1.fastq",
+    "--out-file2",
+    "out_g.r2.fastq",
+    "--out-json",
+    "out_g.pe.json",
+    "--pre-trim-polyx",
+    "G"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "out_g.r1.fastq",
+      "out_g.r2.fastq"
+    ],
+    "json": [
+      "out_g.pe.json"
+    ]
+  }
+}

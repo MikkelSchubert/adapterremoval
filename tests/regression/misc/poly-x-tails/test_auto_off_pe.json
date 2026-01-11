@@ -1,0 +1,11 @@
+{
+  "inherit_from": "test_off_pe.json",
+  "arguments": [
+    "--out-file1",
+    "out_off.r1.fastq",
+    "--out-file2",
+    "out_off.r2.fastq",
+    "--out-json",
+    "out_off.json"
+  ]
+}

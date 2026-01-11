@@ -11,6 +11,7 @@
 #include "scheduler.hpp"   // for provides analytical_step, chunk_ptr, ...
 #include "statistics.hpp"  // for fastq_statistics, fastq_stats_ptr, stat...
 #include "strutils.hpp"    // for shell_escape, string_vec, ends_with
+#include "threading.hpp"   // for threadsafe_data
 #include "userconfig.hpp"  // for userconfig
 #include "utilities.hpp"   // for prng_seed
 #include <algorithm>       // for max, min
@@ -153,10 +154,16 @@ read_fastq::read_fastq(const userconfig& config,
   , m_head(config.head)
   , m_mate_separator(config.input_mate_separator)
   , m_mate_separator_identified(config.input_mate_separator)
+  , m_pre_trim_poly_x(config.pre_trim_poly_x)
+  , m_post_trim_poly_x(config.post_trim_poly_x)
   , m_duplication_1(stats.duplication_1)
   , m_duplication_2(stats.duplication_2)
 {
   AR_REQUIRE(m_duplication_1 && m_duplication_2);
+
+  m_2_color_checked = (m_mode == file_type::read_2) ||
+                      ((*m_pre_trim_poly_x.get_reader() != "auto") &&
+                       (*m_post_trim_poly_x.get_reader() != "auto"));
 }
 
 void
@@ -235,6 +242,11 @@ read_fastq::process(chunk_ptr data)
     }
   }
 
+  if (!m_2_color_checked) {
+    detect_two_color(reads_1);
+    m_2_color_checked = true;
+  }
+
   // Head must be checked after the first loop, to produce at least one chunk
   m_eof |= !m_head;
   chunk->eof = m_eof;
@@ -276,6 +288,36 @@ read_fastq::read_interleaved(std::vector<fastq>& reads_1,
       m_duplication_2->process(reads_2.back());
     }
   }
+}
+
+namespace {
+
+void
+update_poly_x_nucleotides(threadsafe_data<std::string>& sink,
+                          const std::string& nucleotides)
+{
+  auto writer = sink.get_writer();
+  if (*writer == "auto") {
+    *writer = nucleotides;
+  }
+}
+
+} // namespace
+
+void
+read_fastq::detect_two_color(const std::vector<fastq>& reads)
+{
+  // Check first available read; input is assumed to be homogeneous
+  std::string nucleotides;
+  for (const auto& read : reads) {
+    if (read.is_two_color()) {
+      nucleotides = "G";
+    }
+    break;
+  }
+
+  update_poly_x_nucleotides(m_pre_trim_poly_x, nucleotides);
+  update_poly_x_nucleotides(m_post_trim_poly_x, nucleotides);
 }
 
 void

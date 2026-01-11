@@ -97,6 +97,12 @@ public:
   /** Returns the mean Phred score of bases in a (non-empty) sequence */
   [[nodiscard]] double mean_quality() const;
 
+  /**
+   * Returns true if the read name corresponds to the output from known
+   * two-color sequences technologies
+   */
+  [[nodiscard]] bool is_two_color() const;
+
   /** The number of bases trimmed from the 5p and 3p end respectively. **/
   using ntrimmed = std::pair<size_t, size_t>;
 
