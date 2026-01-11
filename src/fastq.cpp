@@ -35,48 +35,69 @@ count_poly_x_tail(const std::string& m_sequence,
                   const char nucleotide,
                   const size_t min_length)
 {
-  // Maximum number of sequential mismatches
-  const size_t max_seq_mismatches = 2;
   // Number of called bases required per mismatch (via fastp)
   const size_t min_bases_per_mismatch = 8;
 
-  //! Number of bases in the alignment to trim, excluding leading mismatches
+  //! Number of bases in the sequence to trim
   size_t n_trim = 0;
-  //! Number of bases in the alignment
+  //! Number of bases in the examined part of the sequence
   size_t n_bases = 0;
-  //! Number of uncalled bases (Ns) in the alignment
+  //! Number of uncalled bases (Ns) in the examined part of the sequence
   size_t n_uncalled = 0;
-  //! Number of mismatches in the alignment
+  //! Total Number of mismatches in the examined part of the sequence
   size_t n_mismatches = 0;
-  //! Current number of sequential mismatches in the alignment
-  size_t n_seq_mismatches = 0;
+  //! Number of uncalled bases in the identified tail
+  size_t n_uncalled_in_tail = 0;
+  //! Number of mismatches in the identified tail
+  size_t n_mismatches_in_tail = 0;
+  //! Alignment score of the current putative next part of the tail
+  int local_score = 0;
 
   for (auto it = m_sequence.rbegin(); it != m_sequence.rend(); ++it) {
     n_bases++;
 
     if (*it == nucleotide) {
-      n_trim = n_bases;
-      n_seq_mismatches = 0;
+      local_score++;
+
+      if (local_score >= 0 &&
+          n_mismatches <= (n_bases - n_uncalled) / min_bases_per_mismatch) {
+        local_score = 0;
+        n_trim = n_bases;
+        n_uncalled_in_tail = n_uncalled;
+        n_mismatches_in_tail = n_mismatches;
+      }
     } else if (*it == 'N') {
       n_uncalled++;
-      // Trailing Ns are allowed only after a match
-      if (!n_seq_mismatches) {
-        n_trim = n_bases;
-      }
     } else {
+      local_score--;
       n_mismatches++;
-      n_seq_mismatches++;
-      if (n_seq_mismatches > max_seq_mismatches ||
-          n_mismatches > std::max(min_length, n_bases - n_uncalled) /
-                           min_bases_per_mismatch) {
-        // The final mismatch is not counted as part of the alignment
-        n_bases--;
+      // This cutoff is arbitrary, but mostly excludes questionable results
+      // while significantly reduces the running time of the algorithm
+      if (local_score < -5) {
         break;
       }
     }
   }
 
-  if (n_bases - n_uncalled >= min_length) {
+  // Expand tail to include all uncalled bases; these can reasonably be
+  // considered part of the low-quality poly-X tail
+  while (n_trim < n_bases) {
+    if (m_sequence.at(m_sequence.size() - n_trim - 1) == 'N') {
+      n_uncalled_in_tail++;
+      n_trim++;
+    } else {
+      break;
+    }
+  }
+
+  const size_t n_aligned = n_trim - n_uncalled_in_tail;
+  if (n_aligned >= min_length ||
+      // Edge case, when the final base in the tail is a mismatch, or when the
+      // putative tail contains `min_length - 1` called bases and at least one
+      // N, which we can consider a mismatch and potentially still accept
+      (n_aligned + 1 == min_length && n_aligned < n_bases &&
+       n_mismatches_in_tail == 0 &&
+       ((n_aligned + 1) / min_bases_per_mismatch) >= 1)) {
     return n_trim;
   }
 

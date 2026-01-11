@@ -836,9 +836,9 @@ TEST_CASE("trim_poly_x accept one mismatch per 8 bases")
   REQUIRE(poly_x_trimming("A", 10, "AAAAAATAAA").empty());
   REQUIRE(poly_x_trimming("A", 10, "TTAAAAAAAAA") == "TT");
   REQUIRE(poly_x_trimming("A", 10, "AATAAATAAA") == "AATAAATAAA");
-  REQUIRE(poly_x_trimming("A", 10, "AAATAAAAAAAAATAAA") == "AAAT");
-  REQUIRE(poly_x_trimming("A", 10, "AATAAAAAAAAAATAAA") == "AAT");
-  REQUIRE(poly_x_trimming("A", 10, "ATAAAAAAAAAAATAAA").empty());
+  REQUIRE(poly_x_trimming("A", 10, "AAATAAAAAAATAAA") == "AAAT");
+  REQUIRE(poly_x_trimming("A", 10, "AATAAAAAAAATAAA") == "AAT");
+  REQUIRE(poly_x_trimming("A", 10, "AATAAAAAAAATAAAA").empty());
 }
 
 TEST_CASE("trim_poly_x accept early mismatches if in window")
@@ -869,18 +869,19 @@ TEST_CASE("trim_poly_x doesn't count Ns in alignnment")
   REQUIRE(poly_x_trimming("C", 5, "CNCCCC").empty());
   REQUIRE(poly_x_trimming("C", 5, "CNCCNC") == "CNCCNC");
 
-  REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCCC") == "CCCCNCCCCC");
-  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC").empty());
+  REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCC") == "CCCCNCCCC");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC") == "");
   REQUIRE(poly_x_trimming("C", 10, "TCCCCNCCCCC") == "T");
 
-  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC").empty());
-  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCNCCCCCTCCC") == "CCCCT");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CNCCTCCNCCNCCCNCTCCN") == "CNCCT");
 }
 
 TEST_CASE("trim_poly_x only trims trailing Ns after matches")
 {
-  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC").empty());
-  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC").empty());
+  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC") == "");
   REQUIRE(poly_x_trimming("C", 5, "NNTCCCCCCC") == "NNT");
 }
 

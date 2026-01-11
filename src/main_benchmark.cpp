@@ -20,6 +20,7 @@
 #include <cstdint>               // for uint64_t
 #include <limits>                // for numeric_limits
 #include <string>                // for string+, char_traits
+#include <string_view>           // for string_view
 #include <utility>               // for move
 #include <vector>                // for vector
 
@@ -289,6 +290,31 @@ protected:
   }
 };
 
+class poly_x_trimming_benchmarker : public trimming_benchmarker
+{
+public:
+  poly_x_trimming_benchmarker(const std::vector<fastq>& records_1,
+                              const std::vector<fastq>& records_2,
+                              std::string nucleotides,
+                              size_t threshold)
+    : trimming_benchmarker("poly-X trimming", "polyx", records_1, records_2)
+    , m_nucleotides(std::move(nucleotides))
+    , m_threshold(threshold)
+  {
+  }
+
+protected:
+  void trim(std::vector<fastq>& reads) const override
+  {
+    for (auto& read : reads) {
+      read.poly_x_trimming(m_nucleotides, m_threshold);
+    }
+  }
+
+  std::string m_nucleotides;
+  size_t m_threshold;
+};
+
 /** Class for benchmarking collection of `fastq_statistics` */
 class fastq_statistics_benchmarker : public benchmarker
 {
@@ -471,10 +497,10 @@ private:
 string_vec
 supported_toggles()
 {
-  string_vec toggles = { "read",  "parse",      "revcompl",  "complexity",
-                         "trim",  "trim:basic", "trim:mott", "trim:window",
-                         "stats", "align",      "align:se",  "align:pe",
-                         "simd" };
+  string_vec toggles = { "read",       "parse",      "revcompl",  "complexity",
+                         "trim",       "trim:basic", "trim:mott", "trim:window",
+                         "trim:polyx", "stats",      "align",     "align:se",
+                         "align:pe",   "simd" };
 
   for (const auto is : simd::supported()) {
     toggles.push_back(std::string("simd:") + to_lower(simd::name(is)));
@@ -523,6 +549,19 @@ benchmark(const userconfig& config)
 
   window_trimming_benchmarker(records.records_1(), records.records_2())
     .run_if_toggled(toggles);
+
+  {
+    auto nucleotides = config.pre_trim_poly_x;
+    if (nucleotides.empty()) {
+      nucleotides = "ACGT";
+    }
+
+    poly_x_trimming_benchmarker(records.records_1(),
+                                records.records_2(),
+                                nucleotides,
+                                config.trim_poly_x_threshold)
+      .run_if_toggled(toggles);
+  }
 
   fastq_statistics_benchmarker(records.records_1(), records.records_2())
     .run_if_toggled(toggles);
