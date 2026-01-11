@@ -5,6 +5,7 @@
 #include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp" // for threadsafe_data
 #include <memory>        // for unique_ptr
+#include <mutex>         // for std::mutex
 #include <thread>        // for std::thread
 
 namespace Catch {
@@ -211,15 +212,19 @@ TEST_CASE("threadsafe_data readers are shared")
 TEST_CASE("threadsafe_data writers are exclusive #1")
 {
   threadsafe_data<std::string> data{ "example" };
+  std::mutex lock;
+  lock.lock();
 
-  const auto write_func = [&data]() {
+  const auto write_func = [&data, &lock]() {
     auto writer = data.get_writer();
+    lock.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     REQUIRE(*writer == "example");
     *writer = "modified";
   };
 
-  const auto read_func = [&data]() {
+  const auto read_func = [&data, &lock]() {
+    lock.lock();
     const auto reader = data.get_reader();
     REQUIRE(*reader == "modified");
   };
