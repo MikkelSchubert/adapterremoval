@@ -6,8 +6,7 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for instruction_set
 #include "threading.hpp"     // for threadsafe_data
-#include <chrono>            // for
-#include <fastq.hpp>         // for fastq
+#include <chrono>            // for steady_clock
 
 namespace adapterremoval {
 
