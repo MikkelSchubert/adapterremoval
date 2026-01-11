@@ -22,7 +22,6 @@ LTO := true
 # LTO mode; older systems may need to use `make LTO_MODE=default`
 LTO_MODE := thin
 
-
 # Generate statically linked binary
 # It is recommended to use the included Containerfile to build the static binary
 STATIC := false
