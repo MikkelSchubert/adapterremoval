@@ -50,17 +50,13 @@ class read_fastq : public analytical_step
 public:
   enum class file_type;
 
-  read_fastq(const userconfig& config,
-             size_t next_step,
-             file_type mode,
-             statistics& stats);
+  read_fastq(const userconfig& config, size_t next_step, file_type mode);
   ~read_fastq() override = default;
 
   /** Adds read_fastq step(s) to the scheduler depending on current input */
   static void add_steps(scheduler& sch,
                         const userconfig& config,
-                        size_t next_step,
-                        statistics& stats);
+                        size_t next_step);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr data) override;
@@ -75,13 +71,10 @@ public:
 
 private:
   /** Fills a chunk with SE reads; stops on EOF or after `head` reads. */
-  void read_single_end(std::vector<fastq>& reads,
-                       duplication_statistics& stats);
+  void read_single_end(std::vector<fastq>& reads);
   /** Fills a chunk of interleaved reads; stops on EOF or after `head` reads. */
   void read_interleaved(std::vector<fastq>& reads_1,
                         std::vector<fastq>& reads_2);
-
-  void detect_two_color(const std::vector<fastq>& reads);
 
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_reader;
@@ -98,6 +91,31 @@ private:
   bool m_eof = false;
   //! Number of reads to process
   uint64_t m_head = std::numeric_limits<uint64_t>::max();
+
+  //! Lock used to verify that the analytical_step is only run sequentially.
+  std::mutex m_lock{};
+};
+
+/** Step for performing costly, ordered (duplication) analysis */
+class scan_fastq : public analytical_step
+{
+public:
+  scan_fastq(const userconfig& config, size_t next_step, statistics& stats);
+  ~scan_fastq() override = default;
+
+  /** Reads lines from the input file and saves them in an fastq_file_chunk. */
+  chunk_vec process(chunk_ptr data) override;
+
+  scan_fastq(const scan_fastq&) = delete;
+  scan_fastq(scan_fastq&&) = delete;
+  scan_fastq& operator=(const scan_fastq&) = delete;
+  scan_fastq& operator=(scan_fastq&&) = delete;
+
+private:
+  void detect_two_color(const std::vector<fastq>& reads);
+
+  const size_t m_next_step;
+
   //! Character used to join read-names with mate numbers, e.g. '/'
   char m_mate_separator = '\0';
   //! Indicates if the mate separator is known / has been attempted identified
@@ -109,13 +127,12 @@ private:
   //! Indicates if automatic checks for 2-color systems have been performed
   bool m_2_color_checked = false;
 
+  //! Indicates if duplication statistics should be collected
+  bool m_duplication_enabled = false;
   //! Optional duplication stats for mate 1 reads
   duplication_stats_ptr m_duplication_1{};
   //! Optional duplication stats for mate 2 reads
   duplication_stats_ptr m_duplication_2{};
-
-  //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock{};
 };
 
 /**

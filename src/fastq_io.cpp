@@ -144,36 +144,23 @@ estimate_capacity(size_t input_size, bool eof)
 
 read_fastq::read_fastq(const userconfig& config,
                        const size_t next_step,
-                       const read_fastq::file_type mode,
-                       statistics& stats)
+                       const read_fastq::file_type mode)
   : analytical_step(processing_order::ordered, "read_fastq")
   , m_reader(select_filenames(config, mode))
   , m_next_step(next_step)
   , m_single_end(!config.paired_ended_mode)
   , m_mode(mode)
   , m_head(config.head)
-  , m_mate_separator(config.input_mate_separator)
-  , m_mate_separator_identified(config.input_mate_separator)
-  , m_pre_trim_poly_x(config.pre_trim_poly_x)
-  , m_post_trim_poly_x(config.post_trim_poly_x)
-  , m_duplication_1(stats.duplication_1)
-  , m_duplication_2(stats.duplication_2)
 {
-  AR_REQUIRE(m_duplication_1 && m_duplication_2);
-
-  m_2_color_checked = (m_mode == file_type::read_2) ||
-                      ((*m_pre_trim_poly_x.get_reader() != "auto") &&
-                       (*m_post_trim_poly_x.get_reader() != "auto"));
 }
 
 void
 read_fastq::add_steps(scheduler& sch,
                       const userconfig& config,
-                      size_t next_step,
-                      statistics& stats)
+                      size_t next_step)
 {
-  const auto add_step = [&sch, &config, &stats](auto next, auto type) {
-    return sch.add<read_fastq>(config, next, type, stats);
+  const auto add_step = [&sch, &config](auto next, auto type) {
+    return sch.add<read_fastq>(config, next, type);
   };
 
   if (config.interleaved_input) {
@@ -206,51 +193,27 @@ read_fastq::process(chunk_ptr data)
   auto& reads_1 = chunk->reads_1;
   auto& reads_2 = chunk->reads_2;
 
-  if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
-    if (m_mode == file_type::read_1) {
-      read_single_end(reads_1, *m_duplication_1);
-    } else {
-      read_interleaved(reads_1, reads_2);
-    }
-  } else if (m_mode == file_type::read_2) {
-    read_single_end(reads_2, *m_duplication_2);
+  if (m_mode == file_type::read_1) {
+    read_single_end(reads_1);
   } else {
-    AR_FAIL("invalid file_type value");
-  }
-
-  if (m_single_end) {
-    AR_REQUIRE(m_mode == file_type::read_1);
-
-    if (!m_mate_separator_identified) {
-      // Attempt to determine the mate separator character
-      m_mate_separator = fastq::guess_mate_separator(reads_1);
-      m_mate_separator_identified = true;
+    if (m_mode == file_type::interleaved) {
+      read_interleaved(reads_1, reads_2);
+    } else if (m_mode == file_type::read_2) {
+      read_single_end(reads_2);
+    } else {
+      AR_FAIL("invalid file_type value");
     }
-  } else if (m_mode != file_type::read_1) {
-    if (reads_1.size() != reads_2.size()) {
+
+    if (chunk->reads_1.size() != chunk->reads_2.size()) {
       throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
                         "input files may be truncated. Please fix before "
                         "continuing.");
-    } else if (!m_mate_separator_identified) {
-      AR_REQUIRE(reads_1.size() == reads_2.size());
-      // Mate separators are identified using the first block, in order to
-      // reduce the need for locking in the post-processing step
-
-      // Attempt to determine the mate separator character
-      m_mate_separator = fastq::guess_mate_separator(reads_1, reads_2);
-      m_mate_separator_identified = true;
     }
-  }
-
-  if (!m_2_color_checked) {
-    detect_two_color(reads_1);
-    m_2_color_checked = true;
   }
 
   // Head must be checked after the first loop, to produce at least one chunk
   m_eof |= !m_head;
   chunk->eof = m_eof;
-  chunk->mate_separator = m_mate_separator;
   chunk->first = m_first;
   m_first = false;
 
@@ -260,13 +223,10 @@ read_fastq::process(chunk_ptr data)
 }
 
 void
-read_fastq::read_single_end(std::vector<fastq>& reads,
-                            duplication_statistics& stats)
+read_fastq::read_single_end(std::vector<fastq>& reads)
 {
   for (; reads.size() < INPUT_READS && m_head && !m_eof; m_head--) {
-    if (read_record(m_reader, reads)) {
-      stats.process(reads.back());
-    } else {
+    if (!read_record(m_reader, reads)) {
       m_eof = true;
     }
   }
@@ -277,17 +237,83 @@ read_fastq::read_interleaved(std::vector<fastq>& reads_1,
                              std::vector<fastq>& reads_2)
 {
   for (; reads_1.size() < INPUT_READS && m_head && !m_eof; m_head--) {
-    if (read_record(m_reader, reads_1)) {
-      m_duplication_1->process(reads_1.back());
-    } else {
+    if (!read_record(m_reader, reads_1)) {
       m_eof = true;
       break;
     }
 
-    if (read_record(m_reader, reads_2)) {
-      m_duplication_2->process(reads_2.back());
+    read_record(m_reader, reads_2);
+  }
+}
+
+void
+read_fastq::finalize()
+{
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_eof);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Implementations for 'scan_fastq'
+
+scan_fastq::scan_fastq(const userconfig& config,
+                       const size_t next_step,
+                       statistics& stats)
+  : analytical_step(processing_order::ordered, "scan_fastq")
+  , m_next_step(next_step)
+  , m_mate_separator(config.input_mate_separator)
+  , m_mate_separator_identified(config.input_mate_separator)
+  , m_pre_trim_poly_x(config.pre_trim_poly_x)
+  , m_post_trim_poly_x(config.post_trim_poly_x)
+  , m_duplication_enabled(config.report_duplication)
+  , m_duplication_1(stats.duplication_1)
+  , m_duplication_2(stats.duplication_2)
+{
+  AR_REQUIRE(m_duplication_1 && m_duplication_2);
+
+  m_2_color_checked = (*m_pre_trim_poly_x.get_reader() != "auto") &&
+                      (*m_post_trim_poly_x.get_reader() != "auto");
+}
+
+chunk_vec
+scan_fastq::process(chunk_ptr data)
+{
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
+  AR_REQUIRE(chunk);
+
+  if (m_duplication_enabled) {
+    for (const auto& read : chunk->reads_1) {
+      m_duplication_1->process(read);
+    }
+
+    for (const auto& read : chunk->reads_2) {
+      m_duplication_2->process(read);
     }
   }
+
+  if (!m_mate_separator_identified) {
+    // Mate separators are identified using an already ordered block, in order
+    // to reduce the need for locking in the post-processing step
+    if (chunk->reads_2.empty()) {
+      m_mate_separator = fastq::guess_mate_separator(chunk->reads_1);
+    } else {
+      m_mate_separator =
+        fastq::guess_mate_separator(chunk->reads_1, chunk->reads_2);
+    }
+
+    m_mate_separator_identified = true;
+  }
+
+  if (!m_2_color_checked) {
+    detect_two_color(chunk->reads_1);
+    m_2_color_checked = true;
+  }
+
+  chunk->mate_separator = m_mate_separator;
+
+  chunk_vec chunks;
+  chunks.emplace_back(m_next_step, std::move(chunk));
+  return chunks;
 }
 
 namespace {
@@ -305,7 +331,7 @@ update_poly_x_nucleotides(threadsafe_data<std::string>& sink,
 } // namespace
 
 void
-read_fastq::detect_two_color(const std::vector<fastq>& reads)
+scan_fastq::detect_two_color(const std::vector<fastq>& reads)
 {
   // Check first available read; input is assumed to be homogeneous
   std::string nucleotides;
@@ -318,13 +344,6 @@ read_fastq::detect_two_color(const std::vector<fastq>& reads)
 
   update_poly_x_nucleotides(m_pre_trim_poly_x, nucleotides);
   update_poly_x_nucleotides(m_post_trim_poly_x, nucleotides);
-}
-
-void
-read_fastq::finalize()
-{
-  AR_REQUIRE_SINGLE_THREAD(m_lock);
-  AR_REQUIRE(m_eof);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
