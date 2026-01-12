@@ -127,6 +127,8 @@ private:
   //! Indicates if automatic checks for 2-color systems have been performed
   bool m_2_color_checked = false;
 
+  //! Indicates if duplication statistics should be collected
+  bool m_duplication_enabled = false;
   //! Optional duplication stats for mate 1 reads
   duplication_stats_ptr m_duplication_1{};
   //! Optional duplication stats for mate 2 reads

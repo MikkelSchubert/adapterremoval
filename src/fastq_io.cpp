@@ -193,16 +193,22 @@ read_fastq::process(chunk_ptr data)
   auto& reads_1 = chunk->reads_1;
   auto& reads_2 = chunk->reads_2;
 
-  if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
-    if (m_mode == file_type::read_1) {
-      read_single_end(reads_1);
-    } else {
-      read_interleaved(reads_1, reads_2);
-    }
-  } else if (m_mode == file_type::read_2) {
-    read_single_end(reads_2);
+  if (m_mode == file_type::read_1) {
+    read_single_end(reads_1);
   } else {
-    AR_FAIL("invalid file_type value");
+    if (m_mode == file_type::interleaved) {
+      read_interleaved(reads_1, reads_2);
+    } else if (m_mode == file_type::read_2) {
+      read_single_end(reads_2);
+    } else {
+      AR_FAIL("invalid file_type value");
+    }
+
+    if (chunk->reads_1.size() != chunk->reads_2.size()) {
+      throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
+                        "input files may be truncated. Please fix before "
+                        "continuing.");
+    }
   }
 
   // Head must be checked after the first loop, to produce at least one chunk
@@ -259,6 +265,7 @@ scan_fastq::scan_fastq(const userconfig& config,
   , m_mate_separator_identified(config.input_mate_separator)
   , m_pre_trim_poly_x(config.pre_trim_poly_x)
   , m_post_trim_poly_x(config.post_trim_poly_x)
+  , m_duplication_enabled(config.report_duplication)
   , m_duplication_1(stats.duplication_1)
   , m_duplication_2(stats.duplication_2)
 {
@@ -274,32 +281,27 @@ scan_fastq::process(chunk_ptr data)
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
 
-  for (const auto& read : chunk->reads_1) {
-    m_duplication_1->process(read);
-  }
-
-  for (const auto& read : chunk->reads_2) {
-    m_duplication_2->process(read);
-  }
-
-  if (chunk->reads_2.empty()) {
-    if (!m_mate_separator_identified) {
-      // Attempt to determine the mate separator character
-      m_mate_separator = fastq::guess_mate_separator(chunk->reads_1);
-      m_mate_separator_identified = true;
+  if (m_duplication_enabled) {
+    for (const auto& read : chunk->reads_1) {
+      m_duplication_1->process(read);
     }
-  } else {
-    if (chunk->reads_1.size() != chunk->reads_2.size()) {
-      throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
-                        "input files may be truncated. Please fix before "
-                        "continuing.");
-    } else if (!m_mate_separator_identified) {
-      // Mate separators are identified using the first block, in order to
-      // reduce the need for locking in the post-processing step
+
+    for (const auto& read : chunk->reads_2) {
+      m_duplication_2->process(read);
+    }
+  }
+
+  if (!m_mate_separator_identified) {
+    // Mate separators are identified using an already ordered block, in order
+    // to reduce the need for locking in the post-processing step
+    if (chunk->reads_2.empty()) {
+      m_mate_separator = fastq::guess_mate_separator(chunk->reads_1);
+    } else {
       m_mate_separator =
         fastq::guess_mate_separator(chunk->reads_1, chunk->reads_2);
-      m_mate_separator_identified = true;
     }
+
+    m_mate_separator_identified = true;
   }
 
   if (!m_2_color_checked) {
