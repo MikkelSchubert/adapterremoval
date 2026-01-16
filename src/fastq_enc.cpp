@@ -55,7 +55,9 @@ calc_solexa_to_phred33()
     const double score = round(10.0 * log10(1.0 + pow(10, (i / 10.0))));
     const int transformed =
       std::max<int>(PHRED_SCORE_MIN, std::min<int>(PHRED_SCORE_MAX, score));
-    scores.at(i + SOLEXA_OFFSET_MIN) = PHRED_OFFSET_MIN + transformed;
+    const auto idx = static_cast<unsigned char>(i + SOLEXA_OFFSET_MIN);
+
+    scores.at(idx) = PHRED_OFFSET_MIN + transformed;
   }
 
   return scores;
@@ -409,8 +411,10 @@ fastq_encoding::process_qualities(std::string& qualities) const
   if (m_encoding == quality_encoding::solexa) {
     for (auto& quality : qualities) {
       const char current = quality;
-      // TODO: Handle negative values, e.g. è
-      if (!(quality = g_solexa_to_phred33.at(quality))) {
+      const auto idx = static_cast<unsigned char>(quality);
+
+      quality = g_solexa_to_phred33.at(idx);
+      if (quality == '\0') {
         throw_invalid_score(m_encoding, current);
       }
     }
