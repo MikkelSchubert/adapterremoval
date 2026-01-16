@@ -21,6 +21,12 @@
 
 namespace adapterremoval {
 
+namespace {
+
+//! Maximum length of inferred adapter sequences. This length corresponds to the
+//! longest sequence recorded in the database of known adapter sequences.
+constexpr size_t MAX_ADAPTER_LENGTH = 42;
+
 class reads_sink : public analytical_step
 {
 public:
@@ -35,7 +41,9 @@ public:
 class adapter_identification : public analytical_step
 {
 public:
-  explicit adapter_identification(const userconfig& config, statistics& stats)
+  explicit adapter_identification(const userconfig& config,
+                                  statistics& stats,
+                                  const size_t max_adapter_length)
     : analytical_step(processing_order::unordered, "adapter_identification")
     , m_config(config)
     , m_sink_id(stats.adapter_id)
@@ -44,9 +52,7 @@ public:
     AR_REQUIRE(stats.adapter_id);
     m_sink_trim = stats.trimming.back();
 
-    // FIXME: Shouldn't be adapter specific
-    m_stats_id.emplace_back_n(m_config.max_threads,
-                              m_sink_id->adapter1.max_length());
+    m_stats_id.emplace_back_n(m_config.max_threads, max_adapter_length);
     m_stats_ins.emplace_back_n(m_config.max_threads);
   }
 
@@ -126,13 +132,15 @@ private:
   adapter_id_stats_ptr m_sink_id{};
 };
 
+} // namespace
+
 int
 generate_reports(const userconfig& config)
 {
   scheduler sch;
 
-  // FIXME: Length picked based on known sequences
-  const auto max_adapter_length = config.paired_ended_mode ? 42 : 0;
+  const auto max_adapter_length =
+    config.paired_ended_mode ? MAX_ADAPTER_LENGTH : 0;
   statistics stats = statistics_builder()
                        .sample_rate(config.report_sample_rate)
                        .estimate_duplication(config.report_duplication)
@@ -143,7 +151,7 @@ generate_reports(const userconfig& config)
   size_t step = std::numeric_limits<size_t>::max();
   if (config.paired_ended_mode) {
     // Attempt to identify adapters through pair-wise alignments
-    step = sch.add<adapter_identification>(config, stats);
+    step = sch.add<adapter_identification>(config, stats, max_adapter_length);
   } else {
     // Discard all written reads
     step = sch.add<reads_sink>();

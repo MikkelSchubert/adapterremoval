@@ -430,7 +430,7 @@ statistics_builder::estimate_duplication(size_t max_unique)
 statistics_builder&
 statistics_builder::adapter_identification(size_t max_length)
 {
-  m_adapter_id = max_length;
+  m_adapter_length = max_length;
 
   return *this;
 }
@@ -443,8 +443,9 @@ statistics_builder::initialize() const
   stats.duplication_1 = std::make_shared<duplication_statistics>(m_max_unique);
   stats.duplication_2 = std::make_shared<duplication_statistics>(m_max_unique);
 
-  if (m_adapter_id) {
-    stats.adapter_id = std::make_shared<adapter_id_statistics>(m_adapter_id);
+  if (m_adapter_length) {
+    stats.adapter_id =
+      std::make_shared<adapter_id_statistics>(m_adapter_length);
   }
 
   for (size_t i = 0; i < m_sample_count; ++i) {

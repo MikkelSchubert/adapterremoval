@@ -346,7 +346,7 @@ private:
   //! The max number of unique sequences counted when estimating duplication.
   size_t m_max_unique = 0;
   //! The number of bases to infer for adapter sequences
-  size_t m_adapter_id = 0;
+  size_t m_adapter_length = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
