@@ -826,13 +826,21 @@ write_html_analyses_section(const userconfig& config,
     sample->i64("offset", 0);
     sample->i64_vec("y", insert_sizes);
 
-    // FIXME: Specify "identified reads" when in demultiplexing mode and
-    // correct format_percentage to merged / n_identified.
     std::ostringstream ss;
-    ss << "Insert sizes inferred for "
-       << format_percentage(insert_sizes.sum(),
-                            stats.input_1->number_of_input_reads())
-       << " of reads";
+    ss << "Insert sizes inferred for ";
+    if (config.is_demultiplexing_enabled()) {
+      size_t n_identified = 0;
+      for (const auto& count : stats.demultiplexing->samples) {
+        n_identified += count.sum() / 2; // both reads in each pair are counted
+      }
+
+      ss << format_percentage(insert_sizes.sum(), n_identified)
+         << " of identified reads";
+    } else {
+      ss << format_percentage(insert_sizes.sum(),
+                              stats.input_1->number_of_input_reads())
+         << " of reads";
+    }
 
     html_plot_title()
       .set_href("analyses-insert-sizes")
@@ -1259,13 +1267,13 @@ write_html_report(const userconfig& config,
 
   write_html_input_section(config, stats, output);
 
+  if (config.is_demultiplexing_enabled()) {
+    write_html_demultiplexing_section(*samples, stats, output);
+  }
+
   if (config.paired_ended_mode || config.report_duplication ||
       config.run_type == ar_command::report_only) {
     write_html_analyses_section(config, *samples, stats, output);
-  }
-
-  if (config.is_demultiplexing_enabled()) {
-    write_html_demultiplexing_section(*samples, stats, output);
   }
 
   if (config.run_type != ar_command::report_only) {
