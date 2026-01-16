@@ -325,7 +325,7 @@ private:
 class statistics_builder
 {
 public:
-  statistics_builder();
+  statistics_builder() = default;
 
   /** The number of barcodes used for demultiplexing (0 if disabled). */
   statistics_builder& demultiplexing(size_t samples);
@@ -339,14 +339,14 @@ public:
   statistics initialize() const;
 
 private:
-  //! Number of demultiplexing samples
-  size_t m_sample_count;
+  //! Number of (demultiplexing) samples; at least one, for regular runs
+  size_t m_sample_count = 1;
   //! Fraction of reads sampled for costly statistics (quality distrib., etc.).
-  double m_sample_rate;
+  double m_sample_rate = 1.0;
   //! The max number of unique sequences counted when estimating duplication.
-  size_t m_max_unique;
+  size_t m_max_unique = 0;
   //! The number of bases to infer for adapter sequences
-  size_t m_adapter_id;
+  size_t m_adapter_length = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

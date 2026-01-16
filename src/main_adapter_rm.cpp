@@ -15,7 +15,6 @@
 #include "userconfig.hpp"       // for userconfig, output_files, DEV_NULL
 #include <cstring>              // for size_t
 #include <limits>               // for numeric_limits
-#include <memory>               // for make_shared
 
 namespace adapterremoval {
 
@@ -23,40 +22,33 @@ int
 remove_adapter_sequences(const userconfig& config)
 {
   scheduler sch;
-  statistics stats = statistics_builder()
-                       .sample_rate(config.report_sample_rate)
-                       .estimate_duplication(config.report_duplication)
-                       .demultiplexing(config.samples.get_reader()->size())
-                       .initialize();
 
   auto output = config.get_output_filenames();
   // Add write steps for demultiplexed and per-samples output
   output.add_write_steps(sch, config);
 
+  statistics stats = statistics_builder()
+                       .sample_rate(config.report_sample_rate)
+                       .estimate_duplication(config.report_duplication)
+                       .demultiplexing(output.samples().size())
+                       .initialize();
+
   post_demux_steps steps;
 
   // Step 7 - N: Trim and write (demultiplexed) reads
   for (size_t nth = 0; nth < output.samples().size(); ++nth) {
-    stats.trimming.push_back(std::make_shared<trimming_statistics>());
+    const auto& sample = output.get_sample(nth);
+    auto trim_stats = stats.trimming.at(nth);
 
     if (!config.is_adapter_trimming_enabled()) {
       steps.samples.push_back(
-        sch.add<process_demultiplexed>(config,
-                                       output.get_sample(nth),
-                                       nth,
-                                       stats.trimming.back()));
+        sch.add<process_demultiplexed>(config, sample, nth, trim_stats));
     } else if (config.paired_ended_mode) {
       steps.samples.push_back(
-        sch.add<pe_reads_processor>(config,
-                                    output.get_sample(nth),
-                                    nth,
-                                    stats.trimming.back()));
+        sch.add<pe_reads_processor>(config, sample, nth, trim_stats));
     } else {
       steps.samples.push_back(
-        sch.add<se_reads_processor>(config,
-                                    output.get_sample(nth),
-                                    nth,
-                                    stats.trimming.back()));
+        sch.add<se_reads_processor>(config, sample, nth, trim_stats));
     }
   }
 

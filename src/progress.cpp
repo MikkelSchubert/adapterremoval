@@ -127,7 +127,6 @@ progress_timer::finalize()
 void
 progress_timer::start()
 {
-  // TODO: Hide/show cursor with "\033[?25l" / "\033[?25h"?
   if (m_type == progress_type::spinner && !m_spinner.joinable()) {
     m_spinning = true;
     m_spinner = std::thread(&progress_timer::loop, this);
