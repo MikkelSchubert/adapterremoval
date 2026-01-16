@@ -632,9 +632,8 @@ userconfig::userconfig()
     .with_default("{prefix}[.sample].merged.fastq")
     .with_preprocessor(normalize_output_file);
   argparser.add("--out-singleton", "FILE")
-    .help("Output file containing paired reads for which the mate "
-          "has been discarded. This file is only created if filtering is "
-          "enabled. Setting this value in demultiplexing mode overrides "
+    .help("Output file containing paired reads for which the mate has been "
+          "discarded. Setting this value in demultiplexing mode overrides "
           "--out-prefix for this file")
     .deprecated_alias("--singleton")
     .bind_str(nullptr)
@@ -1443,9 +1442,9 @@ userconfig::parse_args(const string_vec& argvec)
         is_adapter_trimming_enabled() || is_demultiplexing_enabled() },
       { "--out-file2",
         is_adapter_trimming_enabled() || is_demultiplexing_enabled() },
-      { "--out-singleton", is_any_filtering_enabled() },
+      { "--out-singleton", is_adapter_trimming_enabled() },
       { "--out-merged", is_read_merging_enabled() },
-      { "--out-discarded", is_any_filtering_enabled() },
+      { "--out-discarded", is_adapter_trimming_enabled() },
       { "--out-unidentified1", is_demultiplexing_enabled() },
       { "--out-unidentified2", is_demultiplexing_enabled() },
       { "--out-json", true },
@@ -1571,18 +1570,14 @@ userconfig::get_output_filenames() const
     }
 
     if (run_type == ar_command::trim_adapters) {
-      if (is_any_filtering_enabled()) {
-        map.set_file(
-          read_file::discarded,
-          new_output_file("--out-discarded", name, { ".discarded" }, ext));
-      }
+      map.set_file(
+        read_file::discarded,
+        new_output_file("--out-discarded", name, { ".discarded" }, ext));
 
       if (paired_ended_mode) {
-        if (is_any_filtering_enabled()) {
-          map.set_file(
-            read_file::singleton,
-            new_output_file("--out-singleton", name, { ".singleton" }, ext));
-        }
+        map.set_file(
+          read_file::singleton,
+          new_output_file("--out-singleton", name, { ".singleton" }, ext));
 
         if (is_read_merging_enabled()) {
           map.set_file(
