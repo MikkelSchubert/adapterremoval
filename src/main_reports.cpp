@@ -138,8 +138,6 @@ generate_reports(const userconfig& config)
                        .estimate_duplication(config.report_duplication)
                        .adapter_identification(max_adapter_length)
                        .initialize();
-  // FIXME: Required for insert size statistics
-  stats.trimming.push_back(std::make_shared<trimming_statistics>());
 
   // Step 6: Identify adapters from pair-wise alignments and infer insert sizes
   size_t step = std::numeric_limits<size_t>::max();

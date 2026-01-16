@@ -402,14 +402,6 @@ statistics::statistics(double sample_rate)
 {
 }
 
-statistics_builder::statistics_builder()
-  : m_sample_count(0)
-  , m_sample_rate(1.0)
-  , m_max_unique(0)
-  , m_adapter_id(0)
-{
-}
-
 statistics_builder&
 statistics_builder::sample_rate(double rate)
 {
@@ -453,6 +445,10 @@ statistics_builder::initialize() const
 
   if (m_adapter_id) {
     stats.adapter_id = std::make_shared<adapter_id_statistics>(m_adapter_id);
+  }
+
+  for (size_t i = 0; i < m_sample_count; ++i) {
+    stats.trimming.push_back(std::make_shared<trimming_statistics>());
   }
 
   return stats;
