@@ -2,7 +2,12 @@
 set -euo # "strict" mode
 
 echo RUNNING SETUP
-make setup DEBUG=true SANITIZE=true "${@:-}"
+# WORKAROUND for empty `$@` failing with `set -u` on OSX
+if test $# -gt 0; then
+    make setup DEBUG=true SANITIZE=true "${@}"
+else
+    make setup DEBUG=true SANITIZE=true
+fi
 
 echo RUNNING COMPILE
 make executables
