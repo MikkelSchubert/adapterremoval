@@ -2,7 +2,7 @@
 set -euo # "strict" mode
 
 echo RUNNING SETUP
-make setup DEBUG=true SANITIZE=true "${@}"
+make setup DEBUG=true SANITIZE=true "${@:-}"
 
 echo RUNNING COMPILE
 make executables
