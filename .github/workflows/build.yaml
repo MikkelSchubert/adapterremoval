@@ -64,31 +64,14 @@ jobs:
           # Disable cache cleanups while building
           max-size: "0"
 
-      - name: dependencies (libraries)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo apt-get install -y libisal-dev libdeflate-dev
+      - name: dependencies (OS specific)
+        run: bash scripts/setup-${{ matrix.os }}.sh
 
-      - name: dependencies (libraries)
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: brew install isa-l libdeflate
+      - name: dependencies (common)
+        run: bash scripts/setup-common.sh
 
-      - name: dependencies (pip)
-        run: uv pip install meson ninja jsonschema sphinx
-
-      - name: setup
-        run: make setup DEBUG=true SANITIZE=true
-
-      - name: compile
-        run: make executables DEBUG=true SANITIZE=true
-
-      - name: install
-        run: make install DESTDIR=${PWD}/install
-
-      - name: examples
-        run: make -C examples EXE=${PWD}/build/src/adapterremoval3
-
-      - name: tests
-        run: make regression-tests
+      - name: build and test
+        run: bash scripts/build-common.sh
 
       - name: CCache cleanup
         # Manual ccache cleanup, using the ccache-action default max size
