@@ -10,6 +10,9 @@ COVERAGE := false
 # Debug build; adds warnings, debugging symbols, and extra STL/POSIX asserts
 DEBUG := ${COVERAGE}
 
+# Build and install HTML documentation (https://adapterremoval.readthedocs.org)
+DOCS := false
+
 # Enable address and undefined behavior sanitation
 SANITIZE := false
 
@@ -86,6 +89,9 @@ coverage: ${NINJAFILE}
 coverage-xml: ${NINJAFILE}
 	ninja -C "${BUILDDIR}" coverage-xml
 
+docs: ${NINJAFILE}
+	meson compile -C "${BUILDDIR}" docs man
+
 install: ${NINJAFILE}
 	meson install -C "${BUILDDIR}"
 
@@ -101,6 +107,7 @@ setup ${NINJAFILE}:
 		-Db_lto=${LTO} \
 		-Db_lto_mode=${LTO_MODE} \
 		-Ddebug=${DEBUG} \
+		-Ddocs=${DOCS} \
 		-Dharden=${HARDEN} \
 		-Dmimalloc=${MIMALLOC} \
 		-Dstatic=${STATIC} \
@@ -143,6 +150,6 @@ update-regression-tests: ${NINJAFILE}
 
 test tests: executables unit-tests regression-tests
 
-.PHONY: clean clean-coverage coverage-xml coverage executable executables \
-	install regression-tests setup static-container static test tests \
-	unit-tests unit-tests-executable update-regression-tests
+.PHONY: clean clean-coverage coverage-xml coverage docs executable \
+	executables install regression-tests setup static-container static test \
+	tests unit-tests unit-tests-executable update-regression-tests

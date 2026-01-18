@@ -4,9 +4,9 @@ set -euo # "strict" mode
 echo RUNNING SETUP
 # WORKAROUND for empty `$@` failing with `set -u` on OSX
 if test $# -gt 0; then
-    make setup DEBUG=true SANITIZE=true "${@}"
+    make setup DEBUG=true SANITIZE=true DOCS=true "${@}"
 else
-    make setup DEBUG=true SANITIZE=true
+    make setup DEBUG=true SANITIZE=true DOCS=true
 fi
 
 echo RUNNING COMPILE

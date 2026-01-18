@@ -19,3 +19,9 @@ option(
     value: true,
     description: 'Build executable with hardening flags',
 )
+option(
+    'docs',
+    type: 'boolean',
+    value: true,
+    description: 'Build HTML documentation; requires sphinx-build to be available',
+)

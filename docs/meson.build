@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 
 sh = find_program('sh')
-sphinx_build = find_program('sphinx-build', required: false)
+sphinx_build = find_program('sphinx-build', required: get_option('docs'))
 
 if sphinx_build.found()
     custom_target(
@@ -29,6 +29,8 @@ if sphinx_build.found()
             '-q', # no output on stdout, just warnings on stderr
             '-E', # don't use a saved environment, always read all files
         ],
+        install: get_option('docs'),
+        install_dir: get_option('datadir') / meson.project_name() / 'docs',
     )
 
     custom_target(
