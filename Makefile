@@ -33,10 +33,11 @@ MIMALLOC := $(STATIC)
 ###############################################################################
 # (Container for) building static binaries using Alpine
 
+# Podman is preferred (and the fallback if neither is found), since it is more
+# likely that the user can execute podman than docker, if both are present
 CONTAINER_RUNNER := $(firstword $(shell which podman docker) podman)
 
 CONTAINER_NAME := ar3static
-
 
 ###############################################################################
 
