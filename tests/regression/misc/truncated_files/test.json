@@ -1,0 +1,16 @@
+{
+  "description": "Truncated files should report the final record",
+  "arguments": [
+    "--out-prefix",
+    "your_output"
+  ],
+  "return_code": 1,
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  },
+  "stderr": [
+    "[ERROR] Error reading FASTQ record from 'input_1.fastq' at line 1: partial FASTQ record; cut off after sequence"
+  ]
+}
