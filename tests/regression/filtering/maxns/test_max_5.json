@@ -5,6 +5,8 @@
     "none",
     "--out-file1",
     "out_max_5.fastq",
+    "--out-json",
+    "out_max_5.json",
     "--max-ns",
     "5"
   ],
@@ -14,6 +16,9 @@
     ],
     "output": [
       "out_max_5.fastq"
+    ],
+    "json": [
+      "out_max_5.json"
     ]
   }
 }

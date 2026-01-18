@@ -1031,7 +1031,7 @@ userconfig::userconfig()
           "trimming are discarded. May be combined with --max-ns [default: "
           "0.05, unless --max-ns is set]")
     .bind_double(&max_ambiguous_base_fraction)
-    .with_minimum(0)
+    .with_minimum(0.0)
     .with_maximum(1.0)
     .with_default(0.05);
 

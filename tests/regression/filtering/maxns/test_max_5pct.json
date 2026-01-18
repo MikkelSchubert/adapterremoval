@@ -5,6 +5,8 @@
     "none",
     "--out-file1",
     "out_max_5pct.fastq",
+    "--out-json",
+    "out_max_5pct.json",
     "--max-ns-fraction",
     "0.05"
   ],
@@ -14,6 +16,9 @@
     ],
     "output": [
       "out_max_5pct.fastq"
+    ],
+    "json": [
+      "out_max_5pct.json"
     ]
   }
 }
