@@ -89,7 +89,8 @@
     },
     { "step": "merging", "action": "merge", "reads": 10, "bases": 200, "corrected": 2, "masked": 3, "unmasked": 4 },
     { "step": "low_quality", "action": "trim", "reads": 6, "bases": 23 },
-    { "step": "min_length", "action": "filter", "reads": 2, "bases": 0 }
+    { "step": "min_length", "action": "filter", "reads": 2, "bases": 0 },
+    { "step": "ambiguous_bases", "action": "filter", "reads": 0, "bases": 0 }
   ],
   "analyses": {
     "duplication": null,

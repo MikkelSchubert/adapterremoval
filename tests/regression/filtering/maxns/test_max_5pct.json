@@ -1,0 +1,24 @@
+{
+  "description": "Filtering by maximum Ns, either fractional or constant",
+  "arguments": [
+    "--trim-strategy",
+    "none",
+    "--out-file1",
+    "out_max_5pct.fastq",
+    "--out-json",
+    "out_max_5pct.json",
+    "--max-ns-fraction",
+    "0.05"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "out_max_5pct.fastq"
+    ],
+    "json": [
+      "out_max_5pct.json"
+    ]
+  }
+}

@@ -1,7 +1,9 @@
 {
   "arguments": [
     "--out-prefix",
-    "your_output"
+    "your_output",
+    "--max-ns-fraction",
+    "1.0"
   ],
   "files": {
     "input_1": [

@@ -144,6 +144,9 @@ public:
   //! The maximum number of ambiguous bases (N) in an read; reads exceeding
   //! this number following trimming (optionally) are discarded.
   uint32_t max_ambiguous_bases{};
+  //! The maximum fraction of ambiguous bases (N) in an read.
+  double max_ambiguous_base_fraction{};
+
   //! The minimum average phred score of non-empty reads
   double min_mean_quality = 0.0;
   //! The minimum complexity score for FASTQ reads (see FASTQ::complexity()).

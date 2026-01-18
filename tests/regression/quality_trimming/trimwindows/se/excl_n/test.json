@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--max-ns-fraction",
+    "1.0",
     "--out-prefix",
     "your_output",
     "--quality-trimming",

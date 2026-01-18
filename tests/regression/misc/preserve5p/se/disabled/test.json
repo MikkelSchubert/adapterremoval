@@ -2,6 +2,8 @@
   "arguments": [
     "--adapter1",
     "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--max-ns-fraction",
+    "1.0",
     "--out-prefix",
     "your_output"
   ],

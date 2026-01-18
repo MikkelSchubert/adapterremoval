@@ -2,6 +2,8 @@
   "arguments": [
     "--out-prefix",
     "your_output",
+    "--max-ns-fraction",
+    "1.0",
     "--preserve5p"
   ],
   "files": {
