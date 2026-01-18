@@ -1020,14 +1020,14 @@ userconfig::userconfig()
   argparser.add_header("FILTERING:");
 
   argparser.add("--max-ns", "N")
-    .help("Reads containing more than N ambiguous bases after trimming are "
-          "discarded. This option may be combined with --max-ns-fraction "
+    .help("Reads containing more than N ambiguous bases ('N') after trimming "
+          "are discarded. This option may be combined with --max-ns-fraction "
           "[default: no maximum]")
     .deprecated_alias("--maxns")
     .bind_u32(&max_ambiguous_bases)
     .with_default(std::numeric_limits<uint32_t>::max());
   argparser.add("--max-ns-fraction", "N")
-    .help("Reads containing more than N / length ambiguous bases after "
+    .help("Reads containing more than N / length ambiguous bases ('N') after "
           "trimming are discarded. May be combined with --max-ns [default: "
           "0.05, unless --max-ns is set]")
     .bind_double(&max_ambiguous_base_fraction)
