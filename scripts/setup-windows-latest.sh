@@ -24,6 +24,6 @@ wget https://github.com/ebiggers/libdeflate/releases/download/v1.25/libdeflate-1
 tar xvzf libdeflate-1.25.tar.gz
 
 cd libdeflate-1.25
-cmake -B build
+cmake -B build -DCMAKE_INSTALL_PREFIX=/ucrt64
 cmake --build build
 cmake --install build
