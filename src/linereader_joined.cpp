@@ -38,8 +38,7 @@ joined_line_readers::filenames(size_t start, size_t end) const
   AR_REQUIRE(1 <= start && start <= end && end <= m_current_line);
 
   string_vec parts;
-  while (start <= end) {
-    bool found_file = false;
+  for (bool found_file = true; found_file && start <= end; found_file = false) {
     size_t current_offset = 0;
     for (const auto& it : m_filenames) {
       if (start <= it.second) {
@@ -67,8 +66,6 @@ joined_line_readers::filenames(size_t start, size_t end) const
 
       current_offset = it.second;
     }
-
-    AR_REQUIRE(found_file);
   }
 
   return join_text(parts, ", ", ", and ");
