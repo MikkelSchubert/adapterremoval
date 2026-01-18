@@ -60,6 +60,11 @@ $(error "SANITIZE must be 'true' or 'false', not '${SANITIZE}'")
 endif
 endif
 
+# Use custom installation prefix instead of the system default
+ifneq ($(strip ${PREFIX}), )
+override MESON_OPTIONS += --prefix=${PREFIX}
+endif
+
 ###############################################################################
 
 # Meson commands cannot be run in parallel
@@ -124,7 +129,7 @@ static:
 		"${CONTAINER_NAME}" \
 		-C /host/src \
 		BUILDDIR=/host/out/static/build \
-		DESTDIR=/host/out/static/install \
+		PREFIX=/host/out/static/install \
 		DEBUG=${DEBUG} \
 		COVERAGE=${COVERAGE} \
 		DOCS=${DOCS} \
