@@ -31,6 +31,14 @@ STATIC := false
 MIMALLOC := $(STATIC)
 
 ###############################################################################
+# (Container for) building static binaries using Alpine
+
+CONTAINER_RUNNER := $(firstword $(shell which podman docker) podman)
+
+CONTAINER_NAME := ar3static
+
+
+###############################################################################
 
 # Extra meson flags
 MESON_OPTIONS :=
@@ -97,11 +105,31 @@ setup ${NINJAFILE}:
 		-Dstatic=${STATIC} \
 		${MESON_OPTIONS}
 
-static: ${NINJAFILE}
-	meson compile -C "${BUILDDIR}" static
+static:
+	mkdir -p "${BUILDDIR}"
+	# Compilation with sanitize flags fails with alpine, but support is
+	# left in to avoid giving the false impression that they were enabled
+	"${CONTAINER_RUNNER}" run --rm -t \
+		--mount "type=bind,src=${PWD}/,dst=/host/src/" \
+		--mount "type=bind,src=${BUILDDIR}/,dst=/host/out/" \
+		--entrypoint /usr/bin/make \
+		"${CONTAINER_NAME}" \
+		-C /host/src \
+		BUILDDIR=/host/out/static/build \
+		DESTDIR=/host/out/static/install \
+		DEBUG=${DEBUG} \
+		COVERAGE=${COVERAGE} \
+		DOCS=${DOCS} \
+		SANITIZE=${SANITIZE} \
+		HARDEN=${HARDEN} \
+		STATIC=true \
+		MIMALLOC=true \
+		setup \
+		tests \
+		install
 
-static-container: ${NINJAFILE}
-	meson compile -C "${BUILDDIR}" static-container
+static-container:
+	"${CONTAINER_RUNNER}" build -f "Containerfile" -t ${CONTAINER_NAME} "."
 
 unit-tests-executable: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" unit_tests
