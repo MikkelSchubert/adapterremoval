@@ -71,7 +71,7 @@ jobs:
         run: bash scripts/setup-common.sh
 
       - name: build and test
-        run: bash scripts/build-common.sh
+        run: bash scripts/build-common.sh DEBUG=true SANITIZE=true
 
       - name: CCache cleanup
         # Manual ccache cleanup, using the ccache-action default max size
