@@ -21,7 +21,7 @@ mkdir -p dependencies/libdeflate
 
 cd dependencies/libdeflate
 wget https://github.com/ebiggers/libdeflate/releases/download/v1.25/libdeflate-1.25.tar.gz
-unzip libdeflate-1.25.tar.gz
+tar xvzf libdeflate-1.25.tar.gz
 
 cd libdeflate-1.25
 cmake -B build
