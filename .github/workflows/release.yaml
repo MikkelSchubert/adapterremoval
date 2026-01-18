@@ -1,0 +1,123 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v3.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create_draft_release:
+    runs-on: ubuntu-latest
+
+    outputs:
+      release_id: ${{ steps.create_release.outputs.release_id }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Read changelog
+        id: changelog
+        shell: bash
+        run: |
+          {
+            echo 'TEXT<<EOF'
+            sed '1,/^## /d;/^## /,$d' CHANGES.md
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: upload binaries to release
+        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2.11.3
+        id: create_release
+        with:
+          tag: ${{ github.ref }}
+          release_name: "AdapterRemoval ${{ github.ref_name }}"
+          body: ${{ steps.changelog.outputs.TEXT }}
+          file: "examples" # must exist, but won't be uploaded since it's not a file as of v2.11.3
+          overwrite: true
+          draft: true
+
+  release:
+    name: build assets for ${{ matrix.os }} with ${{ matrix.cxx }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux-x86_64
+          # - os: macos-latest
+          #   arch: macos-aarch64
+          - os: windows-latest
+            arch: windows-x86_64
+      # Do not auto-cancel other runners if one fails
+      fail-fast: false
+
+    env:
+      CXX: ${{ matrix.cxx }}
+      TARGET: "adapterremoval-${{ github.ref_name }}-${{ matrix.arch }}"
+
+    needs: create_draft_release
+
+    steps:
+      - name: Disable man-db building
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        # This speeds up apt-get, by preventing the man-db step from running
+        run: sudo rm -vf /var/lib/man-db/auto-update
+
+      # WORKAROUND: Container cannot be built with hardening enabled, due to
+      #             https://github.com/step-security/harden-runner/issues/559
+      # - name: harden runner
+      #   uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+      #   with:
+      #     egress-policy: audit
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - if: ${{ matrix.os == 'windows-latest' }}
+        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
+        with:
+          msystem: ucrt64
+
+      - if: ${{ matrix.os != 'windows-latest' }}
+        name: dependencies (Unix)
+        run: bash scripts/setup-${{ matrix.os }}.sh
+
+      - if: ${{ matrix.os == 'windows-latest' }}
+        name: dependencies (Windows)
+        shell: msys2 {0}
+        run: bash scripts/setup-${{ matrix.os }}.sh
+
+      - if: ${{ matrix.os == 'ubuntu-latest' }}
+        name: setup, build, test, and bundle (Linux)
+        run: |
+          make static-container static DOCS=true
+          bash scripts/build-bundle.sh "build/static/install/" "${TARGET}"
+
+      # FIXME: STATIC=true results in SIGABRT; unclear why
+      - if: ${{ matrix.os == 'macos-latest' }}
+        name: setup, build, test, and bundle (OSX)
+        run: |
+          bash scripts/build-common.sh STATIC=true DOCS=true
+          bash scripts/build-bundle.sh "build/install/" "${TARGET}"
+
+      - if: ${{ matrix.os == 'windows-latest' }}
+        name: setup, build, test, and bundle (Windows)
+        shell: msys2 {0}
+        run: |
+          bash scripts/build-common.sh STATIC=true DOCS=true
+          bash scripts/build-bundle.sh "build/install/" "${TARGET}"
+
+      - name: upload binaries to release
+        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2.11.3
+        with:
+          asset_name: "adapterremoval-${{ github.ref_name }}-${{ matrix.arch }}.tar.gz"
+          file: "adapterremoval-${{ github.ref_name }}-${{ matrix.arch }}.tar.gz"
+          release_id: ${{ needs.create_draft_release.outputs.release_id }}
+          draft: true

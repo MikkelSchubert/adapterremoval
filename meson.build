@@ -92,9 +92,9 @@ endif
 # Build static binary, forcing linking against static libraries
 libmimalloc = not_found
 if get_option('mimalloc')
-    libmimalloc = dependency('libmimalloc', version: ['>=2', '<3'], static: static, required: false)
+    libmimalloc = dependency('libmimalloc', version: ['>=2', '<4'], static: static, required: false)
     if not libmimalloc.found()
-        libmimalloc = dependency('mimalloc', version: ['>=2', '<3'], static: static)
+        libmimalloc = dependency('mimalloc', version: ['>=2', '<4'], static: static)
     endif
 endif
 
