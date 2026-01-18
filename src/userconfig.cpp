@@ -1020,11 +1020,20 @@ userconfig::userconfig()
   argparser.add_header("FILTERING:");
 
   argparser.add("--max-ns", "N")
-    .help("Reads containing more ambiguous bases (N) than this number after "
-          "trimming are discarded [default: no maximum]")
+    .help("Reads containing more than N ambiguous bases after trimming are "
+          "discarded. This option may be combined with --max-ns-fraction "
+          "[default: no maximum]")
     .deprecated_alias("--maxns")
     .bind_u32(&max_ambiguous_bases)
     .with_default(std::numeric_limits<uint32_t>::max());
+  argparser.add("--max-ns-fraction", "N")
+    .help("Reads containing more than N / length ambiguous bases after "
+          "trimming are discarded. May be combined with --max-ns [default: "
+          "0.05, unless --max-ns is set]")
+    .bind_double(&max_ambiguous_base_fraction)
+    .with_minimum(0)
+    .with_maximum(1.0)
+    .with_default(0.05);
 
   argparser.add("--min-length", "N")
     .help("Reads shorter than this length following trimming are discarded")
@@ -1492,6 +1501,11 @@ userconfig::parse_args(const string_vec& argvec)
     }
   }
 
+  // Enable only one maximum, unless both are explicitly requested
+  if (argparser.is_set("--max-ns") && !argparser.is_set("--max-ns-fraction")) {
+    max_ambiguous_base_fraction = 1.0;
+  }
+
   if (!min_genomic_length) {
     log::warn() << "--min-length is set to 0. This may produce FASTQ files "
                    "that are incompatible with some tools!";
@@ -1770,7 +1784,8 @@ bool
 userconfig::is_ambiguous_base_filtering_enabled() const
 {
   return max_ambiguous_bases !=
-         std::numeric_limits<decltype(max_ambiguous_bases)>::max();
+           std::numeric_limits<decltype(max_ambiguous_bases)>::max() ||
+         max_ambiguous_base_fraction < 1.0;
 }
 
 bool

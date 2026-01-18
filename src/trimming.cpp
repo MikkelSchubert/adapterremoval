@@ -251,11 +251,16 @@ is_acceptable_read(const userconfig& config,
     return false;
   }
 
-  const auto max_n = config.max_ambiguous_bases;
-  if (max_n < length && seq.count_ns() > max_n) {
-    stats.filtered_ambiguous.inc_reads(n_reads);
-    stats.filtered_ambiguous.inc_bases(length);
-    return false;
+  if (config.max_ambiguous_bases < length ||
+      (length * config.max_ambiguous_base_fraction < length)) {
+    const auto n_count = seq.count_ns();
+
+    if (n_count > config.max_ambiguous_bases ||
+        n_count > length * config.max_ambiguous_base_fraction) {
+      stats.filtered_ambiguous.inc_reads(n_reads);
+      stats.filtered_ambiguous.inc_bases(length);
+      return false;
+    }
   }
 
   if (length > 0 && config.min_mean_quality > 0.0 &&

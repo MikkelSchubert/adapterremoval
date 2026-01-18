@@ -1,5 +1,7 @@
 {
   "arguments": [
+    "--max-ns-fraction",
+    "1.0",
     "--quality-trimming",
     "per-base",
     "--trim-qualities",
