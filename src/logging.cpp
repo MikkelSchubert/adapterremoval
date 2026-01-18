@@ -10,8 +10,11 @@
 #include <iostream>      // for cerr
 #include <limits>        // for numeric_limits
 #include <mutex>         // for mutex, unique_lock
-#include <sys/ioctl.h>   // for ioctl, winsize, TIOCGWINSZ
 #include <unistd.h>      // for size_t, STDERR_FILENO
+
+#if !defined(_WIN32)
+#include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
+#endif
 
 namespace adapterremoval {
 
@@ -210,11 +213,13 @@ set_timestamps(bool enabled)
 size_t
 get_terminal_width()
 {
+#if !defined(_WIN32)
   struct winsize params = {};
   // Attempt to retrieve the number of columns in the terminal
   if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
     return std::min<size_t>(120, std::max<size_t>(60, params.ws_col));
   }
+#endif
 
   return std::numeric_limits<size_t>::max();
 }
