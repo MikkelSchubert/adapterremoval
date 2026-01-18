@@ -8,7 +8,7 @@
  Precompiled binary
 ********************
 
-A pre-compiled binary is provided for 64-bit x86 Linux systems under https://github.com/MikkelSchubert/adapterremoval/releases/
+Binaries are provided for 64-bit x86 Linux and Windows under https://github.com/MikkelSchubert/adapterremoval/releases/
 
 *************************
  Installing from sources
@@ -21,19 +21,25 @@ Prerequisites
 
 Building and installing AdapterRemoval requires basic build tools including a C++17 capable compiler, meson_ v1.2+, ninja_, python_ 3.8+, libdeflate_ and isa-l_ v2.30+. Sphinx_ is additionally required to build the documentation.
 
-On Debian based systems, these may be installed as follows:
+- **Debian**:
 
-.. code::
+  .. code::
 
-   sudo apt-get install build-essential meson ninja-build libdeflate-dev libisal-dev python3 python3-sphinx pkgconf
+     sudo apt-get install build-essential meson ninja-build libdeflate-dev libisal-dev python3 python3-sphinx pkgconf
 
-On OSX, these can be installed using Homebrew as follows:
+- **OSX**, requires Homebrew_ to install the dependencies:
 
-.. code::
+  .. code::
 
-   brew install llvm meson ninja isa-l libdeflate sphinx-doc
+     brew install llvm meson ninja isa-l libdeflate sphinx-doc
 
-Running AdapterRemoval requires only libdeflate and libisal.
+- **Windows**, requires MSYS2 with an UCRT64 environment:
+
+  .. code::
+
+    pacman -S make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate mingw-w64-ucrt-x86_64-meson mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-sphinx
+
+Running AdapterRemoval requires only libdeflate and isa-l to be installed.
 
 Building AdapterRemoval
 =======================
@@ -47,33 +53,29 @@ To compile AdapterRemoval, first download and unpack the newest release from Git
    cd adapterremoval-3.0.0-alpha3
    make
 
-The resulting ``adapterremoval3`` executable is located in the 'build/release' subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command:
+The resulting ``adapterremoval3`` executable is located in the 'build/src' subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command:
 
 .. code::
 
    sudo make install
 
-**************************
- Building a static binary
-**************************
+********************************
+ Building a static Linux binary
+********************************
 
-A podman_/docker_ ``Containerfile`` is provided, which is used to generate the pre-compiled binaries mentioned above. To run this, meson_, ninja_, and either podman_ or docker_ are required.
+A podman_/docker_ ``Containerfile`` is provided, which is used to generate the pre-compiled binaries mentioned above. To build this, either podman_ or docker_ are required.
 
-To build the container, run
-
-.. code::
-
-   make static-container
-
-Once the container has been built, run the actual build process via
+To build the container and the static binary, run
 
 .. code::
 
-   make static
+   make static-container static
 
 The resulting executable and extra files are saved to ``build/static/install``.
 
 .. _docker: https://www.docker.com/
+
+.. _homebrew: https://brew.sh
 
 .. _isa-l: https://github.com/intel/isa-l/
 
@@ -88,3 +90,4 @@ The resulting executable and extra files are saved to ``build/static/install``.
 .. _python: https://www.python.org/
 
 .. _sphinx: https://www.sphinx-doc.org/
+

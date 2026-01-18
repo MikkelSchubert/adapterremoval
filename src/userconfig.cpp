@@ -232,7 +232,9 @@ append_normalized_input_files(string_pair_vec& out, const string_vec& filenames)
 {
   for (const auto& filename : filenames) {
     try {
-      out.emplace_back(std::filesystem::weakly_canonical(filename), filename);
+      const auto normalized = std::filesystem::weakly_canonical(filename);
+
+      out.emplace_back(normalized.string(), filename);
     } catch (const std::filesystem::filesystem_error&) {
       // Permission errors are handled by the explicit access checks below
       out.emplace_back(filename, filename);

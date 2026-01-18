@@ -217,7 +217,7 @@ def pretty_error(prefix: str, message: str):
 
 def write_data(path: Path, data: str) -> None:
     open_ = gzip.open if path.suffix == ".gz" else open
-    with open_(path, "wt") as handle:
+    with open_(path, "wt", newline="\n") as handle:
         handle.write(data)
 
 
@@ -946,7 +946,6 @@ class TestRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             close_fds=True,
-            preexec_fn=os.setsid,
             cwd=self._test_path,
         )
 
@@ -1061,7 +1060,6 @@ class TestUpdater:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             close_fds=True,
-            preexec_fn=os.setsid,
             cwd=self.path,
         )
 
@@ -1094,7 +1092,6 @@ class TestUpdater:
                     ],
                     stdin=subprocess.PIPE,
                     close_fds=True,
-                    preexec_fn=os.setsid,
                 )
 
                 proc.communicate(it.text.encode())
@@ -1419,6 +1416,9 @@ def main(argv: list[str]) -> int:
 
     print(f"Found {len(tests)} specifications; generated {len(exhaustive_tests)} tests")
     print(f"Using work-dir {quote(args.work_dir)}")
+
+    if hasattr(os, "setsid"):
+        os.setsid()
 
     n_failures = 0
     n_successes = 0

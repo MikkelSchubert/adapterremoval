@@ -1,4 +1,4 @@
-name: build
+name: test
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  test-unix:
     name: test on ${{ matrix.os }} with ${{ matrix.cxx }}
 
     runs-on: ${{ matrix.os }}
@@ -27,7 +27,6 @@ jobs:
 
     env:
       CXX: ${{ matrix.cxx }}
-      UV_SYSTEM_PYTHON: 1
 
     steps:
       - name: Disable man-db building
@@ -39,23 +38,15 @@ jobs:
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
-
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
-        with:
-          python-version: "3.x"
-      - uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
-        with:
-          version: "latest"
 
       # Use mold for faster linking
       - uses: rui314/setup-mold@45c2b085bbc0283c8e1443d4a511aaa1eda5a3a1 # v1
         with:
           mold-version: 2.38.0
           make-default: true
-
       - name: ccache
         uses: hendrikmuhs/ccache-action@a1209f81afb8c005c13b4296c32e363431bffea5 # v1.2.17
         with:
@@ -67,12 +58,35 @@ jobs:
       - name: dependencies (OS specific)
         run: bash scripts/setup-${{ matrix.os }}.sh
 
-      - name: dependencies (common)
-        run: bash scripts/setup-common.sh
-
       - name: build and test
         run: bash scripts/build-common.sh DEBUG=true SANITIZE=true
 
       - name: CCache cleanup
         # Manual ccache cleanup, using the ccache-action default max size
         run: env CCACHE_MAXSIZE=500M ccache --cleanup
+
+  test-windows:
+    name: test on windows
+
+    runs-on: windows-latest
+
+    steps:
+      - name: harden runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
+        with:
+          msystem: ucrt64
+
+      - name: dependencies (OS specific)
+        shell: msys2 {0}
+        run: bash scripts/setup-windows-latest.sh
+
+      - name: build and test
+        shell: msys2 {0}
+        run: bash scripts/build-common.sh DEBUG=true

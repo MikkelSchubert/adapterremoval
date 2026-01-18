@@ -18,6 +18,8 @@ namespace adapterremoval {
 // the signature of the function
 using glibc_strerror_r = char* (*)(int, char*, size_t);
 using posix_strerror_r = int (*)(int, char*, size_t);
+using posix_strerror_s = int (*)(char*, size_t, int);
+
 //! Recommended buffer size according to `strerror` man page
 using strerror_buf = std::array<char, 1024>;
 
@@ -41,6 +43,17 @@ strerror_r_wrapper(posix_strerror_r f, int error_number)
   return buf.data();
 }
 
+[[maybe_unused]] std::string
+strerror_s_wrapper(posix_strerror_s f, int error_number)
+{
+  strerror_buf buf{};
+  if (f(buf.data(), buf.size(), error_number)) {
+    return "unknown error " + stringify(error_number);
+  }
+
+  return buf.data();
+}
+
 std::ostream&
 format_exception(std::ostream& os,
                  std::string_view name,
@@ -56,7 +69,11 @@ format_io_error(std::string_view message, const int error_number)
 {
   if (error_number) {
     std::ostringstream stream;
+#if defined(_WIN32)
+    stream << message << ": " << strerror_s_wrapper(::strerror_s, error_number);
+#else
     stream << message << ": " << strerror_r_wrapper(::strerror_r, error_number);
+#endif
 
     return stream.str();
   } else {

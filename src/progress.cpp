@@ -5,7 +5,7 @@
 #include "debug.hpp"    // for AR_FAIL
 #include "logging.hpp"  // for info, log_stream, cerr
 #include "strutils.hpp" // for format_rough_number, format_thousand_sep
-#include <chrono>       // for microseconds
+#include <chrono>       // for milliseconds
 #include <iomanip>      // for operator<<, setfill, setw
 #include <sstream>      // for operator<<, basic_ostream, ostringstream
 #include <string>       // for string, operator<<, basic_string, char_traits
@@ -17,9 +17,21 @@ namespace {
 //! Print progress report every N read
 const size_t REPORT_EVERY_NTH_READ = 1e6;
 //! Print an updated progress report every S seconds
-const size_t REPORT_EVERY_NTH_LOOP = 10;
+
+const size_t REPORT_EVERY_NTH_LOOP =
+#if defined(_WIN32)
+  5;
+#else
+  10;
+#endif
+
 //! Increment the spinner every time-unit
-const auto SPIN_EVERY = std::chrono::microseconds(100000);
+const auto SPIN_EVERY =
+#if defined(_WIN32)
+  std::chrono::milliseconds(200);
+#else
+  std::chrono::milliseconds(100);
+#endif
 
 std::string
 format_time(double seconds)
@@ -139,8 +151,13 @@ progress_timer::loop()
   double last_time = 0;
   size_t last_reads = 0;
 
-  const std::vector<std::string> symbols = { "⠙", "⠸", "⢰", "⣠",
-                                             "⣄", "⡆", "⠇", "⠋" };
+  const std::vector<std::string> symbols =
+#if defined(_WIN32)
+    // A simple ASCII spinner is used, to avoid having to deal with encodings
+    { ".", "o", "O", "o", "." };
+#else
+    { "⠙", "⠸", "⢰", "⣠", "⣄", "⡆", "⠇", "⠋" };
+#endif
   auto symbol_it = symbols.begin();
   std::string last_message;
 
