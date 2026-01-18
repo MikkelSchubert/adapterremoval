@@ -31,13 +31,26 @@ name(instruction_set value);
 size_t
 padding(instruction_set value);
 
-/***/
 using compare_subsequences_func = bool (*)(size_t& n_mismatches,
                                            size_t& n_ambiguous,
                                            const char* seq_1,
                                            const char* seq_2,
                                            size_t length,
                                            size_t max_penalty);
+
+#define DECLARE_COMPARE_SUBSEQUENCES_SIMD(IS)                                  \
+  bool compare_subsequences_##IS(size_t& n_mismatches,                         \
+                                 size_t& n_ambiguous,                          \
+                                 const char* seq_1,                            \
+                                 const char* seq_2,                            \
+                                 size_t length,                                \
+                                 size_t max_penalty);
+
+DECLARE_COMPARE_SUBSEQUENCES_SIMD(std);
+DECLARE_COMPARE_SUBSEQUENCES_SIMD(sse2);
+DECLARE_COMPARE_SUBSEQUENCES_SIMD(avx2);
+DECLARE_COMPARE_SUBSEQUENCES_SIMD(avx512);
+DECLARE_COMPARE_SUBSEQUENCES_SIMD(neon);
 
 /**
  * Returns a pair-wise alignment function for a given instruction set.
