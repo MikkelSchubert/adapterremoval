@@ -304,10 +304,6 @@ def is_wildcard_dict(item: JSON) -> bool:
     return False
 
 
-def is_complex_list(items: list[JSON]) -> bool:
-    return any(isinstance(it, (dict, list)) for it in items)
-
-
 def diff_list_with_wildcards(
     reference: list[JSON],
     observed: list[JSON],
@@ -406,7 +402,7 @@ def diff_json(
     elif type(reference) is not type(observed):
         yield _err("type mismatch", classname(reference), classname(observed))
     elif isinstance(reference, list) and isinstance(observed, list):
-        if is_complex_list(reference):
+        if any(isinstance(it, (dict, list)) for it in reference):
             yield from diff_list_with_wildcards(reference, observed, path)
         else:
             if len(reference) != len(observed):
