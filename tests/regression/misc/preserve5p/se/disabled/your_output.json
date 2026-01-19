@@ -66,7 +66,7 @@
       ]
     },
     { "step": "low_quality", "action": "trim", "reads": 5, "bases": 50 },
-    { "step": "min_length", "action": "filter", "reads": 0, "bases": 0 }
+    { "step": "...", "action": "...", "reads": 0, "bases": 0 }
   ],
   "analyses": {
     "duplication": null,
