@@ -78,17 +78,8 @@
   },
   "demultiplexing": null,
   "processing": [
-    {
-      "step": "adapters",
-      "action": "trim",
-      "reads": 0,
-      "bases": 0,
-      "adapter_list": [
-        { "adapter1": "", "adapter2": "", "reads": 0, "bases": 0 }
-      ]
-    },
     { "step": "low_quality", "action": "trim", "reads": 4, "bases": 40 },
-    { "step": "min_length", "action": "filter", "reads": 0, "bases": 0 }
+    { "step": "...", "action": "...", "reads": 0, "bases": 0, "...": "..." }
   ],
   "analyses": {
     "duplication": null,

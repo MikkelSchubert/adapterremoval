@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import traceback
+from collections import deque
 from dataclasses import dataclass
 from itertools import groupby, islice
 from pathlib import Path
@@ -240,8 +241,21 @@ def simplify_cmd(cmd: list[str | Path]) -> str:
     return " ".join(quote(field) for field in cmd)
 
 
+# JSON path elements that do not require quoting
+JSON_PATH = re.compile("^[a-z0-9_]*$", re.I)
+
+
 def path_to_s(path: Iterable[str | int]) -> str:
-    return ".".join(str(value) for value in path)
+    escaped_values: list[str] = []
+    for value in path:
+        if isinstance(value, int):
+            value = str(value)
+        elif not JSON_PATH.match(value):
+            value = repr(value)
+
+        escaped_values.append(value)
+
+    return ".".join(escaped_values)
 
 
 def relative_to(root: Path, path: Path) -> Path:
@@ -279,8 +293,96 @@ JSON_WILDCARDS: dict[str, Callable[[object], bool]] = {
     "...[str] | None": lambda it: it is None or _is_str_list(it),
 }
 
-# JSON path elements that do not require quoting
-JSON_PATH = re.compile("[a-z0-9_]", re.I)
+
+def is_wildcard_dict(item: JSON) -> bool:
+    if isinstance(item, dict):
+        return bool(item.keys() & JSON_WILDCARDS.keys()) or any(
+            (isinstance(value, str) and value in JSON_WILDCARDS)
+            for value in item.values()
+        )
+
+    return False
+
+
+def diff_list_with_wildcards(
+    reference: list[JSON],
+    observed: list[JSON],
+    path: tuple[str, ...],
+) -> Iterator[str]:
+    out_of_order_warning = False
+    reference_is_found = [False] * len(observed)
+    reference_is_wildcard = [is_wildcard_dict(ref) for ref in reference]
+
+    dreference = deque(enumerate(reference))
+    for obs_idx, obs in enumerate(observed):
+        obs_found_at_idx: int | None = None
+        obs_out_of_order = False
+        for rotations in range(len(dreference)):
+            ref_idx, ref = dreference[0]
+            if not any(diff_json(ref, obs, path=path + (str(obs_idx),))):
+                obs_found_at_idx = ref_idx
+                if reference_is_wildcard[ref_idx]:
+                    # wildcard locations are not informative
+                    dreference.rotate(rotations)
+                    obs_out_of_order = False
+                else:
+                    dreference.rotate(-1)
+                break
+
+            if not (obs_out_of_order or out_of_order_warning):
+                obs_out_of_order = not reference_is_wildcard[ref_idx]
+
+            dreference.rotate(-1)
+
+        if obs_found_at_idx is None:
+            yield f"unexpected value at {path_to_s(path + (obs_idx + 1,))}: {obs}"
+            continue
+        elif reference_is_found[obs_found_at_idx]:
+            if not reference_is_wildcard[obs_found_at_idx]:
+                yield f"duplicate value at {path_to_s(path + (obs_idx + 1,))}: {obs}"
+        elif obs_out_of_order:
+            yield f"value at unexpected location {path_to_s(path + (obs_idx + 1,))}: {obs}"
+            out_of_order_warning = True
+
+        reference_is_found[obs_found_at_idx] = True
+
+    for ref, found in zip(reference, reference_is_found):
+        if not found:
+            yield f"missing value at {path_to_s(path)}: {ref}"
+
+
+def diff_dict_with_wildcards(
+    reference: dict[str, JSON],
+    observed: dict[str, JSON],
+    path: tuple[str, ...],
+) -> Iterator[str]:
+    reference_is_found = dict.fromkeys(reference, False)
+    observed_found = dict.fromkeys(observed, False)
+
+    for key, value in observed.items():
+        if key in reference:
+            reference_is_found[key] = True
+            observed_found[key] = True
+
+            yield from diff_json(reference[key], value, path + (key,))
+        elif "..." in reference:
+            reference_is_found["..."] = True
+            observed_found[key] = True
+
+            yield from diff_json(reference["..."], value, path + (key,))
+
+    # References / observed are considered found, even if there were mismatches,
+    # to prevents spurious errors. Actual missing values will be revealed once
+    # the mismatches have been resolved.
+    for ref, found in reference_is_found.items():
+        # Allows ignoring optional key/value pairs. Any slightly wrong, but
+        # required values matched to this will be reported as 'unexpected' below
+        if not (found or (ref == "..." and reference[ref] in JSON_WILDCARDS)):
+            yield f"missing item at {path_to_s(path)}: {ref!r} / {reference[ref]!r}"
+
+    for obs, found in observed_found.items():
+        if not found:
+            yield f"unexpected item at {path_to_s(path)}: {obs!r} / {observed[obs]!r} "
 
 
 def diff_json(
@@ -294,29 +396,24 @@ def diff_json(
     if reference == observed:
         return
 
-    if not isinstance(reference, (dict, list)) and reference in JSON_WILDCARDS:
+    if isinstance(reference, str) and reference in JSON_WILDCARDS:
         if not JSON_WILDCARDS[reference](observed):
             yield _err("wildcard mismatch", repr(reference), repr(observed))
     elif type(reference) is not type(observed):
         yield _err("type mismatch", classname(reference), classname(observed))
     elif isinstance(reference, list) and isinstance(observed, list):
-        if len(reference) != len(observed):
-            yield _err("length mismatch", len(reference), len(observed))
+        if any(isinstance(it, (dict, list)) for it in reference):
+            yield from diff_list_with_wildcards(reference, observed, path)
+        else:
+            if len(reference) != len(observed):
+                yield _err("length mismatch", len(reference), len(observed))
 
-        for idx, (ref, obs) in enumerate(zip(reference, observed)):
-            yield from diff_json(ref, obs, (*path, f"[{idx}]"))
+            for idx, (ref, obs) in enumerate(zip(reference, observed)):
+                yield from diff_json(ref, obs, (*path, f"[{idx}]"))
     elif isinstance(reference, dict):
         assert isinstance(observed, dict)
 
-        for key in reference.keys() | observed.keys():
-            if key not in reference:
-                yield _err("unexpected key", "in reference", key)
-            elif key not in observed:
-                yield _err("unexpected key", "in observation", key)
-            else:
-                key_s = key if JSON_PATH.match(key) else repr(key)
-
-                yield from diff_json(reference[key], observed[key], (*path, key_s))
+        yield from diff_dict_with_wildcards(reference, observed, path)
     elif isinstance(reference, float):
         assert isinstance(observed, float)
 
@@ -1096,7 +1193,7 @@ class TestUpdater:
 
                 proc.communicate(it.text.encode())
                 if proc.returncode != 0:
-                    raise TestError(f"error dating test {self.path}")
+                    raise TestError(f"error updating test {self.path}")
             else:
                 # Some files may intentionally be written compressed
                 data = read_file(filename, "rb")
