@@ -3,6 +3,7 @@ set -euo # "strict" mode
 trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
 
 pacman -S --noconfirm \
+    git \
     make \
     mingw-w64-ucrt-x86_64-cmake \
     mingw-w64-ucrt-x86_64-gcc \

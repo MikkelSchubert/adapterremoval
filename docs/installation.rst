@@ -31,7 +31,7 @@ Building and installing AdapterRemoval requires basic build tools including a C+
 
   .. code::
 
-     brew install llvm meson ninja isa-l libdeflate sphinx-doc
+     brew install llvm meson ninja isa-l libdeflate sphinx-doc pkgconf
 
 - **Windows**, requires MSYS2 with an UCRT64 environment:
 
