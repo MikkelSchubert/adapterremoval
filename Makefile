@@ -104,6 +104,9 @@ regression-tests: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" run-regression-tests
 
 setup ${NINJAFILE}:
+	# WORKAROUND: Ensure that index is up-to-date, to prevent false positive
+	#             `dirty` flags from `git describe` when building `version.cpp`
+	git update-index --refresh || true
 	# WORKAROUND: `setup` fails on existing builddirs without `--reconfigure`,
 	#             but that option requires existing builddir in v1.0.0 or older
 	rm -rf "${BUILDDIR}"

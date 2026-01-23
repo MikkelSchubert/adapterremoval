@@ -1515,7 +1515,10 @@ def main(argv: list[str]) -> int:
     print(f"Using work-dir {quote(args.work_dir)}")
 
     if hasattr(os, "setsid"):
-        os.setsid()
+        try:
+            os.setsid()
+        except PermissionError:
+            pass
 
     n_failures = 0
     n_successes = 0

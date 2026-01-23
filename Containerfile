@@ -6,6 +6,7 @@ FROM alpine:3.20.1
 
 RUN apk add \
     build-base \
+    git \
     isa-l-dev \
     isa-l-static \
     libdeflate-dev \

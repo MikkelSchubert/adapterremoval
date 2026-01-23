@@ -51,8 +51,8 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: linux-x86_64
-          # - os: macos-latest
-          #   arch: macos-aarch64
+          - os: macos-latest
+            arch: macos-aarch64
           - os: windows-latest
             arch: windows-x86_64
       # Do not auto-cancel other runners if one fails
@@ -100,11 +100,11 @@ jobs:
           make static-container static DOCS=true
           bash scripts/build-bundle.sh "build/static/install/" "${TARGET}"
 
-      # FIXME: STATIC=true results in SIGABRT; unclear why
       - if: ${{ matrix.os == 'macos-latest' }}
         name: setup, build, test, and bundle (OSX)
         run: |
-          bash scripts/build-common.sh STATIC=true DOCS=true
+          # WORKAROUND: linking mimalloc causes SIGABRT in simd_neon.cpp
+          bash scripts/build-common.sh STATIC=true MIMALLOC=false DOCS=true
           bash scripts/build-bundle.sh "build/install/" "${TARGET}"
 
       - if: ${{ matrix.os == 'windows-latest' }}
