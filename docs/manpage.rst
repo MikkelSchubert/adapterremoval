@@ -341,7 +341,7 @@ Reporting options
 
 .. option:: --report-title title
 
-    Set the title used in the HTML report. Defaults to ``AdapterRemoval v3.0.0-alpha3``.
+    Set the title used in the HTML report. Defaults to ``AdapterRemoval v3.0.0``.
 
 .. option:: --report-sample-rate x
 

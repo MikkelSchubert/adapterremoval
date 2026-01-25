@@ -9,7 +9,7 @@ resolution-markers = [
 
 [[package]]
 name = "adapterremoval"
-version = "3.0.0a3"
+version = "3.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastjsonschema" },

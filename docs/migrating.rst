@@ -60,6 +60,6 @@ And in AdapterRemoval v1.x:
 
     AdapterRemoval --adapter1 AGATCGGAAGAGC --adapter2 GCTCTTCCGATCT ...
 
-.. _changelog: https://github.com/MikkelSchubert/adapterremoval/blob/v3.0.0-alpha3/CHANGES.md
+.. _changelog: https://github.com/MikkelSchubert/adapterremoval/blob/v3.0.0/CHANGES.md
 
 .. _seqtk: https://github.com/lh3/seqtk

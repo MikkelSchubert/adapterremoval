@@ -1,10 +1,12 @@
 [project]
 name = "AdapterRemoval"
-version = "3.0.0-alpha3"
-description = "Add your description here"
+version = "3.0.0"
+description = "AdapterRemoval trims adapter sequences and low quality bases from High-Throughput Sequencing (HTS) data in FASTQ format"
 readme = "README.md"
 requires-python = ">=3.7"
-dependencies = ["fastjsonschema==2.21.2"] # NO_VERSION_CHECK
+dependencies = [
+    "fastjsonschema==2.21.2", # NO_VERSION_CHECK
+]
 
 [dependency-groups]
 dev = [

@@ -4,7 +4,7 @@
 project(
     'adapterremoval3',
     'cpp',
-    version: '3.0.0-alpha3',
+    version: '3.0.0',
     meson_version: '>=0.56.0',
     default_options: [
         # Disable costly (libc++) assertions in release mode
