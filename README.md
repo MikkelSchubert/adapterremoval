@@ -1,72 +1,94 @@
-# AdapterRemoval
+# AdapterRemoval v3 - Dang fast(Q) processing
 
-[![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yaml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/build-and-test.yml) [![docs](https://readthedocs.org/projects/adapterremoval/badge/?version=latest)](https://adapterremoval.readthedocs.io/)
+[![build](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/test.yaml/badge.svg)](https://github.com/MikkelSchubert/adapterremoval/actions/workflows/test.yaml) [![docs](https://readthedocs.org/projects/adapterremoval/badge/?version=latest)](https://adapterremoval.readthedocs.io/)
 
-AdapterRemoval trims adapter sequences and low quality bases from High-Throughput Sequencing (HTS) data in FASTQ format. For paired-end data, AdapterRemoval can merge overlapping paired-ended reads into (longer) consensus sequences. Additionally, AdapterRemoval can demultiplex FASTQ reads, and construct a consensus adapter sequence for paired-ended reads, if this information is not available.
+AdapterRemoval trims adapter sequences and low quality bases from High-Throughput Sequencing (HTS) data in FASTQ format, merges overlapping paired-end reads into (longer) consensus sequences, demultiplexes FASTQ reads containing 5' barcodes, and more.
 
-For questions, bug reports, and/or suggestions, please use the [GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/).
+AdapterRemoval v3 is a major revision of AdapterRemoval v2 that aims to simplify usage via sensible default settings. AdapterRemoval v3 expands the range of features available in v2 (see below), as well as greatly increasing throughput.
 
-## AdapterRemoval v3 - Dang fast(Q) processing
+- [Highlights](#highlights)
+- [Getting started](#getting-started)
+- [Documentation](#documentation)
+- [Support](#support)
+- [Citation](#citation)
 
-AdapterRemoval v3 is a major revision of AdapterRemoval, that aims to simplify usage by picking a sensible set of default settings, providing [human-readable](https://mikkelschubert.github.io/adapterremoval/examples/3.0.0-alpha3.html) and [machine-readable](https://mikkelschubert.github.io/adapterremoval/examples/3.0.0-alpha3.json) QC reports, as well as greatly improving overall throughput, and more.
+## Highlights
 
-AdapterRemoval v3 is still a work in progress, but alpha release 3 is [available for download](https://github.com/MikkelSchubert/adapterremoval/releases/tag/v3.0.0-alpha3/). Documentation is available at [Read the Docs](https://adapterremoval.readthedocs.io/en/v3.0.0-alpha3/), including a guide on how to migrate from v2. Bug reports, feature requests, and other feedback is greatly appreciated.
+Features introduced in AdapterRemoval v3 are marked with a "**(v3)**":
 
-For more information, please see [README-v3.md](README-v3.md).
+- Supports Linux, MacOS, and Windows **(v3)**
+- Trimming of adapter sequences from single-end and paired-end FASTQ reads
+  - Trimming of multiple, different adapters or adapter pairs
+- Detailed [human-readable](https://mikkelschubert.github.io/adapterremoval/examples/3.x.html) and [machine-readable](https://mikkelschubert.github.io/adapterremoval/examples/3.x.json) QC reports **(v3)**
+  - The ability to perform QC-only runs with or without read processing **(v3)**
+- Barcode-based demultiplexing with or without trimming of adapter sequences
+  - Support for samples identified by multiple barcode pairs **(v3)**
+  - Support for mixed orientation barcodes **(v3)**
+- Support for multiple methods for trimming low quality bases/reads
+  - Quality trimming using windows or constant thresholds
+  - Quality trimming using the modified Mott algorithm **(v3)**
+  - Poly-X tail trimming, supporting any combination of trailing bases **(v3)**
+    - Enabled automatically for data generated using two-color sequencing technologies (e.g. Illumina iSeq, NovaSeq)
+- Filtering of reads based on complexity **(v3)**
+- Reconstruction of adapter sequences by pair-wise alignment of paired-end reads
+- Merging of overlapping read-pairs into higher-quality consensus sequences
+- Support for reading interleaved FASTQ files
+- Support for flexible routing of output to files or STDOUT **(v3)**
+- Support for writing FASTQ, SAM, and BAM files **(v3)**
+- Support for SSE2, AVX2, AVX512, and NEON accelerated alignments **(v3)**
 
-## AdapterRemoval v2
+### Performance
 
-If you use AdapterRemoval v2, then please cite the paper:
+AdapterRemoval v3 features greatly increased throughput compared to AdapterRemoval v2. This is accomplished through support for additional SIMD instruction sets, and improved parallelization of I/O and computationally expensive tasks. To enable this, compression of output is now block-based, defaults to a lower compression level (4), and uses a more efficient implementation (libdeflate).
 
-    Schubert, Lindgreen, and Orlando (2016). AdapterRemoval v2: rapid adapter trimming, identification, and read merging. BMC Research Notes, 12;9(1):88 <http://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-016-1900-2>
+Please note that these results are preliminary:
 
-AdapterRemoval was originally published in Lindgreen 2012:
+![Throughput for ARv2, ARv3, and fastp](https://raw.githubusercontent.com/MikkelSchubert/adapterremoval/main/docs/images/throughput.svg)
 
-    Lindgreen (2012): AdapterRemoval: Easy Cleaning of Next Generation Sequencing Reads, BMC Research Notes, 5:337 <http://www.biomedcentral.com/1756-0500/5/337/>
+Point labels indicate the number of threads configured on the command line. The X-axis shows observed CPU usage (actual cores used, which may exceed the configured thread count due to extra worker threads). The Y-axis indicates millions of 150bp paired-end reads processed per second, for gzipped input and output, with merging enabled and duplication estimation disabled.
 
-### Overview of major features
+Benchmarking was performed on an Intel i9-11900K with 8 physical cores, and plotting is therefore limited to ~8 CPUs. AdapterRemoval v2 was observed not to scale past 4 threads.
 
-- Trimming of adapters sequences from single-end and paired-end FASTQ reads.
-- Trimming of multiple, different adapters or adapter pairs.
-- Demultiplexing of single or double indexed reads, with or without trimming
-      of adapter sequences.
-- Reconstruction of adapter sequences from paired-end reads, by the pairwise
-      alignment of reads in the absence of a known adapter sequence.
-- Merging of overlapping read-pairs into higher-quality consensus sequences.
-- Multi-threading of all operations for increased throughput.
-- Reading and writing of gzip and bzip2 compressed files.
-- Reading and writing of interleaved FASTQ files.
-
-### Documentation
-
-For a detailed description of program installation and usage, please refer to the [online documentation](https://adapterremoval.readthedocs.io/). A summary of command-line options may also be found in the manual page, accessible via the command "man AdapterRemoval" once AdapterRemoval has been installed.
+## Getting started
 
 ### Installation
 
-#### Installation with Conda
+Precompiled binaries are provided for [Linux, MacOS, and Windows](https://github.com/MikkelSchubert/adapterremoval/releases).
 
-If you have Conda installed on your system:
+**NOTE**: The precompiled Linux binary sacrifices performance for compatibility. To achieve the best performance, it is therefore recommended to install packages provided by your Linux distribution, if these are available, or to build AdapterRemoval from source. See the [documentation](#documentation) for more information.
 
-   conda install -c bioconda adapterremoval
+### Basic usage
 
-#### Installing from sources
+To run AdapterRemoval, specify the location of mate 1 and, optionally, mate 2 FASTQ files using the `--in-file1` and `--in-file2` command-line options. When the `--out-prefix` option is used, AdapterRemoval will create a set of standard output files starting with that prefix:
 
-Installing AdapterRemoval from sources requires libz and libbz2.
+```
+adapterremoval3 --in-file1 reads_1.fastq.gz --in-file2 reads_2.fastq.gz --out-prefix my_results
+```
 
-To compile AdapterRemoval, download the latest release, unpack the archive and then simply run "make" in the resulting folder:
+This command will automatically detect and trim adapter sequences and low-quality bases from the input, filter short reads, write non-filtered reads to gzip-compressed FASTQ files, and generate HTML and JSON reports.
 
-    wget -O adapterremoval-2.3.4.tar.gz <https://github.com/MikkelSchubert/adapterremoval/archive/v2.3.4.tar.gz> tar xvzf adapterremoval-2.3.4.tar.gz cd adapterremoval-2.3.4 make
+Many more examples of common usage may be found in the [Examples](https://adapterremoval.readthedocs.io/en/latest/examples.html) section of the online documentation.
 
-The resulting 'AdapterRemoval' executable is located in the 'build' subdirectory and may be installed by running "make install":
+## Documentation
 
-    sudo make install
+For a detailed description of program installation and usage, please refer to the [online documentation](https://adapterremoval.readthedocs.io/). A summary of command-line options may also be found in the [manual page](https://adapterremoval.readthedocs.io/en/latest/manpage.html), accessible via the command `man adapterremoval3` once AdapterRemoval has been installed.
 
-### Getting started
+## Support
 
-To run AdapterRemoval, specify the location of pair 1 and (optionally) pair 2 FASTQ using the --file1 and --file2 command-line options:
+For questions, bug reports, and/or suggestions, please use the [GitHub tracker](https://github.com/MikkelSchubert/adapterremoval/issues/).
 
-    AdapterRemoval --file1 reads_1.fastq.gz --file2 reads_2.fastq.gz
+## Citation
 
-By default, AdapterRemoval will save the trimmed reads in the current working directly, using filenames starting with 'your_output'.
+AdapterRemoval v3 has not yet been published.
 
-More examples of common usage may be found in the [Examples](https://adapterremoval.readthedocs.io/en/latest/examples.html) section of the online documentation:
+If you use AdapterRemoval v3, please cite AdapterRemoval v2:
+
+```
+Schubert, Lindgreen, and Orlando. AdapterRemoval v2: rapid adapter trimming, identification, and read merging. BMC Research Notes 9, 88 (2016). <https://doi.org/10.1186/s13104-016-1900-2>
+```
+
+AdapterRemoval was originally published by Lindgreen (2012):
+
+```
+Lindgreen. AdapterRemoval: Easy Cleaning of Next Generation Sequencing Reads, BMC Research Notes 5, 337 (2012). <http://www.biomedcentral.com/1756-0500/5/337/>
+```
