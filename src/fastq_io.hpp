@@ -81,8 +81,6 @@ private:
 
   const size_t m_next_step;
 
-  //! Indicates that input is single end
-  bool m_single_end;
   //! The kind of data read by the reader (SE, PE, interleaved)
   file_type m_mode;
   //! Used to track whether the first block has been read

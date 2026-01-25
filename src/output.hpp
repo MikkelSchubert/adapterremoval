@@ -126,7 +126,10 @@ public:
 
   using sample_output_vec = std::vector<sample_output_files>;
 
-  void add_sample(sample_output_files&& sample) { m_samples.push_back(sample); }
+  void add_sample(sample_output_files&& sample)
+  {
+    m_samples.emplace_back(std::move(sample));
+  }
 
   /** Adds write steps for each  */
   void add_write_steps(scheduler& sch, const userconfig& config);

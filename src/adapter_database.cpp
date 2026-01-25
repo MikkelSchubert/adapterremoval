@@ -369,23 +369,25 @@ std::pair<identified_adapter, identified_adapter>
 adapter_database::identify_exact(const dna_sequence& seq_1,
                                  const dna_sequence& seq_2) const
 {
+  std::pair<identified_adapter, identified_adapter> match;
+
   // missing/empty sequences are allowed, to simplify doing lookups
   if (seq_1.empty() && seq_2.empty()) {
-    return {};
+    return match;
   }
 
-  auto match = exact_match_pe(m_adapters, seq_1, seq_2);
+  match = exact_match_pe(m_adapters, seq_1, seq_2);
   if (!match.first.sequence.empty() || !match.second.sequence.empty()) {
     return match;
   }
 
   // fall back to arbitrary picks among all candidates
   if (!seq_1.empty() && !seq_2.empty()) {
-    auto [match_1, _unused_2] = exact_match_pe(m_adapters, seq_1, {});
-    auto [_unused_1, match_2] = exact_match_pe(m_adapters, {}, seq_2);
+    match.first = exact_match_pe(m_adapters, seq_1, {}).first;
+    match.second = exact_match_pe(m_adapters, {}, seq_2).second;
 
-    if (!match_1.sequence.empty() && !match_2.sequence.empty()) {
-      return { match_1, match_2 };
+    if (!match.first.sequence.empty() && !match.second.sequence.empty()) {
+      return match;
     }
   }
 
