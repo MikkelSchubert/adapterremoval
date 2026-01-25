@@ -193,20 +193,18 @@ parse_counts(const argparse::parser& args,
   return true;
 }
 
-bool
-check_no_clobber(const std::string& label,
-                 const string_vec& in_files,
-                 const output_file& out_file)
+std::string
+normalize_filename(std::string filename)
 {
-  for (const auto& in_file : in_files) {
-    if (in_file == out_file.name && in_file != DEV_NULL) {
-      log::error() << "Input file would be overwritten: " << label << " "
-                   << in_file;
-      return false;
-    }
-  }
+  try {
+    const auto normalized =
+      std::filesystem::weakly_canonical(std::move(filename));
 
-  return true;
+    return normalized.string();
+  } catch (const std::filesystem::filesystem_error&) {
+    // Permission errors are handled by the explicit access checks below
+    return filename;
+  }
 }
 
 /** Replace the STDIN pseudo-filename with the device path */
@@ -227,82 +225,178 @@ normalize_output_file(std::string& filename)
   }
 }
 
-void
-append_normalized_input_files(string_pair_vec& out, const string_vec& filenames)
+/** Represents a user-supplied input or output file */
+struct user_file
 {
-  for (const auto& filename : filenames) {
-    try {
-      const auto normalized = std::filesystem::weakly_canonical(filename);
+  /** The type of file read or written by AdapterRemoval */
+  enum class types
+  {
+    //! Any (FASTQ) input file
+    input,
+    //! Output files, in any format
+    output,
+    //! The output JSON report
+    json,
+    //! The output HTML report
+    html,
+  };
 
-      out.emplace_back(normalized.string(), filename);
-    } catch (const std::filesystem::filesystem_error&) {
-      // Permission errors are handled by the explicit access checks below
-      out.emplace_back(filename, filename);
-    }
+  /** Create user_file with filename of a given type, for a command-line key */
+  user_file(types type_, std::string key_, std::string filename_)
+    : type(type_)
+    , key(std::move(key_))
+    , filename(std::move(filename_))
+    , normalized(normalize_filename(filename))
+    , lowercase(to_lower(normalized))
+  {
   }
+
+  //! File type; determines which overlap is allowed
+  types type;
+  //! Command-line key used to set this option
+  std::string key;
+  //! The original, possibly user-supplied filename
+  std::string filename;
+  //! Normalized name/path
+  std::string normalized;
+  //! Normalized name converted to lowercase
+  std::string lowercase;
+};
+
+/** Collects all input and output files */
+std::vector<user_file>
+aggregate_filenames(const userconfig& config)
+{
+  using types = user_file::types;
+
+  std::vector<user_file> files;
+  auto add = [&files](types type, std::string key, std::string filename) {
+    if (filename != DEV_NULL) {
+      files.emplace_back(type, std::move(key), std::move(filename));
+    }
+  };
+
+  auto add_sample_file = [&add](types type,
+                                std::string key,
+                                const sample_output_files& sof,
+                                read_file rf) {
+    auto offset = sof.offset(rf);
+    if (offset != sample_output_files::disabled) {
+      add(type, std::move(key), sof.filename(offset));
+    }
+  };
+
+  for (const auto& filename : config.input_files_1) {
+    add(types::input, "--in-file1", filename);
+  }
+
+  for (const auto& filename : config.input_files_2) {
+    add(types::input, "--in-file2", filename);
+  }
+
+  const auto output = config.get_output_filenames();
+  add(types::html, "--out-html", output.settings_html);
+  add(types::json, "--out-json", output.settings_json);
+
+  if (config.is_demultiplexing_enabled()) {
+    add(types::output, "--out-unidentified1", output.unidentified_1.name);
+    add(types::output, "--out-unidentified2", output.unidentified_2.name);
+  }
+
+  for (const auto& it : output.samples()) {
+    add_sample_file(types::output, "--out-file1", it, read_file::mate_1);
+    if (config.paired_ended_mode) {
+      add_sample_file(types::output, "--out-file2", it, read_file::mate_2);
+      add_sample_file(types::output,
+                      "--out-singleton",
+                      it,
+                      read_file::singleton);
+
+      if (config.is_read_merging_enabled()) {
+        add_sample_file(types::output, "--out-merged", it, read_file::merged);
+      }
+    }
+
+    add_sample_file(types::output, "--out-discarded", it, read_file::discarded);
+  }
+
+  return files;
 }
 
+/**
+ * Checks that input files are not repeated, that input and output files do not
+ * overlap, that different types of output files do not overlap, and that
+ * filenames do not only differ by unnormalized paths or by case.
+ */
 bool
-check_input_files(const string_vec& filenames_1, const string_vec& filenames_2)
+check_input_and_output_filenames(const userconfig& config)
 {
-  string_pair_vec filenames;
-  append_normalized_input_files(filenames, filenames_1);
-  append_normalized_input_files(filenames, filenames_2);
-  std::sort(filenames.begin(), filenames.end());
+  auto files = aggregate_filenames(config);
+  std::sort(files.begin(),
+            files.end(),
+            [](const user_file& a, const user_file& b) {
+              return a.lowercase < b.lowercase;
+            });
 
   bool any_errors = false;
-  for (size_t i = 1; i < filenames.size(); ++i) {
-    const auto& it_0 = filenames.at(i - 1);
-    const auto& it_1 = filenames.at(i);
+  for (size_t i = 1; i < files.size(); ++i) {
+    const auto& it_1 = files.at(i - 1);
+    const auto& it_2 = files.at(i);
 
-    if (it_0.second == it_1.second) {
-      log::error() << "Input file " << log_escape(it_0.second)
-                   << " has been specified multiple times using --in-file1 "
-                      "and/or --in-file2";
-      any_errors = true;
-    } else if (it_0.first == it_1.first) {
-      log::error() << "The path of input file " << log_escape(it_0.second)
-                   << " and the path of input " << "file "
-                   << log_escape(it_1.second) << " both point to the file "
-                   << log_escape(it_0.first);
-      any_errors = true;
+    const bool is_out_1 = it_1.type == user_file::types::output;
+    const bool is_out_2 = it_2.type == user_file::types::output;
+    const bool is_in_1 = it_1.type == user_file::types::input;
+    const bool is_in_2 = it_2.type == user_file::types::input;
+
+    std::string_view error;
+    if (it_1.lowercase != it_2.lowercase) {
+      continue;
+    } else if (is_in_1 != is_in_2) {
+      error = "the input file being overwritten";
+    } else if (is_in_1 && is_in_2) {
+      error = "data duplication and is probably a mistake. Use the options "
+              "`--interleaved` or `--interleaved-input` if you wish to "
+              "read interleaved FASTQ files";
+    } else if (it_1.type != it_2.type && (is_out_1 || is_out_2)) {
+      error = "the output file being overwritten";
+    } else if (it_1.type != it_2.type && !is_out_1 && !is_out_2) {
+      error = "one report being overwritten";
+    } else if (is_out_1 && is_out_2 && it_1.filename != it_2.filename) {
+      error = "output (not) being combined as expected. If you wish to combine "
+              "output files, then use the exact same path for all the files "
+              "you wish to combine, otherwise use wholly unique paths";
     }
-  }
 
-  for (const auto& it : filenames) {
-    if (access(it.second.c_str(), R_OK)) {
-      log::error() << "Cannot access input file " << log_escape(it.second)
-                   << ": " << std::strerror(errno);
+    if (!error.empty()) {
       any_errors = true;
-    }
-  }
+      auto msg = log::error();
+      msg << "The " << it_1.key << " file " << log_escape(it_1.filename)
+          << " and the " << it_2.key << " file " << log_escape(it_2.filename)
+          << " both point at the same";
 
-  return !any_errors;
-}
-
-bool
-check_output_files(const std::string& label,
-                   const string_vec& filenames,
-                   const output_files& output_files)
-{
-
-  if (!check_no_clobber(label, filenames, output_files.unidentified_1)) {
-    return false;
-  }
-
-  if (!check_no_clobber(label, filenames, output_files.unidentified_2)) {
-    return false;
-  }
-
-  for (const auto& sample : output_files.samples()) {
-    for (size_t i = 0; i < sample.size(); ++i) {
-      if (!check_no_clobber(label, filenames, sample.file(i))) {
-        return false;
+      if (it_1.filename == it_2.filename) {
+        msg << " path. This would result in " << error;
+      } else if (it_1.normalized == it_2.normalized) {
+        msg << " normalized path. This would result in " << error;
+      } else {
+        msg << " normalized path, when not considering case. This could "
+               "result in "
+            << error;
       }
     }
   }
 
-  return true;
+  for (const auto& it : files) {
+    if (it.type == user_file::types::input) {
+      if (access(it.filename.c_str(), R_OK)) {
+        log::error() << "Cannot access input file " << log_escape(it.filename)
+                     << ": " << std::strerror(errno);
+        any_errors = true;
+      }
+    }
+  }
+
+  return !any_errors;
 }
 
 /**
@@ -1521,6 +1615,11 @@ userconfig::parse_args(const string_vec& argvec)
     return argparse::parse_result::error;
   }
 
+  // Prevent repeat/clobbered input, inconsistent output, bad merging, etc.
+  if (!check_input_and_output_filenames(*this)) {
+    return argparse::parse_result::error;
+  }
+
   return argparse::parse_result::ok;
 }
 
@@ -1660,6 +1759,8 @@ userconfig::new_output_file(std::string_view key,
   return output_file{ out, infer_output_format(out) };
 }
 
+namespace {
+
 bool
 check_and_set_barcode_mm(const argparse::parser& argparser,
                          const std::string& key,
@@ -1679,6 +1780,8 @@ check_and_set_barcode_mm(const argparse::parser& argparser,
 
   return true;
 }
+
+} // namespace
 
 adapter_database
 userconfig::known_adapters() const
@@ -1973,11 +2076,7 @@ userconfig::setup_demultiplexing()
                 << shell_escape(barcode_table);
   }
 
-  const auto& output_files = get_output_filenames();
-
-  return check_input_files(input_files_1, input_files_2) &&
-         check_output_files("--in-file1", input_files_1, output_files) &&
-         check_output_files("--in-file2", input_files_2, output_files);
+  return true;
 }
 
 } // namespace adapterremoval

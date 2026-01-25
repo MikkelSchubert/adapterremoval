@@ -75,7 +75,8 @@ sample_output_files::set_file(const read_file rtype, output_file file)
   // If the file type isn't being saved, then there is no need to process the
   // reads. This saves time especially when output compression is enabled.
   if (file.name != DEV_NULL) {
-    // FIXME: This assumes that filesystem is case sensitive
+    // This assumes that filenames are normalized and do not differ only by case
+    // on case-insensitive filesystems. See `userconfig` for checks.
     auto it = m_output.begin();
     for (; it != m_output.end(); ++it) {
       if (file.name == it->file.name) {
