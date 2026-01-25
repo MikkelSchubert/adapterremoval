@@ -151,7 +151,7 @@ enum class adapter_fallback
 //! Path used to indicate that a file is not needed
 const std::string_view DEV_NULL = "/dev/null";
 //! Path used to indicate that data should be read from STDIN
-const std::string_view DEV_STDIN = "/dev/stdout";
+const std::string_view DEV_STDIN = "/dev/stdin";
 //! Path used to indicate that data should be written to STDOUT
 const std::string_view DEV_STDOUT = "/dev/stdout";
 //! Path used to indicate that data should be written to STDOUT
