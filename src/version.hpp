@@ -20,11 +20,11 @@ std::string_view
 long_version();
 
 /** Returns program name plus short version string */
-std::string
+std::string_view
 short_name();
 
 /** Returns program name plus long version string */
-std::string
+std::string_view
 long_name();
 
 } // namespace adapterremoval::program

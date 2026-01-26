@@ -7,50 +7,34 @@
 
 namespace adapterremoval::program {
 
-namespace {
-
-constexpr std::string_view PROGRAM_NAME = "AdapterRemoval";
-constexpr std::string_view GIT_VERSION = "PLACEHOLDER";
-
-} // namespace
-
 std::string_view
 name()
 {
-  return PROGRAM_NAME;
+  return PROJECT_NAME;
 }
 
 std::string_view
 long_version()
 {
-  // Generated version string always starts with 'v'
-  return GIT_VERSION.substr(1);
+  return PROJECT_VERSION "-PLACEHOLDER";
 }
 
 std::string_view
 short_version()
 {
-  return prune_git_description(long_version());
+  return PROJECT_VERSION;
 }
 
-std::string
+std::string_view
 short_name()
 {
-  std::string desc{ PROGRAM_NAME };
-  desc.append(" v");
-  desc.append(short_version());
-
-  return desc;
+  return PROJECT_NAME " " PROJECT_VERSION;
 }
 
-std::string
+std::string_view
 long_name()
 {
-  std::string desc{ PROGRAM_NAME };
-  desc.push_back(' ');
-  desc.append(GIT_VERSION);
-
-  return desc;
+  return PROJECT_NAME " " PROJECT_VERSION "-PLACEHOLDER";
 }
 
 } // namespace adapterremoval::program
