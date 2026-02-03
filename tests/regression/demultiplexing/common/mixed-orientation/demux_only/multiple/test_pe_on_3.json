@@ -5,8 +5,9 @@
     "--barcode-table",
     "barcodes.txt",
     "--demultiplex-only",
-    "--reversible-barcodes",
-    "forward"
+    "--barcode-orientation",
+    "reverse",
+    "--multiple-barcodes"
   ],
-  "inherit_from": "test_se_on_1.json"
+  "inherit_from": "test_pe_on_1.json"
 }

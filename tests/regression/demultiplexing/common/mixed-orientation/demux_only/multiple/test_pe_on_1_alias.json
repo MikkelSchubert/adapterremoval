@@ -1,13 +1,12 @@
 {
+  "inherit_from": "test_pe_on_1.json",
   "arguments": [
     "--out-prefix",
-    "out_off",
+    "out_on",
     "--barcode-table",
     "barcodes.txt",
     "--demultiplex-only",
     "--reversible-barcodes",
-    "unspecified",
     "--multiple-barcodes"
-  ],
-  "inherit_from": "test_se_off_1.json"
+  ]
 }
