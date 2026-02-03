@@ -1,13 +1,13 @@
 {
   "arguments": [
     "--out-prefix",
-    "out_off",
+    "out_on",
     "--barcode-table",
     "barcodes.txt",
     "--demultiplex-only",
-    "--reversible-barcodes",
-    "unspecified",
+    "--barcode-orientation",
+    "reverse",
     "--multiple-barcodes"
   ],
-  "inherit_from": "test_pe_off_1.json"
+  "inherit_from": "test_se_on_1.json"
 }
