@@ -21,8 +21,9 @@ html_template = custom_target(
 # Creation of version.cpp
 
 version_cpp = vcs_tag(
-    command: ['git', 'describe', '--long', '--tags', '--dirty', '--broken'],
-    fallback: 'v' + meson.project_version(),
+    # Only return hash, possibly with '-dirty' and '-broken' tags
+    command: ['git', 'describe', '--match=""', '--always', '--dirty', '--broken'],
+    fallback: 'unknown',
     input: 'version.cpp.in',
     output: 'version.cpp',
     replace_string: 'PLACEHOLDER',

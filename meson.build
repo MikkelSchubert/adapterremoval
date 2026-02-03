@@ -31,6 +31,15 @@ not_found = dependency('', required: false)
 
 add_project_arguments(
     compiler.get_supported_arguments(
+        # Workaround for systems where _FORTIFY_SOURCE is defined by default
+        '-DPROJECT_NAME="@0@"'.format(meson.project_name()),
+        '-DPROJECT_VERSION="@0@"'.format(meson.project_version()),
+    ),
+    language: 'cpp',
+)
+
+add_project_arguments(
+    compiler.get_supported_arguments(
         # abort when sanitizers trigger
         '-fno-sanitize-recover=all',
         # Treat non-ISO-conforming code and the use of extensions as errors

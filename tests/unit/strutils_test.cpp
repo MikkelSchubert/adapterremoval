@@ -526,23 +526,6 @@ TEST_CASE("trim_ascii_whitespace")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'prune_git_description'
-
-TEST_CASE("prune_git_description")
-{
-  REQUIRE(prune_git_description("") == "");
-  REQUIRE(prune_git_description("-") == "");
-  REQUIRE(prune_git_description("1.2.3") == "1.2.3");
-  REQUIRE(prune_git_description("1.2.3-") == "1.2.3");
-  REQUIRE(prune_git_description("1.2.3-53-g9d6ce2c6") == "1.2.3");
-  REQUIRE(prune_git_description("1.2.3-alpha1") == "1.2.3-alpha1");
-  REQUIRE(prune_git_description("1.2.3-alpha1-") == "1.2.3-alpha1");
-  REQUIRE(prune_git_description("1.2.3-alpha1-53-g9d6ce2c6") == "1.2.3-alpha1");
-  REQUIRE(prune_git_description("1.2.3-alpha1-53-g9d6ce2c6-") ==
-          "1.2.3-alpha1");
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Tests for 'stringify'
 
 TEST_CASE("stringify")
