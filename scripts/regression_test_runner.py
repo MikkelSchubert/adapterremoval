@@ -708,10 +708,16 @@ class TestConfig(NamedTuple):
         _, data = read_json(filepath)
         assert isinstance(data, dict)
 
+        inherited_from: set[Path] = {filepath}
         while True:
             inherit_from = json_pop_optional_str(data, ("inherit_from",))
             if inherit_from is not None:
-                _, template = read_json(filepath.parent / inherit_from)
+                inherit_from = (filepath.parent / inherit_from).resolve()
+                if inherit_from in inherited_from:
+                    raise TestError(f"inheritance loop in {filepath}")
+
+                inherited_from.add(inherit_from)
+                _, template = read_json(inherit_from)
                 assert isinstance(template, dict)
                 for key, value in data.items():
                     if key in template and template[key] == value:
