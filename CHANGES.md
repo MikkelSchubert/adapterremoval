@@ -1,11 +1,92 @@
 # Changelog
 
+## [3.0.0] - Unreleased
+
+### Added
+
+- \[**BREAKING**\] The appropriate adapter sequences for trimming are now
+  selected automatically by default (configurable via `--adapter-selection` or
+  by manually setting adapter sequences), with configurable fallback strategies
+  for when detection fails (#196)
+- \[**BREAKING**\] Added `--normalize-mate-separator` option to allow optional
+  normalization of the mate separator character. This is no longer enabled by
+  default (#221)
+- \[**BREAKING**\] Automatically enable poly-G trimming of Illumina data, when
+  this can be identified. This behavior can be disabled/overridden (#225)
+- It is now possible to build AdapterRemoval for Windows using an MSYS2/UCRT64
+  environment. Static binaries be executed outside this environment (#237)
+- \[**BREAKING**\] Added `--max-ns-fraction 0.05` as a default filter, filtering
+  any trimmed read that contains more than 5% uncalled bases.
+- Support quality trimming/merging under the assumption that input data does not
+  contain adapter sequences. This is intended for already trimmed input (#171)
+- Attempting to use deprecated or removed options now displays a message
+  describing the change and, if possible, how to migrate (#181, #182)
+- Support explicitly undefined/unknown adapters for trimming of PE reads (#194)
+- Embedded the current git-checksum in the version string (#199)
+- Report the number of bases corrected or masked during merging (#201)
+- The optimal SIMD instruction sets is now selected based on the dataset (#175)
+- Added checks for all possible combinations of overlapping input/output files,
+  and checks for inconsistent paths that can lead to unexpected results (#244)
+- Added feature flags for building docs, the man-page, and using mimalloc (#263)
+
+### Changed
+
+- \[**BREAKING**\] Made `--compression-level 1` use libdeflate level 1
+  compression and `--compression-level 2` use libdeflate level 2 compression.
+  This removes an extra compression level compared to other software (#209)
+- \[**BREAKING**\] Revert change of `--trim-mott-rate` to `--trim-mott-quality`,
+  to more closely match other tools supporting mott trimming (#211).
+- \[**BREAKING**\] Reworked poly-x trimming algorithm to improve sensitivity, by
+  finding the longest valid alignment instead of the first valid alignment, at
+  the cost of slightly lower throughput (#224)
+- \[**BREAKING**\] Output files for discarded and singleton reads are now
+  created unconditionally, to simplify pipelines. This reverts a change in
+  alpha3 (#229)
+- \[**BREAKING**\] Options `--trim-ns` and `--trim-qualities` are now always
+  enabled when performing quality based trimming (#252)
+- \[**BREAKING**\] `--merge-strategy` no longer implies `--merge` (#265)
+- Optimized PE aignments using NEON for ~20% higher throughput (#152)
+- `--mismatch-rate` rate arguments greater than 0.5 are deprecated, and the
+  default value has been changed from 6 (corresponding to 1/6) to 0.1667 (#189)
+- Renamed `--adapter-list` and `-barcode-list` to `--*-table`, to reflect the
+  expected content of these files. The old names supported but deprecated (#191)
+- Warn about and skip duplicate adapter sequences. This should have no effect on
+  results, but increases throughput (#192)
+- AdapterRemoval is now built using link-time optimization by default (LTO).
+  This can be turned off via the build-time option `make LTO=false` (#227).
+- Always use libdeflate's crc32, for a small speedup on non-Intel systems (#208)
+- The `make` targets `static` and `static-container`no longer require all
+  dependencies to be installed. Instead, only Docker/Podman is required (#233)
+
+### Fixed
+
+- Edge case in SE alignments that would trigger asserts due to pointless
+  alignments when multiple adapters were specified (#147)
+- Checks for sample-name 'unidentified' are now case-insensitive, to prevent the
+  use of a reserved filename on case-insensitive filesystems (#179)
+- Edge case in duplication estimates could result in less exact estimates (#185)
+- Duplication statistics for mate 2 are no longer written in SE mode (#186)
+- Human readable timestamps are now used in the HTML report (#190)
+- FASTQ parsing errors spanning multiple files now lists those files (#205)
+- Fixed static (musl) builds with link-time optimization (LTO) enabled (#206)
+- Fixed build on older system with outdated compilers or meson versions (#213)
+- Fixed mate separator being written to SE SAM/BAM output (#218)
+- Fixed some invalid Solexa scores resulting in an unhandled exception instead
+  of a meaningful error message (#230)
+- The percent of identified insert sizes now only consider identified reads when
+  demultiplexing is enabled, as unidentified reads are not aligned (#231)
+- Fixed support for `-` to mean `STDIN` for `--in-file1` and `--in-file2` (#245)
+- Fixed some bases being skipped in calculation of read complexity (#253)
+- Fixed possible race condition if file handles were exhausted (#259)
+- Fixed possible overflow when merging very high-quality bases using the
+  `additive` read-merging strategy (#264)
+
 ## [3.0.0-alpha3] - 2025-05-19
 
 This is the third alpha release of AdapterRemoval v3. As with the previous alpha
 releases, changes that affect how AdapterRemoval is used (e.g. by removing
 options) or that result in different output compared to previous versions are
-marked with the label "[**BREAKING**]".
+marked with the label "\[**BREAKING**\]".
 
 AdapterRemoval now uses `meson` for its build process, and `meson` is therefore
 a build-time requirement. A `Makefile` is still provided to simplify setting up
@@ -26,11 +107,11 @@ plot in HTML report.
 - Added support for handling barcodes that may ligate in different orientations
   (via `--barcode-orientation`) and for normalizing the orientation of merged
   reads (via `--normalize-orientation`).
-- The `--use-colors` parameter may now be used to controls color output.
-  Options are auto (default; enabled when run interactively), always, or never.
+- The `--use-colors` parameter may now be used to controls color output. Options
+  are auto (default; enabled when run interactively), always, or never.
 - The title of the HTML report can now be set via `--report-title`.
-- Input files are now checked for duplicate filenames, in order to help
-  prevents accidental data duplication.
+- Input files are now checked for duplicate filenames, in order to help prevents
+  accidental data duplication.
 - Alignments are now accelerated on Apple hardware using NEON instructions, for
   a roughly 3-fold increase in throughput.
 - A duplication plot is now included in the HTML report if this is enabled,
@@ -38,25 +119,27 @@ plot in HTML report.
 
 ### Changed
 
-- [**BREAKING**] Changed  `CO` tags for read-groups in SAM/BAM files to `DS`
+- \[**BREAKING**\] Changed `CO` tags for read-groups in SAM/BAM files to `DS`
   (description) tags, in order to match the specification.
-- [**BREAKING**] A number of changes have been made to the JSON report layout,
+- \[**BREAKING**\] A number of changes have been made to the JSON report layout,
   including the moving, removal, and addition of sections. The layout is
   described in `schema.json`.
-- [**BREAKING**] The minimum allowed/default value for `--min-adapter-overlap`
+- \[**BREAKING**\] The minimum allowed/default value for `--min-adapter-overlap`
   was set to 1. In practice this has no effect, since length 0 alignments were
   never considered, but may break scripts running AdapterRemoval.
-- [**BREAKING**] Drop support for raw error-rates to `--trim-mott-rate`, which
+- \[**BREAKING**\] Drop support for raw error-rates to `--trim-mott-rate`, which
   was renamed to `--trim-mott-quality` to match other trimming options.
-- [**BREAKING**] SAM/BAM output is now combined into a single file by default,
+- \[**BREAKING**\] SAM/BAM output is now combined into a single file by default,
   including discarded reads. This can be overridden by setting the individual
   `--out-*` options.
-- [**BREAKING**] Dropped `PG` tag from read-groups/records in SAM/BAM output.
-- [**BREAKING**] Dropped (minimal) read-groups for SAM/BAM output. If desired,
+- \[**BREAKING**\] Output files for discarded and singleton reads are only
+  created if at least one filter is enabled.
+- \[**BREAKING**\] Dropped `PG` tag from read-groups/records in SAM/BAM output.
+- \[**BREAKING**\] Dropped (minimal) read-groups for SAM/BAM output. If desired,
   read-group information can be added with `--read-group`.
-- [**BREAKING**] The `--report-duplication` option now supports k/m/g suffixes,
-  and defaults to `100k` if used without an explicit value.
-- [**BREAKING**] The `--read-group` option no longer attempts to unescape
+- \[**BREAKING**\] The `--report-duplication` option now supports k/m/g
+  suffixes, and defaults to `100k` if used without an explicit value.
+- \[**BREAKING**\] The `--read-group` option no longer attempts to unescape
   special characters. Instead, tags must be separated using embedded tabs
   (`--read-group $'ID:A\tSM:B'`) or provided as individual arguments
   (`--read-group 'ID:A' 'SM:B'`).
@@ -69,9 +152,9 @@ plot in HTML report.
   making the report readable before Vega-lite has loaded.
 - Optimized alignments involving multiple possible adapter sequences, by only
   once performing the alignments that involve no adapter sequences.
-- Optimized alignments involving multiple possible adapter sequences, by
-  sorting the list of adapter sequences by hits. This increasing the odds that
-  a good alignment is found early so that worse alignments can be skipped.
+- Optimized alignments involving multiple possible adapter sequences, by sorting
+  the list of adapter sequences by hits. This increasing the odds that a good
+  alignment is found early so that worse alignments can be skipped.
 - The old Makefile was replaced with the Meson build system, but a wrapper
   Makefile is still provided/used as a convenience for setting the recommended
   build options.
@@ -134,7 +217,7 @@ couple of months.
 
 As with alpha 1, changes that affect how AdapterRemoval is used (e.g. by
 removing options) or that result in different output compared to AdapterRemoval
-v2 are marked with the label "[**BREAKING**]".
+v2 are marked with the label "\[**BREAKING**\]".
 
 In addition to changes listed below, this release includes increased throughput
 thanks to improved parallelization of various steps in internal pipeline,
@@ -156,9 +239,9 @@ mandatory dependency.
   user-supplied read-group information.
 - Added support for alignments using AVX512 instructions. AVX512 support only
   available when AdapterRemoval is compiled with GCC v11+ or Clang v8+.
-- Added support selecting output file formats via the file extension and via
-  the `--out-format` option. A corresponding option, `--stdout-format` was
-  added to select the format for data written to STDOUT.
+- Added support selecting output file formats via the file extension and via the
+  `--out-format` option. A corresponding option, `--stdout-format` was added to
+  select the format for data written to STDOUT.
 - Added support for reading from STDIN or writing to STDOUT when '-' is used as
   the filename, as an alternative to using `/dev/stdin` or `/dev/stdout`.
 - Added dedicated threads solely for writing output data. This allows compute
@@ -174,21 +257,21 @@ mandatory dependency.
 
 ### Changed
 
-- [**BREAKING**] Changed the default `--mm`/`--mismatch-rate` from 1/3 to 1/6,
+- \[**BREAKING**\] Changed the default `--mm`/`--mismatch-rate` from 1/3 to 1/6,
   in order to decrease the false positive rate, in particular for read merging.
-- [**BREAKING**] Default to writing gzip-compressed FASTQ files; output written
-  to STDOUT is uncompressed by default.
-- [**BREAKING**] Discarded reads are no longer saved by default.
-- [**BREAKING**] Output files for discarded reads and singleton (orphan)
+- \[**BREAKING**\] Default to writing gzip-compressed FASTQ files; output
+  written to STDOUT is uncompressed by default.
+- \[**BREAKING**\] Discarded reads are no longer saved by default.
+- \[**BREAKING**\] Output files for discarded reads and singleton (orphan)
   paired-end reads are only created if filtering is enabled.
-- [**BREAKING**] The `--basename` / `--out-prefix` no longer defaults to
+- \[**BREAKING**\] The `--basename` / `--out-prefix` no longer defaults to
   `your_output`. Instead the user is required to set at least one `--out-*`
   option.
-- [**BREAKING**] Merged `--identify-adapters` and `--report-only` commands. The
-  adapter sequence is presently only reported in the HTML report, but will be
-  added to the JSON report following some planned changes.
-- [**BREAKING**] Reverted `--min-complexity` being enabled by default.
-- Increased the default ``--threads`` value to 2.
+- \[**BREAKING**\] Merged `--identify-adapters` and `--report-only` commands.
+  The adapter sequence is presently only reported in the HTML report, but will
+  be added to the JSON report following some planned changes.
+- \[**BREAKING**\] Reverted `--min-complexity` being enabled by default.
+- Increased the default `--threads` value to 2.
 - A number of command-line options were renamed for consistency; use of the old
   names is still supported, but will trigger a warning message.
 - Re-organized compression: level 1 is streamed using isa-l, while levels 2-13
@@ -198,15 +281,15 @@ mandatory dependency.
   larger output files.
 - Setting an `--out-*` option in demultiplexing mode overrides the basename /
   prefix for that specific output type.
-- Add smoothing to GC values calculated for the GC content curve, to account
-  for the fact that possible GC% values are unevenly distributed depending on
-  the read length.
+- Add smoothing to GC values calculated for the GC content curve, to account for
+  the fact that possible GC% values are unevenly distributed depending on the
+  read length.
 
 ### Removed
 
-The following changes are all [**BREAKING**] as described above:
+The following changes are all \[**BREAKING**\] as described above:
 
-- Removed support for original merging algorithm has been removed. The
+- Support for original merging algorithm has been removed. The
   `--merge-strategy additive` method produces very similar, but slightly more
   conservative scores.
 - Removed the ability to randomly sample a base if no best base could be
@@ -224,7 +307,7 @@ This release features a number of breaking changes compared to AdapterRemoval v2
 and it is therefore recommended that you carefully read the list of changes
 below. Changes that affect how AdapterRemoval is used (e.g. by removing options)
 or that result in different output compared to AdapterRemoval v2 are marked with
-the label "[**BREAKING**]".
+the label "\[**BREAKING**\]".
 
 This is an alpha release; not all planned features are complete (more QC reports
 are planned among other things), additional optimizations will be attempted, and
@@ -260,30 +343,31 @@ Feedback is very welcome in the mean time.
 
 ### Changed
 
-- [**BREAKING**] Default adapters have been changed to the [recommended Illumina
-  sequences], equivalent to the first 33 bp of the adapter sequences used by
-  AdapterRemoval v2. This makes the default settings more generally applicable.
-- [**BREAKING**] The trimming options `--trimwindows`, `--trimns`,
+- \[**BREAKING**\] Default adapters have been changed to the
+  [recommended Illumina sequences], equivalent to the first 33 bp of the adapter
+  sequences used by AdapterRemoval v2. This makes the default settings more
+  generally applicable.
+- \[**BREAKING**\] The trimming options `--trimwindows`, `--trimns`,
   `--trimqualities`, and `--minquality` have been deprecated in favor of a new
   the modified Mott's algorithm, which is enabled by default. The trimming
   algorithm used may be changed using the new `--trim-strategy` option.
-- [**BREAKING**] Merging now defaults to using the conservative algorithm,
+- \[**BREAKING**\] Merging now defaults to using the conservative algorithm,
   meaning that matching quality scores are assigned `Q_match = max(Q_a, Q_b)`
   instead of `Q_match ~= Q_a + Q_b`, and that same-quality mismatches are
   assigned 'N' instead of one being picked at random. Motivated in part by
   `doi:10.1186/s12859-018-2579-2`. This can be changed using `--merge-strategy`.
-- [**BREAKING**] The `--merge` option no longer has any effect when processing
+- \[**BREAKING**\] The `--merge` option no longer has any effect when processing
   SE data; previously this option would treat reads with at
   `--minalignmentlength` adapter as pseudo-merged reads.
-- [**BREAKING**] Merged reads are no longer given a `M_` name prefix and merged
-  reads that have been trimmed after merging are no longer given an `MT_` name
-  prefix. Instead, see the new option `--prefix-merged`.
-- [**BREAKING**] Default filenames have all been revised and now include proper
-  extensions to indicate the format.
-- [**BREAKING**] The executable is now named `adapterremoval3`. This was done to
-  allow v3 to coexist with AdapterRemoval v2 and to prevent accidental use of
+- \[**BREAKING**\] Merged reads are no longer given a `M_` name prefix and
+  merged reads that have been trimmed after merging are no longer given an `MT_`
+  name prefix. Instead, see the new option `--prefix-merged`.
+- \[**BREAKING**\] Default filenames have all been revised and now include
+  proper extensions to indicate the format.
+- \[**BREAKING**\] The executable is now named `adapterremoval3`. This was done
+  to allow v3 to coexist with AdapterRemoval v2 and to prevent accidental use of
   the wrong version.
-- [**BREAKING**] Changed the default --maxns value from 1000 to "infinite"
+- \[**BREAKING**\] Changed the default --maxns value from 1000 to "infinite"
 - `--gzip` now defaults to compressing independent blocks of 64kb data using
   `libdeflate`. This significantly improves throughput in both single- and
   (especially) multi-threaded mode, but may be incompatible with a few programs.
@@ -298,7 +382,7 @@ Feedback is very welcome in the mean time.
 
 ### Removed
 
-The following changes are all [**BREAKING**] as described above:
+The following changes are all \[**BREAKING**\] as described above:
 
 - The `--outputcollapsedtruncated` has been removed and all merged reads
   (whether quality trimmed or not) are simply written to `--outputmerged`.
@@ -449,7 +533,7 @@ The following changes are all [**BREAKING**] as described above:
 
 ### Added
 
-- Added support for reading FASTQ files using Windows-style newlines (\r\n).
+- Added support for reading FASTQ files using Windows-style newlines (\\r\\n).
 - AdapterRemoval will now print a warning to STDERR if the same command-line
   option is specified multiple times.
 
@@ -470,9 +554,9 @@ The following changes are all [**BREAKING**] as described above:
 
 ### Removed
 
-- Dropped the undocumented 'poor' classification for alignments; for
-  statistical purposes, reads are either counted as aligned or not aligned.
-  This only changes how results are presented in the .settings files.
+- Dropped the undocumented 'poor' classification for alignments; for statistical
+  purposes, reads are either counted as aligned or not aligned. This only
+  changes how results are presented in the .settings files.
 
 ### Fixed
 
@@ -485,8 +569,8 @@ The following changes are all [**BREAKING**] as described above:
 - Fixed mis-placement of underscore when pretty printing adapter sequences that
   included barcodes.
 - Fixed misprinting of mate 2 adapter sequences in the .settings file; these
-  would be printed in the reverse complemented orientation, relative to how
-  they were specified on the command-line.
+  would be printed in the reverse complemented orientation, relative to how they
+  were specified on the command-line.
 
 ## [2.1.7] - 2016-03-11
 
@@ -501,7 +585,7 @@ The following changes are all [**BREAKING**] as described above:
 ### Changed
 
 - The mate number is now stripped from collapsed reads, where previously this
-  would always be '\1' (if set). However, if meta-data is present in the reads,
+  would always be '\\1' (if set). However, if meta-data is present in the reads,
   that found in the mate 1 read is retained.
 - The value used for --mate-separator is now written to the 'settings' file.
 
@@ -539,10 +623,9 @@ The following changes are all [**BREAKING**] as described above:
 
 ### Changed
 
-- Wrapped code in 'ar' namespace, and made it possible to compile
-  AdapterRemoval as a static library (via the command 'make static'), allowing
-  it to be used as part of other projects, courtesy of Hannes Pétur
-  Eggertsson.
+- Wrapped code in 'ar' namespace, and made it possible to compile AdapterRemoval
+  as a static library (via the command 'make static'), allowing it to be used as
+  part of other projects, courtesy of Hannes Pétur Eggertsson.
 - Updated instructions for installing GTest library using new repository
   courtesy of Hannes Pétur Eggertsson.
 
@@ -657,7 +740,7 @@ versions of AdapterRemoval, and adding a few new features.
 
 - Limited support for Solexa quality scores; these are converted to and saved as
   Phred+33 or Phred+64 encoded scores.
-- Added the ability to identify adapter sequences for paired-ended reads, by
+- Added the ability to identify adapter sequences for paired-end reads, by
   identifying reads which extends past the ends of the template sequence, and
   extracting the adapters from these.
 - Added support for reading / writing gzipped compressed FASTQ files; if enabled
@@ -678,9 +761,9 @@ versions of AdapterRemoval, and adding a few new features.
 - Significant improvements in performance, resulting in a ~5x increase in the
   rate of adapter trimming in basic version, and a ~20x increase in the rate of
   adapter trimming in the SSE enabled version (the default).
-- If --collapse is set in single-ended mode, "collapsed" reads will be
-  identified using the same criteria as for paired-ended mode, i.e. requiring
-  that at least --minalignmentlen bases overlap, and written to .collapsed and
+- If --collapse is set in single-end mode, "collapsed" reads will be identified
+  using the same criteria as for paired-end mode, i.e. requiring that at least
+  --minalignmentlen bases overlap, and written to .collapsed and
   .collapsed.truncated. This allows for the identification of reads that are
   complete inserts.
 - Length distributions are now calculated per read-type post-trimming (mate 1,
@@ -765,9 +848,11 @@ dramatic effects on the use of the program so please read these notes carefully
 
 - The PCR1 and PCR2 sequences are used as-is (not reverse-complementation). You
   have to make sure that the sequences you search for are correct.
+
 - The default PCR1 and PCR2 sequences are now:
 
 - PCR1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+
 - PCR2: AATGATACGGCGACCACCGAGATCACACTCTTTCCCTACACGACGCTCTTCCGATCT
 
 - Use of PCR1 and PCR2 changed to make the program consistent: Now, you always
@@ -776,9 +861,11 @@ dramatic effects on the use of the program so please read these notes carefully
   an empty READ2 and ignore PCR2 as illustrated below:
 
 - For paired end data, PCR2-READ1 aligned to READ2-PCR1.
+
 - For single end data, READ1 aligned to PCR1.
 
 - Collapsed reads are now names "@M\_...".
+
 - Collapsed reads are put in a separate file with extension ".collapsed".
 
 ### Fixed
@@ -796,8 +883,8 @@ dramatic effects on the use of the program so please read these notes carefully
 ### Changed
 
 - Updated trimming of qualities.
-- The program handles lower vs upper case issues by translating all sequences
-  to upper case.
+- The program handles lower vs upper case issues by translating all sequences to
+  upper case.
 - The program now checks for inconsistent parameters.
 
 ### Fixed
@@ -808,34 +895,35 @@ dramatic effects on the use of the program so please read these notes carefully
 
 - Initial release
 
-[3.0.0-alpha3]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha2...3.0.0-alpha3
-[2.3.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...v2.3.4
-[3.0.0-alpha2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha1...3.0.0-alpha2
-[3.0.0-alpha1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...3.0.0-alpha1
-[2.3.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...v2.3.3
-[2.3.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.1...v2.3.2
-[2.3.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.0...v2.3.1
-[2.3.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.4...v2.3.0
-[2.2.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.3...v2.2.4
-[2.2.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.2...v2.2.3
-[2.2.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.1...v2.2.2a
-[2.2.1a]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.1...v2.2.1a
-[2.2.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.0...v2.2.1
-[2.2.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.7...v2.2.0
-[2.1.7]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.6...v2.1.7
-[2.1.6]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.5...v2.1.6
-[2.1.5]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.4...v2.1.5
-[2.1.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.3...v2.1.4
-[2.1.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.2...v2.1.3
-[2.1.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.1...v2.1.2
-[2.1.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.0...v2.1.1
-[2.1.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.0.0...v2.1.0
-[2.0.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.4...v2.0.0
-[1.5.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.2...v1.5.4
-[1.5.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.0...v1.5.2
-[1.5.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.1.0...v1.3.0
+[1.4.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.3.0...v1.4.0
+[1.5.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.4.0...v1.5.0
+[1.5.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.0...v1.5.2
+[1.5.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.2...v1.5.4
+[2.0.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v1.5.4...v2.0.0
+[2.1.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.0.0...v2.1.0
+[2.1.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.0...v2.1.1
+[2.1.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.1...v2.1.2
+[2.1.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.2...v2.1.3
+[2.1.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.3...v2.1.4
+[2.1.5]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.4...v2.1.5
+[2.1.6]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.5...v2.1.6
+[2.1.7]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.6...v2.1.7
+[2.2.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.1.7...v2.2.0
+[2.2.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.0...v2.2.1
+[2.2.1a]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.1...v2.2.1a
+[2.2.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.1...v2.2.2a
+[2.2.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.2...v2.2.3
+[2.2.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.3...v2.2.4
+[2.3.0]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.2.4...v2.3.0
+[2.3.1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.0...v2.3.1
+[2.3.2]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.1...v2.3.2
+[2.3.3]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.2...v2.3.3
+[2.3.4]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...v2.3.4
+[3.0.0]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha3...3.0.0
+[3.0.0-alpha1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...3.0.0-alpha1
+[3.0.0-alpha2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha1...3.0.0-alpha2
+[3.0.0-alpha3]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha2...3.0.0-alpha3
 [fastp]: (https://github.com/OpenGene/fastp/)
 [fastqc]: (https://github.com/s-andrews/FastQC)
 [recommended illumina sequences]: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
