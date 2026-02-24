@@ -1068,19 +1068,6 @@ userconfig::userconfig()
     .bind_u32(&trim_quality_score)
     .with_maximum(PHRED_SCORE_MAX)
     .with_default(2);
-  argparser.add("--trim-ns")
-    .help("If set, trim ambiguous bases (N) at 5'/3' termini when using the "
-          "'window' or the 'per-base' trimming strategy")
-    .conflicts_with("--trim-mott-rate")
-    .deprecated_alias("--trimns")
-    .bind_bool(&trim_ambiguous_bases);
-  argparser.add("--trim-qualities")
-    .help("If set, trim low-quality bases (< --trim-min-quality) when using "
-          "the 'per-base' trimming strategy")
-    .deprecated_alias("--trimqualities")
-    .conflicts_with("--trim-mott-rate")
-    .conflicts_with("--trim-windows")
-    .bind_bool(&trim_low_quality_bases);
 
   argparser.add_separator();
   argparser.add("--pre-trim-polyx", "X")
@@ -1303,6 +1290,18 @@ userconfig::userconfig()
   argparser.add("--settings")
     .help("See --out-json or --out-html for machine and human readable reports")
     .removed();
+
+  // These options are now always enabled
+  argparser.add("--trim-ns")
+    .help("Trimming of uncalled nucleotides (Ns) is always enabled when "
+          "trimming of low-quality bases is enabled")
+    .deprecated_alias("--trimns")
+    .deprecated();
+  argparser.add("--trim-qualities")
+    .help("Trimming of low-quality bases is always enabled when a trimming "
+          "strategy is set with --quality-trimming")
+    .deprecated_alias("--trimqualities")
+    .deprecated();
 }
 
 // Must be implemented out of line for unique ptrs
@@ -1382,14 +1381,6 @@ userconfig::parse_args(const string_vec& argvec)
       trim = trimming_strategy::window;
     } else if (strategy == "per-base") {
       trim = trimming_strategy::per_base;
-
-      if (!trim_low_quality_bases && !trim_ambiguous_bases) {
-        log::error() << "The per-base quality trimming strategy is enabled, "
-                     << "but neither trimming of low-quality bases (via "
-                     << "--trim-qualities) nor trimming of Ns (via --trim-ns) "
-                     << "is enabled.";
-        return argparse::parse_result::error;
-      }
     } else if (strategy == "none") {
       trim = trimming_strategy::none;
     } else {

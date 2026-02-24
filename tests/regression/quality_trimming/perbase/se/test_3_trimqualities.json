@@ -8,18 +8,18 @@
     "per-base",
     "--trim-qualities",
     "--out-prefix",
-    "output_3"
+    "output_5"
   ],
   "files": {
     "input_1": [
       "input_1.fastq"
     ],
     "output": [
-      "output_3.r1.fastq.gz"
+      "output_5.r1.fastq.gz"
     ],
     "ignore": [
-      "output_3.json",
-      "output_3.html"
+      "output_5.json",
+      "output_5.html"
     ]
   }
 }
