@@ -33,19 +33,11 @@ print_trimming_parameters(const userconfig& config)
     case trimming_strategy::window:
       log::info() << "  - Window based quality based trimming with window size "
                   << config.trim_window_length << "and minimum quality score "
-                  << config.trim_quality_score
-                  << (config.trim_ambiguous_bases ? " (including Ns)" : "");
+                  << config.trim_quality_score;
       break;
     case trimming_strategy::per_base:
-      if (config.trim_low_quality_bases) {
-        log::info() << "  - Per-base based quality based trimming with minimum "
-                    << "quality score " << config.trim_quality_score
-                    << (config.trim_ambiguous_bases ? " (including Ns)" : "");
-      } else if (config.trim_ambiguous_bases) {
-        log::info() << "  - Per-base based trimming of Ns";
-      } else {
-        AR_FAIL("this should not be possible");
-      }
+      log::info() << "  - Per-base based quality based trimming with minimum "
+                  << "quality score " << config.trim_quality_score;
       break;
     case trimming_strategy::none:
       log::info() << "  - Quality based trimming disabled";

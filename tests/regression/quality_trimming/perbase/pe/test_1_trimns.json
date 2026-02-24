@@ -6,7 +6,7 @@
     "per-base",
     "--trim-ns",
     "--out-prefix",
-    "output_1"
+    "output_5"
   ],
   "files": {
     "input_1": [
@@ -16,13 +16,13 @@
       "input_2.fastq"
     ],
     "output": [
-      "output_1.r1.fastq.gz",
-      "output_1.r2.fastq.gz",
-      "output_1.singleton.fastq.gz"
+      "output_5.r1.fastq.gz",
+      "output_5.r2.fastq.gz",
+      "output_5.singleton.fastq.gz"
     ],
     "ignore": [
-      "output_1.json",
-      "output_1.html"
+      "output_5.json",
+      "output_5.html"
     ]
   }
 }

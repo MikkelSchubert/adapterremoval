@@ -9,18 +9,18 @@
     "--trim-ns",
     "--preserve5p",
     "--out-prefix",
-    "output_2"
+    "output_6"
   ],
   "files": {
     "input_1": [
       "input_1.fastq"
     ],
     "output": [
-      "output_2.r1.fastq.gz"
+      "output_6.r1.fastq.gz"
     ],
     "ignore": [
-      "output_2.json",
-      "output_2.html"
+      "output_6.json",
+      "output_6.html"
     ]
   }
 }

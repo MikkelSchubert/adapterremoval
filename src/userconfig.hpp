@@ -129,10 +129,6 @@ public:
   double trim_window_length{};
   //! [window/per-base] The highest quality score considered low-quality
   uint32_t trim_quality_score{};
-  //! [per-base] If true, low quality bases read termini are trimmed.
-  bool trim_low_quality_bases = false;
-  //! [per-base] If true, ambiguous bases (N) at read termini are trimmed.
-  bool trim_ambiguous_bases = false;
 
   //! Nucleotides to trim from poly-X tails prior to alignment/adapter trimming.
   threadsafe_data<std::string> pre_trim_poly_x{};

@@ -207,17 +207,16 @@ post_trim_read_by_quality(const userconfig& config,
       break;
 
     case trimming_strategy::window:
-      trimmed = read.trim_windowed_bases(config.trim_ambiguous_bases,
+      trimmed = read.trim_windowed_bases(true,
                                          config.trim_quality_score,
                                          config.trim_window_length,
                                          config.preserve5p);
       break;
 
     case trimming_strategy::per_base:
-      trimmed = read.trim_trailing_bases(
-        config.trim_ambiguous_bases,
-        config.trim_low_quality_bases ? config.trim_quality_score : -1,
-        config.preserve5p);
+      trimmed = read.trim_trailing_bases(true,
+                                         config.trim_quality_score,
+                                         config.preserve5p);
       break;
 
     default:
