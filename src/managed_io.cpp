@@ -52,9 +52,17 @@ public:
       return;
     } else if (writer->filename() == DEV_STDOUT) {
       writer->m_file = stdout;
+
+#ifdef _WIN32
+      _setmode(fileno(stdout), O_BINARY);
+#endif
     } else if (writer->filename() == DEV_STDERR) {
       // Not sure why anyone would do this, but ¯\_(ツ)_/¯
       writer->m_file = stderr;
+
+#ifdef _WIN32
+      _setmode(fileno(stdout), O_BINARY);
+#endif
     } else if (writer->filename() != DEV_PIPE) {
       writer->m_file =
         io_manager::fopen(writer->filename(), writer->m_created ? "ab" : "wb");

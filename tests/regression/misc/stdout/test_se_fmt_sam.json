@@ -1,0 +1,22 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--out-file1",
+    "-",
+    "--out-discarded",
+    "-",
+    "--stdout-format",
+    "sam"
+  ],
+  "pipe": "out_se.sam",
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "out_se.sam"
+    ]
+  }
+}

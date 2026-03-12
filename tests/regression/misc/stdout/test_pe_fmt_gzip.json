@@ -1,0 +1,14 @@
+{
+  "inherit_from": "test_pe_fmt_fqgz.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-file1",
+    "-",
+    "--out-file2",
+    "-",
+    "--gzip"
+  ]
+}

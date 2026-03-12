@@ -21,6 +21,7 @@ import tempfile
 import traceback
 from collections import deque
 from dataclasses import dataclass
+from io import BufferedWriter
 from itertools import groupby, islice
 from pathlib import Path
 from typing import (
@@ -698,6 +699,7 @@ class TestConfig(NamedTuple):
     exhaustive: bool | None
     arguments: tuple[str, ...]
     return_code: int
+    pipe: str | None
     stdout: tuple[str, ...]
     stderr: tuple[str, ...]
     files: tuple[TestFile, ...]
@@ -749,6 +751,7 @@ class TestConfig(NamedTuple):
             skip=json_pop_bool(data, ("skip",), default=False),
             exhaustive=json_pop_bool(data, ("exhaustive",), default=False),
             return_code=json_pop_int(data, ("return_code",), default=0),
+            pipe=json_pop_optional_str(data, ("pipe",)),
             stdout=json_pop_tuple_of_str(data, ("stdout",), default=[]),
             stderr=json_pop_tuple_of_str(data, ("stderr",), default=[]),
             files=tuple(test_files),
@@ -768,6 +771,13 @@ class TestConfig(NamedTuple):
         for filetype, keys in table_args.items():
             if has_filetype(filetype) and not set(self.arguments).intersection(keys):
                 raise TestError(f"Missing {filetype}-table option in {quote(filepath)}")
+
+        if self.pipe is not None and self.stdout:
+            raise TestError("Both `pipe` and `stdout` specified")
+        elif not (self.pipe or self.pipe is None):
+            raise TestError("Option `pipe` must be null or a non-empty string")
+        elif self.pipe and os.path.dirname(self.pipe):
+            raise TestError("Option `pipe` must not contain directory component")
 
         return self
 
@@ -1043,25 +1053,36 @@ class TestRunner:
                 write_data(root / it.name, it.text)
 
     def _execute(self) -> tuple[int, str, str]:
-        proc = subprocess.Popen(
-            self.command,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            close_fds=True,
-            cwd=self._test_path,
-        )
-
+        proc = None
+        stdout_pipe = subprocess.PIPE
         try:
+            if self._test.pipe:
+                filename = self._test_path / self._test.pipe
+                stdout_pipe = filename.open("wb")
+
+            proc = subprocess.Popen(
+                self.command,
+                stdin=subprocess.DEVNULL,
+                stdout=stdout_pipe,
+                stderr=subprocess.PIPE,
+                close_fds=True,
+                cwd=self._test_path,
+            )
+
             stdout, stderr = proc.communicate(timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             raise TestError("Test took too long to run") from error
         finally:
-            proc.terminate()
+            if isinstance(proc, subprocess.Popen):
+                proc.terminate()
 
-        stdout = stdout.decode("utf-8")
+            if isinstance(stdout_pipe, BufferedWriter):
+                stdout_pipe.close()
+
+        stdout = "" if stdout is None else stdout.decode("utf-8")
         stderr = stderr.decode("utf-8")
 
+        assert proc is not None
         return proc.returncode, stdout, stderr
 
     def _evaluate_return_code(self, returncode: int, stderr: str) -> None:
