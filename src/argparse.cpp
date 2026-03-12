@@ -417,7 +417,7 @@ std::string
 argument::help() const
 {
   // Append string representation of current (default) value
-  std::ostringstream ss(m_help);
+  std::ostringstream ss;
   ss << m_help;
 
   const auto choices = m_sink->choices();
@@ -610,8 +610,13 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
 
     return parsing_failed;
   } else if (m_deprecated) {
-    log::warn() << "Option " << *start << " is deprecated and will "
-                << "be removed in the future.";
+    auto warn = log::warn();
+    warn << "Option " << *start << " is deprecated and will "
+         << "be removed in the future";
+
+    if (!m_help.empty()) {
+      warn << ": " << m_help;
+    }
   } else if (deprecated_alias) {
     log::warn() << "Option " << *start << " has been renamed to " << key()
                 << ". Support for the old name will be removed in the future.";

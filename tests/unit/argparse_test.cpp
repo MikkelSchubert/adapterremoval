@@ -832,7 +832,22 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE_POSTFIX(ss.str(),
                   "[WARNING] Option --12345 is deprecated and will be "
-                  "removed in the future.\n");
+                  "removed in the future\n");
+}
+
+TEST_CASE("deprecated argument with help", "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+  arg.deprecated();
+  arg.help("additional help text");
+
+  log::log_capture ss;
+
+  string_vec values{ "--12345" };
+  REQUIRE(arg.parse(values.begin(), values.end()) == 1);
+  REQUIRE_POSTFIX(ss.str(),
+                  "[WARNING] Option --12345 is deprecated and will be "
+                  "removed in the future: additional help text\n");
 }
 
 TEST_CASE("removed argument without help", "[argparse::argument]")
