@@ -87,7 +87,6 @@ jobs:
         uses: hendrikmuhs/ccache-action@a1209f81afb8c005c13b4296c32e363431bffea5 # v1.2.17
         with:
           key: ${{ github.job }}-windows
-          create-symlink: true
           # Disable cache cleanups while building
           max-size: "0"
 
