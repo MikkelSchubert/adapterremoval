@@ -1,0 +1,14 @@
+{
+  "...": "...",
+  "output": {
+    "read1": {
+      "filenames": ["/dev/stdout"],
+      "...": "..."
+    },
+    "read2": {
+      "filenames": ["/dev/stdout"],
+      "...": "..."
+    },
+    "...": "..."
+  }
+}

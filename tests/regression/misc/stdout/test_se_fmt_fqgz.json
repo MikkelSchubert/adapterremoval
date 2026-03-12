@@ -1,0 +1,20 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--out-file1",
+    "-",
+    "--stdout-format",
+    "fastq.gz"
+  ],
+  "pipe": "out_se.fastq.gz",
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "out_se.fastq.gz"
+    ]
+  }
+}

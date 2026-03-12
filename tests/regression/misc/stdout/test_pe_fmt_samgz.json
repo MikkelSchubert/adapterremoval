@@ -1,0 +1,31 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-file1",
+    "-",
+    "--out-file2",
+    "-",
+    "--out-singleton",
+    "-",
+    "--out-discarded",
+    "-",
+    "--stdout-format",
+    "sam.gz"
+  ],
+  "pipe": "out_pe.sam.gz",
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "out_pe.sam.gz"
+    ]
+  }
+}

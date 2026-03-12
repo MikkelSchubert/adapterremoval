@@ -1,0 +1,30 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-json",
+    "out_pe.json",
+    "--out-file1",
+    "-",
+    "--out-file2",
+    "-"
+  ],
+  "pipe": "out_pe.fastq",
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "out_pe.fastq"
+    ],
+    "json": [
+      "out_pe.json"
+    ]
+  }
+}

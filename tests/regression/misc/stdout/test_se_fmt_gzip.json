@@ -1,0 +1,13 @@
+{
+  "inherit_from": "test_se_fmt_fqgz.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--out-file1",
+    "-",
+    "--gzip"
+  ],
+  "stderr": [
+    "[WARNING] Option --gzip is deprecated and will be removed in the future"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "inherit_from": "test_pe_dash.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-json",
+    "out_pe.json",
+    "--out-file1",
+    "-",
+    "--out-file2",
+    "/dev/stdout"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "inherit_from": "test_se_dash.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--out-json",
+    "out_se.json",
+    "--out-file1",
+    "/dev/stdout"
+  ]
+}
