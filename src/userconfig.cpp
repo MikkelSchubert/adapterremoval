@@ -824,7 +824,8 @@ userconfig::userconfig()
   argparser.add_header("OUTPUT FORMAT:");
 
   argparser.add("--gzip")
-    .hidden()
+    .help("Use the --out-format and --stdout-format options to specify the "
+          "output format for reads written to files and STDOUT, respectively")
     .deprecated()
     .conflicts_with("--out-format")
     .conflicts_with("--stdout-format");
@@ -968,10 +969,12 @@ userconfig::userconfig()
     .with_maximum(PHRED_SCORE_MAX)
     .with_default(41);
   argparser.add("--collapse-deterministic")
+    .help("Use the --merge-strategy option instead")
     .conflicts_with("--collapse-conservatively")
     .conflicts_with("--merge-strategy")
     .deprecated();
   argparser.add("--collapse-conservatively")
+    .help("Use the --merge-strategy option instead")
     .conflicts_with("--collapse-deterministic")
     .conflicts_with("--merge-strategy")
     .deprecated();
@@ -1291,17 +1294,28 @@ userconfig::userconfig()
     .help("See --out-json or --out-html for machine and human readable reports")
     .removed();
 
+  for (const auto& key : std::array{ "--pcr1", "--pcr2" }) {
+    argparser.add(key)
+      .help("See the AdapterRemoval v1 to v2 migration guide, for how to "
+            "convert --pcr1 and --pcr2 arguments to the form expected by "
+            "AdapterRemoval v3")
+      .removed();
+  }
+
   // These options are now always enabled
-  argparser.add("--trim-ns")
-    .help("Trimming of uncalled nucleotides (Ns) is always enabled when "
-          "trimming of low-quality bases is enabled")
-    .deprecated_alias("--trimns")
-    .deprecated();
-  argparser.add("--trim-qualities")
-    .help("Trimming of low-quality bases is always enabled when a trimming "
-          "strategy is set with --quality-trimming")
-    .deprecated_alias("--trimqualities")
-    .deprecated();
+  for (const auto& key : std::array{ "--trimns", "--trim-ns" }) {
+    argparser.add(key)
+      .help("Trimming of uncalled nucleotides (Ns) is automatically enabled, "
+            "when trimming of low-quality bases is enabled")
+      .deprecated();
+  }
+
+  for (const auto& key : std::array{ "--trimqualities", "--trim-qualities" }) {
+    argparser.add(key)
+      .help("Trimming of low-quality bases is automatically enabled, when a "
+            "trimming strategy is set with --quality-trimming")
+      .deprecated();
+  }
 }
 
 // Must be implemented out of line for unique ptrs
