@@ -82,6 +82,26 @@ jobs:
       - uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
         with:
           msystem: ucrt64
+          install: |
+            git
+            make
+            mingw-w64-ucrt-x86_64-ccache
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-isa-l
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-mimalloc
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-python-jsonschema
+            mingw-w64-ucrt-x86_64-python-sphinx
+            mingw-w64-ucrt-x86_64-uv
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@a1209f81afb8c005c13b4296c32e363431bffea5 # v1.2.17
+        with:
+          key: ${{ github.job }}-windows
+          # Disable cache cleanups while building
+          max-size: "0"
 
       - name: dependencies (OS specific)
         shell: msys2 {0}
@@ -90,3 +110,7 @@ jobs:
       - name: build and test
         shell: msys2 {0}
         run: bash scripts/build-common.sh DEBUG=true
+
+      - name: CCache cleanup
+        # Manual ccache cleanup, using the ccache-action default max size
+        run: env CCACHE_MAXSIZE=500M ccache --cleanup
