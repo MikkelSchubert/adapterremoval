@@ -276,12 +276,9 @@ public:
   {
     AR_REQUIRE(m_writer);
 
-    // streams are always open and aren't placed on the queue
-    if (!m_writer->m_stream) {
-      // Remove from global queue to prevent other threads from manipulating it
-      io_manager::remove(m_writer);
-      io_manager::open(m_writer);
-    }
+    // Remove from global queue to prevent other threads from manipulating it
+    io_manager::remove(m_writer);
+    io_manager::open(m_writer);
   };
 
   ~writer_lock()
