@@ -83,6 +83,14 @@ jobs:
         with:
           msystem: ucrt64
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@a1209f81afb8c005c13b4296c32e363431bffea5 # v1.2.17
+        with:
+          key: ${{ github.job }}-windows
+          create-symlink: true
+          # Disable cache cleanups while building
+          max-size: "0"
+
       - name: dependencies (OS specific)
         shell: msys2 {0}
         run: bash scripts/setup-windows-latest.sh
@@ -90,3 +98,7 @@ jobs:
       - name: build and test
         shell: msys2 {0}
         run: bash scripts/build-common.sh DEBUG=true
+
+      - name: CCache cleanup
+        # Manual ccache cleanup, using the ccache-action default max size
+        run: env CCACHE_MAXSIZE=500M ccache --cleanup
