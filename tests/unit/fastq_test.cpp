@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
+#include "catch.hpp"
 #include "errors.hpp"     // for fastq_error
 #include "fastq.hpp"      // for fastq, fastq::ntrimmed, ACGTN, ACGT
 #include "fastq_enc.hpp"  // for FASTQ_ENCODING_33
@@ -392,6 +393,31 @@ TEST_CASE("complexity", "[fastq::fastq]")
   REQUIRE_THAT(fastq("c", "AGACCGGT").complexity(), WithinAbs(5.0 / 7.0, 1e-6));
   REQUIRE_THAT(fastq("c", "AGACCGGTN").complexity(),
                WithinAbs(5.0 / 8.0, 1e-6));
+}
+
+TEST_CASE("complexity for long sequences", "[fastq::fastq]")
+{
+  using Catch::WithinAbs;
+
+  auto complexity = [](std::string s) { return fastq("c", s).complexity(); };
+
+  CHECK_THAT(complexity("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+             WithinAbs(0.0, 1e-6));
+  CHECK_THAT(complexity("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"),
+             WithinAbs(0.0, 1e-6));
+
+  auto matcher = WithinAbs(5.0 / 34.0, 1e-6);
+  CHECK_THAT(complexity("GACCGGTAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), matcher);
+  CHECK_THAT(complexity("GACCGGTAAAAAAAAAAAAAAAAAAAAAAAAAAAN"), matcher);
+
+  CHECK_THAT(complexity("GGGGGGGGGGGGGGACCGGTAAAAAAAAAAAAAAA"), matcher);
+  CHECK_THAT(complexity("GGGGGGGGGGGGGGACCGGTAAAAAAAAAAAAAAN"), matcher);
+
+  CHECK_THAT(complexity("GGGGGGGGGGGGGGGGGGGACCGGTAAAAAAAAAA"), matcher);
+  CHECK_THAT(complexity("NGGGGGGGGGGGGGGGGGGACCGGTAAAAAAAAAA"), matcher);
+
+  CHECK_THAT(complexity("GGGGGGGGGGGGGGGGGGGGGGGGGGGGACCGGTA"), matcher);
+  CHECK_THAT(complexity("NGGGGGGGGGGGGGGGGGGGGGGGGGGGACCGGTA"), matcher);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

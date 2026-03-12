@@ -9,6 +9,7 @@
 #include "strutils.hpp"   // for log_escape
 #include <algorithm>      // for reverse, count, max, min
 #include <cstdint>        // for int64_t
+#include <cstring>        // for memchr
 #include <numeric>        // for accumulate
 #include <sstream>        // for ostringstream
 #include <string_view>    // for string_view
@@ -195,72 +196,32 @@ fastq::count_ns() const
     std::count(m_sequence.begin(), m_sequence.end(), 'N'));
 }
 
-namespace {
-
-/**
- * Calculate the absolute sequence complexity score, under the assumption that
- * the sequence does not contain Ns. Should the sequence contain Ns, then this
- * algorithm would overestimate the sequence complexity, and therefore returns
- * -1 to indicate failure.
- */
-int
-fast_calculate_complexity(const std::string& sequence)
-{
-  // The last base is not checked in the loop below
-  if (sequence.back() == 'N') {
-    return -1;
-  }
-
-  const size_t length = sequence.length() - 1;
-  size_t i = 0;
-  int score = 0;
-
-  // Fixed block sizes allows gcc/clang to optimize the loop
-  const size_t BLOCK_SIZE = 16;
-  for (; i + BLOCK_SIZE < length; i += BLOCK_SIZE) {
-    for (size_t j = 0; j < BLOCK_SIZE; ++j, ++i) {
-      if (sequence[i] != sequence[i + 1]) {
-        score++;
-      }
-
-      if (sequence[i] == 'N') {
-        return -1;
-      }
-    }
-  }
-
-  for (; i < length; ++i) {
-    if (sequence[i] != sequence[i + 1]) {
-      score++;
-    }
-
-    if (sequence[i] == 'N') {
-      return -1;
-    }
-  }
-
-  return score;
-}
-
-} // namespace
-
 double
 fastq::complexity() const
 {
-  if (m_sequence.length() < 2) {
+  const std::string_view view = m_sequence;
+  if (view.length() < 2) {
     return 0.0;
   }
 
-  // Try to use unrolled/vectorized algorithm
-  int score = fast_calculate_complexity(m_sequence);
+  int score;
 
-  if (score < 0) {
+  if (memchr(view.data(), 'N', view.size()) != nullptr) {
     // If the sequence contains Ns then use the slower calculation, that does
     // not treat Ns as distinct bases and thereby does not inflate the score
+    score = -1;
     char prev = 'N';
-    for (const auto nuc : m_sequence) {
+    for (const auto nuc : view) {
       if (nuc != 'N' && nuc != prev) {
         prev = nuc;
+        score++;
+      }
+    }
+  } else {
+    score = 0;
+    // This form gets auto-vectorized in both GCC 15+ and Clang 16+
+    for (size_t i = 1; i < view.length(); ++i) {
+      if (view[i - 1] != view[i]) {
         score++;
       }
     }
