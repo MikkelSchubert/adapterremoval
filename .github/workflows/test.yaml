@@ -97,7 +97,7 @@ jobs:
 
       - name: build and test
         shell: msys2 {0}
-        run: bash scripts/build-common.sh DEBUG=true CC="ccache gcc" CXX="ccache g++"
+        run: bash scripts/build-common.sh DEBUG=true
 
       - name: CCache cleanup
         # Manual ccache cleanup, using the ccache-action default max size
