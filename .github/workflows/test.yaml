@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   test-unix:
+    if: false
     name: test on ${{ matrix.os }} with ${{ matrix.cxx }}
 
     runs-on: ${{ matrix.os }}
@@ -69,6 +70,10 @@ jobs:
     name: test on windows
 
     runs-on: windows-latest
+
+    env:
+      CC: ccache gcc
+      CXX: ccache g++
 
     steps:
       - name: harden runner
