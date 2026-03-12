@@ -52,20 +52,30 @@ public:
       return;
     } else if (writer->filename() == DEV_STDOUT) {
       writer->m_file = stdout;
+      writer->m_stream = true;
+
+#ifdef _WIN32
+      _setmode(fileno(stdout), O_BINARY);
+#endif
     } else if (writer->filename() == DEV_STDERR) {
       // Not sure why anyone would do this, but ¯\_(ツ)_/¯
       writer->m_file = stderr;
+      writer->m_stream = true;
+
+#ifdef _WIN32
+      _setmode(fileno(stdout), O_BINARY);
+#endif
     } else if (writer->filename() != DEV_PIPE) {
       writer->m_file =
         io_manager::fopen(writer->filename(), writer->m_created ? "ab" : "wb");
+      writer->m_stream =
+        io_manager::is_stream(writer->filename(), writer->m_file);
     } else {
       // Merged I/O depends on filenames being identical
       AR_FAIL("unhandled STDOUT marker");
     }
 
     writer->m_created = true;
-    writer->m_stream =
-      io_manager::is_stream(writer->filename(), writer->m_file);
   }
 
   /** Adds writer to list of inactive writers */
@@ -156,10 +166,6 @@ private:
 
   static bool is_stream(const std::string& filename, FILE* handle)
   {
-    if (handle == stdin || handle == stdout || handle == stderr) {
-      return true;
-    }
-
     struct stat statbuf = {};
     if (fstat(fileno(handle), &statbuf) == 0) {
       return S_ISFIFO(statbuf.st_mode);
@@ -270,9 +276,12 @@ public:
   {
     AR_REQUIRE(m_writer);
 
-    // Remove from global queue to prevent other threads from manipulating it
-    io_manager::remove(m_writer);
-    io_manager::open(m_writer);
+    // streams are always open and aren't placed on the queue
+    if (!m_writer->m_stream) {
+      // Remove from global queue to prevent other threads from manipulating it
+      io_manager::remove(m_writer);
+      io_manager::open(m_writer);
+    }
   };
 
   ~writer_lock()
