@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   test-unix:
-    if: false
     name: test on ${{ matrix.os }} with ${{ matrix.cxx }}
 
     runs-on: ${{ matrix.os }}
