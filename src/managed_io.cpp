@@ -81,7 +81,7 @@ public:
   /** Adds writer to list of inactive writers */
   static void add(managed_writer* writer)
   {
-    std::lock_guard<std::mutex> lock(m_lock);
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
 
     AR_REQUIRE(!writer->m_prev);
     AR_REQUIRE(!writer->m_next);
@@ -105,7 +105,7 @@ public:
   /* Removes the writer from the list of inactive writers */
   static void remove(managed_writer* writer)
   {
-    std::lock_guard<std::mutex> lock(m_lock);
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
 
     AR_REQUIRE(!m_head == !m_tail);
     AR_REQUIRE(!m_head || !m_head->m_prev);
@@ -180,6 +180,8 @@ private:
   /** Try to close the least recently used writer */
   static void close_one()
   {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+
     AR_REQUIRE(!m_head == !m_tail);
     if (!m_warning_printed) {
       log::warn() << "Number of available file-handles (ulimit -n) is too low. "
@@ -189,14 +191,15 @@ private:
       m_warning_printed = true;
     }
 
-    if (m_tail) {
-      if (fclose(m_tail->m_file)) {
-        m_tail->m_file = nullptr;
+    auto* writer = m_tail;
+    if (writer) {
+      remove(writer);
+
+      if (fclose(writer->m_file)) {
+        writer->m_file = nullptr;
         throw io_error("failed to close file", errno);
       }
-      m_tail->m_file = nullptr;
-
-      remove(m_tail);
+      writer->m_file = nullptr;
     } else {
       throw io_error(
         "available number of file-handles too low; could not open any files");
@@ -210,13 +213,13 @@ private:
   //! Least recently used managed_writer
   static managed_writer* m_tail;
   //! Lock used to control access to internal state
-  static std::mutex m_lock;
+  static std::recursive_mutex m_lock;
 };
 
 bool io_manager::m_warning_printed = false;
 managed_writer* io_manager::m_head = nullptr;
 managed_writer* io_manager::m_tail = nullptr;
-std::mutex io_manager::m_lock{};
+std::recursive_mutex io_manager::m_lock{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
