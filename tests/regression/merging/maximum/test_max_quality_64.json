@@ -1,0 +1,16 @@
+{
+  "inherit_from": "test_implicit.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-prefix",
+    "your_output",
+    "--out-discarded",
+    "your_output.discarded.fastq",
+    "--merge",
+    "--merge-quality-max",
+    "64"
+  ]
+}

@@ -3,7 +3,7 @@
   "arguments": [
     "--adapter1",
     "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-    "--barcode-list",
+    "--barcode-table",
     "barcodes.txt",
     "--out-prefix",
     "your_output",

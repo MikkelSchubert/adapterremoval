@@ -1,9 +1,12 @@
 {
+  "inherit_from": "test_defaults.json",
   "arguments": [
     "--out-prefix",
     "output",
-    "--compression-level",
+    "--gzip-level",
     "2"
   ],
-  "inherit_from": "test_defaults.json"
+  "stderr": [
+    "[WARNING] Option --gzip-level has been renamed to --compression-level. Support for the old name will be removed in the future."
+  ]
 }

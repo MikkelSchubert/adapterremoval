@@ -1,0 +1,17 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "/dev/null",
+    "--bzip2-level",
+    "7"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  },
+  "stderr": [
+    "[ERROR] Option --bzip2-level has been removed in AdapterRemoval v3: "
+  ],
+  "return_code": 1
+}

@@ -1,0 +1,11 @@
+{
+  "inherit_from": "test.json",
+  "arguments": [
+    "--identify-adapters",
+    "--out-prefix",
+    "your_output"
+  ],
+  "stderr": [
+    "[WARNING] Option --identify-adapters has been renamed to --report-only. Support for the old name will be removed in the future."
+  ]
+}

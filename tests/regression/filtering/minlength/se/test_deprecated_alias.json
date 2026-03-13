@@ -1,28 +1,22 @@
 {
+  "description": "Filtering by minimum length, all reads excluded",
   "arguments": [
     "--adapter1",
     "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
-    "--adapter2",
-    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
     "--out-prefix",
     "your_output",
     "--out-discarded",
     "your_output.discarded.fastq",
-    "--collapse"
+    "--minlength",
+    "999"
   ],
   "files": {
     "input_1": [
       "input_1.fastq"
     ],
-    "input_2": [
-      "input_2.fastq"
-    ],
     "output": [
       "your_output.discarded.fastq",
-      "your_output.merged.fastq.gz",
-      "your_output.r1.fastq.gz",
-      "your_output.r2.fastq.gz",
-      "your_output.singleton.fastq.gz"
+      "your_output.r1.fastq.gz"
     ],
     "json": [
       "your_output.json"
@@ -32,6 +26,6 @@
     ]
   },
   "stderr": [
-    "[WARNING] Option --collapse has been renamed to --merge. Support for the old name will be removed in the future."
+    "[WARNING] Option --minlength has been renamed to --min-length. Support for the old name will be removed in the future."
   ]
 }

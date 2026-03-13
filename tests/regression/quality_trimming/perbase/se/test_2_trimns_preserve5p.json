@@ -6,7 +6,6 @@
     "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "--quality-trimming",
     "per-base",
-    "--trim-ns",
     "--preserve5p",
     "--out-prefix",
     "output_6"
