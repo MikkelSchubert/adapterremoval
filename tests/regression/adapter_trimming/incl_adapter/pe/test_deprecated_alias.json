@@ -1,0 +1,16 @@
+{
+  "inherit_from": "test_defaults.json",
+  "exhaustive": false,
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--file1",
+    "input_1.fastq",
+    "--file2",
+    "input_2.fastq"
+  ],
+  "stderr": [
+    "[WARNING] Option --file1 has been renamed to --in-file1. Support for the old name will be removed in the future.",
+    "[WARNING] Option --file2 has been renamed to --in-file2. Support for the old name will be removed in the future."
+  ]
+}

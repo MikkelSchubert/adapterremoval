@@ -1,0 +1,14 @@
+{
+  "inherit_from": "test_1_value.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--out-prefix",
+    "your_output",
+    "--trim5p",
+    "5"
+  ],
+  "stderr": [
+    "[WARNING] Option --trim5p has been renamed to --post-trim5p. Support for the old name will be removed in the future."
+  ]
+}

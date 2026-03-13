@@ -1,0 +1,16 @@
+{
+  "inherit_from": "test_max_5.json",
+  "arguments": [
+    "--trim-strategy",
+    "none",
+    "--out-file1",
+    "out_max_5.fastq",
+    "--out-json",
+    "out_max_5.json",
+    "--maxns",
+    "5"
+  ],
+  "stderr": [
+    "[WARNING] Option --maxns has been renamed to --max-ns. Support for the old name will be removed in the future."
+  ]
+}

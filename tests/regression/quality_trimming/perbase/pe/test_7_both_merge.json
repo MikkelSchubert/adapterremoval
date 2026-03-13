@@ -4,8 +4,6 @@
     "1.0",
     "--quality-trimming",
     "per-base",
-    "--trim-ns",
-    "--trim-qualities",
     "--merge",
     "--out-prefix",
     "output_7"

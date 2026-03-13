@@ -31,5 +31,8 @@
     "html": [
       "output_pe.html"
     ]
-  }
+  },
+  "stderr": [
+    "[WARNING] Option --barcode-list has been renamed to --barcode-table. Support for the old name will be removed in the future."
+  ]
 }

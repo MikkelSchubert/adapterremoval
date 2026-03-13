@@ -2,9 +2,15 @@
   "arguments": [
     "--out-prefix",
     "your_output",
+    "--out-merged",
+    "your_output.max20.merged.fastq",
+    "--out-json",
+    "your_output.max20.json",
     "--merge",
     "--merge-strategy",
-    "additive"
+    "additive",
+    "--merge-quality-max",
+    "20"
   ],
   "files": {
     "input_1": [
@@ -14,13 +20,13 @@
       "input_2.fastq"
     ],
     "output": [
-      "your_output.merged.fastq.gz",
+      "your_output.max20.merged.fastq",
       "your_output.r1.fastq.gz",
       "your_output.r2.fastq.gz",
       "your_output.singleton.fastq.gz"
     ],
     "json": [
-      "your_output.json"
+      "your_output.max20.json"
     ],
     "html": [
       "your_output.html"

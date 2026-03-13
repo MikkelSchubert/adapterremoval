@@ -1,0 +1,35 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--out-merged",
+    "your_output.max64.merged.fastq",
+    "--out-json",
+    "your_output.max64.json",
+    "--merge",
+    "--merge-strategy",
+    "additive",
+    "--merge-quality-max",
+    "64"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "input_2": [
+      "input_2.fastq"
+    ],
+    "output": [
+      "your_output.max64.merged.fastq",
+      "your_output.r1.fastq.gz",
+      "your_output.r2.fastq.gz",
+      "your_output.singleton.fastq.gz"
+    ],
+    "json": [
+      "your_output.max64.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
+  }
+}

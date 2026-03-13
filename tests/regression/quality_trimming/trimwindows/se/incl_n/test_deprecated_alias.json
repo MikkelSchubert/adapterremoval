@@ -1,0 +1,18 @@
+{
+  "inherit_from": "test.json",
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--quality-trimming",
+    "window",
+    "--trimwindows",
+    "4",
+    "--minquality",
+    "20",
+    "--trim-ns"
+  ],
+  "stderr": [
+    "[WARNING] Option --trimwindows has been renamed to --trim-windows. Support for the old name will be removed in the future.",
+    "[WARNING] Option --minquality has been renamed to --trim-min-quality. Support for the old name will be removed in the future."
+  ]
+}

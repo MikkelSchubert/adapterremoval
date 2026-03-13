@@ -1,0 +1,19 @@
+{
+  "inherit_from": "test_max_quality_20.json",
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--out-merged",
+    "your_output.max20.merged.fastq",
+    "--out-json",
+    "your_output.max20.json",
+    "--merge",
+    "--merge-strategy",
+    "additive",
+    "--qualitymax",
+    "20"
+  ],
+  "stderr": [
+    "[WARNING] Option --qualitymax has been renamed to --merge-quality-max. Support for the old name will be removed in the future."
+  ]
+}

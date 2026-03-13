@@ -1,0 +1,12 @@
+{
+  "inherit_from": "test.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--basename",
+    "alternative"
+  ],
+  "stderr": [
+    "[WARNING] Option --basename has been renamed to --out-prefix. Support for the old name will be removed in the future."
+  ]
+}

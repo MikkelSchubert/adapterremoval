@@ -1,0 +1,17 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "/dev/null",
+    "--settings",
+    "settings.txt"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  },
+  "stderr": [
+    "[ERROR] Option --settings has been removed in AdapterRemoval v3: "
+  ],
+  "return_code": 1
+}

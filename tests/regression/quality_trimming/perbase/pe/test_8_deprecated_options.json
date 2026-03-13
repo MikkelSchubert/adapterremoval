@@ -1,0 +1,21 @@
+{
+  "inherit_from": "test_5_both.json",
+  "arguments": [
+    "--max-ns-fraction",
+    "1.0",
+    "--quality-trimming",
+    "per-base",
+    "--trimns",
+    "--trim-ns",
+    "--trimqualities",
+    "--trim-qualities",
+    "--out-prefix",
+    "output_5"
+  ],
+  "stderr": [
+    "[WARNING] Option --trimns is deprecated and will be removed in the future",
+    "[WARNING] Option --trim-ns is deprecated and will be removed in the future",
+    "[WARNING] Option --trimqualities is deprecated and will be removed in the future",
+    "[WARNING] Option --trim-qualities is deprecated and will be removed in the future"
+  ]
+}

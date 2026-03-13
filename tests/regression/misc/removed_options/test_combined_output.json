@@ -1,0 +1,16 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "/dev/null",
+    "--combined-output"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  },
+  "stderr": [
+    "[ERROR] Option --combined-output has been removed in AdapterRemoval v3: "
+  ],
+  "return_code": 1
+}

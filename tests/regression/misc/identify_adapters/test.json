@@ -1,6 +1,6 @@
 {
   "arguments": [
-    "--identify-adapters",
+    "--report-only",
     "--out-prefix",
     "your_output"
   ],

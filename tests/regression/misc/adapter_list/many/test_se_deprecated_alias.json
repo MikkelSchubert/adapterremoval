@@ -24,5 +24,8 @@
     "html": [
       "output.html"
     ]
-  }
+  },
+  "stderr": [
+    "[WARNING] Option --adapter-list has been renamed to --adapter-table. Support for the old name will be removed in the future."
+  ]
 }

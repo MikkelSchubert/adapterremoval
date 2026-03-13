@@ -1,0 +1,17 @@
+{
+  "inherit_from": "test_implicit.json",
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-prefix",
+    "your_output",
+    "--out-discarded",
+    "your_output.discarded.fastq",
+    "--collapse-conservatively"
+  ],
+  "stderr": [
+    "[WARNING] Option --collapse-conservatively is deprecated and will be removed in the future"
+  ]
+}

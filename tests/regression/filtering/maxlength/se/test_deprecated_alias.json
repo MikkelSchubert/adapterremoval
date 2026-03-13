@@ -1,0 +1,30 @@
+{
+  "arguments": [
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--out-prefix",
+    "your_output",
+    "--out-discarded",
+    "your_output.discarded.fastq.gz",
+    "--maxlength",
+    "13"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "output": [
+      "your_output.discarded.fastq.gz",
+      "your_output.r1.fastq.gz"
+    ],
+    "json": [
+      "your_output.json"
+    ],
+    "html": [
+      "your_output.html"
+    ]
+  },
+  "stderr": [
+    "[WARNING] Option --maxlength has been renamed to --max-length. Support for the old name will be removed in the future."
+  ]
+}

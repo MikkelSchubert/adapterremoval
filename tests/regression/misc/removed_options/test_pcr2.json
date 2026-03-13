@@ -1,0 +1,17 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "/dev/null",
+    "--pcr2",
+    "GTCT"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  },
+  "stderr": [
+    "[ERROR] Option --pcr2 has been removed in AdapterRemoval v3: "
+  ],
+  "return_code": 1
+}

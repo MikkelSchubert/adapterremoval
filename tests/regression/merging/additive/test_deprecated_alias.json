@@ -1,0 +1,15 @@
+{
+  "inherit_from": "test_default.json",
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--out-merged",
+    "your_output.default.merged.fastq",
+    "--out-json",
+    "your_output.default.json",
+    "--collapse-deterministic"
+  ],
+  "stderr": [
+    "[WARNING] Option --collapse-deterministic is deprecated and will be removed in the future"
+  ]
+}
