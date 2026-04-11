@@ -27,6 +27,12 @@ repos:
     hooks:
       - id: ruff
       - id: ruff-format
+  - repo: https://github.com/LilSpazJoekp/docstrfmt
+    rev: 7653faa707cb660bc80cef0e8433932363b43504 # 2.0.2
+    hooks:
+      - id: docstrfmt
+        types_or: [rst]
+        args: ["--line-length", "9999", "--file-type", "rst", "--check"]
   - repo: https://github.com/codespell-project/codespell
     rev: 63c8f8312b7559622c0d82815639671ae42132ac # v2.4.1
     hooks:
