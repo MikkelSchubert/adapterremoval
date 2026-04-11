@@ -3,7 +3,7 @@
 
 test_runner_script = meson.project_source_root() / 'scripts' / 'regression_test_runner.py'
 
-regression_test_exe = find_program('uv', required: false, version: '>=0.5.17')
+regression_test_exe = find_program('uv', version: '>=0.5.17', required: get_option('uv'))
 if regression_test_exe.found()
     regression_test_args = ['run', test_runner_script]
 else
