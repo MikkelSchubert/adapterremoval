@@ -18,7 +18,7 @@ MANPAGE := enabled
 # Build and install HTML documentation (https://adapterremoval.readthedocs.org)
 DOCS := disabled
 
-# Use `uv` to install dependencies for regression tests (enabled/disabled/auto)
+# Use `uv` to install dependencies for regression tests
 UV := auto
 
 # Enable address and undefined behavior sanitation
