@@ -251,7 +251,7 @@ is_acceptable_read(const userconfig& config,
   }
 
   if (config.max_ambiguous_bases < length ||
-      (length * config.max_ambiguous_base_fraction < length)) {
+      config.max_ambiguous_base_fraction < 1.0) {
     const auto n_count = seq.count_ns();
 
     if (n_count > config.max_ambiguous_bases ||
