@@ -11,7 +11,7 @@
 
 # General information about the project.
 project = "AdapterRemoval3"
-copyright = "2025, Mikkel Schubert; Stinus Lindgreen"
+copyright = "2026, Mikkel Schubert; Stinus Lindgreen"
 author = "Mikkel Schubert; Stinus Lindgreen"
 
 # The version info for the project you're documenting, acts as replacement for
