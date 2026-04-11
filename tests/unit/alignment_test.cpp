@@ -1267,6 +1267,20 @@ TEST_CASE("Identical nucleotides gets higher qualities [additive]")
   REQUIRE(record1 == expected);
 }
 
+TEST_CASE("Identical nucleotides gets higher qualities, capped [additive]")
+{
+  sequence_merger merger;
+  merger.set_merge_strategy(merge_strategy::additive);
+  fastq record1("Rec1", "GCATGATATA", "~~~~~~~~~~", FASTQ_ENCODING_SAM);
+  fastq record2("Rec2", "TATATACAAC", "~~~~~~~~~~", FASTQ_ENCODING_SAM);
+  const alignment_info alignment = ALN().offset(6);
+  REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
+  const fastq expected =
+    fastq("Rec1", "GCATGATATATACAAC", "~~~~~~~~~~~~~~~~", FASTQ_ENCODING_SAM);
+  merger.merge(alignment, record1, record2);
+  REQUIRE(record1 == expected);
+}
+
 TEST_CASE("Identical nucleotides gets higher qualities, no more than 41 "
           "[additive]")
 {
@@ -1375,7 +1389,7 @@ TEST_CASE("Mate number removed, custom separator, not set [additive]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Merging of reads using the additive merging method
+// Merging of reads using the 'maximum' merging method
 
 TEST_CASE("Merge partial overlap")
 {
