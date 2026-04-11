@@ -2,9 +2,17 @@
  AdapterRemoval
 ################
 
-AdapterRemoval searches for and trims remnant adapter sequences from High-Throughput Sequencing (HTS) data, trims low quality bases, merges overlapping paired-ended reads, and generates QC reports (human and machine-readable). AdapterRemoval can additionally demultiplex sequencing reads and can construct a consensus adapter sequence from paired-ended reads.
+AdapterRemoval is a multi-platform tool for processing High-Throughput Sequencing (HTS) data in FASTQ format. AdapterRemoval trims remnant adapter sequences, trims and filters low quality reads, merges overlapping paired-end reads, demultiplexes sequencing reads, and generates QC reports in human and machine-readable formats.
 
-See the :doc:`getting_started` and :doc:`examples` pages to get started processing your own data. See the :doc:`detailed_overview` page for a description of processing carried out by AdapterRemoval and the options affecting each step of the process. See the :doc:`input_and_output` page for details on the input files read by AdapterRemoval and resulting output files. And finally, see the :doc:`migrating` page if you are upgrading from an older version of AdapterRemoval.
+AdapterRemoval is designed for rapidly processing large datasets, and therefore accelerates operations using hardware specific instruction sets (SSE2, AVX, and NEON), via parallel processing of sequencing data, parallel compression of outputs, and other techniques.
+
+- See the :doc:`getting_started` to get started processing your own data.
+- See the :doc:`detailed_overview` page for a description of processing steps carried out by AdapterRemoval, and the options affecting each of these steps.
+- See the :doc:`input_and_output` page for details on the input files read by AdapterRemoval and resulting output files.
+- See the :doc:`migrating` page if you are upgrading from an older version of AdapterRemoval.
+- For a complete list of command-line options, see the :doc:`manpage`.
+
+For questions, suggestions, or bug reports, please `create an issue on GitHub`_.
 
 If you use AdapterRemoval v3, then please cite the paper:
 
@@ -20,7 +28,6 @@ AdapterRemoval was originally published in Lindgreen 2012:
 
    installation
    getting_started
-   examples
    detailed_overview
    input_and_output
    migrating
@@ -33,3 +40,5 @@ AdapterRemoval was originally published in Lindgreen 2012:
 -  :ref:`genindex`
 -  :ref:`modindex`
 -  :ref:`search`
+
+.. _create an issue on github: https://github.com/MikkelSchubert/adapterremoval/issues/new

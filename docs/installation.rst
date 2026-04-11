@@ -1,5 +1,3 @@
-.. highlight:: Bash
-
 ##############
  Installation
 ##############
@@ -8,18 +6,22 @@
  Precompiled binary
 ********************
 
-Binaries are provided for 64-bit x86 Linux and Windows under https://github.com/MikkelSchubert/adapterremoval/releases/
+Binaries are provided for 64-bit x86 Linux, ARM-based MacOSX, and Windows at https://github.com/MikkelSchubert/adapterremoval/releases/
 
-*************************
- Installing from sources
-*************************
+.. warning::
 
-This section describes how to build and install the latest version of AdapterRemoval from sources.
+    The static Linux binary uses Musl_ for maximum compatibility, at the cost of a significant performance loss. It is therefore recommended to build AdapterRemoval yourself, or use your distribution's AdapterRemoval package (if available).
+
+************************
+ Installing from source
+************************
+
+This section describes how to build and install the latest version of AdapterRemoval from source.
 
 Prerequisites
 =============
 
-Building and installing AdapterRemoval requires basic build tools including a C++17 capable compiler, meson_ v1.2+, ninja_, python_ 3.8+, libdeflate_ and isa-l_ v2.30+. Sphinx_ is additionally required to build the documentation.
+Building and installing AdapterRemoval requires basic build tools including a C++17 capable compiler, meson_ v1.2+, ninja_, python_ 3.9+, libdeflate_ and isa-l_ v2.30+. Sphinx_ is additionally required to build the documentation. Of these dependencies, only libdeflate and isa-l are required to run AdapterRemoval, once it has been installed.
 
 - **Debian**:
 
@@ -33,18 +35,16 @@ Building and installing AdapterRemoval requires basic build tools including a C+
 
      brew install llvm meson ninja isa-l libdeflate sphinx-doc pkgconf
 
-- **Windows**, requires MSYS2 with an UCRT64 environment:
+- **Windows**, requires MSYS2_ with an UCRT64 environment:
 
   .. code::
 
     pacman -S make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate mingw-w64-ucrt-x86_64-meson mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-sphinx
 
-Running AdapterRemoval requires only libdeflate and isa-l to be installed.
-
 Building AdapterRemoval
 =======================
 
-To compile AdapterRemoval, first download and unpack the newest release from GitHub, and then run ``make``:
+To compile AdapterRemoval, first download and unpack the newest release from GitHub, and then run ``make`` in the resulting directory:
 
 .. code::
 
@@ -53,7 +53,7 @@ To compile AdapterRemoval, first download and unpack the newest release from Git
    cd adapterremoval-3.0.0-alpha3
    make
 
-The resulting ``adapterremoval3`` executable is located in the 'build/src' subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command:
+The resulting ``adapterremoval3`` executable is located in the ``build/src`` subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command:
 
 .. code::
 
@@ -71,7 +71,7 @@ To build the container and the static binary, run
 
    make static-container static
 
-The resulting executable and extra files are saved to ``build/static/install``.
+The resulting executable and other files are saved to ``build/static/install``.
 
 .. _docker: https://www.docker.com/
 
@@ -83,6 +83,10 @@ The resulting executable and extra files are saved to ``build/static/install``.
 
 .. _meson: https://mesonbuild.com/
 
+.. _msys2: https://www.msys2.org/
+
+.. _musl: https://wiki.musl-libc.org/
+
 .. _ninja: https://ninja-build.org/
 
 .. _podman: https://podman.io/
@@ -90,4 +94,3 @@ The resulting executable and extra files are saved to ``build/static/install``.
 .. _python: https://www.python.org/
 
 .. _sphinx: https://www.sphinx-doc.org/
-

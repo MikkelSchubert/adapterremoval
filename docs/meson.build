@@ -10,7 +10,6 @@ if sphinx_build.found()
         input: [
             'conf.py',
             'detailed_overview.rst',
-            'examples.rst',
             'getting_started.rst',
             'index.rst',
             'input_and_output.rst',
