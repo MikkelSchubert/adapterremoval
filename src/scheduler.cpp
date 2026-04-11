@@ -42,7 +42,7 @@ analytical_step::analytical_step(processing_order step_order, std::string name)
 
 using data_chunk = std::pair<size_t, chunk_ptr>;
 
-/** Class wrapping a analytical_step. */
+/** Class wrapping an analytical_step */
 class scheduler_step
 {
 public:

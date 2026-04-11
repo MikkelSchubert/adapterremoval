@@ -16,8 +16,7 @@ namespace adapterremoval {
 namespace {
 //! Print progress report every N read
 const size_t REPORT_EVERY_NTH_READ = 1e6;
-//! Print an updated progress report every S seconds
-
+//! Print an updated progress report roughly every 5 or 10 seconds
 const size_t REPORT_EVERY_NTH_LOOP =
 #if defined(_WIN32)
   5;

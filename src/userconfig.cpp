@@ -898,9 +898,9 @@ userconfig::userconfig()
     .with_choices({ "auto", "manual", "undefined", "none" });
 
   argparser.add("--adapter-fallback", "X")
-    .help("If '--adapter-select auto' is used and no adapter sequences could "
-          "be identified, either 'abort' the program, or fall back to one of "
-          "the other possible --adapter-selection options [default: "
+    .help("If '--adapter-selection auto' is used and no adapter sequences "
+          "could be identified, either 'abort' the program, or fall back to "
+          "one of the other possible --adapter-selection options [default: "
           "'undefined' if possible, otherwise 'none']")
     .bind_str(nullptr)
     .with_choices({ "undefined", "none", "abort" })
@@ -1089,7 +1089,8 @@ userconfig::userconfig()
     .bind_vec(&post_trim_poly_x_sink)
     .with_min_values(0);
   argparser.add("--trim-polyx-threshold", "N")
-    .help("The minimum number of bases in a poly-X tail")
+    .help("The minimum length of poly-X tails trimmed by --pre-trim-polyx and "
+          "--post-trim-polyx")
     .bind_u32(&trim_poly_x_threshold)
     .with_default(10);
 
@@ -1423,8 +1424,7 @@ userconfig::parse_args(const string_vec& argvec)
   interleaved_output |= interleaved;
 
   if (interleaved_input) {
-    // Enable paired end mode .. other than the FASTQ reader, all other
-    // parts of the pipeline simply run in paired-end mode.
+    // Enable PE mode; only the FASTQ reader is affected by `interleaved_input`
     paired_ended_mode = true;
   }
 

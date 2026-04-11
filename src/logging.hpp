@@ -124,7 +124,7 @@ debug()
   return log_stream(level::debug);
 }
 
-/** Logs a info-level message; not output if quiet logging is enabled */
+/** Logs an info-level message; not output if quiet logging is enabled */
 inline log_stream
 info()
 {
@@ -138,7 +138,7 @@ warn()
   return log_stream(level::warning);
 }
 
-/** Logs a error message; is always output */
+/** Logs an error message; is always output */
 inline log_stream
 error()
 {

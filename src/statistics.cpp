@@ -204,15 +204,14 @@ duplication_statistics::correct_count(size_t bin, size_t count) const
   // sequence with this number of observations which we would have missed.
 
   // We'll start by working out the probability of NOT seeing a sequence with
-  // this duplication level within the first countAtLimit sequences of
-  // count.  This is easier than calculating the probability of
-  // seeing it.
+  // this duplication level within the first sequences_counted_at_max sequences
+  // of count. This is easier than calculating the probability of seeing it.
   double p_not_seeing_at_limit = 1.0;
 
   // To save doing long calculations which are never going to produce anything
-  // meaningful we'll set a limit to our p-value calculation.  This is the
+  // meaningful we'll set a limit to our p-value calculation. This is the
   // probability below which we won't increase our count by 0.01 of an
-  // observation.  Once we're below this we stop caring about the corrected
+  // observation. Once we're below this we stop caring about the corrected
   // value since it's going to be so close to the observed value that we can
   // just return that instead.
   const double limit_of_caring = 1.0 - (count / (count + 0.01));

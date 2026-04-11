@@ -611,7 +611,6 @@ gzip_split_fastq::process(chunk_ptr data)
       // Resize the buffer to the actually used size
       output_buffer.resize(output_size + BGZF_HEADER.size());
     } else {
-      // Libdeflate compression levels 1 to 12 are mapped onto 2 to 13
       AR_REQUIRE(m_config.compression_level >= 2 &&
                  m_config.compression_level <= 12);
       auto* compressor =

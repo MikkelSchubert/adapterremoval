@@ -28,7 +28,7 @@ const size_t BENCHMARK_BURN_IN = 1;
 const size_t BENCHMARK_MIN_LOOPS = 10;
 //! Benchmarks must be repeated at most this number of times
 const size_t BENCHMARK_MAX_LOOPS = 1000;
-//! Benchmarks must run for at this this number of nano-seconds
+//! Benchmarks must run for at this number of nano-seconds
 const double BENCHMARK_MIN_TIME_NS = 5'000'000'000;
 //! Benchmark loops shorter than this number of nano-seconds cannot be measured
 const double BENCHMARK_CUTOFF_TIME_NS = 10'000;

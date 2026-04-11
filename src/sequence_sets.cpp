@@ -311,7 +311,7 @@ create_reversed_barcodes(std::vector<sample>& samples,
     return;
   }
 
-  // This is inefficient, but easier than trying to sort the list afterwards
+  // This is inefficient, but easier than trying to sort the list afterward
   std::vector<sample> rsamples;
   for (const auto& sample : samples) {
     for (const auto& seqs : sample) {
@@ -818,7 +818,7 @@ sample_set::uninitialized_adapters() const
 void
 sample_set::set_unidentified_read_group(read_group tmpl)
 {
-  // Unidentified reads lack a SM tag, so add a description instead
+  // Unidentified reads lack an SM tag, so add a description instead
   tmpl.set_sample("");
   tmpl.set_description("unidentified");
   m_unidentified.set_read_group(tmpl);

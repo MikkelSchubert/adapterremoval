@@ -19,8 +19,8 @@ namespace {
 
 //! The minimum number of reads to benchmark before picking an instruction set
 constexpr size_t MIN_READS_FOR_BENCHMARK = 10'000;
-//! The maximum amount of time in ns to spend benchmarking each instruction set
-constexpr std::chrono::milliseconds MAX_NS_PER_TEST{ 100 };
+//! The maximum amount of time in ms to spend benchmarking each instruction set
+constexpr std::chrono::milliseconds MAX_MS_PER_TEST{ 100 };
 
 } // namespace
 
@@ -70,14 +70,14 @@ simd_selector::process(chunk_ptr data)
                                   m_mismatch_threshold };
 
         auto& candidate = m_candidates.at(i);
-        if (candidate.second < MAX_NS_PER_TEST &&
+        if (candidate.second < MAX_MS_PER_TEST &&
             candidate.first < MIN_READS_FOR_BENCHMARK) {
           candidate.first += chunk->reads();
           candidate.second += process_chunk(aligner, *chunk);
         }
 
         ready &= candidate.first >= MIN_READS_FOR_BENCHMARK ||
-                 candidate.second >= MAX_NS_PER_TEST;
+                 candidate.second >= MAX_MS_PER_TEST;
       }
 
       if (ready || chunk->eof) {

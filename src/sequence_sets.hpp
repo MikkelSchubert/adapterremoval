@@ -235,7 +235,7 @@ private:
 
 /**
  * Class for handling user-specified samples for demultiplexing, in addition to
- * an 'unidentified' sample representing reads that could not be assigned to a
+ * a 'unidentified' sample representing reads that could not be assigned to a
  * sample. In non-demultiplexing mode, the set contains a single, unnamed sample
  * with an optional read-group, and no barcode sequences.
  */
@@ -244,7 +244,7 @@ class sample_set
 public:
   /** Creates sample set with single unnamed sample with empty barcodes */
   sample_set();
-  /** Creates sample set from  lines representing a barcode table */
+  /** Creates sample set from lines representing a barcode table */
   sample_set(std::initializer_list<std::string_view> lines,
              barcode_config config = {});
 
@@ -285,7 +285,7 @@ public:
   /** Returns the original, user-supplied adapter sequences */
   [[nodiscard]] const read_group& readgroup() const { return m_read_group; }
 
-  /** Returns special sample representing uidentified reads */
+  /** Returns special sample representing unidentified reads */
   [[nodiscard]] const auto& unidentified() const { return m_unidentified; }
 
   /** Returns the vector of samples */

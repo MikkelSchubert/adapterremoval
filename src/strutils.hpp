@@ -67,7 +67,7 @@ std::string
 stringify(long double value) = delete;
 
 /**
- * Convert a string to a uint32_t.
+ * Convert a string to an uint32_t.
  *
  * Throws std::invalid_argument if the string does not contain a proper number,
  * if it contains more than just a number, or if the number overflows a
@@ -116,11 +116,11 @@ to_upper(std::string_view str)
   return to_upper(std::string{ str });
 }
 
-/** Returns true if str1 ends with str2 (case sensitive) */
+/** Returns true if str1 ends with str2 (case-sensitive) */
 bool
 starts_with(std::string_view str1, std::string_view str2);
 
-/** Returns true if str1 ends with str2 (case sensitive) */
+/** Returns true if str1 ends with str2 (case-sensitive) */
 bool
 ends_with(std::string_view str1, std::string_view str2);
 
@@ -155,7 +155,7 @@ wrap_text(const std::string& value,
           size_t ljust = 0);
 
 /**
- * Joins a iterable sequence of values that support `operator<<` into a string.
+ * Joins an iterable sequence of values that support `operator<<` into a string.
  * The first N - 1 values are joined using `sep`, while the last two values are
  * joined using `final_sep`
  */
