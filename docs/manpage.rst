@@ -1,14 +1,16 @@
-AdapterRemoval manpage
-======================
+########################
+ AdapterRemoval manpage
+########################
 
-Synopsis
---------
+**********
+ Synopsis
+**********
 
 **adapterremoval3** [*options*...] --in-file1 <*filenames*> [--in-file2 <*filenames*>]
 
-
-Description
------------
+*************
+ Description
+*************
 
 :program:`adapterremoval3` removes residual adapter sequences from single-end (SE) or paired-end (PE) FASTQ reads, optionally trimming Ns and low quality bases and/or merging overlapping paired-end mates into one read. Low quality reads are filtered based on the resulting length and the number of ambiguous nucleotides (``N``) present following trimming. These operations may be combined with simultaneous demultiplexing using 5' barcode sequences. Reports containing statistics and plots in HTML and JSON format are generated after each run.
 
@@ -24,9 +26,9 @@ For detailed documentation, please see
 
     http://adapterremoval.readthedocs.io/
 
-
-Options
--------
+*********
+ Options
+*********
 
 .. program:: adapterremoval3
 
@@ -50,9 +52,8 @@ Options
 
     Selects the preferred SIMD instruction. Possible values are none, SSE2, AVX2, AVX512, and NEON. Options may be unavailable depending on the current system and depending on the compiler used to build AdapterRemoval. By default, AdapterRemoval will attempt to select the most appropriate instruction set for the input data.
 
-
 Input files
-~~~~~~~~~~~
+===========
 
 .. option:: --in-file1 filename [filenames...], --in-file2 filename [filenames...]
 
@@ -62,9 +63,8 @@ Input files
 
     If set, AdapterRemoval will process only the first N reads/pairs of reads in the input, in single-end and paired-end mode, respectively. Accepts suffixes K (thousands), M (millions), and G (billions). By default, all data is processed.
 
-
 Output file options
-~~~~~~~~~~~~~~~~~~~
+===================
 
 Output files for AdapterRemoval may be specified either via the ``--out-prefix`` option, which assigns default filenames to output, and/or via the individual ``--out`` options to set or override the output filename for a given output type. The same filename may be used for multiple ``--out`` options, in which case all of those reads are written to that file in input order.
 
@@ -99,7 +99,7 @@ Use ``-`` or ``/dev/stdin`` to read from standard input, use ``-`` or ``/dev/std
     Reports in JSON/HTML format containing information about the parameters used in the run, overall statistics on the reads before and after trimming, demultiplexing statistics, and the results of any analyses carried out during the run. Analyses include insert inference of sizes, duplication levels, and any inferred consensus adapter sequences.
 
 FASTQ options
-~~~~~~~~~~~~~
+=============
 
 .. option:: --quality-format name
 
@@ -133,9 +133,8 @@ FASTQ options
 
     Convert uracils (U) to thymine (T) in input reads; if this option is not used, AdapterRemoval will abort upon encountering uracils in the input.
 
-
 Output compression options
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+==========================
 
 .. option:: --out-format name
 
@@ -153,9 +152,8 @@ Output compression options
 
     Sets the compression level for compressed output. Valid values are 0 to 12: Level 0 is uncompressed but includes gzip headers/checksums, level 1 is streamed for FASTQ and SAM output, which may be required for compatibility in rare cases. FASTQ and SAM output with compression levels 2 to 12, and BAM output, is block compressed using the gzip compatible BGZF format. Lower this value to 1 for a 50-100% increase in throughput, at the cost of 10-20% larger output files. Defaults to compression level 4.
 
-
 Adapter selection
-~~~~~~~~~~~~~~~~~
+=================
 
 .. option:: --adapter1 adapter
 
@@ -181,9 +179,8 @@ Adapter selection
 
     Output the adapters used for automatic adapter selection to STDOUT, either as a ``tsv`` table or in ``json`` format. If an adapter 2 sequence is not listed, then AdapterRemoval uses the same sequence for both adapter 1 and adapter 2.
 
-
 FASTQ processing options
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 
 .. option:: --min-adapter-overlap length
 
@@ -226,9 +223,8 @@ FASTQ processing options
 
     Adds the specified prefix to merged read names. Defaults to no prefix.
 
-
 Quality trimming options
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 
 .. option:: --pre-trim3p n [n]
 
@@ -274,9 +270,8 @@ Quality trimming options
 
     If set, bases at the 5' will not be trimmed by ``mott``, ``window``, or ``per-base`` trimming, except if the entire read consists of low-quality bases. Merged reads will not be quality trimmed when this option is enabled due to the 3' ends being located inside the reads or overlapping the 5' of the source sequences.
 
-
 Filtering options
-~~~~~~~~~~~~~~~~~
+=================
 
 .. option:: --max-ns n
 
@@ -302,9 +297,8 @@ Filtering options
 
     Reads with a sequence quality less than this value after trimming are discarded. Complexity is measured as the fraction of positions that differ from the previous position, not counting ambiguous bases (``N``). A suggested value is 0.3. Defaults to no minimum.
 
-
 Demultiplexing options
-~~~~~~~~~~~~~~~~~~~~~~
+======================
 
 .. option:: --barcode-table filename
 
@@ -338,9 +332,8 @@ Demultiplexing options
 
     Only carry out demultiplexing using the list of barcodes supplied with --barcode-table. No other processing is done.
 
-
 Reporting options
-~~~~~~~~~~~~~~~~~~~~~~
+=================
 
 .. option:: --report-only
 
@@ -358,9 +351,9 @@ Reporting options
 
     FastQC based duplicate detection, based on the frequency of the first N unique sequences observed. If the option is used without an explicit value, the FastQC default of 100k unique reads is used; a value of 0 disables the analysis. Accepts suffixes K, M, and G. Default is 0.
 
-
-Logging options
----------------
+*****************
+ Logging options
+*****************
 
 .. option:: --log-level name
 
@@ -374,46 +367,38 @@ Logging options
 
     Specify the type of progress report used. If set to ``auto``, then a spinner will be used if STDERR is a terminal and the NO_COLORS environmental variable is not set, otherwise a log line will be written for every 1 million records processed. Possible values are ``auto``, ``spin``, ``log``, and ``never``. Default is ``auto``.
 
-Window-based quality trimming
------------------------------
+*******************************
+ Window-based quality trimming
+*******************************
 
 AdapterRemoval implements sliding window-based approach to quality based base-trimming inspired by ``sickle``. If ``--trim-windows`` is greater than or equal to 1, that number is used as the window size for all reads. If ``--trim-windows`` is a number greater than or equal to 0 and less than 1, then that number is multiplied by the length of individual reads to determine the window size. If the window length is zero or is greater than the current read length, then the read length is used instead.
 
 Reads are trimmed as follows for a given window size:
 
-       1. The new 5' is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than ``--trim-min-quality``.
+    1. The new 5' is determined by locating the first window where both the average quality and the quality of the first base in the window is greater than ``--trim-min-quality``.
+    2. The new 3' is located by sliding the first window right, until the average quality becomes less than or equal to ``--trim-min-quality``. The new 3' is placed at the last base in that window where the quality is greater than or equal to ``--trim-min-quality``.
+    3. If no 5' position could be determined, the read is discarded.
 
-       2. The new 3' is located by sliding the first window right, until the average quality becomes less than or equal to ``--trim-min-quality``. The new 3' is placed at the last base in that window where the quality is greater than or equal to ``--trim-min-quality``.
-
-       3. If no 5' position could be determined, the read is discarded.
-
-
-Exit status
------------
+*************
+ Exit status
+*************
 
 AdapterRemoval exits with status 0 if the program ran successfully, and with a non-zero exit code if any errors were encountered. Output from AdapterRemoval should not be used if the program returned a non-zero exit code.
 
-
-Reporting bugs
---------------
+****************
+ Reporting bugs
+****************
 
 Please report any bugs using the AdapterRemoval issue-tracker:
 
 https://github.com/MikkelSchubert/adapterremoval/issues
 
+*********
+ License
+*********
 
-License
--------
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or at your option any later version.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-at your option any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.

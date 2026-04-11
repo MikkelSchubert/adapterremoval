@@ -44,11 +44,11 @@ Each read and adapter sequence (single-end mode) or each read pair and adapter s
 
 .. code-block:: text
 
-   SE: [Read 1 -------------]
-                   [Adapter 1 -----]
+    SE: [Read 1 -------------]
+                    [Adapter 1 -----]
 
-   PE: [Adapter 2' ----][Read 1 ------------]
-                 [Read 2' ------------][Adapter 1 ----]
+    PE: [Adapter 2' ----][Read 1 ------------]
+                  [Read 2' ------------][Adapter 1 ----]
 
 Note that adapter 2 and read 2 are both reverse complemented in the above figure. If multiple adapters are specified using ``--adapter-table``, then alignment is carried out with each adapter or adapter pair, in order to select the single best alignment, if any.
 
@@ -92,8 +92,8 @@ Interleaved output
 
 Interleaved output, in which both mate 1 and mate 2 reads are written to the same file, can be produced in several ways:
 
--  By using the ``--interleaved`` or ``--interleaved-output`` option to enable interleaved input and output, or just interleaved output. The interleaved reads are written to ``--out-file1`` filename.
--  By specifying the same filename for ``--out-file1`` and ``--out-file2``. This includes special filenames ``-`` and ``/dev/stdout``, to write interleaved output to STDOUT (see below).
+- By using the ``--interleaved`` or ``--interleaved-output`` option to enable interleaved input and output, or just interleaved output. The interleaved reads are written to ``--out-file1`` filename.
+- By specifying the same filename for ``--out-file1`` and ``--out-file2``. This includes special filenames ``-`` and ``/dev/stdout``, to write interleaved output to STDOUT (see below).
 
 Compressed output
 =================
@@ -104,11 +104,11 @@ Depending on the compression level, this option either enables block-based compr
 
 .. note::
 
-   Most tools are compatible with block-based compression, but if a downstream tool only processes a few hundreds of your trimmed reads, then try running AdapterRemoval with ``--compression-level 1`` to enable stream-based compression. BAM output is always block-compressed.
+    Most tools are compatible with block-based compression, but if a downstream tool only processes a few hundreds of your trimmed reads, then try running AdapterRemoval with ``--compression-level 1`` to enable stream-based compression. BAM output is always block-compressed.
 
 .. tip::
 
-   On fast storage, and if space is not a limiting factor, then ``--compression-level`` can be decreased to 1 for an up to 50-100% increase in throughput, at the cost of 10-20% larger files, depending on the data and hardware.
+    On fast storage, and if space is not a limiting factor, then ``--compression-level`` can be decreased to 1 for an up to 50-100% increase in throughput, at the cost of 10-20% larger files, depending on the data and hardware.
 
 ******************************
  STDIN, STDOUT, and /dev/null
@@ -116,9 +116,9 @@ Depending on the compression level, this option either enables block-based compr
 
 AdapterRemoval supports four special filenames: ``-``, ``/dev/stdin``, ``/dev/stdout``, and ``/dev/null``:
 
--  If ``-`` or ``/dev/stdin`` is used for either ``--in-file1`` or ``--in-file2``, then AdapterRemoval will read those reads from STDIN. Note that it is currently not possible to use ``--in-file1 - --in-file2 -`` for interleaved input, instead use ``--interleaved-input --in-file1 -``.
--  If ``-`` or ``/dev/stdout`` is used for any ``--out-*`` options, then that file is written to STDOUT. As noted above, multiple read types may be written to STDOUT in this manner, meaning that ``--interleaved-output --out-file1 -`` and ``--out-file1 - --out-file2 -`` give identical output.
--  If ``/dev/null`` is used with any ``--out-*`` option, then the corresponding files are not saved. Statistics are still collected for any processed reads.
+- If ``-`` or ``/dev/stdin`` is used for either ``--in-file1`` or ``--in-file2``, then AdapterRemoval will read those reads from STDIN. Note that it is currently not possible to use ``--in-file1 - --in-file2 -`` for interleaved input, instead use ``--interleaved-input --in-file1 -``.
+- If ``-`` or ``/dev/stdout`` is used for any ``--out-*`` options, then that file is written to STDOUT. As noted above, multiple read types may be written to STDOUT in this manner, meaning that ``--interleaved-output --out-file1 -`` and ``--out-file1 - --out-file2 -`` give identical output.
+- If ``/dev/null`` is used with any ``--out-*`` option, then the corresponding files are not saved. Statistics are still collected for any processed reads.
 
 As specifying ``/dev/null`` skips the compression/write steps, it is highly recommended to disable any undesired file types in this way when using the ``--out-prefix`` option. Alternatively, only specify the exact file-types that you want to save for the same effect.
 

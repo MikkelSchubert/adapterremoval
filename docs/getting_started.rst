@@ -270,7 +270,7 @@ Since only the reports are generated in this mode, we can use the ``--out-prefix
 
 The consensus sequences inferred are compared to those specified using the ``--adapter1`` and ``--adapter2`` command-line options, if specified, or the best matching adapter otherwise (see below). Pipes (``|``) indicate matches between the provided sequences and the consensus sequence, and ``*`` indicate the presence of unspecified bases (Ns).
 
-The best practice is to compare the consensus with published `Illumina <illumina truseq adapters>`_ or `BGI/MGI`_ adapter sequences and pick out the best matches. The built-in list of adapters can be viewed by using the ``--adapter-database`` option (see below). However, on occasion there may be consistent differences between the published sequences and the observed adapter sequences, in which case you should prefer the observed sequence.
+The best practice is to compare the consensus with published `Illumina <illumina_truseq_adapters>`_ or `BGI/MGI`_ adapter sequences and pick out the best matches. The built-in list of adapters can be viewed by using the ``--adapter-database`` option (see below). However, on occasion there may be consistent differences between the published sequences and the observed adapter sequences, in which case you should prefer the observed sequence.
 
 .. _specifying_adapters:
 
@@ -288,7 +288,7 @@ If AdapterRemoval cannot identify any potential adapter sequences in the input, 
 
 Adapter sequences may also be set explicitly via the ``--adapter1`` and ``--adapter2`` options, should you be aware of the exact sequences used during sequencing. Adapter sequences are specified in the read orientation when using the ``--adapter1`` and ``--adapter2`` command-line options, directly corresponding to the sequence that is observed in the FASTQ files produced by the base calling software.
 
-If we were processing data generated using `Illumina TruSeq adapters`_, then we would therefore expect to find those sequences to appear as-is in our FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short):
+If we were processing data generated using `Illumina TruSeq adapters <illumina_truseq_adapters>`_, then we would therefore expect to find those sequences to appear as-is in our FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short):
 
 .. code-block:: console
 
@@ -316,8 +316,8 @@ An ``N`` in an adapter sequence is treated as a wildcard. An ``N`` will align ag
 
 .. _bgi/mgi: https://en.mgitech.cn/Download/download_file/id/71
 
-.. _illumina truseq adapters: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
-
-.. _this wikipedia article: https://en.wikipedia.org/wiki/FASTQ_format#Encoding
+.. _illumina_truseq_adapters: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
 
 .. _json: https://www.json.org/
+
+.. _this wikipedia article: https://en.wikipedia.org/wiki/FASTQ_format#Encoding
