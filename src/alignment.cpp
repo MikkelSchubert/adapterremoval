@@ -489,8 +489,7 @@ sequence_merger::merge(const alignment_info& alignment,
       if (m_merge_strategy == merge_strategy::maximum) {
         qual_1 = std::max(qual_1, qual_2);
       } else {
-        qual_1 =
-          std::min<char>(m_max_score, qual_1 + qual_2 - PHRED_OFFSET_MIN);
+        qual_1 = std::min<int>(m_max_score, qual_1 + qual_2 - PHRED_OFFSET_MIN);
       }
     } else {
       if (qual_1 < qual_2) {
