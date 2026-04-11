@@ -25,19 +25,19 @@ Building and installing AdapterRemoval requires basic build tools including a C+
 
 - **Debian**:
 
-  .. code::
+.. code-block:: console
 
-     sudo apt-get install build-essential meson ninja-build libdeflate-dev libisal-dev python3 python3-sphinx pkgconf
+    sudo apt-get install build-essential meson ninja-build libdeflate-dev libisal-dev python3 python3-sphinx pkgconf
 
 - **OSX**, requires Homebrew_ to install the dependencies:
 
-  .. code::
+.. code-block:: console
 
-     brew install llvm meson ninja isa-l libdeflate sphinx-doc pkgconf
+    brew install llvm meson ninja isa-l libdeflate sphinx-doc pkgconf
 
 - **Windows**, requires MSYS2_ with an UCRT64 environment:
 
-  .. code::
+.. code-block:: console
 
     pacman -S make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate mingw-w64-ucrt-x86_64-meson mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-sphinx
 
@@ -46,18 +46,18 @@ Building AdapterRemoval
 
 To compile AdapterRemoval, first download and unpack the newest release from GitHub, and then run ``make`` in the resulting directory:
 
-.. code::
+.. code-block:: console
 
-   wget -O adapterremoval-3.0.0-alpha3.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.0-alpha3.tar.gz
-   tar xvzf adapterremoval-3.0.0-alpha3.tar.gz
-   cd adapterremoval-3.0.0-alpha3
-   make
+    wget -O adapterremoval-3.0.0-alpha3.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.0-alpha3.tar.gz
+    tar xvzf adapterremoval-3.0.0-alpha3.tar.gz
+    cd adapterremoval-3.0.0-alpha3
+    make
 
 The resulting ``adapterremoval3`` executable is located in the ``build/src`` subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command:
 
-.. code::
+.. code-block:: console
 
-   sudo make install
+    sudo make install
 
 ********************************
  Building a static Linux binary
@@ -67,9 +67,9 @@ A podman_/docker_ ``Containerfile`` is provided, which is used to generate the p
 
 To build the container and the static binary, run
 
-.. code::
+.. code-block:: console
 
-   make static-container static
+    make static-container static
 
 The resulting executable and other files are saved to ``build/static/install``.
 
