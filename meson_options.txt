@@ -9,8 +9,8 @@ option(
 )
 option(
     'mimalloc',
-    type: 'boolean',
-    value: false,
+    type: 'feature',
+    value: 'disabled',
     description: 'Require and link to mimalloc library',
 )
 option(
@@ -20,8 +20,20 @@ option(
     description: 'Build executable with hardening flags',
 )
 option(
+    'manpage',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Build man page documentation; requires sphinx-build to be available',
+)
+option(
     'docs',
-    type: 'boolean',
-    value: true,
+    type: 'feature',
+    value: 'disabled',
     description: 'Build HTML documentation; requires sphinx-build to be available',
+)
+option(
+    'uv',
+    type: 'feature',
+    value: 'auto',
+    description: 'Use `uv` to install dependencies when running regression tests',
 )

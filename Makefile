@@ -1,8 +1,10 @@
 ###############################################################################
 # This makefile is provided as a simple convenience
 
-## Optional features; set to 'true' to enable or 'false' to disable:
+## Optional features; either set to 'true' to enable or 'false' to disable:
 ##   $ make DEBUG=true
+## or set 'enabled', 'disabled', or 'auto' (enabled if requirements are met)
+##   $ make MIMALLOC=enabled
 
 # Include coverage instrumentation in build
 COVERAGE := false
@@ -10,8 +12,14 @@ COVERAGE := false
 # Debug build; adds warnings, debugging symbols, and extra STL/POSIX asserts
 DEBUG := ${COVERAGE}
 
+# Build and install man page
+MANPAGE := enabled
+
 # Build and install HTML documentation (https://adapterremoval.readthedocs.org)
-DOCS := false
+DOCS := disabled
+
+# Use `uv` to install dependencies for regression tests (enabled/disabled/auto)
+UV := auto
 
 # Enable address and undefined behavior sanitation
 SANITIZE := false
@@ -31,7 +39,7 @@ STATIC := false
 
 # Use/require mimalloc. Mainly intended for static builds, as the musl allocator
 # comes with a significant performance cost
-MIMALLOC := $(STATIC)
+MIMALLOC := disabled
 
 ###############################################################################
 # (Container for) building static binaries using Alpine
@@ -115,7 +123,9 @@ setup ${NINJAFILE}:
 		-Db_lto=${LTO} \
 		-Db_lto_mode=${LTO_MODE} \
 		-Ddebug=${DEBUG} \
+		-Dmanpage=${MANPAGE} \
 		-Ddocs=${DOCS} \
+		-Duv=${UV} \
 		-Dharden=${HARDEN} \
 		-Dmimalloc=${MIMALLOC} \
 		-Dstatic=${STATIC} \
@@ -135,7 +145,9 @@ static:
 		PREFIX=/host/out/static/install \
 		DEBUG=${DEBUG} \
 		COVERAGE=${COVERAGE} \
+		MANPAGE=${MANPAGE} \
 		DOCS=${DOCS} \
+		UV=${UV} \
 		SANITIZE=${SANITIZE} \
 		HARDEN=${HARDEN} \
 		STATIC=true \
