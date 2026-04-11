@@ -1434,8 +1434,7 @@ userconfig::parse_args(const string_vec& argvec)
       merge = merge_strategy::additive;
     } else if (argparser.is_set("--collapse-conservatively")) {
       merge = merge_strategy::maximum;
-    } else if (argparser.is_set("--merge") ||
-               argparser.is_set("--merge-strategy")) {
+    } else if (argparser.is_set("--merge")) {
       const auto strategy = argparser.value("--merge-strategy");
       if (strategy == "maximum") {
         merge = merge_strategy::maximum;
