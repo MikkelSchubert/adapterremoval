@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: docstrfmt
         types_or: [rst]
-        args: ["--line-length", "9999", "--file-type", "rst", "--check"]
+        args: ["--line-length", "9999", "--file-type", "rst", "--ignore-cache", "--check"]
   - repo: https://github.com/codespell-project/codespell
     rev: 63c8f8312b7559622c0d82815639671ae42132ac # v2.4.1
     hooks:
