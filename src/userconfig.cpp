@@ -955,7 +955,7 @@ userconfig::userconfig()
       "The 'maximum' strategy uses Q=max(Q1,Q2) for matches while the "
       "'additive' strategy uses Q=Q1+Q2. Both strategies use Q=abs(Q1-Q2) for "
       "mismatches and picks the highest quality base, unless the qualities are "
-      "the same in which case 'N' is used. Setting this option implies --merge")
+      "the same in which case 'N' is used")
     .bind_str(nullptr)
     .with_choices({ "maximum", "additive" })
     .with_default("maximum");
