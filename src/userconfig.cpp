@@ -172,7 +172,7 @@ parse_counts(const argparse::parser& args,
         break;
 
       default:
-        log::error() << "Invalid unit in command-line option " << key
+        log::error() << "Invalid unit in command-line option " << key << " "
                      << shell_escape(sink);
         return false;
     }
@@ -185,7 +185,7 @@ parse_counts(const argparse::parser& args,
     // but will need to be changed if we want to allow large raw numbers
     out = static_cast<uint64_t>(str_to_u32(sink_without_unit)) * unit;
   } catch (const std::invalid_argument&) {
-    log::error() << "Invalid value in command-line option --sink "
+    log::error() << "Invalid value in command-line option " << key << " "
                  << shell_escape(sink);
     return false;
   }
