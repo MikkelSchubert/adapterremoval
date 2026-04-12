@@ -94,6 +94,13 @@ Or when demultiplexing is enabled, replacing the key ``${sample}`` with each sam
 
 This can be overridden as described above, using the individual ``--out`` options. To exclude discarded reads from the output, use ``--out-discarded /dev/null``.
 
+SAM/BAM tags
+------------
+
+When demultiplexing, AdapterRemoval will assign read-groups based on the barcodes, using the provided sample names. For samples with multiple barcodes, a read-group will be created for each barcode or barcode pair. When ``--barcode-orientation`` is used, AdapterRemoval will additionally record the orientation of the barcodes using ``or`` tags in the corresponding ``@RG`` headers.
+
+Additional read-group information can be set using ``--read-group``, which also adds read-group information when not demultiplexing.
+
 HTML report
 ===========
 
