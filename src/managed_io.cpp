@@ -63,7 +63,7 @@ public:
       writer->m_stream = true;
 
 #ifdef _WIN32
-      _setmode(fileno(stdout), O_BINARY);
+      _setmode(fileno(stderr), O_BINARY);
 #endif
     } else if (writer->filename() != DEV_PIPE) {
       writer->m_file =
