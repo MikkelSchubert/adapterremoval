@@ -869,17 +869,20 @@ userconfig::userconfig()
 
   argparser.add("--adapter1", "SEQ")
     .help("Adapter sequence expected to be found in mate 1 reads. Any 'N' in "
-          "this sequence is treated as a wildcard")
+          "this sequence is treated as a wildcard. Setting this option makes "
+          "'--adapter-selection' default to 'manual'")
     .bind_str(&adapter_1);
   argparser.add("--adapter2", "SEQ")
     .help("Adapter sequence expected to be found in mate 2 reads. Any 'N' in "
-          "this sequence is treated as a wildcard")
+          "this sequence is treated as a wildcard. Setting this option makes "
+          "'--adapter-selection' default to 'manual'")
     .bind_str(&adapter_2);
   argparser.add("--adapter-table", "FILE")
     .help("Read adapter pairs from the first two columns of a white-space "
           "separated table. AdapterRemoval will then select the best matching "
           "adapter pair for each pair of input reads when trimming. Only the "
-          "first column is required for single-end trimming")
+          "first column is required for single-end trimming. Setting this "
+          "option makes '--adapter-selection' default to 'manual'")
     .deprecated_alias("--adapter-list")
     .conflicts_with("--adapter1")
     .conflicts_with("--adapter2")

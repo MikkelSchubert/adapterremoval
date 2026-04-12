@@ -159,35 +159,6 @@ By default, AdapterRemoval expects the quality scores in FASTQ reads to be Phred
 
 Output is always saved as Phred+33. See `this Wikipedia article`_ for a detailed overview of Phred encoding schemes currently and previously in use.
 
-*******************************************************
- Trimming paired-end reads with multiple adapter pairs
-*******************************************************
-
-It is possible to provide multiple, different sets of adapters for trimming, in which case AdapterRemoval will select the best match for each read (pair). This is done by providing a one or two-column table, for SE and PE trimming, respectively, with each line containing one or two adapters, separated by whitespace.
-
-For example, to specify both Illumina TruSeq and BGISeq adapters, one might save the following in the file ``adapters.txt``:
-
-.. code-block:: text
-
-    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
-    AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA   AAGTCGGATCGTAGCCATGTCGTTCTGTGAGCCAAGGAGTTG
-
-This file is then specified using the ``--adapter-table`` option:
-
-.. code-block:: console
-
-    adapterremoval3 \
-        --in-file1 reads_1.fastq \
-        --in-file2 reads_2.fastq \
-        --out-prefix output_multi \
-        --adapter-table adapters.txt
-
-Pairs of adapters are used exactly as written, and the resulting QC reports lists how frequently adapter or pairs of adapters were used.
-
-Note that throughput decreases proportionally to the number of adapters, and it is therefore *not* recommended to use this functionality unless strictly necessary. When adapters differ only after the first N bases, for example due to an embedded barcode, then it is typically better to specify only the shared part of the adapter sequences on the command line, instead of specifying multiple, different adapter pairs.
-
-It is also possible to mask variable sites in an adapter sequence, such as barcodes, by setting sites to ``N``. These sites will then not be considered part of the alignments.
-
 ****************
  Demultiplexing
 ****************
@@ -278,17 +249,24 @@ The best practice is to compare the consensus with published `Illumina <illumina
  A note on specifying adapters
 *******************************
 
-AdapterRemoval will attempt to identify the type of adapter sequences present in the input data, based on a database of adapter sequences included with AdapterRemoval. You can use the ``--adapter-database`` option to list these in either ``tsv`` or ``json`` format:
+By default, AdapterRemoval will attempt to identify the type of adapter sequences present in the input data, based on a database of adapter sequences included with AdapterRemoval. The selected adapter sequences (if any) will be listed in the resulting QC reports.
+
+If AdapterRemoval cannot identify any potential adapter sequences in the input, then AdapterRemoval will either assume that the data contains no adapters (in single-end mode), or perform adapter trimming based on the pair-wise alignment of the input reads (paired-end mode). This behavior is controlled via the ``--adapter-selection`` and ``--adapter-fallback`` options.
+
+You can use the ``--adapter-database`` option to list the known adapter sequences, in either ``tsv`` or ``json`` format:
 
 .. code-block:: console
 
     adapterremoval3 --adapter-database tsv
 
-If AdapterRemoval cannot identify any potential adapter sequences in the input, then AdapterRemoval will either assume that the data contains no adapters (in single-end mode), or perform adapter trimming based on the pair-wise alignment of the input reads (paired-end mode). This behavior is controlled via the ``--adapter-selection`` and ``--adapter-fallback`` options.
+This database can be extended by combining ``--adapter-selection auto`` with the options ``--adapter1`` and ``--adapter2``, or with ``--adapter-table``.
 
-Adapter sequences may also be set explicitly via the ``--adapter1`` and ``--adapter2`` options, should you be aware of the exact sequences used during sequencing. Adapter sequences are specified in the read orientation when using the ``--adapter1`` and ``--adapter2`` command-line options, directly corresponding to the sequence that is observed in the FASTQ files produced by the base calling software.
+Manually specifying adapters
+============================
 
-If we were processing data generated using `Illumina TruSeq adapters <illumina_truseq_adapters>`_, then we would therefore expect to find those sequences to appear as-is in our FASTQ files (assuming that the read lengths are sufficiently long and that insert sizes are sufficiently short):
+Adapter sequences may also be set explicitly via the ``--adapter1`` and ``--adapter2`` options, should you be aware of the exact sequences. Adapter sequences are specified in the read orientation when using the ``--adapter1`` and ``--adapter2`` command-line options, directly corresponding to the sequence that is observed in the FASTQ files produced by the base calling software.
+
+In other words, if we were processing data generated using `Illumina TruSeq adapters <illumina_truseq_adapters>`_, then the TruSeq read 1 adapter should be found in files passed to ``--in-file1``:
 
 .. code-block:: console
 
@@ -297,22 +275,49 @@ If we were processing data generated using `Illumina TruSeq adapters <illumina_t
     CTGGAGTTCAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAA
     GGAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGAATCTCGTATGCCGTCTTCTGCTTGCAAATTGAAAACAC
 
-    $ grep "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT" file2.fastq
-    CAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAGAAAAACATCTTG
-    GAACTCCAGAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAATAGA
-    GAACTAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAACATAAGACCTA
+And the TruSeq read 2 adapter should be found in files passed to ``--in-file2``:
 
-These adapters would therefore be set using the arguments ``--adapter1 AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter2 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT``.
+.. code-block:: console
 
-An ``N`` in an adapter sequence is treated as a wildcard. An ``N`` will align against any other base, including other ``N``s, but does not affect the score of the resulting alignment and are not counted for the purpose of filters such as ``--min-adapter-overlap``.
+    $ grep "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT" file2.fastq CAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAGAAAAACATCTTG GAACTCCAGAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAAAAATAGA GAACTAGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTCAAAAACATAAGACCTA
+
+How much of these adapter sequences that can be found in your input (if anything) will depend on the read length and the size of the DNA fragments sequenced. AdapterRemoval is designed to detect even short adapter fragments.
+
+To manually set these adapters, use the command-line options ``--adapter1 AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter2 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT``.
+
+.. tip::
+
+    An ``N`` in an adapter sequence is treated as a wildcard. An ``N`` will align against any other base, including other ``N``s, but does not affect the score of the resulting alignment and are not counted for the purpose of filters such as ``--min-adapter-overlap``.
 
 .. tip::
 
     It is generally not worthwhile to specify more than the first ~30 bp of the adapter sequences to be trimmed. Doing so does not notably improve sensitivity or specificity, but does result in a lower throughput.
 
-.. tip::
+Trimming paired-end data with multiple adapter pairs
+====================================================
 
-    For paired-end data, the ``--report-only`` mode may be used to verify the choice of adapters, by attempting to reconstruct the adapter sequence directly from the FASTQ reads. See the :ref:`s_identifying_adapters` section above, for a demonstration of this functionality.
+It is possible to provide multiple, different sets of adapters for trimming, in which case AdapterRemoval will select the single best match for each read (pair), and trim that adapter or adapter pair from the read or read pair.
+
+Adapters must be written in a one or two-column table, for SE and PE trimming, respectively. Columns can be separated with any whitespace. For example, to specify both the recommended Illumina TruSeq and the recommended BGISeq adapters, one might save the following text in the file ``adapters.txt``:
+
+.. code-block:: text
+
+    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA  AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+    AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA   AAGTCGGATCGTAGCCATGTCGTTCTGTGAGCCAAGGAGTTG
+
+This file is then specified using the ``--adapter-table`` option:
+
+.. code-block:: console
+
+    adapterremoval3 \
+        --in-file1 reads_1.fastq \
+        --in-file2 reads_2.fastq \
+        --out-prefix output_multi \
+        --adapter-table adapters.txt
+
+Pairs of adapters are used exactly as written, and the resulting QC reports lists how frequently each adapter or each pair of adapters was used.
+
+Note that throughput decreases proportionally to the number of adapters, and it is therefore *not* recommended to use this functionality unless strictly necessary. When adapters differ only after the first N bases, for example due to an embedded barcode, then it is typically better to specify the common part of the adapter sequences with ``--adapter1`` and (optionally) ``--adapter2``, instead of specifying multiple, different adapter pairs in a table.
 
 .. _bgi/mgi: https://en.mgitech.cn/Download/download_file/id/71
 
