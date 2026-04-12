@@ -1017,7 +1017,9 @@ userconfig::userconfig()
 
   argparser.add("--post-trim5p", "N")
     .help("Trim the 5' by a fixed amount after removing adapters, but before "
-          "carrying out quality based trimming [default: no trimming]")
+          "carrying out quality based trimming. Note that this trims both ends "
+          "of merged reads, as both ends represent the 5' of a read [default: "
+          "no trimming]")
     .deprecated_alias("--trim5p")
     .bind_vec(&post_trim5p)
     .with_max_values(2);

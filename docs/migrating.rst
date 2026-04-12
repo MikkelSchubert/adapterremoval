@@ -6,7 +6,9 @@
  Migrating AdapterRemoval to 3.x from 2.x
 ******************************************
 
-AdapterRemoval v3 makes a number of changes in default behavior, including the renaming of a number of options (old names may still be used, but are deprecated) and the renaming of all output filenames. See the changelog for an exhaustive list of changes in behavior.
+AdapterRemoval v3 makes a number of changes in default behavior, including the renaming of a number of options (old names may still be used, but are deprecated) and the renaming of all output filenames. See the changelog_ for an exhaustive list of changes in behavior.
+
+Note also that the executable has been renamed from ``AdapterRemoval`` to ``adapterremoval3``, to allow multiple versions of AdapterRemoval to coexist.
 
 **Output**
     - AdapterRemoval will no longer default to writing all files with the prefix ``your_output``. Instead, you should either set a prefix via the ``--out-prefix`` option (previously ``--basename``) or select just the reads you want to save via the various ``--out-*`` options.
@@ -56,5 +58,7 @@ And in AdapterRemoval v1.x:
 .. code-block:: console
 
     AdapterRemoval --adapter1 AGATCGGAAGAGC --adapter2 GCTCTTCCGATCT ...
+
+.. _changelog: https://github.com/MikkelSchubert/adapterremoval/blob/v3.0.0-alpha3/CHANGES.md
 
 .. _seqtk: https://github.com/lh3/seqtk
