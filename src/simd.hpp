@@ -44,7 +44,7 @@ using compare_subsequences_func = bool (*)(size_t& n_mismatches,
                                  const char* seq_1,                            \
                                  const char* seq_2,                            \
                                  size_t length,                                \
-                                 size_t max_penalty);
+                                 size_t max_penalty)
 
 DECLARE_COMPARE_SUBSEQUENCES_SIMD(std);
 DECLARE_COMPARE_SUBSEQUENCES_SIMD(sse2);

@@ -100,7 +100,21 @@ if static
 endif
 
 # Build static binary, forcing linking against static libraries
-libmimalloc = dependency('libmimalloc', 'mimalloc', version: ['>=2', '<4'], static: static, required: get_option('mimalloc'))
+libmimalloc = not_found
+# Meson >=0.59.0 required for `allowed()`
+if not get_option('mimalloc').disabled()
+    libmimalloc = dependency('libmimalloc', version: ['>=2', '<4'], static: static, required: false)
+
+    # Meson >=0.60.0 required for multiple names in a dependency
+    if not libmimalloc.found()
+        libmimalloc = dependency(
+            'mimalloc',
+            version: ['>=2', '<4'],
+            static: static,
+            required: get_option('mimalloc'),
+        )
+    endif
+endif
 
 # Hardening flags based on https://wiki.debian.org/Hardening
 harden = get_option('harden')

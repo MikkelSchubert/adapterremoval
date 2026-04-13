@@ -28,7 +28,8 @@ if sphinx_build.found()
             '-q', # no output on stdout, just warnings on stderr
             '-E', # don't use a saved environment, always read all files
         ],
-        install: get_option('docs').allowed(),
+        # Meson >=0.59.0 required for `allowed()`
+        install: not get_option('docs').disabled(),
         install_dir: get_option('datadir') / meson.project_name() / 'docs',
     )
 
@@ -51,7 +52,7 @@ if sphinx_build.found()
                     '@PRIVATE_DIR@' / 'man' / (meson.project_name() + '.1'),
                 ),
             ],
-            install: get_option('manpage').allowed(),
+            install: not get_option('manpage').disabled(),
             install_dir: join_paths(get_option('mandir'), 'man1'),
         )
     endif
