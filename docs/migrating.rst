@@ -28,6 +28,7 @@ Note also that the executable has been renamed from ``AdapterRemoval`` to ``adap
 **Quality trimming and filtering**
     - The various quality trimming options ``--trimwindows``, ``--trimns``, ``--trimqualities``, and ``--minquality`` have been deprecated in favor of the modified Mott's algorithm. This is enabled by default with a threshold of ``0.05`` via the new ``--trim-mott-rate`` option, but the trimming algorithm used may be changed back (or disabled) using the ``--quality-trimming`` option.
     - The options ``--trimns`` and ``--trimqualities`` are now always enabled when performing quality-based trimming, and therefore have no effect.
+    - The ``--max-ns-fraction`` option has been added and defaults to 0.05, excluding reads with more than 1/20 ambiguous bases (N). To disable, set this option to 1.0
 
 **Reports**
     - The ``.settings`` file has been replaced by two reports, one report in HTML intended for human consumption and one report in JSON format intended for machine consumption. A JSON schema for the JSON report is included in the source distribution.
