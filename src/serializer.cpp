@@ -95,7 +95,7 @@ sequence_to_bam(buffer& buf, const std::string& seq)
 
   uint8_t pair = 0;
   for (size_t i = 0; i < seq.length(); ++i) {
-    pair = (pair << 4) | "\0\1\0\2\10\0\20\4"[seq[i] & 0x7];
+    pair = (pair << 4) | "\0\1\0\2\10\0\17\4"[seq[i] & 0x7];
 
     if (i % 2) {
       buf.append_u8(pair);
