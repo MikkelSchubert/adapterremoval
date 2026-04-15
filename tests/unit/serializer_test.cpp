@@ -513,12 +513,12 @@ TEST_CASE("serialize BAM record without sample")
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
   s.set_demultiplexing_only(GENERATE(true, false));
 
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  fastq record{ "record", "ACGTACNATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                  "\x00\x00\x04\x00\n\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
-                 "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x81\x00\x03\x02"
+                 "\xff\x00\x00\x00\x00record\x00\x12H\x12\xf1\x81\x00\x03\x02"
                  "\x03\t\x15\x17\"&)"_buffer);
 }
 
@@ -528,12 +528,12 @@ TEST_CASE("serialize BAM record with uneven length sequence")
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
   s.set_demultiplexing_only(GENERATE(true, false));
 
-  fastq record{ "record", "ACGTACGAT", "!$#$*68CG" };
+  fastq record{ "record", "ACGTACNAT", "!$#$*68CG" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "5\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
                  "\x00\x00\x04\x00\t\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff"
-                 "\xff\x00\x00\x00\x00record\x00\x12H\x12\x41\x80\x00\x03\x02"
+                 "\xff\x00\x00\x00\x00record\x00\x12H\x12\xf1\x80\x00\x03\x02"
                  "\x03\t\x15\x17\"&"_buffer);
 }
 
