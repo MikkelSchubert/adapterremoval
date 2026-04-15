@@ -294,7 +294,7 @@ log_capture::~log_capture()
   AR_REQUIRE(g_log_out == &m_stream);
   g_log_out = &std::cerr;
   g_log_level = m_level;
-  g_log_timestamps = m_colors;
+  g_log_timestamps = m_timestamps;
   g_log_colors = m_colors;
 }
 
