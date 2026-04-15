@@ -45,5 +45,6 @@ run_target(
     command: [
         unit_tests,
         '--use-colour', 'yes',
+        '--order', 'rand',
     ],
 )
