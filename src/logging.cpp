@@ -16,9 +16,7 @@
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #endif
 
-namespace adapterremoval {
-
-namespace log {
+namespace adapterremoval::log {
 
 namespace {
 
@@ -280,11 +278,17 @@ log_capture::log_capture()
   std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   AR_REQUIRE(g_log_out == &std::cerr);
+  m_original_stream = g_log_out;
   g_log_out = &m_stream;
 
   m_level = g_log_level;
   m_timestamps = g_log_timestamps;
   m_colors = g_log_colors;
+
+  // Default to simple log output
+  g_log_level = level::debug;
+  g_log_timestamps = false;
+  g_log_colors = false;
 }
 
 log_capture::~log_capture()
@@ -292,12 +296,11 @@ log_capture::~log_capture()
   std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
 
   AR_REQUIRE(g_log_out == &m_stream);
-  g_log_out = &std::cerr;
+  g_log_out = m_original_stream;
+
   g_log_level = m_level;
-  g_log_timestamps = m_colors;
+  g_log_timestamps = m_timestamps;
   g_log_colors = m_colors;
 }
 
-} // namespace log
-
-} // namespace adapterremoval
+} // namespace adapterremoval::log
