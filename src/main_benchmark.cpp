@@ -65,12 +65,14 @@ protected:
 private:
   void read_lines(const string_vec& filenames, string_vec& lines) const
   {
-    joined_line_readers reader(filenames);
-    while (lines.size() / 4 < m_head) {
-      lines.emplace_back(std::string());
-      if (!reader.getline(lines.back())) {
-        lines.pop_back();
-        break;
+    if (!filenames.empty()) {
+      joined_line_readers reader(filenames);
+      while (lines.size() / 4 < m_head) {
+        lines.emplace_back();
+        if (!reader.getline(lines.back())) {
+          lines.pop_back();
+          break;
+        }
       }
     }
   }
