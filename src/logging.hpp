@@ -3,12 +3,11 @@
 #pragma once
 
 #include <cstddef> // for size_t
+#include <ostream> // for ostream
 #include <sstream> // for ostringstream
 #include <string>  // for string
 
-namespace adapterremoval {
-
-namespace log {
+namespace adapterremoval::log {
 
 /** Log levels */
 enum class level
@@ -76,8 +75,10 @@ private:
 
 /**
  * Helper class that captures any output that would otherwise have been written
- * to STDERR. Only one instance of `log_capture` is allowed to exist at any one
- * time. For use during testing.
+ * to STDERR. Multiple log_capture objects may be created, but should be
+ * destroyed in the same order they were created. For use during testing.
+ *
+ * By default, captures DEBUG level output, without colors or timestamps.
  */
 class log_capture
 {
@@ -91,7 +92,7 @@ public:
   std::string str() const { return m_stream.str(); }
 
   log_capture(const log_capture&) = delete;
-  log_capture(log_capture&&) = default;
+  log_capture(log_capture&&) noexcept = default;
   log_capture& operator=(const log_capture&) = delete;
   log_capture& operator=(log_capture&&) = delete;
 
@@ -104,6 +105,8 @@ private:
   bool m_timestamps = false;
   //! Stream containing text written using `log_stream`
   std::ostringstream m_stream{};
+  //! Original output stream
+  std::ostream* m_original_stream = nullptr;
 };
 
 /**
@@ -165,6 +168,4 @@ set_timestamps(bool enabled);
 size_t
 get_terminal_width();
 
-} // namespace log
-
-} // namespace adapterremoval
+} // namespace adapterremoval::log
