@@ -5,6 +5,7 @@
 
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
+#include <cstdint>       // for int64_t
 #include <iosfwd>        // for ostream
 #include <string>        // for string
 #include <vector>        // for vector
@@ -381,6 +382,24 @@ private:
   size_t m_mismatches_resolved = 0;
   //! The number of mismatches where there was no higher quality base
   size_t m_mismatches_unresolved = 0;
+};
+
+/** Tracks merged reads, to account for trimming affecting the overlap */
+class merged_trim_tracker
+{
+public:
+  /** Track trimming for the specified overlapping reads */
+  merged_trim_tracker(const fastq& read1, const fastq& read2, int offset);
+
+  /** Increments bases trimmed and returns true if both reads were affected by
+   * the current operation, in which case statistics should count both */
+  bool increment(size_t trim5p, size_t trim3p);
+
+private:
+  //! The remaining number of bases that uniquely belong to read 1
+  int64_t m_unique_1 = 0;
+  //! The remaining number of bases that uniquely belong to read 2
+  int64_t m_unique_2 = 0;
 };
 
 /** Stream operator for debugging output */

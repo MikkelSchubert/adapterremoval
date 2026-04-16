@@ -517,6 +517,35 @@ sequence_merger::merge(const alignment_info& alignment,
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `merged_trim_tracker`
+
+merged_trim_tracker::merged_trim_tracker(const fastq& read1,
+                                         const fastq& read2,
+                                         int offset)
+{
+  // sequences are expected to have been trimmed at this point
+  offset = std::max(0, offset);
+  AR_REQUIRE(offset < static_cast<int>(read1.length()) || read1.length() == 0);
+  AR_REQUIRE(offset + read2.length() >= read1.length());
+
+  m_unique_1 = offset;
+  m_unique_2 = read2.length() - (read1.length() - offset);
+}
+
+bool
+merged_trim_tracker::increment(const size_t trim5p, const size_t trim3p)
+{
+  m_unique_1 -= trim5p;
+  m_unique_2 -= trim3p;
+
+  return (trim5p && trim3p) || (trim5p && m_unique_1 < 0) ||
+         (trim3p && m_unique_2 < 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for helper functions
+
 std::ostream&
 operator<<(std::ostream& os, const alignment_type& value)
 {

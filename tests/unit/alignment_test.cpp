@@ -2000,4 +2000,137 @@ TEST_CASE("stringmaker for MMNs")
   REQUIRE(os.str() == "MMNs{mismatches=1, ambiguous=2}");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// tests for `merged_trim_tracker`
+
+TEST_CASE("merged_trim_tracker constructor ")
+{
+  const fastq r1{ "r1", "ACGTT" };
+  const fastq r2{ "r2", "TGGGTAG" };
+
+  REQUIRE_NOTHROW(merged_trim_tracker(fastq{}, fastq{}, 0));
+  REQUIRE_NOTHROW(merged_trim_tracker(r1, r2, -1));
+  REQUIRE_NOTHROW(merged_trim_tracker(r1, r2, 0));
+  REQUIRE_NOTHROW(merged_trim_tracker(r1, r2, 4));
+  REQUIRE_THROWS_AS(merged_trim_tracker(r1, r2, 5), assert_failed);
+
+  REQUIRE_THROWS_AS(merged_trim_tracker(r2, r1, 0), assert_failed);
+}
+
+TEST_CASE("merged_trim_tracker trim fully overlapping")
+{
+  const fastq r1{ "r1", "CTACCCA" };
+  const fastq r2{ "r2", "TGGGTAG" };
+  merged_trim_tracker m{ r1, r2, 0 };
+
+  SECTION("from 5p")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE(m.increment(1, 0));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+
+  SECTION("from 3p")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE(m.increment(0, 1));
+    REQUIRE(m.increment(0, 2));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+
+  SECTION("mixed")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE(m.increment(1, 0));
+    REQUIRE(m.increment(0, 2));
+    REQUIRE(m.increment(2, 1));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+}
+
+TEST_CASE("merged_trim_tracker trim partially overlapping, symmetric")
+{
+  const fastq r1{ "r1", "CTACCCA" };
+  const fastq r2{ "r2", "TGGGTAG" };
+  merged_trim_tracker m{ r1, r2, 3 };
+
+  SECTION("from 5p")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE_FALSE(m.increment(3, 0));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+
+  SECTION("from 3p")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE_FALSE(m.increment(0, 3));
+    REQUIRE(m.increment(0, 2));
+    REQUIRE(m.increment(0, 2));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+
+  SECTION("mixed")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE_FALSE(m.increment(1, 0));
+    REQUIRE(m.increment(0, 4));
+    REQUIRE_FALSE(m.increment(2, 0));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE(m.increment(0, 1));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+}
+
+TEST_CASE("merged_trim_tracker trim partially overlapping, asymmetric")
+{
+  const fastq r1{ "r1", "CTACC" };
+  const fastq r2{ "r2", "TGGGTAG" };
+  merged_trim_tracker m{ r1, r2, 2 };
+
+  SECTION("from 5p")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE_FALSE(m.increment(2, 0));
+    REQUIRE(m.increment(1, 0));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+
+  SECTION("from 3p")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE_FALSE(m.increment(0, 3));
+    REQUIRE_FALSE(m.increment(0, 1));
+    REQUIRE(m.increment(0, 2));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+
+  SECTION("mixed")
+  {
+    REQUIRE_FALSE(m.increment(0, 0));
+    REQUIRE_FALSE(m.increment(1, 0));
+    REQUIRE_FALSE(m.increment(0, 3));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE(m.increment(2, 0));
+    REQUIRE_FALSE(m.increment(0, 1));
+    REQUIRE(m.increment(0, 1));
+    REQUIRE_FALSE(m.increment(0, 0));
+  }
+}
+
+TEST_CASE("merged_trim_tracker totals are not checked")
+{
+  const fastq r1{ "r1", "CTACCCA" };
+  const fastq r2{ "r2", "TGGGTAG" };
+  merged_trim_tracker m{ r1, r2, 3 };
+
+  REQUIRE(m.increment(1024, 0));
+  REQUIRE(m.increment(0, 1024));
+  REQUIRE(m.increment(1024, 1024));
+}
+
 } // namespace adapterremoval
