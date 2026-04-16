@@ -5,6 +5,7 @@
 
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
+#include <cstdint>       // for int64_t
 #include <iosfwd>        // for ostream
 #include <string>        // for string
 #include <vector>        // for vector
