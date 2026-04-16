@@ -118,7 +118,7 @@ post_trim_read_termini(const userconfig& config,
                        trimming_statistics& stats,
                        fastq& read,
                        read_file type,
-                       merged_reads* mstats = nullptr)
+                       merged_trim_tracker* mstats = nullptr)
 {
   size_t trim_5p = 0;
   size_t trim_3p = 0;
@@ -160,7 +160,7 @@ void
 post_trim_read_by_quality(const userconfig& config,
                           trimming_statistics& stats,
                           fastq& read,
-                          merged_reads* mstats = nullptr)
+                          merged_trim_tracker* mstats = nullptr)
 {
   fastq::ntrimmed trimmed;
   switch (config.trim) {
@@ -244,30 +244,6 @@ is_acceptable_read(const userconfig& config,
 }
 
 } // namespace
-
-////////////////////////////////////////////////////////////////////////////////
-// Implementations for `merged_reads`
-
-merged_reads::merged_reads(const fastq& read1, const fastq& read2, int offset)
-{
-  // sequences are expected to have been trimmed at this point
-  offset = std::max(0, offset);
-  AR_REQUIRE(offset < static_cast<int>(read1.length()) || read1.length() == 0);
-  AR_REQUIRE(offset + read2.length() >= read1.length());
-
-  m_unique_1 = offset;
-  m_unique_2 = read2.length() - (read1.length() - offset);
-}
-
-bool
-merged_reads::increment(const size_t trim5p, const size_t trim3p)
-{
-  m_unique_1 -= trim5p;
-  m_unique_2 -= trim3p;
-
-  return (trim5p && trim3p) || (trim5p && m_unique_1 < 0) ||
-         (trim3p && m_unique_2 < 0);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `reads_processor`
@@ -522,7 +498,7 @@ pe_reads_processor::process(chunk_ptr data)
       if (m_config.merge != merge_strategy::none &&
           alignment.type() == alignment_type::mergeable) {
         // Track if one or both source reads are trimmed post merging
-        merged_reads mstats(read_1, read_2, alignment.offset());
+        merged_trim_tracker mstats(read_1, read_2, alignment.offset());
 
         // Merge read_2 into read_1
         merger.merge(alignment, read_1, read_2);

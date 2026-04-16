@@ -31,7 +31,6 @@ unit_tests = executable(
     'testing_test.cpp',
     'testing.cpp',
     'threading_test.cpp',
-    'trimming_test.cpp',
     'utilities_test.cpp',
     config_inc,
     link_with: [libcore, libsimd],

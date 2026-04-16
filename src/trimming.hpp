@@ -55,22 +55,4 @@ public:
   chunk_vec process(chunk_ptr data) override;
 };
 
-/** Tracks merged reads, to account for trimming affecting the overlap */
-class merged_reads
-{
-public:
-  /** Track trimming for the specified overlapping reads */
-  merged_reads(const fastq& read1, const fastq& read2, int offset);
-
-  /** Increments bases trimmed and returns true if both reads were affected by
-   * the current operation, in which case statistics should count both */
-  bool increment(size_t trim5p, size_t trim3p);
-
-private:
-  //! The remaining number of bases that uniquely belong to read 1
-  int64_t m_unique_1 = 0;
-  //! The remaining number of bases that uniquely belong to read 2
-  int64_t m_unique_2 = 0;
-};
-
 } // namespace adapterremoval
