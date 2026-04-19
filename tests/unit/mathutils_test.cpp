@@ -34,4 +34,57 @@ TEST_CASE("sample standard deviation")
           Approx(43958.38));
 }
 
+TEST_CASE("grubb's test pruning -- too few values")
+{
+  std::vector<uint64_t> values;
+
+  CHECK_FALSE(grubbs_test_prune(values));
+  REQUIRE(values == std::vector<uint64_t>{});
+
+  values.emplace_back(1);
+  CHECK_FALSE(grubbs_test_prune(values));
+  REQUIRE(values == std::vector<uint64_t>{ 1 });
+
+  values.emplace_back(2);
+  CHECK_FALSE(grubbs_test_prune(values));
+  REQUIRE(values == std::vector<uint64_t>{ 1, 2 });
+}
+
+TEST_CASE("grubb's test pruning -- no outliers")
+{
+  SECTION("minimal sample")
+  {
+    std::vector<uint64_t> values = { 1, 2, 3 };
+    CHECK_FALSE(grubbs_test_prune(values));
+    REQUIRE(values == std::vector<uint64_t>{ 1, 2, 3 });
+  }
+
+  SECTION("grubb's test pruning -- many values")
+  {
+    const std::vector<uint64_t> expected = {
+      756, 1608, 281, 239,  649, 968, 180, 1717, 811,  726, 1386, 342,
+      287, 2748, 221, 2352, 813, 353, 328, 128,  1501, 537, 306,
+    };
+
+    auto observed = expected;
+    CHECK_FALSE(grubbs_test_prune(observed));
+    REQUIRE(observed == expected);
+  }
+}
+
+TEST_CASE("grubb's test pruning -- with outliers")
+{
+  std::vector<uint64_t> values = {
+    756, 1608, 281, 239,  649, 968, 180, 1717, 811,  726, 8800, 1386, 342,
+    287, 2748, 221, 2352, 813, 353, 328, 128,  1501, 537, 7922, 306,
+  };
+  const std::vector<uint64_t> expected = {
+    756, 1608, 281,  239, 649,  968, 180, 1717, 811, 726,  306, 1386,
+    342, 287,  2748, 221, 2352, 813, 353, 328,  128, 1501, 537,
+  };
+
+  CHECK(grubbs_test_prune(values));
+  REQUIRE(values == expected);
+}
+
 } // namespace adapterremoval
