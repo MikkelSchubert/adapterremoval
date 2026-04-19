@@ -11,22 +11,32 @@ namespace adapterremoval {
 
 namespace {
 
-//! Critical Values of the Student's t Distribution at 0.995 for 0 to 100 df,
-//! calculated via `qt(0.995, 1:100)` in R
-const std::array<double, 101> STUDENTS_T_CRITICAL_VALUES = {
-  NAN,    63.657, 9.9248, 5.8409, 4.6041, 4.0321, 3.7074, 3.4995, 3.3554,
-  3.2498, 3.1693, 3.1058, 3.0545, 3.0123, 2.9768, 2.9467, 2.9208, 2.8982,
-  2.8784, 2.8609, 2.8453, 2.8314, 2.8188, 2.8073, 2.7969, 2.7874, 2.7787,
-  2.7707, 2.7633, 2.7564, 2.7500, 2.7440, 2.7385, 2.7333, 2.7284, 2.7238,
-  2.7195, 2.7154, 2.7116, 2.7079, 2.7045, 2.7012, 2.6981, 2.6951, 2.6923,
-  2.6896, 2.6870, 2.6846, 2.6822, 2.6800, 2.6778, 2.6757, 2.6737, 2.6718,
-  2.6700, 2.6682, 2.6665, 2.6649, 2.6633, 2.6618, 2.6603, 2.6589, 2.6575,
-  2.6561, 2.6549, 2.6536, 2.6524, 2.6512, 2.6501, 2.6490, 2.6479, 2.6469,
-  2.6459, 2.6449, 2.6439, 2.6430, 2.6421, 2.6412, 2.6403, 2.6395, 2.6387,
-  2.6379, 2.6371, 2.6364, 2.6356, 2.6349, 2.6342, 2.6335, 2.6329, 2.6322,
-  2.6316, 2.6309, 2.6303, 2.6297, 2.6291, 2.6286, 2.6280, 2.6275, 2.6269,
-  2.6264, 2.6259
+//! Critical Values for Grubb's test calculated in R:
+//!   > n = 0:100
+//!   > t = qt(1 - 0.01/(2 * n), n - 2)
+//!   > round(((n - 1) / sqrt(n)) * sqrt((t^2 / (n - 2 + t^2))), 4)
+constexpr std::array<double, 101> GRUBBS_TEST_CRITICAL_VALUES = {
+  NAN,    NAN,    NAN,    1.1547, 1.4963, 1.7637, 1.9728, 2.1391, 2.2744,
+  2.3868, 2.4821, 2.5641, 2.6357, 2.6990, 2.7554, 2.8061, 2.8521, 2.8940,
+  2.9325, 2.9680, 3.0008, 3.0314, 3.0599, 3.0866, 3.1117, 3.1353, 3.1577,
+  3.1788, 3.1989, 3.2179, 3.2361, 3.2534, 3.2700, 3.2858, 3.3010, 3.3156,
+  3.3296, 3.3431, 3.3561, 3.3686, 3.3807, 3.3924, 3.4037, 3.4146, 3.4252,
+  3.4354, 3.4454, 3.4551, 3.4645, 3.4736, 3.4825, 3.4911, 3.4995, 3.5077,
+  3.5157, 3.5235, 3.5311, 3.5386, 3.5458, 3.5529, 3.5598, 3.5666, 3.5733,
+  3.5798, 3.5861, 3.5924, 3.5985, 3.6044, 3.6103, 3.6161, 3.6217, 3.6272,
+  3.6327, 3.6380, 3.6433, 3.6484, 3.6535, 3.6585, 3.6633, 3.6682, 3.6729,
+  3.6775, 3.6821, 3.6866, 3.6911, 3.6955, 3.6998, 3.7040, 3.7082, 3.7123,
+  3.7164, 3.7204, 3.7243, 3.7282, 3.7320, 3.7358, 3.7396, 3.7432, 3.7469,
+  3.7505, 3.7540,
 };
+
+double
+grubbs_test_critical_values(size_t n)
+{
+  n = std::min(n, GRUBBS_TEST_CRITICAL_VALUES.size() - 1);
+
+  return GRUBBS_TEST_CRITICAL_VALUES.at(n);
+}
 
 } // namespace
 
@@ -53,40 +63,34 @@ standard_deviation(const std::vector<uint64_t>& values)
   return std::sqrt(error / (values.size() - 1));
 }
 
-double
-students_t_critical_value(size_t df)
-{
-  return STUDENTS_T_CRITICAL_VALUES.at(
-    std::min<size_t>(df, STUDENTS_T_CRITICAL_VALUES.size() - 1));
-}
-
 bool
 grubbs_test_prune(std::vector<uint64_t>& values)
 {
   const size_t original_size = values.size();
-  bool found_any = false;
 
-  do {
-    const double N = values.size();
-    const double t = students_t_critical_value(N - 2);
-    const auto t2 = t * t;
-
+  while (values.size() >= 3) {
     const double m = arithmetic_mean(values);
     const double sd = standard_deviation(values);
+    const double cutoff = grubbs_test_critical_values(values.size());
 
-    const double cutoff = ((N - 1) / std::sqrt(N)) * sqrt(t2 / (N - 2 + t2));
+    size_t greatest_outlier_i = 0;
+    auto greatest_outlier = std::abs(values.at(0) - m) / sd;
+    for (size_t i = 1; i < values.size(); ++i) {
+      const auto outlier = std::abs(values.at(i) - m) / sd;
 
-    found_any = false;
-    for (size_t i = 0; i < values.size(); ++i) {
-      const auto G = (values.at(i) - m) / sd;
-      if (G < -cutoff || G > cutoff) {
-        values.at(i) = values.back();
-        values.pop_back();
-        found_any = true;
-        break;
+      if (outlier > greatest_outlier) {
+        greatest_outlier = outlier;
+        greatest_outlier_i = i;
       }
     }
-  } while (found_any);
+
+    if (greatest_outlier > cutoff) {
+      values.at(greatest_outlier_i) = values.back();
+      values.pop_back();
+    } else {
+      break;
+    }
+  }
 
   return original_size != values.size();
 }

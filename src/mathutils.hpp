@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <cstddef> // for size_t
 #include <cstdint> // for uint64_t
 #include <vector>  // for vector
 
@@ -16,15 +15,11 @@ arithmetic_mean(const std::vector<uint64_t>& values);
 double
 standard_deviation(const std::vector<uint64_t>& values);
 
-/** Returns critical value for student's t distribution at 99.5% */
-double
-students_t_critical_value(size_t df);
-
 /**
  * Prune extreme values from a vector using Grubb's test:
  *   https://en.wikipedia.org/wiki/Grubbs%27s_test
  *
- * Returns true if values were pruned.
+ * Returns true if values were pruned. Input order is not preserved.
  */
 bool
 grubbs_test_prune(std::vector<uint64_t>& values);
