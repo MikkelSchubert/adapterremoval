@@ -1071,6 +1071,7 @@ TEST_CASE("Adapter-skipping for PE adapters", "[alignment::single_end]")
   const adapter_set adapters = {
     { "AAAAA", "AAAAA" },
     { "AAAA", "AAAA" },
+    { "AAAA", "AAAA" },
     { "AAAAAA", "AAAAAA" },
   };
 
@@ -1084,7 +1085,7 @@ TEST_CASE("Adapter-skipping for PE adapters", "[alignment::single_end]")
   CHECK(align("AAAAA", "TTTTT") ==
         ALN().length(10).offset(-5).adapter_id(0).is_good());
   CHECK(align("AAAAAA", "TTTTTT") ==
-        ALN().length(12).offset(-6).adapter_id(2).is_good());
+        ALN().length(12).offset(-6).adapter_id(3).is_good());
 }
 
 TEST_CASE("Adapter-sorting for SE adapters", "[alignment::single_end]")

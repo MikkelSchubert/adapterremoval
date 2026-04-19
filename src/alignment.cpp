@@ -342,6 +342,7 @@ sequence_aligner::align_paired_end(const fastq& read1,
 
   for (const auto& it : m_adapters) {
     if (it.unique == unique_adapter::never) {
+      ++adapter_id;
       continue;
     }
 
