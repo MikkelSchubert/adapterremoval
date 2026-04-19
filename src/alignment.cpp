@@ -183,7 +183,7 @@ alignment_info::truncate_paired_end(fastq& read1, fastq& read2) const
 bool
 alignment_info::extract_adapter_sequences(fastq& read1, fastq& read2) const
 {
-  AR_REQUIRE(m_offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(m_offset < static_cast<int>(read1.length()) || m_offset == 0);
   const int template_length =
     std::max(0, static_cast<int>(read2.length()) + m_offset);
 
@@ -198,7 +198,7 @@ alignment_info::extract_adapter_sequences(fastq& read1, fastq& read2) const
 size_t
 alignment_info::insert_size(const fastq& read1, const fastq& read2) const
 {
-  AR_REQUIRE(m_offset <= static_cast<int>(read1.length()));
+  AR_REQUIRE(m_offset < static_cast<int>(read1.length()) || m_offset == 0);
 
   return std::max<int>(0, static_cast<int>(read2.length()) + m_offset);
 }
@@ -451,7 +451,8 @@ sequence_merger::merge(const alignment_info& alignment,
   AR_REQUIRE(m_merge_strategy != merge_strategy::none);
 
   // Gap between the two reads is not allowed
-  AR_REQUIRE(alignment.offset() <= static_cast<int>(read1.length()));
+  AR_REQUIRE(alignment.offset() < static_cast<int>(read1.length()) ||
+             alignment.offset() == 0);
 
   // Offset to the first base overlapping read 2
   const auto read_1_offset =
