@@ -1206,9 +1206,9 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter [additive]")
   merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
-  const alignment_info alignment = ALN().offset(3);
+  const alignment_info alignment = ALN().offset(2);
   REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
-  const fastq expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
+  const fastq expected = fastq("Rec1", "ATANNNACGT", "012BCDEFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
@@ -1233,9 +1233,10 @@ TEST_CASE("Unequal sequence lengths, mate 2 shorter [additive]")
   merger.set_merge_strategy(merge_strategy::additive);
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "ACG", "EFG");
-  const alignment_info alignment = ALN().offset(8);
+  const alignment_info alignment = ALN().offset(7);
   REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
-  const fastq expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
+  const fastq expected =
+    fastq("Rec1", "ATATTATACG", "0123456[FG", FASTQ_ENCODING_SAM);
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
@@ -1444,9 +1445,9 @@ TEST_CASE("Unequal sequence lengths, mate 1 shorter")
   sequence_merger merger;
   fastq record1("Rec1", "ATA", "012");
   fastq record2("Rec2", "NNNNACGT", "ABCDEFGH");
-  const alignment_info alignment = ALN().offset(3);
+  const alignment_info alignment = ALN().offset(2);
   REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
-  const fastq expected = fastq("Rec1", "ATANNNNACGT", "012ABCDEFGH");
+  const fastq expected = fastq("Rec1", "ATANNNACGT", "012BCDEFGH");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
@@ -1468,9 +1469,9 @@ TEST_CASE("Unequal sequence lengths, mate 2 shorter")
   sequence_merger merger;
   fastq record1("Rec1", "ATATTATA", "01234567");
   fastq record2("Rec2", "ACG", "EFG");
-  const alignment_info alignment = ALN().offset(8);
+  const alignment_info alignment = ALN().offset(7);
   REQUIRE(alignment.truncate_paired_end(record1, record2) == 0);
-  const fastq expected = fastq("Rec1", "ATATTATAACG", "01234567EFG");
+  const fastq expected = fastq("Rec1", "ATATTATACG", "0123456EFG");
   merger.merge(alignment, record1, record2);
   REQUIRE(record1 == expected);
 }
