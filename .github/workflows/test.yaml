@@ -3,7 +3,7 @@ name: test
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -106,6 +106,9 @@ jobs:
       - name: dependencies (OS specific)
         shell: msys2 {0}
         run: bash scripts/setup-windows-latest.sh
+
+      - name: Register problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/compiler-warnings.json"
 
       - name: build and test
         shell: msys2 {0}
