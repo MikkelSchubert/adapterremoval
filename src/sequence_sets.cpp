@@ -692,6 +692,7 @@ sample_set::sample_set()
                    barcode_orientation::unspecified)
 {
   set_unidentified_read_group(m_read_group);
+  m_unidentified.flag_uninitialized_adapters();
 }
 
 sample_set::sample_set(std::initializer_list<std::string_view> lines,
@@ -709,7 +710,6 @@ sample_set::set_adapters(adapter_set adapters)
     sample.set_adapters(m_adapters);
   }
 
-  m_unidentified.set_adapters(m_adapters);
   m_uninitialized_adapters = false;
 }
 
@@ -830,7 +830,8 @@ operator<<(std::ostream& os, const sample_set& value)
   return os << "sample_set{samples=[" << join_text(value, ", ") << "]"
             << ", unidentified=" << value.unidentified()
             << ", read_group=" << value.readgroup()
-            << ", adapters=" << value.adapters() << "}";
+            << ", adapters=" << value.m_adapters << ", uninitialized_adapters="
+            << (value.m_uninitialized_adapters ? "true" : "false") << "}";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
