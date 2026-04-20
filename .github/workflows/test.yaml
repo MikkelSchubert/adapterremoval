@@ -58,6 +58,9 @@ jobs:
       - name: dependencies (OS specific)
         run: bash scripts/setup-${{ matrix.os }}.sh
 
+      - name: Register problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/compiler-warnings.json"
+
       - name: build and test
         run: bash scripts/build-common.sh DEBUG=true SANITIZE=true
 
