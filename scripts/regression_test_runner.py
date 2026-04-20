@@ -243,7 +243,7 @@ def simplify_cmd(cmd: list[str | Path]) -> str:
 
 
 # JSON path elements that do not require quoting
-JSON_PATH = re.compile("^[a-z0-9_]*$", re.I)
+JSON_PATH = re.compile(r"^[a-z0-9_]*$|^\[\d+\]$", re.I)
 
 
 def path_to_s(path: Iterable[str | int]) -> str:
@@ -336,13 +336,13 @@ def diff_list_with_wildcards(
             dreference.rotate(-1)
 
         if obs_found_at_idx is None:
-            yield f"unexpected value at {path_to_s(path + (obs_idx + 1,))}: {obs}"
+            yield f"unexpected value at {path_to_s(path + (f'[{obs_idx}]',))}: {obs}"
             continue
         elif reference_is_found[obs_found_at_idx]:
             if not reference_is_wildcard[obs_found_at_idx]:
-                yield f"duplicate value at {path_to_s(path + (obs_idx + 1,))}: {obs}"
+                yield f"duplicate value at {path_to_s(path + (f'[{obs_idx}]',))}: {obs}"
         elif obs_out_of_order:
-            yield f"value at unexpected location {path_to_s(path + (obs_idx + 1,))}: {obs}"
+            yield f"value at unexpected location {path_to_s(path + (f'[{obs_idx}]',))}: {obs}"
             out_of_order_warning = True
 
         reference_is_found[obs_found_at_idx] = True
@@ -383,7 +383,7 @@ def diff_dict_with_wildcards(
 
     for obs, found in observed_found.items():
         if not found:
-            yield f"unexpected item at {path_to_s(path)}: {obs!r} / {observed[obs]!r} "
+            yield f"unexpected item at {path_to_s(path)}: {obs!r} / {observed[obs]!r}"
 
 
 def diff_json(
@@ -420,7 +420,7 @@ def diff_json(
 
         # There should be no NANs in this data, so this test also catches those
         if not (abs(reference - observed) < 1e-6):
-            yield _err("mismatch", repr(observed), repr(reference))
+            yield _err("mismatch", repr(reference), repr(observed))
     else:
         yield _err("mismatch", repr(reference), repr(observed))
 
@@ -900,7 +900,7 @@ class TestMutator:
             files_2 = input_files["input_2"]
 
             n_lines_1 = sum(map(len, files_1))
-            n_lines_2 = sum(map(len, files_1))
+            n_lines_2 = sum(map(len, files_2))
 
             if n_lines_1 == n_lines_2 and n_lines_1 % 4 == 0:
                 for idx, (file_1, file_2) in enumerate(zip(files_1, files_2)):
@@ -1014,7 +1014,7 @@ class TestRunner:
             self._evaluate_return_code(returncode, stderr)
             self._evaluate_terminal_output(stdout, stderr)
             self._evaluate_output_files()
-        except:
+        except Exception:
             # Create folder containing reference output data for comparison
             self._setup(self._exp_path, _OUTPUT_FILES)
 
@@ -1075,6 +1075,7 @@ class TestRunner:
         finally:
             if isinstance(proc, subprocess.Popen):
                 proc.terminate()
+                proc.wait()
 
             if isinstance(stdout_pipe, BufferedWriter):
                 stdout_pipe.close()
@@ -1122,7 +1123,7 @@ class TestRunner:
 
         if expected_lines:
             raise TestError(
-                f"expected {pipe} not found: {expected_lines[0]}",
+                f"expected {pipe} not found: {expected_lines[-1]}",
                 output=actual_text,
             )
 
@@ -1140,8 +1141,6 @@ class TestRunner:
             raise TestError(f"files do not match expectations: {', '.join(changes)}")
 
         for it in self._test.get_files(_OUTPUT_FILES | _INPUT_FILES):
-            expected_files.add(it.name)
-
             it.compare_with_file(
                 expected=self._exp_path / it.name,
                 observed=self._test_path / it.name,
@@ -1190,9 +1189,10 @@ class TestUpdater:
         try:
             proc.wait(timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
-            raise TestError("Test took too long to run") from error
-        finally:
             proc.terminate()
+            proc.wait()
+
+            raise TestError("Test took too long to run") from error
 
     def _update_files(self) -> None:
         for it in self._test.files:
@@ -1601,7 +1601,7 @@ def main(argv: list[str]) -> int:
         if isinstance(error, TestError) and error.output is not None:
             pretty_error("  Output        =", error.output)
 
-    if not (n_failures or args.create_updated_reference):
+    if not (n_failures or args.create_updated_reference or args.keep_all):
         args.work_dir.rmdir()
 
     if n_failures >= args.max_failures:
