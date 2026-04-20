@@ -56,6 +56,7 @@ TEST_CASE("constructor", "[sample_set]")
   {
     sample unidentified;
     unidentified.set_read_group(read_group{ "DS:unidentified" });
+    unidentified.flag_uninitialized_adapters();
     CHECK(ss.unidentified() == unidentified);
   }
 
@@ -764,7 +765,7 @@ TEST_CASE("set adapters for non-demultiplexing", "[sample_set]")
   CHECK(ss.adapters() == as);
 
   CHECK(ss.at(0).at(0).adapters() == as);
-  CHECK(ss.unidentified().at(0).adapters() == as);
+  CHECK_THROWS_AS(ss.unidentified().at(0).adapters(), assert_failed);
 }
 
 TEST_CASE("set adapters for demultiplexing", "[sample_set]")
@@ -883,8 +884,34 @@ TEST_CASE("sample set to string", "[sample_set]")
     "read_group=read_group{id='1', header='@RG\\tID:1\\tDS:unidentified'}, "
     "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
     "orientation=barcode_orientation::unspecified, adapters=adapter_set{[]}, "
-    "uninitialized_adapters=false}]}, read_group=read_group{id='1', "
-    "header='@RG\\tID:1'}, adapters=adapter_set{[]}}");
+    "uninitialized_adapters=true}]}, read_group=read_group{id='1', "
+    "header='@RG\\tID:1'}, adapters=adapter_set{[]}, "
+    "uninitialized_adapters=false}");
+}
+
+TEST_CASE("uninitialized sample set to string", "[sample_set]")
+{
+  sample_set ss;
+  ss.flag_uninitialized_adapters();
+
+  std::ostringstream os;
+  os << ss;
+
+  CHECK(
+    os.str() ==
+    "sample_set{samples=[sample{name='', "
+    "barcodes=[sample_sequences{has_read_group=false, "
+    "read_group=read_group{id='1', header='@RG\\tID:1'}, "
+    "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
+    "orientation=barcode_orientation::unspecified, adapters=adapter_set{[]}, "
+    "uninitialized_adapters=true}]}], unidentified=sample{name='', "
+    "barcodes=[sample_sequences{has_read_group=true, "
+    "read_group=read_group{id='1', header='@RG\\tID:1\\tDS:unidentified'}, "
+    "barcode_1=dna_sequence{''}, barcode_2=dna_sequence{''}, "
+    "orientation=barcode_orientation::unspecified, adapters=adapter_set{[]}, "
+    "uninitialized_adapters=true}]}, read_group=read_group{id='1', "
+    "header='@RG\\tID:1'}, adapters=adapter_set{[]}, "
+    "uninitialized_adapters=true}");
 }
 
 } // namespace adapterremoval
