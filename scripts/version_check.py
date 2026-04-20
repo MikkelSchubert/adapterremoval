@@ -9,7 +9,11 @@ import re
 import sys
 from pathlib import Path
 
-# Based on https://semver.org/
+SKIP_LIST: set[tuple[Path, str]] = {
+    (Path("README.md"), "2.3.4"),  # Link to current stable version
+}
+
+# Captures subset of https://semver.org/, based on AdapterRemoval usage
 SEMVER_RE = re.compile(
     r"(0|[1-9]\d*)"  # major version
     r"\.(0|[1-9]\d*)"  # minor version
@@ -17,35 +21,28 @@ SEMVER_RE = re.compile(
     r"(?:-?((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)*))?"  # pre-release
 )
 
-IGNORED_FILES = (
-    "CHANGES.md",
-    "Containerfile",
-    "uv.lock",
-)
-
 
 def collect_version_strings(filepath: Path, n: int | None = None) -> list[str]:
     text = filepath.read_text()
-    matches: set[str] = set()
+    matches: list[str] = []
 
-    for match in SEMVER_RE.finditer(text):
-        if n is not None and len(matches) >= n:
-            break
+    skip_line = False
+    for line in text.splitlines():
+        if "NO_VERSION_CHECK" in line:
+            skip_line = True
 
-        value = match.group(0)
+        if not skip_line:
+            for match in SEMVER_RE.finditer(line):
+                matches.append(match.group(0))
 
-        # Trim what are typically file extensions
-        while True:
-            parts = value.rsplit(".", 1)
-            if len(parts) > 1 and parts[-1].isalpha():
-                value = parts[0]
-            else:
-                break
+        skip_line = False
+        if "NO_VERSION_CHECK_NEXT_LINE" in line:
+            skip_line = True
 
-        if value:
-            matches.add(value)
+    if n is not None and n < len(matches):
+        matches = matches[:n]
 
-    return sorted(matches)
+    return sorted(set(matches))
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -88,31 +85,17 @@ def main(argv: list[str]) -> int:
     any_errors = False
 
     for filepath in args.files:
-        if (
-            # Some specific files contain non-AR version strings
-            filepath.name not in IGNORED_FILES
-            # Reference SAM files are expected to contain out-dated version strings
-            and filepath.suffix != ".sam"
-            # Reference JSON reports are expected to contain out-dated version strings
-            and (filepath.suffix != ".json" or not filepath.is_relative_to("tests"))
-            # workflows contains numerous other software versions, but no AR versions
-            and not filepath.is_relative_to(".github")
-        ):
-            for match in collect_version_strings(filepath):
-                if args.verbose:
-                    print(match, filepath, file=sys.stderr)
+        for match in collect_version_strings(filepath):
+            if args.verbose:
+                print(match, filepath, file=sys.stderr)
 
-                if "3." <= match <= "4.":
-                    if match != expected:
-                        any_errors = True
+            if match != expected and (filepath, match) not in SKIP_LIST:
+                any_errors = True
 
-                        print(
-                            f"Found version {match!r} in {filepath}, expected",
-                            f"{expected!r}",
-                            file=sys.stderr,
-                        )
-        elif args.verbose:
-            print("skipping", filepath, file=sys.stderr)
+                print(
+                    f"Found version {match!r} in {filepath}, expected {expected!r}",
+                    file=sys.stderr,
+                )
 
     return 1 if any_errors else 0
 

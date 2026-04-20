@@ -44,4 +44,5 @@ repos:
         name: version-check
         entry: python3 ./scripts/version_check.py
         language: python
-        types: ["text"]
+        files: "\\.(rst|md|json|toml)$|^conf\\.py$"
+        exclude: "^CHANGES.md$"
