@@ -28,7 +28,8 @@ SANITIZE := false
 HARDEN := true
 
 # Enable link-time optimizations
-LTO := true
+# WARNING: Causes irreproducible builds and possibly other issues
+LTO := false
 
 # LTO mode; older systems may need to use `make LTO_MODE=default`
 LTO_MODE := thin
