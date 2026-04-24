@@ -476,7 +476,7 @@ argument::bind_bool(bool* ptr)
 }
 
 u32_sink&
-argument::bind_u32(unsigned* ptr)
+argument::bind_u32(uint32_t* ptr)
 {
   return bind<u32_sink>(m_sink, ptr);
 }
@@ -870,7 +870,7 @@ double_sink::default_value() const
 double_sink&
 double_sink::with_minimum(double value)
 {
-  AR_REQUIRE(m_default >= value && value >= m_minimum);
+  AR_REQUIRE(m_default >= value && value <= m_maximum);
   m_minimum = value;
 
   return *this;

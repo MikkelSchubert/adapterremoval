@@ -73,8 +73,6 @@ protected:
   virtual strategy enabled(const benchmark_toggles& toggles) const;
 
 private:
-  size_t count() const { return m_description.size(); }
-
   void run(strategy s);
 
   std::string summarize(size_t loops) const;

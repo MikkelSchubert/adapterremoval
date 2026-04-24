@@ -34,7 +34,11 @@ debug_raise_assert(std::string_view funcname,
   do {                                                                         \
     /* NOLINTNEXTLINE(readability-simplify-boolean-expr) */                    \
     if (AR_UNLIKELY(!(test))) {                                                \
-      debug_raise_assert(__PRETTY_FUNCTION__, __FILE__, __LINE__, #test, msg); \
+      ::adapterremoval::debug_raise_assert(__PRETTY_FUNCTION__,                \
+                                           __FILE__,                           \
+                                           __LINE__,                           \
+                                           #test,                              \
+                                           msg);                               \
     }                                                                          \
   } while (0)
 
@@ -46,7 +50,11 @@ debug_raise_assert(std::string_view funcname,
 
 /** Raise an assert failure with a user-specified message. */
 #define AR_FAIL(msg)                                                           \
-  adapterremoval::debug_raise_assert(__FUNCTION__, __FILE__, __LINE__, {}, msg)
+  ::adapterremoval::debug_raise_assert(__PRETTY_FUNCTION__,                    \
+                                       __FILE__,                               \
+                                       __LINE__,                               \
+                                       {},                                     \
+                                       msg)
 
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)

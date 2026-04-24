@@ -27,7 +27,7 @@ TEST_CASE("merging POD")
     REQUIRE(dst == 21);
   }
 
-  SECTION("float")
+  SECTION("doubles")
   {
     double dst = 3.141;
     merge(dst, 2.718);
@@ -213,7 +213,7 @@ public:
 
 } // namespace
 
-TEST_CASE("dynamic_cast_unique on nulllptr returns nullptr")
+TEST_CASE("dynamic_cast_unique on nullptr returns nullptr")
 {
   std::unique_ptr<test_base_class> ptr;
   REQUIRE_FALSE(ptr.get());

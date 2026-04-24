@@ -6,7 +6,7 @@
 
 namespace adapterremoval {
 
-void
+[[noreturn]] void
 debug_raise_assert(std::string_view funcname,
                    std::string_view filename,
                    unsigned lineno,

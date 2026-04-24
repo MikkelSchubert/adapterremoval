@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "commontypes.hpp"
+#include "commontypes.hpp"   // for string_pair
 #include "errors.hpp"        // for parsing_error
 #include "linereader.hpp"    // for vec_reader
 #include "sequence.hpp"      // for dna_sequence
@@ -61,13 +61,13 @@ load_adapters(std::vector<std::string> lines, bool paired_end)
 
 TEST_CASE("load table", "[adapter_set]")
 {
-  SECTION("one adapter")
+  SECTION("SE adapters")
   {
     auto adapters = load_adapters({ "ACACA", "GTTAGA" }, false);
     CHECK(adapters == adapter_set{ { "ACACA", {} }, { "GTTAGA", {} } });
   }
 
-  SECTION("two adapters")
+  SECTION("PE adapters")
   {
     const auto paired_end = GENERATE(true, false);
     auto adapters =
@@ -103,7 +103,7 @@ TEST_CASE("load empty table", "[adapter_set]")
 
 TEST_CASE("load table with wrong number of columns", "[adapter_set]")
 {
-  // it only makes sense to test PE, since SE with too few values is an empty
+  // it only makes sense to test PE, since SE would test reading an empty file
   CHECK_THROWS_MESSAGE(load_adapters({ "ACGTTA" }, true),
                        parsing_error,
                        "Error at line 1: Expected at least 2 columns, but "
@@ -128,13 +128,8 @@ TEST_CASE("load table with too many columns", "[adapter_set]")
 ///////////////////////////////////////////////////////////////////////////////
 // Adapter set -- other functions
 
-TEST_CASE("add squences", "[adapter_set]")
+TEST_CASE("add sequences", "[adapter_set]")
 {
-  const dna_sequence set_1a{ "ACT" };
-  const dna_sequence set_1b{ "CTA" };
-  const dna_sequence set_2a{ "ATT" };
-  const dna_sequence set_2b{ "CTT" };
-
   adapter_set set;
   CHECK(std::vector(set.begin(), set.end()) == sequence_pair_vec{});
 

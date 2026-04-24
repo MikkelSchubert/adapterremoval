@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "commontypes.hpp"   // for barcode_orientation, ...
-#include "sequence_sets.hpp" // for read_group
+#include "sequence_sets.hpp" // for parse_table_orientation
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <stdexcept>         // for invalid_argument
 #include <string>            // for string==
@@ -38,7 +38,6 @@ TEST_CASE("parse_table_orientation throws on invalid value",
 {
   CHECK_THROWS_AS(parse_table_orientation(""), std::invalid_argument);
   CHECK_THROWS_AS(parse_table_orientation("revers"), std::invalid_argument);
-  // The trailing underline should not be accepted/used anywhere
   CHECK_THROWS_AS(parse_table_orientation("implicit"), std::invalid_argument);
   // The trailing underline should not be accepted/used anywhere
   CHECK_THROWS_AS(parse_table_orientation("explicit_"), std::invalid_argument);
