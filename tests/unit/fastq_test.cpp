@@ -1408,12 +1408,20 @@ TEST_CASE("guess_mate_separator fails on mismatching mates")
   REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
 }
 
-TEST_CASE("guess_mate_separator returns separator for partial information")
+TEST_CASE("guess_mate_separator fails on for partial information #1")
 {
   const std::vector<fastq> reads_1{ fastq("foo/1", "") };
   const std::vector<fastq> reads_2{ fastq("foo", "") };
 
-  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == '/');
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
+}
+
+TEST_CASE("guess_mate_separator fails on for partial information #2")
+{
+  const std::vector<fastq> reads_1{ fastq("foo", "") };
+  const std::vector<fastq> reads_2{ fastq("foo/2", "") };
+
+  REQUIRE(fastq::guess_mate_separator(reads_1, reads_2) == 0);
 }
 
 TEST_CASE("guess_mate_separator fails on inconsistent data")

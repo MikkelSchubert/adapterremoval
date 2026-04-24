@@ -586,27 +586,11 @@ fastq::guess_mate_separator(const std::vector<fastq>& reads_1,
       const auto info1 = it_1->parse_header(candidate);
       const auto info2 = it_2->parse_header(candidate);
 
-      if (info1.mate == '\0' || info1.name != info2.name) {
+      if (((info1.mate != '1' || info2.mate != '2') &&
+           (info1.mate != '2' || info2.mate != '1')) ||
+          info1.name != info2.name) {
         any_failures = true;
         break;
-      }
-
-      const auto mate_1 = info1.mate;
-      const auto mate_2 = info2.mate;
-
-      if (mate_1 != '\0' || mate_2 != '\0') {
-        if (mate_1 == mate_2) {
-          // This could be valid data that just happens to include a known
-          // mate separator in the name. But this could also happen if the
-          // same reads are used for both mate 1 and mate 2, so we cannot
-          // safely guess.
-          return 0;
-        } else if (mate_1 != '1' || mate_2 != '2') {
-          // The mate separator seems to be correct, but the mate information
-          // does not match: One mate is missing information or the order is
-          // wrong. Return the identified separator and raise an error later.
-          return candidate;
-        }
       }
     }
 
