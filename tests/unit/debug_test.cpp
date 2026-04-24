@@ -63,8 +63,8 @@ TEST_CASE("assert fail")
   }
 
   std::ostringstream message;
-  message << "Assertion failed in " << std::string_view(__FUNCTION__) << " at "
-          << __FILE__ << ":" << __LINE__ - 7 << ": big fail";
+  message << "Assertion failed in " << std::string_view(__PRETTY_FUNCTION__)
+          << " at " << __FILE__ << ":" << __LINE__ - 7 << ": big fail";
 
   REQUIRE(what == message.str());
 }

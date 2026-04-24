@@ -141,7 +141,7 @@ check_sample_names(const std::vector<sample>& samples)
       std::ostringstream error;
       error << "Samples with names " << log_escape(name_0) << " and "
             << log_escape(name_1) << " differ only by case. Either use the "
-            << "exact same name for both, if they the same sample, or give "
+            << "exact same name for both, if they are the same sample, or give "
                "them distinct names";
 
       throw parsing_error(error.str());

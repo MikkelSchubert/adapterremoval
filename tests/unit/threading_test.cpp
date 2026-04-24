@@ -105,7 +105,7 @@ TEST_CASE("threadstate release", "[scheduler::threadstate]")
   REQUIRE_THROWS_AS(state.acquire(), assert_failed);
 }
 
-TEST_CASE("threadstate release lvalue", "[scheduler::threadstate]")
+TEST_CASE("threadstate release rvalue", "[scheduler::threadstate]")
 {
   threadstate<int> state;
   state.release(std::make_unique<int>(1234));
@@ -116,7 +116,7 @@ TEST_CASE("threadstate release lvalue", "[scheduler::threadstate]")
   REQUIRE_THROWS_AS(state.acquire(), assert_failed);
 }
 
-TEST_CASE("threadstate merg into", "[scheduler::threadstate]")
+TEST_CASE("threadstate merge into", "[scheduler::threadstate]")
 {
   threadstate<int> state;
   state.emplace_back(1);

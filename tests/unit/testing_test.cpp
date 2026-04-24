@@ -31,7 +31,7 @@ private:
 
 } // namespace
 
-TEST_CASE("", "[testing:fallbackStringifier]")
+TEST_CASE("fallbackStringifier", "[testing:fallbackStringifier]")
 {
   REQUIRE(Catch::fallbackStringifier(stringifier_test{ 17 }) ==
           "stringifier_test{ 17 }");

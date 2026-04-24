@@ -396,7 +396,8 @@ TEST_CASE("Names for barcodes must be distinct", "[sample_set]")
                        parsing_error,
                        "Samples with names 'SAMPLE_1' and 'sample_1' differ "
                        "only by case. Either use the exact same name for both, "
-                       "if they the same sample, or give them distinct names");
+                       "if they are the same sample, or give them distinct "
+                       "names");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

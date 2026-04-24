@@ -454,8 +454,8 @@ operator<<(std::ostream& os, const read_mate mate)
     case read_mate::_1:
     case read_mate::_2:
       return os << "read " << underlying_value(mate);
-    default:                                   // GCOVR_EXCL_LINE
-      AR_FAIL("invalid sequence_orientation"); // GCOVR_EXCL_LINE
+    default:                        // GCOVR_EXCL_LINE
+      AR_FAIL("invalid read_mate"); // GCOVR_EXCL_LINE
   }
 }
 

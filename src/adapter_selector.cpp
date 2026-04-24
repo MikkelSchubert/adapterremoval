@@ -188,7 +188,7 @@ adapter_finalizer::process(chunk_ptr data)
                 << "Could not select adapter sequences automatically; falling "
                    "back to trimming putative adapter sequences based on "
                    "overlap between read pairs, equivalent to `--adapter1 ''` "
-                   "and `--adapter2 ''";
+                   "and `--adapter2 ''`";
 
               m_samples.get_writer()->set_adapters(adapter_set{ { "", "" } });
               break;
