@@ -52,8 +52,8 @@
   expected content of these files. The old names supported but deprecated (#191)
 - Warn about and skip duplicate adapter sequences. This should have no effect on
   results, but increases throughput (#192)
-- AdapterRemoval is now built using link-time optimization by default (LTO).
-  This can be turned off via the build-time option `make LTO=false` (#227).
+- AdapterRemoval now has experimental support for link-time optimization (LTO).
+  This can be turned on via the build-time option `make LTO=true` (#227).
 - Always use libdeflate's crc32, for a small speedup on non-Intel systems (#208)
 - The `make` targets `static` and `static-container`no longer require all
   dependencies to be installed. Instead, only Docker/Podman is required (#233)
