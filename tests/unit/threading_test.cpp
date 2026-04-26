@@ -4,8 +4,8 @@
 #include "errors.hpp"    // for assertion_failed
 #include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp" // for threadsafe_data
+#include <atomic>        // for atomic_int
 #include <memory>        // for unique_ptr
-#include <mutex>         // for std::mutex
 #include <thread>        // for std::thread
 
 namespace Catch {
@@ -212,57 +212,63 @@ TEST_CASE("threadsafe_data readers are shared")
 TEST_CASE("threadsafe_data writers are exclusive #1")
 {
   threadsafe_data<std::string> data{ "example" };
-  std::mutex lock;
-  lock.lock();
+  std::atomic_int waiting = 2;
 
-  const auto write_func = [&data, &lock]() {
+  const auto write_func = [&data, &waiting]() {
     auto writer = data.get_writer();
-    lock.unlock();
+
+    for (waiting -= 1; waiting;) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     REQUIRE(*writer == "example");
     *writer = "modified";
   };
 
-  const auto read_func = [&data, &lock]() {
-    lock.lock();
+  const auto read_func = [&data, &waiting]() {
+    for (waiting -= 1; waiting;) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
     const auto reader = data.get_reader();
     REQUIRE(*reader == "modified");
   };
 
-  std::vector<std::thread> threads;
-  threads.emplace_back(write_func);
-  std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  threads.emplace_back(read_func);
-
-  for (auto& it : threads) {
-    it.join();
-  }
+  std::thread thread_1{ write_func };
+  std::thread thread_2{ read_func };
+  thread_1.join();
+  thread_2.join();
 }
 
 TEST_CASE("threadsafe_data writers are exclusive #2")
 {
   threadsafe_data<std::string> data{ "example" };
+  std::atomic_int waiting = 2;
 
-  const auto write_func_1 = [&data]() {
+  const auto write_func_1 = [&data, &waiting]() {
     auto writer = data.get_writer();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    for (waiting -= 1; waiting;) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
     writer->push_back('!');
   };
 
-  const auto write_func_2 = [&data]() {
+  const auto write_func_2 = [&data, &waiting]() {
+    for (waiting -= 1; waiting;) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
     auto writer = data.get_writer();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
     writer->push_back('?');
   };
 
-  std::vector<std::thread> threads;
-  threads.emplace_back(write_func_1);
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  threads.emplace_back(write_func_2);
-
-  for (auto& it : threads) {
-    it.join();
-  }
+  std::thread thread_1{ write_func_1 };
+  std::thread thread_2{ write_func_2 };
+  thread_1.join();
+  thread_2.join();
 
   REQUIRE(*data.get_reader() == "example!?");
 }
@@ -271,27 +277,31 @@ TEST_CASE("threadsafe_data writers are exclusive #3")
 {
   threadsafe_data<std::string> data_1{ "example" };
   auto data_2 = data_1;
+  std::atomic_int waiting = 2;
 
-  const auto write_func_1 = [&data_1]() {
+  const auto write_func_1 = [&data_1, &waiting]() {
     auto writer = data_1.get_writer();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    for (waiting -= 1; waiting;) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
     writer->push_back('!');
   };
 
-  const auto write_func_2 = [&data_2]() {
+  const auto write_func_2 = [&data_2, &waiting]() {
+    for (waiting -= 1; waiting;) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
     auto writer = data_2.get_writer();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
     writer->push_back('?');
   };
 
-  std::vector<std::thread> threads;
-  threads.emplace_back(write_func_1);
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  threads.emplace_back(write_func_2);
-
-  for (auto& it : threads) {
-    it.join();
-  }
+  std::thread thread_1{ write_func_1 };
+  std::thread thread_2{ write_func_2 };
+  thread_1.join();
+  thread_2.join();
 
   REQUIRE(*data_1.get_reader() == "example!?");
   REQUIRE(*data_2.get_reader() == "example!?");
