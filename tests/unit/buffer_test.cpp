@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "buffer.hpp"   // declarations
+#include "errors.hpp"   // for assert_failed
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <ostream>      // for ostream
 #include <string>       // for string
@@ -298,6 +299,12 @@ TEST_CASE("append buffer")
   REQUIRE(buf2.at(2) == 0xBE);
   REQUIRE(buf2.at(3) == 0xAD);
   REQUIRE(buf2.at(4) == 0xDE);
+}
+
+TEST_CASE("buffer append to self is disallowed")
+{
+  buffer buf;
+  REQUIRE_THROWS_AS(buf.append(buf), assert_failed);
 }
 
 } // namespace adapterremoval
