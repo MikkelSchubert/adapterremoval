@@ -181,6 +181,23 @@ TEST_CASE("set adapters for sample", "[sample]")
   CHECK(std::vector(s.begin(), s.end()) == std::vector{ ss });
 }
 
+TEST_CASE("set read group for sample w/wo name", "[sample]")
+{
+  SECTION("no name")
+  {
+    sample s{ "", {}, {}, barcode_orientation::unspecified };
+    s.set_read_group(read_group{ "SM:foo\tLB:bar" });
+    CHECK(s.at(0).read_group_ == read_group{ "ID:1\tSM:foo\tLB:bar" });
+  }
+
+  SECTION("has name")
+  {
+    sample s{ "sample", {}, {}, barcode_orientation::unspecified };
+    s.set_read_group(read_group{ "SM:foo\tLB:bar" });
+    CHECK(s.at(0).read_group_ == read_group{ "ID:sample\tSM:sample\tLB:bar" });
+  }
+}
+
 TEST_CASE("set read group for sample w/wo barcodes", "[sample]")
 {
   SECTION("no barcodes")
