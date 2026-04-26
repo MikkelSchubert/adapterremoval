@@ -24,7 +24,6 @@ public:
 
   buffer(buffer&& other) noexcept
   {
-    free();
     std::swap(m_data, other.m_data);
     std::swap(m_capacity, other.m_capacity);
     std::swap(m_size, other.m_size);
@@ -32,10 +31,13 @@ public:
 
   buffer& operator=(buffer&& other) noexcept
   {
-    free();
-    std::swap(m_data, other.m_data);
-    std::swap(m_capacity, other.m_capacity);
-    std::swap(m_size, other.m_size);
+    if (this != &other) {
+      free();
+      std::swap(m_data, other.m_data);
+      std::swap(m_capacity, other.m_capacity);
+      std::swap(m_size, other.m_size);
+    }
+
     return *this;
   }
 
@@ -85,7 +87,11 @@ public:
   void append(std::string_view data) { append(data.data(), data.size()); }
 
   /** Append a string to the buffer */
-  void append(const buffer& data) { append(data.data(), data.size()); }
+  void append(const buffer& data)
+  {
+    AR_REQUIRE(this != &data);
+    append(data.data(), data.size());
+  }
 
   /** Append data to the buffer */
   void append(const char* data, size_t length)
