@@ -13,7 +13,7 @@ fi
 echo RUNNING COMPILE
 make executables
 
-echo "Built '$(./build/src/adapterremoval3 --version)'"
+echo "Built '$(./build/src/adapterremoval3 --version 2>&1)'"
 
 echo RUNNING TESTS
 make tests
