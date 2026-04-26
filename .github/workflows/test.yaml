@@ -75,18 +75,17 @@ jobs:
         with:
           msystem: ucrt64
           install: |
-            git
-            make
             mingw-w64-ucrt-x86_64-ccache
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-git
             mingw-w64-ucrt-x86_64-isa-l
+            mingw-w64-ucrt-x86_64-make
             mingw-w64-ucrt-x86_64-meson
             mingw-w64-ucrt-x86_64-mimalloc
             mingw-w64-ucrt-x86_64-python
-            mingw-w64-ucrt-x86_64-python-jsonschema
+            mingw-w64-ucrt-x86_64-python-fastjsonschema
             mingw-w64-ucrt-x86_64-python-sphinx
-            mingw-w64-ucrt-x86_64-uv
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
