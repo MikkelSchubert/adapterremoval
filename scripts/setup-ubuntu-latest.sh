@@ -9,5 +9,5 @@ sudo apt-get install -y \
 	ninja-build \
 	pkgconf \
 	python3 \
-	python3-jsonschema \
+	python3-fastjsonschema \
 	python3-sphinx
