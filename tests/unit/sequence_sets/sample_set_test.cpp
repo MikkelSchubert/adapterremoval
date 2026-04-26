@@ -77,7 +77,7 @@ TEST_CASE("Loading single barcodes", "[sample_set]")
                    "TGCAT"_dna,
                    ""_dna,
                    barcode_orientation::unspecified };
-  sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_1\tBC:TGCAT" });
+  sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_2\tBC:TGCAT" });
 
   const sample_set ss{
     "sample_1 ACGTA",
@@ -105,7 +105,7 @@ TEST_CASE("Loading two barcodes per sample", "[sample_set]")
                    "TGCAT"_dna,
                    "CCGAT"_dna,
                    barcode_orientation::unspecified };
-  sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_1" });
+  sample_2.set_read_group(read_group{ "ID:sample_2\tSM:sample_2" });
 
   const sample_set ss{
     "sample_1 ACGTA TTGTC",
