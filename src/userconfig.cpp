@@ -1338,7 +1338,7 @@ userconfig::parse_args(const string_vec& argvec)
   }
 
   // ad-hoc arg parsing to make argparse output consistent with rest of run
-  configure_log_colors(try_parse_argument(args, "--log-color", "auto"), true);
+  configure_log_colors(try_parse_argument(args, "--log-colors", "auto"), true);
   configure_log_levels(try_parse_argument(args, "--log-level", "info"), true);
 
   const argparse::parse_result result = argparser.parse_args(args);
