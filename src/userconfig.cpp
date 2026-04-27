@@ -1972,7 +1972,7 @@ userconfig::setup_adapter_sequences()
       return false;
     }
   } else if (m_argparser->is_set("--adapter1") ||
-             m_argparser->is_set("--adapter1")) {
+             m_argparser->is_set("--adapter2")) {
     if (adapter_1.empty() && !paired_ended_mode) {
       log::warn() << "It is not possible to trim adapters from single-end "
                      "reads if an empty --adapter1 sequence has been set; "
