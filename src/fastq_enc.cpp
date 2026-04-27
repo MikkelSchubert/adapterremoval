@@ -448,11 +448,13 @@ fastq_encoding::p_to_phred(double p)
 char
 fastq_encoding::p_to_phred_33(double p)
 {
-  AR_REQUIRE(p >= 0.0);
+  AR_REQUIRE(p >= 0.0 && p <= 1.0);
 
   // Lowest error rate that can be represented is 93 (~5e-10), encoded as '~'
   const auto raw_score = p_to_phred(std::max(5e-10, p));
-  return std::min<int>(PHRED_OFFSET_MAX, PHRED_OFFSET_MIN + raw_score);
+  return std::min<int>(PHRED_OFFSET_MAX,
+                       PHRED_OFFSET_MIN +
+                         static_cast<int>(std::round(raw_score)));
 }
 
 } // namespace adapterremoval
