@@ -1287,7 +1287,7 @@ write_html_report(const userconfig& config,
     writer.write(output.str());
     writer.close();
   } catch (const io_error& error) {
-    log::error() << "Error writing JSON report to '" << filename << "':\n"
+    log::error() << "Error writing HTML report to '" << filename << "':\n"
                  << indent_lines(error.what());
     return false;
   }

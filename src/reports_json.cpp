@@ -109,8 +109,6 @@ write_report_summary(const userconfig& config,
   if (config.run_type == ar_command::report_only) {
     summary->null("output");
   } else {
-    const auto output = summary->dict("output");
-
     std::vector<fastq_stats_ptr> passed;
     for (const auto& it : stats.trimming) {
       passed.push_back(it->read_1);
