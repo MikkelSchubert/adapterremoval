@@ -10,8 +10,11 @@
 #include <limits>       // for numeric_limits
 #include <sstream>      // for ostringstream
 #include <string>       // for basic_string, operator==, string
+#include <string_view>  // for string_view
 
 namespace adapterremoval {
+
+namespace {
 
 template<typename T>
 std::string
@@ -22,6 +25,8 @@ _write_json(const T& json)
 
   return ss.str();
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // json_token::constructor
@@ -80,6 +85,25 @@ TEST_CASE("special characters are encoded by json_token::from_str")
   auto s = json_token::from_str("\\simple\ttest\n123");
 
   REQUIRE(s->to_string() == "\"\\\\simple\\ttest\\n123\"");
+}
+
+TEST_CASE("unprintable characters are encoded by json_token::from_str")
+{
+  using namespace std::literals;
+
+  CHECK(json_token::from_str("foo\000bar"sv)->to_string() ==
+        "\"foo\\u0000bar\"");
+  CHECK(json_token::from_str("foo\037bar"sv)->to_string() ==
+        "\"foo\\u001fbar\"");
+}
+
+TEST_CASE("unicode should be ignored by json_token::from_str")
+{
+  const std::string_view input =
+    "\xe3\x81\x8b\xe3\x82\x8f\xe3\x81\x84\xe3\x81\x84\xe7\x8c\xab";
+
+  CHECK(json_token::from_str(input)->to_string() ==
+        "\"\xe3\x81\x8b\xe3\x82\x8f\xe3\x81\x84\xe3\x81\x84\xe7\x8c\xab\"");
 }
 
 TEST_CASE("identical to_string and write for json_token::from_str")

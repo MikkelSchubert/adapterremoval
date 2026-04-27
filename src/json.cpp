@@ -4,11 +4,14 @@
 #include "debug.hpp"    // for AR_REQUIRE
 #include "strutils.hpp" // for join_text, stringify
 #include <cmath>        // for isinf, isnan
+#include <iomanip>      // for setfill, setw
 #include <memory>       // for make_shared, __shared_ptr_access, shar...
 #include <sstream>      // for ostringstream
 #include <utility>      // for pair
 
 namespace adapterremoval {
+
+namespace {
 
 std::string
 _escape(std::string_view value)
@@ -41,10 +44,11 @@ _escape(std::string_view value)
         stream << "\\t";
         break;
       default: {
-        if (c <= 0x1F) {
-          stream << "\\u" << std::hex << static_cast<int>(c);
+        if (c >= 0 && c <= 0x1F) {
+          stream << "\\u" << std::hex << std::setw(4) << std::setfill('0')
+                 << static_cast<unsigned int>(static_cast<unsigned char>(c));
         } else {
-          stream << c;
+          stream.put(c);
         }
       }
     }
@@ -69,6 +73,8 @@ format_f64(double value)
 
   return out.str();
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
