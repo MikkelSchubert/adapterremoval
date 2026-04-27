@@ -194,16 +194,15 @@ parse_counts(const argparse::parser& args,
 }
 
 std::string
-normalize_filename(std::string filename)
+normalize_filename(std::string_view filename)
 {
   try {
-    const auto normalized =
-      std::filesystem::weakly_canonical(std::move(filename));
+    const auto normalized = std::filesystem::weakly_canonical(filename);
 
     return normalized.string();
   } catch (const std::filesystem::filesystem_error&) {
     // Permission errors are handled by the explicit access checks below
-    return filename;
+    return std::string{ filename };
   }
 }
 
