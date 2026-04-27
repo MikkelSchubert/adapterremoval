@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
-#include "progress.hpp"
-#include "debug.hpp"    // for AR_FAIL
-#include "logging.hpp"  // for info, log_stream, cerr
-#include "strutils.hpp" // for format_rough_number, format_thousand_sep
-#include <chrono>       // for milliseconds
-#include <iomanip>      // for operator<<, setfill, setw
-#include <sstream>      // for operator<<, basic_ostream, ostringstream
-#include <string>       // for string, operator<<, basic_string, char_traits
-#include <vector>       // for vector
+#include "progress.hpp"  // declarations
+#include "debug.hpp"     // for AR_FAIL
+#include "logging.hpp"   // for info, log_stream, cerr
+#include "strutils.hpp"  // for format_rough_number, format_thousand_sep
+#include "timeutils.hpp" // for seconds_to_duration
+#include <chrono>        // for milliseconds
+#include <iomanip>       // for operator<<, setfill, setw
+#include <sstream>       // for operator<<, basic_ostream, ostringstream
+#include <string>        // for string, operator<<, basic_string, char_traits
+#include <vector>        // for vector
 
 namespace adapterremoval {
 
@@ -33,29 +34,6 @@ const auto SPIN_EVERY =
 #endif
 
 std::string
-format_time(double seconds)
-{
-  std::ostringstream stream;
-  stream.precision(1);
-  stream << std::setfill('0');
-
-  if (seconds > 60 * 60) {
-    stream << static_cast<size_t>(seconds) / (60LU * 60) << ":";
-    stream << std::setw(2);
-  }
-
-  if (seconds > 60) {
-    stream << (static_cast<size_t>(seconds) % (60LU * 60)) / 60 << ":";
-    stream << std::setw(4) << std::setfill('0');
-  }
-
-  stream << std::fixed << (static_cast<size_t>(seconds * 100) % 6000) / 100.0
-         << "s";
-
-  return stream.str();
-}
-
-std::string
 format_progress(size_t reads,
                 double seconds,
                 double rate,
@@ -65,11 +43,11 @@ format_progress(size_t reads,
 
   if (finalize) {
     ss << "Processed " << format_thousand_sep(reads) << " reads in "
-       << format_time(seconds) << "; " << format_rough_number(rate)
+       << seconds_to_duration(seconds) << "; " << format_rough_number(rate)
        << " reads/s on average";
   } else {
     ss << "Processed " << format_rough_number(reads) << " reads in "
-       << format_time(seconds) << "; " << format_rough_number(rate)
+       << seconds_to_duration(seconds) << "; " << format_rough_number(rate)
        << " reads/s";
   }
 
