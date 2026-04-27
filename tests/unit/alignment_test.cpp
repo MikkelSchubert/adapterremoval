@@ -851,23 +851,30 @@ TEST_CASE("Positive score is required for good alignment", "[alignment:flags]")
   }
 }
 
-TEST_CASE("Single end with minimum overlap", "[alignment:flags]")
+TEST_CASE("Alignment with minimum overlap", "[alignment:flags]")
 {
   const adapter_set adapters{ { "ATGC", "CCCC" } };
   sequence_aligner aligner{ adapters, PARAMETERIZE_IS, 1.0 };
-  aligner.set_min_se_overlap(2);
+  aligner.set_min_overlap(2);
 
-  SECTION("does not affect PE")
+  SECTION("PE length 1 is too short")
   {
     const auto result =
-      aligner.align_paired_end({ "Read", "AT" }, { "Read", "TA" }, 0);
-    REQUIRE(result == ALN().offset(1).length(1).is_good());
+      aligner.align_paired_end({ "Read", "T" }, { "Read", "T" }, 0);
+    REQUIRE(result == ALN().offset(0).length(1));
   }
 
   SECTION("SE length 1 too short")
   {
     const auto result = aligner.align_single_end({ "Read", "CGTA" }, 0);
     REQUIRE(result == ALN().offset(3).length(1));
+  }
+
+  SECTION("PE length 2 is long enough")
+  {
+    const auto result =
+      aligner.align_paired_end({ "Read", "TAT" }, { "Read", "ATG" }, 0);
+    REQUIRE(result == ALN().offset(1).length(2).is_good());
   }
 
   SECTION("SE length 2 long enough")
@@ -880,6 +887,13 @@ TEST_CASE("Single end with minimum overlap", "[alignment:flags]")
   {
     const auto result = aligner.align_single_end({ "Read", "CATG" }, 0);
     REQUIRE(result == ALN().offset(1).length(3).is_good());
+  }
+
+  SECTION("PE length 3 is long enough")
+  {
+    const auto result =
+      aligner.align_paired_end({ "Read", "ATTAG" }, { "Read", "TAGCG" }, 0);
+    REQUIRE(result == ALN().offset(2).length(3).is_good());
   }
 }
 
@@ -981,8 +995,7 @@ TEST_CASE("can_merge requires good alignment", "[alignment:flags]")
 
   SECTION("can merge when threshold less-than-or-equal")
   {
-    // A threshold of 0 is functionally identical to 1
-    aligner.set_merge_threshold(GENERATE(0, 1, 2, 3, 4, 5, 6));
+    aligner.set_merge_threshold(GENERATE(1, 2, 3, 4, 5, 6));
     const auto result = aligner.align_paired_end(read1, read2, 0);
     REQUIRE(result == ALN().offset(2).length(6).can_merge());
   }

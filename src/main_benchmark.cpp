@@ -407,7 +407,7 @@ public:
     , m_adapters(config.samples.get_reader()->adapters())
     , m_aligner(m_adapters, is, config.mismatch_threshold)
   {
-    m_aligner.set_min_se_overlap(config.min_adapter_overlap);
+    m_aligner.set_min_overlap(config.min_overlap);
   }
 
 protected:

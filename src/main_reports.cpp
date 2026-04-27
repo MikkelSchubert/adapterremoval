@@ -69,6 +69,7 @@ public:
                                     *m_config.simd.get_reader(),
                                     m_config.mismatch_threshold);
     aligner.set_merge_threshold(m_config.merge_threshold);
+    aligner.set_min_overlap(m_config.min_overlap);
 
     auto stats_id = m_stats_id.acquire();
     auto stats_ins = m_stats_ins.acquire();
@@ -89,18 +90,19 @@ public:
 
       if (alignment.type() >= alignment_type::good) {
         stats_id->aligned_pairs++;
+
         if (alignment.type() == alignment_type::mergeable) {
           const size_t insert_size = alignment.insert_size(read_1, read_2);
           stats_ins->insert_sizes.resize_up_to(insert_size + 1);
           stats_ins->insert_sizes.inc(insert_size);
+        }
 
-          if (alignment.extract_adapter_sequences(read_1, read_2)) {
-            stats_id->pairs_with_adapters++;
+        if (alignment.extract_adapter_sequences(read_1, read_2)) {
+          stats_id->pairs_with_adapters++;
 
-            stats_id->adapter1.process(read_1.sequence());
-            read_2.reverse_complement();
-            stats_id->adapter2.process(read_2.sequence());
-          }
+          stats_id->adapter1.process(read_1.sequence());
+          read_2.reverse_complement();
+          stats_id->adapter2.process(read_2.sequence());
         }
       }
     }

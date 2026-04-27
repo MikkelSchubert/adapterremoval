@@ -111,7 +111,7 @@ sequence_aligner::update_flags(alignment_info& alignment,
   // Only pairs of called bases are considered part of the alignment
   const size_t n_aligned = alignment.m_length - alignment.m_n_ambiguous;
 
-  if (alignment.score() > 0 && (paired_end || n_aligned >= m_min_se_overlap)) {
+  if (alignment.score() > 0 && n_aligned >= m_min_overlap) {
     auto mm_threshold = static_cast<size_t>(m_mismatch_threshold * n_aligned);
     if (n_aligned < 6) {
       mm_threshold = 0;
@@ -288,6 +288,20 @@ sequence_aligner::sequence_aligner(const adapter_set& adapters,
   }
 }
 
+void
+sequence_aligner::set_min_overlap(size_t n)
+{
+  AR_REQUIRE(n > 0);
+  m_min_overlap = n;
+}
+
+void
+sequence_aligner::set_merge_threshold(size_t n)
+{
+  AR_REQUIRE(n > 0);
+  m_merge_threshold = n;
+}
+
 alignment_info
 sequence_aligner::align_single_end(const fastq& read, unsigned max_shift)
 {
@@ -380,7 +394,8 @@ sequence_aligner::align_paired_end(const fastq& read1,
 
     // Only check for end/end overlaps during the first alignment; subsequent
     // alignments need only consider offsets involving the current adapters
-    const int max_offset = (adapter_id ? adapter2.length() : sequence1_len) - 1;
+    const int max_offset =
+      static_cast<int>(adapter_id ? adapter2.length() : sequence1_len) - 1;
 
     if (pairwise_align_sequences(alignment,
                                  sequence1,

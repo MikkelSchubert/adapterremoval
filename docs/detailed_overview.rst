@@ -52,9 +52,11 @@ Each read and adapter sequence (single-end mode) or each read pair and adapter s
 
 Note that adapter 2 and read 2 are both reverse complemented in the above figure. If multiple adapters are specified using ``--adapter-table``, then alignment is carried out with each adapter or adapter pair, in order to select the single best alignment, if any.
 
-If a valid alignment is found, and if the error rate in the alignment does not exceed the maximum error rate defined by ``--mismatch-rate``, and if the alignment covers at least ``--min-adapter-overlap`` bases for SE data, then the inferred adapter sequences are trimmed.
+If a valid alignment is found, and if the error rate in the alignment does not exceed the maximum error rate defined by ``--mismatch-rate``, and if the alignment involves at least ``--min-overlap`` unambiguous bases (not 'N'), then the inferred adapter sequences are trimmed.
 
-If the ``--merge`` option is set and the best alignment is at least ``--merge-threshold`` long, then the two reads are merged into a single sequence (paired-end mode only). Depending on the ``--merge-strategy`` option, Phred scores of matching merged bases are either set to the maximum of the two observed Phred-scores, or to the sum of Phred scores (the probability that both reads are wrong). The output Phred score is capped by the ``--merge-quality-max``, to ensure that quality scores are compatible with downstream tools.
+In paired-end mode only, if the ``--merge`` option is set and the best alignment is at least ``--merge-threshold`` long, then the two reads are merged into a single sequence. Ambiguous nucleotides (Ns) are not counted as part of the alignment, for the purpose of checking ``--merge-threshold``.
+
+Depending on the ``--merge-strategy`` option, Phred scores of matching merged bases are either set to the maximum of the two observed Phred-scores, or to the sum of Phred scores (the probability that both reads are wrong). The output Phred score is capped by the ``--merge-quality-max``, to ensure that quality scores are compatible with downstream tools.
 
 If the ``--post-trim5p`` or ``--post-trim3p`` options are specified, the reads are trimmed by the specified amounts of bases and poly-X tails are trimmed if the ``--post-trim-polyx`` option is specified. Only trimming with the ``--post-trim5p`` is performed on merged reads, since the 3' ends are typically located inside the reads or correspond to the 5' of the other mate (see alignment above).
 

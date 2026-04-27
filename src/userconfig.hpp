@@ -103,8 +103,8 @@ public:
   uint32_t min_genomic_length{};
   //! The maximum length of trimmed reads (ie. genomic nts) to be retained
   uint32_t max_genomic_length{};
-  //! The minimum required overlap before trimming single-end reads.
-  uint32_t min_adapter_overlap{};
+  //! The minimum required overlap before trimming reads.
+  uint32_t min_overlap{};
   //! Rate of mismatches determining the threshold for an acceptable alignment,
   //! depending on the length of the alignment. But see also the limits set in
   //! the function 'is_good_alignment'.

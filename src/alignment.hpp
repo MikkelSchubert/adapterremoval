@@ -203,11 +203,11 @@ public:
                    simd::instruction_set is,
                    double mismatch_threshold);
 
-  /** Sets the minimum required overlap for "good" SE alignments */
-  void set_min_se_overlap(size_t n) { m_min_se_overlap = n; }
+  /** Sets the minimum required overlap for "good" alignments */
+  void set_min_overlap(size_t n);
 
   /** Sets the minimum number of non-N aligned bases required to merge */
-  void set_merge_threshold(size_t n) { m_merge_threshold = n; }
+  void set_merge_threshold(size_t n);
 
   /**
    * Attempts to align adapters sequences against a SE read.
@@ -282,7 +282,7 @@ private:
   //! Number of aligned (non-N, including adapters) bases required for merging
   size_t m_merge_threshold;
   //! Minimum alignment length for "good" SE alignments, including Ns
-  size_t m_min_se_overlap = 1;
+  size_t m_min_overlap = 1;
   //! PE sequences are assumed to have been trimmed already
   bool m_assume_pretrimmed = false;
 

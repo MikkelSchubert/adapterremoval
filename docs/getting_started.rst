@@ -287,7 +287,7 @@ To manually set these adapters, use the command-line options ``--adapter1 AGATCG
 
 .. tip::
 
-    An ``N`` in an adapter sequence is treated as a wildcard. An ``N`` will align against any other base, including other ``N``s, but does not affect the score of the resulting alignment and are not counted for the purpose of filters such as ``--min-adapter-overlap``.
+    An ``N`` in an adapter sequence is treated as a wildcard. An ``N`` will align against any other base, including other ``N``s, but does not affect the score of the resulting alignment and are not counted for the purpose of filters such as ``--min-overlap``.
 
 .. tip::
 
