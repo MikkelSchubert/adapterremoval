@@ -20,4 +20,8 @@ format_time(const std::chrono::system_clock::time_point& now,
             const char* format,
             bool milliseconds = false);
 
+/** Converts a positive number of second to [[hh:[mm]:]ss. */
+std::string
+seconds_to_duration(double seconds);
+
 } // namespace adapterremoval

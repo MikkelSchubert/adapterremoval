@@ -51,4 +51,29 @@ format_time(const std::chrono::system_clock::time_point& now,
   }
 }
 
+std::string
+seconds_to_duration(double seconds)
+{
+  AR_REQUIRE(seconds >= 0.0);
+
+  std::ostringstream stream;
+  stream.precision(1);
+  stream << std::setfill('0');
+
+  if (seconds >= 3600.0) {
+    stream << static_cast<size_t>(seconds / 3600.0) << ":";
+    stream << std::setw(2);
+  }
+
+  if (seconds >= 60.0) {
+    stream << (static_cast<size_t>(seconds) % (60LU * 60)) / 60 << ":";
+    stream << std::setw(4) << std::setfill('0');
+  }
+
+  stream << std::fixed << (static_cast<size_t>(seconds * 100) % 6000) / 100.0
+         << "s";
+
+  return stream.str();
+}
+
 } // namespace adapterremoval
