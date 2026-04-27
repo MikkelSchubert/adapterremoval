@@ -45,6 +45,8 @@ TEST_CASE("fastq_encoding::p_to_phred_33")
   CHECK(fastq_encoding::p_to_phred_33(1e-9) == '{');
   // Supports higher phred scores than the 33 encoding
   CHECK(fastq_encoding::p_to_phred_33(1e-10) == '~');
+  // Should be rounded to closest integer
+  CHECK(fastq_encoding::p_to_phred_33(0.2) == '(');
 
   CHECK_THROWS_AS(fastq_encoding::p_to_phred_33(-0.005), assert_failed);
 }
