@@ -307,7 +307,7 @@ se_reads_processor::process(chunk_ptr data)
   const auto simd = *m_config.simd.get_reader();
   for (const auto& it : samples->at(m_sample)) {
     aligners.emplace_back(it.adapters(), simd, m_config.mismatch_threshold);
-    aligners.back().set_min_se_overlap(m_config.min_adapter_overlap);
+    aligners.back().set_min_overlap(m_config.min_overlap);
   }
 
   AR_REQUIRE(!aligners.empty());
@@ -441,6 +441,7 @@ pe_reads_processor::process(chunk_ptr data)
   for (const auto& it : sample) {
     aligners.emplace_back(it.adapters(), simd, m_config.mismatch_threshold);
     aligners.back().set_merge_threshold(m_config.merge_threshold);
+    aligners.back().set_min_overlap(m_config.min_overlap);
   }
 
   // Read processing statistics

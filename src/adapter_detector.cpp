@@ -225,7 +225,7 @@ adapter_detector::adapter_detector(adapter_database database,
   , m_aligner(adapters_to_set(m_adapters), is, mismatch_threshold)
   , m_common_prefixes(common_prefixes(m_adapters, ADAPTER_DETECT_MIN_OVERLAP))
 {
-  m_aligner.set_min_se_overlap(ADAPTER_DETECT_MIN_OVERLAP);
+  m_aligner.set_min_overlap(ADAPTER_DETECT_MIN_OVERLAP);
 }
 
 void

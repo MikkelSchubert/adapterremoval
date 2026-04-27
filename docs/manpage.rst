@@ -182,9 +182,9 @@ Adapter selection
 FASTQ processing options
 ========================
 
-.. option:: --min-adapter-overlap length
+.. option:: --min-overlap length
 
-    In single-end mode, reads are only trimmed if the overlap between the read and the adapter is at least X bases long, not counting ambiguous nucleotides (N). Defaults to 1.
+    The minimum amount of bases that must overlap, not counting ambiguous nucleotides (Ns), for a single-end or paired-end alignment to be considered valid. For paired-end mode, this is important when no adapters were specified or detected, to prevent trimming of short palindromes. Defaults to 1 in single-end mode, and `--merge-threshold` in paired-end mode.
 
 .. option:: --mismatch-rate rate
 
@@ -201,7 +201,7 @@ FASTQ processing options
 
 .. option:: --merge-threshold length
 
-    The minimum overlap between mate 1 and mate 2 before the reads are merged into one, potentially longer sequence, when merging paired-end reads. Default is 11 bases.
+    The minimum overlap between mate 1 and mate 2 before the reads are merged into one, potentially longer sequence, when merging is enabled. Does not include ambiguous nucleotides (Ns). Default is 11 bases.
 
 .. option:: --merge-strategy name
 

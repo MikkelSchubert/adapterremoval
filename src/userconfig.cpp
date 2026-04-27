@@ -919,12 +919,14 @@ userconfig::userconfig()
   argparser.add_header("PROCESSING:");
 
   argparser.add_separator();
-  argparser.add("--min-adapter-overlap", "N")
-    .help("In single-end mode, reads are only trimmed if the overlap between "
-          "read and the adapter is at least X bases long, not counting "
-          "ambiguous nucleotides (Ns)")
+  argparser.add("--min-overlap", "N")
+    .help("The minimum amount of bases that must overlap, not counting "
+          "ambiguous nucleotides (Ns), for a single-end or paired-end "
+          "alignment to be considered valid [default: 1 in single-end mode, "
+          "--merge-threshold for paired-end mode]")
     .deprecated_alias("--minadapteroverlap")
-    .bind_u32(&min_adapter_overlap)
+    .deprecated_alias("--min-adapter-overlap")
+    .bind_u32(&min_overlap)
     .with_default(1)
     .with_minimum(1);
   argparser.add("--mismatch-rate", "X")
@@ -951,7 +953,8 @@ userconfig::userconfig()
           "where one or both bases are ambiguous (N) are not counted")
     .deprecated_alias("--minalignmentlength")
     .bind_u32(&merge_threshold)
-    .with_default(11);
+    .with_default(11)
+    .with_minimum(1);
   argparser.add("--merge-strategy", "X")
     .help(
       "The 'maximum' strategy uses Q=max(Q1,Q2) for matches while the "
@@ -1448,6 +1451,10 @@ userconfig::parse_args(const string_vec& argvec)
         AR_FAIL(strategy);
       }
     }
+  }
+
+  if (!argparser.is_set("--min-overlap")) {
+    min_overlap = paired_ended_mode ? merge_threshold : 1;
   }
 
   // (Optionally) read barcodes from file and validate. Must be done before
