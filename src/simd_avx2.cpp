@@ -6,9 +6,7 @@
 #include <cstddef>     // for size_t
 #include <immintrin.h> // for _mm256_set1_epi8, __m256i, _mm256_lo...
 
-namespace adapterremoval {
-
-namespace simd {
+namespace adapterremoval::simd {
 
 namespace {
 
@@ -46,7 +44,7 @@ compare_subsequences_avx2(size_t& n_mismatches,
     const __m256i eq_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
 
     n_mismatches += 32 - count_masked_avx2(eq_mask);
-    if (2 * n_mismatches + n_ambiguous > max_penalty) {
+    if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
       return false;
     }
 
@@ -61,9 +59,7 @@ compare_subsequences_avx2(size_t& n_mismatches,
     length -= unpadded_length;
   }
 
-  return true;
+  return (2 * n_mismatches) + n_ambiguous <= max_penalty;
 }
 
-} // namespace simd
-
-} // namespace adapterremoval
+} // namespace adapterremoval::simd

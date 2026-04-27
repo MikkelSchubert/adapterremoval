@@ -54,12 +54,12 @@ compare_subsequences_neon(size_t& n_mismatches,
 
     n_mismatches += chunk - vaddvq_u8(a_matches);
     n_ambiguous += vaddvq_u8(a_ambiguous) + std::min<int64_t>(0, i_length);
-    if (2 * n_mismatches + n_ambiguous > max_penalty) {
+    if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
       return false;
     }
   }
 
-  return true;
+  return (2 * n_mismatches) + n_ambiguous <= max_penalty;
 }
 
 } // namespace adapterremoval::simd
