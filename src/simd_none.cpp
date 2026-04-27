@@ -3,9 +3,7 @@
 #include "simd.hpp" // for size_t, compare_subsequences_std
 #include <cstddef>  // for size_t
 
-namespace adapterremoval {
-
-namespace simd {
+namespace adapterremoval::simd {
 
 namespace {
 
@@ -15,16 +13,16 @@ const size_t LOOP_COUNT = 8;
 } // namespace
 
 bool
-compare_subsequences_std(size_t& out_mismatches,
-                         size_t& out_ambiguous,
-                         const char* seq_1,
-                         const char* seq_2,
-                         size_t length,
-                         size_t max_penalty)
+compare_subsequences_none(size_t& n_mismatches,
+                          size_t& n_ambiguous,
+                          const char* seq_1,
+                          const char* seq_2,
+                          size_t length,
+                          size_t max_penalty)
 {
   // Local accumulators are used since references prevent loop unrolling
-  size_t n_mismatches = out_mismatches;
-  size_t n_ambiguous = out_ambiguous;
+  size_t tmp_mismatches = n_mismatches;
+  size_t tmp_ambiguous = n_ambiguous;
 
   while (length >= LOOP_COUNT) {
     // A constant loop count enables loop-unrolling for increased throughput
@@ -33,13 +31,13 @@ compare_subsequences_std(size_t& out_mismatches,
       const char nt_2 = *seq_2++;
 
       if (nt_1 == 'N' || nt_2 == 'N') {
-        n_ambiguous++;
+        tmp_ambiguous++;
       } else if (nt_1 != nt_2) {
-        n_mismatches++;
+        tmp_mismatches++;
       }
     }
 
-    if (2 * n_mismatches + n_ambiguous > max_penalty) {
+    if ((2 * tmp_mismatches) + tmp_ambiguous > max_penalty) {
       return false;
     }
 
@@ -51,18 +49,16 @@ compare_subsequences_std(size_t& out_mismatches,
     const char nt_2 = *seq_2++;
 
     if (nt_1 == 'N' || nt_2 == 'N') {
-      n_ambiguous++;
+      tmp_ambiguous++;
     } else if (nt_1 != nt_2) {
-      n_mismatches++;
+      tmp_mismatches++;
     }
   }
 
-  out_ambiguous = n_ambiguous;
-  out_mismatches = n_mismatches;
+  n_ambiguous = tmp_ambiguous;
+  n_mismatches = tmp_mismatches;
 
-  return 2 * n_mismatches + n_ambiguous <= max_penalty;
+  return (2 * n_mismatches) + n_ambiguous <= max_penalty;
 }
 
-} // namespace simd
-
-} // namespace adapterremoval
+} // namespace adapterremoval::simd

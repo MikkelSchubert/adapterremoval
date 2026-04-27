@@ -5,9 +5,7 @@
 #include "simd-config.hpp" // for HAVE_SSE2, HAVE_AVX2, HAVE_AVX512...
 #include <string_view>     // for string_view
 
-namespace adapterremoval {
-
-namespace simd {
+namespace adapterremoval::simd {
 
 std::vector<instruction_set>
 supported()
@@ -99,7 +97,7 @@ get_compare_subsequences_func(instruction_set is)
 {
   switch (is) {
     case instruction_set::none:
-      return &compare_subsequences_std;
+      return &compare_subsequences_none;
     case instruction_set::sse2:
 #if HAVE_SSE2
       return &compare_subsequences_sse2;
@@ -129,6 +127,4 @@ get_compare_subsequences_func(instruction_set is)
   }
 }
 
-} // namespace simd
-
-} // namespace adapterremoval
+} // namespace adapterremoval::simd

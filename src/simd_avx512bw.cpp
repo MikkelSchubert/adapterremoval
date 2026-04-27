@@ -5,9 +5,7 @@
 #include <cstddef>     // for size_t
 #include <immintrin.h> // for _mm512_set1_epi8, __m512i, _mm512_lo...
 
-namespace adapterremoval {
-
-namespace simd {
+namespace adapterremoval::simd {
 
 namespace {
 
@@ -59,7 +57,7 @@ compare_subsequences_avx512(size_t& n_mismatches,
     const auto eq_mask = _mm512_cmpeq_epu8_mask(s1, s2) | ns_mask;
 
     n_mismatches += 64 - count_masked_avx512(eq_mask);
-    if (2 * n_mismatches + n_ambiguous > max_penalty) {
+    if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
       return false;
     }
 
@@ -68,9 +66,7 @@ compare_subsequences_avx512(size_t& n_mismatches,
     n_ambiguous += count_masked_avx512(ns_mask);
   }
 
-  return true;
+  return (2 * n_mismatches) + n_ambiguous <= max_penalty;
 }
 
-} // namespace simd
-
-} // namespace adapterremoval
+} // namespace adapterremoval::simd
