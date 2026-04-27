@@ -34,20 +34,21 @@ const auto SPIN_EVERY =
 #endif
 
 std::string
-format_progress(size_t reads,
-                double seconds,
-                double rate,
-                bool finalize = false)
+format_progress(size_t total_reads,
+                double total_seconds,
+                size_t current_reads,
+                double current_seconds,
+                bool exact = false)
 {
   std::ostringstream ss;
 
-  if (finalize) {
-    ss << "Processed " << format_thousand_sep(reads) << " reads in "
-       << seconds_to_duration(seconds) << "; " << format_rough_number(rate)
-       << " reads/s on average";
-  } else {
-    ss << "Processed " << format_rough_number(reads) << " reads in "
-       << seconds_to_duration(seconds) << "; " << format_rough_number(rate)
+  ss << "Processed "
+     << (exact ? format_thousand_sep(total_reads)
+               : format_rough_number(total_reads))
+     << " reads in " << seconds_to_duration(total_seconds);
+
+  if (current_seconds > 0.0) {
+    ss << "; " << format_rough_number(current_reads / current_seconds)
        << " reads/s";
   }
 
@@ -82,8 +83,10 @@ progress_timer::increment(size_t inc)
 
       if (m_current >= REPORT_EVERY_NTH_READ) {
         const double current_time = m_timer.duration();
-        const double rate = m_current / (current_time - m_last_time);
-        log::info() << format_progress(m_total, m_timer.duration(), rate);
+        log::info() << format_progress(m_total,
+                                       current_time,
+                                       m_current,
+                                       current_time - m_last_time);
 
         m_current = 0;
         m_last_time = current_time;
@@ -109,8 +112,8 @@ progress_timer::finalize()
 {
   stop();
 
-  const double rate = m_total / m_timer.duration();
-  log::info() << format_progress(m_total, m_timer.duration(), rate, true);
+  const double duration = m_timer.duration();
+  log::info() << format_progress(m_total, duration, m_total, duration, true);
 }
 
 void
@@ -155,10 +158,10 @@ progress_timer::loop()
     }
 
     if (loop % REPORT_EVERY_NTH_LOOP == 0) {
-      const double rate =
-        (current_reads - last_reads) / (current_time - last_time);
-
-      last_message = format_progress(current_reads, current_time, rate);
+      last_message = format_progress(current_reads,
+                                     current_time,
+                                     current_reads - last_reads,
+                                     current_time - last_time);
       last_reads = current_reads;
       last_time = current_time;
     }
