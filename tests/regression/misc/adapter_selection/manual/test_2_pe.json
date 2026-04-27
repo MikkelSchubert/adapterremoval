@@ -1,0 +1,19 @@
+{
+  "arguments": [
+    "--min-length",
+    "10",
+    "--interleaved",
+    "--out-file1",
+    "output_both.fastq",
+    "--adapter2",
+    "TAGCAACGTACAGAT"
+  ],
+  "files": {
+    "input_1": [
+      "input.fastq"
+    ],
+    "output": [
+      "output_both.fastq"
+    ]
+  }
+}

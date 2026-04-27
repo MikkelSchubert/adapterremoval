@@ -1,0 +1,18 @@
+{
+  "arguments": [
+    "--min-length",
+    "10",
+    "--out-file1",
+    "output_1.fastq",
+    "--adapter1",
+    "CTCTGAACACCGAGG"
+  ],
+  "files": {
+    "input_1": [
+      "input.fastq"
+    ],
+    "output": [
+      "output_1.fastq"
+    ]
+  }
+}
