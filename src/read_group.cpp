@@ -102,7 +102,14 @@ read_group::operator==(const read_group& other) const
 void
 read_group::update_tag(std::string_view key, std::string_view value)
 {
-  AR_REQUIRE(!key.empty());
+  AR_REQUIRE(key.size() == 2);
+  for (const auto c : value) {
+    if (c < ' ' || c > '~') {
+      throw std::invalid_argument(
+        "only characters in the range ' ' to '~' are allowed");
+    }
+  }
+
   std::string cache;
   cache.push_back('\t');
   cache.append(key);

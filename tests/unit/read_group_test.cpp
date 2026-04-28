@@ -41,6 +41,18 @@ TEST_CASE("minimal read group with PG", "[read_group]")
   REQUIRE(rg.header() == "@RG\tID:1\tPG:foo");
 }
 
+TEST_CASE("setting invalid values", "[read_group]")
+{
+  using namespace std::literals;
+  read_group rg;
+
+  CHECK_THROWS_AS(rg.set_id("bad\nid"), std::invalid_argument);
+  CHECK_THROWS_AS(rg.set_sample("sample\t1"), std::invalid_argument);
+  CHECK_THROWS_AS(rg.set_barcodes("foo\0bar"sv), std::invalid_argument);
+  CHECK_THROWS_AS(rg.set_description("invalid char \x7f"),
+                  std::invalid_argument);
+}
+
 TEST_CASE("minimal read group with ID", "[read_group]")
 {
   std::string_view header = GENERATE("ID:foo", "@RG\tID:foo");
