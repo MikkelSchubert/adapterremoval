@@ -36,7 +36,8 @@ StringMaker<std::string>::convert(const std::string& str)
 
   for (const auto c : str) {
     // Escape any special characters that cannot be distinguished at a glance
-    if (!std::isprint(c) || (std::isspace(c) && (c != ' ' && c != '\n'))) {
+    const auto uc = static_cast<uint8_t>(c);
+    if (!std::isprint(uc) || (std::isspace(uc) && (c != ' ' && c != '\n'))) {
       return adapterremoval::log_escape(str);
     }
   }

@@ -346,7 +346,8 @@ shell_escape(const std::string_view s)
 
   for (const auto c : s) {
     // Conservative list of safe values; better safe than sorry
-    if (!isalnum(c) && c != '_' && c != '.' && c != '/' && c != '-') {
+    if (!std::isalnum(static_cast<uint8_t>(c)) && c != '_' && c != '.' &&
+        c != '/' && c != '-') {
       return log_escape(s);
     }
   }
@@ -385,16 +386,17 @@ log_escape(const std::string_view s)
       case '\t':
         out.append("\\t");
         break;
-      default:
-        if (!std::isprint(c)) {
+      default: {
+        const auto uc = static_cast<uint8_t>(c);
 
+        if (!std::isprint(uc)) {
           out.append("\\x");
-          out.push_back(HEX.at((static_cast<uint8_t>(c) & 0xf0) >> 4));
-          out.push_back(HEX.at((static_cast<uint8_t>(c) & 0xf)));
-
+          out.push_back(HEX.at((uc & 0xf0) >> 4));
+          out.push_back(HEX.at((uc & 0x0f)));
         } else {
           out.push_back(c);
         }
+      }
     }
   }
 
