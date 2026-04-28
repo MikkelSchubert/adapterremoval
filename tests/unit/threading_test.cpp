@@ -87,6 +87,20 @@ TEST_CASE("threadstate emplace back n", "[scheduler::threadstate]")
   REQUIRE_THROWS_AS(state.acquire(), assert_failed);
 }
 
+TEST_CASE("threadstate emplace back n (moved)", "[scheduler::threadstate]")
+{
+  threadstate<std::string> state;
+  state.emplace_back_n(3, std::string{ __PRETTY_FUNCTION__ });
+
+  for (size_t i = 0; i < 3; ++i) {
+    auto value = state.acquire();
+    REQUIRE(value);
+    REQUIRE(*value == __PRETTY_FUNCTION__);
+  }
+
+  REQUIRE_THROWS_AS(state.acquire(), assert_failed);
+}
+
 TEST_CASE("threadstate release", "[scheduler::threadstate]")
 {
   threadstate<int> state;

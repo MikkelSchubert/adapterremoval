@@ -37,11 +37,11 @@ public:
 
   /** Create N new state values using the given arguments **/
   template<class... Args>
-  void emplace_back_n(size_t n, Args&&... args)
+  void emplace_back_n(size_t n, const Args&... args)
   {
     std::lock_guard<std::mutex> lock(m_mutex);
     for (; n; n--) {
-      m_values.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+      m_values.emplace_back(std::make_unique<T>(args...));
     }
   }
 
