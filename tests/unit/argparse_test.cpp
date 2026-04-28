@@ -1098,18 +1098,39 @@ TEST_CASE("warning on first duplicate argument", "[argparse::argument]")
   string_vec values{ "--12345" };
 
   log::log_capture ss;
-
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE(ss.str().empty());
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE_POSTFIX(ss.str(),
-                  "[WARNING] Command-line option --12345 has been specified "
-                  "more than once.\n");
+  REQUIRE(ss.str() == "[WARNING] Command-line option --12345 has been "
+                      "specified more than once.\n");
   // Only display the warning once per argument
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
-  REQUIRE_POSTFIX(ss.str(),
-                  "[WARNING] Command-line option --12345 has been specified "
-                  "more than once.\n");
+  REQUIRE(ss.str() == "[WARNING] Command-line option --12345 has been "
+                      "specified more than once.\n");
+}
+
+TEST_CASE("warning on first duplicate argument (on error)",
+          "[argparse::argument]")
+{
+  argparse::argument arg("--12345");
+  arg.bind_str(nullptr);
+
+  string_vec bad_values{ "--12345" };
+  string_vec values{ "--12345", "value" };
+
+  const std::string msg_invalid = "[ERROR] Command-line argument --12345 takes "
+                                  "1 value, but 0 values were provided!\n";
+  const std::string msg_duplicate = "[WARNING] Command-line option --12345 has "
+                                    "been specified more than once.\n";
+
+  log::log_capture ss;
+  REQUIRE(arg.parse(bad_values.begin(), bad_values.end()) ==
+          argparse::argument::parsing_failed);
+  REQUIRE(ss.str() == msg_invalid);
+  REQUIRE(arg.parse(values.begin(), values.end()) == 2);
+  REQUIRE(ss.str() == msg_invalid + msg_duplicate);
+  REQUIRE(arg.parse(values.begin(), values.end()) == 2);
+  REQUIRE(ss.str() == msg_invalid + msg_duplicate);
 }
 
 TEST_CASE("no warning on main alias", "[argparse::argument]")

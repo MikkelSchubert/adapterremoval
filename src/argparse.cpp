@@ -622,7 +622,7 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
                 << ". Support for the old name will be removed in the future.";
   }
 
-  if (m_times_set == 1) {
+  if (m_times_set++ == 1) {
     log::warn() << "Command-line option " << key()
                 << " has been specified more than once.";
   }
@@ -686,7 +686,6 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
     return result;
   }
 
-  m_times_set++;
   return result + 1;
 }
 
