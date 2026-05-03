@@ -5,6 +5,9 @@
     "--out-json",
     "out_auto.se.json"
   ],
+  "stderr": [
+    "[INFO] Automatic trimming of poly-G tails enabled"
+  ],
   "files": {
     "input_1": [
       "input_1_named.fastq"
