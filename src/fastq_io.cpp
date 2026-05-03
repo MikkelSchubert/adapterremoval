@@ -6,6 +6,7 @@
 #include "errors.hpp"      // for io_error, gzip_error, fastq_error
 #include "fastq.hpp"       // for fastq
 #include "fastq_enc.hpp"   // for MATE_SEPARATOR
+#include "logging.hpp"     // for log
 #include "output.hpp"      // for output_file
 #include "progress.hpp"    // for progress_timer
 #include "scheduler.hpp"   // for provides analytical_step, chunk_ptr, ...
@@ -336,6 +337,7 @@ scan_fastq::detect_two_color(const std::vector<fastq>& reads)
   std::string nucleotides;
   for (const auto& read : reads) {
     if (read.is_two_color()) {
+      log::info() << "Automatic trimming of poly-G tails enabled";
       nucleotides = "G";
     }
     break;
