@@ -100,14 +100,14 @@ jobs:
             mingw-w64-ucrt-x86_64-python-sphinx
 
       - if: ${{ matrix.os != 'windows-latest' }}
-        name: setup, build, test, and bundle (${{ matrix.os }})
+        name: setup, build, test, and bundle (unix)
         run: |
           bash scripts/setup-${{ matrix.os }}.sh --static
           bash scripts/build-common.sh STATIC=true DOCS=enabled
           bash scripts/build-bundle.sh "build/install/" "${TARGET}"
 
       - if: ${{ matrix.os == 'windows-latest' }}
-        name: setup, build, test, and bundle (${{ matrix.os }})
+        name: setup, build, test, and bundle (windows)
         shell: msys2 {0} # WORKAROUND: Cannot be set via matrix
         run: |
           bash scripts/setup-${{ matrix.os }}.sh --static
