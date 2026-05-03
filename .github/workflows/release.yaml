@@ -1,25 +1,32 @@
 name: release
 
 on:
-  push:
-    tags:
-      - "v3.*.*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag or reference
+        required: false
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   create_draft_release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     outputs:
       release_id: ${{ steps.create_release.outputs.release_id }}
+
+    env:
+      REF: ${{ inputs.tag || github.ref }}
+      NAME: ${{ inputs.tag || github.ref_name }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.REF }}
 
       - name: Read changelog
         id: changelog
@@ -35,15 +42,15 @@ jobs:
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
         id: create_release
         with:
-          tag: ${{ github.ref }}
-          release_name: "AdapterRemoval ${{ github.ref_name }}"
+          tag: ${{ env.REF }}
+          release_name: "AdapterRemoval ${{ env.NAME }}"
           body: ${{ steps.changelog.outputs.TEXT }}
           file: "examples" # must exist, but won't be uploaded since it's not a file as of v2.11.5
           overwrite: true
           draft: true
 
   release:
-    name: build assets for ${{ matrix.os }} with ${{ matrix.cxx }}
+    name: build assets for ${{ matrix.os }}
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -59,8 +66,9 @@ jobs:
       fail-fast: false
 
     env:
-      CXX: ${{ matrix.cxx }}
-      TARGET: "adapterremoval-${{ github.ref_name }}-${{ matrix.arch }}"
+      REF: ${{ inputs.tag || github.ref }}
+      NAME: ${{ inputs.tag || github.ref_name }}
+      TARGET: "adapterremoval-${{ inputs.tag || github.ref_name }}-${{ matrix.arch }}"
 
     needs: create_draft_release
 
@@ -73,6 +81,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.REF }}
 
       - if: ${{ matrix.os == 'windows-latest' }}
         uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
@@ -91,37 +100,24 @@ jobs:
             mingw-w64-ucrt-x86_64-python-sphinx
 
       - if: ${{ matrix.os != 'windows-latest' }}
-        name: dependencies (Unix)
-        run: bash scripts/setup-${{ matrix.os }}.sh
-
-      - if: ${{ matrix.os == 'windows-latest' }}
-        name: dependencies (Windows)
-        shell: msys2 {0}
-        run: bash scripts/setup-${{ matrix.os }}.sh
-
-      - if: ${{ matrix.os == 'ubuntu-latest' }}
-        name: setup, build, test, and bundle (Linux)
+        name: setup, build, test, and bundle (unix)
         run: |
-          make static-container static DOCS=enabled
-          bash scripts/build-bundle.sh "build/static/install/" "${TARGET}"
-
-      - if: ${{ matrix.os == 'macos-latest' }}
-        name: setup, build, test, and bundle (OSX)
-        run: |
+          bash scripts/setup-${{ matrix.os }}.sh --static
           bash scripts/build-common.sh STATIC=true DOCS=enabled
           bash scripts/build-bundle.sh "build/install/" "${TARGET}"
 
       - if: ${{ matrix.os == 'windows-latest' }}
-        name: setup, build, test, and bundle (Windows)
-        shell: msys2 {0}
+        name: setup, build, test, and bundle (windows)
+        shell: msys2 {0} # WORKAROUND: Cannot be set via matrix
         run: |
+          bash scripts/setup-${{ matrix.os }}.sh --static
           bash scripts/build-common.sh STATIC=true DOCS=enabled
           bash scripts/build-bundle.sh "build/install/" "${TARGET}"
 
       - name: upload binaries to release
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
         with:
-          asset_name: "adapterremoval-${{ github.ref_name }}-${{ matrix.arch }}.tar.gz"
-          file: "adapterremoval-${{ github.ref_name }}-${{ matrix.arch }}.tar.gz"
+          asset_name: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.tar.gz"
+          file: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.tar.gz"
           release_id: ${{ needs.create_draft_release.outputs.release_id }}
           draft: true
