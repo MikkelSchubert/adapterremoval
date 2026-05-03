@@ -151,7 +151,7 @@ if not libisal.found()
 
     # WORKAROUND: Support for older distros lacking cmake/pkgconf support
     if not libisal.found()
-        libisal = meson.get_compiler('cpp').find_library('libisal')
+        libisal = meson.get_compiler('cpp').find_library('libisal', static: static)
     endif
 endif
 
@@ -161,7 +161,7 @@ if not libdeflate.found()
 
     # WORKAROUND: Support for older distros lacking cmake/pkgconf support
     if not libdeflate.found()
-        libdeflate = meson.get_compiler('cpp').find_library('libdeflate')
+        libdeflate = meson.get_compiler('cpp').find_library('libdeflate', static: static)
     endif
 endif
 

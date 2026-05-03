@@ -152,7 +152,7 @@ static:
 		SANITIZE=${SANITIZE} \
 		HARDEN=${HARDEN} \
 		STATIC=true \
-		MIMALLOC=true \
+		MIMALLOC=enabled \
 		setup \
 		tests \
 		install

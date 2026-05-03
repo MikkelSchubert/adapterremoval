@@ -102,21 +102,20 @@ jobs:
       - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: setup, build, test, and bundle (Linux)
         run: |
-          make static-container static DOCS=true
+          make static-container static DOCS=enabled
           bash scripts/build-bundle.sh "build/static/install/" "${TARGET}"
 
       - if: ${{ matrix.os == 'macos-latest' }}
         name: setup, build, test, and bundle (OSX)
         run: |
-          # WORKAROUND: linking mimalloc causes SIGABRT in simd_neon.cpp
-          bash scripts/build-common.sh STATIC=true MIMALLOC=false DOCS=true
+          bash scripts/build-common.sh STATIC=true DOCS=enabled
           bash scripts/build-bundle.sh "build/install/" "${TARGET}"
 
       - if: ${{ matrix.os == 'windows-latest' }}
         name: setup, build, test, and bundle (Windows)
         shell: msys2 {0}
         run: |
-          bash scripts/build-common.sh STATIC=true DOCS=true
+          bash scripts/build-common.sh STATIC=true DOCS=enabled
           bash scripts/build-bundle.sh "build/install/" "${TARGET}"
 
       - name: upload binaries to release
