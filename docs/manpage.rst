@@ -248,7 +248,7 @@ Quality trimming options
 
 .. option:: --trim-windows size
 
-    Trim low quality bases using a sliding window-based approach inspired by :program:`sickle` with the given window size. See the "Window-based quality trimming" section of the manual page for a description of this algorithm. Applies when ``window`` based trimming is enabled using `--quality-trimming``. Defaults to 0.1.
+    Specifies the initial size of the dynamic window, when window-based quality trimming is enabled via ``--quality-trimming window``. Trimming is performed using a sliding window-based approach inspired by :program:`sickle`. See the "Window-based quality trimming" section of the manual page for a description of this algorithm. Defaults to 0.1.
 
 .. option:: --trim-min-quality minimum
 

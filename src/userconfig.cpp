@@ -1057,11 +1057,12 @@ userconfig::userconfig()
     .with_maximum(1.0)
     .with_default(0.05);
   argparser.add("--trim-windows", "X")
-    .help("Specifies the size of the window used for '--quality-trimming "
-          "window': If >= 1, this value will be used as the window size; if "
-          "the value is < 1, window size is the read length times this value. "
-          "If the resulting window size is 0 or larger than the read length, "
-          "the read length is used as the window size")
+    .help("Specifies the initial size of the dynamic window used for "
+          "'--quality-trimming window': If >= 1, this value will be used as "
+          "the window size; if the value is < 1, window size is the read "
+          "length times this value. If the resulting window size is 0 or "
+          "larger than the read length, the read length is used as the window "
+          "size. See the documentation for more information")
     .deprecated_alias("--trimwindows")
     .conflicts_with("--trim-mott-rate")
     .conflicts_with("--trim-qualities")
