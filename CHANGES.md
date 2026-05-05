@@ -8,7 +8,7 @@ features available in v2, as well as greatly increasing throughput.
 
 See the documentation for a detailed guide of how to migrate from earlier
 versions of AdapterRemoval:
-<https://adapterremoval.readthedocs.io/en/v3.0.0-alpha3/migrating.html>
+<https://adapterremoval.readthedocs.io/en/v3.0.0/migrating.html>
 
 ### Added
 
