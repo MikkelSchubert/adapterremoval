@@ -21,7 +21,7 @@ author = "Mikkel Schubert; Stinus Lindgreen"
 # The short X.Y version.
 version = "3.0"
 # The full version, including alpha/beta/rc tags.
-release = "3.0.0-alpha3"
+release = "3.0.0"
 
 
 # -- General configuration ---------------------------------------------------

@@ -1,6 +1,14 @@
 # Changelog
 
-## [3.0.0] - Unreleased
+## [3.0.0] - 2026-05-05
+
+AdapterRemoval v3 is a major revision of AdapterRemoval v2 that aims to simplify
+usage via sensible default settings. AdapterRemoval v3 expands the range of
+features available in v2, as well as greatly increasing throughput.
+
+See the documentation for a detailed guide of how to migrate from earlier
+versions of AdapterRemoval:
+<https://adapterremoval.readthedocs.io/en/v3.0.0-alpha3/migrating.html>
 
 ### Added
 
@@ -45,6 +53,13 @@
 - \[**BREAKING**\] Options `--trim-ns` and `--trim-qualities` are now always
   enabled when performing quality based trimming (#252)
 - \[**BREAKING**\] `--merge-strategy` no longer implies `--merge` (#265)
+- \[**BREAKING**\] Renamed `--min-adapter-overlap` to `--min-overlap`, and apply
+  this option to PE alignments, with a default value corresponding to
+  `--merge-treshold`. This mostly applies to trimming with unspecified adapters
+  or were the known adapter sequences are very short (#305)
+- Applied `--min-overlap` to both SE and PE alignments
+- Use min-overlap as filter when building consensus adapters
+- Set PE specific default for --min-overlap
 - Optimized PE aignments using NEON for ~20% higher throughput (#152)
 - `--mismatch-rate` rate arguments greater than 0.5 are deprecated, and the
   default value has been changed from 6 (corresponding to 1/6) to 0.1667 (#189)
@@ -80,6 +95,10 @@
 - Fixed possible race condition if file handles were exhausted (#259)
 - Fixed possible overflow when merging very high-quality bases using the
   `additive` read-merging strategy (#264)
+- Fixed output when writing BAM records with ambiguous bases (N) (#275)
+- Fixed command-line parsing errors not respecting `--log-colors` (#294)
+- Fixed Phred scores for consensus adapters being rounded down (#297)
+- Fixed passthrough of UTF-8 filenames in JSON output (#298)
 
 ## [3.0.0-alpha3] - 2025-05-19
 
