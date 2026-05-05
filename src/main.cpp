@@ -110,8 +110,6 @@ main(int argc, char* argv[])
     }
   }
 
-  int i = 0;
-
   print_terminal_postamble(config, returncode);
 
   return returncode;
