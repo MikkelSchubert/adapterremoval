@@ -8,10 +8,6 @@
 
 Binaries are provided for 64-bit x86 Linux, ARM-based MacOSX, and Windows at https://github.com/MikkelSchubert/adapterremoval/releases/
 
-.. warning::
-
-    The static Linux binary uses Musl_ for maximum compatibility, at the cost of a significant performance loss. It is therefore recommended to build AdapterRemoval yourself, or use your distribution's AdapterRemoval package (if available).
-
 ************************
  Installing from source
 ************************
@@ -84,8 +80,6 @@ The resulting executable and other files are saved to ``build/static/install``.
 .. _meson: https://mesonbuild.com/
 
 .. _msys2: https://www.msys2.org/
-
-.. _musl: https://wiki.musl-libc.org/
 
 .. _ninja: https://ninja-build.org/
 
