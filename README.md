@@ -45,7 +45,7 @@ Please note that these results are preliminary:
 
 ![Throughput for ARv2 and ARv3](docs/images/throughput.svg)
 
-Point labels indicate the number of threads configured on the command line. The X-axis shows actual CPU utilization. The Y-axis shows millions of 150bp reads processed per second in paired-end mode, with gzipped input and output, and merging enabled.
+Point labels indicate the number of threads configured on the command line. The X-axis shows actual CPU utilization. The Y-axis shows millions of 150bp reads processed per second in paired-end mode, with gzipped input and output.
 
 Benchmarking was performed on an Intel i9-11900K with 8 physical cores, and plotting is therefore limited to ~8 CPUs. AdapterRemoval v2 was observed not to scale past 4 threads. AdapterRemoval v2 was run with default settings and `--gzip-level 4` (gz4).
 
