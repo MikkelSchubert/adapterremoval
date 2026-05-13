@@ -493,18 +493,40 @@ fastq::truncate(size_t pos, size_t len)
   }
 }
 
+namespace {
+
+constexpr std::array<char, 256>
+build_complements_lut()
+{
+  std::array<char, 256> table{};
+
+  table[static_cast<unsigned char>('A')] = 'T';
+  table[static_cast<unsigned char>('C')] = 'G';
+  table[static_cast<unsigned char>('G')] = 'C';
+  table[static_cast<unsigned char>('T')] = 'A';
+  table[static_cast<unsigned char>('N')] = 'N';
+
+  return table;
+}
+
+constexpr auto COMPLEMENTS_LUT = build_complements_lut();
+
+} // namespace
+
 void
 fastq::reverse_complement()
 {
-  std::reverse(m_sequence.begin(), m_sequence.end());
-  std::reverse(m_qualities.begin(), m_qualities.end());
+  if (!m_sequence.empty()) {
+    char* start = m_sequence.data();
+    char* end = start + m_sequence.length() - 1;
+    // Complementing the last base twice is as fast as special-casing it
+    for (; start <= end; ++start, --end) {
+      const auto tmp = COMPLEMENTS_LUT[*start];
+      *start = COMPLEMENTS_LUT[*end];
+      *end = tmp;
+    }
 
-  // Lookup table for complementary bases based only on the last 4 bits
-  constexpr std::array complements{ '-', 'T', '-', 'G', 'A', '-', '-', 'C',
-                                    '-', '-', '-', '-', '-', '-', 'N', '-' };
-
-  for (auto& nuc : m_sequence) {
-    nuc = complements[nuc & 0xf];
+    std::reverse(m_qualities.begin(), m_qualities.end());
   }
 }
 
