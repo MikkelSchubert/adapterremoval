@@ -52,7 +52,7 @@ public:
       return;
     } else if (writer->filename() == DEV_STDOUT) {
       writer->m_file = stdout;
-      writer->m_stream = true;
+      writer->m_regular_file = false;
 
 #ifdef _WIN32
       _setmode(fileno(stdout), O_BINARY);
@@ -60,7 +60,7 @@ public:
     } else if (writer->filename() == DEV_STDERR) {
       // Not sure why anyone would do this, but ¯\_(ツ)_/¯
       writer->m_file = stderr;
-      writer->m_stream = true;
+      writer->m_regular_file = false;
 
 #ifdef _WIN32
       _setmode(fileno(stderr), O_BINARY);
@@ -68,8 +68,8 @@ public:
     } else if (writer->filename() != DEV_PIPE) {
       writer->m_file =
         io_manager::fopen(writer->filename(), writer->m_created ? "ab" : "wb");
-      writer->m_stream =
-        io_manager::is_stream(writer->filename(), writer->m_file);
+      writer->m_regular_file =
+        io_manager::is_regular_file(writer->filename(), writer->m_file);
     } else {
       // Merged I/O depends on filenames being identical
       AR_FAIL("unhandled STDOUT marker");
@@ -164,17 +164,17 @@ private:
     }
   }
 
-  static bool is_stream(const std::string& filename, FILE* handle)
+  static bool is_regular_file(const std::string& filename, FILE* handle)
   {
     struct stat statbuf = {};
     if (fstat(fileno(handle), &statbuf) == 0) {
-      return S_ISFIFO(statbuf.st_mode);
+      return S_ISREG(statbuf.st_mode);
     }
 
     log::warn() << "Could not fstat " << log_escape(filename);
 
     // Assumed to be a stream to be safe
-    return true;
+    return false;
   }
 
   /** Try to close the least recently used writer */
@@ -280,7 +280,7 @@ public:
     AR_REQUIRE(m_writer);
 
     // streams are always open and aren't placed on the queue
-    if (!m_writer->m_stream) {
+    if (m_writer->m_regular_file) {
       // Remove from global queue to prevent other threads from manipulating it
       io_manager::remove(m_writer);
       io_manager::open(m_writer);
@@ -290,7 +290,7 @@ public:
   ~writer_lock()
   {
     // Streams cannot be managed, since they cannot be reopened
-    if (m_writer->m_file && !m_writer->m_stream) {
+    if (m_writer->m_file && m_writer->m_regular_file) {
       // Allow this writer to be closed if we run out of file handles
       io_manager::add(m_writer);
     }

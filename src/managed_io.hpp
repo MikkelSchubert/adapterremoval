@@ -94,8 +94,8 @@ private:
   bool m_created = false;
   //! Lazily opened, managed handle; may be closed to free up handles.
   FILE* m_file = nullptr;
-  //! Indicates if the handle is a stream and can't be closed
-  bool m_stream = false;
+  //! Indicates if the handle is a regular file and can be closed/reopened
+  bool m_regular_file = true;
 
   //! Managed writer used more recently than this writer.
   managed_writer* m_prev = nullptr;
