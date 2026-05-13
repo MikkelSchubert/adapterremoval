@@ -1009,6 +1009,14 @@ TEST_CASE("reverse_complement", "[fastq::fastq]")
   REQUIRE(result == expected);
 }
 
+TEST_CASE("reverse_complement (uneven length)", "[fastq::fastq]")
+{
+  const fastq expected = fastq("Rec", "ACAGANGTN", "123456789");
+  fastq result = fastq("Rec", "NACNTCTGT", "987654321");
+  result.reverse_complement();
+  REQUIRE(result == expected);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Adding prefixes to the header
 
