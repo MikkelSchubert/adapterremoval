@@ -13,7 +13,7 @@ project(
         'debug=false',
         'optimization=2',
         'warning_level=3',
-        'b_lto=true',
+        'b_lto=false',
         'b_lto_mode=thin',
     ],
 )
