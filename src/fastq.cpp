@@ -146,8 +146,16 @@ fastq::fastq(std::string_view header,
 }
 
 fastq::fastq(std::string_view header, std::string sequence)
-  : fastq(header, std::move(sequence), std::string(sequence.length(), '!'))
+  : m_header()
+  , m_sequence(std::move(sequence))
+  , m_qualities(m_sequence.length(), '!')
 {
+  if (header.empty() || header.front() != '@') {
+    m_header.push_back('@');
+  }
+
+  m_header.append(header);
+  post_process(FASTQ_ENCODING_33);
 }
 
 bool
