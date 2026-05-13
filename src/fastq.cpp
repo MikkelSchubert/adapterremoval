@@ -120,7 +120,7 @@ fastq::fastq()
 fastq::fastq(std::string_view header,
              std::string sequence,
              std::string qualities)
-  : fastq(header, sequence, qualities, FASTQ_ENCODING_33)
+  : fastq(header, std::move(sequence), std::move(qualities), FASTQ_ENCODING_33)
 {
 }
 
@@ -146,7 +146,7 @@ fastq::fastq(std::string_view header,
 }
 
 fastq::fastq(std::string_view header, std::string sequence)
-  : fastq(header, sequence, std::string(sequence.length(), '!'))
+  : fastq(header, std::move(sequence), std::string(sequence.length(), '!'))
 {
 }
 
