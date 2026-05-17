@@ -152,6 +152,87 @@ TEST_CASE("constructor_simple_record_dots_to_n", "[fastq::fastq]")
   REQUIRE(record.sequence() == "ACNAGNCN");
 }
 
+TEST_CASE("constructor_simple_mask_degenerate_bases", "[fastq::fastq]")
+{
+  const std::string sequence = "ACmAGDCv";
+  const std::string qualities = "!7BF8DGI";
+
+  REQUIRE_THROWS_AS(
+    fastq("record_1",
+          sequence,
+          qualities,
+          fastq_encoding(quality_encoding::sam, degenerate_encoding::reject)),
+    fastq_error);
+
+  fastq record(
+    "record_1",
+    sequence,
+    qualities,
+    fastq_encoding(quality_encoding::sam, degenerate_encoding::mask));
+
+  REQUIRE(record == fastq{ "record_1", "ACNAGNCN", qualities });
+}
+
+TEST_CASE("constructor_simple_mask_uracils", "[fastq::fastq]")
+{
+  const std::string sequence = "ACUAGuCU";
+  const std::string qualities = "!7BF8DGI";
+
+  REQUIRE_THROWS_AS(fastq("record_1",
+                          sequence,
+                          qualities,
+                          fastq_encoding(quality_encoding::sam,
+                                         degenerate_encoding::reject,
+                                         uracil_encoding::reject)),
+                    fastq_error);
+
+  fastq record("record_1",
+               sequence,
+               qualities,
+               fastq_encoding(quality_encoding::sam,
+                              degenerate_encoding::reject,
+                              uracil_encoding::convert));
+
+  REQUIRE(record == fastq{ "record_1", "ACTAGTCT", qualities });
+}
+
+TEST_CASE("constructor_simple_both_invalid_types", "[fastq::fastq]")
+{
+  const std::string sequence = "ACDAGuCv";
+  const std::string qualities = "!7BF8DGI";
+
+  REQUIRE_THROWS_AS(fastq("record_1",
+                          sequence,
+                          qualities,
+                          fastq_encoding(quality_encoding::sam,
+                                         degenerate_encoding::reject,
+                                         uracil_encoding::reject)),
+                    fastq_error);
+  REQUIRE_THROWS_AS(fastq("record_1",
+                          sequence,
+                          qualities,
+                          fastq_encoding(quality_encoding::sam,
+                                         degenerate_encoding::mask,
+                                         uracil_encoding::reject)),
+                    fastq_error);
+  REQUIRE_THROWS_AS(fastq("record_1",
+                          sequence,
+                          qualities,
+                          fastq_encoding(quality_encoding::sam,
+                                         degenerate_encoding::reject,
+                                         uracil_encoding::convert)),
+                    fastq_error);
+
+  fastq record("record_1",
+               sequence,
+               qualities,
+               fastq_encoding(quality_encoding::sam,
+                              degenerate_encoding::mask,
+                              uracil_encoding::convert));
+
+  REQUIRE(record == fastq{ "record_1", "ACNAGTCN", qualities });
+}
+
 TEST_CASE("constructor_score_boundaries_phred_33", "[fastq::fastq]")
 {
   REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_33));

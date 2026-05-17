@@ -253,86 +253,42 @@ throw_invalid_base(char c)
   throw fastq_error(stream.str());
 }
 
-void
-process_nucleotides_strict(std::string& nucleotides)
+// Build once at startup / compile time
+constexpr std::array<char, 256>
+build_lookup_table(const bool degenerate, const bool uracil)
 {
-  for (char& nuc : nucleotides) {
-    // Fast ASCII letter uppercase
-    const auto upper_case = mangle_to_upper(nuc);
-    switch (upper_case) {
-      case 'A':
-      case 'C':
-      case 'G':
-      case 'T':
-      case 'N':
-        nuc = upper_case;
-        break;
+  std::array<char, 256> lut{}; // zero-initialize: 0 = invalid
 
-      default:
-        // Found in some very old data sets
-        if (nuc == '.') {
-          nuc = 'N';
-        } else {
-          throw_invalid_base(nuc);
-        }
+  const std::array plain_nucleotides = { 'A', 'C', 'G', 'T', 'N' };
+  for (const auto c : plain_nucleotides) {
+    lut[static_cast<unsigned char>(c)] = c;
+    lut[static_cast<unsigned char>(c) ^ 0x20] = c; // from lowercase
+  }
+
+  lut[static_cast<unsigned char>('.')] = 'N'; // legacy data
+
+  if (uracil) {
+    lut[static_cast<unsigned char>('u')] = 'T';
+    lut[static_cast<unsigned char>('U')] = 'T';
+  }
+
+  if (degenerate) {
+    // https://en.wikipedia.org/wiki/Nucleic_acid_notation
+    const std::array degenerate_nucleotides = { 'B', 'D', 'H', 'K', 'M',
+                                                'R', 'S', 'V', 'W', 'Y' };
+    for (const auto c : degenerate_nucleotides) {
+      lut[static_cast<unsigned char>(c)] = 'N';
+      lut[static_cast<unsigned char>(c) ^ 0x20] = 'N'; // from lowercase
     }
   }
+
+  return lut;
 }
 
-void
-process_nucleotides_lenient(std::string& nucleotides,
-                            const bool convert_uracil,
-                            const bool mask_degenerate)
-{
-  for (char& nuc : nucleotides) {
-    // Fast ASCII letter uppercase
-    const auto upper_case = mangle_to_upper(nuc);
-    switch (upper_case) {
-      case 'A':
-      case 'C':
-      case 'G':
-      case 'T':
-      case 'N':
-        nuc = upper_case;
-        break;
-
-      // Uracils
-      case 'U':
-        if (convert_uracil) {
-          nuc = 'T';
-          break;
-        } else {
-          throw_invalid_base(nuc);
-        }
-
-      // IUPAC encoded degenerate bases
-      case 'B': // C / G / T
-      case 'D': // A / G / T
-      case 'H': // A / C / T
-      case 'K': // G / T
-      case 'M': // A / C
-      case 'R': // A / G
-      case 'S': // C / G
-      case 'V': // A / C / G
-      case 'W': // A / T
-      case 'Y': // C / T
-        if (mask_degenerate) {
-          nuc = 'N';
-          break;
-        } else {
-          throw_invalid_base(nuc);
-        }
-
-      default:
-        if (nuc == '.') {
-          // Found in some very old data sets
-          nuc = 'N';
-        } else {
-          throw_invalid_base(nuc);
-        }
-    }
-  }
-}
+constexpr auto NUCLEOTIDES_LUT_PLAIN = build_lookup_table(false, false);
+constexpr auto NUCLEOTIDES_LUT_URACILS = build_lookup_table(false, true);
+constexpr auto NUCLEOTIDES_LUT_DEGENERATE = build_lookup_table(true, false);
+constexpr auto NUCLEOTIDES_LUT_BOTH = build_lookup_table(true, true);
 
 } // namespace
 
@@ -341,32 +297,25 @@ process_nucleotides_lenient(std::string& nucleotides,
 fastq_encoding::fastq_encoding(quality_encoding encoding,
                                degenerate_encoding degenerate,
                                uracil_encoding uracils) noexcept
-  : m_mask_degenerate()
-  , m_convert_uracil()
+  : m_nucleotides_lut(nullptr)
   , m_encoding(encoding)
   , m_offset_min()
   , m_offset_max()
 {
-  switch (degenerate) {
-    case degenerate_encoding::reject:
-      m_mask_degenerate = false;
-      break;
-    case degenerate_encoding::mask:
-      m_mask_degenerate = true;
-      break;
-    default:
-      AR_FAIL("invalid degenerate encoding value");
-  }
-
-  switch (uracils) {
-    case uracil_encoding::convert:
-      m_convert_uracil = true;
-      break;
-    case uracil_encoding::reject:
-      m_convert_uracil = false;
-      break;
-    default:
-      AR_FAIL("invalid uracil encoding value");
+  if (degenerate == degenerate_encoding::reject &&
+      uracils == uracil_encoding::reject) {
+    m_nucleotides_lut = NUCLEOTIDES_LUT_PLAIN.data();
+  } else if (degenerate == degenerate_encoding::reject &&
+             uracils == uracil_encoding::convert) {
+    m_nucleotides_lut = NUCLEOTIDES_LUT_URACILS.data();
+  } else if (degenerate == degenerate_encoding::mask &&
+             uracils == uracil_encoding::reject) {
+    m_nucleotides_lut = NUCLEOTIDES_LUT_DEGENERATE.data();
+  } else if (degenerate == degenerate_encoding::mask &&
+             uracils == uracil_encoding::convert) {
+    m_nucleotides_lut = NUCLEOTIDES_LUT_BOTH.data();
+  } else {
+    AR_FAIL("invalid degenerate or uracil encoding value");
   }
 
   switch (encoding) {
@@ -398,10 +347,12 @@ fastq_encoding::fastq_encoding(quality_encoding encoding,
 void
 fastq_encoding::process_nucleotides(std::string& sequence) const
 {
-  if (m_mask_degenerate || m_convert_uracil) {
-    process_nucleotides_lenient(sequence, m_convert_uracil, m_mask_degenerate);
-  } else {
-    process_nucleotides_strict(sequence);
+  for (char& nuc : sequence) {
+    const char original = nuc;
+    nuc = m_nucleotides_lut[static_cast<unsigned char>(nuc)];
+    if (AR_UNLIKELY(nuc == '\0')) {
+      throw_invalid_base(original);
+    }
   }
 }
 
