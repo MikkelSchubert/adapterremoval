@@ -76,10 +76,8 @@ public:
   static char p_to_phred_33(double p);
 
 private:
-  //! Mask or reject degenerate bases
-  bool m_mask_degenerate;
-  //! Convert or reject uracil
-  bool m_convert_uracil;
+  //! Lookup table for conversion/validation of nucleotides
+  std::array<char, 256>::const_pointer m_nucleotides_lut;
   //! Quality score encoding expected when decoding data
   quality_encoding m_encoding;
   //! Offset of the lowest ASCII value used by the given encoding
@@ -88,10 +86,10 @@ private:
   char m_offset_max;
 };
 
-static const fastq_encoding FASTQ_ENCODING_33{ quality_encoding::phred_33 };
-static const fastq_encoding FASTQ_ENCODING_64{ quality_encoding::phred_64 };
-static const fastq_encoding FASTQ_ENCODING_SAM{ quality_encoding::sam };
-static const fastq_encoding FASTQ_ENCODING_SOLEXA{ quality_encoding::solexa };
+inline const fastq_encoding FASTQ_ENCODING_33{ quality_encoding::phred_33 };
+inline const fastq_encoding FASTQ_ENCODING_64{ quality_encoding::phred_64 };
+inline const fastq_encoding FASTQ_ENCODING_SAM{ quality_encoding::sam };
+inline const fastq_encoding FASTQ_ENCODING_SOLEXA{ quality_encoding::solexa };
 
 ///////////////////////////////////////////////////////////////////////////////
 
