@@ -17,6 +17,7 @@
 #include "utilities.hpp"   // for prng_seed
 #include <algorithm>       // for max, min
 #include <cerrno>          // for errno
+#include <cstdint>         // for uint8_t
 #include <isa-l.h>         // for isal_gzip_header
 #include <libdeflate.h>    // for libdeflate_alloc_compressor, libdeflate...
 #include <memory>          // for unique_ptr, make_unique, __shared_ptr_a...
@@ -596,29 +597,65 @@ split_fastq::process(chunk_ptr data)
 
 namespace {
 
+/** Free isa-l stream and associated level buffer */
+void
+free_isal_zstream(isal_zstream* stream)
+{
+  if (stream) {
+    delete[] stream->level_buf;
+    delete stream;
+  }
+}
+
+/**
+ * Perform level 1 gzip compression using isa-l
+ *
+ * @param input_buffer Buffer containing data to be compressed
+ * @param output_buffer Write output to this buffer. May contain existing data
+ * @param output_offset Skip the first n bytes in the output buffer
+ * @param eof Is this the end of stream or an independently compressed block?
+ * @return the number of bytes written to output_buffer
+ */
 size_t
 isal_deflate_block(buffer& input_buffer,
                    buffer& output_buffer,
                    const size_t output_offset,
                    const bool eof)
 {
-  isal_zstream stream{};
-  isal_deflate_stateless_init(&stream);
+  using compressor_ptr =
+    std::unique_ptr<isal_zstream, decltype(&free_isal_zstream)>;
+  compressor_ptr ptr{ nullptr, &free_isal_zstream };
 
-  stream.flush = FULL_FLUSH;
-  stream.end_of_stream = eof;
+  static std::mutex s_lock;
+  static std::vector<compressor_ptr> s_cache;
 
-  stream.level = ISAL_COMPRESSION_LEVEL;
-  stream.level_buf_size = ISAL_BUFFER_SIZE;
-  buffer level_buffer{ stream.level_buf_size };
-  stream.level_buf = level_buffer.data();
+  {
+    std::unique_lock<std::mutex> locker{ s_lock };
+    if (!s_cache.empty()) {
+      ptr = std::move(s_cache.back());
+      s_cache.pop_back();
+    }
+  }
 
-  stream.avail_in = input_buffer.size();
-  stream.next_in = input_buffer.data();
-  stream.next_out = output_buffer.data() + output_offset;
-  stream.avail_out = output_buffer.size() - output_offset;
+  if (ptr) {
+    isal_deflate_reset(ptr.get());
+  } else {
+    ptr.reset(new isal_zstream());
 
-  const auto ec = isal_deflate_stateless(&stream);
+    isal_deflate_stateless_init(ptr.get());
+    ptr->flush = FULL_FLUSH;
+    ptr->level = ISAL_COMPRESSION_LEVEL;
+    ptr->level_buf_size = ISAL_BUFFER_SIZE;
+    ptr->level_buf = new uint8_t[ISAL_BUFFER_SIZE]();
+  }
+
+  ptr->end_of_stream = eof;
+  ptr->avail_in = input_buffer.size();
+  ptr->next_in = input_buffer.data();
+  ptr->next_out = output_buffer.data() + output_offset;
+  ptr->avail_out = output_buffer.size() - output_offset;
+
+  const auto ec = isal_deflate_stateless(ptr.get());
   switch (ec) {
     case COMP_OK:
       break;
@@ -637,9 +674,71 @@ isal_deflate_block(buffer& input_buffer,
   }
 
   // The easily compressible input should fit in a single output block
-  AR_REQUIRE(stream.avail_in == 0);
+  AR_REQUIRE(ptr->avail_in == 0);
+  const auto total_out = ptr->total_out;
 
-  return stream.total_out;
+  std::unique_lock<std::mutex> locker{ s_lock };
+  s_cache.emplace_back(std::move(ptr));
+
+  return total_out;
+}
+
+/**
+ * Perform gzip compression using libdeflate
+ *
+ * @param input_buffer Buffer containing data to be compressed
+ * @param output_buffer Write output to this buffer. May NOT contain data
+ * @param compression_level compression level must be constant across calls
+ * @param eof Is this the end of stream or an independently compressed block?
+ */
+void
+libdeflate_deflate_block(buffer& input_buffer,
+                         buffer& output_buffer,
+                         const unsigned compression_level,
+                         const bool eof)
+{
+  using compressor_ptr = std::unique_ptr<libdeflate_compressor,
+                                         decltype(&libdeflate_free_compressor)>;
+  compressor_ptr ptr{ nullptr, &libdeflate_free_compressor };
+
+  static std::mutex s_lock;
+  static std::vector<compressor_ptr> s_cache;
+
+  {
+    std::unique_lock<std::mutex> locker{ s_lock };
+    if (!s_cache.empty()) {
+      ptr = std::move(s_cache.back());
+      s_cache.pop_back();
+    }
+  }
+
+  if (!ptr) {
+    // Compression level is assumed to be constant per program invocation
+    ptr.reset(libdeflate_alloc_compressor(compression_level));
+    AR_REQUIRE(ptr);
+  }
+
+  const auto output_bound =
+    libdeflate_deflate_compress_bound(ptr.get(), input_buffer.size());
+
+  output_buffer.reserve(estimate_capacity(output_bound, eof));
+  output_buffer.append(BGZF_HEADER);
+  output_buffer.resize(output_buffer.capacity());
+
+  const auto output_size =
+    libdeflate_deflate_compress(ptr.get(),
+                                input_buffer.data(),
+                                input_buffer.size(),
+                                output_buffer.data() + BGZF_HEADER.size(),
+                                output_buffer.size() - BGZF_HEADER.size());
+
+  // The easily compressible input should fit in a single output block
+  AR_REQUIRE(output_size);
+  // Resize the buffer to the actually used size
+  output_buffer.resize(output_size + BGZF_HEADER.size());
+
+  std::unique_lock<std::mutex> locker{ s_lock };
+  s_cache.emplace_back(std::move(ptr));
 }
 
 } // namespace
@@ -693,27 +792,11 @@ gzip_split_fastq::process(chunk_ptr data)
     } else {
       AR_REQUIRE(m_config.compression_level >= 2 &&
                  m_config.compression_level <= 12);
-      auto* compressor =
-        libdeflate_alloc_compressor(m_config.compression_level);
-      const auto output_bound =
-        libdeflate_deflate_compress_bound(compressor, input_buffer.size());
 
-      output_buffer.reserve(estimate_capacity(output_bound, chunk->eof));
-      output_buffer.append(BGZF_HEADER);
-      output_buffer.resize(output_buffer.capacity());
-
-      const auto output_size =
-        libdeflate_deflate_compress(compressor,
-                                    input_buffer.data(),
-                                    input_buffer.size(),
-                                    output_buffer.data() + BGZF_HEADER.size(),
-                                    output_buffer.size() - BGZF_HEADER.size());
-      libdeflate_free_compressor(compressor);
-      // The easily compressible input should fit in a single output block
-      AR_REQUIRE(output_size);
-
-      // Resize the buffer to the actually used size
-      output_buffer.resize(output_size + BGZF_HEADER.size());
+      libdeflate_deflate_block(input_buffer,
+                               output_buffer,
+                               m_config.compression_level,
+                               chunk->eof);
     }
 
     const auto input_crc32 =
