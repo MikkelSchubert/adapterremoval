@@ -275,7 +275,7 @@ read_fastq::read_single_end(std::vector<fastq>& reads)
 {
   AR_REQUIRE(reads.empty());
 
-  const size_t to_read = std::min(INPUT_READS, m_head);
+  const size_t to_read = std::min<size_t>(INPUT_READS, m_head);
   s_fastq_vec_cache.acquire(reads, to_read);
 
   size_t nread = 0;
