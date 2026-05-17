@@ -1,0 +1,16 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "your_output",
+    "--interleaved-input"
+  ],
+  "return_code": 1,
+  "stderr": [
+    "Found uneven number of interleaved reads"
+  ],
+  "files": {
+    "input_1": [
+      "input_interleaved.fastq"
+    ]
+  }
+}
