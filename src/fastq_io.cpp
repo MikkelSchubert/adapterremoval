@@ -296,7 +296,7 @@ read_fastq::read_interleaved(std::vector<fastq>& reads_1,
 {
   AR_REQUIRE(reads_1.empty() && reads_2.empty());
 
-  const size_t to_read = std::min(INPUT_READS, m_head);
+  const size_t to_read = std::min<size_t>(INPUT_READS, m_head);
   s_fastq_vec_cache.acquire(reads_1, to_read);
   s_fastq_vec_cache.acquire(reads_2, to_read);
 
