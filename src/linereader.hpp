@@ -56,6 +56,9 @@ public:
   /** Reads a line into dst, returning false on EOF. */
   bool getline(std::string& dst) override;
 
+  /** Resets position in vec_reader */
+  void reset() { m_it = m_lines.begin(); }
+
 private:
   //! Lines of text in reader
   std::vector<std::string> m_lines;
