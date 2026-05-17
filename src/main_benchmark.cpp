@@ -47,12 +47,6 @@ public:
   const string_vec& lines_2() const { return m_lines_2; }
 
 protected:
-  void setup() override
-  {
-    m_lines_1 = string_vec();
-    m_lines_2 = string_vec();
-  }
-
   void execute() override
   {
     read_lines(m_filenames_1, m_lines_1);
@@ -67,13 +61,17 @@ private:
   {
     if (!filenames.empty()) {
       joined_line_readers reader(filenames);
-      while (lines.size() / 4 < m_head) {
-        lines.emplace_back();
-        if (!reader.getline(lines.back())) {
-          lines.pop_back();
+
+      size_t nread = 0;
+      // vector and strings are reused to match actual usage via `read_fastq`
+      lines.resize(m_head * 4);
+      for (; nread < m_head * 4; nread++) {
+        if (!reader.getline(lines.at(nread))) {
           break;
         }
       }
+
+      lines.resize(nread);
     }
   }
 
@@ -89,40 +87,46 @@ private:
 class fastq_parser_benchmarker : public benchmarker
 {
 public:
-  fastq_parser_benchmarker(const string_vec& lines_1, const string_vec& lines_2)
+  fastq_parser_benchmarker(const string_vec& lines_1,
+                           const string_vec& lines_2,
+                           fastq_encoding encoding)
     : benchmarker("FASTQ parsing", { "parse" })
-    , m_lines_1(lines_1)
-    , m_lines_2(lines_2)
+    , m_encoding(encoding)
+    , m_reader_1{ lines_1 }
+    , m_reader_2{ lines_2 }
   {
     set_required();
+    m_records_1.resize(lines_1.size() / 4);
+    m_records_2.resize(lines_2.size() / 4);
   }
 
-  const std::vector<fastq>& records_1() const { return m_records_1; }
+  [[nodiscard]] const std::vector<fastq>& records_1() const
+  {
+    return m_records_1;
+  }
 
-  const std::vector<fastq>& records_2() const { return m_records_2; }
+  [[nodiscard]] const std::vector<fastq>& records_2() const
+  {
+    return m_records_2;
+  }
 
 protected:
   void setup() override
   {
-    m_records_1 = std::vector<fastq>();
-    m_records_2 = std::vector<fastq>();
+    m_reader_1.reset();
+    m_reader_2.reset();
   }
 
   void execute() override
   {
-    fastq record;
-    {
-      vec_reader reader_1(m_lines_1);
-      while (record.read(reader_1, FASTQ_ENCODING_33)) {
-        m_records_1.push_back(record);
-      }
+    // FASTQ records are reused to match actual usage via `read_fastq`
+    for (auto& record : m_records_1) {
+      AR_REQUIRE(record.read(m_reader_1, m_encoding));
     }
 
-    {
-      vec_reader reader_2(m_lines_2);
-      while (record.read(reader_2, FASTQ_ENCODING_33)) {
-        m_records_2.push_back(record);
-      }
+    // FASTQ records are reused to match actual usage via `read_fastq`
+    for (auto& record : m_records_2) {
+      AR_REQUIRE(record.read(m_reader_2, m_encoding));
     }
 
     blackbox(m_records_1);
@@ -130,8 +134,9 @@ protected:
   }
 
 private:
-  const string_vec& m_lines_1;
-  const string_vec& m_lines_2;
+  const fastq_encoding m_encoding;
+  vec_reader m_reader_1;
+  vec_reader m_reader_2;
   std::vector<fastq> m_records_1{};
   std::vector<fastq> m_records_2{};
 };
@@ -534,7 +539,9 @@ benchmark(const userconfig& config)
                                head };
   lines.run_if_toggled(toggles);
 
-  fastq_parser_benchmarker records{ lines.lines_1(), lines.lines_2() };
+  fastq_parser_benchmarker records{ lines.lines_1(),
+                                    lines.lines_2(),
+                                    config.io_encoding };
   records.run_if_toggled(toggles);
 
   reverse_complement_benchmarker(records.records_1(), records.records_2())
