@@ -35,7 +35,16 @@ public:
   {
   }
 
-  chunk_vec process(chunk_ptr /* chunk */) override { return {}; }
+  chunk_vec process(chunk_ptr data) override
+  {
+    auto chunk = dynamic_cast_unique<fastq_chunk>(data);
+    AR_REQUIRE(chunk);
+
+    read_fastq::release(std::move(chunk->reads_1));
+    read_fastq::release(std::move(chunk->reads_2));
+
+    return {};
+  }
 };
 
 class adapter_identification : public analytical_step
@@ -109,6 +118,9 @@ public:
 
     m_stats_id.release(std::move(stats_id));
     m_stats_ins.release(std::move(stats_ins));
+
+    read_fastq::release(std::move(chunk->reads_1));
+    read_fastq::release(std::move(chunk->reads_2));
 
     return {};
   }

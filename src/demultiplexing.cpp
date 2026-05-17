@@ -6,6 +6,7 @@
 #include "commontypes.hpp"    // for read_type, read_file
 #include "debug.hpp"          // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
 #include "fastq.hpp"          // for fastq
+#include "fastq_io.hpp"       // for read_fastq
 #include "output.hpp"         // for output_files
 #include "scheduler.hpp"      // for fastq_chunk
 #include "sequence_sets.hpp"  // for adapter_set
@@ -93,6 +94,8 @@ demultiplex_se_reads::process(chunk_ptr data)
     }
   }
 
+  read_fastq::release(std::move(chunk->reads_1));
+
   return m_cache.flush(chunk->eof, chunk->mate_separator);
 }
 
@@ -143,6 +146,9 @@ demultiplex_pe_reads::process(chunk_ptr data)
       m_statistics->samples.at(sample).inc(barcode, 2);
     }
   }
+
+  read_fastq::release(std::move(chunk->reads_1));
+  read_fastq::release(std::move(chunk->reads_2));
 
   return m_cache.flush(chunk->eof, chunk->mate_separator);
 }
