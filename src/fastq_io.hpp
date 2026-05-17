@@ -64,6 +64,9 @@ public:
   /** Finalizer; checks that all input has been processed. */
   void finalize() override;
 
+  /** Release a vector of fastq objects for reuse */
+  static void release(std::vector<fastq>&& chunk);
+
   read_fastq(const read_fastq&) = delete;
   read_fastq(read_fastq&&) = delete;
   read_fastq& operator=(const read_fastq&) = delete;

@@ -7,7 +7,7 @@
 #include "counts.hpp"        // for counts, indexed_count
 #include "debug.hpp"         // for AR_FAIL, AR_REQUIRE
 #include "fastq.hpp"         // for fastq
-#include "fastq_enc.hpp"     // for ACGT
+#include "fastq_io.hpp"      // for read_fastq
 #include "output.hpp"        // for sample_output_files, processed_reads
 #include "scheduler.hpp"     // for analytical_step, processing_order
 #include "sequence_sets.hpp" // for adapter_set
@@ -362,6 +362,11 @@ se_reads_processor::process(chunk_ptr data)
 
   m_stats.release(std::move(stats));
 
+  // avoid adding non-input chunks to the cache
+  if (!m_config.is_demultiplexing_enabled()) {
+    read_fastq::release(std::move(chunk->reads_1));
+  }
+
   return chunks.finalize(chunk->eof);
 }
 
@@ -605,6 +610,12 @@ pe_reads_processor::process(chunk_ptr data)
   stats->ns_resolved += merger.ns_resolved();
 
   m_stats.release(std::move(stats));
+
+  // avoid adding non-input chunks to the cache
+  if (!m_config.is_demultiplexing_enabled()) {
+    read_fastq::release(std::move(chunk->reads_1));
+    read_fastq::release(std::move(chunk->reads_2));
+  }
 
   return chunks.finalize(chunk->eof);
 }

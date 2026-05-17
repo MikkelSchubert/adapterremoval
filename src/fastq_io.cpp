@@ -87,22 +87,14 @@ enum class read_fastq::file_type
 namespace {
 
 bool
-read_record(joined_line_readers& reader, std::vector<fastq>& chunk)
+read_record(joined_line_readers& reader, fastq& record)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
   const auto start = reader.linenumber();
 
   try {
-    chunk.emplace_back();
-    auto& record = chunk.back();
-
-    if (record.read_unsafe(reader)) {
-      return true;
-    } else {
-      chunk.pop_back();
-      return false;
-    }
+    return record.read_unsafe(reader);
   } catch (const fastq_error& error) {
     std::ostringstream stream;
     stream << "Error reading FASTQ record from "
@@ -140,6 +132,62 @@ estimate_capacity(size_t input_size, bool eof)
          + (eof ? BGZF_EOF.size() : 0) // Standard bgzip tail
     ;
 }
+
+class fastq_vec_cache
+{
+public:
+  fastq_vec_cache() = default;
+  fastq_vec_cache(const fastq_vec_cache&) = delete;
+  fastq_vec_cache(fastq_vec_cache&&) = delete;
+  fastq_vec_cache& operator=(const fastq_vec_cache&) = delete;
+  fastq_vec_cache& operator=(fastq_vec_cache&&) = delete;
+  ~fastq_vec_cache() = default;
+
+  /** Attempt to acquire a previously used vector of fastq objects */
+  void acquire(std::vector<fastq>& chunk, size_t capacity)
+  {
+    if (capacity) {
+      std::unique_lock<std::mutex> lock{ s_chunks_lock };
+      if (s_chunks_cache.empty()) {
+        s_chunks_created++;
+      } else {
+        chunk = std::move(s_chunks_cache.back());
+        s_chunks_cache.pop_back();
+      }
+    }
+
+    chunk.resize(capacity);
+  }
+
+  /** Release a vector of fastq objects for reuse */
+  void release(std::vector<fastq>&& chunk)
+  {
+    if (chunk.capacity()) {
+      std::unique_lock<std::mutex> lock{ s_chunks_lock };
+      s_chunks_cache.emplace_back(std::move(chunk));
+    }
+  }
+
+  /** Verify that there were no leaks or lost chunks */
+  void finalize()
+  {
+    std::unique_lock<std::mutex> lock{ s_chunks_lock };
+    AR_REQUIRE(s_chunks_cache.size() == s_chunks_created);
+    s_chunks_cache.clear();
+    s_chunks_created = 0;
+  }
+
+private:
+  //! Lock used to control access to cache of previously allocated FASTQ chunks
+  std::mutex s_chunks_lock{};
+  //! Cache of FASTQ chunks that have previously been returned by `release`
+  std::vector<std::vector<fastq>> s_chunks_cache{};
+  //! #chunks created, to check that `release` and `acquire` are called 1-to-1
+  size_t s_chunks_created = 0;
+};
+
+//! Global cache of FASTQ vectors, used to reduce the number of allocs
+fastq_vec_cache s_fastq_vec_cache;
 
 } // namespace
 
@@ -225,25 +273,47 @@ read_fastq::process(chunk_ptr data)
 void
 read_fastq::read_single_end(std::vector<fastq>& reads)
 {
-  for (; reads.size() < INPUT_READS && m_head && !m_eof; m_head--) {
-    if (!read_record(m_reader, reads)) {
+  AR_REQUIRE(reads.empty());
+
+  const size_t to_read = std::min<size_t>(INPUT_READS, m_head);
+  s_fastq_vec_cache.acquire(reads, to_read);
+
+  size_t nread = 0;
+  for (; nread < to_read; ++nread) {
+    if (!read_record(m_reader, reads.at(nread))) {
       m_eof = true;
+      break;
     }
   }
+
+  m_head -= nread;
+  reads.resize(nread);
 }
 
 void
 read_fastq::read_interleaved(std::vector<fastq>& reads_1,
                              std::vector<fastq>& reads_2)
 {
-  for (; reads_1.size() < INPUT_READS && m_head && !m_eof; m_head--) {
-    if (!read_record(m_reader, reads_1)) {
+  AR_REQUIRE(reads_1.empty() && reads_2.empty());
+
+  const size_t to_read = std::min<size_t>(INPUT_READS, m_head);
+  s_fastq_vec_cache.acquire(reads_1, to_read);
+  s_fastq_vec_cache.acquire(reads_2, to_read);
+
+  size_t nread = 0;
+  for (; nread < to_read; ++nread) {
+    if (!read_record(m_reader, reads_1.at(nread))) {
       m_eof = true;
       break;
+    } else if (!read_record(m_reader, reads_2.at(nread))) {
+      throw fastq_error("Found uneven number of interleaved reads; input files "
+                        " may be truncated. Please fix before continuing.");
     }
-
-    read_record(m_reader, reads_2);
   }
+
+  m_head -= nread;
+  reads_1.resize(nread);
+  reads_2.resize(nread);
 }
 
 void
@@ -251,6 +321,14 @@ read_fastq::finalize()
 {
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
+
+  s_fastq_vec_cache.finalize();
+}
+
+void
+read_fastq::release(std::vector<fastq>&& chunk)
+{
+  s_fastq_vec_cache.release(std::move(chunk));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
