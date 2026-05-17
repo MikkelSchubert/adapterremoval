@@ -188,8 +188,10 @@ adapter_detection_stats::adapter_detection_stats(size_t reads,
 void
 adapter_detection_stats::merge(const adapter_detection_stats& other)
 {
-  AR_REQUIRE(m_mate_1.size() == 0 || m_mate_1.size() == other.m_mate_1.size());
-  AR_REQUIRE(m_mate_2.size() == 0 || m_mate_2.size() == other.m_mate_2.size());
+  AR_REQUIRE(m_mate_1.size() == 0 || other.m_mate_1.size() == 0 ||
+             m_mate_1.size() == other.m_mate_1.size());
+  AR_REQUIRE(m_mate_2.size() == 0 || other.m_mate_2.size() == 0 ||
+             m_mate_2.size() == other.m_mate_2.size());
 
   m_reads_1 += other.m_reads_1;
   m_reads_2 += other.m_reads_2;
