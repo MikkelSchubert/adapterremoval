@@ -94,7 +94,7 @@ private:
   uint64_t m_head = std::numeric_limits<uint64_t>::max();
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock{};
+  std::recursive_mutex m_lock{};
 };
 
 /** Step for performing costly, ordered (duplication) analysis */
@@ -184,7 +184,7 @@ private:
   const fastq_encoding m_encoding;
 
   //! Lock used to control access to progress timer
-  std::mutex m_timer_lock{};
+  std::recursive_mutex m_timer_lock{};
   //! Timer for displaying read progress.
   std::unique_ptr<progress_timer> m_timer;
 };
@@ -225,7 +225,7 @@ private:
   bool m_eof = false;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock{};
+  std::recursive_mutex m_lock{};
 };
 
 /**
@@ -290,7 +290,7 @@ private:
   bool m_eof = false;
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock{};
+  std::recursive_mutex m_lock{};
 };
 
 } // namespace adapterremoval

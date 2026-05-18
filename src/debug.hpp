@@ -19,8 +19,8 @@ debug_raise_assert(std::string_view funcname,
 
 #ifdef __has_builtin
 #if __has_builtin(__builtin_expect)
-#define AR_LIKELY(condition) __builtin_expect(!!(condition), 1)
-#define AR_UNLIKELY(condition) __builtin_expect(!!(condition), 0)
+#define AR_LIKELY(condition) __builtin_expect(static_cast<bool>(condition), 1)
+#define AR_UNLIKELY(condition) __builtin_expect(static_cast<bool>(condition), 0)
 #endif
 #endif
 
@@ -32,8 +32,7 @@ debug_raise_assert(std::string_view funcname,
 /** Custom assert which prints various information on failure; always enabled */
 #define AR_REQUIRE_2_(test, msg)                                               \
   do {                                                                         \
-    /* NOLINTNEXTLINE(readability-simplify-boolean-expr) */                    \
-    if (AR_UNLIKELY(!(test))) {                                                \
+    if (!AR_LIKELY(test)) {                                                    \
       ::adapterremoval::debug_raise_assert(__PRETTY_FUNCTION__,                \
                                            __FILE__,                           \
                                            __LINE__,                           \
@@ -59,12 +58,13 @@ debug_raise_assert(std::string_view funcname,
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)
 
-/** Raise a failure if a scope is accessed more than once at the same time. */
+/** Raise a failure if scope is accessed by multiple threads simultaneously */
 #define AR_REQUIRE_SINGLE_THREAD(lock)                                         \
-  std::unique_lock<std::mutex> AR_MERGE_(locker, __LINE__)(lock,               \
-                                                           std::defer_lock);   \
+  std::unique_lock<std::recursive_mutex> AR_MERGE_(locker,                     \
+                                                   __LINE__)(lock,             \
+                                                             std::defer_lock); \
   do {                                                                         \
-    if (AR_UNLIKELY(!AR_MERGE_(locker, __LINE__).try_lock())) {                \
+    if (!AR_LIKELY(AR_MERGE_(locker, __LINE__).try_lock())) {                  \
       AR_FAIL("race condition detected");                                      \
     }                                                                          \
   } while (0)

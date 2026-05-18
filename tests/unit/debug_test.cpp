@@ -6,6 +6,7 @@
 #include <mutex>       // for unique_lock, mutex
 #include <sstream>     // for operator<<, basic_ostream, char_traits, ostring...
 #include <string>      // for basic_string, operator==, string
+#include <thread>      // for thread
 
 namespace adapterremoval {
 
@@ -71,7 +72,7 @@ TEST_CASE("assert fail")
 
 TEST_CASE("assert single thread")
 {
-  std::mutex lock;
+  std::recursive_mutex lock;
 
   {
     AR_REQUIRE_SINGLE_THREAD(lock);
@@ -84,16 +85,25 @@ TEST_CASE("assert single thread")
 
 TEST_CASE("assert single thread failed")
 {
-  std::mutex lock;
-
+  std::recursive_mutex lock;
   AR_REQUIRE_SINGLE_THREAD(lock);
 
-  bool caught_exception = false;
-  try {
+  {
+    // The same thread is allowed to re-enter the scope
     AR_REQUIRE_SINGLE_THREAD(lock);
-  } catch (const assert_failed&) {
-    caught_exception = true;
   }
+
+  bool caught_exception = false;
+  const auto func = [&lock, &caught_exception]() {
+    try {
+      AR_REQUIRE_SINGLE_THREAD(lock);
+    } catch (const assert_failed&) {
+      caught_exception = true;
+    }
+  };
+
+  std::thread thread{ func };
+  thread.join();
 
   REQUIRE(caught_exception);
 }

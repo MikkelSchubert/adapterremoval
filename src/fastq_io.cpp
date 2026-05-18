@@ -492,7 +492,7 @@ post_process_fastq::process(chunk_ptr data)
   m_stats.release(std::move(stats));
 
   {
-    std::unique_lock<std::mutex> lock(m_timer_lock);
+    std::unique_lock<std::recursive_mutex> lock(m_timer_lock);
     m_timer->increment(reads_1.size() + reads_2.size());
   }
 
