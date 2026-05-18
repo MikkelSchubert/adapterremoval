@@ -594,8 +594,6 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
   AR_REQUIRE(start != end);
 
   const bool deprecated_alias = is_deprecated_alias(*start);
-  AR_REQUIRE(deprecated_alias || *start == m_key_long ||
-             (!m_key_short.empty() && *start == m_key_short));
 
   if (m_removed) {
     auto err = log::error();
@@ -692,8 +690,13 @@ argument::parse(string_vec_citer start, const string_vec_citer& end)
 bool
 argument::is_deprecated_alias(std::string_view key) const
 {
-  return std::find(m_deprecated_keys.begin(), m_deprecated_keys.end(), key) !=
-         m_deprecated_keys.end();
+  AR_REQUIRE(!key.empty());
+  const bool deprecated_alias =
+    std::find(m_deprecated_keys.begin(), m_deprecated_keys.end(), key) !=
+    m_deprecated_keys.end();
+
+  AR_REQUIRE(deprecated_alias || key == m_key_long || key == m_key_short);
+  return deprecated_alias;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,8 +13,6 @@
 #define CATCH_CONFIG_FAST_COMPILE
 #define CATCH_CONFIG_FALLBACK_STRINGIFIER ::Catch::fallbackStringifier
 
-namespace Catch {
-
 /** Helper macro for typed catching of thrown messages */
 #define REQUIRE_THROWS_MESSAGE(expr, exceptionType, message)                   \
   REQUIRE_THROWS_MATCHES(expr, exceptionType, Catch::Message(message))
@@ -22,6 +20,8 @@ namespace Catch {
 /** Helper macro for typed catching of thrown messages */
 #define CHECK_THROWS_MESSAGE(expr, exceptionType, message)                     \
   CHECK_THROWS_MATCHES(expr, exceptionType, Catch::Message(message))
+
+namespace Catch {
 
 /** This function needs to be declared before "catch.hpp" is included */
 template<typename T>
@@ -38,9 +38,9 @@ template<typename T>
 std::string
 fallbackStringifier(const T& value)
 {
-  // A stringstream is used instead of convertUnstreamable, since the latter
-  // will simply omit the contents of unknown object types. This way, the
-  // appropriate stream operator must be defined up front
+  // By using operator<<, all types are required to implement stringifier
+  // functionality, whereas the default stringifier (`convertUnstreamable`) just
+  // returns `{?}` for types that cannot be stringified. This eases debugging
   ReusableStringStream ss;
   ss << value;
   return ss.str();

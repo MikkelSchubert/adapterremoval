@@ -247,7 +247,7 @@ TEST_CASE("Exact match among similar SE barcodes for PE reads - differs at 3p",
 }
 
 TEST_CASE("Shorter and longer reads for SE barcodes and PE reads",
-          "[barcodes::exact::se]")
+          "[barcodes::exact::pe]")
 {
   const sample_set samples{
     "sample ACCCA",
@@ -443,7 +443,7 @@ TEST_CASE("Global limits override local limits for SE barcodes",
 }
 
 TEST_CASE("Global limits override local limits for PE barcodes",
-          "[barcodes::inexact::se]")
+          "[barcodes::inexact::pe]")
 {
   const sample_set samples{
     "sample ACCCA GTTTC",

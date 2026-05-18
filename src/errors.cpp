@@ -96,14 +96,32 @@ io_error::io_error(const std::string& message, int error_number)
 {
 }
 
+std::ostream&
+io_error::to_stream(std::ostream& os) const
+{
+  return format_exception(os, "io_error", *this);
+}
+
 gzip_error::gzip_error(const std::string& message)
   : io_error(message)
 {
 }
 
+std::ostream&
+gzip_error::to_stream(std::ostream& os) const
+{
+  return format_exception(os, "gzip_error", *this);
+}
+
 parsing_error::parsing_error(const std::string& message)
   : std::runtime_error(message)
 {
+}
+
+std::ostream&
+parsing_error::to_stream(std::ostream& os) const
+{
+  return format_exception(os, "parsing_error", *this);
 }
 
 serializing_error::serializing_error(const std::string& message)
@@ -114,6 +132,12 @@ serializing_error::serializing_error(const std::string& message)
 fastq_error::fastq_error(const std::string& message)
   : parsing_error(message)
 {
+}
+
+std::ostream&
+fastq_error::to_stream(std::ostream& os) const
+{
+  return format_exception(os, "fastq_error", *this);
 }
 
 fatal_error::fatal_error(const std::string& message)
@@ -130,25 +154,19 @@ operator<<(std::ostream& os, const assert_failed& value)
 std::ostream&
 operator<<(std::ostream& os, const io_error& value)
 {
-  return format_exception(os, "io_error", value);
-}
-
-std::ostream&
-operator<<(std::ostream& os, const gzip_error& value)
-{
-  return format_exception(os, "gzip_error", value);
+  return value.to_stream(os);
 }
 
 std::ostream&
 operator<<(std::ostream& os, const parsing_error& value)
 {
-  return format_exception(os, "parsing_error", value);
+  return value.to_stream(os);
 }
 
 std::ostream&
-operator<<(std::ostream& os, const fastq_error& value)
+operator<<(std::ostream& os, const serializing_error& value)
 {
-  return format_exception(os, "fastq_error", value);
+  return format_exception(os, "serializing_error", value);
 }
 
 std::ostream&

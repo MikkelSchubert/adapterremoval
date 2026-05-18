@@ -324,9 +324,8 @@ TEST_CASE("log_escape tests")
 {
   // empty values must be quoted
   REQUIRE(log_escape("") == "''");
-  // passes simple values unchanged
+  // always escapes values, with or without whitespace
   REQUIRE(log_escape("my_file.txt") == "'my_file.txt'");
-  // whitespace in a value must be quoted
   REQUIRE(log_escape("my file.txt") == "'my file.txt'");
   // various characters must be escaped (using standard escapes)
   REQUIRE(log_escape("bob's_file.txt") == "'bob\\'s_file.txt'");
@@ -455,7 +454,7 @@ TEST_CASE("format_fraction")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'format_fraction'
+// Tests for 'format_percentage'
 
 TEST_CASE("format_percentage")
 {

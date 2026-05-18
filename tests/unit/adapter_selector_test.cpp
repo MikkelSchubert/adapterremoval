@@ -207,8 +207,8 @@ TEST_CASE("adapter selector on SE data")
   chunk->data = std::make_unique<fastq_chunk>();
   chunk->data->reads_1 = {
     fastq{ "read1", "AGTGTTATTTAA" },
-    fastq{ "read1", "ACGGACGTTTA" },
-    fastq{ "read1", "ACGGACGTTTA" },
+    fastq{ "read2", "ACGGACGTTTA" },
+    fastq{ "read3", "ACGGACGTTTA" },
   };
 
   auto out = step.process(std::move(chunk));
@@ -268,7 +268,6 @@ test_finalizer_on_chunks(threadsafe_data<sample_set> samples,
                          std::vector<chunk_ptr>& chunks,
                          adapter_fallback fallback)
 {
-
   REQUIRE(samples.get_reader()->adapters() == adapter_set{});
 
   adapter_set adapters{
@@ -552,7 +551,6 @@ TEST_CASE("stats are merged across chunks")
                                                { {}, { 3, 0 }, {}, {} } };
 
   auto chunk_2 = std::make_unique<adapter_chunk>();
-  chunk_2 = std::make_unique<adapter_chunk>();
   chunk_2->data = std::make_unique<fastq_chunk>();
   chunk_2->last_adapter_selection_block = true;
   chunk_2->adapters = adapter_detection_stats{ 10,

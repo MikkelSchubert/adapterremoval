@@ -121,7 +121,6 @@ TEST_CASE("alignment_info::score")
   REQUIRE(ALN().length(13).info.score() == 13);
   REQUIRE(ALN().length(13).n_ambiguous(5).info.score() == 8);
   REQUIRE(ALN().length(13).n_mismatches(5).info.score() == 3);
-  REQUIRE(ALN().length(13).n_ambiguous(5).info.score() == 8);
   REQUIRE(ALN().length(13).n_ambiguous(6).n_mismatches(5).info.score() == -3);
 }
 
@@ -1626,19 +1625,6 @@ TEST_CASE("Extracting empty sequences yields empty sequences #2",
   REQUIRE(read2 == fastq("read2", "", ""));
 }
 
-TEST_CASE("Extracting empty sequences yields empty sequences #3",
-          "[alignment::extract_adapter_sequences]")
-{
-  const fastq expected_1 = fastq("read1", "AATTTT", "!!!!!!");
-  const fastq expected_2 = fastq("read2", "", "");
-  fastq read1 = fastq("read1", "", "");
-  fastq read2 = expected_2;
-  alignment_info alignment;
-  alignment.extract_adapter_sequences(read1, read2);
-  REQUIRE(read1 == fastq("read1", "", ""));
-  REQUIRE(read2 == fastq("read2", "", ""));
-}
-
 TEST_CASE("Extracting empty sequences yields empty sequences #4",
           "[alignment::extract_adapter_sequences]")
 {
@@ -1652,14 +1638,14 @@ TEST_CASE("Extracting empty sequences yields empty sequences #4",
   REQUIRE(read2 == fastq("read2", "", ""));
 }
 
-TEST_CASE("Extracting with no alignment yields empty sequences",
+TEST_CASE("Extracting no alignment/complete overlap yields empty sequences",
           "[alignment::extract_adapter_sequences]")
 {
   const fastq expected_1 = fastq("read1", "AATTTT", "!!!!!!");
   const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment;
+  alignment_info alignment = GENERATE(alignment_info{}, ALN().length(6));
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1673,19 +1659,6 @@ TEST_CASE("Extracting with partial overlap yields empty sequences",
   fastq read1 = expected_1;
   fastq read2 = expected_2;
   alignment_info alignment = ALN().offset(2);
-  alignment.extract_adapter_sequences(read1, read2);
-  REQUIRE(read1 == fastq("read1", "", ""));
-  REQUIRE(read2 == fastq("read2", "", ""));
-}
-
-TEST_CASE("Extracting with complete overlap yields empty sequences",
-          "[alignment::extract_adapter_sequences]")
-{
-  const fastq expected_1 = fastq("read1", "AATTTT", "!!!!!!");
-  const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
-  fastq read1 = expected_1;
-  fastq read2 = expected_2;
-  alignment_info alignment;
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1864,7 +1837,7 @@ TEST_CASE("rotate nucleotide")
   REQUIRE(rotate_nucleotide('C') == 'G');
   REQUIRE(rotate_nucleotide('G') == 'T');
   REQUIRE(rotate_nucleotide('T') == 'A');
-  REQUIRE(rotate_nucleotide('T') == 'A');
+  REQUIRE_THROWS_AS(rotate_nucleotide('N'), assert_failed);
   REQUIRE_THROWS_AS(rotate_nucleotide('X'), assert_failed);
 }
 
@@ -2000,9 +1973,9 @@ TEST_CASE("stringmaker for alignment_info")
 TEST_CASE("stringmaker for ALN")
 {
   std::ostringstream os;
-  os << alignment_info{};
+  os << ALN{};
 
-  REQUIRE(os.str() == "alignment_info{score=0, adapter_id=-1, offset=0, "
+  REQUIRE(os.str() == "alignment_info{score=0, adapter_id=0, offset=0, "
                       "length=0, n_mismatches=0, n_ambiguous=0, "
                       "m_type=alignment_type::bad}");
 }

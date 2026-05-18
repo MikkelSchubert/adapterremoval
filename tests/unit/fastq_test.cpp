@@ -28,10 +28,10 @@ namespace adapterremoval {
 TEST_CASE("ACGT::to_index", "[fastq::*]")
 {
   // The exact encoding is unimportant, but it must be unique and 2 bit
-  REQUIRE(ACGT::to_index('A') <= 3);
-  REQUIRE(ACGT::to_index('C') <= 3);
-  REQUIRE(ACGT::to_index('G') <= 3);
-  REQUIRE(ACGT::to_index('T') <= 3);
+  REQUIRE((ACGT::to_index('A') >= 0 && ACGT::to_index('A') <= 3));
+  REQUIRE((ACGT::to_index('C') >= 0 && ACGT::to_index('C') <= 3));
+  REQUIRE((ACGT::to_index('G') >= 0 && ACGT::to_index('G') <= 3));
+  REQUIRE((ACGT::to_index('T') >= 0 && ACGT::to_index('T') <= 3));
 
   REQUIRE(ACGT::to_index('A') != ACGT::to_index('C'));
   REQUIRE(ACGT::to_index('A') != ACGT::to_index('G'));
@@ -51,12 +51,12 @@ TEST_CASE("ACGT::to_value", "[fastq::*]")
 
 TEST_CASE("ACGTN::to_index", "[fastq::*]")
 {
-  // The exact encoding is unimportant, but it must be unique in the range 0-4
-  REQUIRE(ACGTN::to_index('A') <= 8);
-  REQUIRE(ACGTN::to_index('C') <= 8);
-  REQUIRE(ACGTN::to_index('G') <= 8);
-  REQUIRE(ACGTN::to_index('T') <= 8);
-  REQUIRE(ACGTN::to_index('N') <= 8);
+  // The exact encoding is unimportant, but it must be unique in the range 0-8
+  REQUIRE((ACGTN::to_index('A') >= 0 && ACGTN::to_index('A') <= 8));
+  REQUIRE((ACGTN::to_index('C') >= 0 && ACGTN::to_index('C') <= 8));
+  REQUIRE((ACGTN::to_index('G') >= 0 && ACGTN::to_index('G') <= 8));
+  REQUIRE((ACGTN::to_index('T') >= 0 && ACGTN::to_index('T') <= 8));
+  REQUIRE((ACGTN::to_index('N') >= 0 && ACGTN::to_index('N') <= 8));
 
   REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('C'));
   REQUIRE(ACGTN::to_index('A') != ACGTN::to_index('G'));
@@ -291,17 +291,6 @@ TEST_CASE("constructor_score_boundaries_phred_sam", "[fastq::fastq]")
                       Catch::Contains("Found raw FASTQ quality score of 127"));
 }
 
-TEST_CASE("constructor_score_boundaries_ignored", "[fastq::fastq]")
-{
-  REQUIRE_NOTHROW(fastq("Rec", "CAT", "!!\"", FASTQ_ENCODING_SAM));
-  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", " !\"", FASTQ_ENCODING_SAM),
-                      Catch::Contains("Found raw FASTQ quality score of 32"));
-
-  REQUIRE_NOTHROW(fastq("Rec", "CAT", "gh~", FASTQ_ENCODING_SAM));
-  REQUIRE_THROWS_WITH(fastq("Rec", "CAT", "gh\x7f", FASTQ_ENCODING_SAM),
-                      Catch::Contains("Found raw FASTQ quality score of 127"));
-}
-
 TEST_CASE("constructor_field_lengths", "[fastq::fastq]")
 {
   const std::string message =
@@ -374,7 +363,7 @@ TEST_CASE("move_constructor", "[fastq::fastq]")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Move constructor
+// Assignment constructor
 
 TEST_CASE("assignment_operator", "[fastq::fastq]")
 {
@@ -969,7 +958,7 @@ TEST_CASE("trim_poly_x stops trims best candidate")
   REQUIRE(poly_x_trimming("ACGT", 10, "TATTTTTTTT").empty());
 }
 
-TEST_CASE("trim_poly_x doesn't count Ns in alignnment")
+TEST_CASE("trim_poly_x doesn't count Ns in alignment")
 {
   REQUIRE(poly_x_trimming("C", 5, "CCCCCC").empty());
   REQUIRE(poly_x_trimming("C", 5, "CTCCCC") == "CTCCCC");
@@ -1411,7 +1400,7 @@ TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
   REQUIRE(record.header() == "@record_1");
   REQUIRE(record.sequence() == "ACGTA");
   REQUIRE(record.qualities() == "!!!!!");
-  REQUIRE_NOTHROW(!record.read(reader, FASTQ_ENCODING_33));
+  CHECK(!record.read(reader, FASTQ_ENCODING_33));
 }
 
 TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
