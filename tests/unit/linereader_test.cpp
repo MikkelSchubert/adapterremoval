@@ -14,17 +14,20 @@ namespace adapterremoval {
 
 using string_vec = std::vector<std::string>;
 
+namespace {
+
 FILE*
 temporary_file(const string_vec& lines)
 {
   FILE* handle = std::tmpfile();
+  REQUIRE(handle);
 
   for (const auto& line : lines) {
     const auto n = std::fwrite(line.data(), sizeof(char), line.size(), handle);
     REQUIRE(n == line.size());
   }
 
-  std::rewind(handle);
+  REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
 
   return handle;
 }
@@ -33,8 +36,10 @@ FILE*
 temporary_gzip_file(const string_vec& blocks)
 {
   FILE* handle = std::tmpfile();
-
+  REQUIRE(handle);
   auto* compressor = libdeflate_alloc_compressor(6);
+  REQUIRE(compressor);
+
   for (const auto& block : blocks) {
     std::array<char, 1024> buffer{};
     auto size = libdeflate_gzip_compress(compressor,
@@ -42,14 +47,14 @@ temporary_gzip_file(const string_vec& blocks)
                                          block.size(),
                                          buffer.data(),
                                          buffer.size());
-
+    REQUIRE(size > 0);
     const auto n = std::fwrite(buffer.data(), sizeof(char), size, handle);
     REQUIRE(n == size);
   }
 
   libdeflate_free_compressor(compressor);
 
-  std::rewind(handle);
+  REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
 
   return handle;
 }
@@ -64,10 +69,10 @@ read_lines(line_reader& reader)
     lines.push_back(buffer);
   }
 
-  REQUIRE(buffer.empty());
-
   return lines;
 }
+
+} // namespace
 
 TEST_CASE("line_reader throws on null")
 {
@@ -259,7 +264,7 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
   FILE* handle = temporary_gzip_file(input);
   REQUIRE(std::fseek(handle, 0, SEEK_END) == 0);
   REQUIRE(std::fwrite("trailing junk", sizeof(char), 13, handle) == 13);
-  std::rewind(handle);
+  REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
 
   log::log_capture ss;
   line_reader reader(handle);
@@ -267,6 +272,23 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
   REQUIRE_THAT(ss.str(),
                Catch::Matchers::Contains(
                  "[WARNING] Ignoring trailing garbage at the end of"));
+}
+
+TEST_CASE("line reader always clears buffer")
+{
+  const string_vec input = { "HnSw4nWJAsds32emFfQdwO6Z\n"
+                             "tiuSGNsadNZ\n",
+                             // with/without trailing newline
+                             GENERATE("pAehX8GBlmyOPR\n", "pAehX8GBlmyOPR") };
+  FILE* handle = temporary_gzip_file(input);
+  line_reader reader(handle);
+
+  std::string buffer;
+  while (reader.getline(buffer)) {
+    REQUIRE(!buffer.empty());
+  }
+
+  REQUIRE(buffer.empty());
 }
 
 } // namespace adapterremoval

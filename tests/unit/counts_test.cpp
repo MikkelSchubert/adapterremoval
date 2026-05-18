@@ -261,11 +261,14 @@ TEST_CASE("counts operator==")
   const counts empty;
   const counts non_empty_1 = { 1, 2, 3 };
   const counts non_empty_2 = { 3, 2, 1 };
+  const counts non_empty_3 = { 1, 2, 3 };
 
   REQUIRE(empty == empty);
   REQUIRE(non_empty_1 == non_empty_1);
+  REQUIRE(non_empty_1 == non_empty_3);
   REQUIRE(!(empty == non_empty_1));
   REQUIRE(!(non_empty_1 == non_empty_2));
+  REQUIRE(!(non_empty_2 == non_empty_3));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -399,7 +402,9 @@ TEST_CASE("indexed_counts<ACGT> resize_up_to")
   {
     auto c = indexed_counts<ACGT>(2);
     REQUIRE(c.size() == 2);
+    REQUIRE(c.to_counts('A') == counts({ 0, 0 }));
     c.inc('A', 1);
+    REQUIRE(c.to_counts('A') == counts({ 0, 1 }));
     c.resize_up_to(5);
     REQUIRE(c.to_counts('A') == counts({ 0, 1, 0, 0, 0 }));
     REQUIRE(c.to_counts('C') == counts({ 0, 0, 0, 0, 0 }));
@@ -505,14 +510,18 @@ TEST_CASE("indexed_counts<ACGT> operator==")
   const indexed_counts<ACGT> empty;
   auto non_empty_1 = indexed_counts<ACGT>(1);
   auto non_empty_2 = indexed_counts<ACGT>(1);
+  auto non_empty_3 = indexed_counts<ACGT>(1);
 
   non_empty_1.inc('A', 0);
   non_empty_2.inc('T', 0);
+  non_empty_3.inc('A', 0);
 
   REQUIRE(empty == empty);
   REQUIRE(non_empty_1 == non_empty_1);
+  REQUIRE(non_empty_1 == non_empty_3);
   REQUIRE(!(empty == non_empty_1));
   REQUIRE(!(non_empty_1 == non_empty_2));
+  REQUIRE(!(non_empty_2 == non_empty_3));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -525,7 +534,6 @@ TEST_CASE("counts to string")
   c.inc(0, 15);
   c.inc(1, 10);
   c.inc(2, 5);
-  c.inc(3, 0);
 
   REQUIRE(Catch::fallbackStringifier(c) == "counts{[15, 10, 5, 0]}");
 }

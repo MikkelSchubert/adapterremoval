@@ -30,13 +30,13 @@ TEST_CASE("non-empty dna_sequence", "[dna_sequence]")
   CHECK(fallbackStringifier(seq) == "dna_sequence{'ACCNTAT'}");
 }
 
-TEST_CASE("dna_equence addition", "[dna_sequence]")
+TEST_CASE("dna_sequence addition", "[dna_sequence]")
 {
   CHECK("ACCGTAT"_dna + dna_sequence{} == "ACCGTAT"_dna);
   CHECK("ACCGTAT"_dna + "CCGT"_dna == "ACCGTATCCGT"_dna);
 }
 
-TEST_CASE("dna_sequence equality")
+TEST_CASE("dna_sequence equality", "[dna_sequence]")
 {
   CHECK(dna_sequence{} == dna_sequence{});
   CHECK_FALSE("ACCNTAT"_dna == dna_sequence{});
@@ -45,7 +45,7 @@ TEST_CASE("dna_sequence equality")
   CHECK_FALSE("ACCNTAT"_dna == "CC"_dna);
 }
 
-TEST_CASE("dna_sequence literal")
+TEST_CASE("dna_sequence literal", "[dna_sequence]")
 {
   CHECK(""_dna == dna_sequence{});
   CHECK("ACCNTAT"_dna == "ACCNTAT"_dna);

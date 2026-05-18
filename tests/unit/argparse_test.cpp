@@ -253,7 +253,7 @@ TEST_CASE("with uint minimum", "[argparse::u32_sink]")
     REQUIRE_THROWS_MESSAGE(sink.consume(values.begin(), values.end()),
                            std::invalid_argument,
                            "value must be at least 100");
-    REQUIRE(value != 0);
+    REQUIRE(value == 100);
   }
 }
 
@@ -297,7 +297,7 @@ TEST_CASE("with uint maximum", "[argparse::u32_sink]")
     REQUIRE_THROWS_MESSAGE(sink.consume(values.begin(), values.end()),
                            std::invalid_argument,
                            "value must be at most 100");
-    REQUIRE(value != 101);
+    REQUIRE(value == 0);
   }
 }
 
@@ -924,7 +924,7 @@ TEST_CASE("short argument alias", "[argparse::argument]")
   REQUIRE(arg.short_key() == "-a");
   REQUIRE(arg.keys() == string_vec{ "--12345", "-a" });
   REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
-  REQUIRE_FALSE(arg.is_deprecated_alias("-1"));
+  REQUIRE_FALSE(arg.is_deprecated_alias("-a"));
 }
 
 TEST_CASE("deprecated argument alias", "[argparse::argument]")

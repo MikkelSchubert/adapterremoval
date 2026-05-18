@@ -8,8 +8,6 @@
 #include <string>          // for string
 #include <string_view>     // for string_view
 
-using Contains = Catch::Matchers::StdString::ContainsMatcher;
-
 namespace adapterremoval {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,7 +63,7 @@ TEST_CASE("minimal read group with ID", "[read_group]")
 
   rg.set_id(id);
   REQUIRE(rg.id() == id);
-  REQUIRE(rg.header() == std::string("@RG\tID:") + id + "");
+  REQUIRE(rg.header() == std::string("@RG\tID:") + id);
 }
 
 TEST_CASE("minimal read group with SM", "[read_group]")
@@ -79,7 +77,7 @@ TEST_CASE("minimal read group with SM", "[read_group]")
   std::string name = GENERATE("2", "longer");
 
   rg.set_sample(name);
-  REQUIRE(rg.header() == std::string("@RG\tID:1\tSM:") + name + "");
+  REQUIRE(rg.header() == std::string("@RG\tID:1\tSM:") + name);
 }
 
 TEST_CASE("minimal read group with barcodes", "[read_group]")

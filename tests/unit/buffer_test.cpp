@@ -192,7 +192,7 @@ TEST_CASE("buffer append u8")
   REQUIRE(buf.at(3) == 0xEF);
 }
 
-TEST_CASE("buffer append u16")
+TEST_CASE("buffer append u16 is le")
 {
   buffer buf;
   buf.append_u16(0xDEAD);
@@ -219,7 +219,7 @@ TEST_CASE("buffer append_u32 is le")
 TEST_CASE("buffer append_i32 is le")
 {
   buffer buf;
-  buf.append_i32(0xDEADBEEF);
+  buf.append_i32(static_cast<int32_t>(0xDEADBEEF));
 
   REQUIRE(buf.at(3) == 0xDE);
   REQUIRE(buf.at(2) == 0xAD);

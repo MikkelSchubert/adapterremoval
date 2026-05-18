@@ -8,7 +8,7 @@ namespace adapterremoval {
 
 TEST_CASE("fastq_encoding::phred_to_p")
 {
-  CHECK(fastq_encoding::phred_to_p(-0) == Approx(1.0));
+  CHECK(fastq_encoding::phred_to_p(-0.0) == Approx(1.0));
   CHECK(fastq_encoding::phred_to_p(0) == Approx(1.0));
   CHECK(fastq_encoding::phred_to_p(1) == Approx(0.7943282));
   CHECK(fastq_encoding::phred_to_p(10) == Approx(0.1));

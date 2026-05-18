@@ -16,7 +16,7 @@ using u64vec = std::vector<uint64_t>;
 
 TEST_CASE("arithmetic mean")
 {
-  REQUIRE_THROWS_AS(arithmetic_mean(u64vec()), assert_failed);
+  REQUIRE_THROWS_AS(arithmetic_mean(u64vec{}), assert_failed);
   REQUIRE(arithmetic_mean(u64vec{ 13 }) == Approx(13));
   REQUIRE(arithmetic_mean(u64vec{ 10, 15 }) == Approx(12.5));
   REQUIRE(arithmetic_mean(u64vec{ 119509, 48979, 38789 }) == Approx(69092.33));

@@ -27,6 +27,7 @@ Catch::StringMaker<std::invalid_argument, void>::convert(
   return format_exception("invalid_argument", value);
 }
 
+// This definition replaces the one in `catch.hpp`, which has been commented out
 std::string
 StringMaker<std::string>::convert(const std::string& str)
 {
@@ -37,7 +38,7 @@ StringMaker<std::string>::convert(const std::string& str)
   for (const auto c : str) {
     // Escape any special characters that cannot be distinguished at a glance
     const auto uc = static_cast<uint8_t>(c);
-    if (!std::isprint(uc) || (std::isspace(uc) && (c != ' ' && c != '\n'))) {
+    if (!std::isprint(uc) && c != '\n') {
       return adapterremoval::log_escape(str);
     }
   }

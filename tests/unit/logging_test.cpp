@@ -9,18 +9,18 @@ namespace adapterremoval {
 
 TEST_CASE("log capture timestamps")
 {
-  log::set_timestamps(false);
+  log::set_timestamps(GENERATE(true, false));
   // Force logging of preamble prior to tests
   log::log_preamble();
 
-  SECTION("timestamps disabled")
+  // timestamps disabled
   {
     log::log_capture cap;
     log::info() << "test 1";
     REQUIRE(cap.str() == "[INFO] test 1\n");
   }
 
-  SECTION("timestamps enabled")
+  // timestamps enabled
   {
     log::log_capture cap;
     log::set_timestamps(true);
@@ -29,7 +29,7 @@ TEST_CASE("log capture timestamps")
     REQUIRE_THAT(cap.str(), Catch::EndsWith("[INFO] test 2\n"));
   }
 
-  SECTION("timestamps restored")
+  // timestamps restored
   {
     log::log_capture cap;
     log::info() << "test 3";
@@ -39,11 +39,11 @@ TEST_CASE("log capture timestamps")
 
 TEST_CASE("log capture colors")
 {
-  log::set_colors(false);
+  log::set_colors(GENERATE(true, false));
   // Force logging of preamble prior to tests
   log::log_preamble();
 
-  SECTION("colors enabled")
+  // colors enabled
   {
     log::log_capture cap;
     log::set_colors(true);
@@ -51,7 +51,7 @@ TEST_CASE("log capture colors")
     REQUIRE(cap.str() == "[\033[0;32mINFO\033[0m] test 1\n");
   }
 
-  SECTION("colors restored")
+  // colors restored
   {
     log::log_capture cap;
     log::info() << "test 2";
@@ -65,7 +65,7 @@ TEST_CASE("log capture levels")
   // Force logging of preamble prior to tests
   log::log_preamble();
 
-  SECTION("default levels")
+  // default levels
   {
     log::log_capture cap;
     log::debug() << "test 1";
@@ -78,7 +78,7 @@ TEST_CASE("log capture levels")
                          "[ERROR] test 4\n");
   }
 
-  SECTION("filter levels")
+  // filter levels
   {
     log::log_capture cap;
     log::set_level(log::level::warning);
@@ -90,13 +90,15 @@ TEST_CASE("log capture levels")
                          "[ERROR] test 4\n");
   }
 
-  SECTION("levels restored")
+  // levels restored
   {
     log::log_capture cap;
+    log::debug() << "test 1";
     log::info() << "test 2";
     log::warn() << "test 3";
     log::error() << "test 4";
-    REQUIRE(cap.str() == "[INFO] test 2\n"
+    REQUIRE(cap.str() == "[DEBUG] test 1\n"
+                         "[INFO] test 2\n"
                          "[WARNING] test 3\n"
                          "[ERROR] test 4\n");
   }

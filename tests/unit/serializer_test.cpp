@@ -145,16 +145,6 @@ TEST_CASE("FASTQ is the same for all read and sub-formats")
                              read_type::singleton_1,
                              read_type::singleton_2,
                              read_type::merged,
-                             read_type::merged_fail,
-                             read_type::se,
-                             read_type::se_fail,
-                             read_type::pe_1,
-                             read_type::pe_1_fail,
-                             read_type::pe_2,
-                             read_type::pe_2_fail,
-                             read_type::singleton_1,
-                             read_type::singleton_2,
-                             read_type::merged,
                              read_type::merged_fail);
   const auto format = GENERATE(output_format::fastq, output_format::fastq_gzip);
 
@@ -193,7 +183,7 @@ TEST_CASE("Writing FASTQ with meta-data to buffer", "[serializer::fastq]")
 ///////////////////////////////////////////////////////////////////////////////
 // SAM header serialization
 
-TEST_CASE("Writing SAM header to buffer", "[serializer::fastq]")
+TEST_CASE("Writing SAM header to buffer", "[serializer::sam]")
 {
   buffer buf;
   serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
@@ -212,7 +202,7 @@ TEST_CASE("Writing SAM header to buffer", "[serializer::fastq]")
   REQUIRE(buf == expected);
 }
 
-TEST_CASE("Writing SAM read-group header to buffer", "[serializer::fastq]")
+TEST_CASE("Writing SAM read-group header to buffer", "[serializer::sam]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
   sample.set_read_group({});
@@ -233,7 +223,7 @@ TEST_CASE("Writing SAM read-group header to buffer", "[serializer::fastq]")
 }
 
 TEST_CASE("Writing SAM read-group header to buffer with multiple barcodes",
-          "[serializer::fastq]")
+          "[serializer::sam]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
   sample.add_barcodes("TTGG"_dna, "AGTT"_dna, barcode_orientation::unspecified);
@@ -423,7 +413,7 @@ TEST_CASE("serialize SAM record from FASTQ with meta-data")
 ///////////////////////////////////////////////////////////////////////////////
 // BAM header serialization
 
-TEST_CASE("Writing BAM header to buffer", "[serializer::fastq]")
+TEST_CASE("Writing BAM header to buffer", "[serializer::bam]")
 {
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
 
@@ -450,7 +440,7 @@ TEST_CASE("Writing BAM header to buffer", "[serializer::fastq]")
   REQUIRE(buf == expected);
 }
 
-TEST_CASE("Writing BAM read-group header to buffer", "[serializer::fastq]")
+TEST_CASE("Writing BAM read-group header to buffer", "[serializer::bam]")
 {
 
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
@@ -477,7 +467,7 @@ TEST_CASE("Writing BAM read-group header to buffer", "[serializer::fastq]")
 }
 
 TEST_CASE("Writing BAM read-group header to buffer with multiple barcodes",
-          "[serializer::fastq]")
+          "[serializer::bam]")
 {
   sample sample{ BASIC_SAMPLE_WITH_BARCODES };
   sample.add_barcodes("TTGG"_dna, "AGTT"_dna, barcode_orientation::unspecified);
@@ -720,7 +710,7 @@ TEST_CASE("Serializing too long read names")
   // The maximum allowed read name length for SAM/BAM
   static_assert(EXTREMELY_LONG_NAME.size() == 254);
 
-  auto name = std ::string{ EXTREMELY_LONG_NAME };
+  auto name = std::string{ EXTREMELY_LONG_NAME };
   fastq record_254{ name, "ACGT", "!!!!" };
   fastq record_255{ name + "5", "ACGT", "!!!!" };
 
@@ -797,7 +787,7 @@ TEST_CASE("read type to file type mapping")
     CHECK(meta.get_file() == read_file::singleton);
   }
 
-  SECTION("--out-singleton")
+  SECTION("--out-merged")
   {
     read_meta meta(read_type::merged);
     CHECK(meta.get_file() == read_file::merged);

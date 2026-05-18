@@ -162,7 +162,7 @@ TEST_CASE("identical to_string and write for json_token::from_<int>")
 
   SECTION("u64")
   {
-    auto s = json_token::from_u64(-83754);
+    auto s = json_token::from_u64(83754);
     REQUIRE(s->to_string() == _write_json(*s));
   }
 }
@@ -239,7 +239,7 @@ TEST_CASE("identical to_string and write for json_token::from_null")
 ////////////////////////////////////////////////////////////////////////////////
 // json_dict::from_i64_vec
 
-TEST_CASE("json_token::from_i64_vec is null")
+TEST_CASE("json_token::from_i64_vec")
 {
   counts c(3);
   c.inc(0, 3);

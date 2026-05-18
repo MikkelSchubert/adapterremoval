@@ -52,6 +52,13 @@ TEST_CASE("sample_sequences equality operator", "[sample_sequences]")
     CHECK_FALSE(set_1 == set_2);
   }
 
+  SECTION("read_group_")
+  {
+    auto set_2 = set_1;
+    set_2.read_group_ = read_group{ "ID:foo" };
+    CHECK_FALSE(set_1 == set_2);
+  }
+
   SECTION("barcode_1")
   {
     auto set_2 = set_1;
@@ -130,6 +137,7 @@ TEST_CASE("default sample constructor", "[sample]")
   sample s;
 
   CHECK(s == s);
+  CHECK(s == sample{});
   CHECK(s.name() == "");
   CHECK(s.size() == 1);
   CHECK(s.at(0) == sample_sequences{});
@@ -143,13 +151,14 @@ TEST_CASE("explicit sample constructor", "[sample]")
   sample_sequences ss{ "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
 
   CHECK(s == s);
+  CHECK(s == sample{ s });
   CHECK(s.name() == "foo");
   CHECK(s.size() == 1);
   CHECK(s.at(0) == ss);
   CHECK(std::vector(s.begin(), s.end()) == std::vector{ ss });
 }
 
-TEST_CASE("barcode2 requires barcode1 in sample constructor ", "[sample]")
+TEST_CASE("barcode2 requires barcode1 in sample constructor", "[sample]")
 {
   dna_sequence s1{};
   dna_sequence s2{ "ACGT" };
@@ -261,23 +270,20 @@ TEST_CASE("set read group for sample with barcode orientation", "[sample]")
 
 TEST_CASE("sample equality operator", "[sample]")
 {
-  CHECK(sample{} == sample{ "",
-                            dna_sequence{},
-                            dna_sequence{},
-                            barcode_orientation::unspecified });
-  CHECK_FALSE(sample{} == sample{ "foo",
-                                  dna_sequence{},
-                                  dna_sequence{},
-                                  barcode_orientation::unspecified });
-  CHECK_FALSE(
-    sample{} ==
-    sample{ "", "ACGT"_dna, dna_sequence{}, barcode_orientation::unspecified });
-  CHECK_FALSE(
-    sample{} ==
-    sample{ "", "ACGT"_dna, "ACGT"_dna, barcode_orientation::unspecified });
-  CHECK_FALSE(
-    sample{} ==
-    sample{ "", dna_sequence{}, dna_sequence{}, barcode_orientation::reverse });
+  constexpr auto unspecified = barcode_orientation::unspecified;
+  constexpr auto forward = barcode_orientation::forward;
+
+  CHECK(sample{} == sample{});
+  CHECK(sample{} == sample{ "", {}, {}, unspecified });
+
+  const sample s{ "foo", "ACGT"_dna, "TGTA"_dna, forward };
+  CHECK(s == sample{ s });
+
+  CHECK(s == sample{ "foo", "ACGT"_dna, "TGTA"_dna, forward });
+  CHECK_FALSE(s == sample{ "bar", "ACGT"_dna, "TGTA"_dna, forward });
+  CHECK_FALSE(s == sample{ "foo", "TTTA"_dna, "TGTA"_dna, forward });
+  CHECK_FALSE(s == sample{ "foo", "ACGT"_dna, "CGTA"_dna, forward });
+  CHECK_FALSE(s == sample{ "foo", "ACGT"_dna, "TGTA"_dna, unspecified });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
