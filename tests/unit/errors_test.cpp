@@ -79,8 +79,7 @@ TEST_CASE("serializing_error to string", "[errors]")
 
 TEST_CASE("fastq_error to string", "[errors]")
 {
-
-  SECTION("as gzip_error")
+  SECTION("as fastq_error")
   {
     std::ostringstream ss;
     ss << fastq_error("d611b2a5-6501-45b0-94dd-5bec7971f84c");
