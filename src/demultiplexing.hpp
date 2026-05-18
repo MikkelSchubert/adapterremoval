@@ -59,7 +59,7 @@ protected:
   demux_stats_ptr m_statistics{};
 
   //! Lock used to verify that the analytical_step is only run sequentially.
-  std::mutex m_lock{};
+  std::recursive_mutex m_lock{};
 };
 
 /** Demultiplexer for single-end reads. */
