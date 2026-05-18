@@ -7,7 +7,6 @@ brew install \
 	isa-l \
 	libdeflate \
 	meson \
-	mimalloc \
 	ninja \
 	sphinx-doc \
 	uv
