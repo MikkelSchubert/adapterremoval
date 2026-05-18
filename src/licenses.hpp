@@ -178,7 +178,7 @@ constexpr std::string_view const LICENSES =
   "\n"
 
   // Mimalloc
-  "Static builds of adapterremoval use Mimalloc:\n"
+  "AdapterRemoval may optionally make use of Mimalloc:\n"
   "  Homepage = https://github.com/microsoft/mimalloc\n"
   "  License = MIT license\n"
   "\n"
