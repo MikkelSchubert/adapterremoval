@@ -106,23 +106,23 @@ TEST_CASE("load table with wrong number of columns", "[adapter_set]")
   // it only makes sense to test PE, since SE would test reading an empty file
   CHECK_THROWS_MESSAGE(load_adapters({ "ACGTTA" }, true),
                        parsing_error,
-                       "Error at line 1: Expected at least 2 columns, but "
+                       "Error at line 1: Expected at least 2 column(s), but "
                        "found 1 column(s)");
 
   CHECK_THROWS_MESSAGE(load_adapters({ "GTTAGA CCTGAG", "ACGTTA" }, false),
                        parsing_error,
                        "Error at line 2: Inconsistent number of columns; "
-                       "expected 2 column(s) but found 1");
+                       "expected 2 column(s), but found 1 column(s)");
 }
 
 TEST_CASE("load table with too many columns", "[adapter_set]")
 {
   const auto paired_end = GENERATE(true, false);
 
-  CHECK_THROWS_MESSAGE(load_adapters({ "ACGTTA ACCGTA bad" }, paired_end),
-                       parsing_error,
-                       "Error at line 1: Expected at most 2 columns, but found "
-                       "3 column(s)");
+  CHECK_THROWS_MESSAGE(
+    load_adapters({ "ACGTTA ACCGTA bad" }, paired_end),
+    parsing_error,
+    "Error at line 1: Expected at most 2 column(s), but found 3 column(s)");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

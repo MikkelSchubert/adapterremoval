@@ -18,10 +18,10 @@ void
 throw_table_error(std::string_view name, size_t linenum, std::string_view error)
 {
   std::ostringstream ss;
-  if (!name.empty() || linenum != static_cast<size_t>(-1)) {
+  if (!name.empty() || linenum) {
     ss << "Error";
 
-    if (linenum != static_cast<size_t>(-1)) {
+    if (linenum) {
       ss << " at line " << linenum;
     }
 
@@ -38,6 +38,49 @@ throw_table_error(std::string_view name, size_t linenum, std::string_view error)
 }
 
 } // namespace
+
+////////////////////////////////////////////////////////////////////////////////
+// table_row
+
+table_row::table_row(size_t line_num, std::vector<std::string> values)
+  : m_line_num(line_num)
+  , m_values(std::move(values))
+{
+}
+
+bool
+table_row::operator==(const table_row& other) const noexcept
+{
+  return m_line_num == other.m_line_num && m_values == other.m_values;
+}
+
+bool
+table_row::operator!=(const table_row& other) const noexcept
+{
+  return !(*this == other);
+}
+
+std::ostream&
+operator<<(std::ostream& os, const table_row& row)
+{
+  os << "table_row{line_num=";
+
+  if (row.m_line_num) {
+    os << row.m_line_num;
+  } else {
+    os << "NA";
+  }
+
+  std::vector<std::string> values;
+  for (const auto& value : row.m_values) {
+    values.emplace_back(log_escape(value));
+  }
+
+  return os << ", values=[" << join_text(values, ", ") << "]}";
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// table_reader
 
 table_reader&
 table_reader::with_comment_char(char value)
@@ -78,9 +121,11 @@ table_reader::parse(line_reader_base& lr) const
 
   try {
     for (size_t linenum = 1; lr.getline(buffer); ++linenum) {
-      const size_t index = buffer.find('#');
-      if (index != std::string::npos) {
-        buffer.resize(index);
+      if (m_comment_char) {
+        const size_t index = buffer.find(m_comment_char);
+        if (index != std::string::npos) {
+          buffer.resize(index);
+        }
       }
 
       std::string_view line = trim_ascii_whitespace(buffer);
@@ -88,28 +133,30 @@ table_reader::parse(line_reader_base& lr) const
         continue;
       }
 
-      table_row row{ linenum, {} };
+      std::vector<std::string> values;
       std::istringstream instream{ buffer };
       for (; instream >> field; field.clear()) {
-        row.values.push_back(field);
+        values.push_back(field);
       }
 
+      table_row row{ linenum, std::move(values) };
       if (row.size() < m_min_columns) {
         std::ostringstream message;
         message << "Expected at least " << m_min_columns
-                << " columns, but found " << row.size() << " column(s)";
+                << " column(s), but found " << row.size() << " column(s)";
 
         throw_table_error<parsing_error>(m_name, linenum, message.str());
       } else if (row.size() > m_max_columns) {
         std::ostringstream message;
         message << "Expected at most " << m_max_columns
-                << " columns, but found " << row.size() << " column(s)";
+                << " column(s), but found " << row.size() << " column(s)";
 
         throw_table_error<parsing_error>(m_name, linenum, message.str());
       } else if (!table.empty() && table.back().size() != row.size()) {
         std::ostringstream message;
         message << "Inconsistent number of columns; expected "
-                << table.back().size() << " column(s) but found " << row.size();
+                << table.back().size() << " column(s), but found " << row.size()
+                << " column(s)";
 
         throw_table_error<parsing_error>(m_name, linenum, message.str());
       }
@@ -117,7 +164,7 @@ table_reader::parse(line_reader_base& lr) const
       table.emplace_back(std::move(row));
     }
   } catch (const io_error& error) {
-    throw_table_error<io_error>(m_name, static_cast<size_t>(-1), error.what());
+    throw_table_error<io_error>(m_name, 0, error.what());
   }
 
   return table;
