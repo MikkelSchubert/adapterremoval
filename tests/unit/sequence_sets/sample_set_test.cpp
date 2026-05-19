@@ -611,7 +611,7 @@ TEST_CASE("Double barcodes are required for barcode orientation",
 
   CHECK_THROWS_MESSAGE(sample_set(lines, config),
                        parsing_error,
-                       "Error at line 1: Expected at least 3 columns, but "
+                       "Error at line 1: Expected at least 3 column(s), but "
                        "found 2 column(s)");
 }
 
@@ -677,7 +677,7 @@ TEST_CASE("Orientation must be present for explicit barcodes", "[sample_set]")
 
   CHECK_THROWS_MESSAGE(sample_set(lines, CONFIG_PE_EXPLICIT),
                        parsing_error,
-                       "Error at line 2: Expected at least 4 columns, but "
+                       "Error at line 2: Expected at least 4 column(s), but "
                        "found 3 column(s)");
 }
 
