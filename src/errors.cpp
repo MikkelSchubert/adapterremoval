@@ -3,10 +3,10 @@
 #include "errors.hpp"   // declarations
 #include "strutils.hpp" // for log_escape, stringify
 #include <array>        // for array
-#include <cstdio>       // for sys_errlist, sys_nerr
 #include <cstring>      // for strerror_r
 #include <exception>    // for exception
 #include <ostream>      // for ostream
+#include <sstream>      // for ostringstream
 #include <stdexcept>    // for logic_error, runtime_error
 #include <string>       // for string
 #include <string_view>  // for string_view
@@ -86,62 +86,18 @@ assert_failed::assert_failed(const std::string& what)
 {
 }
 
-io_error::io_error(const std::string& message)
+program_failure::program_failure(const std::string& message)
   : std::runtime_error(message)
+{
+}
+
+io_error::io_error(const std::string& message)
+  : program_failure(message)
 {
 }
 
 io_error::io_error(const std::string& message, int error_number)
-  : std::runtime_error(format_io_error(message, error_number))
-{
-}
-
-std::ostream&
-io_error::to_stream(std::ostream& os) const
-{
-  return format_exception(os, "io_error", *this);
-}
-
-gzip_error::gzip_error(const std::string& message)
-  : io_error(message)
-{
-}
-
-std::ostream&
-gzip_error::to_stream(std::ostream& os) const
-{
-  return format_exception(os, "gzip_error", *this);
-}
-
-parsing_error::parsing_error(const std::string& message)
-  : std::runtime_error(message)
-{
-}
-
-std::ostream&
-parsing_error::to_stream(std::ostream& os) const
-{
-  return format_exception(os, "parsing_error", *this);
-}
-
-serializing_error::serializing_error(const std::string& message)
-  : std::runtime_error(message)
-{
-}
-
-fastq_error::fastq_error(const std::string& message)
-  : parsing_error(message)
-{
-}
-
-std::ostream&
-fastq_error::to_stream(std::ostream& os) const
-{
-  return format_exception(os, "fastq_error", *this);
-}
-
-fatal_error::fatal_error(const std::string& message)
-  : std::runtime_error(message)
+  : program_failure(format_io_error(message, error_number))
 {
 }
 
@@ -152,27 +108,9 @@ operator<<(std::ostream& os, const assert_failed& value)
 }
 
 std::ostream&
-operator<<(std::ostream& os, const io_error& value)
+operator<<(std::ostream& os, const program_failure& value)
 {
-  return value.to_stream(os);
-}
-
-std::ostream&
-operator<<(std::ostream& os, const parsing_error& value)
-{
-  return value.to_stream(os);
-}
-
-std::ostream&
-operator<<(std::ostream& os, const serializing_error& value)
-{
-  return format_exception(os, "serializing_error", value);
-}
-
-std::ostream&
-operator<<(std::ostream& os, const fatal_error& value)
-{
-  return format_exception(os, "fatal_error", value);
+  return format_exception(os, value.kind(), value);
 }
 
 } // namespace adapterremoval

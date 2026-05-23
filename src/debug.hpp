@@ -2,20 +2,30 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include <mutex>       // for recursive_mutex
 #include <string_view> // for string_view
 
 namespace adapterremoval {
 
-/**
- * Aborts after printing the filename, line-number, and message, plus
- * instructions for how to report the problem.
- */
+/** Terminate on internal error; prints how to file issue on github */
 [[noreturn]] void
-debug_raise_assert(std::string_view funcname,
-                   std::string_view filename,
-                   unsigned lineno,
-                   std::string_view test,
-                   std::string_view msg);
+terminate_on_bug(std::string_view message);
+
+/** Terminate on external error; prints warning not to use program output */
+[[noreturn]] void
+terminate_on_failure(std::string_view message);
+
+/** Terminate on unhandled exception */
+[[noreturn]] void
+terminate_on_exception();
+
+/** Terminate on failed assert; prints location and how to file issue */
+[[noreturn]] void
+terminate_on_assert(std::string_view funcname,
+                    std::string_view filename,
+                    unsigned lineno,
+                    std::string_view test,
+                    std::string_view msg);
 
 #ifdef __has_builtin
 #if __has_builtin(__builtin_expect)
@@ -33,11 +43,11 @@ debug_raise_assert(std::string_view funcname,
 #define AR_REQUIRE_2_(test, msg)                                               \
   do {                                                                         \
     if (!AR_LIKELY(test)) {                                                    \
-      ::adapterremoval::debug_raise_assert(__PRETTY_FUNCTION__,                \
-                                           __FILE__,                           \
-                                           __LINE__,                           \
-                                           #test,                              \
-                                           msg);                               \
+      ::adapterremoval::terminate_on_assert(__PRETTY_FUNCTION__,               \
+                                            __FILE__,                          \
+                                            __LINE__,                          \
+                                            #test,                             \
+                                            msg);                              \
     }                                                                          \
   } while (0)
 
@@ -49,11 +59,11 @@ debug_raise_assert(std::string_view funcname,
 
 /** Raise an assert failure with a user-specified message. */
 #define AR_FAIL(msg)                                                           \
-  ::adapterremoval::debug_raise_assert(__PRETTY_FUNCTION__,                    \
-                                       __FILE__,                               \
-                                       __LINE__,                               \
-                                       {},                                     \
-                                       msg)
+  ::adapterremoval::terminate_on_assert(__PRETTY_FUNCTION__,                   \
+                                        __FILE__,                              \
+                                        __LINE__,                              \
+                                        {},                                    \
+                                        msg)
 
 #define AR_MERGE1_(a, b) a##b
 #define AR_MERGE_(a, b) AR_MERGE1_(a, b)
@@ -67,6 +77,8 @@ debug_raise_assert(std::string_view funcname,
     if (!AR_LIKELY(AR_MERGE_(locker, __LINE__).try_lock())) {                  \
       AR_FAIL("race condition detected");                                      \
     }                                                                          \
-  } while (0)
+  } while (0);                                                                 \
+  /* Ensure that this macro cannot be placed after if or while without {} */   \
+  [[maybe_unused]] int AR_MERGE_(_braces_are_required, __LINE__)
 
 } // namespace adapterremoval

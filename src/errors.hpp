@@ -22,8 +22,37 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const assert_failed& value);
 };
 
+/** Base class for errors that should not represent bugs in the program */
+class program_failure : public std::runtime_error
+{
+public:
+  /** Produces an error without an associated error code */
+  explicit program_failure(const std::string& message);
+
+  /** Generic stream functions for program failure sub-classes */
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const program_failure& value);
+
+protected:
+  //! The specific kind of error
+  [[nodiscard]] virtual std::string_view kind() const = 0;
+};
+
+#define AR_DEFINE_FAILURE_FROM(subclass, name)                                 \
+  class name : public subclass /** NOLINT(bugprone-macro-parentheses) */       \
+  {                                                                            \
+  public:                                                                      \
+    explicit name(const std::string& message)                                  \
+      : subclass(message)                                                      \
+    {                                                                          \
+    }                                                                          \
+                                                                               \
+  protected:                                                                   \
+    [[nodiscard]] std::string_view kind() const override { return #name; }     \
+  };
+
 /** Represents errors during basic IO. */
-class io_error : public std::runtime_error
+class io_error : public program_failure
 {
 public:
   /** Produces an error without an associated error code */
@@ -32,61 +61,23 @@ public:
   /** Produces a combined error including a description of the error code */
   explicit io_error(const std::string& message, int error_number);
 
-  friend std::ostream& operator<<(std::ostream& os, const io_error& value);
-
 protected:
-  virtual std::ostream& to_stream(std::ostream& os) const;
+  [[nodiscard]] std::string_view kind() const override { return "io_error"; }
 };
 
 /** Represents errors during GZip (de)compression. */
-class gzip_error : public io_error
-{
-public:
-  explicit gzip_error(const std::string& message);
-
-protected:
-  std::ostream& to_stream(std::ostream& os) const override;
-};
+AR_DEFINE_FAILURE_FROM(io_error, gzip_error);
 
 /** Exception raised for parsing and validation errors. */
-class parsing_error : public std::runtime_error
-{
-public:
-  explicit parsing_error(const std::string& message);
+AR_DEFINE_FAILURE_FROM(program_failure, parsing_error);
 
-  friend std::ostream& operator<<(std::ostream& os, const parsing_error& value);
-
-protected:
-  virtual std::ostream& to_stream(std::ostream& os) const;
-};
-
-/** Exception raised for for errors during serialization / encoding. */
-class serializing_error : public std::runtime_error
-{
-public:
-  explicit serializing_error(const std::string& message);
-
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const serializing_error& value);
-};
+/** Exception raised for errors during serialization / encoding. */
+AR_DEFINE_FAILURE_FROM(program_failure, serializing_error);
 
 /** Exception raised for FASTQ parsing and validation errors. */
-class fastq_error : public parsing_error
-{
-public:
-  explicit fastq_error(const std::string& message);
-
-protected:
-  std::ostream& to_stream(std::ostream& os) const override;
-};
+AR_DEFINE_FAILURE_FROM(parsing_error, fastq_error);
 
 /** Exception raised to trigger a generic (testable) fatal error */
-class fatal_error : public std::runtime_error
-{
-public:
-  explicit fatal_error(const std::string& message);
-
-  friend std::ostream& operator<<(std::ostream& os, const fatal_error& value);
-};
+AR_DEFINE_FAILURE_FROM(program_failure, fatal_error);
 
 } // namespace adapterremoval

@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "debug.hpp" // declarations
-#include "main.hpp"  // for terminate
 #include <sstream>   // for ostringstream
 
 namespace adapterremoval {
 
 [[noreturn]] void
-debug_raise_assert(std::string_view funcname,
-                   std::string_view filename,
-                   unsigned lineno,
-                   std::string_view test,
-                   std::string_view msg)
+terminate_on_assert(std::string_view funcname,
+                    std::string_view filename,
+                    unsigned lineno,
+                    std::string_view test,
+                    std::string_view msg)
 {
   std::ostringstream message;
 
@@ -25,7 +24,7 @@ debug_raise_assert(std::string_view funcname,
     message << ": " << msg;
   }
 
-  terminate(message.str());
+  terminate_on_bug(message.str());
 }
 
 } // namespace adapterremoval
