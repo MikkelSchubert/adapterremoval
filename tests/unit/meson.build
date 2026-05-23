@@ -15,6 +15,7 @@ unit_tests = executable(
     'errors_test.cpp',
     'fastq_enc_test.cpp',
     'fastq_test.cpp',
+    'joined_linereader_test.cpp',
     'json_test.cpp',
     'linereader_test.cpp',
     'logging_test.cpp',
