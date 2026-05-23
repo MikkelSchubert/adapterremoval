@@ -99,9 +99,9 @@ private:
 
   //! Reader used to fill unparsed buffers
   managed_reader m_reader;
-  /** Refills 'm_raw_buffer'; sets 'm_raw_buffer_ptr' and 'm_raw_buffer_end'. */
+  /** Refills 'm_raw_buffer' and updates 'm_raw_buffer_end' */
   void refill_raw_buffer(size_t avail_in = 0);
-  /** Points 'm_buffer' and other points to corresponding 'm_raw_buffer's. */
+  /** Points `m_buffer` and related pointers to 'm_raw_buffer` */
   void refill_buffers_uncompressed();
 
   std::unique_ptr<inflate_state> m_gzip_stream;

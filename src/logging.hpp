@@ -36,7 +36,7 @@ enum class level
 class log_stream
 {
 public:
-  /* Crates a log stream with the specified log level */
+  /* Creates a log stream with the specified log level */
   explicit log_stream(level lvl);
   /** Writes the message if the corresponding log-level is enabled */
   ~log_stream();
@@ -46,7 +46,7 @@ public:
    *
    * The message is assumed to contain no new-lines. In addition, this message
    * will be cleared before any further messages are printed. This can only be
-   * used with level::none.
+   * used with level::cerr.
    */
   log_stream& transient();
 
@@ -83,7 +83,7 @@ private:
 class log_capture
 {
 public:
-  /** Starts capturing log messages; aborts if another instance exists. */
+  /** Starts capturing log messages */
   log_capture();
   /** Restores output to stderr and restores previous settings. */
   ~log_capture();
@@ -111,8 +111,8 @@ private:
 
 /**
  * Writes to stderr (or log_capture); unlike other logging streams, `cerr`
- *does not write a timestamp or a log-level, nor does it add a trailing
- *newline.
+ * does not write a timestamp or a log-level, nor does it add a trailing
+ * newline.
  **/
 inline log_stream
 cerr()

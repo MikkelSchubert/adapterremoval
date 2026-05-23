@@ -251,7 +251,7 @@ line_reader::refill_buffers_gzip()
   m_gzip_stream->avail_out = m_buffer->size();
   m_gzip_stream->next_out = reinterpret_cast<uint8_t*>(m_buffer->data());
 
-  // Refill the buffer if empty or if we need more data to properlyidentify
+  // Refill the buffer if empty or if we need more data to properly identify
   // additional gzip blocks and parse their headers. The number of bytes (64) is
   // arbitrary, but should suffice.
   if (!m_gzip_stream->avail_in ||

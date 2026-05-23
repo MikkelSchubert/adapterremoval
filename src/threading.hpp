@@ -124,7 +124,7 @@ class threadsafe_data
   using data_ptr = std::shared_ptr<inner>;
 
 public:
-  /** The `reader`class provides non-exclusive read access to the inner data */
+  /** The `reader` class provides non-exclusive read access to the inner data */
   template<typename U>
   class reader
   {
@@ -171,7 +171,7 @@ public:
     std::shared_lock<std::shared_mutex> m_lock;
   };
 
-  /** The `reader`class provides exclusive write access to the inner data */
+  /** The `writer` class provides exclusive write access to the inner data */
   template<typename U>
   class writer
   {

@@ -265,7 +265,7 @@ serializer::sam_record(buffer& buf,
   buf.append("\t"
              "*\t" // 3. RNAME
              "0\t" // 4. POS
-             "0\t" // 5. MAPQ
+             "0\t" // 5. MAPQ. See note regarding MAPQ in `bam_record`
              "*\t" // 6. CIGAR
              "*\t" // 7. RNEXT
              "0\t" // 8. PNEXT
@@ -317,9 +317,11 @@ serializer::bam_record(buffer& buf,
 
   const auto name = prepare_name(record, m_mate_separator_in);
   buf.append_u8(name.length() + 1); // l_read_name
-  buf.append_u8(0);                 // mapq
-  buf.append_u16(4680);             // bin (c.f. specification 4.2.1)
-  buf.append_u16(0);                // n_cigar
+  // MAPQ is set to 0, not 255, even though the latter means "MAPQ unavailable".
+  // This is because few tools handle MAPQ 255 and to match samtools/gatk/picard
+  buf.append_u8(0);     // mapq
+  buf.append_u16(4680); // bin (c.f. specification 4.2.1)
+  buf.append_u16(0);    // n_cigar
   buf.append_u16(read_type_to_bam(meta.m_type)); // flags
 
   buf.append_u32(record.length()); // l_seq
@@ -327,8 +329,8 @@ serializer::bam_record(buffer& buf,
   buf.append_i32(-1);              // next_pos
   buf.append_i32(0);               // tlen
 
-  buf.append(name); // read_name + NUL terminator
-  buf.append_u8(0);
+  buf.append(name); // read_name
+  buf.append_u8(0); // NUL terminator
   // no cigar operations
   sequence_to_bam(buf, record.sequence());
   qualities_to_bam(buf, record.qualities());

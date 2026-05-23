@@ -57,9 +57,9 @@ public:
 
   /** Ignore all text on a line past this character. Set to `\0` to disable */
   table_reader& with_comment_char(char value);
-  /** Table must contain at least this many columns; most be a non-zero value */
+  /** Table must contain at least this many columns; must be a non-zero value */
   table_reader& with_min_columns(size_t value);
-  /** Table must contain at most this many columns; most be a non-zero value */
+  /** Table must contain at most this many columns; must be a non-zero value */
   table_reader& with_max_columns(size_t value);
   /** Set filename/name of table for use in error messages */
   table_reader& with_name(std::string_view value);
@@ -70,9 +70,9 @@ public:
 private:
   //! Optional comment char; NUL signifies no comment char
   char m_comment_char = '\0';
-  //! Minimum number of columns; must be at least one
+  //! Minimum number of columns
   size_t m_min_columns = 1;
-  //! Maximum number of columns; must be greater than m_min_columns
+  //! Maximum number of columns
   size_t m_max_columns = std::numeric_limits<size_t>::max();
   //! Optional (file)name used in error messages
   std::string m_name{};

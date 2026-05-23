@@ -386,7 +386,7 @@ parse_table_orientation(std::string_view value)
   } else if (value_l == "unspecified") {
     return barcode_table_orientation::unspecified;
   } else {
-    throw std::invalid_argument("invalid barcode table orientation ");
+    throw std::invalid_argument("invalid barcode table orientation");
   }
 }
 

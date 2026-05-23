@@ -27,7 +27,8 @@ enum class progress_type
  *  1. A log based timer that prints the current progress every 1M reads.
  *  2. An animated timer (spinner) that updates the current number of processed
  *     reads once every second. This rate is intentionally lower than the speed
- *     of the since it feels noisy to have the statistics constantly updating.
+ *     of the animation since it feels noisy to have the statistics constantly
+ *     updating.
  *
  * A final summary is printed using the 'finalize' function for both modes
  */

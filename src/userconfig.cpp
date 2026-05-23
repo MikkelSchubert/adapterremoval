@@ -650,7 +650,7 @@ userconfig::userconfig()
 
     AR_REQUIRE(!choices.empty());
     argparser.add("--simd", "NAME")
-      .help("SIMD instruction set to use; when multiple SIMD instruction sets"
+      .help("SIMD instruction set to use; when multiple SIMD instruction sets "
             "are supported, attempt to auto-select the optimal instruction set "
             "for the current data")
       .bind_str(nullptr)
@@ -1977,8 +1977,8 @@ userconfig::setup_adapter_sequences()
     if (adapter_1.empty() && !paired_ended_mode) {
       log::warn() << "It is not possible to trim adapters from single-end "
                      "reads if an empty --adapter1 sequence has been set; "
-                     "AdapterRemoval will asusume that no adapters can be "
-                     "found in the input. Use '--adapter-selection none' to "
+                     "AdapterRemoval will assume that no adapters can be found "
+                     "in the input. Use '--adapter-selection none' to "
                      "explicitly enable this behavior and silence this warning";
 
       adapter_selection_strategy = adapter_selection::none;

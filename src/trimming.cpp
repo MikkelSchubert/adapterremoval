@@ -137,6 +137,9 @@ post_trim_read_termini(const userconfig& config,
     case read_file::merged:
       AR_REQUIRE(config.paired_ended_mode);
       trim_5p = config.post_trim_fixed_5p.first;
+      // In a merged read, the 3p is derived from the 5p of the mate 2 read. For
+      // that reason both ends of the merged reads are trimmed based on the
+      // --post-trim-5p option, as if they had been trimmed prior to merging
       trim_3p = config.post_trim_fixed_5p.second;
       break;
 

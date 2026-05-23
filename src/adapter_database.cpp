@@ -109,15 +109,13 @@ const std::array ADAPTER_DATABASE = {
   known_adapters{
     "Lexogen Small RNA-Seq",
     { "TGGAATTCTCGGGTGCCAAGGAACTCCAGTCAC" },
-  }
-#ifdef TAKARA_SMARTER
-  // Not included due to high probability of false positives
-  known_adapters{
-    "Takara SMARTer smRNA-Seq",
-    { "AAAAAAAAAA" },
   },
-#endif
 };
+
+// The following, known sequences are intentionally omitted:
+// - Name: Takara SMARTer smRNA-Seq
+//   Reason: Would also match poly-A tails and similar artifacts
+//   Sequences: AAAAAAAAAA
 
 //! Simplifies checking boolean conditions that may be false or true
 const std::array FALSE_AND_TRUE{ false, true };

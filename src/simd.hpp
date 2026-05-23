@@ -17,7 +17,7 @@ enum class instruction_set
   neon,
 };
 
-/** Returns vector of supports instruction sets */
+/** Returns vector of supported instruction sets */
 std::vector<instruction_set>
 supported();
 

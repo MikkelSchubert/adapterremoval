@@ -31,7 +31,7 @@ public:
   /** Constructor; does nothing. */
   analytical_chunk() = default;
 
-  /** Destructor; does nothing. */
+  /** Destructor; typically does nothing */
   virtual ~analytical_chunk() = 0;
 
   analytical_chunk(const analytical_chunk&) = delete;
@@ -122,7 +122,7 @@ enum class processing_order
   ordered,
   //! Data must be consumed in the input order and only involves IO
   ordered_io,
-  //! Data may be consumed in any order. May involve IO
+  //! Data may be consumed in any order. May not involve IO
   unordered
 };
 

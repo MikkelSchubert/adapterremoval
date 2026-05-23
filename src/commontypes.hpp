@@ -44,9 +44,9 @@ enum class read_type
   pe_1,
   //! PE mate 1 read that failed QC
   pe_1_fail,
-  //! PE mate 1 read
+  //! PE mate 2 read
   pe_2,
-  //! PE mate 1 read that failed QC
+  //! PE mate 2 read that failed QC
   pe_2_fail,
   //! PE mate 1 read for which the mate 2 read failed QC
   singleton_1,
@@ -127,7 +127,7 @@ enum class barcode_table_orientation
   forward,
   //! All barcodes in the table are in reverse orientation
   reverse,
-  //! The user has provided an oritentation per barcode
+  //! The user has provided an orientation per barcode
   explicit_,
 };
 
@@ -154,7 +154,7 @@ const std::string_view DEV_NULL = "/dev/null";
 const std::string_view DEV_STDIN = "/dev/stdin";
 //! Path used to indicate that data should be written to STDOUT
 const std::string_view DEV_STDOUT = "/dev/stdout";
-//! Path used to indicate that data should be written to STDOUT
+//! Path used to indicate that data should be written to STDERR
 const std::string_view DEV_STDERR = "/dev/stderr";
 //! Filename indicating that data should be read from stdin/written to stdout
 const std::string_view DEV_PIPE = "-";
