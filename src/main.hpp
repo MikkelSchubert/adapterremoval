@@ -7,8 +7,6 @@
 #error "AdapterRemoval cannot be compiled with -ffast-math"
 #endif
 
-#include <string_view> // for string_view
-
 namespace adapterremoval {
 
 class userconfig;
@@ -22,9 +20,5 @@ generate_reports(const userconfig& config);
 // See main_benchmark.cpp
 int
 benchmark(const userconfig& config);
-
-/** Terminate on internal error; prints  */
-[[noreturn]] void
-terminate(std::string_view message);
 
 } // namespace adapterremoval
