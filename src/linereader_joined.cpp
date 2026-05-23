@@ -10,7 +10,10 @@
 
 namespace adapterremoval {
 
-joined_line_readers::joined_line_readers(std::vector<std::string> filenames)
+////////////////////////////////////////////////////////////////////////////////
+// joined_filenames
+
+joined_filenames::joined_filenames(std::vector<std::string> filenames)
 {
   AR_REQUIRE(!filenames.empty());
   for (auto&& filename : filenames) {
@@ -19,12 +22,80 @@ joined_line_readers::joined_line_readers(std::vector<std::string> filenames)
   }
 }
 
+void
+joined_filenames::inc_position(size_t n)
+{
+  AR_REQUIRE(m_current_file < m_filenames.size());
+  m_position += n;
+}
+
+std::string
+joined_filenames::filenames(size_t start, size_t end) const
+{
+  AR_REQUIRE(start <= end && end <= m_position);
+  if (start == m_position && remaining_filenames() == 0) {
+    return "end of input files";
+  }
+
+  size_t current_offset = 0;
+  std::vector<std::string> parts;
+  for (const auto& [filename, current_end] : m_filenames) {
+    if (end < current_offset) {
+      break;
+    } else if (start >= current_offset && start < current_end) {
+      const size_t file_start = start - current_offset;
+      const size_t file_end = std::min(current_end, end) - current_offset;
+      start += file_end - file_start;
+
+      std::ostringstream os;
+      // Reading failed at line, or parsing failed after reading 1 line in file
+      if (file_start == file_end || file_start + 1 == file_end) {
+        os << log_escape(filename) << " at line " << file_start + 1;
+      } else {
+        os << log_escape(filename) << " at lines " << file_start + 1 << "-"
+           << file_end;
+      }
+
+      parts.emplace_back(os.str());
+    } else if (start == current_offset && current_offset == current_end) {
+      parts.emplace_back("empty file " + log_escape(filename));
+    }
+
+    current_offset = current_end;
+  }
+
+  return join_text(parts, ", ", ", and ");
+}
+
+const std::string&
+joined_filenames::current_filename() const
+{
+  AR_REQUIRE(m_current_file < m_filenames.size());
+  return m_filenames.at(m_current_file).first;
+}
+
+void
+joined_filenames::next_file()
+{
+  AR_REQUIRE(m_current_file < m_filenames.size());
+  m_filenames.at(m_current_file).second = m_position;
+  m_current_file++;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// joined_line_readers
+
+joined_line_readers::joined_line_readers(std::vector<std::string> filenames)
+  : m_filenames(std::move(filenames))
+{
+}
+
 bool
 joined_line_readers::getline(std::string& dst)
 {
   while (true) {
     if (m_reader && m_reader->getline(dst)) {
-      m_current_line++;
+      m_filenames.inc_position();
       return true;
     } else if (!open_next_file()) {
       return false;
@@ -32,63 +103,32 @@ joined_line_readers::getline(std::string& dst)
   }
 }
 
+size_t
+joined_line_readers::position() const noexcept
+{
+  return m_filenames.position();
+}
+
 std::string
 joined_line_readers::filenames(size_t start, size_t end) const
 {
-  AR_REQUIRE(1 <= start && start <= end && end <= m_current_line);
-
-  string_vec parts;
-  for (bool found_file = true; found_file && start <= end; found_file = false) {
-    size_t current_offset = 0;
-    for (const auto& it : m_filenames) {
-      if (start <= it.second) {
-        size_t file_start = start - current_offset;
-        size_t file_end = std::min(end, it.second) - current_offset;
-        // For parsing errors we expect that start < end, but for I/O errors
-        // the line number indicates the line at which the read failed
-        if (file_start < file_end) {
-          file_end--;
-        }
-
-        std::ostringstream os;
-        if (file_start != file_end) {
-          os << log_escape(it.first) << " at lines " << file_start << "-"
-             << file_end;
-        } else {
-          os << log_escape(it.first) << " at line " << file_start;
-        }
-
-        parts.emplace_back(os.str());
-        start = std::min(end, it.second) + 1;
-        found_file = true;
-        break;
-      }
-
-      current_offset = it.second;
-    }
-  }
-
-  return join_text(parts, ", ", ", and ");
+  return m_filenames.filenames(start, end);
 }
 
 bool
 joined_line_readers::open_next_file()
 {
   if (m_reader) {
-    // m_current_line is the the first line in the next file at this point
-    m_filenames.at(m_current_file).second = m_current_line - 1;
-    m_current_file++;
-  }
-
-  if (m_current_file >= m_filenames.size()) {
     m_reader.reset();
-    return false;
+    m_filenames.next_file();
   }
 
-  m_reader =
-    std::make_unique<line_reader>(m_filenames.at(m_current_file).first);
+  if (m_filenames.remaining_filenames()) {
+    m_reader = std::make_unique<line_reader>(m_filenames.current_filename());
+    return true;
+  }
 
-  return true;
+  return false;
 }
 
 } // namespace adapterremoval

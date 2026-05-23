@@ -92,14 +92,14 @@ read_record(joined_line_readers& reader, fastq& record)
 {
   // Line numbers change as we attempt to read the record, and potentially
   // points to the next record in the case of invalid qualities/nucleotides
-  const auto start = reader.linenumber();
+  const auto start = reader.position();
 
   try {
     return record.read_unsafe(reader);
   } catch (const fastq_error& error) {
     std::ostringstream stream;
     stream << "Error reading FASTQ record from "
-           << reader.filenames(start, reader.linenumber()) << ": "
+           << reader.filenames(start, reader.position()) << ": "
            << error.what();
 
     throw fastq_error(stream.str());

@@ -11,6 +11,6 @@
     ]
   },
   "stderr": [
-    "[ERROR] Error reading FASTQ record from 'input_1.fastq' at line 1: partial FASTQ record; cut off after sequence"
+    "[ERROR] Error reading FASTQ record from 'input_1.fastq' at lines 1-2: partial FASTQ record; cut off after sequence"
   ]
 }
