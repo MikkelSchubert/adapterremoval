@@ -91,7 +91,7 @@ to_lower(char c)
 std::string
 to_lower(std::string str);
 
-/** Uppercase letters in the range a-z */
+/** Lowercase letters in the range a-z */
 inline std::string
 to_lower(std::string_view str)
 {
@@ -116,7 +116,7 @@ to_upper(std::string_view str)
   return to_upper(std::string{ str });
 }
 
-/** Returns true if str1 ends with str2 (case-sensitive) */
+/** Returns true if str1 starts with str2 (case-sensitive) */
 bool
 starts_with(std::string_view str1, std::string_view str2);
 

@@ -470,7 +470,7 @@ The following changes are all \[**BREAKING**\] as described above:
   files, use an empty basename (--basename "") or a basename ending with a slash
   (--basename path/).
 - Added support for managing file handles to allow AdapterRemoval to run when
-  the the number of output files exceeds the number of file handles, e.g. when
+  the number of output files exceeds the number of file handles, e.g. when
   demultiplexing large numbers of samples.
 
 ### Changed
@@ -835,7 +835,7 @@ versions of AdapterRemoval, and adding a few new features.
 - Fixed a minor bug in the collapse code where two very low quality bases might
   give rise to a third low quality base being called. For example, a C with
   quality " and a T with quality ! would result in an A with quality #. This has
-  been fixed so that the the result is now C with quality ".
+  been fixed so that the result is now C with quality ".
 
 ## [1.5.0] - 2013-04-29
 

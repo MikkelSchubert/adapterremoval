@@ -33,7 +33,7 @@ public:
    * @param qualities phred encoded quality scores
    *
    * Nucleotides are converted to uppercase, and dots are replaced with N.
-   * Phred scores are converted to to Phred+33 scores, if not already Phred+33.
+   * Phred scores are converted to Phred+33 scores, if not already Phred+33.
    *
    * The quality scores are expected to be in the range of 0 .. 40, unless
    * the format is Phred+33, in which case the range 0 .. 41 is accepted.
@@ -145,7 +145,7 @@ public:
    * Trims the longest poly-X tail, where X is one of the specified nucleotides.
    *
    * @param nucleotides Nucleotides to consider ('A', 'G', 'C', and/or 'T').
-   * @param min_length The minimum length of of a poly-G tail.
+   * @param min_length The minimum length of a poly-G tail.
    * @return The number of 3' bases trimmed for the best matching nucleotide.
    */
   std::pair<char, size_t> poly_x_trimming(std::string_view nucleotides,
@@ -228,7 +228,7 @@ private:
   ntrimmed trim_sequence_and_qualities(size_t left_inclusive,
                                        size_t right_exclusive);
 
-  //! Header including the @ sigil, but (possibly) including meta-info
+  //! Header starting with a '@'. May be otherwise empty for blank records
   std::string m_header;
   //! Nucleotide sequence; contains only uppercase letters "ACGTN"
   std::string m_sequence;

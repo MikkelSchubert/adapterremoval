@@ -110,6 +110,7 @@ main(int argc, char* argv[])
     }
   }
 
+  // Print final summary, or warnings if the run failed
   print_terminal_postamble(config, returncode);
 
   return returncode;

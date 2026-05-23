@@ -162,10 +162,10 @@ public:
   /** Returns the number of barcode sequences loaded */
   [[nodiscard]] size_t size() const { return m_barcodes.size(); }
 
-  /** Iterator over adapter sequences in alignment orientation */
+  /** Iterator over sequences for this sample */
   [[nodiscard]] auto begin() const { return m_barcodes.begin(); }
 
-  /** Terminal iterator over adapter sequences in alignment orientation */
+  /** Terminal iterator over sequences for this sample */
   [[nodiscard]] auto end() const { return m_barcodes.end(); }
 
   /** Returns the nth barcode / pair of barcodes */
@@ -173,7 +173,7 @@ public:
 
   /**
    * Mark adapters as uninitialized, i.e. before automatic selection is done.
-   * When set, adapters may not be accessed until set_adapters` has been called
+   * When set, adapters may not be accessed until `set_adapters` has been called
    */
   void flag_uninitialized_adapters();
 
@@ -282,7 +282,7 @@ public:
   /** Returns the original, user-supplied adapter sequences */
   [[nodiscard]] const adapter_set& adapters() const;
 
-  /** Returns the original, user-supplied adapter sequences */
+  /** Returns the original, user-supplied readgroup */
   [[nodiscard]] const read_group& readgroup() const { return m_read_group; }
 
   /** Returns special sample representing unidentified reads */

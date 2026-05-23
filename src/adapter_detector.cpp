@@ -271,7 +271,7 @@ adapter_detector::detect_adapters(const fastq& read,
   AR_REQUIRE(stats.empty() || stats.size() == m_adapters.size());
   stats.resize(m_adapters.size());
 
-  // No shift, to avoid misdetection of adapters with common postfixes
+  // No shift, to avoid mis-detection of adapters with common postfixes
   const auto alignment = m_aligner.align_single_end(read, 0);
   if (alignment.type() >= alignment_type::good) {
     auto idx = alignment.adapter_id();

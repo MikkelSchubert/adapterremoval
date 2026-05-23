@@ -59,7 +59,7 @@ TEST_CASE("test known adapters constructor with implicit read 2")
   REQUIRE_FALSE(adapters.user_provided());
 }
 
-TEST_CASE("test known adapters constructor with explicitg read 2")
+TEST_CASE("test known adapters constructor with explicit read 2")
 {
   known_adapters adapters{
     "foo",

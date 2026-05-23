@@ -246,6 +246,8 @@ managed_reader::~managed_reader()
 void
 managed_reader::close()
 {
+  // This will also close non-regular files, such as STDIN. That is intentional
+  // as only a single reader should be created per input file or stream
   if (m_file) {
     if (::fclose(m_file) != 0) {
       m_file = nullptr;
@@ -403,6 +405,9 @@ void
 managed_writer::close()
 {
   io_manager::remove(this);
+
+  // This will also close non-regular files, such as STDOUT. That is intentional
+  // as only a single writer should be created per output file or stream
   if (m_file) {
     if (fclose(m_file)) {
       m_file = nullptr;

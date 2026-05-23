@@ -131,7 +131,7 @@ public:
     m_samples.emplace_back(std::move(sample));
   }
 
-  /** Adds write steps for each  */
+  /** Adds write steps for each enabled output type */
   void add_write_steps(scheduler& sch, const userconfig& config);
 
   [[nodiscard]] const sample_output_files& get_sample(size_t idx) const

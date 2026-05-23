@@ -11,7 +11,7 @@ namespace {
 
 //! The number of bytes in a NEON uint8x16_t
 const size_t NEON_BLOCK_SIZE = 16;
-//! The number of uint8x16_t to process between before summing up stats
+//! The number of bytes to process before summing up stats
 const size_t NEON_BATCH_SIZE = NEON_BLOCK_SIZE * 8;
 
 } // namespace

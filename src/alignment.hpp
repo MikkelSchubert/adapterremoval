@@ -54,10 +54,10 @@ enum class alignment_type
  * shows the starting position of the adapter, regardless of the size of the
  * adapter sequence.
  *
- * In PE mode, while the alignment is between seq1+PCR2 and PCR1+seq2, the
- * offset returned is relative to to seq1 and seq2 only. Thus, if '1'
- * represents PCR1 and '2' represents PCR2, the following alignment results
- * from PE mode (ie. offset = -9 rather than 3):
+ * In PE mode, while the alignment is between adapter2+seq1 and seq2+adapter1,
+ * the offset returned is relative to seq1 and seq2 only. Thus, if '1'
+ * represents adapter1 and '2' represents adapter2, the following alignment
+ * results from PE mode (ie. offset = -9 rather than 3):
  *
  * Seq 1:    22222222222aaaaaaaaa
  * Seq 2:      bbbbbbbbbbb1111111111
@@ -150,8 +150,8 @@ private:
   //! 0-based ID of best matching adapter or a negative value if not set.
   int m_adapter_id = -1;
 
-  //! Zero based id of the adapter which offered the best alignment. Is less
-  //! than zero if no alignment was found.
+  //! Offset of the alignment; position of the start of the second sequence
+  //! relative to the start of the first sequence. May be negative.
   int m_offset = 0;
 
   //! The number of base-pairs included in the alignment. This number

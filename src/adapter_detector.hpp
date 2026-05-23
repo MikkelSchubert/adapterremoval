@@ -126,7 +126,7 @@ private:
   //! Aligner for full set of adapter sequences, all stored as read 1 adapters
   sequence_aligner m_aligner;
   //! Adapter sequence overlap with adjacent sequences; each sub-vector contains
-  // counts of sequences before/after, with lengths - min adapter overlap >= 0
+  //! counts of sequences before/after, with lengths - min adapter overlap >= 0
   std::vector<std::vector<std::pair<size_t, size_t>>> m_common_prefixes{};
 };
 

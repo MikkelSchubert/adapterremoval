@@ -39,7 +39,7 @@ public:
   reads_and_bases& operator+=(const reads_and_bases& other);
   reads_and_bases operator+(const reads_and_bases& other) const;
 
-  /** Increments the number of reads by one the number of bases by an amount */
+  /** Increments the number of reads by one and the number of bases by n */
   void inc(uint64_t bases = 1);
 
   /** Increments the number of reads */
@@ -207,7 +207,7 @@ public:
   fastq_stats_ptr read_1{};
   //! Statistics for second reads
   fastq_stats_ptr read_2{};
-  //! Statistics for discarded reads
+  //! Statistics for singleton reads
   fastq_stats_ptr singleton{};
   //! Statistics for merged reads
   fastq_stats_ptr merged{};
@@ -251,8 +251,9 @@ public:
   //! Total number of reads/bases trimmed
   reads_and_bases total_trimmed{};
 
-  //! Number of reads/bases filtered due to length (min)
+  //! Number of reads/bases filtered due to being shorter than the min length
   reads_and_bases filtered_min_length{};
+  //! Number of reads/bases filtered due to being longer than the max length
   reads_and_bases filtered_max_length{};
   //! Number of reads filtered due to too many Ns
   reads_and_bases filtered_ambiguous{};

@@ -66,7 +66,10 @@ public:
            m_queue.front().first == m_next_chunk;
   }
 
-  /** FIFO queues a task; requires locking */
+  /**
+   * Adds chunk to step backlog. Returns true if the chunk can be processed;
+   * requires locking
+   */
   bool push_chunk(size_t chunk_id, chunk_ptr ptr)
   {
     m_queue.emplace_back(chunk_id, std::move(ptr));

@@ -26,7 +26,7 @@ public:
   fastq_chunk_ptr data{};
   //! (Optional) adapter detection stats
   adapter_detection_stats adapters{};
-  //! Indicates if this is the the last chunk to run detection on
+  //! Indicates if this is the last chunk to run detection on
   bool last_adapter_selection_block = false;
 
   adapter_chunk(const adapter_chunk&) = delete;

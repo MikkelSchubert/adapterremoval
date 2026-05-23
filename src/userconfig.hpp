@@ -140,7 +140,7 @@ public:
   //! The maximum number of ambiguous bases (N) in a read; reads exceeding
   //! this number following trimming (optionally) are discarded.
   uint32_t max_ambiguous_bases{};
-  //! The maximum fraction of ambiguous bases (N) in an read.
+  //! The maximum fraction of ambiguous bases (N) in a read.
   double max_ambiguous_base_fraction{};
 
   //! The minimum average phred score of non-empty reads
@@ -170,18 +170,18 @@ public:
   //! SIMD instruction set used for alignments
   threadsafe_data<simd::instruction_set> simd{ simd::instruction_set::none };
 
-  //! The format in which in which output reads are written to files
+  //! The format in which output reads are written to files
   output_format out_file_format = output_format::fastq_gzip;
-  //! The format in which in which output reads are written to STDOUT
+  //! The format in which output reads are written to STDOUT
   output_format out_stdout_format = output_format::fastq;
   //! Compression level used for output reads where appropriate
   uint32_t compression_level{};
 
   //! Maximum number of mismatches (considering both barcodes for PE)
   uint32_t barcode_mm{};
-  //! Maximum number of mismatches (considering both barcodes for PE)
+  //! Maximum number of mismatches for mate 1 reads (capped at `barcode_mm`)
   uint32_t barcode_mm_r1{};
-  //! Maximum number of mismatches (considering both barcodes for PE)
+  //! Maximum number of mismatches for mate 2 reads (capped at `barcode_mm`)
   uint32_t barcode_mm_r2{};
   //! Normalize the orientation of merged reads to forward
   bool normalize_orientation{};
@@ -278,7 +278,7 @@ private:
   //! Sink for --read-group
   string_vec read_group{};
 
-  //! Sinks for --pre-trim5p/--pre-trimp3p
+  //! Sinks for --pre-trim5p/--pre-trim3p
 #ifdef PRE_TRIM_5P
   string_vec pre_trim5p{};
 #endif

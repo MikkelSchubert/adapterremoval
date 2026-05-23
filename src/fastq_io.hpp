@@ -123,7 +123,7 @@ private:
   bool m_mate_separator_identified = false;
   //! Poly-X tails to remove before trimming; for autodetection of 2-color tech
   threadsafe_data<std::string> m_pre_trim_poly_x{};
-  //! Poly-X tails to remove afters trimming; for autodetection of 2-color tech
+  //! Poly-X tails to remove after trimming; for auto-detection of 2-color tech
   threadsafe_data<std::string> m_post_trim_poly_x{};
   //! Indicates if automatic checks for 2-color systems have been performed
   bool m_2_color_checked = false;

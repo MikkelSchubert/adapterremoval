@@ -153,6 +153,12 @@ public:
   }
 
 protected:
+  void setup() override
+  {
+    // To reduce overhead, and since it makes no practical difference, the same
+    // fastq objects are reverse complemented each loop
+  }
+
   void execute() override
   {
     for (auto& it : m_records_1) {

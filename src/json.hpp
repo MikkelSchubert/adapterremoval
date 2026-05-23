@@ -84,7 +84,7 @@ private:
   /** Create a single-line JSON list from a set of JSON encoded values */
   static json_ptr from_raw_vec(const string_vec& values);
 
-  //! A valid JSON token/string representing or more objects
+  //! A valid JSON token/string representing one or more objects
   const std::string m_value;
 };
 
@@ -112,7 +112,9 @@ private:
 /**
  * Simple write-only JSON dictionary serializer.
  *
- * Keys are written in the order they are (first) assigned.
+ * Keys are written in the order they are (first) assigned. Dicts may be
+ * "inline", in which case the dict is written on a single line. This is
+ * intended for simple, repeated, and compact data structures.
  */
 class json_dict : public json_value
 {

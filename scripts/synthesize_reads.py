@@ -95,7 +95,8 @@ class Args(tap.TypedArgs):
     )
     frag_len_sigma: int = tap.arg(
         default=30,
-        help="Variance of normal distribution used to generate DNA fragment lengths",
+        help="Standard deviation of normal distribution used to generate DNA fragment "
+        "lengths",
     )
     frag_len_min: int = tap.arg(
         default=0,

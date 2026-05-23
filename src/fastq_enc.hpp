@@ -41,7 +41,7 @@ enum class degenerate_encoding
 //! How to handle uracil ('U')
 enum class uracil_encoding
 {
-  //! Replace any degenerate bases with 'N'
+  //! Replace any uracil (U) with thymine (T)
   convert,
   //! Report an error if a uracil is observed
   reject,
@@ -126,13 +126,13 @@ struct ACGTN
 
   /**
    * Simple hashing function for nucleotides 'A', 'C', 'G', 'T', 'N', returning
-   * numbers in the range 0-4. Passing characters other than "ACGTN" (uppercase
+   * numbers in the range 0-7. Passing characters other than "ACGTN" (uppercase
    * only) will result in hash collisions.
    */
   static constexpr auto to_index(value_type nt) { return nt & 0x7; }
 
   /**
-   * Inverse of to_index. Only values in the range 0 to 4 are allowed.
+   * Inverse of to_index. Only values in the range 0 to 7 are allowed.
    */
   static constexpr value_type to_value(size_t idx) { return "-A-CT-NG"[idx]; }
 };

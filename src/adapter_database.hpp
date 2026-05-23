@@ -26,7 +26,7 @@ public:
                  std::initializer_list<std::string_view> adapter_2 = {},
                  bool user_provided = false);
 
-  /** Returns the canonnical company / technology for these sequences */
+  /** Returns the canonical company / technology for these sequences */
   [[nodiscard]] const std::string& name() const { return m_name; }
 
   /** Adapter sequences used to trim mate 1 reads */

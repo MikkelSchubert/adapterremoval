@@ -49,11 +49,11 @@ compare_subsequences_avx512(size_t& n_mismatches,
       length -= 64;
     }
 
-    // Sets 0xFF for every byte where one or both nts is N
+    // Sets 0xFF for every bit where one or both nucleotides is N
     const auto ns_mask =
       _mm512_cmpeq_epu8_mask(s1, n_mask) | _mm512_cmpeq_epu8_mask(s2, n_mask);
 
-    // Sets 0xFF for every byte where bytes are equal or N
+    // Sets 0xFF for every bit where nucleotides are equal or N
     const auto eq_mask = _mm512_cmpeq_epu8_mask(s1, s2) | ns_mask;
 
     n_mismatches += 64 - count_masked_avx512(eq_mask);

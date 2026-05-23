@@ -30,7 +30,7 @@ public:
   /** Returns the full @RG header, not including a trailing new-line */
   [[nodiscard]] std::string_view header() const { return m_header; }
 
-  /** Adds/replaces the barcode (ID) tag */
+  /** Adds/replaces the read-group ID tag */
   void set_id(std::string_view id);
 
   /** Adds/replaces the sample (SM) tag */
@@ -51,7 +51,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const read_group& value);
 
 private:
-  /** Updates or adds the specified tag; sets `m_id` if key is `ID` */
+  /** Updates or adds the specified tag */
   void update_tag(std::string_view key, std::string_view value);
 
   //! The full read_group header, including leading `@RG\t`
