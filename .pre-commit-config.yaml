@@ -17,7 +17,7 @@ repos:
         args: [--branch, main, --branch, 2.3.x]
       - id: trailing-whitespace
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: a8c7c3ac16eabd3b958952ea0d6bf1dceeab6411 # v19.1.2
+    rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # v22.1.0
     hooks:
       - id: clang-format
         types_or: [c++, c]
