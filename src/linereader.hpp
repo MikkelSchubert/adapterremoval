@@ -101,7 +101,7 @@ private:
   managed_reader m_reader;
   /** Refills 'm_raw_buffer' and updates 'm_raw_buffer_end' */
   void refill_raw_buffer(size_t avail_in = 0);
-  /** Points `m_buffer` and related pointers to 'm_raw_buffer` */
+  /** Points `m_buffer` and related pointers to `m_raw_buffer` */
   void refill_buffers_uncompressed();
 
   std::unique_ptr<inflate_state> m_gzip_stream;

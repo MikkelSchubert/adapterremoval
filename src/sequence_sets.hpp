@@ -228,7 +228,7 @@ private:
   bool m_paired_end_mode = false;
   //! Indicates if multiple barcodes/barcode pairs are allowed per sample
   bool m_allow_multiple_barcodes = false;
-  //! Indicates the orientation demultiplexingof barcodes in the table
+  //! Indicates the orientation of barcodes in the table
   barcode_table_orientation m_orientation =
     barcode_table_orientation::unspecified;
 };

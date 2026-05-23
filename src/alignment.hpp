@@ -56,7 +56,7 @@ enum class alignment_type
  *
  * In PE mode, while the alignment is between adapter2+seq1 and seq2+adapter1,
  * the offset returned is relative to seq1 and seq2 only. Thus, if '1'
- * represents adapter2 and '2' represents adapter2, the following alignment
+ * represents adapter1 and '2' represents adapter2, the following alignment
  * results from PE mode (ie. offset = -9 rather than 3):
  *
  * Seq 1:    22222222222aaaaaaaaa
