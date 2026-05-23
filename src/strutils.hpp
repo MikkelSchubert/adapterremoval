@@ -4,6 +4,7 @@
 
 #include <cstddef>     // for size_t
 #include <cstdint>     // for uint64_t
+#include <iterator>    // for next
 #include <sstream>     // for ostringstream
 #include <string>      // for string
 #include <string_view> // for string_view
@@ -169,7 +170,7 @@ join_text(const T& values, std::string_view sep, std::string_view final_sep)
 
   for (auto it = begin; it != end; ++it) {
     if (it != begin) {
-      if (it + 1 == end) {
+      if (std::next(it) == end) {
         stream << final_sep;
       } else {
         stream << sep;
@@ -217,17 +218,17 @@ public:
   cli_formatter& set_indent(size_t value);
 
   /** Formats string using the current settings. */
-  std::string format(std::string_view value) const;
+  [[nodiscard]] std::string format(std::string_view value) const;
 
 private:
   //! Specifies whether or not to indent the first line of output.
-  bool m_indent_first;
+  bool m_indent_first{ true };
   //! Number of spaces to indent the 2+ lines in each paragraph.
-  size_t m_ljust;
+  size_t m_ljust{ 0 };
   //! The maximum number of columns (in characters).
   size_t m_columns;
   //! The number of spaces to indent each line (see also m_indent_first_line)
-  size_t m_indentation;
+  size_t m_indentation{ 4 };
 };
 
 /** Escapes a string to make it safe to use in copy/pasted commands */

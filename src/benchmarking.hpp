@@ -32,18 +32,18 @@ public:
   bool update_toggles(const std::vector<std::string>& keys);
 
   /** Returns true if the default (most) benchmarks should be run */
-  bool defaults() const { return m_defaults; }
+  [[nodiscard]] bool defaults() const { return m_defaults; }
 
   /** Returns true if the specified benchmark toggle is set */
   [[nodiscard]] bool is_set(std::string_view key) const;
 
 private:
   //! Vector of supported toggles
-  const std::vector<std::string> m_toggles;
+  const std::vector<std::string> m_toggles{};
   //! Vector indicating whether the user set a specific toggle
-  std::vector<bool> m_enabled;
+  std::vector<bool> m_enabled{};
   //! Indicates if default toggles should be used (benchmark specific)
-  bool m_defaults;
+  bool m_defaults = false;
 };
 
 /** Base-class for benchmarks */
@@ -70,12 +70,13 @@ protected:
   /** Called to carry out work to be benchmarked */
   virtual void execute() = 0;
 
-  virtual strategy enabled(const benchmark_toggles& toggles) const;
+  [[nodiscard]] virtual strategy enabled(
+    const benchmark_toggles& toggles) const;
 
 private:
   void run(strategy s);
 
-  std::string summarize(size_t loops) const;
+  [[nodiscard]] std::string summarize(size_t loops) const;
 
   using clock = std::chrono::steady_clock;
   using time_point = std::chrono::time_point<clock>;

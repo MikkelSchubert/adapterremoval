@@ -11,6 +11,8 @@
 #include "simd.hpp"          // for size_t, instruction_set, supported, get_c...
 #include "strutils.hpp"      // for stringify
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include <cstddef>           // for size_t
+#include <ostream>           // for ostream
 #include <sstream>           // for ostringstream
 #include <string>            // for string, basic_string, operator<<
 
@@ -69,6 +71,8 @@ struct ALN
   alignment_info info;
 };
 
+namespace {
+
 alignment_info
 align_single_ended_sequence(const fastq& read,
                             const adapter_set& adapters,
@@ -99,6 +103,8 @@ REQUIRE_TRUNCATED_PE_IS_UNCHANGED(const alignment_info& alignment,
   REQUIRE(tmp_record1 == record1);
   REQUIRE(tmp_record2 == record2);
 }
+
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // alignment info getter functions
@@ -194,12 +200,12 @@ TEST_CASE("simple alignment should not terminate early")
 
 TEST_CASE("sequence aligner size")
 {
-  adapter_set adapters{
+  const adapter_set adapters{
     { "CTGCTA", "TATATC" },
     { "CGAGAC", "CTAAGG" },
     { "TCATAC", "ATTTCG" },
   };
-  sequence_aligner aligner(adapters, PARAMETERIZE_IS, NO_MISMATCHES);
+  const sequence_aligner aligner(adapters, PARAMETERIZE_IS, NO_MISMATCHES);
   REQUIRE(aligner.size() == 3);
 }
 
@@ -904,7 +910,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 6 disallows mismatches (good)")
   {
-    std::string seq = adapter.substr(0, GENERATE(2, 3, 4, 5));
+    const std::string seq = adapter.substr(0, GENERATE(2, 3, 4, 5));
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
     REQUIRE(result == ALN().length(seq.length()).is_good());
@@ -921,7 +927,7 @@ TEST_CASE("Very short alignments must be perfect", "[alignment:flags]")
 
   SECTION("less than 10 allows 1 mismatch (good, mm = 0)")
   {
-    std::string seq = adapter.substr(0, GENERATE(6, 7, 8, 9));
+    const std::string seq = adapter.substr(0, GENERATE(6, 7, 8, 9));
     const fastq read{ "Rec", seq };
     const auto result = aligner.align_single_end(read, 0);
     REQUIRE(result == ALN().length(seq.length()).is_good());
@@ -1606,7 +1612,7 @@ TEST_CASE("Extracting empty sequences yields empty sequences #1",
   const fastq expected_2 = fastq("read2", "", "");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment;
+  const alignment_info alignment;
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == expected_1);
   REQUIRE(read2 == expected_2);
@@ -1619,7 +1625,7 @@ TEST_CASE("Extracting empty sequences yields empty sequences #2",
   const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
   fastq read1 = expected_1;
   fastq read2 = fastq("read2", "GGGGCC", "!!!!!!");
-  alignment_info alignment;
+  const alignment_info alignment;
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1632,7 +1638,7 @@ TEST_CASE("Extracting empty sequences yields empty sequences #4",
   const fastq expected_2 = fastq("read2", "", "");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment;
+  const alignment_info alignment;
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1645,7 +1651,7 @@ TEST_CASE("Extracting no alignment/complete overlap yields empty sequences",
   const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment = GENERATE(alignment_info{}, ALN().length(6));
+  const alignment_info alignment = GENERATE(alignment_info{}, ALN().length(6));
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1658,7 +1664,7 @@ TEST_CASE("Extracting with partial overlap yields empty sequences",
   const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment = ALN().offset(2);
+  const alignment_info alignment = ALN().offset(2);
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1671,7 +1677,7 @@ TEST_CASE("Extracting sequence 2 inside sequence 1 yields empty sequences",
   const fastq expected_2 = fastq("read2", "GGCC", "!!!!");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment = ALN().offset(2);
+  const alignment_info alignment = ALN().offset(2);
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1684,7 +1690,7 @@ TEST_CASE("Extracting sequence 1 inside sequence 2 yields empty sequences",
   const fastq expected_2 = fastq("read2", "GGGGCC", "!!!!!!");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment;
+  const alignment_info alignment;
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1697,7 +1703,7 @@ TEST_CASE("Extracting sequence 1 extending past sequence 2",
   const fastq expected_2 = fastq("read2", "GGGGGG", "!!!!!!");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment;
+  const alignment_info alignment;
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "CC", "78"));
   REQUIRE(read2 == fastq("read2", "", ""));
@@ -1710,7 +1716,7 @@ TEST_CASE("Extracting sequence 2 extending past sequence 1",
   const fastq expected_2 = fastq("read2", "AAGGGGGG", "12345678");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment = ALN().offset(-2);
+  const alignment_info alignment = ALN().offset(-2);
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "", ""));
   REQUIRE(read2 == fastq("read2", "AA", "12"));
@@ -1723,7 +1729,7 @@ TEST_CASE("Extracting both sequences extending past each other",
   const fastq expected_2 = fastq("read2", "AAGGGGGG", "12345678");
   fastq read1 = expected_1;
   fastq read2 = expected_2;
-  alignment_info alignment = ALN().offset(-2);
+  const alignment_info alignment = ALN().offset(-2);
   alignment.extract_adapter_sequences(read1, read2);
   REQUIRE(read1 == fastq("read1", "CCC", "GHI"));
   REQUIRE(read2 == fastq("read2", "AA", "12"));
@@ -1791,6 +1797,8 @@ TEST_CASE("PE alignments with empty adapters can extend past 5' of read 2",
 ///////////////////////////////////////////////////////////////////////////////
 // Brute-force checking of alignment calculations
 
+namespace {
+
 struct MMNs
 {
   size_t mismatches = 0;
@@ -1802,6 +1810,8 @@ struct MMNs
   }
 
   bool operator!=(const MMNs& other) const { return !(*this == other); }
+
+  friend std::ostream& operator<<(std::ostream& os, const MMNs& value);
 };
 
 std::ostream&
@@ -1831,6 +1841,8 @@ rotate_nucleotide(char c)
   }
 }
 
+} // namespace
+
 TEST_CASE("rotate nucleotide")
 {
   REQUIRE(rotate_nucleotide('A') == 'C');
@@ -1840,6 +1852,8 @@ TEST_CASE("rotate nucleotide")
   REQUIRE_THROWS_AS(rotate_nucleotide('N'), assert_failed);
   REQUIRE_THROWS_AS(rotate_nucleotide('X'), assert_failed);
 }
+
+namespace {
 
 void
 compare(simd::compare_subsequences_func func,
@@ -1864,6 +1878,8 @@ compare(simd::compare_subsequences_func func,
     REQUIRE(alignment == expected);
   }
 }
+
+} // namespace
 
 TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
 {
@@ -1954,13 +1970,13 @@ TEST_CASE("stringmaker for empty alignment_info")
 
 TEST_CASE("stringmaker for alignment_info")
 {
-  alignment_info info = ALN()
-                          .offset(2)
-                          .length(3)
-                          .n_mismatches(4)
-                          .n_ambiguous(5)
-                          .adapter_id(1)
-                          .is_good();
+  const alignment_info info = ALN()
+                                .offset(2)
+                                .length(3)
+                                .n_mismatches(4)
+                                .n_ambiguous(5)
+                                .adapter_id(1)
+                                .is_good();
 
   std::ostringstream os;
   os << info;

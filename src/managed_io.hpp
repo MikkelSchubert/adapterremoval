@@ -36,7 +36,7 @@ public:
   void close();
 
   /** Returns the filename of the (previously opened) file */
-  const std::string& filename() const { return m_filename; }
+  [[nodiscard]] const std::string& filename() const { return m_filename; }
 
   /** Reads `size` bytes into the destination buffer */
   size_t read(void* buffer, size_t size);
@@ -80,7 +80,7 @@ public:
   void close();
 
   /** Returns the filename of the (previously opened) file */
-  const std::string& filename() const { return m_filename; }
+  [[nodiscard]] const std::string& filename() const { return m_filename; }
 
   managed_writer(const managed_writer&) = delete;
   managed_writer(managed_writer&& other) = delete;

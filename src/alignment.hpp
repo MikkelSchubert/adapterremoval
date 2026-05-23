@@ -5,6 +5,7 @@
 
 #include "fastq_enc.hpp" // for MATE_SEPARATOR
 #include "simd.hpp"      // for size_t, compare_subsequences_func, instru...
+#include <cstddef>       // for size_t
 #include <cstdint>       // for int64_t
 #include <iosfwd>        // for ostream
 #include <string>        // for string
@@ -169,7 +170,8 @@ private:
   alignment_type m_type = alignment_type::bad;
 
   /** Creates debug representation of an adapter set */
-  friend std::ostream& operator<<(std::ostream&, const alignment_info&);
+  friend std::ostream& operator<<(std::ostream& /* os */,
+                                  const alignment_info& /* value */);
 
   /** Perform unaccelerated gapless alignment at offset 0 */
   friend alignment_info simple_alignment(const dna_sequence& seq1,
@@ -350,19 +352,25 @@ public:
   void merge(const alignment_info& alignment, fastq& read1, const fastq& read2);
 
   /* Returns number of reads merged */
-  size_t reads_merged() const { return m_reads_merged; }
+  [[nodiscard]] size_t reads_merged() const { return m_reads_merged; }
 
   /* Returns number of bases merged */
-  size_t bases_merged() const { return m_bases_merged; }
+  [[nodiscard]] size_t bases_merged() const { return m_bases_merged; }
 
   /* Returns the number of Ns that could be replaced by an actual base */
-  size_t ns_resolved() const { return m_ns_resolved; }
+  [[nodiscard]] size_t ns_resolved() const { return m_ns_resolved; }
 
   /* Returns number of mismatches where a higher quality base was selected */
-  size_t mismatches_resolved() const { return m_mismatches_resolved; }
+  [[nodiscard]] size_t mismatches_resolved() const
+  {
+    return m_mismatches_resolved;
+  }
 
   /* Returns number of mismatches where there was no higher quality base */
-  size_t mismatches_unresolved() const { return m_mismatches_unresolved; }
+  [[nodiscard]] size_t mismatches_unresolved() const
+  {
+    return m_mismatches_unresolved;
+  }
 
 private:
   //! Mate separator used in read names

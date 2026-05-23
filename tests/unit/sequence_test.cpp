@@ -9,19 +9,19 @@ using Catch::fallbackStringifier;
 
 TEST_CASE("empty sequence", "[dna_sequence]")
 {
-  dna_sequence seq;
+  const dna_sequence seq;
 
   CHECK(seq.empty());
-  CHECK(seq.length() == 0);
+  CHECK(seq.length() == 0); // NOLINT(readability-container-size-empty)
   CHECK(seq == seq);
   CHECK(seq.reverse_complement() == seq);
-  CHECK(seq.as_string() == "");
+  CHECK(seq.as_string() == ""); // NOLINT(readability-container-size-empty)
   CHECK(fallbackStringifier(seq) == "dna_sequence{''}");
 }
 
 TEST_CASE("non-empty dna_sequence", "[dna_sequence]")
 {
-  dna_sequence seq{ "ACCNTAT" };
+  const dna_sequence seq{ "ACCNTAT" };
 
   CHECK(!seq.empty());
   CHECK(seq.length() == 7);
@@ -38,7 +38,9 @@ TEST_CASE("dna_sequence addition", "[dna_sequence]")
 
 TEST_CASE("dna_sequence equality", "[dna_sequence]")
 {
+  // NOLINTNEXTLINE(readability-container-size-empty)
   CHECK(dna_sequence{} == dna_sequence{});
+  // NOLINTNEXTLINE(readability-container-size-empty)
   CHECK_FALSE("ACCNTAT"_dna == dna_sequence{});
   CHECK("ACCNTAT"_dna == "ACCNTAT"_dna);
   CHECK_FALSE("ACCNTAT"_dna == "CGTGGTA"_dna);
@@ -47,6 +49,7 @@ TEST_CASE("dna_sequence equality", "[dna_sequence]")
 
 TEST_CASE("dna_sequence literal", "[dna_sequence]")
 {
+  // NOLINTNEXTLINE(readability-container-size-empty)
   CHECK(""_dna == dna_sequence{});
   CHECK("ACCNTAT"_dna == "ACCNTAT"_dna);
 }

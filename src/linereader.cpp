@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "linereader.hpp"    // declarations
-#include "errors.hpp"        // for io_error
-#include "logging.hpp"       // for warn, log_stream
-#include "managed_io.hpp"    // for managed_writer
-#include "strutils.hpp"      // for shell_escape
-#include <cstdint>           // for uint8_t
-#include <cstring>           // for strerror, memchr
-#include <isa-l/igzip_lib.h> // for inflate_state, isal_gzip_header, isal_...
-#include <memory>            // for unique_ptr, shared_ptr, __shared_ptr_a...
-#include <sstream>           // for operator<<, basic_ostream
-#include <utility>           // for move
+#include "linereader.hpp"   // declarations
+#include "errors.hpp"       // for io_error
+#include "logging.hpp"      // for warn, log_stream
+#include "managed_io.hpp"   // for managed_writer
+#include "strutils.hpp"     // for shell_escape
+#include <cstdint>          // for uint8_t
+#include <cstdio>           // for FILE, size_t
+#include <cstring>          // for strerror, memchr
+#include <initializer_list> // for initializer_list
+#include <isa-l.h>          // IWYU pragma: keep
+#include <memory>           // for unique_ptr, shared_ptr, __shared_ptr_a...
+#include <sstream>          // for operator<<, basic_ostream
+#include <string>           // for string
+#include <string_view>      // for string_view
+#include <utility>          // for move
+#include <vector>           // for vector
 
 namespace adapterremoval {
 
@@ -93,7 +98,7 @@ vec_reader::vec_reader(std::initializer_list<std::string_view> lines)
 {
 }
 
-vec_reader::vec_reader(string_vec lines)
+vec_reader::vec_reader(std::vector<std::string> lines)
   : m_lines(std::move(lines))
   , m_it(m_lines.begin())
 {

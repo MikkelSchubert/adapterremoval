@@ -5,7 +5,10 @@
 #include <algorithm>     // for min
 #include <array>         // for array
 #include <cmath>         // for sqrt
+#include <cstddef>       // for size_t
+#include <cstdint>       // for uint64_t
 #include <numeric>       // for accumulate
+#include <vector>        // for vector
 
 namespace adapterremoval {
 

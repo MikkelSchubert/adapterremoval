@@ -3,6 +3,7 @@
 #include "adapter_id.hpp"       // for adapter_id_statistics
 #include "adapter_selector.hpp" // for adapter_selector, ...
 #include "alignment.hpp"        // for extract_adapter_sequences, ...
+#include "commontypes.hpp"      // for adapter_selection
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for ACGTN, fastq, ACGT, ACGT:...
 #include "fastq_io.hpp"         // for read_fastq, read_chunk
@@ -13,10 +14,14 @@
 #include "sequence_sets.hpp"    // for adapter_set
 #include "simd_selector.hpp"    // for simd_selector
 #include "statistics.hpp"       // for trimming_statistics
+#include "threading.hpp"        // for threadstate
 #include "userconfig.hpp"       // for userconfig
+#include "utilities.hpp"        // for dynamic_cast_unique
 #include <cstddef>              // for size_t
+#include <limits>               // for numeric_limits
 #include <memory>               // for unique_ptr, __shared_ptr_access, ...
 #include <string>               // for string, operator<<, char_traits
+#include <utility>              // for move
 #include <vector>               // for vector
 
 namespace adapterremoval {

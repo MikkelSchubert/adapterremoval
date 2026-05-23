@@ -5,7 +5,7 @@
 
 #include "commontypes.hpp"  // for barcode_orientation, ...
 #include "read_group.hpp"   // for read_group
-#include "sequence.hpp"     // for for dna_sequence
+#include "sequence.hpp"     // for dna_sequence
 #include <cstddef>          // for size_t
 #include <initializer_list> // for initializer_list
 #include <iosfwd>           // for ostream

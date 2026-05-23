@@ -266,7 +266,7 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
   REQUIRE(std::fwrite("trailing junk", sizeof(char), 13, handle) == 13);
   REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
 
-  log::log_capture ss;
+  const log::log_capture ss;
   line_reader reader(handle);
   REQUIRE(read_lines(reader) == expected);
   REQUIRE_THAT(ss.str(),

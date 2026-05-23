@@ -164,7 +164,7 @@ TEST_CASE("constructor_simple_mask_degenerate_bases", "[fastq::fastq]")
           fastq_encoding(quality_encoding::sam, degenerate_encoding::reject)),
     fastq_error);
 
-  fastq record(
+  const fastq record(
     "record_1",
     sequence,
     qualities,
@@ -186,12 +186,12 @@ TEST_CASE("constructor_simple_mask_uracils", "[fastq::fastq]")
                                          uracil_encoding::reject)),
                     fastq_error);
 
-  fastq record("record_1",
-               sequence,
-               qualities,
-               fastq_encoding(quality_encoding::sam,
-                              degenerate_encoding::reject,
-                              uracil_encoding::convert));
+  const fastq record("record_1",
+                     sequence,
+                     qualities,
+                     fastq_encoding(quality_encoding::sam,
+                                    degenerate_encoding::reject,
+                                    uracil_encoding::convert));
 
   REQUIRE(record == fastq{ "record_1", "ACTAGTCT", qualities });
 }
@@ -223,12 +223,12 @@ TEST_CASE("constructor_simple_both_invalid_types", "[fastq::fastq]")
                                          uracil_encoding::convert)),
                     fastq_error);
 
-  fastq record("record_1",
-               sequence,
-               qualities,
-               fastq_encoding(quality_encoding::sam,
-                              degenerate_encoding::mask,
-                              uracil_encoding::convert));
+  const fastq record("record_1",
+                     sequence,
+                     qualities,
+                     fastq_encoding(quality_encoding::sam,
+                                    degenerate_encoding::mask,
+                                    uracil_encoding::convert));
 
   REQUIRE(record == fastq{ "record_1", "ACNAGTCN", qualities });
 }
@@ -351,11 +351,13 @@ TEST_CASE("constructor_no_qualities_no_sequence", "[fastq::fastq]")
 TEST_CASE("move_constructor", "[fastq::fastq]")
 {
   fastq record1("record_1", "ACGT", "1234");
-  fastq record2(std::move(record1));
+  const fastq record2(std::move(record1));
 
+  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   REQUIRE(record1.header().empty());
   REQUIRE(record1.sequence().empty());
   REQUIRE(record1.qualities().empty());
+  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
 
   REQUIRE(record2.header() == "@record_1");
   REQUIRE(record2.sequence() == "ACGT");
@@ -367,7 +369,7 @@ TEST_CASE("move_constructor", "[fastq::fastq]")
 
 TEST_CASE("assignment_operator", "[fastq::fastq]")
 {
-  fastq record1("record_1", "ACGT", "1234");
+  const fastq record1("record_1", "ACGT", "1234");
   fastq record2;
   record2 = record1;
 
@@ -556,7 +558,7 @@ TEST_CASE("trim_trailing_bases__trim_mixed__no_low_quality_bases",
 TEST_CASE("trim_trailing_bases__trim_everything", "[fastq::fastq]")
 {
   fastq record("Rec", "TAG", "!!!");
-  const fastq expected_record = fastq("Rec", "", "");
+  const fastq expected_record{ "Rec", "", "" };
   const fastq::ntrimmed expected_ntrim(0, 3);
   REQUIRE(record.trim_trailing_bases(true, 2) == expected_ntrim);
   REQUIRE(record == expected_record);
@@ -614,7 +616,7 @@ TEST_CASE("Window trimming entire read", "[fastq::windows]")
   const std::vector<double> values = { 1, 0.2, 4, 10 };
   for (const auto& value : values) {
     fastq record("Rec", "TAGTGACAT", "111111111");
-    const fastq expected_record = fastq("Rec", "", "");
+    const fastq expected_record{ "Rec", "", "" };
     const fastq::ntrimmed expected_ntrim(9, 0);
     REQUIRE(record.trim_windowed_bases(false, '2' - '!', value) ==
             expected_ntrim);
@@ -773,7 +775,7 @@ TEST_CASE("trim_windowed_bases__trim_window", "[fastq::fastq]")
   // Should trim starting at the window of low quality bases in the middle
   // even with high qual bases at the end.
   fastq record("Rec", "NNAAAAAAAAATNNNNNNNA", "##EEEEEEEEEE#######E");
-  const fastq expected_record = fastq("Rec", "AAAAAAAAAT", "EEEEEEEEEE");
+  const fastq expected_record{ "Rec", "AAAAAAAAAT", "EEEEEEEEEE" };
   const fastq::ntrimmed expected_ntrim(2, 8);
   REQUIRE(record.trim_windowed_bases(true, 10, 5) == expected_ntrim);
   REQUIRE(record == expected_record);
@@ -782,7 +784,7 @@ TEST_CASE("trim_windowed_bases__trim_window", "[fastq::fastq]")
 TEST_CASE("trim_windowed_bases__trim_3p", "[fastq::fastq]")
 {
   fastq record("Rec", "NNAAAAAAAAATNNNNNNN", "##EEEEEEEEEE#######");
-  const fastq expected_record = fastq("Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE");
+  const fastq expected_record{ "Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE" };
   const fastq::ntrimmed expected_ntrim(0, 7);
   REQUIRE(record.trim_windowed_bases(false, 10, 5, true) == expected_ntrim);
   REQUIRE(record == expected_record);
@@ -791,7 +793,7 @@ TEST_CASE("trim_windowed_bases__trim_3p", "[fastq::fastq]")
 TEST_CASE("trim_windowed_bases__trim_3p__trim_ns", "[fastq::fastq]")
 {
   fastq record("Rec", "NNAAAAAAAAATNNNNNNN", "##EEEEEEEEEE#######");
-  const fastq expected_record = fastq("Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE");
+  const fastq expected_record{ "Rec", "NNAAAAAAAAAT", "##EEEEEEEEEE" };
   const fastq::ntrimmed expected_ntrim(0, 7);
   REQUIRE(record.trim_windowed_bases(true, 10, 5, true) == expected_ntrim);
   REQUIRE(record == expected_record);
@@ -871,6 +873,8 @@ TEST_CASE("Mott trimming shorter segments if last")
 ///////////////////////////////////////////////////////////////////////////////
 // poly_x_trimming
 
+namespace {
+
 std::string
 poly_x_trimming(const std::string& nucleotides,
                 const size_t min_length,
@@ -882,6 +886,8 @@ poly_x_trimming(const std::string& nucleotides,
 
   return record.sequence();
 }
+
+} // namespace
 
 TEST_CASE("trim_poly_x on empty sequence and with empty X")
 {
@@ -966,24 +972,24 @@ TEST_CASE("trim_poly_x doesn't count Ns in alignment")
   REQUIRE(poly_x_trimming("C", 5, "CNCCNC") == "CNCCNC");
 
   REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCC") == "CCCCNCCCC");
-  REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCCC") == "");
-  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCNCCCCC").empty());
+  REQUIRE(poly_x_trimming("C", 10, "CCCCCNCCCCC").empty());
   REQUIRE(poly_x_trimming("C", 10, "TCCCCNCCCCC") == "T");
 
-  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC") == "");
+  REQUIRE(poly_x_trimming("C", 10, "CCCCTCCCCCCCCCCCTCCC").empty());
   REQUIRE(poly_x_trimming("C", 10, "CNCCTCCNCCNCCCNCTCCN") == "CNCCT");
 }
 
 TEST_CASE("trim_poly_x only trims trailing Ns after matches")
 {
-  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC") == "");
-  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC") == "");
+  REQUIRE(poly_x_trimming("C", 5, "NCCCNCCCNCC").empty());
+  REQUIRE(poly_x_trimming("C", 5, "NNCCCCCCCC").empty());
   REQUIRE(poly_x_trimming("C", 5, "NNTCCCCCCC") == "NNT");
 }
 
 TEST_CASE("trim_poly_x returns nucleotide trimmed or N")
 {
-  fastq record("Test", "CCCCC");
+  const fastq record("Test", "CCCCC");
 
   using pair = std::pair<char, size_t>;
 
@@ -1065,24 +1071,24 @@ TEST_CASE("truncate_pos_after_last_base", "[fastq::fastq]")
 
 TEST_CASE("reverse_complement__empty", "[fastq::fastq]")
 {
-  const fastq expected = fastq("Empty", "", "");
-  fastq result = fastq("Empty", "", "");
+  const fastq expected{ "Empty", "", "" };
+  fastq result{ "Empty", "", "" };
   result.reverse_complement();
   REQUIRE(result == expected);
 }
 
 TEST_CASE("reverse_complement", "[fastq::fastq]")
 {
-  const fastq expected = fastq("Rec", "TACAGANGTN", "0123456789");
-  fastq result = fastq("Rec", "NACNTCTGTA", "9876543210");
+  const fastq expected{ "Rec", "TACAGANGTN", "0123456789" };
+  fastq result{ "Rec", "NACNTCTGTA", "9876543210" };
   result.reverse_complement();
   REQUIRE(result == expected);
 }
 
 TEST_CASE("reverse_complement (uneven length)", "[fastq::fastq]")
 {
-  const fastq expected = fastq("Rec", "ACAGANGTN", "123456789");
-  fastq result = fastq("Rec", "NACNTCTGT", "987654321");
+  const fastq expected{ "Rec", "ACAGANGTN", "123456789" };
+  fastq result{ "Rec", "NACNTCTGT", "987654321" };
   result.reverse_complement();
   REQUIRE(result == expected);
 }
@@ -1119,12 +1125,7 @@ TEST_CASE("add_prefix_to_header__header", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record_1", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("!7BF8DGI");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record_1", "ACGAGTCA", "+", "!7BF8DGI" });
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
@@ -1135,16 +1136,16 @@ TEST_CASE("simple_fastq_record_1", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record_2", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("!7BF8DGI");
-  lines.push_back("@record_2");
-  lines.push_back("GTCAGGAT");
-  lines.push_back("+");
-  lines.push_back("D7BIG!F8");
-  vec_reader reader(lines);
+  vec_reader reader({
+    "@record_1",
+    "ACGAGTCA",
+    "+",
+    "!7BF8DGI",
+    "@record_2",
+    "GTCAGGAT",
+    "+",
+    "D7BIG!F8",
+  });
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
@@ -1160,12 +1161,12 @@ TEST_CASE("simple_fastq_record_2", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__with_extra_header_1", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1 Extra header here");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("!7BF8DGI");
-  vec_reader reader(lines);
+  vec_reader reader({
+    "@record_1 Extra header here",
+    "ACGAGTCA",
+    "+",
+    "!7BF8DGI",
+  });
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
@@ -1177,12 +1178,12 @@ TEST_CASE("simple_fastq_record__with_extra_header_1", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__with_extra_header_2", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+Extra header here");
-  lines.push_back("!7BF8DGI");
-  vec_reader reader(lines);
+  vec_reader reader({
+    "@record_1",
+    "ACGAGTCA",
+    "+Extra header here",
+    "!7BF8DGI",
+  });
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
@@ -1194,12 +1195,7 @@ TEST_CASE("simple_fastq_record__with_extra_header_2", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__no_header", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("!7BF8DGI");
-  vec_reader reader(lines);
+  vec_reader reader({ "@", "ACGAGTCA", "+", "!7BF8DGI" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1209,12 +1205,7 @@ TEST_CASE("simple_fastq_record__no_header", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("");
-  lines.push_back("+");
-  lines.push_back("!7BF8DGI");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record_1", "", "+", "!7BF8DGI" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1224,12 +1215,7 @@ TEST_CASE("simple_fastq_record__no_sequence", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record_1", "ACGAGTCA", "+", "" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1239,12 +1225,7 @@ TEST_CASE("simple_fastq_record__no_qualities", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("");
-  lines.push_back("+");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record_1", "", "+", "" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1254,12 +1235,7 @@ TEST_CASE("simple_fastq_record__no_qualities_or_sequence", "[fastq::fastq]")
 
 TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("!!!!!!!");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record_1", "ACGAGTCA", "+", "!!!!!!!" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1269,7 +1245,7 @@ TEST_CASE("simple_fastq_record__mismatching_seq_qual_length", "[fastq::fastq]")
 
 TEST_CASE("eof_when_starting_to_read_record", "[fastq::fastq]")
 {
-  string_vec lines;
+  const string_vec lines;
   vec_reader reader(lines);
 
   fastq record;
@@ -1278,9 +1254,7 @@ TEST_CASE("eof_when_starting_to_read_record", "[fastq::fastq]")
 
 TEST_CASE("eof_after_header", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1290,10 +1264,7 @@ TEST_CASE("eof_after_header", "[fastq::fastq]")
 
 TEST_CASE("eof_after_sequence_1", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record");
-  lines.push_back("ACGTA");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record", "ACGTA" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1303,11 +1274,7 @@ TEST_CASE("eof_after_sequence_1", "[fastq::fastq]")
 
 TEST_CASE("eof_after_sequence_2", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record");
-  lines.push_back("ACGTA");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record", "ACGTA", "" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1317,11 +1284,7 @@ TEST_CASE("eof_after_sequence_2", "[fastq::fastq]")
 
 TEST_CASE("eof_after_sep_1", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record", "ACGTA", "+" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1331,12 +1294,7 @@ TEST_CASE("eof_after_sep_1", "[fastq::fastq]")
 
 TEST_CASE("eof_after_sep_2", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({ "@record", "ACGTA", "+", "" });
 
   fastq record;
   REQUIRE_THROWS_MESSAGE(record.read(reader, FASTQ_ENCODING_33),
@@ -1346,15 +1304,15 @@ TEST_CASE("eof_after_sep_2", "[fastq::fastq]")
 
 TEST_CASE("eof_after_qualities_following_previous_read_1", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  lines.push_back("!!!!!");
-  lines.push_back("@record_2");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  vec_reader reader(lines);
+  vec_reader reader({
+    "@record_1",
+    "ACGTA",
+    "+",
+    "!!!!!",
+    "@record_2",
+    "ACGTA",
+    "+",
+  });
 
   fastq record;
   REQUIRE_NOTHROW(record.read(reader, FASTQ_ENCODING_33));
@@ -1365,16 +1323,16 @@ TEST_CASE("eof_after_qualities_following_previous_read_1", "[fastq::fastq]")
 
 TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("@record_1");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  lines.push_back("!!!!!");
-  lines.push_back("@record_2");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({
+    "@record_1",
+    "ACGTA",
+    "+",
+    "!!!!!",
+    "@record_2",
+    "ACGTA",
+    "+",
+    "",
+  });
 
   fastq record;
   REQUIRE_NOTHROW(record.read(reader, FASTQ_ENCODING_33));
@@ -1385,15 +1343,7 @@ TEST_CASE("eof_after_qualities_following_previous_read_2", "[fastq::fastq]")
 
 TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("");
-  lines.push_back("@record_1");
-  lines.push_back("ACGTA");
-  lines.push_back("+");
-  lines.push_back("!!!!!");
-  lines.push_back("");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({ "", "@record_1", "ACGTA", "+", "!!!!!", "", "" });
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
@@ -1405,20 +1355,20 @@ TEST_CASE("ignores_trailing_newlines", "[fastq::fastq]")
 
 TEST_CASE("ignores_newlines_between_records", "[fastq::fastq]")
 {
-  string_vec lines;
-  lines.push_back("");
-  lines.push_back("@record_1");
-  lines.push_back("ACGAGTCA");
-  lines.push_back("+");
-  lines.push_back("!7BF8DGI");
-  lines.push_back("");
-  lines.push_back("");
-  lines.push_back("@record_2");
-  lines.push_back("GTCAGGAT");
-  lines.push_back("+");
-  lines.push_back("D7BIG!F8");
-  lines.push_back("");
-  vec_reader reader(lines);
+  vec_reader reader({
+    "",
+    "@record_1",
+    "ACGAGTCA",
+    "+",
+    "!7BF8DGI",
+    "",
+    "",
+    "@record_2",
+    "GTCAGGAT",
+    "+",
+    "D7BIG!F8",
+    "",
+  });
 
   fastq record;
   CHECK(record.read(reader, FASTQ_ENCODING_33));
@@ -1586,8 +1536,8 @@ TEST_CASE("validate_paired_reads__allows_other_separators", "[fastq::fastq]")
 TEST_CASE("validate_paired_reads__throws_if_only_mate_1_is_numbered",
           "[fastq::fastq]")
 {
-  const fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
-  const fastq mate2 = fastq("Mate", "ACGT", "!!#$");
+  const fastq mate1{ "Mate/1", "GCTAA", "$!@#$" };
+  const fastq mate2{ "Mate", "ACGT", "!!#$" };
 
   REQUIRE_NOTHROW(validate_paired_reads(mate2, mate2));
   REQUIRE_THROWS_MESSAGE(validate_paired_reads(mate1, mate2),
@@ -1607,8 +1557,8 @@ TEST_CASE("validate_paired_reads__throws_if_only_mate_1_is_numbered",
 TEST_CASE("validate_paired_reads__throws_if_only_mate_2_is_numbered",
           "[fastq::fastq]")
 {
-  const fastq mate1 = fastq("Mate", "GCTAA", "$!@#$");
-  const fastq mate2 = fastq("Mate/2", "ACGT", "!!#$");
+  const fastq mate1{ "Mate", "GCTAA", "$!@#$" };
+  const fastq mate2{ "Mate/2", "ACGT", "!!#$" };
 
   REQUIRE_NOTHROW(validate_paired_reads(mate1, mate1));
 
@@ -1629,8 +1579,8 @@ TEST_CASE("validate_paired_reads__throws_if_only_mate_2_is_numbered",
 TEST_CASE("validate_paired_reads__throws_if_mate_is_misnumbered",
           "[fastq::fastq]")
 {
-  fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
-  fastq mate2 = fastq("Mate/3", "ACGT", "!!#$");
+  const fastq mate1{ "Mate/1", "GCTAA", "$!@#$" };
+  const fastq mate2{ "Mate/3", "ACGT", "!!#$" };
   REQUIRE_THROWS_WITH(
     fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR),
     Catch::Contains("AdapterRemoval expected the mate "
@@ -1641,8 +1591,8 @@ TEST_CASE("validate_paired_reads__throws_if_mate_is_misnumbered",
 TEST_CASE("validate_paired_reads__throws_if_same_mate_numbers",
           "[fastq::fastq]")
 {
-  fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
-  fastq mate2 = fastq("Mate/1", "ACGT", "!!#$");
+  const fastq mate1{ "Mate/1", "GCTAA", "$!@#$" };
+  const fastq mate2{ "Mate/1", "ACGT", "!!#$" };
   REQUIRE_THROWS_MESSAGE(
     fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR),
     fastq_error,
@@ -1653,8 +1603,8 @@ TEST_CASE("validate_paired_reads__throws_if_same_mate_numbers",
 
 TEST_CASE("validate_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 {
-  fastq mate1 = fastq("Mate/1", "GCTAA", "$!@#$");
-  fastq mate2 = fastq("WrongName/2", "ACGT", "!!#$");
+  const fastq mate1{ "Mate/1", "GCTAA", "$!@#$" };
+  const fastq mate2{ "WrongName/2", "ACGT", "!!#$" };
   REQUIRE_THROWS_MESSAGE(
     fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR),
     fastq_error,
@@ -1665,8 +1615,8 @@ TEST_CASE("validate_paired_reads__throws_if_name_differs", "[fastq::fastq]")
 TEST_CASE("validate_paired_reads doesn't modify reads without mate numbers")
 {
   const auto* name = GENERATE("Name", "Name and meta");
-  fastq mate1 = fastq(name, "GCTAA", "$!@#$");
-  fastq mate2 = fastq(name, "ACGTA", "@$!$#");
+  const fastq mate1{ name, "GCTAA", "$!@#$" };
+  const fastq mate2{ name, "ACGTA", "@$!$#" };
 
   fastq::validate_paired_reads(mate1, mate2, MATE_SEPARATOR);
 

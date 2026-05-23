@@ -1,30 +1,35 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
-#include "fastq_io.hpp"    // declarations
-#include "commontypes.hpp" // for output_format
-#include "debug.hpp"       // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
-#include "errors.hpp"      // for io_error, gzip_error, fastq_error
-#include "fastq.hpp"       // for fastq
-#include "fastq_enc.hpp"   // for MATE_SEPARATOR
-#include "logging.hpp"     // for log
-#include "output.hpp"      // for output_file
-#include "progress.hpp"    // for progress_timer
-#include "scheduler.hpp"   // for provides analytical_step, chunk_ptr, ...
-#include "statistics.hpp"  // for fastq_statistics, fastq_stats_ptr, stat...
-#include "strutils.hpp"    // for shell_escape, string_vec, ends_with
-#include "threading.hpp"   // for threadsafe_data
-#include "userconfig.hpp"  // for userconfig
-#include "utilities.hpp"   // for prng_seed
-#include <algorithm>       // for max, min
-#include <cerrno>          // for errno
-#include <cstdint>         // for uint8_t
-#include <isa-l.h>         // for isal_gzip_header
-#include <libdeflate.h>    // for libdeflate_alloc_compressor, libdeflate...
-#include <memory>          // for unique_ptr, make_unique, __shared_ptr_a...
-#include <sstream>         // for basic_ostream, basic_ostringstream, ope...
-#include <string>          // for string<<
-#include <string_view>     // for string_view
-#include <utility>         // for move, swap
+#include "fastq_io.hpp"          // declarations
+#include "commontypes.hpp"       // for output_format
+#include "debug.hpp"             // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "errors.hpp"            // for io_error, gzip_error, fastq_error
+#include "fastq.hpp"             // for fastq
+#include "fastq_enc.hpp"         // for MATE_SEPARATOR
+#include "linereader_joined.hpp" // joined_line_readers
+#include "logging.hpp"           // for log
+#include "managed_io.hpp"        // for flush
+#include "output.hpp"            // for output_file
+#include "progress.hpp"          // for progress_timer
+#include "scheduler.hpp"         // for provides analytical_step, chunk_ptr, ...
+#include "statistics.hpp"        // for fastq_statistics, fastq_stats_ptr, ...
+#include "strutils.hpp"          // for shell_escape, string_vec, ends_with
+#include "threading.hpp"         // for threadsafe_data
+#include "userconfig.hpp"        // for userconfig
+#include "utilities.hpp"         // for prng_seed
+#include <algorithm>             // for max, min
+#include <cerrno>                // for errno
+#include <cstddef>               // for size_t
+#include <cstdint>               // for uint8_t
+#include <isa-l.h>               // IWYU pragma: keep
+#include <libdeflate.h>          // for libdeflate_alloc_compressor, ...
+#include <memory>                // for unique_ptr, make_unique, ...
+#include <mutex>                 // for mutex, recursive_lock, unique_lock
+#include <sstream>               // for basic_ostream, basic_ostringstream, ...
+#include <string>                // for string<<
+#include <string_view>           // for string_view
+#include <utility>               // for move, swap
+#include <vector>                // for vector
 
 namespace adapterremoval {
 
@@ -148,7 +153,7 @@ public:
   void acquire(std::vector<fastq>& chunk, size_t capacity)
   {
     if (capacity) {
-      std::unique_lock<std::mutex> lock{ s_chunks_lock };
+      const std::unique_lock lock{ s_chunks_lock };
       if (s_chunks_cache.empty()) {
         s_chunks_created++;
       } else {
@@ -164,7 +169,7 @@ public:
   void release(std::vector<fastq>&& chunk)
   {
     if (chunk.capacity()) {
-      std::unique_lock<std::mutex> lock{ s_chunks_lock };
+      const std::unique_lock lock{ s_chunks_lock };
       s_chunks_cache.emplace_back(std::move(chunk));
     }
   }
@@ -172,7 +177,7 @@ public:
   /** Verify that there were no leaks or lost chunks */
   void finalize()
   {
-    std::unique_lock<std::mutex> lock{ s_chunks_lock };
+    const std::unique_lock lock{ s_chunks_lock };
     AR_REQUIRE(s_chunks_cache.size() == s_chunks_created);
     s_chunks_cache.clear();
     s_chunks_created = 0;
@@ -492,7 +497,7 @@ post_process_fastq::process(chunk_ptr data)
   m_stats.release(std::move(stats));
 
   {
-    std::unique_lock<std::recursive_mutex> lock(m_timer_lock);
+    const std::unique_lock lock(m_timer_lock);
     m_timer->increment(reads_1.size() + reads_2.size());
   }
 
@@ -630,7 +635,7 @@ isal_deflate_block(buffer& input_buffer,
   static std::vector<compressor_ptr> s_cache;
 
   {
-    std::unique_lock<std::mutex> locker{ s_lock };
+    const std::unique_lock locker{ s_lock };
     if (!s_cache.empty()) {
       ptr = std::move(s_cache.back());
       s_cache.pop_back();
@@ -677,7 +682,7 @@ isal_deflate_block(buffer& input_buffer,
   AR_REQUIRE(ptr->avail_in == 0);
   const auto total_out = ptr->total_out;
 
-  std::unique_lock<std::mutex> locker{ s_lock };
+  const std::unique_lock locker{ s_lock };
   s_cache.emplace_back(std::move(ptr));
 
   return total_out;
@@ -705,7 +710,7 @@ libdeflate_deflate_block(buffer& input_buffer,
   static std::vector<compressor_ptr> s_cache;
 
   {
-    std::unique_lock<std::mutex> locker{ s_lock };
+    const std::unique_lock locker{ s_lock };
     if (!s_cache.empty()) {
       ptr = std::move(s_cache.back());
       s_cache.pop_back();
@@ -737,7 +742,7 @@ libdeflate_deflate_block(buffer& input_buffer,
   // Resize the buffer to the actually used size
   output_buffer.resize(output_size + BGZF_HEADER.size());
 
-  std::unique_lock<std::mutex> locker{ s_lock };
+  const std::unique_lock locker{ s_lock };
   s_cache.emplace_back(std::move(ptr));
 }
 

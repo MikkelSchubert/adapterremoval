@@ -4,15 +4,17 @@
 // SPDX-FileCopyrightText: 2010-17 Simon Andrews
 #include "statistics.hpp" // declarations
 #include "adapter_id.hpp" // for adapter_id_statistics
+#include "counts.hpp"     // for indexed_counts, rates
 #include "fastq.hpp"      // for ACGTN, fastq, ACGT
 #include "fastq_enc.hpp"  // for PHRED_OFFSET_MIN, PHRED_SCORE_MAX
 #include "robin_hood.hpp" // for unordered_flat_map
 #include "utilities.hpp"  // for prng_seed
 #include <algorithm>      // for max, min
 #include <array>          // for array
+#include <cstdint>        // for uint32_t
 #include <cstdlib>        // for size_t
-#include <functional>     // for equal_to
 #include <memory>         // for make_shared, __shared_ptr_access, __shared_...
+#include <random>         // for generate_canonical
 #include <string>         // for basic_string, string
 #include <string_view>    // for string_view
 
@@ -114,7 +116,6 @@ duplication_statistics::summary::summary()
   : labels(DUPLICATION_LABELS.begin(), DUPLICATION_LABELS.end())
   , total_sequences(DUPLICATION_LEVELS)
   , unique_sequences(DUPLICATION_LEVELS)
-  , unique_frac()
 {
 }
 
@@ -153,9 +154,6 @@ duplication_statistics::summarize() const
   }
 
   duplication_statistics::summary result;
-
-  result.total_sequences.resize_up_to(DUPLICATION_LEVELS);
-  result.unique_sequences.resize_up_to(DUPLICATION_LEVELS);
 
   for (const auto& it : histogram) {
     const auto level = it.first;

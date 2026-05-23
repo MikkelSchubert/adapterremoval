@@ -108,7 +108,7 @@ private:
   std::unique_ptr<isal_gzip_header> m_gzip_header;
 
   /** Returns true if the raw buffer contains gzip'd data. */
-  bool is_raw_buffer_gzip() const;
+  [[nodiscard]] bool is_raw_buffer_gzip() const;
   /** Initializes gzip stream and output buffers. */
   void initialize_buffers_gzip();
   /** Refills 'm_buffer' from compressed data; may refill raw buffers. */

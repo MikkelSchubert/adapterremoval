@@ -20,7 +20,7 @@ public:
   monotonic_timer();
 
   /** Returns the duration in seconds since the timer was created. */
-  double duration() const;
+  [[nodiscard]] double duration() const;
 
 private:
   //! Starting time of the timer.

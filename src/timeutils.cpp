@@ -2,12 +2,12 @@
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "timeutils.hpp" // declarations
 #include "debug.hpp"     // for AR_REQUIRE
-#include <cctype>        // for isprint, isalnum, tolower, toupper
 #include <chrono>        // for system_clock
-#include <cmath>         // for log10, pow, round
 #include <ctime>         // for localtime_r, tm
 #include <iomanip>       // for operator<<, setprecision
+#include <ios>           // for fixed
 #include <sstream>       // for ostringstream, operator<<, basic_ostream, bas...
+#include <string>        // for string
 
 namespace adapterremoval {
 
@@ -32,7 +32,7 @@ format_time(const std::chrono::system_clock::time_point& now,
   tm in_localtime{};
   std::ostringstream ss;
 
-#if defined(_WIN32)
+#ifdef _WIN32
   if (!localtime_s(&in_localtime, &in_time_t)) {
 #else
   if (localtime_r(&in_time_t, &in_localtime)) {

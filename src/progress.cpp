@@ -7,27 +7,29 @@
 #include "strutils.hpp"  // for format_rough_number, format_thousand_sep
 #include "timeutils.hpp" // for seconds_to_duration
 #include <chrono>        // for milliseconds
-#include <iomanip>       // for operator<<, setfill, setw
+#include <cstddef>       // for size_t
+#include <mutex>         // for mutex, unique_lock
 #include <sstream>       // for operator<<, basic_ostream, ostringstream
 #include <string>        // for string, operator<<, basic_string, char_traits
+#include <thread>        // for sleep_for, thread
 #include <vector>        // for vector
 
 namespace adapterremoval {
 
 namespace {
 //! Print progress report every N read
-const size_t REPORT_EVERY_NTH_READ = 1e6;
+constexpr size_t REPORT_EVERY_NTH_READ = 1'000'000;
 //! Print an updated progress report roughly every 5 or 10 seconds
-const size_t REPORT_EVERY_NTH_LOOP =
-#if defined(_WIN32)
+constexpr size_t REPORT_EVERY_NTH_LOOP =
+#ifdef _WIN32
   5;
 #else
   10;
 #endif
 
 //! Increment the spinner every time-unit
-const auto SPIN_EVERY =
-#if defined(_WIN32)
+constexpr auto SPIN_EVERY =
+#ifdef _WIN32
   std::chrono::milliseconds(200);
 #else
   std::chrono::milliseconds(100);
@@ -96,7 +98,7 @@ progress_timer::increment(size_t inc)
     }
 
     case progress_type::spinner: {
-      std::unique_lock<std::mutex> lock(m_lock);
+      const std::unique_lock lock{ m_lock };
 
       m_total += inc;
       break;
@@ -132,7 +134,7 @@ progress_timer::loop()
   size_t last_reads = 0;
 
   const std::vector<std::string> symbols =
-#if defined(_WIN32)
+#ifdef _WIN32
     // A simple ASCII spinner is used, to avoid having to deal with encodings
     { ".", "o", "O", "o", "." };
 #else
@@ -148,7 +150,7 @@ progress_timer::loop()
     size_t current_reads = 0;
 
     {
-      std::unique_lock<std::mutex> lock(m_lock);
+      const std::unique_lock lock{ m_lock };
       if (m_spinning) {
         current_time = m_timer.duration();
         current_reads = m_total;
@@ -179,7 +181,7 @@ progress_timer::stop()
 {
   if (m_spinner.joinable()) {
     {
-      std::unique_lock<std::mutex> lock(m_lock);
+      const std::unique_lock lock{ m_lock };
       m_spinning = false;
     }
 

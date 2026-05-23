@@ -12,7 +12,7 @@ prng_seed()
   static std::mutex lock;
   static std::random_device source;
 
-  std::unique_lock<std::mutex> guard(lock);
+  const std::unique_lock guard{ lock };
   return source();
 }
 

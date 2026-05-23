@@ -6,10 +6,13 @@
 #include <cctype>       // for isprint, isalnum, tolower, toupper
 #include <charconv>     // for from_chars
 #include <cmath>        // for log10, pow, round
+#include <cstddef>      // for size_t
 #include <cstdint>      // for uint64_t, int64_t
 #include <iomanip>      // for operator<<, setprecision
+#include <ios>          // for fixed
 #include <sstream>      // for ostringstream, operator<<, basic_ostream, bas...
 #include <stdexcept>    // for invalid_argument
+#include <string>       // for string
 #include <string_view>  // for string_view
 #include <system_error> // for errc
 #include <vector>       // for vector, swap
@@ -51,7 +54,7 @@ levenshtein(const std::string_view s, const std::string_view t)
       const auto ins = v1.at(j) + 1;
       const auto sub = s.at(i) == t.at(j) ? v0.at(j) : v0.at(j) + 1;
 
-      v1.at(j + 1) = std::min(del, std::min(ins, sub));
+      v1.at(j + 1) = std::min({ del, ins, sub });
     }
 
     std::swap(v0, v1);
@@ -219,7 +222,7 @@ split_text(const std::string_view text, const char separator)
   do {
     end = text.find(separator, start);
 
-    lines.push_back(std::string{ text.substr(start, end - start) });
+    lines.emplace_back(text.substr(start, end - start));
 
     start = end + 1;
   } while (end != std::string::npos);
@@ -284,10 +287,7 @@ trim_ascii_whitespace(std::string_view s)
 // Implementations for 'cli_formatter'
 
 cli_formatter::cli_formatter()
-  : m_indent_first(true)
-  , m_ljust(0)
-  , m_columns(DEFAULT_MAX_COLUMNS)
-  , m_indentation(4)
+  : m_columns(DEFAULT_MAX_COLUMNS)
 {
 }
 
@@ -497,7 +497,7 @@ format_rough_number(size_t value, size_t out_digits)
   const size_t unit = std::min<size_t>(units.size(), in_digits / 3);
   const double scaled = rounded / std::pow(10.0, unit * 3);
   const size_t precision =
-    out_digits - std::min<size_t>(out_digits, in_digits - unit * 3 + 1);
+    out_digits - std::min<size_t>(out_digits, in_digits - (unit * 3) + 1);
 
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(precision) << scaled;

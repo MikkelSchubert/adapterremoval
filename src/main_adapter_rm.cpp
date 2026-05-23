@@ -13,7 +13,7 @@
 #include "statistics.hpp"       // for trim_stats_ptr, trimming_statistics
 #include "trimming.hpp"         // for pe_reads_processor, se_reads_processor
 #include "userconfig.hpp"       // for userconfig, output_files, DEV_NULL
-#include <cstring>              // for size_t
+#include <cstddef>              // for size_t
 #include <limits>               // for numeric_limits
 
 namespace adapterremoval {

@@ -77,13 +77,13 @@ public:
 
 private:
   //! Lookup table for conversion/validation of nucleotides
-  std::array<char, 256>::const_pointer m_nucleotides_lut;
+  std::array<char, 256>::const_pointer m_nucleotides_lut{ nullptr };
   //! Quality score encoding expected when decoding data
   quality_encoding m_encoding;
   //! Offset of the lowest ASCII value used by the given encoding
-  char m_offset_min;
+  char m_offset_min{};
   //! Offset of the maximum ASCII value used by the given encoding
-  char m_offset_max;
+  char m_offset_max{};
 };
 
 inline const fastq_encoding FASTQ_ENCODING_33{ quality_encoding::phred_33 };

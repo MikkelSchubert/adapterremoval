@@ -18,26 +18,26 @@ namespace adapterremoval {
 
 TEST_CASE("what()", "[barcodes::errors]")
 {
-  parsing_error err("test error");
+  const parsing_error err("test error");
 
   REQUIRE(std::string(err.what()) == "test error");
 }
 
 TEST_CASE("copy constructor", "[barcodes::errors]")
 {
-  parsing_error err("test error");
+  const parsing_error err("test error");
 
   REQUIRE(std::string(parsing_error(err).what()) == "test error");
 }
 
 TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
 {
-  sample_set samples{
+  const sample_set samples{
     "sample1 ACGT CGTG",
     "sample2 CGTG ACGT",
   };
 
-  barcode_table table(samples, 0, 0, 0);
+  const barcode_table table(samples, 0, 0, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

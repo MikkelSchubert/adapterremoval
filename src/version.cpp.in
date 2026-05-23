@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "version.hpp"  // declarations
-#include <string>       // for string
 #include <string_view>  // for string_view
 
 namespace adapterremoval::program {

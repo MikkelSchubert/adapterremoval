@@ -5,7 +5,6 @@
 #include "json.hpp"     // for json_dict, json_value, json_token, json_list
 #include "strutils.hpp" // for string_vec
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
-#include <cmath>        // for nan
 #include <cstdint>      // for int64_t, uint64_t
 #include <limits>       // for numeric_limits
 #include <sstream>      // for ostringstream
@@ -186,7 +185,7 @@ TEST_CASE("json_token::from_f64 rounds to 3 digits")
 
 TEST_CASE("json_token::from_f64 writes NaN as null")
 {
-  auto s = json_token::from_f64(std::nan(""));
+  auto s = json_token::from_f64(std::numeric_limits<double>::quiet_NaN());
 
   REQUIRE(s->to_string() == "null");
 }
@@ -290,7 +289,7 @@ TEST_CASE("json_token::from_f64_vec writes NaN as null")
 {
   rates c(3);
   c.inc(0, 1);
-  c.inc(1, std::nan(""));
+  c.inc(1, std::numeric_limits<double>::quiet_NaN());
   c.inc(2, 3.1415);
   auto s = json_token::from_f64_vec(c);
 
@@ -302,7 +301,7 @@ TEST_CASE("json_token::from_f64_vec writes NaN as null")
 
 TEST_CASE("json_token::from_str_vec")
 {
-  string_vec v{ "foo", "b\tr" };
+  const string_vec v{ "foo", "b\tr" };
   auto s = json_token::from_str_vec(v);
 
   REQUIRE(s->to_string() == R"(["foo", "b\tr"])");
@@ -310,7 +309,7 @@ TEST_CASE("json_token::from_str_vec")
 
 TEST_CASE("identical to_string and write for json_token::from_str_vec")
 {
-  string_vec v{ "foo", "b\tr" };
+  const string_vec v{ "foo", "b\tr" };
 
   auto s = json_token::from_str_vec(v);
   REQUIRE(s->to_string() == _write_json(*s));
@@ -321,9 +320,7 @@ TEST_CASE("identical to_string and write for json_token::from_str_vec")
 
 TEST_CASE("empty json_dict is single line")
 {
-  json_dict s;
-
-  REQUIRE(s.to_string() == "{}");
+  REQUIRE(json_dict{}.to_string() == "{}");
 }
 
 TEST_CASE("json_dict with int")
@@ -486,9 +483,7 @@ TEST_CASE("complex json_dict")
 
 TEST_CASE("empty json_list")
 {
-  json_list l;
-
-  REQUIRE(l.to_string() == "[]");
+  REQUIRE(json_list{}.to_string() == "[]");
 }
 
 TEST_CASE("json_list with empty dict")

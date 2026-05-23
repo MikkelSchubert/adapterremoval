@@ -8,10 +8,15 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for supported
 #include "strutils.hpp"      // for format_rough_number
+#include "threading.hpp"     // for threadsafe_data
 #include "userconfig.hpp"    // for userconfig
 #include "utilities.hpp"     // for dynamic_cast_unique
+#include <algorithm>         // for max
 #include <chrono>            // for steady_clock
+#include <cstddef>           // for size_t
+#include <cstdint>           // for uint32_t
 #include <limits>            // for numeric_limits
+#include <utility>           // for move
 
 namespace adapterremoval {
 
@@ -54,7 +59,7 @@ simd_selector::process(chunk_ptr data)
       (m_processed_reads == 0 && chunk->eof) ||
       // No point in benchmarking if we won't align anything
       (chunk->reads_2.empty() &&
-       (adapters == adapter_set{} || adapters == adapter_set{ {} }))) {
+       (adapters.empty() || adapters == adapter_set{ {} }))) {
       // Skip future checks, if any
       m_processed_reads = std::numeric_limits<size_t>::max();
     } else {

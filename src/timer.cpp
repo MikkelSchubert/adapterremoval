@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "timer.hpp" // declarations
+#include <chrono>    // for duration
 
 namespace adapterremoval {
 

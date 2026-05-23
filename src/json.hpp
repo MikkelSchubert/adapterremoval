@@ -31,7 +31,7 @@ public:
   virtual ~json_value() = default;
 
   /** Returns the value as a valid JSON string */
-  virtual std::string to_string() const;
+  [[nodiscard]] virtual std::string to_string() const;
 
   /**
    * Writes the object to a stream. The first line is not indented, but
@@ -75,7 +75,7 @@ public:
   static json_ptr from_null();
 
   /** See json_value::to_string */
-  std::string to_string() const override { return m_value; }
+  [[nodiscard]] std::string to_string() const override { return m_value; }
 
   /** See json_value::write */
   void write(std::ostream& out, size_t indent = 0) const override;

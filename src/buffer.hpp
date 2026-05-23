@@ -16,8 +16,6 @@ namespace adapterremoval {
 
 class buffer
 {
-  struct no_init;
-
 public:
   /** Creates a buffer of the specified size, if non-zero */
   explicit buffer(size_t size = 0) { resize(size); }

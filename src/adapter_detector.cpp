@@ -3,17 +3,22 @@
 #include "adapter_detector.hpp" // declarations
 #include "adapter_database.hpp" // for known_adapters
 #include "alignment.hpp"        // for sequence_aligner
+#include "commontypes.hpp"      // for read_mate
 #include "debug.hpp"            // AR_REQUIRE
 #include "fastq.hpp"            // for fastq
 #include "logging.hpp"          // for log
 #include "sequence.hpp"         // for dna_sequence
 #include "sequence_sets.hpp"    // adapter_set
+#include "simd.hpp"             // for instruction_set
 #include "strutils.hpp"         // for log_escape, starts_with
 #include "utilities.hpp"        // for merge
 #include <algorithm>            // for sort
 #include <cstddef>              // for size_t
 #include <limits>               // for numeric_limits
+#include <ostream>              // for ostream
 #include <string_view>          // for string_view
+#include <utility>              // for move, pair
+#include <vector>               // for vector
 
 namespace adapterremoval {
 
@@ -81,7 +86,7 @@ common_prefixes(const sequence_vec& adapters, size_t min_overlap)
   prefixes.reserve(adapters.size());
 
   for (size_t i = 0; i < adapters.size(); ++i) {
-    std::string_view adapter = adapters.at(i).as_string();
+    const std::string_view adapter = adapters.at(i).as_string();
 
     std::vector<std::pair<size_t, size_t>> overlaps;
     overlaps.reserve(adapter.length() -
@@ -178,19 +183,20 @@ adapter_detection_stats::adapter_detection_stats(size_t reads,
                                                  std::vector<hits> mate_1,
                                                  std::vector<hits> mate_2)
   : m_reads_1(reads)
-  , m_reads_2(mate_2.size() ? reads : 0)
+  , m_reads_2(mate_2.empty() ? 0 : reads)
   , m_mate_1{ std::move(mate_1) }
   , m_mate_2{ std::move(mate_2) }
 {
-  AR_REQUIRE(mate_2.empty() || (mate_1.size() == mate_2.size()));
+  AR_REQUIRE(m_mate_1.empty() || m_mate_2.empty() ||
+             (m_mate_1.size() == m_mate_2.size()));
 }
 
 void
 adapter_detection_stats::merge(const adapter_detection_stats& other)
 {
-  AR_REQUIRE(m_mate_1.size() == 0 || other.m_mate_1.size() == 0 ||
+  AR_REQUIRE(m_mate_1.empty() || other.m_mate_1.empty() ||
              m_mate_1.size() == other.m_mate_1.size());
-  AR_REQUIRE(m_mate_2.size() == 0 || other.m_mate_2.size() == 0 ||
+  AR_REQUIRE(m_mate_2.empty() || other.m_mate_2.empty() ||
              m_mate_2.size() == other.m_mate_2.size());
 
   m_reads_1 += other.m_reads_1;

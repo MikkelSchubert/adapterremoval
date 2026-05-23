@@ -49,9 +49,9 @@ public:
   void inc_bases(uint64_t bases = 1);
 
   /** Returns the total number of reads (number of increments) */
-  uint64_t reads() const;
+  [[nodiscard]] uint64_t reads() const;
   /** Returns the total number of bases */
-  uint64_t bases() const;
+  [[nodiscard]] uint64_t bases() const;
 
 private:
   //! Number of reads/times inc was called
@@ -80,7 +80,7 @@ public:
     //! Fraction of sequences for X-axis label after de-duplication
     rates unique_sequences;
     //! Estimated fraction of unique sequences in input
-    double unique_frac;
+    double unique_frac{};
   };
 
   explicit duplication_statistics(size_t max_unique_sequences);
@@ -94,11 +94,11 @@ public:
   /** **/
   void process(const fastq& read);
 
-  summary summarize() const;
+  [[nodiscard]] summary summarize() const;
 
 private:
   /** Attempts to correct the number of observations for a given bin */
-  double correct_count(size_t bin, size_t count) const;
+  [[nodiscard]] double correct_count(size_t bin, size_t count) const;
 
   /** Map of truncated sequences to sequence counts. */
   std::unique_ptr<string_counts> m_sequence_counts;
@@ -114,53 +114,56 @@ public:
 
   void process(const fastq& read, size_t num_input_reads = 1);
 
-  inline size_t number_of_input_reads() const
+  [[nodiscard]] size_t number_of_input_reads() const
   {
     return m_number_of_input_reads;
   }
 
-  inline size_t number_of_output_reads() const
+  [[nodiscard]] size_t number_of_output_reads() const
   {
     return m_number_of_output_reads;
   }
 
-  inline size_t number_of_sampled_reads() const
+  [[nodiscard]] size_t number_of_sampled_reads() const
   {
     return m_number_of_sampled_reads;
   }
 
   /** Distribution of read lengths */
-  inline const counts& length_dist() const { return m_length_dist; }
+  [[nodiscard]] const counts& length_dist() const { return m_length_dist; }
 
   /** Distribution of Phred quality scores (offset 0) */
-  inline const counts& quality_dist() const { return m_quality_dist; }
+  [[nodiscard]] const counts& quality_dist() const { return m_quality_dist; }
 
   /** Smoothed distribution of GC content */
-  inline const rates& gc_content() const { return m_gc_content_dist; }
+  [[nodiscard]] const rates& gc_content() const { return m_gc_content_dist; }
 
   /** Counts of ACGTN nucleotides by position */
-  inline counts nucleotides_pos(char nuc) const
+  [[nodiscard]] counts nucleotides_pos(char nuc) const
   {
     return m_nucleotide_pos.to_counts(nuc);
   }
 
   /** Sum of nucleotide counts by position */
-  counts nucleotides_pos() const { return m_nucleotide_pos.merge(); }
+  [[nodiscard]] counts nucleotides_pos() const
+  {
+    return m_nucleotide_pos.merge();
+  }
 
   /** Sum of nucleotide counts by position for GC only */
-  inline counts nucleotides_gc_pos() const
+  [[nodiscard]] counts nucleotides_gc_pos() const
   {
     return nucleotides_pos('G') + nucleotides_pos('C');
   }
 
   /** Sum of base qualities for each nucleotide (ACGTN) by position */
-  inline counts qualities_pos(char nuc) const
+  [[nodiscard]] counts qualities_pos(char nuc) const
   {
     return m_quality_pos.to_counts(nuc);
   }
 
   /** Sum of base qualities for ACGTN by position */
-  counts qualities_pos() const { return m_quality_pos.merge(); }
+  [[nodiscard]] counts qualities_pos() const { return m_quality_pos.merge(); }
 
   /** Sum statistics, e.g. those used by different threads. */
   fastq_statistics& operator+=(const fastq_statistics& other);
@@ -174,7 +177,7 @@ private:
   //! Sample every nth read for statistics.
   double m_sample_rate = 1.0;
   //! RNG used to downsample sample reads for curves
-  std::mt19937 m_rng{};
+  std::mt19937 m_rng;
 
   //! Number of input reads used to produce these statistics
   size_t m_number_of_input_reads = 0;
@@ -278,7 +281,7 @@ public:
   explicit demux_statistics(double sample_rate = 1.0);
   ~demux_statistics() = default;
 
-  size_t total() const;
+  [[nodiscard]] size_t total() const;
 
   //! Number of reads identified for each barcode (pair) for each sample
   std::vector<counts> samples{};
@@ -337,7 +340,7 @@ public:
   /** Enable adapter identification if set to > 0 */
   statistics_builder& adapter_identification(size_t max_length);
 
-  statistics initialize() const;
+  [[nodiscard]] statistics initialize() const;
 
 private:
   //! Number of (demultiplexing) samples; at least one, for regular runs

@@ -45,12 +45,12 @@ sample_set_pe(std::initializer_list<std::string_view> lines)
 
 TEST_CASE("constructor", "[sample_set]")
 {
-  sample_set ss;
+  const sample_set ss;
 
   CHECK(ss.size() == 1);
   CHECK(std::vector<sample>{ ss.begin(), ss.end() } ==
         std::vector<sample>{ sample{} });
-  CHECK(ss.adapters() == adapter_set{});
+  CHECK(ss.adapters().empty());
   CHECK(ss.readgroup() == read_group{});
 
   {
@@ -363,7 +363,7 @@ TEST_CASE("Duplicate sample names", "[sample_set]")
 TEST_CASE("Duplicate sample names with different explicit adapters",
           "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 ACCC CTAA forward",
     GENERATE(
       // duplicate barcodes, right orientation
@@ -405,7 +405,7 @@ TEST_CASE("Names for barcodes must be distinct", "[sample_set]")
 
 TEST_CASE("Barcodes in forward orientation", "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTGCCCT ACGTTATT",
     "sample_2 CGCCGATG TGCACGGG",
   };
@@ -428,7 +428,7 @@ TEST_CASE("Barcodes in forward orientation", "[sample_set]")
                         barcode_orientation::reverse);
   sample_2.set_read_group(read_group{});
 
-  std::vector<sample> samples = { sample_1, sample_2 };
+  const std::vector<sample> samples = { sample_1, sample_2 };
 
   barcode_config config;
   config.paired_end_mode(GENERATE(true, false))
@@ -441,7 +441,7 @@ TEST_CASE("Barcodes in forward orientation", "[sample_set]")
 
 TEST_CASE("Barcodes in reverse orientation", "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTGCCCT ACGTTATT",
     "sample_2 CGCCGATG TGCACGGG",
   };
@@ -464,7 +464,7 @@ TEST_CASE("Barcodes in reverse orientation", "[sample_set]")
                         barcode_orientation::forward);
   sample_2.set_read_group(read_group{});
 
-  std::vector<sample> samples = { sample_1, sample_2 };
+  const std::vector<sample> samples = { sample_1, sample_2 };
 
   barcode_config config;
   config.paired_end_mode(GENERATE(true, false))
@@ -477,7 +477,7 @@ TEST_CASE("Barcodes in reverse orientation", "[sample_set]")
 
 TEST_CASE("Barcodes in explicit orientation", "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 ACCC CTAA forwArd", "sample_2 GACA ACAG fWd",
     "sample_3 TTCA TCCA +",       "sample_4 CGAG CCAT reversE",
     "sample_5 TAAG GCTT rev",     "sample_6 ATAT CTCT -",
@@ -505,7 +505,7 @@ TEST_CASE("Barcodes in explicit orientation", "[sample_set]")
 
 TEST_CASE("Barcodes in explicit orientation for same sample", "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 ACCC CTAA forwArd",
     "sample_1 CTAA ACCC reverse",
   };
@@ -571,7 +571,7 @@ TEST_CASE("Multiple barcodes in forward orientation", "[sample_set]")
   const auto fwd = barcode_orientation::forward;
   const auto rev = barcode_orientation::reverse;
 
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTGCCCT ACGTTATT",
     "sample_1 CGCCGATG TGCACGGG",
   };
@@ -582,7 +582,7 @@ TEST_CASE("Multiple barcodes in forward orientation", "[sample_set]")
   sample_1.add_barcodes(seq{ "TGCACGGG" }, seq{ "CGCCGATG" }, rev);
   sample_1.set_read_group(read_group{});
 
-  std::vector<sample> samples = { sample_1 };
+  const std::vector<sample> samples = { sample_1 };
 
   barcode_config config;
   config.allow_multiple_barcodes(true).orientation(
@@ -598,7 +598,7 @@ TEST_CASE("Multiple barcodes in forward orientation", "[sample_set]")
 TEST_CASE("Double barcodes are required for barcode orientation",
           "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTGCCCT",
     "sample_2 CGCCGATG",
   };
@@ -618,7 +618,7 @@ TEST_CASE("Double barcodes are required for barcode orientation",
 TEST_CASE("Overlap between specified and derived barcodes fails",
           "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTGCCCT ACGTTATT",
     "sample_2 CGCCGATG TGCACGGG",
     "sample_3 ACGTTATT CTTGCCCT",
@@ -653,7 +653,7 @@ TEST_CASE("Overlap between specified and derived barcodes fails",
 
 TEST_CASE("Overlap between explicit barcodes fails", "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTGCCCT ACGTTATT forward",
     GENERATE("sample_1 CTTGCCCT ACGTTATT forward",
              "sample_2 CTTGCCCT ACGTTATT forward",
@@ -670,7 +670,7 @@ TEST_CASE("Overlap between explicit barcodes fails", "[sample_set]")
 
 TEST_CASE("Orientation must be present for explicit barcodes", "[sample_set]")
 {
-  std::initializer_list<std::string_view> lines{
+  const std::initializer_list<std::string_view> lines{
     "sample_1 CTTG CCCT forward",
     "sample_2 CGCC GATG ",
   };
@@ -776,7 +776,7 @@ TEST_CASE("set adapters for demultiplexing", "[sample_set]")
     "sample_2 TGCAT CCGAT",
   });
 
-  adapter_set as{ { "ACGTA", "TGGAT" } };
+  const adapter_set as{ { "ACGTA", "TGGAT" } };
   ss.set_adapters(as);
 
   CHECK(ss.adapters() == as);
@@ -822,7 +822,7 @@ TEST_CASE("set and clear uninitialized adapters in sample set", "[sample_set]")
     "sample_2 AA CC",
   });
 
-  adapter_set as_1{ { "TGGAT", "ACGTA" } };
+  const adapter_set as_1{ { "TGGAT", "ACGTA" } };
   ss.set_adapters(as_1);
 
   REQUIRE(ss.adapters() == as_1);
@@ -836,7 +836,7 @@ TEST_CASE("set and clear uninitialized adapters in sample set", "[sample_set]")
   REQUIRE_THROWS_AS(ss.at(1).at(0).adapters(), assert_failed);
   REQUIRE(ss.uninitialized_adapters() == as_1);
 
-  adapter_set as_2{ { "ACGTA", "TGGAT" } };
+  const adapter_set as_2{ { "ACGTA", "TGGAT" } };
   ss.set_adapters(as_2);
   REQUIRE(ss.adapters() == as_2);
   REQUIRE(ss.at(0).at(0).adapters() == adapter_set{ { "CCACGTA", "AATGGAT" } });
@@ -848,7 +848,7 @@ TEST_CASE("loading sample set with uninitialized adapters", "[sample_set]")
 {
   sample_set ss;
 
-  adapter_set as_1{ { "TGGAT", "ACGTA" } };
+  const adapter_set as_1{ { "TGGAT", "ACGTA" } };
   ss.set_adapters(as_1);
   ss.flag_uninitialized_adapters();
 
@@ -858,7 +858,7 @@ TEST_CASE("loading sample set with uninitialized adapters", "[sample_set]")
   REQUIRE_THROWS_AS(ss.at(0).at(0).adapters(), assert_failed);
   REQUIRE(ss.uninitialized_adapters() == as_1);
 
-  adapter_set as_2{ { "ACGTA", "TGGAT" } };
+  const adapter_set as_2{ { "ACGTA", "TGGAT" } };
   ss.set_adapters(as_2);
   REQUIRE(ss.adapters() == as_2);
   REQUIRE(ss.at(0).at(0).adapters() == adapter_set{ { "CCACGTA", "AATGGAT" } });

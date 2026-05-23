@@ -20,7 +20,7 @@ namespace adapterremoval {
 
 TEST_CASE("sample_sequences constructor", "[sample_sequences]")
 {
-  sample_sequences set;
+  const sample_sequences set;
   CHECK(set.barcode_1.empty());
   CHECK(set.barcode_2.empty());
   CHECK(set.orientation == barcode_orientation::unspecified);
@@ -28,7 +28,9 @@ TEST_CASE("sample_sequences constructor", "[sample_sequences]")
 
 TEST_CASE("sample_sequences explicit constructor", "[sample_sequences]")
 {
-  sample_sequences set{ "ACGT"_dna, "TTAA"_dna, barcode_orientation::reverse };
+  const sample_sequences set{ "ACGT"_dna,
+                              "TTAA"_dna,
+                              barcode_orientation::reverse };
   CHECK(set.barcode_1 == "ACGT"_dna);
   CHECK(set.barcode_2 == "TTAA"_dna);
   CHECK(set.orientation == barcode_orientation::reverse);
@@ -36,9 +38,9 @@ TEST_CASE("sample_sequences explicit constructor", "[sample_sequences]")
 
 TEST_CASE("sample_sequences equality operator", "[sample_sequences]")
 {
-  sample_sequences set_1{ "ACGT"_dna,
-                          "TTAA"_dna,
-                          barcode_orientation::reverse };
+  const sample_sequences set_1{ "ACGT"_dna,
+                                "TTAA"_dna,
+                                barcode_orientation::reverse };
 
   SECTION("same")
   {
@@ -98,6 +100,7 @@ TEST_CASE("sample_sequences equality operator", "[sample_sequences]")
 TEST_CASE("sample_sequences with uninitialized adapters", "[sample_sequences]")
 {
   sample_sequences ss{ "ACGT"_dna, "TTAA"_dna, barcode_orientation::reverse };
+  // NOLINTNEXTLINE(readability-container-size-empty)
   REQUIRE(ss.adapters() == adapter_set{});
   ss.flag_uninitialized_adapters();
   REQUIRE_THROWS_AS(ss.adapters(), assert_failed);
@@ -134,11 +137,11 @@ TEST_CASE("sample_sequences to string", "[sample_sequences]")
 
 TEST_CASE("default sample constructor", "[sample]")
 {
-  sample s;
+  const sample s;
 
   CHECK(s == s);
   CHECK(s == sample{});
-  CHECK(s.name() == "");
+  CHECK(s.name().empty());
   CHECK(s.size() == 1);
   CHECK(s.at(0) == sample_sequences{});
   CHECK(std::vector(s.begin(), s.end()) == std::vector{ sample_sequences{} });
@@ -146,9 +149,11 @@ TEST_CASE("default sample constructor", "[sample]")
 
 TEST_CASE("explicit sample constructor", "[sample]")
 {
-  sample s{ "foo", "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
+  const sample s{ "foo", "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
 
-  sample_sequences ss{ "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
+  const sample_sequences ss{ "TTAC"_dna,
+                             "GATG"_dna,
+                             barcode_orientation::forward };
 
   CHECK(s == s);
   CHECK(s == sample{ s });
@@ -160,8 +165,8 @@ TEST_CASE("explicit sample constructor", "[sample]")
 
 TEST_CASE("barcode2 requires barcode1 in sample constructor", "[sample]")
 {
-  dna_sequence s1{};
-  dna_sequence s2{ "ACGT" };
+  const dna_sequence s1{};
+  const dna_sequence s2{ "ACGT" };
 
   CHECK_THROWS_AS(sample("foo", s1, s2, barcode_orientation::unspecified),
                   assert_failed);
@@ -172,8 +177,12 @@ TEST_CASE("add to sample", "[sample]")
   sample s{ "foo", "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
   s.add_barcodes("GTGT"_dna, "GATC"_dna, barcode_orientation::reverse);
 
-  sample_sequences ss_1{ "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
-  sample_sequences ss_2{ "GTGT"_dna, "GATC"_dna, barcode_orientation::reverse };
+  const sample_sequences ss_1{ "TTAC"_dna,
+                               "GATG"_dna,
+                               barcode_orientation::forward };
+  const sample_sequences ss_2{ "GTGT"_dna,
+                               "GATC"_dna,
+                               barcode_orientation::reverse };
 
   CHECK(s.size() == 2);
   CHECK(std::vector(s.begin(), s.end()) == std::vector{ ss_1, ss_2 });
@@ -294,6 +303,7 @@ TEST_CASE("sample with uninitialized adapters", "[sample]")
   sample s{ "foo", "TTAC"_dna, "GATG"_dna, barcode_orientation::forward };
 
   for (const auto& ss : s) {
+    // NOLINTNEXTLINE(readability-container-size-empty)
     REQUIRE(ss.adapters() == adapter_set{});
   }
 
@@ -313,7 +323,10 @@ TEST_CASE("sample with uninitialized adapters", "[sample]")
 
 TEST_CASE("sample to string", "[sample]")
 {
-  sample ss{ "foo", "ACGT"_dna, "TTAA"_dna, barcode_orientation::reverse };
+  const sample ss{ "foo",
+                   "ACGT"_dna,
+                   "TTAA"_dna,
+                   barcode_orientation::reverse };
 
   std::ostringstream os;
   os << ss;

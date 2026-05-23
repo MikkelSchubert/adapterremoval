@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "json.hpp"     // declarations
+#include "counts.hpp"   // for counts, rates
 #include "debug.hpp"    // for AR_REQUIRE
 #include "strutils.hpp" // for join_text, stringify
 #include <cmath>        // for isinf, isnan
+#include <cstddef>      // for size_t
+#include <cstdint>      // for uint64_t, int64_t
 #include <iomanip>      // for setfill, setw
+#include <ios>          // for fixed, hex
 #include <memory>       // for make_shared, __shared_ptr_access, shar...
+#include <ostream>      // for ostream
 #include <sstream>      // for ostringstream
+#include <string>       // for string
+#include <string_view>  // for string_view
 #include <utility>      // for pair
 
 namespace adapterremoval {
@@ -20,7 +27,7 @@ _escape(std::string_view value)
 
   stream << '"';
 
-  for (char c : value) {
+  for (const char c : value) {
     switch (c) {
       case '"':
         stream << "\\\"";

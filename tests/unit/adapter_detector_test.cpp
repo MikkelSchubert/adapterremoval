@@ -10,6 +10,7 @@
 #include "simd.hpp"             // for instruction_set
 #include "testing.hpp"          // for TEST_CASE, REQUIRE, ...
 #include <initializer_list>     // for initializer_list
+#include <vector>               // for vector
 
 namespace adapterremoval {
 
@@ -148,7 +149,7 @@ TEST_CASE("adapter sets are flattened and sorted")
 TEST_CASE("adapter_detector including known adapters")
 {
   const auto is = PARAMETERIZE_IS;
-  std::initializer_list<string_view_pair> seqs{
+  const std::initializer_list<string_view_pair> seqs{
     { "ACGTGTTA", "GTTATTTA" },
     { "ACGGACGT", "GGCAGTTA" },
   };
@@ -156,26 +157,26 @@ TEST_CASE("adapter_detector including known adapters")
   // known adapters only
   adapter_database database_1;
   database_1.add_known();
-  adapter_detector ad_1{ database_1, is, DEFAULT_MISMATCH_THRESHOLD };
+  const adapter_detector ad_1{ database_1, is, DEFAULT_MISMATCH_THRESHOLD };
   REQUIRE(ad_1.size() > 10);
 
   // user specified adapters only
   adapter_database database_2;
   database_2.add(seqs);
-  adapter_detector ad_2{ database_2, is, DEFAULT_MISMATCH_THRESHOLD };
+  const adapter_detector ad_2{ database_2, is, DEFAULT_MISMATCH_THRESHOLD };
   REQUIRE(ad_2.size() == 4);
 
   // known and user specified adapters
   adapter_database database_3;
   database_3.add_known();
   database_3.add(seqs);
-  adapter_detector ad_3{ database_3, is, DEFAULT_MISMATCH_THRESHOLD };
+  const adapter_detector ad_3{ database_3, is, DEFAULT_MISMATCH_THRESHOLD };
   REQUIRE(ad_3.size() == ad_1.size() + ad_2.size());
 }
 
 TEST_CASE("adapter_detector returns empty sequences if no stats")
 {
-  adapter_detection_stats stats;
+  const adapter_detection_stats stats;
   auto ad = simple_detector({
     { "ACGTGTTA", "GTTATTTA" },
     { "ACGGACGT", "GGCAGTTA" },
@@ -212,7 +213,7 @@ TEST_CASE("only unique adapters are collected")
 
 TEST_CASE("very short adapters are skipped")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
 
   auto ad = simple_detector({
     { "ACGTGTT", "ACGGACGT" },
@@ -282,7 +283,7 @@ TEST_CASE("reads with unique adapter matches")
     REQUIRE(stats.mate_1() == hits_vec{ { 1, 21 }, {}, {} });
   }
 
-  REQUIRE(stats.mate_2() == hits_vec{});
+  REQUIRE(stats.mate_2().empty());
   REQUIRE(stats.reads_1() == 1);
   REQUIRE(stats.reads_2() == 0);
 }
@@ -320,7 +321,7 @@ TEST_CASE("reads with shared prefixes")
     REQUIRE(stats.mate_1() == hits_vec{ { 1, 8 }, { 1, 8 }, { 1, 8 } });
   }
 
-  REQUIRE(stats.mate_2() == hits_vec{});
+  REQUIRE(stats.mate_2().empty());
   REQUIRE(stats.reads_1() == 1);
   REQUIRE(stats.reads_2() == 0);
 }
@@ -422,7 +423,7 @@ TEST_CASE("mate 1 and mate 2 read counts are independent")
 
 TEST_CASE("selection requires 10 hits")
 {
-  adapter_detection_stats stats;
+  const adapter_detection_stats stats;
   auto ad = simple_detector({
     { "AGATCGGAAGAGCACACGTCT", {} },
   });
@@ -432,7 +433,7 @@ TEST_CASE("selection requires 10 hits")
   const identified_adapter expected_1{ name, sequence, read_mate::_1 };
   const identified_adapter expected_2{ name, sequence, read_mate::_2 };
 
-  log::log_capture _;
+  const log::log_capture _;
   REQUIRE(ad.select_best({ 9, { { 9 } } }) == identified_adapter_pair{});
   REQUIRE(ad.select_best({ 9, {}, { { 9 } } }) == identified_adapter_pair{});
 
@@ -447,7 +448,7 @@ TEST_CASE("selection requires 10 hits")
 
 TEST_CASE("selection requires 1/0.1 percent sequences")
 {
-  adapter_detection_stats stats;
+  const adapter_detection_stats stats;
   auto ad = simple_detector({
     { "AGATCGGAAGAGCACACGTCT", {} },
   });
@@ -456,7 +457,7 @@ TEST_CASE("selection requires 1/0.1 percent sequences")
                                      "AGATCGGAAGAGCACACGTCT"_dna,
                                      read_mate::_1 };
 
-  log::log_capture _;
+  const log::log_capture _;
   // Common sequences require >= 1% hits
   REQUIRE(ad.select_best({ 10000, { { 99, 9900, 990 } } }) ==
           identified_adapter_pair{});
@@ -476,14 +477,14 @@ TEST_CASE("selection requires 1/0.1 percent sequences")
 
 TEST_CASE("selection prefers the most aligned bases for same hits")
 {
-  adapter_detection_stats stats;
+  const adapter_detection_stats stats;
   auto ad = simple_detector({
     { "AGATCGGAAGAGCACACGTCT", {} },
     { "AGATCGGAAGAGCACACGTCTGAAC", {} },
     { "AGATCGGAAGAGCGTCGTGTAGGGA", {} },
   });
 
-  log::log_capture _;
+  const log::log_capture _;
   // Prefer sequence with the most hits
   REQUIRE(
     ad.select_best({ 100, { { 30, 400 }, { 10, 50 }, { 40, 300 } } }) ==

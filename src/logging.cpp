@@ -7,12 +7,15 @@
 #include "version.hpp"   // for name, version
 #include <algorithm>     // for max, min
 #include <chrono>        // for system_clock
+#include <cstddef>       // for size_t
 #include <iostream>      // for cerr
 #include <limits>        // for numeric_limits
 #include <mutex>         // for mutex, unique_lock
+#include <sstream>       // for ostringstream
+#include <string>        // for string
 #include <unistd.h>      // for size_t, STDERR_FILENO
 
-#if !defined(_WIN32)
+#ifndef _WIN32
 #include <sys/ioctl.h> // for ioctl, winsize, TIOCGWINSZ
 #endif
 
@@ -177,7 +180,7 @@ log_print_lines(std::ostream& out,
 void
 log_preamble()
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
   if (!g_preamble_logged) {
     g_preamble_logged = true;
     log::info() << program::long_name();
@@ -187,7 +190,7 @@ log_preamble()
 void
 set_level(level l)
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
 
   g_log_level = l;
 }
@@ -195,7 +198,7 @@ set_level(level l)
 void
 set_colors(bool enabled)
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
 
   g_log_colors = enabled;
 }
@@ -203,7 +206,7 @@ set_colors(bool enabled)
 void
 set_timestamps(bool enabled)
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
 
   g_log_timestamps = enabled;
 }
@@ -211,7 +214,7 @@ set_timestamps(bool enabled)
 size_t
 get_terminal_width()
 {
-#if !defined(_WIN32)
+#ifndef _WIN32
   struct winsize params = {};
   // Attempt to retrieve the number of columns in the terminal
   if (ioctl(STDERR_FILENO, TIOCGWINSZ, &params) == 0) {
@@ -232,7 +235,7 @@ log_stream::log_stream(level lvl)
 
 log_stream::~log_stream()
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
   if (m_level != level::cerr) {
     log_preamble();
   }
@@ -275,7 +278,7 @@ log_stream::transient()
 
 log_capture::log_capture()
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
 
   AR_REQUIRE(g_log_out == &std::cerr);
   m_original_stream = g_log_out;
@@ -293,7 +296,7 @@ log_capture::log_capture()
 
 log_capture::~log_capture()
 {
-  std::unique_lock<std::recursive_mutex> lock(g_log_mutex);
+  const std::unique_lock lock{ g_log_mutex };
 
   AR_REQUIRE(g_log_out == &m_stream);
   g_log_out = m_original_stream;

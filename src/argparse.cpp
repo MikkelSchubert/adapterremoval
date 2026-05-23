@@ -10,6 +10,7 @@
 #include <cstdint>      // for uint32_t
 #include <limits>       // for numeric_limits
 #include <memory>       // for unique_ptr, shared_ptr, ...
+#include <ostream>      // for ostream
 #include <sstream>      // for operator<<, basic_ostream, ostringstream
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for string

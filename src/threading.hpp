@@ -39,7 +39,7 @@ public:
   template<class... Args>
   void emplace_back_n(size_t n, const Args&... args)
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    const std::unique_lock lock(m_mutex);
     for (; n; n--) {
       m_values.emplace_back(std::make_unique<T>(args...));
     }
@@ -49,7 +49,7 @@ public:
   pointer try_acquire()
   {
     {
-      std::lock_guard<std::mutex> lock(m_mutex);
+      const std::unique_lock lock(m_mutex);
       if (!m_values.empty()) {
         pointer value = std::move(m_values.back());
         m_values.pop_back();
@@ -74,7 +74,7 @@ public:
   void release(pointer value)
   {
     AR_REQUIRE(value);
-    std::lock_guard<std::mutex> lock(m_mutex);
+    const std::unique_lock lock(m_mutex);
 
     m_values.push_back(std::move(value));
   }
@@ -82,7 +82,7 @@ public:
   /** Merge also values into the arguments, using `+=`, then drop them */
   void merge_into(T& value)
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    const std::unique_lock lock(m_mutex);
     while (!m_values.empty()) {
       value += *m_values.back();
       m_values.pop_back();
@@ -220,13 +220,13 @@ public:
 
   /** Create default initialized thread-safe shared data */
   threadsafe_data()
-    : m_inner(std::make_unique<inner>())
+    : m_inner(std::make_shared<inner>())
   {
   }
 
   /** Create thread-safe shared data */
   explicit threadsafe_data(T value)
-    : m_inner(std::make_unique<inner>(std::move(value)))
+    : m_inner(std::make_shared<inner>(std::move(value)))
   {
   }
 

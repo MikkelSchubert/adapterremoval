@@ -12,7 +12,6 @@
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string, allocator
 #include <string_view>  // for string_view
-#include <vector>       // for vector, operator==
 
 namespace adapterremoval {
 
@@ -31,14 +30,14 @@ using Catch::Matchers::Contains;
 TEST_CASE("bool sink is initialized", "[argparse::bool_sink]")
 {
   bool value = true;
-  argparse::bool_sink sink(&value);
+  const argparse::bool_sink sink(&value);
   REQUIRE_FALSE(value);
 }
 
 TEST_CASE("bool sink value", "[argparse::bool_sink]")
 {
   bool value = false;
-  argparse::bool_sink sink(&value);
+  const argparse::bool_sink sink(&value);
   REQUIRE(sink.value() == "off");
   value = true;
   REQUIRE(sink.value() == "on");
@@ -47,7 +46,7 @@ TEST_CASE("bool sink value", "[argparse::bool_sink]")
 TEST_CASE("bool sink has_default", "[argparse::bool_sink]")
 {
   bool value = false;
-  argparse::bool_sink sink(&value);
+  const argparse::bool_sink sink(&value);
   REQUIRE_FALSE(sink.has_default());
 }
 
@@ -74,7 +73,7 @@ TEST_CASE("bool sink rejects values", "[argparse::bool_sink]")
 TEST_CASE("bool does not support default values", "[argparse::bool_sink]")
 {
   bool value = false;
-  argparse::bool_sink sink(&value);
+  const argparse::bool_sink sink(&value);
 
   REQUIRE_FALSE(sink.has_default());
   REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
@@ -91,14 +90,14 @@ TEST_CASE("uint sink is required", "[argparse::u32_sink]")
 TEST_CASE("uint sink is initialized", "[argparse::u32_sink]")
 {
   uint32_t value = 12345;
-  argparse::u32_sink sink(&value);
+  const argparse::u32_sink sink(&value);
   REQUIRE(value == 0);
 }
 
 TEST_CASE("uint sink value", "[argparse::u32_sink]")
 {
   uint32_t value = 1234567;
-  argparse::u32_sink sink(&value);
+  const argparse::u32_sink sink(&value);
   REQUIRE(sink.value() == "0");
   value = 1234567;
   REQUIRE(sink.value() == "1234567");
@@ -312,14 +311,14 @@ TEST_CASE("double sink is required", "[argparse::double_sink]")
 TEST_CASE("double sink is initialized", "[argparse::double_sink]")
 {
   double value = 12345;
-  argparse::double_sink sink(&value);
+  const argparse::double_sink sink(&value);
   REQUIRE(value == 0);
 }
 
 TEST_CASE("double sink value", "[argparse::double_sink]")
 {
   double value = 12345.67;
-  argparse::double_sink sink(&value);
+  const argparse::double_sink sink(&value);
   REQUIRE(sink.value() == "0");
   value = 12345.67;
   REQUIRE(sink.value() == "12345.67");
@@ -456,14 +455,14 @@ TEST_CASE("double with min/max value", "[argparse::double_sink]")
 TEST_CASE("str sink is initialized", "[argparse::str_sink]")
 {
   std::string value = "foo";
-  argparse::str_sink sink(&value);
+  const argparse::str_sink sink(&value);
   REQUIRE(value.empty());
 }
 
 TEST_CASE("str sink value", "[argparse::str_sink]")
 {
   std::string value;
-  argparse::str_sink sink(&value);
+  const argparse::str_sink sink(&value);
   value = "foobar";
   REQUIRE(sink.value() == "foobar");
 }
@@ -471,7 +470,7 @@ TEST_CASE("str sink value", "[argparse::str_sink]")
 TEST_CASE("str sink value escapes", "[argparse::str_sink]")
 {
   std::string value;
-  argparse::str_sink sink(&value);
+  const argparse::str_sink sink(&value);
   value = "foo bar";
   REQUIRE(sink.value() == "foo bar");
 }
@@ -480,7 +479,7 @@ TEST_CASE("str sink with_default (char*)", "[argparse::str_sink]")
 {
   std::string value;
   argparse::str_sink sink(&value);
-  REQUIRE(value == "");
+  REQUIRE(value.empty());
   REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
   sink.with_default("foobar");
   REQUIRE(value == "foobar");
@@ -614,7 +613,7 @@ TEST_CASE("str sink with implicit argument", "[argparse::str_sink]")
   std::string value;
   argparse::str_sink sink(&value);
   sink.with_implicit_argument("foo");
-  REQUIRE(value == "");
+  REQUIRE(value.empty());
 
   string_vec values{ "bar" };
   REQUIRE(sink.consume(values.begin(), values.end()) == 1);
@@ -647,34 +646,34 @@ TEST_CASE("vec sink is required", "[argparse::vec_sink]")
 TEST_CASE("vec sink is initialized", "[argparse::vec_sink]")
 {
   string_vec value{ "foo" };
-  argparse::vec_sink sink(&value);
+  const argparse::vec_sink sink(&value);
   REQUIRE(value.empty());
 }
 
 TEST_CASE("vec sink to_vec #1", "[argparse::vec_sink]")
 {
   string_vec value;
-  argparse::vec_sink sink(&value);
-  value.push_back("foobar");
+  const argparse::vec_sink sink(&value);
+  value.emplace_back("foobar");
   REQUIRE(sink.value() == "foobar");
 }
 
 TEST_CASE("vec sink to_vec #2", "[argparse::vec_sink]")
 {
   string_vec value;
-  argparse::vec_sink sink(&value);
-  value.push_back("foo");
-  value.push_back("bar");
+  const argparse::vec_sink sink(&value);
+  value.emplace_back("foo");
+  value.emplace_back("bar");
   REQUIRE(sink.value() == "foo;bar");
 }
 
 TEST_CASE("vec sink to_vec escapes", "[argparse::vec_sink]")
 {
   string_vec value;
-  argparse::vec_sink sink(&value);
-  value.push_back("foo");
-  value.push_back("1 2");
-  value.push_back("bar");
+  const argparse::vec_sink sink(&value);
+  value.emplace_back("foo");
+  value.emplace_back("1 2");
+  value.emplace_back("bar");
   REQUIRE(sink.value() == "foo;'1 2';bar");
 }
 
@@ -744,7 +743,7 @@ TEST_CASE("vec sink with maximum n values", "[argparse::vec_sink]")
 TEST_CASE("vec does not support default values", "[argparse::vec_sink]")
 {
   string_vec value;
-  argparse::vec_sink sink(&value);
+  const argparse::vec_sink sink(&value);
 
   REQUIRE_FALSE(sink.has_default());
   REQUIRE_THROWS_AS(sink.default_value(), assert_failed);
@@ -755,7 +754,7 @@ TEST_CASE("vec does not support default values", "[argparse::vec_sink]")
 
 TEST_CASE("argument properties", "[argparse::argument]")
 {
-  argparse::argument arg("--12345", "67890");
+  const argparse::argument arg("--12345", "67890");
 
   REQUIRE_FALSE(arg.is_set());
   REQUIRE(arg.key() == "--12345");
@@ -826,7 +825,7 @@ TEST_CASE("deprecated argument", "[argparse::argument]")
   REQUIRE(arg.is_deprecated());
   REQUIRE(arg.is_hidden());
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   string_vec values{ "--12345" };
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
@@ -841,7 +840,7 @@ TEST_CASE("deprecated argument with help", "[argparse::argument]")
   arg.deprecated();
   arg.help("additional help text");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   string_vec values{ "--12345" };
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
@@ -860,7 +859,7 @@ TEST_CASE("removed argument without help", "[argparse::argument]")
   REQUIRE(arg.is_removed());
   REQUIRE(arg.is_hidden());
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   string_vec values{ "--12345" };
   REQUIRE(arg.parse(values.begin(), values.end()) ==
@@ -877,7 +876,7 @@ TEST_CASE("removed argument with help", "[argparse::argument]")
   argparse::argument arg("--12345");
   arg.help("additional help text").removed();
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   string_vec values{ "--12345" };
   REQUIRE(arg.parse(values.begin(), values.end()) ==
@@ -902,14 +901,14 @@ TEST_CASE("hidden argument", "[argparse::argument]")
 
 TEST_CASE("default argument sink", "[argparse::argument]")
 {
-  argparse::argument arg("--12345", "67890");
+  const argparse::argument arg("--12345", "67890");
 
   REQUIRE(arg.value() == "off");
 }
 
 TEST_CASE("canonical key", "[argparse::argument]")
 {
-  argparse::argument arg("--12345", "67890");
+  const argparse::argument arg("--12345", "67890");
 
   REQUIRE(arg.keys() == string_vec{ "--12345" });
   REQUIRE_FALSE(arg.is_deprecated_alias("--12345"));
@@ -950,7 +949,7 @@ TEST_CASE("argument requires", "[argparse::argument]")
 
 TEST_CASE("required option does not exist", "[argparse::parser]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").depends_on("--bar");
 
@@ -1071,7 +1070,7 @@ TEST_CASE("bind vec", "[argparse::argument]")
 
 TEST_CASE("bind vec clears previous values", "[argparse::argument]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
 
   string_vec sink;
   argparse::argument arg("--12345");
@@ -1097,7 +1096,7 @@ TEST_CASE("warning on first duplicate argument", "[argparse::argument]")
   argparse::argument arg("--12345");
   string_vec values{ "--12345" };
 
-  log::log_capture ss;
+  const log::log_capture ss;
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE(ss.str().empty());
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
@@ -1123,7 +1122,7 @@ TEST_CASE("warning on first duplicate argument (on error)",
   const std::string msg_duplicate = "[WARNING] Command-line option --12345 has "
                                     "been specified more than once.\n";
 
-  log::log_capture ss;
+  const log::log_capture ss;
   REQUIRE(arg.parse(bad_values.begin(), bad_values.end()) ==
           argparse::argument::parsing_failed);
   REQUIRE(ss.str() == msg_invalid);
@@ -1139,7 +1138,7 @@ TEST_CASE("no warning on main alias", "[argparse::argument]")
   arg.deprecated_alias("--foo");
   string_vec values{ "--12345" };
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE(ss.str().empty());
@@ -1151,7 +1150,7 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
   arg.deprecated_alias("--foo");
   string_vec values{ "--foo" };
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(arg.parse(values.begin(), values.end()) == 1);
   REQUIRE_POSTFIX(ss.str(),
@@ -1180,7 +1179,7 @@ TEST_CASE("--version", "[argparse::parser]")
   p.set_name("My App");
   p.set_version("1234");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", GENERATE("-v", "--version") }) ==
           argparse::parse_result::exit);
@@ -1193,7 +1192,7 @@ TEST_CASE("--licenses", "[argparse::parser]")
   p.set_name("My App");
   p.set_licenses("line 1\nline 2\nline 3");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--licenses" }) ==
           argparse::parse_result::exit);
@@ -1207,7 +1206,7 @@ TEST_CASE("--help", "[argparse::parser]")
   p.set_version("1234");
   p.set_preamble("basic help");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", GENERATE("-h", "--help") }) ==
           argparse::parse_result::exit);
@@ -1220,7 +1219,7 @@ TEST_CASE("--help with deprecated argument", "[argparse::parser]")
   p.add("--foo").deprecated();
   const string_vec args = { "exe", "--help" };
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args(args) == argparse::parse_result::exit);
   REQUIRE_THAT(ss.str(), !Contains("--foo"));
@@ -1231,7 +1230,7 @@ TEST_CASE("--help with hidden argument", "[argparse::parser]")
   argparse::parser p;
   p.add("--foo").hidden();
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--help" }) == argparse::parse_result::exit);
   REQUIRE_THAT(ss.str(), !Contains("--foo"));
@@ -1248,7 +1247,7 @@ TEST_CASE("--help must not end in dot", "[argparse::parser]")
 TEST_CASE("unexpected positional argument", "[argparse::parser]")
 {
   argparse::parser p;
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(), "[ERROR] Unexpected positional argument 'foo'\n");
@@ -1257,7 +1256,7 @@ TEST_CASE("unexpected positional argument", "[argparse::parser]")
 TEST_CASE("unexpected argument", "[argparse::parser]")
 {
   argparse::parser p;
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--foo" }) == argparse::parse_result::error);
   REQUIRE_POSTFIX(ss.str(), "[ERROR] Unknown argument '--foo'\n");
@@ -1266,7 +1265,7 @@ TEST_CASE("unexpected argument", "[argparse::parser]")
 TEST_CASE("typo in argument", "[argparse::parser]")
 {
   argparse::parser p;
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--halp" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--halp'. "
@@ -1278,7 +1277,7 @@ TEST_CASE("partial argument", "[argparse::parser]")
   argparse::parser p;
   p.add("--partofalongargument");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--part" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--part'. "
@@ -1291,7 +1290,7 @@ TEST_CASE("two possible arguments", "[argparse::parser]")
   p.add("--arg1");
   p.add("--arg2");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--arg" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
@@ -1305,7 +1304,7 @@ TEST_CASE("three possible arguments", "[argparse::parser]")
   p.add("--arg2");
   p.add("--arg3");
 
-  log::log_capture ss;
+  const log::log_capture ss;
 
   REQUIRE(p.parse_args({ "exe", "--arg" }) == argparse::parse_result::error);
   REQUIRE(ss.str() == "[ERROR] Unknown argument '--arg'. "
@@ -1344,7 +1343,7 @@ TEST_CASE("value returns value as str", "[argparse::parser]")
 
 TEST_CASE("user supplied argument", "[argparse::parser]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1359,7 +1358,7 @@ TEST_CASE("user supplied argument", "[argparse::parser]")
 TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 {
   uint32_t sink = 0;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1380,7 +1379,7 @@ TEST_CASE("user supplied argument with meta-var", "[argparse::parser]")
 TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 {
   uint32_t sink = 0;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1409,7 +1408,7 @@ TEST_CASE("user supplied argument with meta-var and help", "[argparse::parser]")
 TEST_CASE("help with default value", "[argparse::parser]")
 {
   uint32_t sink = 0;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1438,7 +1437,7 @@ TEST_CASE("help with default value", "[argparse::parser]")
 
 TEST_CASE("required option missing", "[argparse::parser]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").depends_on("--bar");
   p.add("--bar");
@@ -1469,7 +1468,7 @@ TEST_CASE("conflicting option missing", "[argparse::parser]")
 
 TEST_CASE("conflicting option supplied", "[argparse::parser]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").conflicts_with("--bar");
   p.add("--bar");
@@ -1483,7 +1482,7 @@ TEST_CASE("conflicting option supplied", "[argparse::parser]")
 
 TEST_CASE("conflicting option does not exist", "[argparse::parser]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").conflicts_with("--bar");
 
@@ -1496,7 +1495,7 @@ TEST_CASE("conflicting option does not exist", "[argparse::parser]")
 TEST_CASE("missing value", "[argparse::parser]")
 {
   uint32_t sink = 0;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").bind_u32(&sink);
 
@@ -1509,7 +1508,7 @@ TEST_CASE("missing value", "[argparse::parser]")
 TEST_CASE("missing values, singular", "[argparse::parser]")
 {
   string_vec sink;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").bind_vec(&sink).with_min_values(1).with_max_values(2);
 
@@ -1523,7 +1522,7 @@ TEST_CASE("missing values, singular", "[argparse::parser]")
 TEST_CASE("missing values, plural", "[argparse::parser]")
 {
   string_vec sink;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").bind_vec(&sink).with_min_values(2).with_max_values(3);
 
@@ -1537,7 +1536,7 @@ TEST_CASE("missing values, plural", "[argparse::parser]")
 
 TEST_CASE("excessive values, takes zero", "[argparse::parser]")
 {
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo");
 
@@ -1563,7 +1562,7 @@ TEST_CASE("excessive values, takes zero", "[argparse::parser]")
 TEST_CASE("excessive values, takes non-zero", "[argparse::parser]")
 {
   string_vec vec;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").bind_vec(&vec).with_max_values(2);
 
@@ -1577,7 +1576,7 @@ TEST_CASE("excessive values, takes non-zero", "[argparse::parser]")
 TEST_CASE("invalid value", "[argparse::parser]")
 {
   uint32_t sink = 0;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.add("--foo").bind_u32(&sink);
 
@@ -1591,7 +1590,7 @@ TEST_CASE("invalid value", "[argparse::parser]")
 TEST_CASE("invalid choice", "[argparse::parser]")
 {
   std::string sink;
-  log::log_capture cap;
+  const log::log_capture cap;
   argparse::parser p;
   p.add("--foo").bind_str(&sink).with_choices({ "abc", "def", "ghi" });
 
@@ -1605,7 +1604,7 @@ TEST_CASE("invalid choice", "[argparse::parser]")
 TEST_CASE("help with finite max number of values", "[argparse::parser]")
 {
   string_vec sink;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1629,7 +1628,7 @@ TEST_CASE("help with finite max number of values", "[argparse::parser]")
 TEST_CASE("help with infinite number of values", "[argparse::parser]")
 {
   string_vec sink;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1650,7 +1649,7 @@ TEST_CASE("help with infinite number of values", "[argparse::parser]")
 TEST_CASE("help with lower bound of values", "[argparse::parser]")
 {
   string_vec sink;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");
@@ -1671,7 +1670,7 @@ TEST_CASE("help with lower bound of values", "[argparse::parser]")
 TEST_CASE("help with lower and upper bound of values", "[argparse::parser]")
 {
   string_vec sink;
-  log::log_capture ss;
+  const log::log_capture ss;
   argparse::parser p;
   p.set_name("My App");
   p.set_version("1234");

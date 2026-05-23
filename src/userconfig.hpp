@@ -55,10 +55,10 @@ public:
   /** Parses a set of command-line arguments. */
   argparse::parse_result parse_args(const string_vec& argvec);
 
-  output_files get_output_filenames() const;
+  [[nodiscard]] output_files get_output_filenames() const;
 
   /** Returns runtime in seconds. */
-  double runtime() const { return m_runtime.duration(); }
+  [[nodiscard]] double runtime() const { return m_runtime.duration(); }
 
   //! Command-line arguments
   string_vec args{};
@@ -211,23 +211,23 @@ public:
   string_vec benchmarks{};
 
   /* Helper functions for logging / reporting */
-  bool is_adapter_trimming_enabled() const;
-  bool is_demultiplexing_enabled() const;
-  bool is_read_merging_enabled() const;
+  [[nodiscard]] bool is_adapter_trimming_enabled() const;
+  [[nodiscard]] bool is_demultiplexing_enabled() const;
+  [[nodiscard]] bool is_read_merging_enabled() const;
 
-  bool is_any_quality_trimming_enabled() const;
-  bool is_low_quality_trimming_enabled() const;
-  bool is_terminal_base_pre_trimming_enabled() const;
-  bool is_terminal_base_post_trimming_enabled() const;
-  bool is_poly_x_tail_pre_trimming_enabled() const;
-  bool is_poly_x_tail_post_trimming_enabled() const;
+  [[nodiscard]] bool is_any_quality_trimming_enabled() const;
+  [[nodiscard]] bool is_low_quality_trimming_enabled() const;
+  [[nodiscard]] bool is_terminal_base_pre_trimming_enabled() const;
+  [[nodiscard]] bool is_terminal_base_post_trimming_enabled() const;
+  [[nodiscard]] bool is_poly_x_tail_pre_trimming_enabled() const;
+  [[nodiscard]] bool is_poly_x_tail_post_trimming_enabled() const;
 
-  bool is_any_filtering_enabled() const;
-  bool is_short_read_filtering_enabled() const;
-  bool is_long_read_filtering_enabled() const;
-  bool is_ambiguous_base_filtering_enabled() const;
-  bool is_mean_quality_filtering_enabled() const;
-  bool is_low_complexity_filtering_enabled() const;
+  [[nodiscard]] bool is_any_filtering_enabled() const;
+  [[nodiscard]] bool is_short_read_filtering_enabled() const;
+  [[nodiscard]] bool is_long_read_filtering_enabled() const;
+  [[nodiscard]] bool is_ambiguous_base_filtering_enabled() const;
+  [[nodiscard]] bool is_mean_quality_filtering_enabled() const;
+  [[nodiscard]] bool is_low_complexity_filtering_enabled() const;
 
   userconfig(const userconfig&) = delete;
   userconfig(userconfig&&) = delete;

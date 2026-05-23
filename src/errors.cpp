@@ -69,7 +69,7 @@ format_io_error(std::string_view message, const int error_number)
 {
   if (error_number) {
     std::ostringstream stream;
-#if defined(_WIN32)
+#ifdef _WIN32
     stream << message << ": " << strerror_s_wrapper(::strerror_s, error_number);
 #else
     stream << message << ": " << strerror_r_wrapper(::strerror_r, error_number);

@@ -32,12 +32,6 @@ struct output_file
   }
 };
 
-//! Implemented in main_adapter_rm.cpp
-size_t
-add_write_step(scheduler& sch,
-               const userconfig& config,
-               const output_file& file);
-
 /** Per sample output filenames / steps  */
 class sample_output_files
 {
@@ -174,6 +168,11 @@ public:
 
   /** Returns a chunk for each generated type of processed reads. */
   chunk_vec finalize(bool eof);
+
+  processed_reads(const processed_reads&) = delete;
+  processed_reads(processed_reads&&) = delete;
+  processed_reads& operator=(const processed_reads&) = delete;
+  processed_reads& operator=(processed_reads&&) = delete;
 
 private:
   const sample_output_files& m_map;

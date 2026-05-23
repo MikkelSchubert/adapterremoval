@@ -9,6 +9,7 @@
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for size_t, get_compare_subsequences_func
 #include <algorithm>         // for max, min
+#include <cstddef>           // for size_t
 #include <limits>            // for numeric_limits
 #include <ostream>           // for ostream
 #include <string>            // for string, operator+
@@ -28,10 +29,11 @@ sequence_aligner::pairwise_align_sequences(alignment_info& alignment,
 {
   int offset =
     // The alignment must involve at least one base from seq2,
-    std::max(std::max(min_offset, -static_cast<int>(seq2_len) + 1),
-             // but there's no point aligning pairs too short to matter. This
-             // currently only applies to --adapter-table mode.
-             alignment.score() - static_cast<int>(seq2_len));
+    std::max({ min_offset,
+               -static_cast<int>(seq2_len) + 1,
+               // but there's no point aligning pairs too short to matter. This
+               // currently only applies to --adapter-table mode.
+               alignment.score() - static_cast<int>(seq2_len) });
   // Alignments involving fewer than `score` bases are not interesting, since
   // the maximum possible score is `length` when all bases match
   int end_offset =
@@ -154,7 +156,7 @@ alignment_info::truncate_single_end(fastq& read) const
   // bases before the start of the sequence, leading to a negative offset
   const size_t len = std::max<int>(0, m_offset);
 
-  return read.truncate(0, len);
+  read.truncate(0, len);
 }
 
 size_t
@@ -192,7 +194,7 @@ alignment_info::extract_adapter_sequences(fastq& read1, fastq& read2) const
     0,
     std::max<int>(0, static_cast<int>(read2.length()) - template_length));
 
-  return read1.sequence().length() || read2.sequence().length();
+  return !read1.sequence().empty() || !read2.sequence().empty();
 }
 
 size_t
@@ -419,6 +421,8 @@ sequence_aligner::align_paired_end(const fastq& read1,
   return alignment;
 }
 
+namespace {
+
 void
 strip_mate_info(std::string& header, const char mate_sep)
 {
@@ -435,6 +439,8 @@ strip_mate_info(std::string& header, const char mate_sep)
     }
   }
 }
+
+} // namespace
 
 sequence_merger::sequence_merger()
   : m_merge_strategy(merge_strategy::maximum)

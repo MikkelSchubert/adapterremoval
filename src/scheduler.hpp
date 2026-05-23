@@ -8,7 +8,7 @@
 #include <cstddef>            // for size_t
 #include <cstdint>            // for uint32_t
 #include <memory>             // for unique_ptr, shared_ptr, make_unique
-#include <mutex>              // for mutex, lock_guard
+#include <mutex>              // for mutex
 #include <queue>              // for queue
 #include <string>             // for string
 #include <type_traits>        // for is_base_of
@@ -178,10 +178,10 @@ public:
   virtual void finalize() {}
 
   /** Returns the expected ordering (ordered / unordered) for input data. **/
-  processing_order ordering() const { return m_step_order; }
+  [[nodiscard]] processing_order ordering() const { return m_step_order; }
 
   /** Returns the name of the analytical step (type) */
-  const std::string& name() const { return m_name; }
+  [[nodiscard]] const std::string& name() const { return m_name; }
 
   analytical_step(const analytical_step&) = delete;
   analytical_step(analytical_step&&) = delete;
@@ -239,7 +239,7 @@ private:
   size_t add_step(std::unique_ptr<analytical_step> step);
 
   /** Wrapper function which calls do_run on the provided thread. */
-  static void run_wrapper(scheduler*, threadtype);
+  static void run_wrapper(scheduler* /* sch */, threadtype /* thread_type */);
   /** Work function for calculation heavy threads; invoked by each thread. */
   void run_calc_loop();
   /** Work function for IO threads; invoked by each thread. */

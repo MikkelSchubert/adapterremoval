@@ -39,7 +39,7 @@ TEST_CASE("grubb's test pruning -- too few values")
   std::vector<uint64_t> values;
 
   CHECK_FALSE(grubbs_test_prune(values));
-  REQUIRE(values == std::vector<uint64_t>{});
+  REQUIRE(values.empty());
 
   values.emplace_back(1);
   CHECK_FALSE(grubbs_test_prune(values));

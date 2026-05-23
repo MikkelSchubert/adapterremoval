@@ -17,14 +17,14 @@ TEST_CASE("default read group", "[read_group]")
 {
   SECTION("implicit")
   {
-    read_group rg;
+    const read_group rg;
     REQUIRE(rg.id() == "1");
     REQUIRE(rg.header() == "@RG\tID:1");
   }
 
   SECTION("explicit")
   {
-    read_group rg{ "" };
+    const read_group rg{ "" };
     REQUIRE(rg.id() == "1");
     REQUIRE(rg.header() == "@RG\tID:1");
   }
@@ -32,9 +32,9 @@ TEST_CASE("default read group", "[read_group]")
 
 TEST_CASE("minimal read group with PG", "[read_group]")
 {
-  std::string_view header = GENERATE("PG:foo", "@RG\tPG:foo");
+  const std::string_view header = GENERATE("PG:foo", "@RG\tPG:foo");
 
-  read_group rg{ header };
+  const read_group rg{ header };
   REQUIRE(rg.id() == "1");
   REQUIRE(rg.header() == "@RG\tID:1\tPG:foo");
 }
@@ -53,13 +53,13 @@ TEST_CASE("setting invalid values", "[read_group]")
 
 TEST_CASE("minimal read group with ID", "[read_group]")
 {
-  std::string_view header = GENERATE("ID:foo", "@RG\tID:foo");
+  const std::string_view header = GENERATE("ID:foo", "@RG\tID:foo");
 
   read_group rg{ header };
   REQUIRE(rg.id() == "foo");
   REQUIRE(rg.header() == "@RG\tID:foo");
 
-  std::string id = GENERATE("2", "longer");
+  const std::string id = GENERATE("2", "longer");
 
   rg.set_id(id);
   REQUIRE(rg.id() == id);
@@ -68,13 +68,13 @@ TEST_CASE("minimal read group with ID", "[read_group]")
 
 TEST_CASE("minimal read group with SM", "[read_group]")
 {
-  std::string_view header = GENERATE("SM:foo", "@RG\tSM:foo");
+  const std::string_view header = GENERATE("SM:foo", "@RG\tSM:foo");
 
   read_group rg{ header };
   REQUIRE(rg.id() == "1");
   REQUIRE(rg.header() == "@RG\tID:1\tSM:foo");
 
-  std::string name = GENERATE("2", "longer");
+  const std::string name = GENERATE("2", "longer");
 
   rg.set_sample(name);
   REQUIRE(rg.header() == std::string("@RG\tID:1\tSM:") + name);

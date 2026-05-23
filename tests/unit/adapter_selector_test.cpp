@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_database.hpp" // for adapter_database
+#include "adapter_detector.hpp" // for adapter_detector
 #include "adapter_selector.hpp" // for adapter_chunk, adapter_finalizer, ...
 #include "commontypes.hpp"      // for adapter_fallback
 #include "errors.hpp"           // for assertion_failed
@@ -8,12 +9,15 @@
 #include "logging.hpp"          // for log_capture
 #include "scheduler.hpp"        // for fastq_chunk
 #include "sequence_sets.hpp"    // for sample_set
+#include "simd.hpp"             // for supported
 #include "testing.hpp"          // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp"        // for threadsafe_data
 #include "utilities.hpp"        // for dynamic_cast_unique
+#include <cstddef>              // for size_t
 #include <cstdint>              // for uintptr_t
 #include <memory>               // for make_shared, make_unique
-#include <stdexcept>            // for runtime_error
+#include <utility>              // for move
+#include <vector>               // for vector
 
 namespace adapterremoval {
 
@@ -108,7 +112,7 @@ TEST_CASE("adapter_preselector checks that selection is done")
 
   SECTION("processed enough reads")
   {
-    fastq tmpl{ "read", "ACGTTGCTGATCAACTGGTACATATCAAG" };
+    const fastq tmpl{ "read", "ACGTTGCTGATCAACTGGTACATATCAAG" };
     auto in_chunk = std::make_unique<fastq_chunk>();
     in_chunk->reads_1.resize(1000, tmpl);
     for (size_t i = 0; i < 99; ++i) {
@@ -191,7 +195,7 @@ TEST_CASE("adapter selector returns fastq chunks as is")
 
 TEST_CASE("adapter selector on SE data")
 {
-  adapter_set adapters{
+  const adapter_set adapters{
     { "GTTATTTA", "ACGTGTTA" },
     { "ACGGACGT", "GGCAGTTA" },
   };
@@ -218,12 +222,12 @@ TEST_CASE("adapter selector on SE data")
 
   REQUIRE(out_chunk->adapters.mate_1() ==
           hits_vec{ { 2, 16 }, {}, {}, { 1, 8 } });
-  REQUIRE(out_chunk->adapters.mate_2() == hits_vec{});
+  REQUIRE(out_chunk->adapters.mate_2().empty());
 }
 
 TEST_CASE("adapter selector on PE data")
 {
-  adapter_set adapters{
+  const adapter_set adapters{
     { "GTTATTTA", "ACGTGTTA" },
     { "ACGGACGT", "GGCAGTTA" },
   };
@@ -268,9 +272,9 @@ test_finalizer_on_chunks(threadsafe_data<sample_set> samples,
                          std::vector<chunk_ptr>& chunks,
                          adapter_fallback fallback)
 {
-  REQUIRE(samples.get_reader()->adapters() == adapter_set{});
+  REQUIRE(samples.get_reader()->adapters().empty());
 
-  adapter_set adapters{
+  const adapter_set adapters{
     { "GTTATTTA", "ACGTGTTA" },
     { "ACGGACGT", "GGCAGTTA" },
   };
@@ -278,7 +282,7 @@ test_finalizer_on_chunks(threadsafe_data<sample_set> samples,
   database.add(adapters);
 
   adapter_finalizer step(database, samples, fallback, DEFAULT_NEXT_STEP);
-  REQUIRE(samples.get_reader()->adapters() == adapter_set{});
+  REQUIRE(samples.get_reader()->adapters().empty());
 
   chunk_vec results;
   for (auto&& chunk : chunks) {
@@ -302,8 +306,8 @@ ptr_to_id(const std::unique_ptr<T>& data)
 
 TEST_CASE("post adapter-selection chunks are passed as is")
 {
-  adapter_database database;
-  threadsafe_data<sample_set> samples;
+  const adapter_database database;
+  const threadsafe_data<sample_set> samples;
   adapter_finalizer step(database,
                          samples,
                          PARAMETERIZE_FALLBACK,
@@ -331,11 +335,11 @@ TEST_CASE("post adapter-selection chunks are passed as is")
 
 TEST_CASE("no notifications before final chunk")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
   std::vector<chunk_ptr> chunks;
   chunk_vec results;
 
-  threadsafe_data<sample_set> samples;
+  const threadsafe_data<sample_set> samples;
   auto chunk = std::make_unique<adapter_chunk>();
   chunk->data = std::make_unique<fastq_chunk>();
   chunk->adapters = adapter_detection_stats{ 10,
@@ -349,16 +353,17 @@ TEST_CASE("no notifications before final chunk")
 
 TEST_CASE("user is notified when adapters are selected for SE data")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
   std::vector<chunk_ptr> chunks;
   chunk_vec results;
 
-  threadsafe_data<sample_set> samples;
+  const threadsafe_data<sample_set> samples;
   auto chunk = std::make_unique<adapter_chunk>();
   chunk->data = std::make_unique<fastq_chunk>();
   chunk->last_adapter_selection_block = true;
   const auto ptr_before = ptr_to_id(chunk->data);
 
+  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   SECTION("not enough matches, fallback to none")
   {
     chunk->adapters = adapter_detection_stats{ 10, { {}, {}, {}, { 7, 0 } } };
@@ -366,7 +371,7 @@ TEST_CASE("user is notified when adapters are selected for SE data")
     results = test_finalizer_on_chunks(samples, chunks, adapter_fallback::none);
     REQUIRE_THAT(cap.str(),
                  Contains("Could not select adapter sequences automatically"));
-    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
+    REQUIRE(samples.get_reader()->adapters().empty());
   }
 
   SECTION("sufficient hits for --adapter1")
@@ -382,6 +387,7 @@ TEST_CASE("user is notified when adapters are selected for SE data")
     REQUIRE(samples.get_reader()->adapters() ==
             adapter_set{ { "GTTATTTA", "" } });
   }
+  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
 
   REQUIRE(results.size() == 1);
   REQUIRE(results.at(0).first == DEFAULT_NEXT_STEP);
@@ -393,23 +399,25 @@ TEST_CASE("user is notified when adapters are selected for SE data")
 
 TEST_CASE("user is notified when adapters are selected for PE data")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
   std::vector<chunk_ptr> chunks;
   chunk_vec results;
 
-  threadsafe_data<sample_set> samples;
+  const threadsafe_data<sample_set> samples;
   auto chunk = std::make_unique<adapter_chunk>();
   chunk->data = std::make_unique<fastq_chunk>();
   chunk->last_adapter_selection_block = true;
   const auto ptr_before = ptr_to_id(chunk->data);
 
+  // clang does not understand that sections are run independently
+  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   SECTION("no reads, no messages")
   {
     chunks.emplace_back(std::move(chunk));
     results = test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
     REQUIRE_THAT(cap.str(), !Contains("adapter"));
-    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
+    REQUIRE(samples.get_reader()->adapters().empty());
   }
 
   SECTION("not enough matches, fallback to undefined")
@@ -434,7 +442,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
     results = test_finalizer_on_chunks(samples, chunks, adapter_fallback::none);
     REQUIRE_THAT(cap.str(),
                  Contains("Could not select adapter sequences automatically"));
-    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
+    REQUIRE(samples.get_reader()->adapters().empty());
   }
 
   SECTION("sufficient hits for --adapter1")
@@ -507,6 +515,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
     REQUIRE(samples.get_reader()->adapters() ==
             adapter_set{ { "ACGTGTTA", "GTTATTTA" } });
   }
+  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
 
   REQUIRE(results.size() == 1);
   REQUIRE(results.at(0).first == DEFAULT_NEXT_STEP);
@@ -516,7 +525,7 @@ TEST_CASE("user is notified when adapters are selected for PE data")
 TEST_CASE("abort on insufficient matches if configured")
 {
   std::vector<chunk_ptr> chunks;
-  threadsafe_data<sample_set> samples;
+  const threadsafe_data<sample_set> samples;
   auto chunk = std::make_unique<adapter_chunk>();
   chunk->data = std::make_unique<fastq_chunk>();
   chunk->last_adapter_selection_block = true;
@@ -528,7 +537,7 @@ TEST_CASE("abort on insufficient matches if configured")
 
   chunks.emplace_back(std::move(chunk));
 
-  log::log_capture cap;
+  const log::log_capture cap;
   REQUIRE_THROWS_MESSAGE(
     test_finalizer_on_chunks(samples, chunks, adapter_fallback::abort),
     fatal_error,
@@ -540,7 +549,7 @@ TEST_CASE("abort on insufficient matches if configured")
 
 TEST_CASE("stats are merged across chunks")
 {
-  log::log_capture _cap;
+  const log::log_capture _cap;
   std::vector<chunk_ptr> chunks;
 
   auto chunk_1 = std::make_unique<adapter_chunk>();
@@ -559,16 +568,16 @@ TEST_CASE("stats are merged across chunks")
 
   SECTION("before final chunk")
   {
-    threadsafe_data<sample_set> samples;
+    const threadsafe_data<sample_set> samples;
     chunks.emplace_back(std::move(chunk_1));
     test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
 
-    REQUIRE(samples.get_reader()->adapters() == adapter_set{});
+    REQUIRE(samples.get_reader()->adapters().empty());
   }
 
   SECTION("sufficient hits")
   {
-    threadsafe_data<sample_set> samples;
+    const threadsafe_data<sample_set> samples;
     chunks.emplace_back(std::move(chunk_1));
     chunks.emplace_back(std::move(chunk_2));
     test_finalizer_on_chunks(samples, chunks, PARAMETERIZE_FALLBACK);
@@ -582,7 +591,7 @@ TEST_CASE("final chunk must be final adapter_chunk")
   adapter_database database;
   database.add_known();
 
-  threadsafe_data<sample_set> samples;
+  const threadsafe_data<sample_set> samples;
   adapter_finalizer step(database,
                          samples,
                          adapter_fallback::undefined,
@@ -606,7 +615,7 @@ TEST_CASE("finalize checks that last chunk was observed")
   adapter_database database;
   database.add_known();
 
-  threadsafe_data<sample_set> samples;
+  const threadsafe_data<sample_set> samples;
   adapter_finalizer step(database,
                          samples,
                          adapter_fallback::undefined,
@@ -620,6 +629,7 @@ TEST_CASE("finalize checks that last chunk was observed")
   auto chunk = std::make_unique<adapter_chunk>();
   chunk->data = std::make_unique<fastq_chunk>();
 
+  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   SECTION("before final chunk #2")
   {
     step.process(std::move(chunk));
@@ -632,6 +642,7 @@ TEST_CASE("finalize checks that last chunk was observed")
     step.process(std::move(chunk));
     REQUIRE_NOTHROW(step.finalize());
   }
+  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
 }
 
 } // namespace adapterremoval
