@@ -272,11 +272,18 @@ public:
   /** Opens the specified file for writing using a managed writer */
   write_fastq(const userconfig& config, const output_file& file);
 
+  ~write_fastq() override = default;
+
   /** Writes the reads of the type specified in the constructor. */
   chunk_vec process(chunk_ptr data) override;
 
   /** Flushes the output file and prints progress report (if enabled). */
   void finalize() override;
+
+  write_fastq(const write_fastq&) = delete;
+  write_fastq(write_fastq&&) = delete;
+  write_fastq& operator=(const write_fastq&) = delete;
+  write_fastq& operator=(write_fastq&&) = delete;
 
 private:
   //! Lazily opened / automatically closed handle

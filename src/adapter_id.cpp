@@ -105,7 +105,8 @@ build_consensus_sequence(const indexed_counts<ACGTN>& consensus)
     if (best_nuc == 'N') {
       qualities << static_cast<char>(PHRED_OFFSET_MIN);
     } else {
-      const double pvalue = 1.0 - best_count / static_cast<double>(total_count);
+      const double pvalue =
+        1.0 - (best_count / static_cast<double>(total_count));
       qualities << fastq_encoding::p_to_phred_33(pvalue);
     }
   }
@@ -125,7 +126,7 @@ consensus_adapter::consensus_adapter(const indexed_counts<ACGTN>& consensus,
 {
   kmer_queue queue;
   for (size_t i = 0; i < kmers.size(); ++i) {
-    adapter_kmer value(i, kmers.at(i));
+    const adapter_kmer value(i, kmers.at(i));
     m_total_kmers += value.second;
 
     if (queue.size() >= n_kmers) {
@@ -212,8 +213,6 @@ consensus_adapter_stats::summarize(size_t n_kmers) const
 adapter_id_statistics::adapter_id_statistics(size_t max_length)
   : adapter1(max_length)
   , adapter2(max_length)
-  , aligned_pairs(0)
-  , pairs_with_adapters(0)
 {
 }
 

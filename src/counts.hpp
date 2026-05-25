@@ -12,7 +12,6 @@
 #include <limits>           // for numeric_limits, numeric_limits<>::is_iec559
 #include <ostream>          // for ostream
 #include <type_traits>      // for is_same, is_floating_point, is_integral
-#include <utility>          // for move
 #include <vector>           // for operator==, vector
 
 namespace adapterremoval {
@@ -21,12 +20,12 @@ namespace adapterremoval {
 template<typename T>
 class counts_tmpl
 {
-  static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value,
+  static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>,
                 "T must be number type");
 
 public:
   counts_tmpl(std::initializer_list<T> values)
-    : m_counts(std::move(values))
+    : m_counts(values)
   {
   }
 
@@ -36,7 +35,7 @@ public:
   }
 
   /** Increase the storage size to accommodate at least size items. */
-  inline void resize_up_to(size_t size)
+  void resize_up_to(size_t size)
   {
     if (m_counts.size() < size) {
       m_counts.resize(size);
@@ -44,10 +43,11 @@ public:
   }
 
   /** Increment the specified value. */
-  inline void inc(size_t n, T count = 1) { m_counts.at(n) += count; }
+  void inc(size_t n, T count = 1) { m_counts.at(n) += count; }
 
   /** The sum of values in the specified range. */
-  T sum(size_t from = 0, size_t to = std::numeric_limits<size_t>::max()) const
+  [[nodiscard]] T sum(size_t from = 0,
+                      size_t to = std::numeric_limits<size_t>::max()) const
   {
     AR_REQUIRE(from <= to);
     T total = T();
@@ -60,7 +60,7 @@ public:
   }
 
   /** The sum of products from multiplying values with their 0-based indexes. */
-  T product() const
+  [[nodiscard]] T product() const
   {
     T total = T();
     for (size_t i = 0; i < m_counts.size(); ++i) {
@@ -71,7 +71,7 @@ public:
   }
 
   /** Returns the count for n. */
-  inline T get(size_t n) const
+  [[nodiscard]] T get(size_t n) const
   {
     if (n >= m_counts.size()) {
       return T();
@@ -81,10 +81,10 @@ public:
   }
 
   /** Returns the number of values. */
-  inline size_t size() const { return m_counts.size(); }
+  [[nodiscard]] size_t size() const { return m_counts.size(); }
 
   /** Return counts with trailing zero values trimmed. */
-  counts_tmpl<T> trim() const
+  [[nodiscard]] counts_tmpl<T> trim() const
   {
     auto result = *this;
 
@@ -96,7 +96,7 @@ public:
   }
 
   /* Normalize counts to frequencies in the range [0; 1] */
-  counts_tmpl<double> normalize() const { return *this / sum(); }
+  [[nodiscard]] counts_tmpl<double> normalize() const { return *this / sum(); }
 
   /** + operator. */
   counts_tmpl<T> operator+(const counts_tmpl<T>& other) const
@@ -157,7 +157,7 @@ private:
 template<typename I, typename T = uint64_t>
 class indexed_count
 {
-  static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value,
+  static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>,
                 "T must be number type");
 
 public:
@@ -167,29 +167,29 @@ public:
   indexed_count() = default;
 
   /** Returns the number of values. */
-  inline size_t size() const { return I::indices; }
+  [[nodiscard]] size_t size() const { return I::indices; }
 
   /** Increment the specified value. */
   template<typename V>
-  inline void inc(V index, T count = 1)
+  void inc(V index, T count = 1)
   {
     // Assert to catch help mixups of arguments, pending stronger typed solution
-    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+    static_assert(std::is_same_v<V, value_type>, "probably a mistake");
 
     m_counts.at(I::to_index(index)) += count;
   }
 
   /** Returns the count for n for a given index. */
   template<typename V>
-  inline T get(V index) const
+  [[nodiscard]] T get(V index) const
   {
     // Assert to catch help mixups of arguments, pending stronger typed solution
-    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+    static_assert(std::is_same_v<V, value_type>, "probably a mistake");
 
     return m_counts.at(I::to_index(index));
   }
 
-  T sum() const
+  [[nodiscard]] T sum() const
   {
     T total = T();
     for (auto count : m_counts) {
@@ -235,7 +235,7 @@ public:
   }
 
   /** Increase the storage size to accommodate at least size items. */
-  inline void resize_up_to(size_t size)
+  void resize_up_to(size_t size)
   {
     if (m_counts.size() < size) {
       m_counts.resize(size);
@@ -244,36 +244,36 @@ public:
 
   /** Increment the specified value for a given index. */
   template<typename V>
-  inline void inc(V index, size_t offset, T count = 1)
+  void inc(V index, size_t offset, T count = 1)
   {
     // Assert to catch help mixups of arguments, pending stronger typed solution
-    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+    static_assert(std::is_same_v<V, value_type>, "probably a mistake");
 
     m_counts.at(offset).inc(index, count);
   }
 
   /** Increment the specified value for a given index (unchecked). */
   template<typename V>
-  inline void inc_unsafe(V index, size_t offset, T count = 1)
+  void inc_unsafe(V index, size_t offset, T count = 1)
   {
     // Assert to catch help mixups of arguments, pending stronger typed solution
-    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+    static_assert(std::is_same_v<V, value_type>, "probably a mistake");
 
     m_counts[offset].inc(index, count);
   }
 
   /** Returns the count for n for a given index. */
-  inline const indexed_count<I, T>& get(size_t offset) const
+  [[nodiscard]] const indexed_count<I, T>& get(size_t offset) const
   {
     return m_counts.at(offset);
   }
 
   /** Returns the count for n for a given index. */
   template<typename V>
-  inline T get(V index, size_t offset) const
+  [[nodiscard]] T get(V index, size_t offset) const
   {
     // Assert to catch help mixups of arguments, pending stronger typed solution
-    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+    static_assert(std::is_same_v<V, value_type>, "probably a mistake");
 
     if (offset >= size()) {
       return T();
@@ -284,10 +284,10 @@ public:
 
   /** Create a standard counter object for a given value class */
   template<typename V>
-  counts_tmpl<T> to_counts(V v) const
+  [[nodiscard]] counts_tmpl<T> to_counts(V v) const
   {
     // Assert to catch help mixups of arguments, pending stronger typed solution
-    static_assert(std::is_same<V, value_type>::value, "probably a mistake");
+    static_assert(std::is_same_v<V, value_type>, "probably a mistake");
 
     counts_tmpl<T> counts(size());
     for (size_t j = 0; j < counts.size(); ++j) {
@@ -298,7 +298,7 @@ public:
   }
 
   /** Merges all value classes into a single counter */
-  counts_tmpl<T> merge() const
+  [[nodiscard]] counts_tmpl<T> merge() const
   {
     counts_tmpl<T> counts(m_counts.size());
     for (size_t i = 0; i < m_counts.size(); ++i) {
@@ -309,7 +309,7 @@ public:
   }
 
   /** Returns the number of values per index. */
-  inline size_t size() const { return m_counts.size(); }
+  [[nodiscard]] size_t size() const { return m_counts.size(); }
 
   /** += operator. */
   indexed_counts<I, T>& operator+=(const indexed_counts<I, T>& other)

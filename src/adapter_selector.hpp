@@ -9,6 +9,7 @@
 #include "sequence_sets.hpp"    // for adapter_set
 #include "simd.hpp"             // for instruction_set
 #include "threading.hpp"        // for threadstate, threadsafe_data
+#include <cstddef>              // for size_t
 
 namespace adapterremoval {
 
@@ -108,7 +109,7 @@ class adapter_finalizer : public analytical_step
 {
 public:
   adapter_finalizer(adapter_database database,
-                    threadsafe_data<sample_set> sample,
+                    threadsafe_data<sample_set> samples,
                     adapter_fallback fallback,
                     size_t next_step);
   ~adapter_finalizer() override = default;

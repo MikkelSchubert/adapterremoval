@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_database.hpp" // declarations
-#include "catch.hpp"
-#include "commontypes.hpp" // for read_mate
-#include "errors.hpp"      // assert_failed
-#include "sequence.hpp"    // for dna_sequence
-#include "testing.hpp"     // for TEST_CASE, REQUIRE, ...
-#include <vector>          // for vector
+#include "commontypes.hpp"      // for read_mate
+#include "errors.hpp"           // assert_failed
+#include "sequence.hpp"         // for dna_sequence
+#include "testing.hpp"          // for TEST_CASE, REQUIRE, ...
+#include <utility>              // for pair
+#include <vector>               // for vector
 
 namespace adapterremoval {
 
@@ -46,7 +46,7 @@ TEST_CASE("complex known adapter requirements")
 
 TEST_CASE("test known adapters constructor with implicit read 2")
 {
-  known_adapters adapters{
+  const known_adapters adapters{
     "foo",
     { "ACGT", "TTTT" },
   };
@@ -61,7 +61,7 @@ TEST_CASE("test known adapters constructor with implicit read 2")
 
 TEST_CASE("test known adapters constructor with explicit read 2")
 {
-  known_adapters adapters{
+  const known_adapters adapters{
     "foo",
     { "ACGT", "TTTT" },
     { "TATA", "GTGT" },
@@ -77,7 +77,7 @@ TEST_CASE("test known adapters constructor with explicit read 2")
 
 TEST_CASE("test known adapters constructor for user-provided sequences")
 {
-  known_adapters adapters{
+  const known_adapters adapters{
     "foo",
     { "ACGT", "TTTT" },
     { "TATA", "GTGT" },

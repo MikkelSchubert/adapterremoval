@@ -3,8 +3,11 @@
 #include "buffer.hpp"   // declarations
 #include "errors.hpp"   // for assert_failed
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
+#include <cstddef>      // for size_t
+#include <cstdint>      // int32_t
 #include <ostream>      // for ostream
 #include <string>       // for string
+#include <string_view>  // for string_view
 #include <strutils.hpp> // for log_escape
 #include <utility>      // for move
 
@@ -151,9 +154,11 @@ TEST_CASE("buffer move constructor clears source")
   auto* src_ptr = src.data();
   buffer dst(std::move(src));
 
+  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   REQUIRE(src.size() == 0);
   REQUIRE(src.capacity() == 0);
   REQUIRE(src.data() == nullptr);
+  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
 
   REQUIRE(dst.size() == 7);
   REQUIRE(dst.capacity() == 7);
@@ -168,9 +173,11 @@ TEST_CASE("buffer move assignment clears source")
 
   dst = std::move(src);
 
+  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   REQUIRE(src.size() == 0);
   REQUIRE(src.capacity() == 0);
   REQUIRE(src.data() == nullptr);
+  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
 
   REQUIRE(dst.size() == 7);
   REQUIRE(dst.capacity() == 7);

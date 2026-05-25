@@ -12,6 +12,7 @@
 #include "sequence_sets.hpp"  // for adapter_set
 #include "statistics.hpp"     // for demux_statistics
 #include "userconfig.hpp"     // for userconfig, ar_command, ar_command...
+#include "utilities.hpp"      // for dynamic_cast_unique
 #include <cstddef>            // for size_t
 #include <memory>             // for unique_ptr
 #include <string>             // for basic_string

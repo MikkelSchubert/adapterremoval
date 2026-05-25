@@ -10,6 +10,10 @@
 #include "strutils.hpp"         // for log_escape
 #include "utilities.hpp"        // for underlying_value
 #include <algorithm>            // for swap, none_of
+#include <array>                // for array
+#include <cstddef>              // for size_t
+#include <initializer_list>     // for initializer_list
+#include <ostream>              // for ostream
 #include <sstream>              // for ostringstream
 #include <string_view>          // for string_view
 #include <utility>              // for move, pair

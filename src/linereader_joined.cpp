@@ -3,9 +3,13 @@
 #include "linereader_joined.hpp" // declarations
 #include "debug.hpp"             // for AR_REQUIRE
 #include "strutils.hpp"          // for log_escape
+#include <algorithm>             // for min
+#include <cstddef>               // for size_t
 #include <limits>                // for numeric_limits
 #include <memory>                // for make_unique
 #include <sstream>               // for ostringstream
+#include <string>                // string
+#include <utility>               // for move
 #include <vector>                // for vector
 
 namespace adapterremoval {

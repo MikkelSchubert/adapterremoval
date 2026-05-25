@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "sequence.hpp"  // declarations
-#include "fastq_enc.hpp" // for FASTQ_ENCODING_33
+#include "fastq_enc.hpp" // for FASTQ_ENCODING_SAM
 #include "strutils.hpp"  // for log_escape
 #include <array>         // for array
+#include <ostream>       // for ostream
+#include <string>        // for string
+#include <utility>       // for move
 
 namespace adapterremoval {
 

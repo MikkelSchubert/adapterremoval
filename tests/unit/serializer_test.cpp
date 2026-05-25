@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "buffer.hpp"        // for buffer
+#include "commontypes.hpp"   // for barcode_orientation, output_format, ...
 #include "fastq.hpp"         // for fastq, fastq::ntrimmed, ACGTN, ACGT
 #include "read_group.hpp"    // for read_group
 #include "sequence.hpp"      // for dna_sequence
@@ -87,7 +88,7 @@ TEST_CASE("Writing FASTQ header to buffer", "[serializer::fastq]")
     REQUIRE(buf == buffer{});
   }
 
-  fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
 
   SECTION("basic record")
   {
@@ -112,7 +113,7 @@ TEST_CASE("Writing FASTQ records when only demultiplexing")
   s.set_demultiplexing_only(true);
 
   buffer buf;
-  fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   // The read header should include the barcodes when only demultiplexing
@@ -121,7 +122,7 @@ TEST_CASE("Writing FASTQ records when only demultiplexing")
 
 TEST_CASE("Writing FASTQ with mate separator")
 {
-  fastq record{ "record_1/1", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record_1/1", "ACGTACGATA", "!$#$*68CGJ" };
 
   serializer s{ output_format::fastq };
   // This shouldn't matter, as mate separators are not removed for FASTQ reads
@@ -149,7 +150,7 @@ TEST_CASE("FASTQ is the same for all read and sub-formats")
   const auto format = GENERATE(output_format::fastq, output_format::fastq_gzip);
 
   buffer buf;
-  fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record_1", "ACGTACGATA", "!$#$*68CGJ" };
 
   const read_meta meta{ type };
   const serializer s{ format };
@@ -161,9 +162,9 @@ TEST_CASE("FASTQ is the same for all read and sub-formats")
 TEST_CASE("Writing empty FASTQ to buffer", "[serializer::fastq]")
 {
   buffer buf;
-  fastq record{ "record_1", "", "" };
+  const fastq record{ "record_1", "", "" };
 
-  serializer s{ output_format::fastq };
+  const serializer s{ output_format::fastq };
   s.record(buf, record, read_meta(read_type::se));
 
   REQUIRE(buf == "@record_1\n\n+\n\n"_buffer);
@@ -172,9 +173,9 @@ TEST_CASE("Writing empty FASTQ to buffer", "[serializer::fastq]")
 TEST_CASE("Writing FASTQ with meta-data to buffer", "[serializer::fastq]")
 {
   buffer buf;
-  fastq record{ "record_1 length=5", "ACGTA", "68CGJ" };
+  const fastq record{ "record_1 length=5", "ACGTA", "68CGJ" };
 
-  serializer s{ output_format::fastq };
+  const serializer s{ output_format::fastq };
   s.record(buf, record, read_meta(read_type::se));
 
   REQUIRE(buf == "@record_1 length=5\nACGTA\n+\n68CGJ\n"_buffer);
@@ -254,7 +255,7 @@ TEST_CASE("serialize SAM record without sample")
   serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
   s.set_demultiplexing_only(GENERATE(true, false));
 
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t"
@@ -270,7 +271,7 @@ TEST_CASE("serialize SAM record with sample")
   s.set_sample(sample);
 
   buffer buf;
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGATA\t!$#$*68CGJ\t"
@@ -287,7 +288,7 @@ TEST_CASE("serialize SAM record with multiple barcodes")
   serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
   s.set_sample(sample);
 
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
 
   SECTION("first/default barcodes")
   {
@@ -310,7 +311,7 @@ TEST_CASE("serialize SAM record with mate separator")
   buffer buf;
   serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
 
-  fastq record{ "record/1", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record/1", "ACGTACGATA", "!$#$*68CGJ" };
 
   SECTION("without mate sep")
   {
@@ -332,8 +333,8 @@ TEST_CASE("serialize SAM record with mate separator")
 TEST_CASE("serialize read types for SAM")
 {
   buffer buf;
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
-  serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
 
   SECTION("single end")
   {
@@ -388,10 +389,10 @@ TEST_CASE("serialize read types for SAM")
 
 TEST_CASE("serialize empty SAM record")
 {
-  fastq record{ "record", "", "" };
+  const fastq record{ "record", "", "" };
 
   buffer buf;
-  serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
+  const serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "record\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"_buffer);
@@ -400,9 +401,9 @@ TEST_CASE("serialize empty SAM record")
 TEST_CASE("serialize SAM record from FASTQ with meta-data")
 {
   buffer buf;
-  serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
+  const serializer s{ GENERATE(output_format::sam, output_format::sam_gzip) };
 
-  fastq record{ "record length=NA", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record length=NA", "ACGTACGATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   // The meta-data is (currently) not serialized
@@ -420,7 +421,7 @@ TEST_CASE("Writing BAM header to buffer", "[serializer::bam]")
   // Sample information is only written if there is a read group, either
   // directly from the user or automatically assigned when demultiplexing
   if (GENERATE(true, false)) {
-    sample sample{ BASIC_SAMPLE_WITH_BARCODES };
+    const sample sample{ BASIC_SAMPLE_WITH_BARCODES };
     s.set_sample(sample);
   }
 
@@ -503,7 +504,7 @@ TEST_CASE("serialize BAM record without sample")
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
   s.set_demultiplexing_only(GENERATE(true, false));
 
-  fastq record{ "record", "ACGTACNATA", "!$#$*68CGJ" };
+  const fastq record{ "record", "ACGTACNATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "6\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
@@ -518,7 +519,7 @@ TEST_CASE("serialize BAM record with uneven length sequence")
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
   s.set_demultiplexing_only(GENERATE(true, false));
 
-  fastq record{ "record", "ACGTACNAT", "!$#$*68CG" };
+  const fastq record{ "record", "ACGTACNAT", "!$#$*68CG" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "5\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
@@ -536,7 +537,7 @@ TEST_CASE("serialize BAM record with sample")
   s.set_sample(sample);
 
   buffer buf;
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "=\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
@@ -555,7 +556,7 @@ TEST_CASE("serialize BAM record with multiple barcodes")
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
   s.set_sample(sample);
 
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
 
   SECTION("first/default barcodes")
   {
@@ -582,7 +583,7 @@ TEST_CASE("serialize BAM record with mate separator")
   buffer buf;
   serializer s{ GENERATE(output_format::bam, output_format::ubam) };
 
-  fastq record{ "record/1", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record/1", "ACGTACGATA", "!$#$*68CGJ" };
 
   SECTION("without mate sep")
   {
@@ -608,8 +609,8 @@ TEST_CASE("serialize BAM record with mate separator")
 TEST_CASE("serialize read types for BAM")
 {
   buffer buf;
-  fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
-  serializer s{ GENERATE(output_format::bam, output_format::ubam) };
+  const fastq record{ "record", "ACGTACGATA", "!$#$*68CGJ" };
+  const serializer s{ GENERATE(output_format::bam, output_format::ubam) };
 
   SECTION("single end")
   {
@@ -676,10 +677,10 @@ TEST_CASE("serialize read types for BAM")
 
 TEST_CASE("serialize empty BAM record")
 {
-  fastq record{ "record", "", "" };
+  const fastq record{ "record", "", "" };
 
   buffer buf;
-  serializer s{ GENERATE(output_format::bam, output_format::ubam) };
+  const serializer s{ GENERATE(output_format::bam, output_format::ubam) };
   s.record(buf, record, read_meta{ read_type::se });
 
   REQUIRE(buf == "'\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x07\x00H\x12"
@@ -690,9 +691,9 @@ TEST_CASE("serialize empty BAM record")
 TEST_CASE("serialize BAM record from FASTQ with meta-data")
 {
   buffer buf;
-  serializer s{ GENERATE(output_format::bam, output_format::ubam) };
+  const serializer s{ GENERATE(output_format::bam, output_format::ubam) };
 
-  fastq record{ "record length=NA", "ACGTACGATA", "!$#$*68CGJ" };
+  const fastq record{ "record length=NA", "ACGTACGATA", "!$#$*68CGJ" };
   s.record(buf, record, read_meta{ read_type::se });
 
   // The meta-data is (currently) not serialized
@@ -711,25 +712,26 @@ TEST_CASE("Serializing too long read names")
   static_assert(EXTREMELY_LONG_NAME.size() == 254);
 
   auto name = std::string{ EXTREMELY_LONG_NAME };
-  fastq record_254{ name, "ACGT", "!!!!" };
-  fastq record_255{ name + "5", "ACGT", "!!!!" };
+  const fastq record_254{ name, "ACGT", "!!!!" };
+  const fastq record_255{ name + "5", "ACGT", "!!!!" };
 
   const read_meta meta{ read_type::se };
   buffer buf;
 
   SECTION("fastq is always valid")
   {
-    serializer s{ GENERATE(output_format::fastq, output_format::fastq_gzip) };
+    const serializer s{ GENERATE(output_format::fastq,
+                                 output_format::fastq_gzip) };
     CHECK_NOTHROW(s.record(buf, record_254, meta));
     CHECK_NOTHROW(s.record(buf, record_255, meta));
   }
 
   SECTION("SAM/BAM allows only 254 characters")
   {
-    serializer s{ GENERATE(output_format::sam,
-                           output_format::sam_gzip,
-                           output_format::bam,
-                           output_format::ubam) };
+    const serializer s{ GENERATE(output_format::sam,
+                                 output_format::sam_gzip,
+                                 output_format::bam,
+                                 output_format::ubam) };
 
     CHECK_NOTHROW(s.record(buf, record_254, meta));
     REQUIRE_THROWS_WITH(s.record(buf, record_255, meta),
@@ -741,21 +743,22 @@ TEST_CASE("Serializing too long read names")
 TEST_CASE("invalid read names")
 {
   const read_meta meta{ read_type::se };
-  fastq record{ "invalid\tname", "ACGT", "!!!!" };
+  const fastq record{ "invalid\tname", "ACGT", "!!!!" };
   buffer buf;
 
   SECTION("FASTQ allows anything")
   {
-    serializer s{ GENERATE(output_format::fastq, output_format::fastq_gzip) };
+    const serializer s{ GENERATE(output_format::fastq,
+                                 output_format::fastq_gzip) };
     CHECK_NOTHROW(s.record(buf, record, meta));
   }
 
   SECTION("SAM/BAM limits valid characters")
   {
-    serializer s{ GENERATE(output_format::sam,
-                           output_format::sam_gzip,
-                           output_format::bam,
-                           output_format::ubam) };
+    const serializer s{ GENERATE(output_format::sam,
+                                 output_format::sam_gzip,
+                                 output_format::bam,
+                                 output_format::ubam) };
 
     REQUIRE_THROWS_WITH(s.record(buf, record, meta),
                         Catch::Contains("Cannot encode read as SAM/BAM; read "
@@ -771,34 +774,35 @@ TEST_CASE("read type to file type mapping")
 {
   SECTION("--out-file1")
   {
-    read_meta meta{ GENERATE(read_type::se, read_type::pe_1) };
+    const read_meta meta{ GENERATE(read_type::se, read_type::pe_1) };
     CHECK(meta.get_file() == read_file::mate_1);
   }
 
   SECTION("--out-file2")
   {
-    read_meta meta{ GENERATE(read_type::pe_2) };
+    const read_meta meta{ GENERATE(read_type::pe_2) };
     CHECK(meta.get_file() == read_file::mate_2);
   }
 
   SECTION("--out-singleton")
   {
-    read_meta meta(GENERATE(read_type::singleton_1, read_type::singleton_2));
+    const read_meta meta(
+      GENERATE(read_type::singleton_1, read_type::singleton_2));
     CHECK(meta.get_file() == read_file::singleton);
   }
 
   SECTION("--out-merged")
   {
-    read_meta meta(read_type::merged);
+    const read_meta meta(read_type::merged);
     CHECK(meta.get_file() == read_file::merged);
   }
 
   SECTION("--out-discarded")
   {
-    read_meta meta(GENERATE(read_type::se_fail,
-                            read_type::pe_1_fail,
-                            read_type::pe_2_fail,
-                            read_type::merged_fail));
+    const read_meta meta(GENERATE(read_type::se_fail,
+                                  read_type::pe_1_fail,
+                                  read_type::pe_2_fail,
+                                  read_type::merged_fail));
     CHECK(meta.get_file() == read_file::discarded);
   }
 }

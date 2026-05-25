@@ -8,11 +8,16 @@
 #include "linereader.hpp" // for line_reader_base
 #include "strutils.hpp"   // for log_escape
 #include <algorithm>      // for reverse, count, max, min
+#include <array>          // for array
 #include <cstdint>        // for int64_t
 #include <cstring>        // for memchr
 #include <numeric>        // for accumulate
+#include <ostream>        // for ostream
 #include <sstream>        // for ostringstream
-#include <string_view>    // for string_view
+#include <string>
+#include <string_view> // for string_view
+#include <utility>     // move, pair
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -347,6 +352,8 @@ fastq::trim_trailing_bases(const bool trim_ns,
   return trim_sequence_and_qualities(left_inclusive, right_exclusive);
 }
 
+namespace {
+
 //! Calculates the size of the sliding window for quality trimming given a
 //! read length and a user-defined window-size (fraction or whole number).
 size_t
@@ -363,6 +370,8 @@ calculate_winlen(const size_t read_length, double window_size)
 
   return winlen;
 }
+
+} // namespace
 
 fastq::ntrimmed
 fastq::trim_windowed_bases(const bool trim_ns,

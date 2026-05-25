@@ -5,7 +5,6 @@
 #include "sequence_sets.hpp" // for parse_table_orientation
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
 #include <stdexcept>         // for invalid_argument
-#include <string>            // for string==
 
 using Contains = Catch::Matchers::StdString::ContainsMatcher;
 

@@ -14,6 +14,8 @@
 #include "serializer.hpp"    // for read_type
 #include "statistics.hpp"    // for trimming_statistics, reads_and_bases, ...
 #include "userconfig.hpp"    // for userconfig
+#include "utilities.hpp"     // for dynamic_cast_unique
+#include <cstddef>           // for size_t
 #include <memory>            // for unique_ptr, __shared_ptr_access, make_unique
 #include <string>            // for string
 #include <utility>           // for pair, move

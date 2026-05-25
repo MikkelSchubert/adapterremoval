@@ -8,7 +8,7 @@ namespace adapterremoval {
 
 //! Collection of licenses for libraries, etc. used by adapterremoval, including
 //! both libraries bundled with the source code and purely external libraries.
-constexpr std::string_view const LICENSES =
+constexpr const std::string_view LICENSES =
 
   // AdapterRemoval itself
   "AdapterRemoval is licensed under the GPL v3 or later:\n"

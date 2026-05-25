@@ -23,6 +23,7 @@
 #include <cstdint>           // for uint64_t
 #include <cstring>           // for size_t, strerror
 #include <memory>            // for __shared_ptr_access, shared_ptr, make_...
+#include <ostream>           // for ostream
 #include <sstream>           // for basic_ostringstream, basic_ostream, bas...
 #include <string>            // for basic_string, string, operator+, char_...
 #include <string_view>       // for string_view, operator!=, operator==
@@ -701,7 +702,7 @@ write_json_report(const userconfig& config,
         << program::short_version() << ".json";
 
     auto samples = config.samples.get_reader();
-    json_dict_ptr report = std::make_shared<json_dict>();
+    const json_dict_ptr report = std::make_shared<json_dict>();
     report->str("$schema", url.str());
 
     write_report_meta(config, *report);

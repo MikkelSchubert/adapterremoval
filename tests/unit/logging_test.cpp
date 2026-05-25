@@ -15,14 +15,14 @@ TEST_CASE("log capture timestamps")
 
   // timestamps disabled
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::info() << "test 1";
     REQUIRE(cap.str() == "[INFO] test 1\n");
   }
 
   // timestamps enabled
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::set_timestamps(true);
     log::info() << "test 2";
     REQUIRE_THAT(cap.str(), Catch::StartsWith("20"));
@@ -31,7 +31,7 @@ TEST_CASE("log capture timestamps")
 
   // timestamps restored
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::info() << "test 3";
     REQUIRE(cap.str() == "[INFO] test 3\n");
   }
@@ -45,7 +45,7 @@ TEST_CASE("log capture colors")
 
   // colors enabled
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::set_colors(true);
     log::info() << "test 1";
     REQUIRE(cap.str() == "[\033[0;32mINFO\033[0m] test 1\n");
@@ -53,7 +53,7 @@ TEST_CASE("log capture colors")
 
   // colors restored
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::info() << "test 2";
     REQUIRE(cap.str() == "[INFO] test 2\n");
   }
@@ -67,7 +67,7 @@ TEST_CASE("log capture levels")
 
   // default levels
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::debug() << "test 1";
     log::info() << "test 2";
     log::warn() << "test 3";
@@ -80,7 +80,7 @@ TEST_CASE("log capture levels")
 
   // filter levels
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::set_level(log::level::warning);
     log::debug() << "test 1";
     log::info() << "test 2";
@@ -92,7 +92,7 @@ TEST_CASE("log capture levels")
 
   // levels restored
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::debug() << "test 1";
     log::info() << "test 2";
     log::warn() << "test 3";
@@ -108,21 +108,21 @@ TEST_CASE("log::cerr is written as is")
 {
   SECTION("no newlines")
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::cerr() << "message without newlines";
     REQUIRE(cap.str() == "message without newlines");
   }
 
   SECTION("one newline")
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::cerr() << "message with newline\n";
     REQUIRE(cap.str() == "message with newline\n");
   }
 
   SECTION("multiple newlines")
   {
-    log::log_capture cap;
+    const log::log_capture cap;
     log::cerr() << "message with multiple newlines\n\n";
     REQUIRE(cap.str() == "message with multiple newlines\n\n");
   }
@@ -130,7 +130,7 @@ TEST_CASE("log::cerr is written as is")
 
 TEST_CASE("transient messages are cleared by log messages")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
   log::cerr().transient() << "Transient message\n";
   log::info() << "Standard message 1";
   log::info() << "Standard message 2";
@@ -143,7 +143,7 @@ TEST_CASE("transient messages are cleared by log messages")
 
 TEST_CASE("transient messages are cleared by transient messages")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
   log::cerr().transient() << "Transient message 1\n";
   log::cerr().transient() << "Transient message 2\n";
   log::info() << "Standard message 1";
@@ -157,7 +157,7 @@ TEST_CASE("transient messages are cleared by transient messages")
 
 TEST_CASE("transient logging not allowed for log messages")
 {
-  log::log_capture cap;
+  const log::log_capture cap;
   REQUIRE_THROWS_AS(log::debug().transient(), assert_failed);
   REQUIRE_THROWS_AS(log::info().transient(), assert_failed);
   REQUIRE_THROWS_AS(log::warn().transient(), assert_failed);

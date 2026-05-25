@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "testing.hpp" // for declarations
+#include <array>       // for array
 #include <ostream>     // for ostream
 #include <stdexcept>   // for invalid_argument
+#include <utility>     // for pair
+#include <vector>      // for vector
 
 ////////////////////////////////////////////////////////////////////////////////
 // fallbackStringifier

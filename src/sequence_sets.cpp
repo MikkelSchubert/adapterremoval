@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Stinus Lindgreen <stinus@binf.ku.dk>
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "sequence_sets.hpp" // declarations
+#include "commontypes.hpp"   // for barcode_orientation, ...
 #include "debug.hpp"         // for AR_REQUIRE
 #include "errors.hpp"        // for fastq_error
 #include "linereader.hpp"    // for line_reader
@@ -12,6 +13,7 @@
 #include <algorithm>         // for max, sort, find
 #include <cstddef>           // for size_t
 #include <initializer_list>  // for initializer_list
+#include <ostream>           // for ostream
 #include <sstream>           // for operator<<, basic_ostream, ostringstream
 #include <stdexcept>         // for invalid_argument
 #include <string>            // for string
@@ -645,10 +647,10 @@ sample::set_read_group(const read_group& read_group_)
       }
     }
 
-    if (it->barcode_1.length() || it->barcode_2.length()) {
+    if (!it->barcode_1.empty() || !it->barcode_2.empty()) {
       std::string barcodes;
       barcodes.append(it->barcode_1.as_string());
-      if (it->barcode_2.length()) {
+      if (!it->barcode_2.empty()) {
         barcodes.push_back('-');
         barcodes.append(it->barcode_2.as_string());
       }

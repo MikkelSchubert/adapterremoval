@@ -42,9 +42,9 @@ public:
     set_required();
   }
 
-  const string_vec& lines_1() const { return m_lines_1; }
+  [[nodiscard]] const string_vec& lines_1() const { return m_lines_1; }
 
-  const string_vec& lines_2() const { return m_lines_2; }
+  [[nodiscard]] const string_vec& lines_2() const { return m_lines_2; }
 
 protected:
   void execute() override
@@ -340,6 +340,7 @@ public:
   {
   }
 
+protected:
   void execute() override
   {
     collect_statistics(m_records_1);
@@ -374,7 +375,9 @@ public:
   {
   }
 
-  strategy enabled(const benchmark_toggles& toggles) const override
+protected:
+  [[nodiscard]] strategy enabled(
+    const benchmark_toggles& toggles) const override
   {
     if (toggles.defaults() || toggles.is_set("align") ||
         toggles.is_set("align:" + m_key)) {
@@ -406,10 +409,10 @@ private:
 };
 
 /** Benchmarking of SE alignments */
-class benchmarker_se_alignment : public alignment_benchmarker
+class se_alignment_benchmarker : public alignment_benchmarker
 {
 public:
-  benchmarker_se_alignment(const userconfig& config,
+  se_alignment_benchmarker(const userconfig& config,
                            const std::vector<fastq>& reads,
                            const simd::instruction_set is)
     : alignment_benchmarker("se", is)
@@ -503,7 +506,7 @@ private:
   const std::vector<fastq>& m_mate_1;
   const std::vector<fastq>& m_mate_2;
   std::vector<fastq> m_mate_2_reversed{};
-  adapter_set m_adapters;
+  const adapter_set m_adapters;
   sequence_aligner m_aligner;
 };
 
@@ -582,7 +585,7 @@ benchmark(const userconfig& config)
     .run_if_toggled(toggles);
 
   for (const auto is : simd::supported()) {
-    benchmarker_se_alignment(config, records.records_1(), is)
+    se_alignment_benchmarker(config, records.records_1(), is)
       .run_if_toggled(toggles);
   }
 

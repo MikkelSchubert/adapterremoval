@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
-#include "output.hpp"     // declarations
-#include "buffer.hpp"     // for buffer
-#include "debug.hpp"      // for AR_REQUIRE, AR_FAIL
-#include "fastq.hpp"      // for fastq
-#include "fastq_io.hpp"   // for write_fastq, split_fastq, gzip_split_fastq
-#include "scheduler.hpp"  // for analytical_chunk
-#include "serializer.hpp" // for read_meta
-#include "strutils.hpp"   // for ends_with
-#include <limits>         // for numeric_limits
+#include "output.hpp"      // declarations
+#include "buffer.hpp"      // for buffer
+#include "commontypes.hpp" // DEV_NULL, output_format, read_file, read_type, ...
+#include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
+#include "fastq.hpp"       // for fastq
+#include "fastq_io.hpp"    // for write_fastq, split_fastq, gzip_split_fastq
+#include "scheduler.hpp"   // for analytical_chunk
+#include "serializer.hpp"  // for read_meta
+#include "strutils.hpp"    // for ends_with
+#include <cstddef>         // for size_t
+#include <limits>          // for numeric_limits
+#include <memory>          // for make_unique
+#include <string>          // for string
+#include <utility>         // for move
 
 namespace adapterremoval {
 
@@ -26,13 +31,6 @@ get_buffer(output_chunk_ptr& chunk)
 
   return chunk->buffers.back();
 }
-
-} // namespace
-
-////////////////////////////////////////////////////////////////////////////////
-// Implementations for `sample_output_files`
-
-const size_t sample_output_files::disabled = std::numeric_limits<size_t>::max();
 
 size_t
 add_write_step(scheduler& sch,
@@ -60,6 +58,13 @@ add_write_step(scheduler& sch,
 
   return step_id;
 }
+
+} // namespace
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementations for `sample_output_files`
+
+const size_t sample_output_files::disabled = std::numeric_limits<size_t>::max();
 
 sample_output_files::sample_output_files()
 {

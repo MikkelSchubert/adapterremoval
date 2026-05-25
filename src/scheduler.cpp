@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "scheduler.hpp" // declarations
-#include "buffer.hpp"    // for buffer
 #include "debug.hpp"     // for AR_REQUIRE, AR_FAIL
-#include "fastq.hpp"     // for fastq
 #include "logging.hpp"   // for error, log_stream, debug
+#include <algorithm>     // for pop_heap, push_heap
+#include <cstddef>       // for size_t
 #include <exception>     // for exception
 #include <functional>    // for greater
 #include <memory>        // for __shared_ptr_access, operator<, unique...
+#include <mutex>         // for mutex, unique_lock
+#include <string>        // for string
 #include <system_error>  // for system_error
 #include <thread>        // for thread
+#include <utility>       // for move
+#include <vector>        // for vector
 
 namespace adapterremoval {
 
@@ -60,7 +64,7 @@ public:
    * since unordered tasks are always added to a scheduler queue and looping on
    * the same task will result in queues going out of sync. Requires locking.
    */
-  bool can_run_next() const
+  [[nodiscard]] bool can_run_next() const
   {
     return ordering() != processing_order::unordered && !m_queue.empty() &&
            m_queue.front().first == m_next_chunk;
@@ -70,7 +74,7 @@ public:
    * Adds chunk to step backlog. Returns true if the chunk can be processed;
    * requires locking
    */
-  bool push_chunk(size_t chunk_id, chunk_ptr ptr)
+  [[nodiscard]] bool push_chunk(size_t chunk_id, chunk_ptr ptr)
   {
     m_queue.emplace_back(chunk_id, std::move(ptr));
     std::push_heap(m_queue.begin(), m_queue.end(), std::greater<>{});
@@ -80,7 +84,7 @@ public:
   }
 
   /** Returns the oldest task; requires locking */
-  data_chunk pop_chunk()
+  [[nodiscard]] data_chunk pop_chunk()
   {
     std::pop_heap(m_queue.begin(), m_queue.end(), std::greater<>{});
     auto task = std::move(m_queue.back());
@@ -90,32 +94,32 @@ public:
   }
 
   /** Name of the analytical task; for error messages when bugs are detected */
-  const std::string& name() const { return m_ptr->name(); }
+  [[nodiscard]] const std::string& name() const { return m_ptr->name(); }
 
   /** Name of the analytical task; for error messages when bugs are detected */
-  processing_order ordering() const { return m_ptr->ordering(); }
+  [[nodiscard]] processing_order ordering() const { return m_ptr->ordering(); }
 
   /** Number of chunks waiting to be processed by this task; requires locking */
-  size_t chunks_queued() const { return m_queue.size(); }
+  [[nodiscard]] size_t chunks_queued() const { return m_queue.size(); }
 
   /** Returns new ID for (sparse) output from ordered tasks; requires locking */
-  size_t new_chunk_id() { return m_last_chunk++; }
+  [[nodiscard]] size_t new_chunk_id() { return m_last_chunk++; }
 
   /** Processes a data chunk and returns the output chunks; assumes `can_run` */
-  chunk_vec process(chunk_ptr chunk) const
+  [[nodiscard]] chunk_vec process(chunk_ptr chunk) const
   {
     return m_ptr->process(std::move(chunk));
   }
 
   /** Increment the next chunk to be processed; requires locking */
-  bool increment_next_chunk()
+  [[nodiscard]] bool increment_next_chunk()
   {
     m_next_chunk++;
     return can_run_next();
   }
 
   /** Perform any final cleanup associated with the task; requires locking */
-  void finalize() const { return m_ptr->finalize(); }
+  void finalize() const { m_ptr->finalize(); }
 
   scheduler_step(const scheduler_step&) = delete;
   scheduler_step(scheduler_step&&) = delete;
@@ -231,7 +235,7 @@ scheduler::run_wrapper(scheduler* sch, threadtype thread_type)
 void
 scheduler::run_io_loop()
 {
-  std::unique_lock<std::mutex> lock(m_queue_lock);
+  std::unique_lock lock{ m_queue_lock };
 
   while (true) {
     step_ptr step;
@@ -253,7 +257,7 @@ scheduler::run_io_loop()
       m_condition_io.notify_one();
     }
 
-    chunk_vec chunks = step->process(std::move(chunk.second));
+    const chunk_vec chunks = step->process(std::move(chunk.second));
     // Currently only (final) output steps
     AR_REQUIRE(chunks.empty());
     lock.lock();
@@ -279,7 +283,7 @@ scheduler::run_io_loop()
 void
 scheduler::run_calc_loop()
 {
-  std::unique_lock<std::mutex> lock(m_queue_lock);
+  std::unique_lock lock{ m_queue_lock };
 
   while (true) {
     step_ptr step;

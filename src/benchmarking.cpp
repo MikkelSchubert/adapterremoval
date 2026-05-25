@@ -8,6 +8,7 @@
 #include <algorithm>        // for find, accumulate
 #include <array>            // for array
 #include <cmath>            // for round
+#include <cstddef>          // for size_t
 #include <cstdint>          // for uint64_t
 #include <iomanip>          // for fixed, setprecision
 #include <iostream>         // for cout
@@ -40,7 +41,6 @@ const size_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
 benchmark_toggles::benchmark_toggles(std::vector<std::string> keys)
   : m_toggles(std::move(keys))
   , m_enabled(m_toggles.size(), false)
-  , m_defaults()
 {
 }
 
@@ -163,7 +163,7 @@ benchmarker::run(const strategy s)
              m_durations.size() < BENCHMARK_MAX_LOOPS &&
              (m_durations.size() < BENCHMARK_MIN_LOOPS ||
               (elapsed < BENCHMARK_MIN_TIME_NS &&
-               elapsed / m_durations.size() >= BENCHMARK_CUTOFF_TIME_NS)));
+               elapsed >= m_durations.size() * BENCHMARK_CUTOFF_TIME_NS)));
   } while (s == strategy::benchmark && (loops < 2 * m_durations.size()) &&
            grubbs_test_prune(m_durations));
 

@@ -49,7 +49,7 @@ compare_subsequences_sse2(size_t& n_mismatches,
     }
 
     // Fragment length without 'N' padding
-    size_t unpadded_length = std::min<size_t>(16, length);
+    const size_t unpadded_length = std::min<size_t>(16, length);
 
     // Early termination is almost always due to mismatches, so updating the
     // number of Ns after the above check saves time in the common case.

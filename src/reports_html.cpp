@@ -25,7 +25,9 @@
 #include <cstdint>                   // for uint64_t
 #include <cstring>                   // for size_t, strerror
 #include <iomanip>                   // for operator<<, setprecision, setw
+#include <ios>                       // for fixed
 #include <memory>                    // for __shared_ptr_access, shared_ptr
+#include <ostream>                   // for ostream
 #include <sstream>                   // for ostringstream
 #include <string>                    // for string, operator==
 #include <string_view>               // for string_view
@@ -746,7 +748,7 @@ write_html_io_section(const userconfig& config,
       .write(output);
 
     // Subsequent plots should include merged reads
-    names.push_back("Merged");
+    names.emplace_back("Merged");
     statistics.push_back(merged);
   }
 

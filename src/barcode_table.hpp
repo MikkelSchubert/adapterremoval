@@ -14,7 +14,6 @@ namespace adapterremoval {
 class sample_set;
 class fastq;
 struct barcode_match;
-struct next_subsequence;
 
 /** The sample/barcode IDs associated with a set of sequences */
 struct barcode_key

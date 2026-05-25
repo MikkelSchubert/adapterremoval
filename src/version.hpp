@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <string>      // for string
 #include <string_view> // for string_view
 
 namespace adapterremoval::program {

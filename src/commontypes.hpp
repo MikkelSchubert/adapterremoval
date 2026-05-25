@@ -3,8 +3,10 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include <cstddef>     // for size_t
 #include <string>      // for string
 #include <string_view> // for string_view
+#include <utility>     // for pair
 #include <vector>      // for vector
 
 namespace adapterremoval {
@@ -149,14 +151,14 @@ enum class adapter_fallback
 };
 
 //! Path used to indicate that a file is not needed
-const std::string_view DEV_NULL = "/dev/null";
+constexpr std::string_view DEV_NULL = "/dev/null";
 //! Path used to indicate that data should be read from STDIN
-const std::string_view DEV_STDIN = "/dev/stdin";
+constexpr std::string_view DEV_STDIN = "/dev/stdin";
 //! Path used to indicate that data should be written to STDOUT
-const std::string_view DEV_STDOUT = "/dev/stdout";
+constexpr std::string_view DEV_STDOUT = "/dev/stdout";
 //! Path used to indicate that data should be written to STDERR
-const std::string_view DEV_STDERR = "/dev/stderr";
+constexpr std::string_view DEV_STDERR = "/dev/stderr";
 //! Filename indicating that data should be read from stdin/written to stdout
-const std::string_view DEV_PIPE = "-";
+constexpr std::string_view DEV_PIPE = "-";
 
 } // namespace adapterremoval

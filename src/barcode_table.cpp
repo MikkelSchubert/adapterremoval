@@ -15,6 +15,7 @@
 #include <ostream>           // for ostream
 #include <string>            // for std::string
 #include <utility>           // for pair
+#include <vector>            // for vector
 
 namespace adapterremoval {
 
@@ -35,6 +36,8 @@ struct barcode_match
   uint32_t mismatches = -1;
 };
 
+namespace {
+
 struct next_subsequence
 {
   explicit next_subsequence(const char* seq_,
@@ -47,6 +50,8 @@ struct next_subsequence
   const char* seq;
   const size_t max_local_mismatches;
 };
+
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 

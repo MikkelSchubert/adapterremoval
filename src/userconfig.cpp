@@ -18,11 +18,13 @@
 #include "sequence_sets.hpp"    // for sample_set
 #include "simd.hpp"             // for size_t, name, supported, instruction_set
 #include "strutils.hpp"         // for shell_escape, str_to_u32
+#include "threading.hpp"        // for threadsafe_data
 #include "version.hpp"          // for name, version
 #include <algorithm>            // for find, max, min
 #include <array>                // for array
 #include <cerrno>               // for errno
 #include <cmath>                // for round
+#include <cstdint>              // for uint32_t, uint64_t
 #include <cstdlib>              // for getenv
 #include <cstring>              // for size_t, strerror, strcmp
 #include <exception>            // for exception
@@ -35,6 +37,8 @@
 #include <string_view>          // for string_view
 #include <tuple>                // for get, tuple
 #include <unistd.h>             // for access, isatty, R_OK, STDERR_FILENO
+#include <utility>              // for move, pair
+#include <vector>               // for vector
 
 namespace adapterremoval {
 
@@ -440,8 +444,8 @@ fancy_output_allowed()
     const char* no_color = std::getenv("NO_COLOR");
     const char* term = std::getenv("TERM");
 
-    return !(no_color && no_color[0] != '\0') &&
-           !(term && strcmp(term, "dumb") == 0);
+    return (!no_color || no_color[0] == '\0') &&
+           (!term || strcmp(term, "dumb") != 0);
   }
 
   return false;
@@ -666,7 +670,7 @@ userconfig::userconfig()
     .conflicts_with("--report-only")
     .conflicts_with("--interleaved")
     .conflicts_with("--interleaved-input")
-#if !defined(DEBUG)
+#ifndef DEBUG
     .hidden()
 #endif
     .bind_vec(&benchmarks)
@@ -1662,8 +1666,8 @@ userconfig::get_output_filenames() const
   files.settings_html = new_output_file("--out-html", {}, {}, ".html").name;
 
   auto ext = output_files::file_extension(out_file_format);
-  std::string_view out1 = interleaved_output ? "" : ".r1";
-  std::string_view out2 = interleaved_output ? "" : ".r2";
+  const std::string_view out1 = interleaved_output ? "" : ".r1";
+  const std::string_view out2 = interleaved_output ? "" : ".r2";
 
   if (is_demultiplexing_enabled()) {
     files.unidentified_1 = new_output_file("--out-unidentified1",

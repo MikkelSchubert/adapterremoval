@@ -38,13 +38,13 @@ public:
   [[nodiscard]] std::string compare_with(std::string_view other) const;
 
   /** Returns the consensus adapter sequence */
-  inline const fastq& adapter() const { return m_adapter; }
+  [[nodiscard]] const fastq& adapter() const { return m_adapter; }
 
   /** Returns vector containing the top N KMers */
-  const kmer_vec& top_kmers() const { return m_top_kmers; }
+  [[nodiscard]] const kmer_vec& top_kmers() const { return m_top_kmers; }
 
   /** Returns the total number of KMers recorded */
-  size_t total_kmers() const { return m_total_kmers; }
+  [[nodiscard]] size_t total_kmers() const { return m_total_kmers; }
 
 private:
   //! Consensus adapter sequence
@@ -71,12 +71,12 @@ public:
   consensus_adapter_stats& operator+=(const consensus_adapter_stats& other);
 
   /** Returns the max size of inferred consensus adapter sequences */
-  size_t max_length() const { return m_max_length; }
+  [[nodiscard]] size_t max_length() const { return m_max_length; }
 
   /** Process an adapter fragment, assumed to only contain bases ACGTN */
   void process(std::string_view sequence);
   /** Constructs consensus adapter sequence and selects the top N kmers */
-  consensus_adapter summarize(size_t n_kmers = top_n_kmers) const;
+  [[nodiscard]] consensus_adapter summarize(size_t n_kmers = top_n_kmers) const;
 
 private:
   //! Maximum length of consensus adapter sequence
@@ -102,9 +102,9 @@ public:
   //! Statistics based on putative adapter 2 fragments
   consensus_adapter_stats adapter2;
   //! Number of properly aligned reads
-  size_t aligned_pairs;
+  size_t aligned_pairs = 0;
   //! Number of reads with adapter fragments
-  size_t pairs_with_adapters;
+  size_t pairs_with_adapters = 0;
 
   adapter_id_statistics(const adapter_id_statistics&) = delete;
   adapter_id_statistics(adapter_id_statistics&&) = delete;

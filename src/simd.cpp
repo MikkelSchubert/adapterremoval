@@ -3,7 +3,9 @@
 #include "simd.hpp"        // declarations
 #include "debug.hpp"       // for AR_FAIL
 #include "simd-config.hpp" // for HAVE_SSE2, HAVE_AVX2, HAVE_AVX512...
+#include <cstddef>         // for size_t
 #include <string_view>     // for string_view
+#include <vector>          // for vector
 
 namespace adapterremoval::simd {
 

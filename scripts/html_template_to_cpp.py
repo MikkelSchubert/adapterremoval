@@ -290,10 +290,16 @@ def write_implementations(sections: dict[str, Section], header_name: str) -> str
     tprint('#include "debug.hpp"    // for AR_REQUIRE')
     tprint('#include "strutils.hpp" // for html_escape')
     tprint("#include <cstddef>      // for size_t")
+    tprint("#include <ostream>      // for ostream")
     tprint("")
     tprint("namespace adapterremoval {{")
     tprint("")
+    tprint("namespace {{")
+    tprint("")
     tprint("size_t g_html_id = 1;")
+    tprint("")
+    tprint("}} // namespace")
+    tprint("")
 
     for key, props in sections.items():
         classname = to_classname(key)

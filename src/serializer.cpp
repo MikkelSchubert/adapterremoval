@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
-#include "serializer.hpp"  // declarations
-#include "buffer.hpp"      // for buffer
-#include "commontypes.hpp" // for output_format
-#include "debug.hpp"       // for AR_REQUIRE, AR_FAIL
-#include "errors.hpp"      // for serializing_error
-#include "fastq.hpp"       // for fastq
-#include "fastq_enc.hpp"   // for PHRED_OFFSET_MIN
-#include "read_group.hpp"  // for read_group
-#include "sequence.hpp"    // for dna_sequence
-#include "strutils.hpp"    // for join_text
-#include "version.hpp"     // for version
-#include <cstdint>         // for uint16_t, uint8_t
-#include <sstream>         // for ostringstream
-#include <string>          // for string, operator<<, string
-#include <string_view>     // for string_view
+#include "serializer.hpp"    // declarations
+#include "buffer.hpp"        // for buffer
+#include "commontypes.hpp"   // for output_format
+#include "debug.hpp"         // for AR_REQUIRE, AR_FAIL
+#include "errors.hpp"        // for serializing_error
+#include "fastq.hpp"         // for fastq
+#include "fastq_enc.hpp"     // for PHRED_OFFSET_MIN
+#include "read_group.hpp"    // for read_group
+#include "sequence.hpp"      // for dna_sequence
+#include "sequence_sets.hpp" // for sample, sample_sequences
+#include "strutils.hpp"      // for join_text
+#include "version.hpp"       // for version
+#include <cstddef>           // for size_t
+#include <cstdint>           // for uint16_t, uint8_t
+#include <sstream>           // for ostringstream
+#include <string>            // for string, operator<<, string
+#include <string_view>       // for string_view
 
 namespace adapterremoval {
 
@@ -189,8 +191,9 @@ get_mate_number(const read_type type)
       return '2';
     case read_type::merged:
     case read_type::merged_fail:
-    default:
       return '\0';
+    default:
+      AR_FAIL("invalid read type");
   }
 }
 
@@ -215,7 +218,8 @@ serializer::fastq_record(buffer& buf,
       // input files may be swapped (`--in-file1 input_r2.fq.gz` ) or
       // AdapterRemoval may be run on mate 2 reads in SE mode. In those cases we
       // do not want to replace the mate number
-      char mate = header.mate ? header.mate : get_mate_number(meta.m_type);
+      const char mate =
+        header.mate ? header.mate : get_mate_number(meta.m_type);
       if (mate) {
         buf.append_u8(m_mate_separator_out);
         buf.append_u8(mate);
@@ -231,7 +235,7 @@ serializer::fastq_record(buffer& buf,
   if (m_demultiplexing_only && !sequences.barcode_1.empty()) {
     buf.append(" BC:");
     buf.append(sequences.barcode_1.as_string());
-    if (sequences.barcode_2.length()) {
+    if (!sequences.barcode_2.empty()) {
       buf.append_u8('-');
       buf.append(sequences.barcode_2.as_string());
     }

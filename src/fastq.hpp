@@ -60,13 +60,13 @@ public:
   bool operator==(const fastq& other) const;
 
   /** Returns the header (including the @) of the record. **/
-  const std::string& header() const { return m_header; }
+  [[nodiscard]] const std::string& header() const { return m_header; }
 
   /** Returns the nucleotide sequence (ACGTN only) of the record. **/
-  const std::string& sequence() const { return m_sequence; }
+  [[nodiscard]] const std::string& sequence() const { return m_sequence; }
 
   /** Returns the Phred+33 encoded scores (0 .. 41) for each base. **/
-  const std::string& qualities() const { return m_qualities; }
+  [[nodiscard]] const std::string& qualities() const { return m_qualities; }
 
   /** Returns the name (excluding the @ and other fields) of the header. **/
   [[nodiscard]] std::string_view name(char mate_separator = '\0') const;
@@ -86,13 +86,13 @@ public:
   [[nodiscard]] fastq_header parse_header(char mate_separator = '\0') const;
 
   /** Returns the length of the sequence. */
-  size_t length() const { return m_sequence.length(); }
+  [[nodiscard]] size_t length() const { return m_sequence.length(); }
 
   /** Returns the number of ambiguous nucleotides in the sequence (N). **/
-  size_t count_ns() const;
+  [[nodiscard]] size_t count_ns() const;
 
   /** Returns a measure of sequence complexity in the range [0; 1]. **/
-  double complexity() const;
+  [[nodiscard]] double complexity() const;
 
   /** Returns the mean Phred score of bases in a (non-empty) sequence */
   [[nodiscard]] double mean_quality() const;

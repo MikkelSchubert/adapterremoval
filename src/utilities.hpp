@@ -15,8 +15,7 @@ unsigned int
 prng_seed();
 
 template<typename A>
-typename std::enable_if_t<std::is_integral<A>::value ||
-                          std::is_floating_point<A>::value>
+typename std::enable_if_t<std::is_integral_v<A> || std::is_floating_point_v<A>>
 merge(A& dst, const A& src)
 {
   dst += src;

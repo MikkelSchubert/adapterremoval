@@ -17,7 +17,7 @@ TEST_CASE("counts constructors")
 {
   SECTION("default")
   {
-    counts c;
+    const counts c;
     REQUIRE(c.size() == 0);
     REQUIRE(c.product() == 0);
   }
@@ -25,14 +25,14 @@ TEST_CASE("counts constructors")
   SECTION("with capacity")
   {
     const size_t N = 7;
-    counts c = counts(N);
+    const counts c = counts(N);
     REQUIRE(c.size() == 7);
     REQUIRE(c.product() == 0);
   }
 
   SECTION("from init list")
   {
-    counts c = { 7, 9, 13 };
+    const counts c = { 7, 9, 13 };
     REQUIRE(c.size() == 3);
     REQUIRE(c.get(0) == 7);
     REQUIRE(c.get(1) == 9);
@@ -76,7 +76,7 @@ TEST_CASE("counts inc and get")
 
 TEST_CASE("counts get beyond size")
 {
-  counts c = { 1 };
+  const counts c = { 1 };
   REQUIRE(c.get(0) == 1);
   REQUIRE(c.get(1) == 0);
   REQUIRE(c.get(2) == 0);
@@ -123,8 +123,8 @@ TEST_CASE("counts sum")
 
 TEST_CASE("counts product")
 {
-  counts c = { 1, 20, 300 };
-  REQUIRE(c.product() == 0 * 1 + 1 * 20 + 2 * 300);
+  const counts c = { 1, 20, 300 };
+  REQUIRE(c.product() == (0 * 1) + (1 * 20) + (2 * 300));
 }
 
 TEST_CASE("counts trim empty")
@@ -276,7 +276,7 @@ TEST_CASE("counts operator==")
 
 TEST_CASE("indexed_count<ACGT> constructors")
 {
-  indexed_count<ACGT> c;
+  const indexed_count<ACGT> c;
   REQUIRE(c.size() == ACGT::indices);
   REQUIRE(c.get('A') == 0);
   REQUIRE(c.get('C') == 0);
@@ -374,14 +374,14 @@ TEST_CASE("indexed_counts<ACGT> constructors")
 {
   SECTION("default")
   {
-    indexed_counts<ACGT> c;
+    const indexed_counts<ACGT> c;
     REQUIRE(c.size() == 0);
   }
 
   SECTION("with capacity")
   {
     const size_t N = 7;
-    indexed_counts<ACGT> c = indexed_counts<ACGT>(N);
+    const indexed_counts<ACGT> c = indexed_counts<ACGT>(N);
     REQUIRE(c.size() == 7);
   }
 }
@@ -435,7 +435,7 @@ TEST_CASE("indexed_counts<ACGT> inc and get")
 
 TEST_CASE("indexed_counts<ACGT> get beyond size")
 {
-  indexed_counts<ACGT> c;
+  const indexed_counts<ACGT> c;
   REQUIRE(c.size() == 0);
   REQUIRE(c.get('A', 0) == 0);
   REQUIRE(c.get('A', 1) == 0);

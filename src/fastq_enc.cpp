@@ -9,6 +9,7 @@
 #include <array>         // for array
 #include <cmath>         // for log10, pow, round
 #include <sstream>       // for ostringstream
+#include <string>        // for string
 
 namespace adapterremoval {
 
@@ -297,10 +298,8 @@ constexpr auto NUCLEOTIDES_LUT_BOTH = build_lookup_table(true, true);
 fastq_encoding::fastq_encoding(quality_encoding encoding,
                                degenerate_encoding degenerate,
                                uracil_encoding uracils) noexcept
-  : m_nucleotides_lut(nullptr)
-  , m_encoding(encoding)
-  , m_offset_min()
-  , m_offset_max()
+  : m_encoding(encoding)
+
 {
   if (degenerate == degenerate_encoding::reject &&
       uracils == uracil_encoding::reject) {

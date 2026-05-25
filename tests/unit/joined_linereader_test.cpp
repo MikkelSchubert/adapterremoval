@@ -3,8 +3,8 @@
 #include "errors.hpp"            // for assert_failed
 #include "linereader_joined.hpp" // declarations
 #include "testing.hpp"           // for TEST_CASE, REQUIRE, ...
-#include <cstddef>               // for size_t
 #include <string>                // for string
+#include <utility>               // for move
 #include <vector>                // for vector
 
 namespace adapterremoval {

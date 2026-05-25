@@ -13,7 +13,7 @@
 #include <cstdio>          // for fopen, fread, fwrite, ...
 #include <exception>       // for std::exception
 #include <fcntl.h>         // for posix_fadvise
-#include <mutex>           // for mutex, lock_guard
+#include <mutex>           // for mutex, unique_lock
 #include <string>          // for string
 #include <string_view>     // for string_view
 #include <sys/stat.h>      // for fstat
@@ -81,7 +81,7 @@ public:
   /** Adds writer to list of inactive writers */
   static void add(managed_writer* writer)
   {
-    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    const std::unique_lock lock{ m_lock };
 
     AR_REQUIRE(!writer->m_prev);
     AR_REQUIRE(!writer->m_next);
@@ -105,7 +105,7 @@ public:
   /* Removes the writer from the list of inactive writers */
   static void remove(managed_writer* writer)
   {
-    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    const std::unique_lock lock{ m_lock };
 
     AR_REQUIRE(!m_head == !m_tail);
     AR_REQUIRE(!m_head || !m_head->m_prev);
@@ -180,7 +180,7 @@ private:
   /** Try to close the least recently used writer */
   static void close_one()
   {
-    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    const std::unique_lock lock{ m_lock };
 
     AR_REQUIRE(!m_head == !m_tail);
     if (!m_warning_printed) {

@@ -5,9 +5,12 @@
 #include "commontypes.hpp"   // for read_mate
 #include "sequence.hpp"      // for dna_sequences
 #include "sequence_sets.hpp" // for adapter_set
+#include <cstddef>           // for size_t
 #include <initializer_list>  // for initializer_list
 #include <iosfwd>            // for ostream
+#include <string>            // for string
 #include <string_view>       // for string_view
+#include <utility>           // for pair
 #include <vector>            // for vector
 
 namespace adapterremoval {

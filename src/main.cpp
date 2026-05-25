@@ -13,6 +13,8 @@
 #include <exception>      // for set_terminate
 #include <filesystem>     // for filesystem_error
 #include <ios>            // for ios_base
+#include <string>         // for string
+#include <string_view>    // for string_view
 #include <system_error>   // for system_error
 #include <vector>         // for vector
 

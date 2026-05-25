@@ -9,6 +9,7 @@
 #include <stdexcept>    // for invalid_argument
 #include <string>       // for basic_string, operator==, string
 #include <string_view>  // for string_view
+#include <vector>       // for vector
 
 namespace adapterremoval {
 
@@ -362,7 +363,7 @@ TEST_CASE("shell_escape_command with mixed command")
 
 TEST_CASE("html_escape")
 {
-  REQUIRE(html_escape("") == "");
+  REQUIRE(html_escape("").empty());
   REQUIRE(html_escape(" abc1-9 ") == " abc1-9 ");
   REQUIRE(html_escape(" '&<>' ") == " &#39;&amp;&lt;&gt;&#39; ");
   REQUIRE(html_escape("\"quote\"") == "&quot;quote&quot;");
@@ -514,8 +515,8 @@ TEST_CASE("join_text on list of strings views")
 
 TEST_CASE("trim_ascii_whitespace")
 {
-  REQUIRE(trim_ascii_whitespace("") == "");
-  REQUIRE(trim_ascii_whitespace("\f\n\r\t\v") == "");
+  REQUIRE(trim_ascii_whitespace("").empty());
+  REQUIRE(trim_ascii_whitespace("\f\n\r\t\v").empty());
   REQUIRE(trim_ascii_whitespace("\f\n\r\t\vabc") == "abc");
   REQUIRE(trim_ascii_whitespace("abc\f\n\r\t\v") == "abc");
   REQUIRE(trim_ascii_whitespace("\f\n\r\t\vabc\f\n\r\t\v") == "abc");

@@ -48,7 +48,7 @@ compare_subsequences_avx2(size_t& n_mismatches,
       return false;
     }
 
-    size_t unpadded_length = std::min<size_t>(32, length);
+    const size_t unpadded_length = std::min<size_t>(32, length);
 
     // Early termination is almost always due to mismatches, so updating the
     // number of Ns after the above check saves time in the common case.

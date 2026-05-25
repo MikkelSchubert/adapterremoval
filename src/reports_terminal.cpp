@@ -2,15 +2,14 @@
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
 #include "commontypes.hpp" // for trimming_strategy, trimming_strategy::mott
 #include "debug.hpp"       // for AR_FAIL
-#include "fastq_enc.hpp"   // for fastq_encoding
 #include "logging.hpp"     // for info, log_stream, error, warn
 #include "reports.hpp"     // for print_terminal_postamble, print_terminal_...
 #include "simd.hpp"        // for name, instruction_set, instruction_set::none
 #include "userconfig.hpp"  // for userconfig, ar_command, ar_command::demul...
-#include <iomanip>         // for setprecision
-#include <ios>             // for fixed
 
 namespace adapterremoval {
+
+namespace {
 
 void
 print_trimming_parameters(const userconfig& config)
@@ -47,6 +46,8 @@ print_trimming_parameters(const userconfig& config)
       AR_FAIL("not implemented");
   }
 }
+
+} // namespace
 
 void
 print_terminal_preamble(const userconfig& config)
@@ -93,6 +94,7 @@ print_terminal_postamble(const userconfig& config, bool any_errors)
       case ar_command::demultiplex_only:
         log::error() << "AdapterRemoval did not run to completion;\n"
                      << "    do NOT make use of the resulting reads!";
+        break;
       case ar_command::benchmark:
       case ar_command::report_only:
         break;

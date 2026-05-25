@@ -4,6 +4,7 @@
 #include "adapter_database.hpp" // for adapter_database, identified_adapter
 #include "adapter_detector.hpp" // for adapter_detection_stats, adapter_detector
 #include "alignment.hpp"        // for sequence_aligner
+#include "commontypes.hpp"      // for adapter_fallback, read_mate
 #include "debug.hpp"            // AR_REQUIRE
 #include "errors.hpp"           // for fatal_error
 #include "logging.hpp"          // for log

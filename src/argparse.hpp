@@ -333,7 +333,7 @@ protected:
   void set_max_values(size_t n) { m_max_values = n; }
 
   /** Preprocess the value if a preprocessor was set */
-  std::string preprocess(std::string value) const;
+  [[nodiscard]] std::string preprocess(std::string value) const;
 
 private:
   //! Indicates if the sink has been supplied with a default value
@@ -352,8 +352,9 @@ public:
   explicit bool_sink(bool* ptr);
   ~bool_sink() override = default;
 
-  std::string value() const override;
-  size_t consume(string_vec_citer start, const string_vec_citer& end) override;
+  [[nodiscard]] std::string value() const override;
+  [[nodiscard]] size_t consume(string_vec_citer start,
+                               const string_vec_citer& end) override;
 
   /** Not implemented */
   [[nodiscard]] std::string default_value() const override;

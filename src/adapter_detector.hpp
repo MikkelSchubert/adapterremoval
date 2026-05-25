@@ -5,6 +5,9 @@
 #include "adapter_database.hpp" // for adapter_database
 #include "alignment.hpp"        // for sequence_aligner
 #include "sequence.hpp"         // for dna_sequence
+#include <cstddef>              // for size_t
+#include <iosfwd>               // for ostream
+#include <utility>              // for pair
 #include <vector>               // for vector
 
 namespace adapterremoval {
@@ -13,8 +16,14 @@ class fastq;
 class userconfig;
 class adapter_database;
 
+namespace simd {
+
+enum class instruction_set;
+
+};
+
 //! Minimum overlap required for adapter fragments
-const size_t ADAPTER_DETECT_MIN_OVERLAP = 8;
+inline constexpr size_t ADAPTER_DETECT_MIN_OVERLAP = 8;
 
 /**
  * Class used to record adapter detection statistics; these statistics are
@@ -63,13 +72,13 @@ private:
   friend class adapter_detector;
 
   /** Helper function for use with utilities.hpp:merge */
-  friend void merge(hits&, const hits&);
+  friend void merge(hits& /* dst */, const hits& /* src */);
 
   /** Returns true if all fields match */
-  friend bool operator==(const hits&, const hits&);
+  friend bool operator==(const hits& /* a */, const hits& /* b */);
 
   /** Stream operator for debugging output */
-  friend std::ostream& operator<<(std::ostream& os, const hits&);
+  friend std::ostream& operator<<(std::ostream& os, const hits& /* value */);
 
   //! The number of read 1 sequences processed
   size_t m_reads_1 = 0;

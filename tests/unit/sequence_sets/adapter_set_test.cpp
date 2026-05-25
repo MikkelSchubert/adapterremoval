@@ -19,17 +19,17 @@ namespace adapterremoval {
 
 TEST_CASE("default constructor", "[adapter_set]")
 {
-  adapter_set set;
+  const adapter_set set;
 
-  REQUIRE(set.size() == 0);
   REQUIRE(set.empty());
-  REQUIRE(sequence_pair_vec{ set.begin(), set.end() } == sequence_pair_vec{});
+  REQUIRE(set.size() == 0); // NOLINT(readability-container-size-empty)
+  REQUIRE(sequence_pair_vec{ set.begin(), set.end() }.empty());
 }
 
 TEST_CASE("initializer list", "[adapter_set]")
 {
   // read orientation
-  adapter_set set{ { "ACGTA", "TGGAT" }, { "CCGAT", "AGAGT" } };
+  const adapter_set set{ { "ACGTA", "TGGAT" }, { "CCGAT", "AGAGT" } };
 
   // alignment orientation
   const sequence_pair pair_1{ "ACGTA"_dna, "ATCCA"_dna };
@@ -131,7 +131,7 @@ TEST_CASE("load table with too many columns", "[adapter_set]")
 TEST_CASE("add sequences", "[adapter_set]")
 {
   adapter_set set;
-  CHECK(std::vector(set.begin(), set.end()) == sequence_pair_vec{});
+  CHECK(std::vector(set.begin(), set.end()).empty());
 
   set.add("ACT"_dna, "CTA"_dna);
   CHECK(std::vector(set.begin(), set.end()) ==
@@ -154,14 +154,14 @@ TEST_CASE("add barcodes to adapters", "[adapter_set]")
 
   SECTION("empty set")
   {
-    adapter_set set;
-    CHECK(set.add_barcodes(barcode_1, barcode_2) == adapter_set{});
-    CHECK(set == adapter_set{});
+    const adapter_set set;
+    CHECK(set.add_barcodes(barcode_1, barcode_2).empty());
+    CHECK(set.empty());
   }
 
   SECTION("empty adapters")
   {
-    adapter_set set{ { "", "" } };
+    const adapter_set set{ { "", "" } };
     CHECK(set.add_barcodes(barcode_1, barcode_2) ==
           adapter_set{ { "CCCC", "TTTT" } });
     CHECK(set == adapter_set{ { "", "" } });
@@ -169,7 +169,7 @@ TEST_CASE("add barcodes to adapters", "[adapter_set]")
 
   SECTION("single adapter pair")
   {
-    adapter_set set{ set_1 };
+    const adapter_set set{ set_1 };
     CHECK(set.add_barcodes(barcode_1, barcode_2) ==
           adapter_set{ { "CCCCACT", "TTTTCTA" } });
     CHECK(set == adapter_set{ set_1 });
@@ -177,7 +177,7 @@ TEST_CASE("add barcodes to adapters", "[adapter_set]")
 
   SECTION("multiple adapter pairs")
   {
-    adapter_set set{ set_1, set_2 };
+    const adapter_set set{ set_1, set_2 };
     CHECK(set.add_barcodes(barcode_1, barcode_2) ==
           adapter_set{ { "CCCCACT", "TTTTCTA" }, { "CCCCATT", "TTTTCTT" } });
     CHECK(set == adapter_set{ set_1, set_2 });
@@ -189,7 +189,7 @@ TEST_CASE("to read orientation", "[adapter_set]")
   const auto set_1 = string_pair{ "ACT", "CTA" };
   const auto set_2 = string_pair{ "ATT", "CTT" };
 
-  CHECK(adapter_set{}.to_read_orientation() == sequence_pair_vec{});
+  CHECK(adapter_set{}.to_read_orientation().empty());
   CHECK(adapter_set{ set_1 }.to_read_orientation() ==
         sequence_pair_vec{ sequence_pair{ "ACT", "CTA" } });
   CHECK(adapter_set{ set_1, set_2 }.to_read_orientation() ==
@@ -205,7 +205,7 @@ TEST_CASE("equality operator", "[adapter_set]")
   auto set_2 = adapter_set{ { "ATT", "CTT" } };
 
   CHECK(empty == empty);
-  CHECK(empty == adapter_set{});
+  CHECK(empty == adapter_set{}); // NOLINT(readability-container-size-empty)
   CHECK(set_1a == set_1a);
   CHECK(set_1a == set_1b);
   CHECK_FALSE(set_1a == empty);

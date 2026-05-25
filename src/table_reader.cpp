@@ -5,9 +5,13 @@
 #include "errors.hpp"       // for io_error, parsing_error
 #include "linereader.hpp"   // for line_reader_base
 #include "strutils.hpp"     // for trim_ascii_whitespace
+#include <cstddef>          // for size_t
+#include <ostream>          // for ostream
 #include <sstream>          // for ostringstream
+#include <string>           // for string
 #include <string_view>      // for operator<<, string_view
 #include <utility>          // for move
+#include <vector>           // for vector
 
 namespace adapterremoval {
 
@@ -128,7 +132,7 @@ table_reader::parse(line_reader_base& lr) const
         }
       }
 
-      std::string_view line = trim_ascii_whitespace(buffer);
+      const std::string_view line = trim_ascii_whitespace(buffer);
       if (line.empty()) {
         continue;
       }
