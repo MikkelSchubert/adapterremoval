@@ -16,6 +16,7 @@
 #include <string>       // for string
 #include <string_view>  // for string_view
 #include <utility>      // for pair
+#include <vector>       // for vector
 
 namespace adapterremoval::argparse {
 
@@ -417,17 +418,20 @@ argument::keys() const
 std::string
 argument::help() const
 {
-  // Append string representation of current (default) value
   std::ostringstream ss;
   ss << m_help;
 
+  bool has_content = !m_help.empty();
+
   const auto choices = m_sink->choices();
   if (!choices.empty()) {
-    ss << ". Possible values are " << join_text(choices, ", ", ", and ");
+    ss << (has_content ? ". " : "") << "Possible values are "
+       << join_text(choices, ", ", ", and ");
+    has_content = true;
   }
 
   if (m_sink->has_default() && m_help.find("[default:") == std::string::npos) {
-    ss << " [default: " << default_value() << "]";
+    ss << (has_content ? " " : "") << "[default: " << default_value() << "]";
   }
 
   return ss.str();
@@ -849,25 +853,11 @@ double_sink::with_default(double value)
   return *this;
 }
 
-namespace {
-
-std::string
-double_to_string(double value)
-{
-  auto s = stringify(value);
-  s.erase(s.find_last_not_of('0') + 1, std::string::npos);
-  s.erase(s.find_last_not_of('.') + 1, std::string::npos);
-
-  return s;
-}
-
-} // namespace
-
 std::string
 double_sink::default_value() const
 {
   AR_REQUIRE(has_default());
-  return double_to_string(m_default);
+  return concise_stringify(m_default);
 }
 
 double_sink&
@@ -890,7 +880,7 @@ double_sink::with_maximum(double value)
 std::string
 double_sink::value() const
 {
-  return double_to_string(*m_sink);
+  return concise_stringify(*m_sink);
 }
 
 size_t
@@ -901,10 +891,10 @@ double_sink::consume(string_vec_citer start, const string_vec_citer& end)
   const auto value = str_to_double(*start);
   if (value < m_minimum) {
     throw std::invalid_argument("value must be at least " +
-                                double_to_string(m_minimum));
+                                concise_stringify(m_minimum));
   } else if (value > m_maximum) {
     throw std::invalid_argument("value must be at most " +
-                                double_to_string(m_maximum));
+                                concise_stringify(m_maximum));
   }
 
   *m_sink = value;
