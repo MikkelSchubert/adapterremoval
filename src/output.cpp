@@ -10,7 +10,6 @@
 #include "serializer.hpp"  // for read_meta
 #include "strutils.hpp"    // for ends_with
 #include <cstddef>         // for size_t
-#include <limits>          // for numeric_limits
 #include <memory>          // for make_unique
 #include <string>          // for string
 #include <utility>         // for move
@@ -64,18 +63,16 @@ add_write_step(scheduler& sch,
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `sample_output_files`
 
-const size_t sample_output_files::disabled = std::numeric_limits<size_t>::max();
-
 sample_output_files::sample_output_files()
 {
-  m_offsets.fill(sample_output_files::disabled);
+  m_offsets.fill(NO_OUTPUT);
 }
 
 void
 sample_output_files::set_file(const read_file rtype, output_file file)
 {
   const auto index = static_cast<size_t>(rtype);
-  AR_REQUIRE(m_offsets.at(index) == sample_output_files::disabled);
+  AR_REQUIRE(m_offsets.at(index) == NO_OUTPUT);
 
   // If the filetype isn't being saved, then there is no need to process the
   // reads. This saves time especially when output compression is enabled.
@@ -90,7 +87,7 @@ sample_output_files::set_file(const read_file rtype, output_file file)
     }
 
     if (it == m_output.end()) {
-      m_output.push_back({ std::move(file), disabled });
+      m_output.push_back({ std::move(file), NO_OUTPUT });
       m_offsets.at(index) = m_output.size() - 1;
     } else {
       AR_REQUIRE(file == it->file);
@@ -105,9 +102,9 @@ sample_output_files::set_step(read_file rtype, size_t step)
 {
   const auto index = static_cast<size_t>(rtype);
   const auto offset = m_offsets.at(index);
-  AR_REQUIRE(offset != disabled);
+  AR_REQUIRE(offset != NO_OUTPUT);
 
-  AR_REQUIRE(m_output.at(offset).step == disabled);
+  AR_REQUIRE(m_output.at(offset).step == NO_OUTPUT);
   m_output.at(offset).step = step;
 }
 
@@ -119,8 +116,6 @@ sample_output_files::offset(read_file value) const
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations for `output_files`
-
-const size_t output_files::disabled = static_cast<size_t>(-1);
 
 bool
 output_files::parse_format(std::string_view filename, output_format& sink)
@@ -179,12 +174,12 @@ output_files::file_extension(const output_format format)
 void
 output_files::add_write_steps(scheduler& sch, const userconfig& config)
 {
-  AR_REQUIRE(unidentified_1_step == disabled &&
-             unidentified_2_step == disabled);
+  AR_REQUIRE(unidentified_1_step == NO_OUTPUT &&
+             unidentified_2_step == NO_OUTPUT);
 
   for (auto& sample : m_samples) {
     for (auto& it : sample.m_output) {
-      AR_REQUIRE(it.step == disabled);
+      AR_REQUIRE(it.step == NO_OUTPUT);
       it.step = add_write_step(sch, config, it.file);
     }
   }
@@ -264,7 +259,7 @@ void
 processed_reads::add(const fastq& read, const read_meta& meta)
 {
   const size_t offset = m_map.offset(meta.get_file());
-  if (offset != sample_output_files::disabled) {
+  if (offset != NO_OUTPUT) {
     auto& buffer = get_buffer(m_chunks.at(offset));
     m_serializers.at(offset).record(buffer, read, meta);
   }
@@ -284,11 +279,6 @@ processed_reads::finalize(bool eof)
 
   return chunks;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Implementations for `post_demux_steps`
-
-const size_t post_demux_steps::disabled = output_files::disabled;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for `demultiplexed_reads`
@@ -319,7 +309,7 @@ demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
   m_cache.push_back(std::make_unique<fastq_chunk>());
 
   for (const auto next_step : m_steps.samples) {
-    AR_REQUIRE(next_step != post_demux_steps::disabled);
+    AR_REQUIRE(next_step != NO_OUTPUT);
 
     m_cache.push_back(std::make_unique<fastq_chunk>());
   }

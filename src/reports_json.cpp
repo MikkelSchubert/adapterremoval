@@ -137,7 +137,7 @@ struct io_section
     : io_section(std::move(name), std::move(stats), {})
   {
     const auto offset = sample_files.offset(rtype);
-    if (offset != sample_output_files::disabled) {
+    if (offset != NO_OUTPUT) {
       m_filenames.push_back(sample_files.filename(offset));
     }
   }
@@ -603,7 +603,7 @@ collect_files(const output_files& files, read_file rtype)
 
   for (const auto& sample_files : files.samples()) {
     const auto offset = sample_files.offset(rtype);
-    if (offset != sample_output_files::disabled) {
+    if (offset != NO_OUTPUT) {
       filenames.push_back(sample_files.filename(offset));
     }
   }
