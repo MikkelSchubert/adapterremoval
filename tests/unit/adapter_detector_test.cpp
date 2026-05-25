@@ -3,6 +3,7 @@
 #include "adapter_database.hpp" // for adapter_database
 #include "adapter_detector.hpp" // declarations
 #include "commontypes.hpp"      // for read_mate
+#include "errors.hpp"           // for assert_failed
 #include "fastq.hpp"            // for fastq
 #include "logging.hpp"          // for log_capture
 #include "sequence.hpp"         // for dna_sequence
@@ -38,7 +39,66 @@ using hits_vec = std::vector<adapter_detection_stats::hit_stats>;
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
-// adapter_detection_stats::hits
+// adapter_detection_stats
+
+TEST_CASE("adapter_detection_stats default constructor")
+{
+  adapter_detection_stats stats;
+
+  CHECK(stats.mate_1().empty());
+  CHECK(stats.mate_2().empty());
+
+  CHECK(stats.reads_1() == 0);
+  CHECK(stats.reads_2() == 0);
+}
+
+TEST_CASE("adapter_detection_stats SE stats")
+{
+  using hits = adapter_detection_stats::hit_stats;
+  adapter_detection_stats stats{ 17, { hits{ 1, 2, 3 } } };
+
+  CHECK(stats.mate_1() == std::vector{ hits{ 1, 2, 3 } });
+  CHECK(stats.mate_2().empty());
+
+  CHECK(stats.reads_1() == 17);
+  CHECK(stats.reads_2() == 0);
+}
+
+TEST_CASE("adapter_detection_stats PE stats")
+{
+  using hits = adapter_detection_stats::hit_stats;
+  adapter_detection_stats stats{ 17,
+                                 { hits{ 1, 2, 3 } },
+                                 { hits{ 7, 9, 13 } } };
+
+  CHECK(stats.mate_1() == std::vector{ hits{ 1, 2, 3 } });
+  CHECK(stats.mate_2() == std::vector{ hits{ 7, 9, 13 } });
+
+  CHECK(stats.reads_1() == 17);
+  CHECK(stats.reads_2() == 17);
+}
+
+TEST_CASE("adapter_detection_stats must be SE or PE with matching candidates")
+{
+  const std::vector<adapter_detection_stats::hit_stats> empty;
+  const std::vector<adapter_detection_stats::hit_stats> candidates_1{ {} };
+  const std::vector<adapter_detection_stats::hit_stats> candidates_2{ {}, {} };
+
+  CHECK_NOTHROW(adapter_detection_stats{ 1, empty, empty });
+  CHECK_NOTHROW(adapter_detection_stats{ 1, candidates_1, empty });
+  CHECK_NOTHROW(adapter_detection_stats{ 1, candidates_1, candidates_1 });
+  CHECK_NOTHROW(adapter_detection_stats{ 1, candidates_2, empty });
+  CHECK_NOTHROW(adapter_detection_stats{ 1, candidates_2, candidates_2 });
+
+  CHECK_THROWS_AS(adapter_detection_stats(1, empty, candidates_1),
+                  assert_failed);
+  CHECK_THROWS_AS(adapter_detection_stats(1, empty, candidates_2),
+                  assert_failed);
+  CHECK_THROWS_AS(adapter_detection_stats(1, candidates_1, candidates_2),
+                  assert_failed);
+  CHECK_THROWS_AS(adapter_detection_stats(1, candidates_2, candidates_1),
+                  assert_failed);
+}
 
 TEST_CASE("adapter_detection_stats::hits equality operator")
 {
@@ -423,8 +483,7 @@ TEST_CASE("mate 1 and mate 2 read counts are independent")
 
 TEST_CASE("selection requires 10 hits")
 {
-  const adapter_detection_stats stats;
-  auto ad = simple_detector({
+  const auto ad = simple_detector({
     { "AGATCGGAAGAGCACACGTCT", {} },
   });
 
@@ -433,17 +492,38 @@ TEST_CASE("selection requires 10 hits")
   const identified_adapter expected_1{ name, sequence, read_mate::_1 };
   const identified_adapter expected_2{ name, sequence, read_mate::_2 };
 
+  // different number of matches
+  const std::vector<adapter_detection_stats::hit_stats> empty{};
+  const std::vector<adapter_detection_stats::hit_stats> hits_0{ {} };
+  const std::vector<adapter_detection_stats::hit_stats> hits_9{ { 9 } };
+  const std::vector<adapter_detection_stats::hit_stats> hits_10{ { 10 } };
+
   const log::log_capture _;
-  REQUIRE(ad.select_best({ 9, { { 9 } } }) == identified_adapter_pair{});
-  REQUIRE(ad.select_best({ 9, {}, { { 9 } } }) == identified_adapter_pair{});
+  CHECK(ad.select_best({ 9, empty, empty }) == identified_adapter_pair{});
+  CHECK(ad.select_best({ 10, empty, empty }) == identified_adapter_pair{});
 
-  REQUIRE(ad.select_best({ 10, { { 10 } } }) ==
-          identified_adapter_pair{ expected_1, {} });
-  REQUIRE(ad.select_best({ 10, {}, { { 10 } } }) ==
-          identified_adapter_pair{ {}, expected_2 });
+  CHECK(ad.select_best({ 9, hits_0, hits_0 }) == identified_adapter_pair{});
+  CHECK(ad.select_best({ 10, hits_0, hits_0 }) == identified_adapter_pair{});
 
-  REQUIRE(ad.select_best({ 10, { { 10 } }, { { 10 } } }) ==
-          identified_adapter_pair{ expected_1, expected_2 });
+  CHECK(ad.select_best({ 9, hits_9, hits_0 }) == identified_adapter_pair{});
+  CHECK(ad.select_best({ 9, hits_9, hits_9 }) == identified_adapter_pair{});
+  CHECK(ad.select_best({ 10, hits_9, hits_0 }) == identified_adapter_pair{});
+  CHECK(ad.select_best({ 10, hits_9, hits_9 }) == identified_adapter_pair{});
+
+  CHECK(ad.select_best({ 10, hits_10, empty }) ==
+        identified_adapter_pair{ expected_1, {} });
+  CHECK(ad.select_best({ 10, hits_10, hits_0 }) ==
+        identified_adapter_pair{ expected_1, {} });
+  CHECK(ad.select_best({ 10, hits_10, hits_9 }) ==
+        identified_adapter_pair{ expected_1, {} });
+
+  CHECK(ad.select_best({ 10, hits_0, hits_10 }) ==
+        identified_adapter_pair{ {}, expected_2 });
+  CHECK(ad.select_best({ 10, hits_9, hits_10 }) ==
+        identified_adapter_pair{ {}, expected_2 });
+
+  CHECK(ad.select_best({ 10, hits_10, hits_10 }) ==
+        identified_adapter_pair{ expected_1, expected_2 });
 }
 
 TEST_CASE("selection requires 1/0.1 percent sequences")
