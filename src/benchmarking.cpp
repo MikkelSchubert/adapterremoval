@@ -24,17 +24,17 @@ namespace adapterremoval {
 namespace {
 
 //! Number of loops to perform prior to benchmarking as burn-in
-const size_t BENCHMARK_BURN_IN = 1;
+constexpr size_t BENCHMARK_BURN_IN = 1;
 //! Benchmarks must be repeated at least this number of times
-const size_t BENCHMARK_MIN_LOOPS = 10;
+constexpr size_t BENCHMARK_MIN_LOOPS = 10;
 //! Benchmarks must be repeated at most this number of times
-const size_t BENCHMARK_MAX_LOOPS = 1000;
+constexpr size_t BENCHMARK_MAX_LOOPS = 1000;
 //! Benchmarks must run for at this number of nano-seconds
-const double BENCHMARK_MIN_TIME_NS = 5'000'000'000;
+constexpr uint64_t BENCHMARK_MIN_TIME_NS = 5'000'000'000;
 //! Benchmark loops shorter than this number of nano-seconds cannot be measured
-const double BENCHMARK_CUTOFF_TIME_NS = 10'000;
+constexpr uint64_t BENCHMARK_CUTOFF_TIME_NS = 10'000;
 //! Number of NS between terminal updates
-const size_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
+constexpr uint64_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
 
 } // namespace
 
@@ -140,7 +140,7 @@ benchmarker::run(const strategy s)
   }
 
   size_t loops = 0;
-  uint64_t next_update = 0;
+  uint64_t since_update = 0;
   do {
     uint64_t elapsed =
       std::accumulate(m_durations.begin(), m_durations.end(), uint64_t());
@@ -153,11 +153,12 @@ benchmarker::run(const strategy s)
 
       loops++;
       elapsed += duration;
+      since_update += duration;
       m_durations.push_back(duration);
 
-      if (elapsed >= next_update) {
+      if (since_update >= BENCHMARK_UPDATE_INTERVAL) {
         log::cerr() << "\r\033[K" << summarize(loops);
-        next_update += BENCHMARK_UPDATE_INTERVAL;
+        since_update %= BENCHMARK_UPDATE_INTERVAL;
       }
     } while (s == strategy::benchmark &&
              m_durations.size() < BENCHMARK_MAX_LOOPS &&
