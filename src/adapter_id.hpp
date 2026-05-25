@@ -60,11 +60,11 @@ class consensus_adapter_stats
 {
 public:
   //! Length of kmers to collect to find common kmers
-  static const size_t kmer_length = 9;
-  //! Size of vector needed for k-mer counts
-  static const size_t kmer_count = 2LLU << (2 * kmer_length);
+  static constexpr size_t kmer_length = 9;
+  //! Size of vector needed for k-mer counts, 2 bits per nucleotide
+  static constexpr size_t kmer_count = 1LLU << (2 * kmer_length);
   //! The N most common kmers to print
-  static const size_t top_n_kmers = 5;
+  static constexpr size_t top_n_kmers = 5;
 
   explicit consensus_adapter_stats(size_t max_length);
   /** Merge overall trimming_statistics, consensus, and k-mer counts. */
