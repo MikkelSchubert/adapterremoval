@@ -124,6 +124,8 @@ consensus_adapter::consensus_adapter(const indexed_counts<ACGTN>& consensus,
                                      const size_t n_kmers)
   : m_adapter(build_consensus_sequence(consensus))
 {
+  AR_REQUIRE(n_kmers);
+
   kmer_queue queue;
   for (size_t i = 0; i < kmers.size(); ++i) {
     const adapter_kmer value(i, kmers.at(i));

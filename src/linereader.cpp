@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "linereader.hpp"   // declarations
+#include "debug.hpp"        // for AR_REQUIRE
 #include "errors.hpp"       // for io_error
 #include "logging.hpp"      // for warn, log_stream
 #include "managed_io.hpp"   // for managed_writer
@@ -208,6 +209,7 @@ line_reader::refill_buffers_uncompressed()
 void
 line_reader::refill_raw_buffer(size_t avail_in)
 {
+  AR_REQUIRE(!m_eof);
   if (avail_in) {
     // Move unused (compressed) data to the front of the buffer
     std::memmove(m_raw_buffer->data(), m_raw_buffer_end - avail_in, avail_in);
