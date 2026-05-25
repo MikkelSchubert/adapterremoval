@@ -10,6 +10,7 @@
 #include <string_view>  // for string_view
 #include <strutils.hpp> // for log_escape
 #include <utility>      // for move
+#include <vector>       // for vector
 
 namespace adapterremoval {
 
@@ -51,7 +52,7 @@ TEST_CASE("buffer to string")
   buf.append_u32(0xDEADBEEF);
 
   CHECK(Catch::fallbackStringifier(buf) ==
-        "buffer{data='test string\\xef\\xbe\\xad\\xde', capacity=16, size=15}");
+        "buffer{data='test string\\xef\\xbe\\xad\\xde', capacity=64, size=15}");
 }
 
 TEST_CASE("buffer literals")
@@ -312,6 +313,22 @@ TEST_CASE("buffer append to self is disallowed")
 {
   buffer buf;
   REQUIRE_THROWS_AS(buf.append(buf), assert_failed);
+}
+
+TEST_CASE("buffer grows-curve is 64 * 1.5^n")
+{
+  buffer buf;
+
+  std::vector<size_t> capacity{ 0 };
+  for (size_t i = 0; i < 1024; ++i) {
+    buf.append_u8(13);
+    if (buf.capacity() != capacity.back()) {
+      capacity.push_back(buf.capacity());
+    }
+  }
+
+  REQUIRE(capacity ==
+          std::vector<size_t>{ 0, 64, 96, 144, 216, 324, 486, 729, 1093 });
 }
 
 } // namespace adapterremoval
