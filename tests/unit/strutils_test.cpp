@@ -445,13 +445,27 @@ TEST_CASE("format_rough_number with no precision")
 
 TEST_CASE("format_fraction")
 {
-  REQUIRE(format_fraction(0, 0) == "NA");
-  REQUIRE(format_fraction(1, 0) == "NA");
-  REQUIRE(format_fraction(55, 300) == "0.18");
-  REQUIRE(format_fraction(55, 300, 0) == "0");
-  REQUIRE(format_fraction(55, 300, 1) == "0.2");
-  REQUIRE(format_fraction(55, 300, 2) == "0.18");
-  REQUIRE(format_fraction(55, 300, 3) == "0.183");
+  constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+
+  CHECK(format_fraction(0, 0) == "NA");
+  CHECK(format_fraction(1, 0) == "NA");
+  CHECK(format_fraction(nan, 1) == "NA");
+  CHECK(format_fraction(0, nan) == "NA");
+  CHECK(format_fraction(2, 0.5) == "4.00");
+  CHECK(format_fraction(3, 2.0) == "1.50");
+  CHECK(format_fraction(55, 300) == "0.18");
+  CHECK(format_fraction(55, 300, 0) == "0");
+  CHECK(format_fraction(55, 300, 1) == "0.2");
+  CHECK(format_fraction(55, 300, 2) == "0.18");
+  CHECK(format_fraction(55, 300, 3) == "0.183");
+
+  constexpr auto inf = std::numeric_limits<double>::infinity();
+
+  CHECK(format_fraction(1, inf) == "0.00");
+  CHECK(format_fraction(1, -inf) == "-0.00");
+  CHECK(format_fraction(inf, 1) == "NA");
+  CHECK(format_fraction(-inf, 1) == "NA");
+  CHECK(format_fraction(inf, inf) == "NA");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -459,12 +473,26 @@ TEST_CASE("format_fraction")
 
 TEST_CASE("format_percentage")
 {
-  REQUIRE(format_percentage(0, 0) == "NA");
-  REQUIRE(format_percentage(1, 0) == "NA");
-  REQUIRE(format_percentage(55, 300) == "18.3 %");
-  REQUIRE(format_percentage(55, 300, 0) == "18 %");
-  REQUIRE(format_percentage(55, 300, 1) == "18.3 %");
-  REQUIRE(format_percentage(55, 300, 2) == "18.33 %");
+  constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+
+  CHECK(format_percentage(0, 0) == "NA");
+  CHECK(format_percentage(1, 0) == "NA");
+  CHECK(format_percentage(nan, 1) == "NA");
+  CHECK(format_percentage(0, nan) == "NA");
+  CHECK(format_percentage(2, 0.5) == "400.0 %");
+  CHECK(format_percentage(3, 2.0) == "150.0 %");
+  CHECK(format_percentage(55, 300) == "18.3 %");
+  CHECK(format_percentage(55, 300, 0) == "18 %");
+  CHECK(format_percentage(55, 300, 1) == "18.3 %");
+  CHECK(format_percentage(55, 300, 2) == "18.33 %");
+
+  constexpr auto inf = std::numeric_limits<double>::infinity();
+
+  CHECK(format_percentage(1, inf) == "0.0 %");
+  CHECK(format_percentage(1, -inf) == "-0.0 %");
+  CHECK(format_percentage(inf, 1) == "NA");
+  CHECK(format_percentage(-inf, 1) == "NA");
+  CHECK(format_percentage(inf, inf) == "NA");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

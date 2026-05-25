@@ -510,13 +510,12 @@ format_rough_number(size_t value, size_t out_digits)
 }
 
 std::string
-format_fraction(uint64_t num, uint64_t denom, size_t precision)
+format_fraction(double num, double denom, size_t precision)
 {
-  if (denom) {
-    const double fraction = static_cast<double>(num) / denom;
-
+  const auto value = num / denom;
+  if (std::isfinite(value)) {
     std::ostringstream ss;
-    ss << std::fixed << std::setprecision(precision) << fraction;
+    ss << std::fixed << std::setprecision(precision) << value;
 
     return ss.str();
   } else {
@@ -525,13 +524,14 @@ format_fraction(uint64_t num, uint64_t denom, size_t precision)
 }
 
 std::string
-format_percentage(uint64_t num, uint64_t denom, size_t precision)
+format_percentage(double num, double denom, size_t precision)
 {
-  if (denom) {
-    return format_fraction(num * 100, denom, precision) + " %";
-  } else {
-    return "NA";
+  auto fraction = format_fraction(num * 100.0, denom, precision);
+  if (fraction != "NA") {
+    fraction.append(" %");
   }
+
+  return fraction;
 }
 
 } // namespace adapterremoval
