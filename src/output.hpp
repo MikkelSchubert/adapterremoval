@@ -7,6 +7,7 @@
 #include "serializer.hpp"  // for serializer, read_meta, read_type
 #include <array>           // for array
 #include <cstddef>         // for size_t
+#include <limits>          // for numeric_limits
 #include <string>          // for string
 #include <string_view>     // for string_view
 #include <vector>          // for vector
@@ -20,6 +21,9 @@ class sample;
 class scheduler;
 class userconfig;
 enum class read_type;
+
+//! Constant used to represent unset output files/steps.
+constexpr size_t NO_OUTPUT = std::numeric_limits<size_t>::max();
 
 struct output_file
 {
@@ -45,7 +49,10 @@ public:
 
   [[nodiscard]] size_t size() const { return m_output.size(); }
 
-  /** Returns the offset to the pipeline step/filename for a given read type. */
+  /**
+   * Returns the offset to the pipeline step/filename for a given read type, or
+   * NO_OUTPUT if no output file has been set for the read type.
+   */
   [[nodiscard]] size_t offset(read_file value) const;
 
   /** Returns the filename for a given offset */
@@ -72,9 +79,6 @@ public:
     return m_output.at(offset).step;
   }
 
-  //! Constant used to represent disabled output files/steps.
-  static const size_t disabled;
-
 private:
   friend class output_files;
 
@@ -83,7 +87,7 @@ private:
     //! Unique output filename; may be shared by multiple read types
     output_file file;
     //! The pipeline step responsible for processing/writing this output
-    size_t step = disabled;
+    size_t step = NO_OUTPUT;
   };
 
   std::vector<file_and_step> m_output{};
@@ -101,9 +105,6 @@ public:
   static bool parse_extension(std::string_view filename, output_format& sink);
   static std::string_view file_extension(output_format format);
 
-  /** Constant indicating that a step has been disabled. */
-  static const size_t disabled;
-
   //! JSON file containing settings / statistics
   std::string settings_json{};
   //! HTML file containing settings / statistics / plots
@@ -112,11 +113,11 @@ public:
   //! Filename for unidentified mate 1 reads (demultiplexing)
   output_file unidentified_1{ std::string{ DEV_NULL } };
   //! Pipeline step responsible for compressing/writing unidentified 1 reads
-  size_t unidentified_1_step = disabled;
-  //! Filename for unidentified mate 1 reads (demultiplexing)
+  size_t unidentified_1_step = NO_OUTPUT;
+  //! Filename for unidentified mate 2 reads (demultiplexing)
   output_file unidentified_2{ std::string{ DEV_NULL } };
   //! Pipeline step responsible for compressing/writing unidentified 2 reads
-  size_t unidentified_2_step = disabled;
+  size_t unidentified_2_step = NO_OUTPUT;
 
   using sample_output_vec = std::vector<sample_output_files>;
 
@@ -187,11 +188,8 @@ private:
 class post_demux_steps
 {
 public:
-  /** Constant indicating that a step has been disabled. */
-  static const size_t disabled;
-
   //! Step used to process unidentified reads
-  size_t unidentified = disabled;
+  size_t unidentified = NO_OUTPUT;
 
   /* Processing step for each sample. */
   std::vector<size_t> samples{};

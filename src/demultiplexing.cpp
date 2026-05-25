@@ -237,12 +237,12 @@ processes_unidentified::processes_unidentified(const userconfig& config,
   m_output.set_file(read_file::mate_1, output.unidentified_1);
   m_output.set_file(read_file::mate_2, output.unidentified_2);
 
-  if (output.unidentified_1_step != output_files::disabled) {
+  if (output.unidentified_1_step != NO_OUTPUT) {
     m_output.set_step(read_file::mate_1, output.unidentified_1_step);
   }
 
   if (output.unidentified_1_step != output.unidentified_2_step &&
-      output.unidentified_2_step != output_files::disabled) {
+      output.unidentified_2_step != NO_OUTPUT) {
     m_output.set_step(read_file::mate_2, output.unidentified_2_step);
   }
 

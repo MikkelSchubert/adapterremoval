@@ -284,7 +284,7 @@ aggregate_filenames(const userconfig& config)
                                 const sample_output_files& sof,
                                 read_file rf) {
     auto offset = sof.offset(rf);
-    if (offset != sample_output_files::disabled) {
+    if (offset != NO_OUTPUT) {
       add(type, std::move(key), sof.filename(offset));
     }
   };
