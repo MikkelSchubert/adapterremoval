@@ -332,7 +332,7 @@ sequence_aligner::align_single_end(const fastq& read, unsigned max_shift)
                                  read.length(),
                                  adapter_data,
                                  adapter.length(),
-                                 -max_shift,
+                                 -static_cast<int>(max_shift),
                                  read.length())) {
       alignment.m_adapter_id = adapter_id;
     }
@@ -389,10 +389,15 @@ sequence_aligner::align_paired_end(const fastq& read1,
     // Only consider alignments where at least one nucleotide from each read
     // is aligned against the other, included shifted alignments to account
     // for missing bases at the 5' ends of the reads.
-    const int min_offset =
-      m_assume_pretrimmed
-        ? read1.length() - std::min(read1.length(), read2.length())
-        : adapter2.length() - read2.length() - max_shift;
+    int min_offset;
+    if (m_assume_pretrimmed) {
+      min_offset = static_cast<int>(read1.length()) -
+                   static_cast<int>(std::min(read1.length(), read2.length()));
+    } else {
+      min_offset = static_cast<int>(adapter2.length()) -
+                   static_cast<int>(read2.length()) -
+                   static_cast<int>(max_shift);
+    }
 
     // Only check for end/end overlaps during the first alignment; subsequent
     // alignments need only consider offsets involving the current adapters
