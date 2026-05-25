@@ -91,7 +91,7 @@ std::string
 mean_of_bp_counts(const counts& count)
 {
   auto reads = count.sum();
-  auto bases = count.product();
+  auto bases = count.weighted_sum();
 
   if (!reads) {
     return "NA";
@@ -182,7 +182,7 @@ public:
     html_summary_io_row()
       .set_name(title)
       .set_n_reads(format_rough_number(n_reads))
-      .set_n_bases(format_rough_number(stats.length_dist().product()))
+      .set_n_bases(format_rough_number(stats.length_dist().weighted_sum()))
       .set_lengths(mean_of_bp_counts(stats.length_dist()))
       .set_q30(format_percentage(stats.quality_dist().sum(30), total))
       .set_q20(format_percentage(stats.quality_dist().sum(20), total))
@@ -535,7 +535,7 @@ struct filtering_stats
 reads_and_bases
 summarize_input(const fastq_stats_ptr& ptr)
 {
-  const auto n_bases = ptr->length_dist().product();
+  const auto n_bases = ptr->length_dist().weighted_sum();
 
   return reads_and_bases{ ptr->number_of_input_reads(), n_bases };
 }
