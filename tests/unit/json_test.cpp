@@ -568,7 +568,9 @@ TEST_CASE("inline json dict with child dict")
   d2->str("y", "132");
 
   REQUIRE(j.to_string() == R"({
-  "foo": { "x": { "y": "132" } }
+  "foo": { "x": {
+    "y": "132"
+  } }
 })");
 }
 
