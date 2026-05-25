@@ -75,19 +75,13 @@ dynamic_cast_unique(std::unique_ptr<U, std::default_delete<U>>& src)
   return {};
 }
 
-#ifdef __clang__
-#define NO_OPTIMIZE_CLANG __attribute__((optnone))
-#define NO_OPTIMIZE_GCC
-#else
-#define NO_OPTIMIZE_CLANG
-#define NO_OPTIMIZE_GCC __attribute__((optimize("O0")))
-#endif
-
-/** Unoptimized to prevent calculations from being elided by the compiler */
+/** Create memory barrier to prevent value from being elided by the compiler */
 template<typename T>
-void NO_OPTIMIZE_GCC
-blackbox(T& /* unused */) NO_OPTIMIZE_CLANG
+void
+blackbox(T& value)
 {
+  // NOLINTNEXTLINE(hicpp-no-assembler)
+  asm volatile("" : "+m,r"(value) : : "memory");
 }
 
 } // namespace adapterremoval
