@@ -33,7 +33,7 @@ simple_detector(std::initializer_list<string_view_pair> args)
                            DEFAULT_MISMATCH_THRESHOLD };
 }
 
-using hits_vec = std::vector<adapter_detection_stats::hits>;
+using hits_vec = std::vector<adapter_detection_stats::hit_stats>;
 
 } // namespace
 
@@ -42,7 +42,7 @@ using hits_vec = std::vector<adapter_detection_stats::hits>;
 
 TEST_CASE("adapter_detection_stats::hits equality operator")
 {
-  using hits = adapter_detection_stats::hits;
+  using hits = adapter_detection_stats::hit_stats;
 
   CHECK(hits{} == hits{});
   CHECK(hits{ 1, 2, 3 } == hits{ 1, 2, 3 });
@@ -55,17 +55,17 @@ TEST_CASE("adapter_detection_stats::hits equality operator")
 
 TEST_CASE("adapter_detection_stats::hits stringify")
 {
-  using hits = adapter_detection_stats::hits;
+  using hits = adapter_detection_stats::hit_stats;
 
   CHECK(Catch::fallbackStringifier(hits{}) ==
-        "adapter_detection_stats::hits{hits=0, aligned=0, mismatches=0}");
+        "adapter_detection_stats::hits{count=0, aligned=0, mismatches=0}");
   CHECK(Catch::fallbackStringifier(hits{ 1, 2, 3 }) ==
-        "adapter_detection_stats::hits{hits=1, aligned=2, mismatches=3}");
+        "adapter_detection_stats::hits{count=1, aligned=2, mismatches=3}");
 }
 
 TEST_CASE("adapter_detection_stats::hits merge")
 {
-  using hits = adapter_detection_stats::hits;
+  using hits = adapter_detection_stats::hit_stats;
 
   const hits src{ 1, 2, 3 };
   hits dst{ 4, 5, 6 };

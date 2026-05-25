@@ -25,13 +25,13 @@ namespace adapterremoval {
 namespace {
 
 //! The minimum number of hits required for a successful detection
-const double DETECTION_THRESHOLD = 10;
+constexpr double DETECTION_THRESHOLD = 10;
 //! The fraction of hits/reads required for detection of common sequences
-const double DETECTION_THRESHOLD_COMMON = 1 / 100.0;
+constexpr double DETECTION_THRESHOLD_COMMON = 1 / 100.0;
 //! The minimum fraction of hits/reads required for detection of rare sequences
-const double DETECTION_THRESHOLD_RARE = 1 / 1000.0;
+constexpr double DETECTION_THRESHOLD_RARE = 1 / 1000.0;
 //! The maximum error rate allowed for detection of rare sequences
-const double DETECTION_THRESHOLD_RARE_MISMATCHES = 1 / 20.0;
+constexpr double DETECTION_THRESHOLD_RARE_MISMATCHES = 1 / 20.0;
 
 /** Remove duplicate sequences from a vector; values are sorted */
 sequence_vec
@@ -134,28 +134,28 @@ select_best_match(const read_mate mate,
     return {};
   }
 
-  adapter_detection_stats::hits best;
+  adapter_detection_stats::hit_stats best;
   auto best_idx = std::numeric_limits<size_t>::max();
   for (size_t i = 0; i < adapters.size(); ++i) {
     const auto& current = values.at(i);
 
-    if (current.hits > best.hits ||
-        (current.hits == best.hits && (current.aligned - current.mismatches) >
-                                        (best.aligned - best.mismatches))) {
+    if (current.count > best.count ||
+        (current.count == best.count && (current.aligned - current.mismatches) >
+                                          (best.aligned - best.mismatches))) {
       best = current;
       best_idx = i;
     }
 
-    if (current.hits) {
-      log::debug() << mate << " adapter has " << current.hits << " hits, "
+    if (current.count) {
+      log::debug() << mate << " adapter has " << current.count << " hits, "
                    << current.aligned << " bases, " << current.mismatches
                    << " mismatches: " << adapters.at(i).as_string();
     }
   }
 
-  if (best.hits >= DETECTION_THRESHOLD &&
-      (best.hits >= total_reads * DETECTION_THRESHOLD_COMMON ||
-       ((best.hits >= total_reads * DETECTION_THRESHOLD_RARE) &&
+  if (best.count >= DETECTION_THRESHOLD &&
+      (best.count >= total_reads * DETECTION_THRESHOLD_COMMON ||
+       ((best.count >= total_reads * DETECTION_THRESHOLD_RARE) &&
         (best.aligned * DETECTION_THRESHOLD_RARE_MISMATCHES >=
          best.mismatches)))) {
     log::debug() << "Selected " << adapters.at(best_idx).as_string();
@@ -171,17 +171,17 @@ select_best_match(const read_mate mate,
 // adapter_detection_stats
 
 void
-merge(adapter_detection_stats::hits& dst,
-      const adapter_detection_stats::hits& src)
+merge(adapter_detection_stats::hit_stats& dst,
+      const adapter_detection_stats::hit_stats& src)
 {
-  dst.hits += src.hits;
+  dst.count += src.count;
   dst.aligned += src.aligned;
   dst.mismatches += src.mismatches;
 }
 
 adapter_detection_stats::adapter_detection_stats(size_t reads,
-                                                 std::vector<hits> mate_1,
-                                                 std::vector<hits> mate_2)
+                                                 std::vector<hit_stats> mate_1,
+                                                 std::vector<hit_stats> mate_2)
   : m_reads_1(reads)
   , m_reads_2(mate_2.empty() ? 0 : reads)
   , m_mate_1{ std::move(mate_1) }
@@ -205,18 +205,18 @@ adapter_detection_stats::merge(const adapter_detection_stats& other)
 }
 
 bool
-operator==(const adapter_detection_stats::hits& a,
-           const adapter_detection_stats::hits& b)
+operator==(const adapter_detection_stats::hit_stats& a,
+           const adapter_detection_stats::hit_stats& b)
 {
-  return (a.hits == b.hits) && (a.aligned == b.aligned) &&
+  return (a.count == b.count) && (a.aligned == b.aligned) &&
          (a.mismatches == b.mismatches);
 }
 
 /** Stream operator for debugging output */
 std::ostream&
-operator<<(std::ostream& os, const adapter_detection_stats::hits& value)
+operator<<(std::ostream& os, const adapter_detection_stats::hit_stats& value)
 {
-  return os << "adapter_detection_stats::hits{hits=" << value.hits
+  return os << "adapter_detection_stats::hits{count=" << value.count
             << ", aligned=" << value.aligned
             << ", mismatches=" << value.mismatches << "}";
 }
@@ -294,7 +294,7 @@ adapter_detector::detect_adapters(const fastq& read,
     for (idx = idx_start; idx <= idx_end; ++idx) {
       auto& it = stats.at(idx);
 
-      it.hits++;
+      it.count++;
       it.aligned += alignment.length() - alignment.n_ambiguous();
       it.mismatches += alignment.n_mismatches();
     }
