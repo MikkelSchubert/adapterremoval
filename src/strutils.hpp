@@ -258,12 +258,12 @@ format_thousand_sep(size_t count);
 std::string
 format_rough_number(size_t value, size_t out_digits = 3);
 
-/** Formats a fraction, returning "NA" if denominator is 0 */
+/** Formats a fraction, returning "NA" if the result is not finite */
 std::string
-format_fraction(uint64_t num, uint64_t denom, size_t precision = 2);
+format_fraction(double num, double denom, size_t precision = 2);
 
-/** Formats percentage and adds trailing " %". Returns "NA" if denom is 0 */
+/** Formats percentage with trailing " %", returning "NA" if not finite */
 std::string
-format_percentage(uint64_t num, uint64_t denom, size_t precision = 1);
+format_percentage(double num, double denom, size_t precision = 1);
 
 } // namespace adapterremoval

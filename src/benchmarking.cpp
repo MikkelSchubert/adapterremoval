@@ -199,7 +199,7 @@ benchmarker::summarize(size_t loops) const
 
     if (m_durations.size() > 1) {
       const auto sd = standard_deviation(m_durations);
-      values.at(4) = format_fraction(1e9 * sd, 1e7 * mean);
+      values.at(4) = format_fraction(100.0 * sd, mean);
     }
   }
 
