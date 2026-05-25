@@ -11,3 +11,5 @@ SeparateDefinitionBlocks: Always
 FixNamespaceComments: true
 # Ensure consistent formatting of long argument lists
 AllowAllArgumentsOnNextLine: false
+# Place `const` and other qualifiers on the left
+QualifierAlignment: Left
