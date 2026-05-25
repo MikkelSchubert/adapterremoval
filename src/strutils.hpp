@@ -55,6 +55,10 @@ stringify(unsigned long long value);
 std::string
 stringify(double value);
 
+/** Equivalent to stringify(double), but trims trailing zeroes/decimal point */
+std::string
+concise_stringify(double value);
+
 /* Deleted to prevent ambiguity */
 std::string
 stringify(bool value) = delete;

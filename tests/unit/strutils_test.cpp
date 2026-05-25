@@ -554,7 +554,7 @@ TEST_CASE("trim_ascii_whitespace")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for 'stringify'
+// Tests for 'stringify' functions
 
 TEST_CASE("stringify")
 {
@@ -597,6 +597,37 @@ TEST_CASE("stringify")
   CHECK(stringify(std::numeric_limits<double>::infinity()) == "inf");
   CHECK(stringify(-std::numeric_limits<double>::infinity()) == "-inf");
   CHECK(stringify(std::numeric_limits<double>::quiet_NaN()) == "nan");
+}
+
+TEST_CASE("concise_stringify")
+{
+  using limits = std::numeric_limits<double>;
+
+  CHECK(concise_stringify(0.0) == "0");
+  CHECK(concise_stringify(1.0) == "1");
+  CHECK(concise_stringify(0.5) == "0.5");
+  CHECK(concise_stringify(1.234) == "1.234");
+  CHECK(concise_stringify(-0.5) == "-0.5");
+
+  CHECK(concise_stringify(double{}) == "0");
+  CHECK(concise_stringify(limits::min()) == "0");
+  CHECK(concise_stringify(limits::lowest()) ==
+        "-179769313486231570814527423731704356798070567525844996598917476803157"
+        "2607800285387605895586327668781715404589535143824642343213268894641827"
+        "6846754670353751698604991057655128207624549009038932894407586850845513"
+        "3942304583236903222948165808559332123348274797826204144723168738177180"
+        "919299881250404026184124858368");
+  CHECK(concise_stringify(limits::max()) ==
+        "1797693134862315708145274237317043567980705675258449965989174768031572"
+        "6078002853876058955863276687817154045895351438246423432132688946418276"
+        "8467546703537516986049910576551282076245490090389328944075868508455133"
+        "9423045832369032229481658085593321233482747978262041447231687381771809"
+        "19299881250404026184124858368");
+  CHECK(concise_stringify(3.141592653589) == "3.141593");
+  CHECK(concise_stringify(limits::epsilon()) == "0");
+  CHECK(concise_stringify(limits::infinity()) == "inf");
+  CHECK(concise_stringify(-limits::infinity()) == "-inf");
+  CHECK(concise_stringify(limits::quiet_NaN()) == "nan");
 }
 
 } // namespace adapterremoval

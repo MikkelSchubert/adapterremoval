@@ -124,6 +124,22 @@ stringify(double value)
   return os.str();
 }
 
+std::string
+concise_stringify(double value)
+{
+  auto s = stringify(value);
+
+  while (!s.empty() && s.back() == '0') {
+    s.pop_back();
+  }
+
+  if (!s.empty() && s.back() == '.') {
+    s.pop_back();
+  }
+
+  return s;
+}
+
 namespace {
 
 template<typename T>
@@ -328,10 +344,17 @@ cli_formatter::format(const std::string_view value) const
 {
   std::ostringstream lines_out;
 
+  bool first_line = true;
+  bool indent_first = m_indent_first;
   for (const auto& line : split_lines(value)) {
     const auto block = wrap_text(line, m_columns, m_ljust);
+    if (!first_line) {
+      lines_out << "\n";
+    }
 
-    lines_out << join_text(indent(block, m_indentation, m_indent_first), "\n");
+    lines_out << join_text(indent(block, m_indentation, indent_first), "\n");
+    indent_first = true;
+    first_line = false;
   }
 
   return lines_out.str();

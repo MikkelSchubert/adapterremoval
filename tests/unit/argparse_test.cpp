@@ -815,6 +815,58 @@ TEST_CASE("help with choices", "[argparse::argument]")
   }
 }
 
+TEST_CASE("help with different segments", "[argparse::argument]")
+{
+  argparse::argument arg("--12345", "67890");
+
+  SECTION("help only")
+  {
+    arg.help("gibberish");
+    REQUIRE(arg.help() == "gibberish");
+  }
+
+  SECTION("choices only")
+  {
+    arg.bind_str(nullptr).with_choices({ "foo", "bar" });
+    REQUIRE(arg.help() == "Possible values are foo, and bar");
+  }
+
+  SECTION("help and choices")
+  {
+    arg.help("gibberish").bind_str(nullptr).with_choices({ "foo", "bar" });
+    REQUIRE(arg.help() == "gibberish. Possible values are foo, and bar");
+  }
+
+  SECTION("default only")
+  {
+    arg.bind_str(nullptr).with_default("value");
+    REQUIRE(arg.help() == "[default: value]");
+  }
+
+  SECTION("help and default")
+  {
+    arg.help("gibberish").bind_str(nullptr).with_default("value");
+    REQUIRE(arg.help() == "gibberish [default: value]");
+  }
+
+  SECTION("choices and default")
+  {
+    arg.bind_str(nullptr).with_choices({ "foo", "bar" }).with_default("foo");
+    REQUIRE(arg.help() == "Possible values are foo, and bar [default: foo]");
+  }
+
+  SECTION("help, choices and default")
+  {
+    arg.help("gibberish")
+      .bind_str(nullptr)
+      .with_choices({ "foo", "bar" })
+      .with_default("foo");
+
+    REQUIRE(arg.help() ==
+            "gibberish. Possible values are foo, and bar [default: foo]");
+  }
+}
+
 TEST_CASE("deprecated argument", "[argparse::argument]")
 {
   argparse::argument arg("--12345");
@@ -1690,6 +1742,64 @@ TEST_CASE("help with lower and upper bound of values", "[argparse::parser]")
           "   -v, --version        Print the version string\n"
           "   --licenses           Print licenses for this software\n\n"
           "   --test <X> <X> [X]   Help text\n");
+}
+
+TEST_CASE("line-breaks in preamble are preserved", "[argparse]")
+{
+  log::log_capture ss;
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("1234");
+  p.set_preamble(
+    "A long help preamble that exceeds the limit of 60 characters by "
+    "some amount.\n\nAdditionally, it contains newlines in order to "
+    "test formatting of those");
+
+  p.set_terminal_width(60);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "A long help preamble that exceeds the limit of 60 characters\n"
+          "by some amount.\n\n"
+          "Additionally, it contains newlines in order to test\n"
+          "formatting of those\n\n"
+          "OPTIONS:\n"
+          "   -h, --help      Display this message\n"
+          "   -v, --version   Print the version string\n"
+          "   --licenses      Print licenses for this software\n\n");
+}
+
+TEST_CASE("line-breaks in help text are preserved", "[argparse]")
+{
+  uint32_t sink = 0;
+  log::log_capture ss;
+  argparse::parser p;
+  p.set_name("My App");
+  p.set_version("1234");
+  p.set_preamble("basic help");
+  p.add("--test", "META")
+    .help("A long help message that exceeds the limit of 60 characters by "
+          "some amount.\n\nAdditionally, it contains newlines in order to "
+          "test formatting of those")
+    .bind_u32(&sink)
+    .with_default(1234);
+
+  p.set_terminal_width(60);
+  p.print_help();
+
+  REQUIRE(ss.str() ==
+          "My App v1234\n\n"
+          "basic help\n\n"
+          "OPTIONS:\n"
+          "   -h, --help      Display this message\n"
+          "   -v, --version   Print the version string\n"
+          "   --licenses      Print licenses for this software\n\n"
+          "   --test <META>   A long help message that exceeds the\n"
+          "                   limit of 60 characters by some amount.\n\n"
+          "                   Additionally, it contains newlines in\n"
+          "                   order to test formatting of those\n"
+          "                   [default: 1234]\n");
 }
 
 TEST_CASE("parse_result to string", "[argparse]")
