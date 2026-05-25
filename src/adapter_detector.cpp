@@ -187,8 +187,7 @@ adapter_detection_stats::adapter_detection_stats(size_t reads,
   , m_mate_1{ std::move(mate_1) }
   , m_mate_2{ std::move(mate_2) }
 {
-  AR_REQUIRE(m_mate_1.empty() || m_mate_2.empty() ||
-             (m_mate_1.size() == m_mate_2.size()));
+  AR_REQUIRE(mate_2.empty() || (mate_1.size() == mate_2.size()));
 }
 
 void

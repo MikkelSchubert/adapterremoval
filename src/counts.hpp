@@ -118,7 +118,6 @@ public:
   /** / operator. Always returns double values. */
   counts_tmpl<double> operator/(const counts_tmpl<T>& denom) const
   {
-    static_assert(std::numeric_limits<double>::is_iec559, "IEC 559 assumed");
     AR_REQUIRE(size() == denom.size());
     counts_tmpl<double> result(size());
 
