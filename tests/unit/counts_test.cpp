@@ -19,7 +19,7 @@ TEST_CASE("counts constructors")
   {
     const counts c;
     REQUIRE(c.size() == 0);
-    REQUIRE(c.product() == 0);
+    REQUIRE(c.weighted_sum() == 0);
   }
 
   SECTION("with capacity")
@@ -27,7 +27,7 @@ TEST_CASE("counts constructors")
     const size_t N = 7;
     const counts c = counts(N);
     REQUIRE(c.size() == 7);
-    REQUIRE(c.product() == 0);
+    REQUIRE(c.weighted_sum() == 0);
   }
 
   SECTION("from init list")
@@ -121,10 +121,10 @@ TEST_CASE("counts sum")
   }
 }
 
-TEST_CASE("counts product")
+TEST_CASE("counts weighted_sum")
 {
   const counts c = { 1, 20, 300 };
-  REQUIRE(c.product() == (0 * 1) + (1 * 20) + (2 * 300));
+  REQUIRE(c.weighted_sum() == (0 * 1) + (1 * 20) + (2 * 300));
 }
 
 TEST_CASE("counts trim empty")

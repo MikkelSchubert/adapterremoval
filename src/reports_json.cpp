@@ -69,7 +69,7 @@ write_report_summary_stats(const json_dict_ptr& json,
   for (const auto& it : stats) {
     n_reads += it->number_of_output_reads();
     n_reads_s += it->number_of_sampled_reads();
-    n_bases += it->length_dist().product();
+    n_bases += it->length_dist().weighted_sum();
     // The following stats are all (potentially) based on a subset of reads
     n_a += it->nucleotides_pos('A').sum();
     n_c += it->nucleotides_pos('C').sum();
@@ -168,7 +168,7 @@ struct io_section
     section->u64("reads_sampled", m_stats->number_of_sampled_reads());
     section->i64_vec("lengths", m_stats->length_dist());
 
-    if (m_stats->length_dist().product()) {
+    if (m_stats->length_dist().weighted_sum()) {
       const auto total_bases = m_stats->nucleotides_pos();
       const auto total_quality = m_stats->qualities_pos();
 

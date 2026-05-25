@@ -59,8 +59,8 @@ public:
     return total;
   }
 
-  /** The sum of products from multiplying values with their 0-based indexes. */
-  [[nodiscard]] T product() const
+  /** The weighted sum of values multiplied by their respective counts */
+  [[nodiscard]] T weighted_sum() const
   {
     T total = T();
     for (size_t i = 0; i < m_counts.size(); ++i) {
