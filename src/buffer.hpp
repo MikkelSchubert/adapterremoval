@@ -9,6 +9,7 @@
 #include <cstdlib>     // for free, realloc
 #include <cstring>     // for memcpy
 #include <iosfwd>      // for ostream
+#include <limits>      // for numeric_limits
 #include <string_view> // for string_view
 #include <utility>     // for swap
 
@@ -74,9 +75,16 @@ public:
   void reserve(size_t n)
   {
     if (n > m_capacity) {
-      m_data = reinterpret_cast<uint8_t*>(std::realloc(m_data, n));
+      auto* data = reinterpret_cast<uint8_t*>(std::realloc(m_data, n));
 
-      AR_REQUIRE(m_data);
+      // For most part it wouldn't matter if `m_data` is leaked, since AR_FAIL
+      // aborts when not unit-testing. It is handled to shut up linters
+      if (!data) {
+        free();
+        AR_FAIL("failed to realloc buffer");
+      }
+
+      m_data = data;
       m_capacity = n;
     }
   }
@@ -102,7 +110,7 @@ public:
   {
     if (length) {
       AR_REQUIRE(data);
-      grow_to_fit(m_size + length);
+      grow_to_fit(length);
       std::memcpy(m_data + m_size, data, length);
       m_size += length;
     }
@@ -111,14 +119,14 @@ public:
   /** Append a byte to the buffer */
   void append_u8(uint8_t value)
   {
-    grow_to_fit(m_size + 1);
+    grow_to_fit(1);
     m_data[m_size++] = value;
   }
 
   /** Append 16 bit integer to buffer in LE orientation */
   void append_u16(uint16_t value)
   {
-    grow_to_fit(m_size + 2);
+    grow_to_fit(2);
     m_data[m_size + 0] = value & 0xFFU;
     m_data[m_size + 1] = (value >> 8U) & 0xFFU;
     m_size += 2;
@@ -127,7 +135,7 @@ public:
   /** Append 32 bit integer to buffer in LE orientation */
   void append_u32(uint32_t value)
   {
-    grow_to_fit(m_size + 4);
+    grow_to_fit(4);
     m_data[m_size + 0] = value & 0xFFU;
     m_data[m_size + 1] = (value >> 8U) & 0xFFU;
     m_data[m_size + 2] = (value >> 16U) & 0xFFU;
@@ -182,10 +190,16 @@ private:
 
   void grow_to_fit(size_t n)
   {
+    AR_REQUIRE(n <= std::numeric_limits<size_t>::max() - m_size);
+
+    n += m_size;
     if (n > m_capacity) {
-      size_t increase_to = std::max<size_t>(1, m_capacity);
+      size_t increase_to = std::max<size_t>(64, m_capacity);
       while (n > increase_to) {
-        increase_to *= 2;
+        AR_REQUIRE((increase_to >> 1) <=
+                   std::numeric_limits<size_t>::max() - increase_to);
+
+        increase_to += increase_to >> 1;
       }
 
       reserve(increase_to);
