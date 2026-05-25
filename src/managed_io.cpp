@@ -154,7 +154,6 @@ private:
       FILE* handle = ::fopen(filename.c_str(), mode);
 
       if (handle) {
-        AR_REQUIRE(!::ferror(handle));
         return handle;
       } else if (errno == EMFILE) {
         close_one();

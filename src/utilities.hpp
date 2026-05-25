@@ -66,7 +66,10 @@ template<typename T, typename U>
 std::unique_ptr<T, std::default_delete<T>>
 dynamic_cast_unique(std::unique_ptr<U, std::default_delete<U>>& src)
 {
+  // Both U and T must have virtual dtors for the simple solution to be safe
+  static_assert(std::has_virtual_destructor_v<U>);
   static_assert(std::has_virtual_destructor_v<T>);
+
   if (auto* dst = dynamic_cast<T*>(src.get())) {
     std::ignore = src.release();      // noexcept, silence warning
     return std::unique_ptr<T>{ dst }; // noexcept

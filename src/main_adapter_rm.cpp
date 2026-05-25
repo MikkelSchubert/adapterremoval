@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #include "adapter_selector.hpp" // for select_adapter
 #include "commontypes.hpp"      // for adapter_selection
+#include "debug.hpp"            // for AR_REQUIRE
 #include "demultiplexing.hpp"   // for demultiplex_pe_reads, demultiplex_se_r...
 #include "fastq_io.hpp"         // for gzip_split_fastq, post_process_fastq
 #include "main.hpp"             // declarations
@@ -65,7 +66,8 @@ remove_adapter_sequences(const userconfig& config)
       step = sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
     }
   } else {
-    step = steps.samples.back();
+    AR_REQUIRE(steps.samples.size() == 1);
+    step = steps.samples.front();
   }
 
   // Step 5: Determine optional SIMD instruction set for alignments

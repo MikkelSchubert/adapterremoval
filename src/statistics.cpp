@@ -147,6 +147,8 @@ duplication_statistics::process(const fastq& read)
 duplication_statistics::summary
 duplication_statistics::summarize() const
 {
+  AR_REQUIRE(m_sequence_counts);
+
   // Histogram of sequence duplication counts
   robin_hood::unordered_flat_map<size_t, size_t> histogram;
   for (const auto& it : *m_sequence_counts) {

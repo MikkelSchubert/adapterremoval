@@ -117,7 +117,7 @@ throw_invalid_phred_33(const char raw)
 [[noreturn]] void
 throw_invalid_phred_64(const char raw)
 {
-  AR_REQUIRE(raw < SOLEXA_OFFSET_MIN,
+  AR_REQUIRE(raw < PHRED_64_OFFSET_MIN,
              "invalid_phred called on valid PHRED score");
 
   const int score = raw - PHRED_64_OFFSET_MIN;
