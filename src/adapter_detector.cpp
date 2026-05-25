@@ -187,7 +187,7 @@ adapter_detection_stats::adapter_detection_stats(size_t reads,
   , m_mate_1{ std::move(mate_1) }
   , m_mate_2{ std::move(mate_2) }
 {
-  AR_REQUIRE(mate_2.empty() || (mate_1.size() == mate_2.size()));
+  AR_REQUIRE(m_mate_2.empty() || (m_mate_1.size() == m_mate_2.size()));
 }
 
 void
@@ -283,6 +283,10 @@ adapter_detector::detect_adapters(const fastq& read,
     auto idx_start = idx;
     auto idx_end = idx;
 
+    // This should be true via set_min_overlap and max_shift = 0
+    AR_REQUIRE(alignment.offset() >= 0 &&
+               alignment.length() >=
+                 static_cast<int>(ADAPTER_DETECT_MIN_OVERLAP));
     const auto adapter_len = m_adapters.at(idx).length();
     if (alignment.offset() + adapter_len >= read.length()) {
       auto length = alignment.length() - ADAPTER_DETECT_MIN_OVERLAP;
