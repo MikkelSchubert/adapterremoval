@@ -249,7 +249,7 @@ json_dict::write(std::ostream& out, size_t indent_) const
       const auto it = m_items.at(i);
 
       out << indent << (m_multi_line ? "  " : "") << _escape(it.first) << ": ";
-      it.second->write(out, indent_ + 2);
+      it.second->write(out, indent_ + (m_multi_line ? 2 : 0));
       if (i + 1 < m_items.size()) {
         out << ",";
       }
@@ -265,7 +265,6 @@ json_dict_ptr
 json_dict::dict(std::string_view key)
 {
   auto ptr = std::make_shared<json_dict>();
-  ptr->m_multi_line = m_multi_line;
   _set(key, ptr);
 
   return ptr;
