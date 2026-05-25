@@ -34,7 +34,7 @@ constexpr size_t DEFAULT_NEXT_STEP = 12345;
 
 const double DEFAULT_MISMATCH_THRESHOLD = 1.0 / 6.0;
 
-using hits_vec = std::vector<adapter_detection_stats::hits>;
+using hits_vec = std::vector<adapter_detection_stats::hit_stats>;
 
 using Catch::Matchers::Contains;
 

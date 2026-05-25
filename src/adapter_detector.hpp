@@ -32,10 +32,11 @@ inline constexpr size_t ADAPTER_DETECT_MIN_OVERLAP = 8;
 class adapter_detection_stats
 {
 public:
-  struct hits
+  /** Detection statistics for a single candidate adapter sequence */
+  struct hit_stats
   {
     //! The number of times an adapter was among the set that aligned the best
-    size_t hits = 0;
+    size_t count = 0;
     //! The total number of aligned bases: Excluding Ns but including mismatches
     size_t aligned = 0;
     //! The total number of mismatches
@@ -46,14 +47,14 @@ public:
   adapter_detection_stats() = default;
   /** Create stats object with the specified values */
   adapter_detection_stats(size_t reads,
-                          std::vector<hits> mate_1,
-                          std::vector<hits> mate_2 = {});
+                          std::vector<hit_stats> mate_1,
+                          std::vector<hit_stats> mate_2 = {});
 
   /** Merge results in `other` into this object */
   void merge(const adapter_detection_stats& other);
 
   //! Per adapter candidate statistics
-  using values = std::vector<hits>;
+  using values = std::vector<hit_stats>;
 
   /** Returns the number of reads 1 sequences processed */
   [[nodiscard]] size_t reads_1() const noexcept { return m_reads_1; }
@@ -72,13 +73,14 @@ private:
   friend class adapter_detector;
 
   /** Helper function for use with utilities.hpp:merge */
-  friend void merge(hits& /* dst */, const hits& /* src */);
+  friend void merge(hit_stats& /* dst */, const hit_stats& /* src */);
 
   /** Returns true if all fields match */
-  friend bool operator==(const hits& /* a */, const hits& /* b */);
+  friend bool operator==(const hit_stats& /* a */, const hit_stats& /* b */);
 
   /** Stream operator for debugging output */
-  friend std::ostream& operator<<(std::ostream& os, const hits& /* value */);
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const hit_stats& /* value */);
 
   //! The number of read 1 sequences processed
   size_t m_reads_1 = 0;
