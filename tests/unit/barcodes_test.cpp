@@ -6,6 +6,7 @@
 #include "fastq.hpp"         // for fastq, sequence_pair_vec, fastq_pair
 #include "sequence_sets.hpp" // for sample_set
 #include "testing.hpp"       // for TEST_CASE, REQUIRE, ...
+#include <initializer_list>  // for initializer_list
 #include <string>            // for string
 #include <string_view>       // for string_view
 
@@ -15,6 +16,48 @@
 // spell-checker:ignoreRegExp /\W[acgtnACGTN]+\W/g
 
 namespace adapterremoval {
+
+namespace {
+
+static_assert(barcode_key::unidentified != barcode_key::ambiguous);
+
+constexpr auto unidentified = barcode_key::unidentified;
+constexpr auto ambiguous = barcode_key::ambiguous;
+
+//! The expected result when no sample could be identified
+constexpr barcode_key unidentified_sample{ unidentified, unidentified };
+//! The expected result when multiple samples could are valid matches
+constexpr barcode_key ambiguous_sample{ ambiguous, ambiguous };
+
+/**
+ * Returns a sample-set suitable for testing barcode tables; intentionally
+ * always allows multiple barcodes per sample and non-unique barcode1 sequences,
+ * so that tests do not need to configure this individually
+ */
+sample_set
+make_samples(std::initializer_list<std::string_view> lines)
+{
+  return {
+    lines,
+    barcode_config().allow_multiple_barcodes().paired_end_mode(),
+  };
+}
+
+/** Look up R1 and (optionally) R2 sequences in a barcode table */
+barcode_key
+identify(const barcode_table& table,
+         std::string_view s1,
+         std::string_view s2 = {})
+{
+  if (s2.empty()) {
+    return table.identify(fastq("A", std::string{ s1 }));
+  } else {
+    return table.identify(fastq("A", std::string{ s1 }),
+                          fastq("B", std::string{ s2 }));
+  }
+}
+
+} // namespace
 
 TEST_CASE("what()", "[barcodes::errors]")
 {
@@ -619,34 +662,42 @@ TEST_CASE("Multiple mismatches in R1/R2 with PE table",
           barcode_key{ -1, -1 });
 }
 
-TEST_CASE("Ambiguous matches in R1 for SE table", "[barcodes::inexact::se]")
+TEST_CASE("Ambiguous matches with SE table", "[barcodes::inexact]")
 {
-  const sample_set samples{
-    "sample1 ACCCA",
-    "sample2 TCCCA",
-    "sample3 ACCCG",
-  };
+  const auto ss = make_samples({ "s1 ACCCA", "s2 TCCCA", "s1 ACCCG" });
+  const barcode_table table(ss, 1, 1, 1);
 
-  const barcode_table table(samples, 1, 1, 1);
-  REQUIRE(table.identify(fastq("A", "TCCCA")) == barcode_key{ 1, 0 });
-  REQUIRE(table.identify(fastq("A", "CCCCA")) == barcode_key{ -2, -2 });
-  REQUIRE(table.identify(fastq("A", "ACCCC")) == barcode_key{ -2, -2 });
-  REQUIRE(table.identify(fastq("A", "ACCCN")) == barcode_key{ -2, -2 });
+  CHECK(identify(table, "TCCCA") == barcode_key{ 1, 0 });
+  CHECK(identify(table, "CCCCA") == ambiguous_sample);
+  CHECK(identify(table, "ACCCC") == barcode_key{ 0, ambiguous });
+
+  CHECK(identify(table, "TCCCA", "TGCGT") == barcode_key{ 1, 0 });
+  CHECK(identify(table, "CCCCA", "AAGTT") == ambiguous_sample);
+  CHECK(identify(table, "ACCCC", "AAGTT") == barcode_key{ 0, ambiguous });
 }
 
-TEST_CASE("Ambiguous matches in SE R1 for PE table", "[barcodes::inexact::se]")
+TEST_CASE("Ambiguous matches with PE table", "[barcodes::inexact]")
 {
-  const sample_set samples{
-    "sample1 ACCCA TGCGT",
-    "sample2 TCCCA AAGTT",
-    "sample3 ACCCG CGGCA",
-  };
+  const auto ss = make_samples({
+    "s1 AAAAA CCCCC",
+    "s1 AAAAA CCTCC",
+    "s2 GGGGG TTTTT",
+    "s2 AGGGG TTTTT",
+    "s3 AAAAT CCCCC",
+  });
 
-  const barcode_table table(samples, 1, 1, 1);
-  REQUIRE(table.identify(fastq("A", "TCCCA")) == barcode_key{ 1, 0 });
-  REQUIRE(table.identify(fastq("A", "CCCCA")) == barcode_key{ -2, -2 });
-  REQUIRE(table.identify(fastq("A", "ACCCC")) == barcode_key{ -2, -2 });
-  REQUIRE(table.identify(fastq("A", "ACCCN")) == barcode_key{ -2, -2 });
+  const barcode_table table(ss, 1, 1, 1);
+
+  CHECK(identify(table, "GAAAA") == barcode_key{ 0, ambiguous });
+  CHECK(identify(table, "AAAAT") == barcode_key{ 2, 0 });
+  CHECK(identify(table, "AAAAG") == ambiguous_sample);
+  CHECK(identify(table, "TTTTT") == unidentified_sample);
+
+  CHECK(identify(table, "AAAAA", "CCCCC") == barcode_key{ 0, 0 });
+  CHECK(identify(table, "AAAAA", "CCCCT") == barcode_key{ 0, 0 });
+  CHECK(identify(table, "AAAAA", "CCACC") == barcode_key{ 0, ambiguous });
+  CHECK(identify(table, "AAAAG", "CCCCC") == ambiguous_sample);
+  CHECK(identify(table, "AAAAA", "TTTTT") == unidentified_sample);
 }
 
 TEST_CASE("Mismatch resulting in apparent match", "[barcodes::inexact::se]")

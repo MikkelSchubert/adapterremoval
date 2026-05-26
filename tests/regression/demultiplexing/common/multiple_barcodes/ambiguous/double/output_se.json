@@ -1,0 +1,34 @@
+{
+  "$schema": "...str",
+  "meta": {
+    "version": "...str",
+    "command": "...[str]",
+    "runtime": "...float",
+    "timestamp": "...str"
+  },
+  "summary": "...",
+  "input": "...",
+  "demultiplexing": {
+    "assigned_reads": 2,
+    "ambiguous_reads": 1,
+    "unassigned_reads": 1,
+    "samples": {
+      "sample_1": {
+        "barcodes": [
+          { "barcode1": "CTTGCCCT", "barcode2": "ACGTTATT", "orientation": null, "reads": 1 },
+          { "barcode1": "CTTGCCCA", "barcode2": "ACGTTATT", "orientation": null, "reads": 0 }
+        ],
+        "output": "..."
+      },
+      "sample_2": {
+        "barcodes": [
+          { "barcode1": "CGCCGATG", "barcode2": "TGCACGGG", "orientation": null, "reads": 1 }
+        ],
+        "output": "..."
+      }
+    }
+  },
+  "processing": "...",
+  "analyses": "...",
+  "output": "..."
+}
