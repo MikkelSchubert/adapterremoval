@@ -132,11 +132,6 @@ table_reader::parse(line_reader_base& lr) const
         }
       }
 
-      const std::string_view line = trim_ascii_whitespace(buffer);
-      if (line.empty()) {
-        continue;
-      }
-
       std::vector<std::string> values;
       std::istringstream instream{ buffer };
       for (; instream >> field; field.clear()) {
@@ -144,7 +139,9 @@ table_reader::parse(line_reader_base& lr) const
       }
 
       table_row row{ linenum, std::move(values) };
-      if (row.size() < m_min_columns) {
+      if (row.empty()) {
+        continue;
+      } else if (row.size() < m_min_columns) {
         std::ostringstream message;
         message << "Expected at least " << m_min_columns
                 << " column(s), but found " << row.size() << " column(s)";

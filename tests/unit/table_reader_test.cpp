@@ -35,6 +35,7 @@ TEST_CASE("table_row constructing empty row")
     const table_row row;
     REQUIRE(row.line_num() == 0);
     REQUIRE(row.size() == 0);
+    REQUIRE(row.empty());
     REQUIRE_THROWS_AS(row.at(0), std::out_of_range);
   }
 
@@ -43,6 +44,7 @@ TEST_CASE("table_row constructing empty row")
     const table_row row{ 0, {} };
     REQUIRE(row.line_num() == 0);
     REQUIRE(row.size() == 0);
+    REQUIRE(row.empty());
     REQUIRE_THROWS_AS(row.at(0), std::out_of_range);
   }
 }
@@ -52,6 +54,7 @@ TEST_CASE("table_row constructing row with values")
   const table_row row{ 1234, { "alpha", "beta", "gamma" } };
   REQUIRE(row.line_num() == 1234);
   REQUIRE(row.size() == 3);
+  REQUIRE_FALSE(row.empty());
   REQUIRE(row.at(0) == "alpha");
   REQUIRE(row.at(1) == "beta");
   REQUIRE(row.at(2) == "gamma");
