@@ -47,12 +47,7 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
 
   // Map global barcode offsets to sample and relative barcode offsets
   for (size_t i = 0; i < samples->size(); ++i) {
-    const size_t barcodes = samples->at(i).size();
-
-    m_statistics->samples.at(i).resize_up_to(barcodes);
-    for (size_t j = 0; j < barcodes; ++j) {
-      m_barcodes.emplace_back(i, j);
-    }
+    m_statistics->samples.at(i).resize_up_to(samples->at(i).size());
   }
 }
 
@@ -73,8 +68,7 @@ demultiplex_se_reads::process(chunk_ptr data)
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   for (auto& read : chunk->reads_1) {
     const auto [sample, barcode] = m_barcode_table.identify(read);
-    // TODO: We should keep reads even if we cannot identify the exact barcode
-    if (sample < 0 || barcode < 0) {
+    if (sample < 0) {
       switch (sample) {
         case barcode_key::unidentified:
           m_statistics->unidentified += 1;
@@ -86,6 +80,12 @@ demultiplex_se_reads::process(chunk_ptr data)
           AR_FAIL("invalid barcode match sample");
       }
 
+      m_cache.add_unidentified_1(std::move(read));
+    } else if (barcode < 0) {
+      AR_REQUIRE(barcode == barcode_key::ambiguous);
+
+      // TODO: We should keep reads even if the barcode is ambiguous
+      m_statistics->ambiguous += 1;
       m_cache.add_unidentified_1(std::move(read));
     } else {
       read.truncate(m_barcode_table.length_1());
@@ -122,8 +122,7 @@ demultiplex_pe_reads::process(chunk_ptr data)
   for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
     const auto [sample, barcode] = m_barcode_table.identify(*it_1, *it_2);
 
-    // TODO: We should keep reads even if we cannot identify the exact barcode
-    if (sample < 0 || barcode < 0) {
+    if (sample < 0) {
       switch (sample) {
         case barcode_key::unidentified:
           m_statistics->unidentified += 2;
@@ -135,6 +134,13 @@ demultiplex_pe_reads::process(chunk_ptr data)
           AR_FAIL("invalid barcode match sample");
       }
 
+      m_cache.add_unidentified_1(std::move(*it_1));
+      m_cache.add_unidentified_2(std::move(*it_2));
+    } else if (barcode < 0) {
+      AR_REQUIRE(barcode == barcode_key::ambiguous);
+
+      // TODO: We should keep reads even if the barcode is ambiguous
+      m_statistics->ambiguous += 2;
       m_cache.add_unidentified_1(std::move(*it_1));
       m_cache.add_unidentified_2(std::move(*it_2));
     } else {
@@ -163,7 +169,6 @@ process_demultiplexed::process_demultiplexed(const userconfig& config,
   : analytical_step(processing_order::unordered, "process_demultiplexed")
   , m_config(config)
   , m_output(output)
-  , m_samples(config.samples)
   , m_sample(sample)
   , m_stats_sink(std::move(sink))
 {
@@ -176,7 +181,7 @@ process_demultiplexed::process(chunk_ptr data)
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
   processed_reads chunks{ m_output };
-  chunks.set_sample(m_samples.get_reader()->at(m_sample));
+  chunks.set_sample(m_config.samples.get_reader()->at(m_sample));
   chunks.set_input_mate_separator(chunk->mate_separator);
   chunks.set_output_mate_separator(
     m_config.get_output_mate_separator(chunk->mate_separator));
@@ -227,10 +232,10 @@ process_demultiplexed::finalize()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-processes_unidentified::processes_unidentified(const userconfig& config,
-                                               const output_files& output,
-                                               demux_stats_ptr stats)
-  : analytical_step(processing_order::unordered, "processes_unidentified")
+process_unidentified::process_unidentified(const userconfig& config,
+                                           const output_files& output,
+                                           demux_stats_ptr stats)
+  : analytical_step(processing_order::unordered, "process_unidentified")
   , m_config(config)
   , m_statistics(std::move(stats))
 {
@@ -247,11 +252,13 @@ processes_unidentified::processes_unidentified(const userconfig& config,
   }
 
   m_stats_1.emplace_back_n(m_config.max_threads, config.report_sample_rate);
-  m_stats_2.emplace_back_n(m_config.max_threads, config.report_sample_rate);
+  if (config.paired_ended_mode) {
+    m_stats_2.emplace_back_n(m_config.max_threads, config.report_sample_rate);
+  }
 }
 
 chunk_vec
-processes_unidentified::process(chunk_ptr data)
+process_unidentified::process(chunk_ptr data)
 {
   auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE(chunk);
@@ -265,14 +272,14 @@ processes_unidentified::process(chunk_ptr data)
     chunks.write_headers(m_config.args);
   }
 
-  auto stats_1 = m_stats_1.acquire();
-  auto stats_2 = m_stats_2.acquire();
-
   if (m_config.paired_ended_mode) {
     AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size());
 
     auto it_1 = chunk->reads_1.begin();
     auto it_2 = chunk->reads_2.begin();
+
+    auto stats_1 = m_stats_1.acquire();
+    auto stats_2 = m_stats_2.acquire();
 
     for (; it_1 != chunk->reads_1.end(); ++it_1, ++it_2) {
       it_1->add_prefix_to_name(m_config.prefix_read_1);
@@ -283,23 +290,27 @@ processes_unidentified::process(chunk_ptr data)
       stats_2->process(*it_2);
       chunks.add(*it_2, read_type::pe_2);
     }
+
+    m_stats_1.release(std::move(stats_1));
+    m_stats_2.release(std::move(stats_2));
   } else {
+    auto stats_1 = m_stats_1.acquire();
+
     for (auto& read : chunk->reads_1) {
       read.add_prefix_to_name(m_config.prefix_read_1);
 
       stats_1->process(read);
       chunks.add(read, read_type::se);
     }
-  }
 
-  m_stats_1.release(std::move(stats_1));
-  m_stats_2.release(std::move(stats_2));
+    m_stats_1.release(std::move(stats_1));
+  }
 
   return chunks.finalize(chunk->eof);
 }
 
 void
-processes_unidentified::finalize()
+process_unidentified::finalize()
 {
   m_stats_1.merge_into(*m_statistics->unidentified_stats_1);
   m_stats_2.merge_into(*m_statistics->unidentified_stats_2);

@@ -58,7 +58,7 @@ remove_adapter_sequences(const userconfig& config)
   if (config.is_demultiplexing_enabled()) {
     // Statistics and serialization of unidentified reads
     steps.unidentified =
-      sch.add<processes_unidentified>(config, output, stats.demultiplexing);
+      sch.add<process_unidentified>(config, output, stats.demultiplexing);
 
     if (config.paired_ended_mode) {
       step = sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);

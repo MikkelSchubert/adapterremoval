@@ -1,0 +1,32 @@
+{
+  "arguments": [
+    "--out-prefix",
+    "output_se",
+    "--barcode-table",
+    "barcodes.txt",
+    "--multiple-barcodes",
+    "--out-format",
+    "sam",
+    "--barcode-mm",
+    "1"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ],
+    "barcodes": [
+      "barcodes.txt"
+    ],
+    "output": [
+      "output_se.sample_1.sam",
+      "output_se.sample_2.sam",
+      "output_se.unidentified.sam"
+    ],
+    "json": [
+      "output_se.json"
+    ],
+    "ignore": [
+      "output_se.html"
+    ]
+  }
+}

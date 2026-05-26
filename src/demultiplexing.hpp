@@ -11,8 +11,6 @@
 #include <cstddef>           // for size_t
 #include <memory>            // for shared_ptr
 #include <mutex>             // for mutex
-#include <utility>           // for pair
-#include <vector>            // for vector
 
 namespace adapterremoval {
 
@@ -20,9 +18,7 @@ class demux_statistics;
 class output_files;
 class post_demux_steps;
 class sample_set;
-class trimming_statistics;
 class userconfig;
-class fastq_statistics;
 
 using demux_stats_ptr = std::shared_ptr<demux_statistics>;
 using trim_stats_ptr = std::shared_ptr<trimming_statistics>;
@@ -50,8 +46,6 @@ protected:
   //! Map of steps for output chunks;
   const post_demux_steps& m_steps;
 
-  //! Mapping of barcode global offsets to sample and sample barcode offsets
-  std::vector<std::pair<size_t, size_t>> m_barcodes{};
   //! Cache of reads used to buffer chunks for downstream processing
   demultiplexed_reads m_cache;
 
@@ -112,8 +106,6 @@ public:
 private:
   const userconfig& m_config;
   const sample_output_files& m_output;
-  //! Set of samples to be demultiplexed
-  const threadsafe_data<sample_set> m_samples;
   //! The sample processed by this step
   const size_t m_sample;
 
@@ -122,20 +114,20 @@ private:
 };
 
 /** Collects statistics for and serializes unidentified reads */
-class processes_unidentified : public analytical_step
+class process_unidentified : public analytical_step
 {
 public:
   /** Setup step; keeps reference to config object. */
-  processes_unidentified(const userconfig& config,
-                         const output_files& output,
-                         demux_stats_ptr stats);
+  process_unidentified(const userconfig& config,
+                       const output_files& output,
+                       demux_stats_ptr stats);
 
   /** Collect statistics and serialize (if kept) unidentified reads */
   chunk_vec process(chunk_ptr data) override;
 
   void finalize() override;
 
-protected:
+private:
   //! Pointer to user settings used for output format for unidentified reads
   const userconfig& m_config;
   //! Mapping of output files; unidentified reads are treated as a pseudo-sample
