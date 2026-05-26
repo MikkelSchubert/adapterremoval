@@ -27,7 +27,7 @@ public:
   [[nodiscard]] size_t size() const { return m_values.size(); }
 
   /** Returns true if the row is empty */
-  [[nodiscard]] size_t empty() const { return m_values.empty(); }
+  [[nodiscard]] bool empty() const { return m_values.empty(); }
 
   /** Returns the cell of the 0-based column */
   [[nodiscard]] const std::string& at(size_t idx) const
