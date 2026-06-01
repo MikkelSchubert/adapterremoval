@@ -8,52 +8,50 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
 
 # General information about the project.
-project = "AdapterRemoval3"
-copyright = "2026, Mikkel Schubert; Stinus Lindgreen"
+project = "AdapterRemoval"
+copyright = "%Y, Mikkel Schubert; Stinus Lindgreen"
 author = "Mikkel Schubert; Stinus Lindgreen"
 
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
-#
-# The short X.Y version.
+# The short X.Y version (`|version|`)
 version = "3.0"
-# The full version, including alpha/beta/rc tags.
+# The full version, including alpha/beta/rc tags (`|release|`)
 release = "3.0.0"
 
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []
-
-templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
 language = "en"
 
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
 # Prevent conversion of -- to emdashes
 smartquotes = False
 
-# -- Options for HTML output ----------------------------------------------
 
-html_theme = "alabaster"
-html_static_path = []
+# -- Themes ----------------------------------------------
 
-# Custom sidebar templates, must be a dictionary that maps document names
-# to template names.
-#
-# This is required for the alabaster theme
-# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    "**": [
-        "about.html",
-        "navigation.html",
-        "relations.html",  # needs 'show_related': True theme option to display
-        "searchbox.html",
+if os.environ.get("READTHEDOCS") == "True":
+    # https://sphinx-rtd-theme.readthedocs.io/
+    extensions = [
+        "sphinx_rtd_theme",
     ]
-}
+
+    html_theme = "sphinx_rtd_theme"
+else:
+    # http://alabaster.readthedocs.io/
+    html_theme = "alabaster"
+
+    # This is required for the alabaster theme
+    html_sidebars = {
+        "**": [
+            "about.html",
+            "searchfield.html",
+            "navigation.html",
+            "relations.html",
+            "donate.html",
+        ]
+    }

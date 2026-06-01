@@ -49,7 +49,7 @@ if sphinx_build.found()
                 '-c', '@0@ -M man @1@ @PRIVATE_DIR@ -n -q -E -d @PRIVATE_DIR@ && mv -v @2@ @OUTPUT@'.format(
                     sphinx_build.full_path(),
                     '@CURRENT_SOURCE_DIR@',
-                    '@PRIVATE_DIR@' / 'man' / (meson.project_name() + '.1'),
+                    '@PRIVATE_DIR@' / 'man' / 'adapterremoval.1',
                 ),
             ],
             install: not get_option('manpage').disabled(),
