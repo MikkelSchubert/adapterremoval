@@ -36,10 +36,6 @@ smartquotes = False
 
 if os.environ.get("READTHEDOCS") == "True":
     # https://sphinx-rtd-theme.readthedocs.io/
-    extensions = [
-        "sphinx_rtd_theme",
-    ]
-
     html_theme = "sphinx_rtd_theme"
 else:
     # http://alabaster.readthedocs.io/
