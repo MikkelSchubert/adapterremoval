@@ -48,7 +48,7 @@ arithmetic_mean(const std::vector<uint64_t>& values)
 {
   AR_REQUIRE(!values.empty());
 
-  return std::accumulate(values.begin(), values.end(), uint64_t()) /
+  return std::accumulate(values.begin(), values.end(), 0.0) /
          static_cast<double>(values.size());
 }
 
