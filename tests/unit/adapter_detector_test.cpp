@@ -21,7 +21,7 @@ namespace {
 
 #define REQUIRE_CONTAINS(a, b) REQUIRE_THAT((a), Catch::Matchers::Contains(b))
 
-const double DEFAULT_MISMATCH_THRESHOLD = 1.0 / 6.0;
+constexpr double DEFAULT_MISMATCH_THRESHOLD = 1.0 / 6.0;
 
 inline adapter_detector
 simple_detector(std::initializer_list<string_view_pair> args)

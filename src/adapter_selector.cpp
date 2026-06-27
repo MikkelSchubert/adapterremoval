@@ -27,7 +27,7 @@ namespace adapterremoval {
 namespace {
 
 //! Max reads/read pairs to evaluate when selecting adapters
-const size_t ADAPTER_SELECT_N = 100'000;
+constexpr size_t ADAPTER_SELECT_N = 100'000;
 
 } // namespace
 

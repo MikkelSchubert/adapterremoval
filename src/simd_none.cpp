@@ -8,7 +8,7 @@ namespace adapterremoval::simd {
 namespace {
 
 //! Number of nucleotides to compare per (unrolled) loop
-const size_t LOOP_COUNT = 8;
+constexpr size_t LOOP_COUNT = 8;
 
 } // namespace
 

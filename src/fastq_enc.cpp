@@ -16,33 +16,33 @@ namespace adapterremoval {
 namespace {
 
 //! Offset used by Phred+33 and SAM encodings
-const int PHRED_33_OFFSET_MIN = '!';
+constexpr int PHRED_33_OFFSET_MIN = '!';
 //! The maximum ASCII value allowed for Phred+33 encoded quality scores. This is
 //! a generous maximum, taking into account that instruments are assigning
 //! higher and higher quality scores for Phred+33 data.
-const int PHRED_33_OFFSET_MAX = 'N';
+constexpr int PHRED_33_OFFSET_MAX = 'N';
 //! Minimum Phred score allowed
-// const int PHRED_33_SCORE_MIN = 0;
+// constexpr int PHRED_33_SCORE_MIN = 0;
 //! Maximum Phred score allowed
-const int PHRED_33_SCORE_MAX = PHRED_33_OFFSET_MAX - PHRED_33_OFFSET_MIN;
+constexpr int PHRED_33_SCORE_MAX = PHRED_33_OFFSET_MAX - PHRED_33_OFFSET_MIN;
 
 //! Offset used by Phred+64 encodings
-const int PHRED_64_OFFSET_MIN = '@';
+constexpr int PHRED_64_OFFSET_MIN = '@';
 //! The maximum ASCII value allowed for encoded Phred scores
-const int PHRED_64_OFFSET_MAX = '~';
+constexpr int PHRED_64_OFFSET_MAX = '~';
 //! Minimum Phred+64 score allowed
-const int PHRED_64_SCORE_MIN = 0;
+constexpr int PHRED_64_SCORE_MIN = 0;
 //! Maximum Phred+64 score allowed
-// const int PHRED_64_SCORE_MAX = PHRED_64_OFFSET_MAX - PHRED_64_OFFSET_MIN;
+// constexpr int PHRED_64_SCORE_MAX = PHRED_64_OFFSET_MAX - PHRED_64_OFFSET_MIN;
 
 //! Offset used by Solexa encoding quality scores
-const int SOLEXA_OFFSET_MIN = '@';
+constexpr int SOLEXA_OFFSET_MIN = '@';
 //! The maximum ASCII value allowed for encoded Solexa scores
-const int SOLEXA_OFFSET_MAX = 'h';
+constexpr int SOLEXA_OFFSET_MAX = 'h';
 //! Minimum Phred encoded score allowed
-const int SOLEXA_SCORE_MIN = -5;
+constexpr int SOLEXA_SCORE_MIN = -5;
 //! Maximum Phred encoded score allowed
-const int SOLEXA_SCORE_MAX = SOLEXA_OFFSET_MAX - SOLEXA_OFFSET_MIN;
+constexpr int SOLEXA_SCORE_MAX = SOLEXA_OFFSET_MAX - SOLEXA_OFFSET_MIN;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Pre-calculation of Solexa <-> Phred conversions

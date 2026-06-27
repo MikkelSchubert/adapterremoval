@@ -10,16 +10,16 @@
 namespace adapterremoval {
 
 //! Offset used by Phred scores in SAM files
-const int PHRED_OFFSET_MIN = '!';
+constexpr int PHRED_OFFSET_MIN = '!';
 //! The maximum ASCII value allowed for encoded Phred scores in SAM files
-const int PHRED_OFFSET_MAX = '~';
+constexpr int PHRED_OFFSET_MAX = '~';
 //! Minimum Phred score allowed for SAM files; encodes to '!'
-const int PHRED_SCORE_MIN = 0;
+constexpr int PHRED_SCORE_MIN = 0;
 //! Maximum Phred score allowed for SAM files; encodes to '~'
-const int PHRED_SCORE_MAX = PHRED_OFFSET_MAX - PHRED_OFFSET_MIN;
+constexpr int PHRED_SCORE_MAX = PHRED_OFFSET_MAX - PHRED_OFFSET_MIN;
 
 //! Default character used to separate mate number
-const char MATE_SEPARATOR = '/';
+constexpr char MATE_SEPARATOR = '/';
 
 enum class quality_encoding
 {

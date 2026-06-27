@@ -10,9 +10,9 @@ namespace adapterremoval::simd {
 namespace {
 
 //! The number of bytes in a NEON uint8x16_t
-const size_t NEON_BLOCK_SIZE = 16;
+constexpr size_t NEON_BLOCK_SIZE = 16;
 //! The number of bytes to process before summing up stats
-const size_t NEON_BATCH_SIZE = NEON_BLOCK_SIZE * 8;
+constexpr size_t NEON_BATCH_SIZE = NEON_BLOCK_SIZE * 8;
 
 } // namespace
 

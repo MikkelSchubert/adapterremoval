@@ -36,7 +36,7 @@ struct ALN;
 #define PARAMETERIZE_IS GENERATE(from_range(simd::supported()))
 
 // Dummy mismatch threshold
-const double NO_MISMATCHES = 0.0;
+constexpr double NO_MISMATCHES = 0.0;
 
 struct ALN
 {

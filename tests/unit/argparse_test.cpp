@@ -17,7 +17,7 @@ namespace adapterremoval {
 
 using argparse::argument_ptr;
 
-const size_t invalid_choice = static_cast<size_t>(-2);
+constexpr size_t invalid_choice = static_cast<size_t>(-2);
 
 using Catch::Matchers::Contains;
 
@@ -1215,7 +1215,7 @@ TEST_CASE("warning on deprecated alias", "[argparse::argument]")
 
 namespace {
 
-const std::string_view HELP_HEADER =
+constexpr std::string_view HELP_HEADER =
   "My App v1234\n\n"
   "basic help\n\n"
   "OPTIONS:\n"
