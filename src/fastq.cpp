@@ -11,30 +11,99 @@
 #include <array>          // for array
 #include <cstdint>        // for int64_t
 #include <cstring>        // for memchr
+#include <limits>         // for numeric_limits
 #include <numeric>        // for accumulate
 #include <ostream>        // for ostream
 #include <sstream>        // for ostringstream
-#include <string>
-#include <string_view> // for string_view
-#include <utility>     // move, pair
-#include <vector>      // for vector
+#include <string>         // for string
+#include <string_view>    // for string_view
+#include <type_traits>    // for is_same_v
+#include <utility>        // move, pair
+#include <vector>         // for vector
 
 namespace adapterremoval {
 
 namespace {
 
-std::vector<double>
-init_phred_to_p_values()
-{
-  std::vector<double> result;
+//! Scale to convert mott error probabilities to integer values. The result
+//! deviates from the floating point values by ~1e-15 and was not found to cause
+//! any difference for realistic read lengths. This results in a 50-60% speedup.
+constexpr int64_t MOTT_SCALE_INT64 = 1LL << 48;
+
+//! The worst-case maximum read length for mott trimming, if error_limit = 1.0.
+constexpr size_t MOTT_MAX_LENGTH_INT64 =
+  std::numeric_limits<int64_t>::max() / MOTT_SCALE_INT64;
+
+const auto PHRED_TO_MOTT_ERRORS_DOUBLE = []() {
+  std::array<double, 0x100> result{};
   for (size_t i = PHRED_SCORE_MIN; i <= PHRED_SCORE_MAX; ++i) {
-    result.push_back(fastq_encoding::phred_to_p(i));
+    result[i + PHRED_OFFSET_MIN] =
+      // Weighting of very low-quality bases is reduced, inspired by seqtk
+      fastq_encoding::phred_to_p(std::max<size_t>(3, i));
   }
 
   return result;
-}
+}();
 
-const std::vector<double> g_phred_to_p = init_phred_to_p_values();
+const auto PHRED_TO_MOTT_ERRORS_INT64 = []() {
+  std::array<int64_t, PHRED_TO_MOTT_ERRORS_DOUBLE.size()> result{};
+  for (size_t i = 0; i < result.size(); ++i) {
+    result[i] = MOTT_SCALE_INT64 * PHRED_TO_MOTT_ERRORS_DOUBLE[i];
+  }
+
+  return result;
+}();
+
+template<typename T>
+std::pair<size_t, size_t>
+mott_trimming_impl(const std::string_view seq,
+                   const std::string_view qual,
+                   const double error_limit)
+{
+  T scaled_error_limit;
+  if constexpr (std::is_same_v<T, double>) {
+    scaled_error_limit = error_limit;
+  } else {
+    static_assert(std::is_same_v<T, int64_t>, "expected int64_t or double");
+
+    scaled_error_limit = static_cast<T>(error_limit * MOTT_SCALE_INT64);
+  }
+
+  size_t left_inclusive_temp = 0;
+  size_t left_inclusive = 0;
+  size_t right_exclusive = 0;
+
+  T error_sum = 0;
+  T error_sum_max = 0;
+
+  AR_REQUIRE(seq.length() == qual.length());
+  for (size_t i = 0; i < qual.length(); i++) {
+    // Ns are normalized, which may be relevant for some old data and masked
+    // FASTQ reads. The error-rate itself is capped in PHRED_TO_MOTT_ERRORS.
+    const auto phred = AR_LIKELY(seq[i] != 'N')
+                         ? static_cast<uint8_t>(qual[i])
+                         : static_cast<uint8_t>(PHRED_OFFSET_MIN);
+
+    if constexpr (std::is_same_v<T, double>) {
+      error_sum += scaled_error_limit - PHRED_TO_MOTT_ERRORS_DOUBLE[phred];
+    } else {
+      error_sum += scaled_error_limit - PHRED_TO_MOTT_ERRORS_INT64[phred];
+    }
+
+    if (error_sum > error_sum_max) {
+      // Extend best segment, possibly replacing the previous candidate
+      left_inclusive = left_inclusive_temp;
+      right_exclusive = i + 1;
+      error_sum_max = error_sum;
+    } else if (error_sum < 0) {
+      // End of current segment (if any)
+      left_inclusive_temp = i + 1;
+      error_sum = 0;
+    }
+  }
+
+  return { left_inclusive, right_exclusive };
+}
 
 size_t
 count_poly_x_tail(const std::string& m_sequence,
@@ -438,39 +507,16 @@ fastq::mott_trimming(const double error_limit, const bool preserve5p)
 {
   AR_REQUIRE(error_limit >= 0 && error_limit <= 1);
 
-  size_t left_inclusive_temp = 0;
-  size_t left_inclusive = 0;
-  size_t right_exclusive = 0;
-
-  double error_sum = 0.0;
-  double error_sum_max = 0.0;
-
-  for (size_t i = 0; i < length(); i++) {
-    char phred = m_qualities.at(i) - PHRED_OFFSET_MIN;
-
-    // Reduce weighting of very low-quality bases (inspired by seqtk) and
-    // normalize Ns. The latter is not expected to matter for most data, but may
-    // be relevant for some old/weird data and masked FASTQ reads.
-    if (phred < 3 || m_sequence.at(i) == 'N') {
-      phred = 3;
-    }
-
-    error_sum += error_limit - g_phred_to_p.at(phred);
-
-    if (error_sum < 0.0) {
-      // End of current segment (if any)
-      left_inclusive_temp = i + 1;
-      error_sum = 0;
-    } else if (error_sum > error_sum_max) {
-      // Extend best segment, possibly replacing the previous candidate
-      left_inclusive = left_inclusive_temp;
-      right_exclusive = i + 1;
-      error_sum_max = error_sum;
-    }
+  std::pair<size_t, size_t> span;
+  if (m_sequence.length() <= MOTT_MAX_LENGTH_INT64) {
+    span = mott_trimming_impl<int64_t>(m_sequence, m_qualities, error_limit);
+  } else {
+    // The original algorithm is preserved for backwards compatibility, though
+    // currently AdapterRemoval v3.0.0 is not suitable for reads of this length
+    span = mott_trimming_impl<double>(m_sequence, m_qualities, error_limit);
   }
 
-  return trim_sequence_and_qualities(preserve5p ? 0 : left_inclusive,
-                                     right_exclusive);
+  return trim_sequence_and_qualities(preserve5p ? 0 : span.first, span.second);
 }
 
 std::pair<char, size_t>
