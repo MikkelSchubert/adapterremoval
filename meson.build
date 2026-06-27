@@ -69,6 +69,8 @@ add_project_arguments(
         '-Wswitch-default', # Require a default: statement in a switch, to catch corruption
         '-Wundef', # Undefined variables used in #if pragmas
         '-Wnrvo',
+        # Extraneous semicolons may cause errors on old compilers due to -pedantic-errors
+        '-Wextra-semi',
     ),
     language: 'cpp',
 )

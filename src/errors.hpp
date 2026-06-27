@@ -49,7 +49,7 @@ protected:
                                                                                \
   protected:                                                                   \
     [[nodiscard]] std::string_view kind() const override { return #name; }     \
-  };
+  }
 
 /** Represents errors during basic IO. */
 class io_error : public program_failure
