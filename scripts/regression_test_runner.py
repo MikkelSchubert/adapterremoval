@@ -11,6 +11,7 @@ import json
 import math
 import multiprocessing
 import os
+import platform
 import re
 import shlex
 import shutil
@@ -697,6 +698,7 @@ class TestConfig(NamedTuple):
     variant: tuple[str, ...]
     skip: bool
     exhaustive: bool | None
+    platforms: tuple[str, ...]
     arguments: tuple[str, ...]
     return_code: int
     pipe: str | None
@@ -750,12 +752,16 @@ class TestConfig(NamedTuple):
             arguments=json_pop_tuple_of_str(data, ("arguments",), default=[]),
             skip=json_pop_bool(data, ("skip",), default=False),
             exhaustive=json_pop_bool(data, ("exhaustive",), default=False),
+            platforms=json_pop_tuple_of_str(data, ("platforms",), default=[]),
             return_code=json_pop_int(data, ("return_code",), default=0),
             pipe=json_pop_optional_str(data, ("pipe",)),
             stdout=json_pop_tuple_of_str(data, ("stdout",), default=[]),
             stderr=json_pop_tuple_of_str(data, ("stderr",), default=[]),
             files=tuple(test_files),
         )
+
+        if set(self.platforms) - {"Linux", "Darwin", "Windows"}:
+            raise TestError(f"Unknown platforms: {self.platforms}")
 
         if data:
             raise TestError(f"Unexpected JSON values: {data}")
@@ -922,7 +928,7 @@ class TestMutator:
 
                 yield test._replace(
                     variant=(*test.variant, "intl"),
-                    files=other_files,
+                    files=tuple(other_files),
                     arguments=(*test.arguments, "--interleaved-input"),
                 )
             else:
@@ -995,7 +1001,9 @@ class TestRunner:
 
     @property
     def skip(self) -> bool:
-        return self._test.skip
+        return self._test.skip or bool(
+            self._test.platforms and platform.system() not in self._test.platforms
+        )
 
     @property
     def command(self) -> list[str | Path]:
