@@ -305,13 +305,13 @@ public:
                          const string_vec_citer& end) = 0;
 
   /** Returns the list of valid choices, if any, formatted as strings */
-  [[nodiscard]] virtual string_vec choices() const { return {}; };
+  [[nodiscard]] virtual string_vec choices() const { return {}; }
 
   /** Indicates the minimum number of values taken by this sink */
-  [[nodiscard]] size_t min_values() const { return m_min_values; };
+  [[nodiscard]] size_t min_values() const { return m_min_values; }
 
   /** Indicates the maximum number of values taken by this sink */
-  [[nodiscard]] size_t max_values() const { return m_max_values; };
+  [[nodiscard]] size_t max_values() const { return m_max_values; }
 
   /** Sets pre-processor function used before validating input  */
   sink& with_preprocessor(preprocess_func func)

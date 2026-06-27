@@ -286,7 +286,7 @@ public:
       io_manager::remove(m_writer);
       io_manager::open(m_writer);
     }
-  };
+  }
 
   ~writer_lock()
   {

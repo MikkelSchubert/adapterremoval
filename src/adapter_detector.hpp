@@ -20,7 +20,7 @@ namespace simd {
 
 enum class instruction_set;
 
-};
+}
 
 //! Minimum overlap required for adapter fragments
 inline constexpr size_t ADAPTER_DETECT_MIN_OVERLAP = 8;

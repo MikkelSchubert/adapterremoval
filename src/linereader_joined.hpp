@@ -25,7 +25,7 @@ public:
   void inc_position(size_t n = 1);
 
   /** Returns the position across all files. Should not be used in logs */
-  [[nodiscard]] size_t position() const noexcept { return m_position; };
+  [[nodiscard]] size_t position() const noexcept { return m_position; }
 
   /** List filenames covered by an inclusive range of positions */
   [[nodiscard]] std::string filenames(size_t start, size_t end) const;

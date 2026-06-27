@@ -47,11 +47,11 @@ struct ALN
     info.m_adapter_id = 0;
   }
 
-  TEST_ALIGNMENT_SETTER(int, offset);
-  TEST_ALIGNMENT_SETTER(size_t, length);
-  TEST_ALIGNMENT_SETTER(size_t, n_mismatches);
-  TEST_ALIGNMENT_SETTER(size_t, n_ambiguous);
-  TEST_ALIGNMENT_SETTER(int, adapter_id);
+  TEST_ALIGNMENT_SETTER(int, offset)
+  TEST_ALIGNMENT_SETTER(size_t, length)
+  TEST_ALIGNMENT_SETTER(size_t, n_mismatches)
+  TEST_ALIGNMENT_SETTER(size_t, n_ambiguous)
+  TEST_ALIGNMENT_SETTER(int, adapter_id)
 
   ALN& is_good()
   {
