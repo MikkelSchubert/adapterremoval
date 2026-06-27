@@ -1,0 +1,17 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--out-json",
+    "/dev/full"
+  ],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Error writing JSON report to '/dev/full':",
+    "[ERROR] AdapterRemoval did not run to completion;"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  }
+}

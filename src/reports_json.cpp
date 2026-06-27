@@ -720,7 +720,7 @@ write_json_report(const userconfig& config,
   try {
     managed_writer writer{ std::string{ filename } };
     writer.write(output.str());
-    writer.close();
+    writer.finalize();
   } catch (const io_error& error) {
     log::error() << "Error writing JSON report to '" << filename << "':\n"
                  << indent_lines(error.what());

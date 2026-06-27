@@ -11,7 +11,6 @@
 #include <cerrno>          // for EMFILE, errno
 #include <cstddef>         // for size_t
 #include <cstdio>          // for fopen, fread, fwrite, ...
-#include <exception>       // for std::exception
 #include <fcntl.h>         // for posix_fadvise
 #include <mutex>           // for mutex, unique_lock
 #include <string>          // for string
@@ -27,61 +26,84 @@ class io_manager
 public:
   static void open(managed_reader* reader)
   {
+    // Merged I/O depends on filenames being identical
+    AR_REQUIRE(reader->filename() != DEV_PIPE, "unhandled STDIN marker");
+
     if (reader->m_file) {
       return;
     } else if (reader->filename() == DEV_STDIN) {
       reader->m_file = stdin;
-    } else if (reader->filename() != DEV_PIPE) {
+    } else {
       reader->m_file = io_manager::fopen(reader->filename(), "rb");
 
 #if (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600) ||                        \
   (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
-      posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_WILLNEED);
-      posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_SEQUENTIAL);
-      posix_fadvise(fileno(reader->m_file), 0, 0, POSIX_FADV_NOREUSE);
+      ::posix_fadvise(::fileno(reader->m_file), 0, 0, POSIX_FADV_WILLNEED);
+      ::posix_fadvise(::fileno(reader->m_file), 0, 0, POSIX_FADV_SEQUENTIAL);
+      ::posix_fadvise(::fileno(reader->m_file), 0, 0, POSIX_FADV_NOREUSE);
 #endif
-    } else {
-      // Merged I/O depends on filenames being identical
-      AR_FAIL("unhandled STDIN marker");
     }
   }
 
-  static void open(managed_writer* writer)
+  static void open(managed_writer* writer, bool lazy = false)
   {
+    // Merged I/O depends on filenames being identical
+    AR_REQUIRE(writer->filename() != DEV_PIPE, "unhandled STDOUT marker");
+
     if (writer->m_file) {
       return;
     } else if (writer->filename() == DEV_STDOUT) {
       writer->m_file = stdout;
-      writer->m_regular_file = false;
+      writer->m_state = managed_writer::state::streaming;
 
 #ifdef _WIN32
-      _setmode(fileno(stdout), O_BINARY);
+      ::_setmode(::fileno(stdout), O_BINARY);
 #endif
     } else if (writer->filename() == DEV_STDERR) {
       // Not sure why anyone would do this, but ¯\_(ツ)_/¯
       writer->m_file = stderr;
-      writer->m_regular_file = false;
+      writer->m_state = managed_writer::state::streaming;
 
 #ifdef _WIN32
-      _setmode(fileno(stderr), O_BINARY);
+      ::_setmode(::fileno(stderr), O_BINARY);
 #endif
-    } else if (writer->filename() != DEV_PIPE) {
-      writer->m_file =
-        io_manager::fopen(writer->filename(), writer->m_created ? "ab" : "wb");
-      writer->m_regular_file =
-        io_manager::is_regular_file(writer->filename(), writer->m_file);
-    } else {
-      // Merged I/O depends on filenames being identical
-      AR_FAIL("unhandled STDOUT marker");
-    }
+    } else if (!lazy) {
+      try {
+        if (writer->m_state == managed_writer::state::uninitialized) {
+          writer->m_file = io_manager::fopen(writer->filename(), "wb");
+        } else if (writer->m_state == managed_writer::state::writing) {
+          writer->m_file = io_manager::fopen(writer->filename(), "ab");
+        } else {
+          AR_FAIL("invalid managed_writer::state");
+        }
+      } catch (const io_error&) {
+        writer->m_state = managed_writer::state::failed;
+        throw;
+      }
 
-    writer->m_created = true;
+      if (writer->m_state == managed_writer::state::uninitialized) {
+        // Assuming it's a stream is harmless unless we run out of file handles
+        writer->m_state = managed_writer::state::streaming;
+
+        struct stat statbuf{};
+        if (::fstat(::fileno(writer->m_file), &statbuf) == 0) {
+          if (S_ISREG(statbuf.st_mode)) {
+            // File can be closed and re-opened to if we run out of file handles
+            writer->m_state = managed_writer::state::writing;
+          }
+        } else {
+          log::warn() << "Could not fstat " << log_escape(writer->filename());
+        }
+      }
+    }
   }
 
   /** Adds writer to list of inactive writers */
   static void add(managed_writer* writer)
   {
     const std::unique_lock lock{ m_lock };
+    AR_REQUIRE(writer);
+    AR_REQUIRE(writer->m_state == managed_writer::state::writing);
 
     AR_REQUIRE(!writer->m_prev);
     AR_REQUIRE(!writer->m_next);
@@ -163,19 +185,6 @@ private:
     }
   }
 
-  static bool is_regular_file(const std::string& filename, FILE* handle)
-  {
-    struct stat statbuf = {};
-    if (fstat(fileno(handle), &statbuf) == 0) {
-      return S_ISREG(statbuf.st_mode);
-    }
-
-    log::warn() << "Could not fstat " << log_escape(filename);
-
-    // Assumed to be a stream to be safe
-    return false;
-  }
-
   /** Try to close the least recently used writer */
   static void close_one()
   {
@@ -194,8 +203,9 @@ private:
     if (writer) {
       remove(writer);
 
-      if (fclose(writer->m_file)) {
+      if (::fclose(writer->m_file) != 0) {
         writer->m_file = nullptr;
+        writer->m_state = managed_writer::state::failed;
         throw io_error("failed to close file", errno);
       }
       writer->m_file = nullptr;
@@ -238,7 +248,11 @@ managed_reader::managed_reader(std::string filename)
 managed_reader::~managed_reader()
 {
   if (m_file && ::fclose(m_file) != 0) {
-    AR_FAIL(format_io_error("error closing " + log_escape(m_filename), errno));
+    const auto error_number = errno;
+
+    // this is a non-fatal error if there were no problems reading the file
+    log::warn() << format_io_error("error closing " + log_escape(m_filename),
+                                   error_number);
   }
 }
 
@@ -262,7 +276,7 @@ managed_reader::read(void* buffer, size_t size)
 {
   AR_REQUIRE(buffer);
   const auto nread = ::fread(buffer, 1, size, m_file);
-  if (ferror(m_file)) {
+  if (::ferror(m_file) != 0) {
     throw io_error("error reading " + log_escape(m_filename), errno);
   }
 
@@ -280,19 +294,31 @@ public:
   {
     AR_REQUIRE(m_writer);
 
-    // streams are always open and aren't placed on the queue
-    if (m_writer->m_regular_file) {
-      // Remove from global queue to prevent other threads from manipulating it
-      io_manager::remove(m_writer);
-      io_manager::open(m_writer);
+    switch (m_writer->m_state) {
+      case managed_writer::state::writing:
+        // Remove from global queue to prevent other threads from touching it
+        io_manager::remove(m_writer);
+        [[fallthrough]];
+      case managed_writer::state::uninitialized:
+        io_manager::open(m_writer);
+        [[fallthrough]];
+      case managed_writer::state::streaming:
+        return; // streams are always open and aren't placed on the queue
+      case managed_writer::state::finalized:
+        AR_FAIL("attempted to re-open finalized writer");
+      case managed_writer::state::failed:
+        AR_FAIL("attempted to re-open failed writer");
+      default:
+        AR_FAIL("invalid managed_writer::state");
     }
   }
 
   ~writer_lock()
   {
-    // Streams cannot be managed, since they cannot be reopened
-    if (m_writer->m_file && m_writer->m_regular_file) {
-      // Allow this writer to be closed if we run out of file handles
+    // Allow regular files to be closed if we run out of file handles. Streams
+    // cannot be re-opened, and must therefore not be closed once opened
+    if (m_writer->m_state == managed_writer::state::writing) {
+      AR_REQUIRE(m_writer->m_file);
       io_manager::add(m_writer);
     }
   }
@@ -304,18 +330,11 @@ public:
     if (size) {
       const auto ret = ::fwrite(buffer, 1, size, m_writer->m_file);
       if (ret != size) {
+        m_writer->m_state = managed_writer::state::failed;
+
         throw io_error("error writing to " + log_escape(m_writer->m_filename),
                        errno);
       }
-    }
-  }
-
-  void flush()
-  {
-    AR_REQUIRE(m_writer && m_writer->m_file);
-    if (::fflush(m_writer->m_file)) {
-      throw io_error("error flushing file " + log_escape(m_writer->filename()),
-                     errno);
     }
   }
 
@@ -345,76 +364,79 @@ any_nonempty_buffers(const std::vector<buffer>& buffers)
 managed_writer::managed_writer(std::string filename)
   : m_filename(std::move(filename))
 {
+  // Identify standard streams but don't open actual files, since that could
+  // cause churn when demultiplexing a large number of samples
+  io_manager::open(this, true);
 }
 
 managed_writer::~managed_writer()
 {
-  try {
-    close();
-  } catch (const std::exception&) {
-    AR_FAIL("unhandled exception");
+  io_manager::remove(this);
+
+  if (m_file && ::fclose(m_file) != 0) {
+    // AdapterRemoval should already have aborted before getting to this point,
+    // as handles should normally be closed, and pipeline errors triggers abort
+    AR_FAIL(format_io_error("error closing " + log_escape(m_filename), errno));
   }
 }
 
 void
-managed_writer::write(const buffer& buf, const flush mode)
+managed_writer::write(const buffer& buf)
 {
-  if (buf.size() || mode == flush::on) {
+  if (buf.size()) {
     writer_lock writer{ this };
 
     writer.write(buf.data(), buf.size());
-
-    if (mode == flush::on) {
-      writer.flush();
-    }
   }
 }
 
 void
-managed_writer::write(const std::vector<buffer>& buffers, const flush mode)
+managed_writer::write(const std::vector<buffer>& buffers)
 {
-  if (mode == flush::on || any_nonempty_buffers(buffers)) {
+  if (any_nonempty_buffers(buffers)) {
     writer_lock writer{ this };
 
     for (const auto& buf : buffers) {
       writer.write(buf.data(), buf.size());
     }
-
-    if (mode == flush::on) {
-      writer.flush();
-    }
   }
 }
 
 void
-managed_writer::write(std::string_view buf, const flush mode)
+managed_writer::write(std::string_view buf)
 {
-  if (!buf.empty() || mode == flush::on) {
+  if (!buf.empty()) {
     writer_lock writer{ this };
 
     writer.write(buf.data(), buf.length());
-
-    if (mode == flush::on) {
-      writer.flush();
-    }
   }
 }
 
 void
-managed_writer::close()
+managed_writer::finalize()
 {
-  io_manager::remove(this);
+  AR_REQUIRE(m_state != state::failed);
+  if (m_state == managed_writer::state::writing) {
+    io_manager::remove(this);
+  } else if (m_state == managed_writer::state::uninitialized) {
+    // Ensure creation of the file, if nothing was written to it
+    io_manager::open(this);
+  }
 
   // This will also close non-regular files, such as STDOUT. That is intentional
   // as only a single writer should be created per output file or stream
   if (m_file) {
-    if (fclose(m_file)) {
+    if (::fclose(m_file) != 0) {
       m_file = nullptr;
+      m_state = managed_writer::state::failed;
+
       throw io_error("failed to close file", errno);
     }
 
     m_file = nullptr;
   }
+
+  m_state = state::finalized;
 }
 
 } // namespace adapterremoval

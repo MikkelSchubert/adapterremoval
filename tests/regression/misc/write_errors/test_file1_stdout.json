@@ -1,0 +1,18 @@
+{
+  "exhaustive": false,
+  "arguments": [
+    "--out-file1",
+    "-"
+  ],
+  "pipe": "/dev/full",
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Error writing to FASTQ file '/dev/stdout':",
+    "[ERROR] AdapterRemoval did not run to completion;"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  }
+}

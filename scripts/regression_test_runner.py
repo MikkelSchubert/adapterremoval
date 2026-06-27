@@ -776,7 +776,7 @@ class TestConfig(NamedTuple):
             raise TestError("Both `pipe` and `stdout` specified")
         elif not (self.pipe or self.pipe is None):
             raise TestError("Option `pipe` must be null or a non-empty string")
-        elif self.pipe and os.path.dirname(self.pipe):
+        elif self.pipe and os.path.dirname(self.pipe) and self.pipe != "/dev/full":
             raise TestError("Option `pipe` must not contain directory component")
 
         return self

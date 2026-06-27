@@ -10,13 +10,6 @@
 namespace adapterremoval {
 class buffer;
 
-/** Indicates if the writes should be flushed */
-enum class flush
-{
-  on,
-  off
-};
-
 /** Reader that closes unused writer handles if open files exceeds ulimits. */
 class managed_reader
 {
@@ -72,12 +65,15 @@ public:
   ~managed_writer();
 
   /** Write buffers, opening/creating the file as needed */
-  void write(const buffer& buf, flush mode = flush::off);
-  void write(const std::vector<buffer>& buffers, flush mode = flush::off);
-  void write(std::string_view buffer, flush mode = flush::off);
+  void write(const buffer& buf);
+  void write(const std::vector<buffer>& buffers);
+  void write(std::string_view buffer);
 
-  /** Closes the handle; no-op if the handle has been closed already */
-  void close();
+  /**
+   * Flushing buffers and permanently close the handle. If the file has not yet
+   * been created, this is done. No-op if the file has been finalized already
+   */
+  void finalize();
 
   /** Returns the filename of the (previously opened) file */
   [[nodiscard]] const std::string& filename() const { return m_filename; }
@@ -88,14 +84,27 @@ public:
   managed_writer& operator=(const managed_writer&) = delete;
 
 private:
+  /** Represents the current state of the writer */
+  enum class state
+  {
+    //! The file has not been opened and checked
+    uninitialized,
+    //! The file is a stream; could be STDIN, STDOUT, STDERR, a pipe, etc.
+    streaming,
+    //! The file is a regular file and it has been created
+    writing,
+    //! (Re)opening or writing to the file failed; do not make further attempts
+    failed,
+    //! The file has been created and the handle has been closed
+    finalized,
+  };
+
   //! Destination filename; is created lazily.
   std::string m_filename{};
-  //! Indicates if the file has been created/truncated
-  bool m_created = false;
   //! Lazily opened, managed handle; may be closed to free up handles.
   FILE* m_file = nullptr;
-  //! Indicates if the handle is a regular file and can be closed/reopened
-  bool m_regular_file = true;
+  //! State of the underlying file/stream
+  state m_state = state::uninitialized;
 
   //! Managed writer used more recently than this writer.
   managed_writer* m_prev = nullptr;
