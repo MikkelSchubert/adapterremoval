@@ -22,13 +22,12 @@ namespace adapterremoval {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const size_t DUPLICATION_LEVELS = 16;
-const std::array<std::string_view, DUPLICATION_LEVELS> DUPLICATION_LABELS = {
+namespace {
+
+constexpr std::array<std::string_view, 16> DUPLICATION_LABELS = {
   "1", "2",   "3",   "4",    "5",    "6",   "7",   "8",
   "9", ">10", ">50", ">100", ">500", ">1k", ">5k", ">10k"
 };
-
-namespace {
 
 size_t
 duplication_level(size_t count)
@@ -114,8 +113,8 @@ private:
 
 duplication_statistics::summary::summary()
   : labels(DUPLICATION_LABELS.begin(), DUPLICATION_LABELS.end())
-  , total_sequences(DUPLICATION_LEVELS)
-  , unique_sequences(DUPLICATION_LEVELS)
+  , total_sequences(DUPLICATION_LABELS.size())
+  , unique_sequences(DUPLICATION_LABELS.size())
 {
 }
 

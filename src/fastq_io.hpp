@@ -30,13 +30,13 @@ using fastq_stats_ptr = std::shared_ptr<fastq_statistics>;
 using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
 
 //! Number of reads to load every cycle
-const size_t INPUT_READS = 1024;
+constexpr size_t INPUT_READS = 1024;
 //! Size of chunks of when performing block compression
-const size_t BGZF_BLOCK_SIZE = 0xff00;
+constexpr size_t BGZF_BLOCK_SIZE = 0xff00;
 //! Maximum size of BGZF blocks including header and tail
-const size_t BGZF_MAX_BLOCK_SIZE = 0x10000;
+constexpr size_t BGZF_MAX_BLOCK_SIZE = 0x10000;
 //! Size of blocks to generate before writing to output
-const size_t OUTPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
+constexpr size_t OUTPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 
 /**
  * Simple file reading step.

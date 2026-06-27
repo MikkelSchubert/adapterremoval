@@ -122,7 +122,7 @@ const std::array ADAPTER_DATABASE = {
 //   Sequences: AAAAAAAAAA
 
 //! Simplifies checking boolean conditions that may be false or true
-const std::array FALSE_AND_TRUE{ false, true };
+constexpr std::array FALSE_AND_TRUE{ false, true };
 
 } // namespace
 

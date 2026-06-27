@@ -44,7 +44,7 @@ namespace adapterremoval {
 
 namespace {
 
-const std::string_view HELPTEXT =
+constexpr std::string_view HELPTEXT =
   "AdapterRemoval searches for and removes remnant adapter sequences, poly-X "
   "tails and low-quality base from FASTQ reads. See `man adapterremoval3` or "
   "https://adapterremoval.readthedocs.io/ for more information\n"
