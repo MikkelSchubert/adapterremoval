@@ -37,26 +37,38 @@ compare_subsequences_avx2(size_t& n_mismatches,
     const auto s2 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(seq_2));
 
     // Sets 0xFF for every byte where one or both nts is N
-    const __m256i ns_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, n_mask),
-                                            _mm256_cmpeq_epi8(s2, n_mask));
+    const auto ns_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, n_mask),
+                                         _mm256_cmpeq_epi8(s2, n_mask));
+    const auto n_count = count_masked_avx2(ns_mask);
 
-    // Sets 0xFF for every byte where bytes are equal or N
-    const __m256i eq_mask = _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
+    if (n_count) {
+      // Sets 0xFF for every byte where bytes are equal or N
+      const __m256i eq_mask =
+        _mm256_or_si256(_mm256_cmpeq_epi8(s1, s2), ns_mask);
 
-    n_mismatches += 32 - count_masked_avx2(eq_mask);
-    if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
-      return false;
+      // Early termination is almost always due to mismatches, so updating the
+      // number of Ns after the penalty check saves time in the common case.
+      n_mismatches += 32 - count_masked_avx2(eq_mask);
+      if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
+        return false;
+      }
+
+      const size_t unpadded_length = std::min<size_t>(32, length);
+      n_ambiguous += n_count - (32 - unpadded_length);
+
+      seq_1 += unpadded_length;
+      seq_2 += unpadded_length;
+      length -= unpadded_length;
+    } else {
+      n_mismatches += 32 - count_masked_avx2(_mm256_cmpeq_epi8(s1, s2));
+      if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
+        return false;
+      }
+
+      seq_1 += 32;
+      seq_2 += 32;
+      length -= 32;
     }
-
-    const size_t unpadded_length = std::min<size_t>(32, length);
-
-    // Early termination is almost always due to mismatches, so updating the
-    // number of Ns after the above check saves time in the common case.
-    n_ambiguous += count_masked_avx2(ns_mask) - (32 - unpadded_length);
-
-    seq_1 += 32;
-    seq_2 += 32;
-    length -= unpadded_length;
   }
 
   return (2 * n_mismatches) + n_ambiguous <= max_penalty;

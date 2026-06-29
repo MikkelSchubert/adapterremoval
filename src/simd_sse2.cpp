@@ -44,20 +44,28 @@ compare_subsequences_sse2(size_t& n_mismatches,
     const auto eq_mask = _mm_or_si128(_mm_cmpeq_epi8(s1, s2), ns_mask);
 
     n_mismatches += 16 - count_masked_sse2(eq_mask);
+    // Early termination is almost always due to mismatches, so updating the
+    // number of Ns after the penalty check saves time in the common case.
     if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
       return false;
     }
 
-    // Fragment length without 'N' padding
-    const size_t unpadded_length = std::min<size_t>(16, length);
+    const auto ns_count = count_masked_sse2(ns_mask);
 
-    // Early termination is almost always due to mismatches, so updating the
-    // number of Ns after the above check saves time in the common case.
-    n_ambiguous += count_masked_sse2(ns_mask) - (16 - unpadded_length);
+    if (ns_count) {
+      // Fragment length without 'N' padding
+      const size_t unpadded_length = std::min<size_t>(16, length);
 
-    seq_1 += 16;
-    seq_2 += 16;
-    length -= unpadded_length;
+      n_ambiguous += ns_count - (16 - unpadded_length);
+
+      seq_1 += unpadded_length;
+      seq_2 += unpadded_length;
+      length -= unpadded_length;
+    } else {
+      seq_1 += 16;
+      seq_2 += 16;
+      length -= 16;
+    }
   }
 
   return (2 * n_mismatches) + n_ambiguous <= max_penalty;

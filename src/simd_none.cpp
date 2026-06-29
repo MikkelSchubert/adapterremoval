@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "simd.hpp" // for size_t, compare_subsequences_std
-#include <cstddef>  // for size_t
+#include "pragmas.hpp" // for AR_UNROLL
+#include "simd.hpp"    // for size_t, compare_subsequences_std
+#include <cstddef>     // for size_t
 
 namespace adapterremoval::simd {
-
-namespace {
-
-//! Number of nucleotides to compare per (unrolled) loop
-constexpr size_t LOOP_COUNT = 8;
-
-} // namespace
 
 bool
 compare_subsequences_none(size_t& n_mismatches,
@@ -24,26 +18,7 @@ compare_subsequences_none(size_t& n_mismatches,
   size_t tmp_mismatches = n_mismatches;
   size_t tmp_ambiguous = n_ambiguous;
 
-  while (length >= LOOP_COUNT) {
-    // A constant loop count enables loop-unrolling for increased throughput
-    for (size_t i = 0; i < LOOP_COUNT; ++i) {
-      const char nt_1 = *seq_1++;
-      const char nt_2 = *seq_2++;
-
-      if (nt_1 == 'N' || nt_2 == 'N') {
-        tmp_ambiguous++;
-      } else if (nt_1 != nt_2) {
-        tmp_mismatches++;
-      }
-    }
-
-    if ((2 * tmp_mismatches) + tmp_ambiguous > max_penalty) {
-      return false;
-    }
-
-    length -= LOOP_COUNT;
-  }
-
+  AR_UNROLL(8)
   for (; length; --length) {
     const char nt_1 = *seq_1++;
     const char nt_2 = *seq_2++;
