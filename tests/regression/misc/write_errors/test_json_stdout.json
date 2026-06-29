@@ -1,0 +1,21 @@
+{
+  "exhaustive": false,
+  "platforms": [
+    "Linux"
+  ],
+  "arguments": [
+    "--out-json",
+    "-"
+  ],
+  "pipe": "/dev/full",
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Error writing JSON report to '/dev/stdout':",
+    "[ERROR] AdapterRemoval did not run to completion;"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  }
+}

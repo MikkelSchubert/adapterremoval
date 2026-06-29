@@ -277,7 +277,7 @@ public:
   /** Writes the reads of the type specified in the constructor. */
   chunk_vec process(chunk_ptr data) override;
 
-  /** Flushes the output file and prints progress report (if enabled). */
+  /** Checks that EOF was reached */
   void finalize() override;
 
   write_fastq(const write_fastq&) = delete;

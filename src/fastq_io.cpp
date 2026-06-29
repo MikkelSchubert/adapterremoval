@@ -871,24 +871,28 @@ write_fastq::process(chunk_ptr data)
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(!m_eof);
 
+  m_eof = chunk->eof;
+  m_uncompressed_bytes += chunk->uncompressed_size;
+
+  if (m_eof && m_isal_stream) {
+    buffer trailer;
+    trailer.append_u32(chunk->crc32);
+    trailer.append_u32(m_uncompressed_bytes);
+
+    chunk->buffers.emplace_back(std::move(trailer));
+  }
+
   try {
-    m_eof = chunk->eof;
-    m_uncompressed_bytes += chunk->uncompressed_size;
+    m_output.write(chunk->buffers);
 
-    const auto mode = (m_eof && !m_isal_stream) ? flush::on : flush::off;
-
-    m_output.write(chunk->buffers, mode);
-
-    if (m_eof && m_isal_stream) {
-      buffer trailer;
-      trailer.append_u32(chunk->crc32);
-      trailer.append_u32(m_uncompressed_bytes);
-
-      m_output.write(trailer, flush::on);
+    // Close file to trigger any exceptions due to fclose, etc. This also forces
+    // creation of the file, if no non-empty buffers have been written.
+    if (m_eof) {
+      m_output.finalize();
     }
   } catch (const io_error&) {
     std::ostringstream msg;
-    msg << "Error writing to FASTQ file " << shell_escape(m_output.filename());
+    msg << "Error writing to FASTQ file " << log_escape(m_output.filename());
 
     throw io_error(msg.str(), errno);
   }
@@ -901,16 +905,6 @@ write_fastq::finalize()
 {
   AR_REQUIRE_SINGLE_THREAD(m_lock);
   AR_REQUIRE(m_eof);
-
-  // Close file to trigger any exceptions due to badbit / failbit
-  try {
-    m_output.close();
-  } catch (const io_error&) {
-    std::ostringstream msg;
-    msg << "Error closing FASTQ file " << shell_escape(m_output.filename());
-
-    throw io_error(msg.str(), errno);
-  }
 }
 
 } // namespace adapterremoval

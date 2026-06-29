@@ -1,0 +1,20 @@
+{
+  "exhaustive": false,
+  "platforms": [
+    "Linux"
+  ],
+  "arguments": [
+    "--out-html",
+    "/dev/full"
+  ],
+  "return_code": 1,
+  "stderr": [
+    "[ERROR] Error writing HTML report to '/dev/full':",
+    "[ERROR] AdapterRemoval did not run to completion;"
+  ],
+  "files": {
+    "input_1": [
+      "input_1.fastq"
+    ]
+  }
+}
