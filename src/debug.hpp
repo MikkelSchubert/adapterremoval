@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
+#include "pragmas.hpp" // for AR_LIKELY
 #include <mutex>       // for recursive_mutex
 #include <string_view> // for string_view
 
@@ -26,18 +27,6 @@ terminate_on_assert(std::string_view funcname,
                     unsigned lineno,
                     std::string_view test,
                     std::string_view msg);
-
-#ifdef __has_builtin
-#if __has_builtin(__builtin_expect)
-#define AR_LIKELY(condition) __builtin_expect(static_cast<bool>(condition), 1)
-#define AR_UNLIKELY(condition) __builtin_expect(static_cast<bool>(condition), 0)
-#endif
-#endif
-
-#ifndef AR_LIKELY
-#define AR_LIKELY(condition) (!!(condition))
-#define AR_UNLIKELY(condition) (!!(condition))
-#endif
 
 /** Custom assert which prints various information on failure; always enabled */
 #define AR_REQUIRE_2_(test, msg)                                               \
