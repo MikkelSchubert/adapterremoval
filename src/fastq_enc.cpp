@@ -4,12 +4,14 @@
 #include "fastq_enc.hpp" // header
 #include "debug.hpp"     // for AR_FAIL, AR_REQUIRE
 #include "errors.hpp"    // for fastq_error
+#include "pragmas.hpp"   // for AR_UNLIKELY
 #include "strutils.hpp"  // for shell_escape
 #include <algorithm>     // for min, max
 #include <array>         // for array
 #include <cmath>         // for log10, pow, round
 #include <sstream>       // for ostringstream
 #include <string>        // for string
+#include <string_view>   // for string_view
 
 namespace adapterremoval {
 
@@ -291,6 +293,58 @@ constexpr auto NUCLEOTIDES_LUT_URACILS = build_lookup_table(false, true);
 constexpr auto NUCLEOTIDES_LUT_DEGENERATE = build_lookup_table(true, false);
 constexpr auto NUCLEOTIDES_LUT_BOTH = build_lookup_table(true, true);
 
+void
+validate_sam(std::string_view qualities)
+{
+  AR_UNROLL(8)
+  for (const auto quality : qualities) {
+    if (AR_UNLIKELY(quality < PHRED_OFFSET_MIN || quality > PHRED_OFFSET_MAX)) {
+      throw_invalid_score(quality_encoding::sam, quality);
+    }
+  }
+}
+
+void
+validate_phred_33(std::string_view qualities)
+{
+  AR_UNROLL(8)
+  for (const auto quality : qualities) {
+    if (AR_UNLIKELY(quality < PHRED_33_OFFSET_MIN ||
+                    quality > PHRED_33_OFFSET_MAX)) {
+      throw_invalid_score(quality_encoding::phred_33, quality);
+    }
+  }
+}
+
+void
+convert_phred_64_to_33(std::string& qualities)
+{
+  AR_UNROLL(8)
+  for (auto& quality : qualities) {
+    if (AR_UNLIKELY(quality < PHRED_64_OFFSET_MIN ||
+                    quality > PHRED_64_OFFSET_MAX)) {
+      throw_invalid_score(quality_encoding::phred_64, quality);
+    }
+
+    // Convert Phred+64 to Phred+33
+    quality += PHRED_33_OFFSET_MIN - PHRED_64_OFFSET_MIN;
+  }
+}
+
+void
+convert_solexa_to_phred_33(std::string& qualities)
+{
+  AR_UNROLL(8)
+  for (auto& quality : qualities) {
+    const char current = quality;
+
+    quality = g_solexa_to_phred33.at(static_cast<unsigned char>(quality));
+    if (AR_UNLIKELY(quality == '\0')) {
+      throw_invalid_score(quality_encoding::solexa, current);
+    }
+  }
+}
+
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,8 +352,6 @@ constexpr auto NUCLEOTIDES_LUT_BOTH = build_lookup_table(true, true);
 fastq_encoding::fastq_encoding(quality_encoding encoding,
                                degenerate_encoding degenerate,
                                uracil_encoding uracils) noexcept
-  : m_encoding(encoding)
-
 {
   if (degenerate == degenerate_encoding::reject &&
       uracils == uracil_encoding::reject) {
@@ -319,25 +371,17 @@ fastq_encoding::fastq_encoding(quality_encoding encoding,
 
   switch (encoding) {
     case quality_encoding::phred_33:
-      m_offset_min = PHRED_33_OFFSET_MIN;
-      m_offset_max = PHRED_33_OFFSET_MAX;
+      m_validate_quality_func = validate_phred_33;
       break;
-
     case quality_encoding::phred_64:
-      m_offset_min = PHRED_64_OFFSET_MIN;
-      m_offset_max = PHRED_64_OFFSET_MAX;
+      m_convert_quality_func = convert_phred_64_to_33;
       break;
-
     case quality_encoding::solexa:
-      m_offset_min = SOLEXA_OFFSET_MIN;
-      m_offset_max = SOLEXA_OFFSET_MAX;
+      m_convert_quality_func = convert_solexa_to_phred_33;
       break;
-
     case quality_encoding::sam:
-      m_offset_min = PHRED_OFFSET_MIN;
-      m_offset_max = PHRED_OFFSET_MAX;
+      m_validate_quality_func = validate_sam;
       break;
-
     default:
       AR_FAIL("unknown quality encoding");
   }
@@ -346,6 +390,7 @@ fastq_encoding::fastq_encoding(quality_encoding encoding,
 void
 fastq_encoding::process_nucleotides(std::string& sequence) const
 {
+  AR_UNROLL(8)
   for (char& nuc : sequence) {
     const char original = nuc;
     nuc = m_nucleotides_lut[static_cast<unsigned char>(nuc)];
@@ -358,25 +403,11 @@ fastq_encoding::process_nucleotides(std::string& sequence) const
 void
 fastq_encoding::process_qualities(std::string& qualities) const
 {
-  if (m_encoding == quality_encoding::solexa) {
-    for (auto& quality : qualities) {
-      const char current = quality;
-      const auto idx = static_cast<unsigned char>(quality);
-
-      quality = g_solexa_to_phred33.at(idx);
-      if (quality == '\0') {
-        throw_invalid_score(m_encoding, current);
-      }
-    }
+  if (m_validate_quality_func) {
+    m_validate_quality_func(qualities);
   } else {
-    for (auto& quality : qualities) {
-      if (quality < m_offset_min || quality > m_offset_max) {
-        throw_invalid_score(m_encoding, quality);
-      }
-
-      // Convert Phred+64 to Phred+33 if needed
-      quality -= m_offset_min - PHRED_33_OFFSET_MIN;
-    }
+    AR_REQUIRE(m_convert_quality_func);
+    m_convert_quality_func(qualities);
   }
 }
 

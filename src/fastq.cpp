@@ -6,6 +6,7 @@
 #include "errors.hpp"     // for fastq_error
 #include "fastq_enc.hpp"  // for fastq_encoding
 #include "linereader.hpp" // for line_reader_base
+#include "pragmas.hpp"    // for AR_LIKELY
 #include "strutils.hpp"   // for log_escape
 #include <algorithm>      // for reverse, count, max, min
 #include <array>          // for array

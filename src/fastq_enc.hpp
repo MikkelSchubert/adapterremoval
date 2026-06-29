@@ -3,9 +3,10 @@
 // SPDX-FileCopyrightText: 2014 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <array>   // for array
-#include <cstddef> // for size_t
-#include <string>  // for string
+#include <array>      // for array
+#include <cstddef>    // for size_t
+#include <functional> // for function
+#include <string>     // for string
 
 namespace adapterremoval {
 
@@ -60,6 +61,8 @@ public:
     degenerate_encoding degenerate = degenerate_encoding::reject,
     uracil_encoding uracils = uracil_encoding::reject) noexcept;
 
+  ~fastq_encoding() = default;
+
   /** Validates/normalizes a string of nucleotides in-place. */
   void process_nucleotides(std::string& sequence) const;
 
@@ -75,15 +78,18 @@ public:
   /** Converts an error probability (>= 0) to a Phred+33 encoded score */
   static char p_to_phred_33(double p);
 
+  fastq_encoding(const fastq_encoding&) = default;
+  fastq_encoding(fastq_encoding&&) = default;
+  fastq_encoding& operator=(const fastq_encoding&) = default;
+  fastq_encoding& operator=(fastq_encoding&&) = default;
+
 private:
   //! Lookup table for conversion/validation of nucleotides
   std::array<char, 256>::const_pointer m_nucleotides_lut{ nullptr };
-  //! Quality score encoding expected when decoding data
-  quality_encoding m_encoding;
-  //! Offset of the lowest ASCII value used by the given encoding
-  char m_offset_min{};
-  //! Offset of the maximum ASCII value used by the given encoding
-  char m_offset_max{};
+  //! Function for converting from selected quality encoding
+  std::function<void(std::string&)> m_convert_quality_func{ nullptr };
+  //! Function for validating the selected quality encoding
+  std::function<void(std::string_view)> m_validate_quality_func{ nullptr };
 };
 
 inline const fastq_encoding FASTQ_ENCODING_33{ quality_encoding::phred_33 };
