@@ -18,6 +18,10 @@ short_version();
 std::string_view
 long_version();
 
+/** Returns schema version without revision information */
+std::string_view
+schema_version();
+
 /** Returns program name plus short version string */
 std::string_view
 short_name();

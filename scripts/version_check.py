@@ -17,7 +17,7 @@ SKIP_LIST: set[tuple[Path, str]] = {
 SEMVER_RE = re.compile(
     r"(0|[1-9]\d*)"  # major version
     r"\.(0|[1-9]\d*)"  # minor version
-    r"\.(0|[1-9]\d*)"  # patch version
+    r"\.(0|[1-9]\d*|x)"  # patch version or schema version
     r"(?:-?((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)*))?"  # pre-release
 )
 
@@ -81,7 +81,10 @@ def main(argv: list[str]) -> int:
         print(f"ERROR getting version from {reference}: {versions}", file=sys.stderr)
         return 1
 
-    (expected,) = versions
+    # Schema version
+    major, minor, patch, *_ = versions[0].split(".", 3)
+    versions = [*versions, f"{major}.{minor}.x"]
+
     any_errors = False
 
     for filepath in args.files:
@@ -89,11 +92,11 @@ def main(argv: list[str]) -> int:
             if args.verbose:
                 print(match, filepath, file=sys.stderr)
 
-            if match != expected and (filepath, match) not in SKIP_LIST:
+            if match not in versions and (filepath, match) not in SKIP_LIST:
                 any_errors = True
 
                 print(
-                    f"Found version {match!r} in {filepath}, expected {expected!r}",
+                    f"Found version {match!r} in {filepath}, expected {versions!r}",
                     file=sys.stderr,
                 )
 

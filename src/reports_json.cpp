@@ -699,7 +699,7 @@ write_json_report(const userconfig& config,
   {
     std::ostringstream url;
     url << "https://MikkelSchubert.github.io/adapterremoval/schemas/"
-        << program::short_version() << ".json";
+        << program::schema_version() << ".json";
 
     auto samples = config.samples.get_reader();
     const json_dict_ptr report = std::make_shared<json_dict>();
