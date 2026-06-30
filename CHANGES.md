@@ -2,7 +2,8 @@
 
 ## [3.0.1] - 2026-06-30
 
-This release contains a several bugfixes, as well as a number of optimizations.On average, this results in a 10% increase in throughput.
+This release contains a several bugfixes, as well as a number of optimizations.
+On average, this results in a 10% increase in throughput.
 
 ### Fixed
 
