@@ -86,7 +86,7 @@ simd_selector::process(chunk_ptr data)
       }
 
       if (ready || chunk->eof) {
-        log::info() << "Selecting optimal SIMD instruction set for data:";
+        log::debug() << "Selecting optimal SIMD instruction set for data:";
 
         auto best = std::numeric_limits<double>::min();
         simd::instruction_set selected = simd::instruction_set::none;
@@ -96,8 +96,8 @@ simd_selector::process(chunk_ptr data)
             std::chrono::duration_cast<std::chrono::duration<double>>(duration);
           const double rate = reads / std::max<double>(1e-9, seconds.count());
 
-          log::info() << "  - " << simd::name(candidates.at(i)) << ": "
-                      << format_rough_number(rate) << " reads/s";
+          log::debug() << "  - " << simd::name(candidates.at(i)) << ": "
+                       << format_rough_number(rate) << " reads/s";
 
           if (rate > best) {
             selected = candidates.at(i);
@@ -105,7 +105,7 @@ simd_selector::process(chunk_ptr data)
           }
         }
 
-        log::info() << "Selected SIMD instruction set " << simd::name(selected);
+        log::info() << "Using SIMD instruction set " << simd::name(selected);
 
         *m_simd.get_writer() = selected;
         m_processed_reads = std::numeric_limits<size_t>::max();
