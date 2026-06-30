@@ -24,6 +24,12 @@ short_version()
 }
 
 std::string_view
+schema_version()
+{
+  return SCHEMA_VERSION;
+}
+
+std::string_view
 short_name()
 {
   return PROJECT_NAME " " PROJECT_VERSION;

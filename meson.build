@@ -29,11 +29,16 @@ not_found = dependency('', required: false)
 
 ################################################################################
 
+# The schema version is kept static for patch-level releases
+schema_version_fields = meson.project_version().split('.')
+schema_version = schema_version_fields[0] + '.' + schema_version_fields[1] + '.x'
+
 add_project_arguments(
     compiler.get_supported_arguments(
         # Workaround for systems where _FORTIFY_SOURCE is defined by default
         '-DPROJECT_NAME="@0@"'.format(meson.project_name()),
         '-DPROJECT_VERSION="@0@"'.format(meson.project_version()),
+        '-DSCHEMA_VERSION="@0@"'.format(schema_version),
     ),
     language: 'cpp',
 )
