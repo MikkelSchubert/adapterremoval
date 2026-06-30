@@ -44,9 +44,9 @@ To compile AdapterRemoval, first download and unpack the newest release from Git
 
 .. code-block:: console
 
-    wget -O adapterremoval-3.0.0.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.0.tar.gz
-    tar xvzf adapterremoval-3.0.0.tar.gz
-    cd adapterremoval-3.0.0
+    wget -O adapterremoval-3.0.1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.1.tar.gz
+    tar xvzf adapterremoval-3.0.1.tar.gz
+    cd adapterremoval-3.0.1
     make
 
 The resulting ``adapterremoval3`` executable is located in the ``build/src`` subdirectory, and can be run as-is. It is also possible to perform a system-wide installation of the AdapterRemoval executable, man-page, and examples using the following command:

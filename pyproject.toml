@@ -1,6 +1,6 @@
 [project]
 name = "AdapterRemoval"
-version = "3.0.0"
+version = "3.0.1"
 description = "AdapterRemoval trims adapter sequences and low quality bases from High-Throughput Sequencing (HTS) data in FASTQ format"
 readme = "README.md"
 requires-python = ">=3.7"

@@ -1,5 +1,34 @@
 # Changelog
 
+## [3.0.1] - 2026-06-30
+
+This release contains a several bugfixes, as well as a number of optimizations.
+On average, this results in a 10% increase in throughput.
+
+### Fixed
+
+- Fixed `meson.build` defaulting to LTO 'true' not matching `Makefile` (#321)
+- Fixed check for which files can safely be closed/reopened when running with
+  insufficient file handles, e.g. when demultiplexing many samples (#322)
+- Fixed assert in adapter detection statistics that could incorrectly trigger
+  when the total number of input reads/read-pairs was both divisible by 1024
+  and below 100k (#330)
+- Fixed potentially misleading error messages when parsing errors occurred at or
+  overlapping file boundaries for multiple input files (#338)
+- Fixed assert when using moved-from variables in adapter detection (#348)
+- Fixed assert triggered by ambiguous barcodes assigned to the same sample
+  during demultiplexing (#354)
+
+### Performance
+
+- Optimized reverse-complement of FASTQ sequences (#323)
+- Reuse input FASTQ buffers to reduce memory allocations (#325)
+- Reuse compression streams and buffers for isa-l and libdeflate (#327)
+- Use look-up tables to check and normalize nucleotides (#328)
+- Optimized Mott trimming by performing calculations using integers (#360)
+- Close and flush output files using multiple threads (#362)
+- Specialize FASTQ validation/conversion functions for each input format (#363)
+
 ## [3.0.0] - 2026-05-05
 
 AdapterRemoval v3 is a major revision of AdapterRemoval v2 that aims to simplify
@@ -943,6 +972,7 @@ dramatic effects on the use of the program so please read these notes carefully
 [3.0.0-alpha1]: https://github.com/MikkelSchubert/adapterremoval/compare/v2.3.3...3.0.0-alpha1
 [3.0.0-alpha2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha1...3.0.0-alpha2
 [3.0.0-alpha3]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha2...3.0.0-alpha3
+[3.0.1]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0...3.0.1
 [fastp]: (https://github.com/OpenGene/fastp/)
 [fastqc]: (https://github.com/s-andrews/FastQC)
 [recommended illumina sequences]: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
