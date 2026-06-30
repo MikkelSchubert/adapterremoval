@@ -78,7 +78,7 @@ padding(instruction_set value)
 #endif
     case instruction_set::avx512:
 #if HAVE_AVX512
-      return 0;
+      return 63;
 #else
       AR_FAIL("AVX512 not supported!");
 #endif

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
+#include "debug.hpp"   // for AR_UNLIKELY
 #include "simd.hpp"    // declarations
 #include <bitset>      // for bitset
 #include <cstddef>     // for size_t
@@ -31,39 +32,37 @@ compare_subsequences_avx512(size_t& n_mismatches,
   const auto n_mask = _mm512_set1_epi8('N');
 
   while (length) {
-    __m512i s1;
-    __m512i s2;
+    const __m512i s1 = _mm512_loadu_epi8(seq_1);
+    const __m512i s2 = _mm512_loadu_epi8(seq_2);
 
-    if (length < 64) {
-      const auto mask = 0xFFFFFFFFFFFFFFFFLLU >> (64 - length);
-      s1 = _mm512_maskz_loadu_epi8(mask, seq_1);
-      s2 = _mm512_maskz_loadu_epi8(mask, seq_2);
-
-      length = 0;
-    } else {
-      s1 = _mm512_loadu_epi8(seq_1);
-      s2 = _mm512_loadu_epi8(seq_2);
-
-      seq_1 += 64;
-      seq_2 += 64;
-      length -= 64;
-    }
-
-    // Sets 0xFF for every bit where one or both nucleotides is N
+    // Sets 1 for every bit where one or both nucleotides is N
     const auto ns_mask =
       _mm512_cmpeq_epu8_mask(s1, n_mask) | _mm512_cmpeq_epu8_mask(s2, n_mask);
 
-    // Sets 0xFF for every bit where nucleotides are equal or N
-    const auto eq_mask = _mm512_cmpeq_epu8_mask(s1, s2) | ns_mask;
+    // Sets 1 for every bit where nucleotides are equal or N
+    n_mismatches +=
+      count_masked_avx512(~(_mm512_cmpeq_epu8_mask(s1, s2) | ns_mask));
 
-    n_mismatches += 64 - count_masked_avx512(eq_mask);
+    // Early termination is almost always due to mismatches, so updating the
+    // number of Ns after the penalty check saves time in the common case.
     if ((2 * n_mismatches) + n_ambiguous > max_penalty) {
       return false;
     }
 
-    // Early termination is almost always due to mismatches, so updating the
-    // number of Ns after the above check saves time in the common case.
-    n_ambiguous += count_masked_avx512(ns_mask);
+    if (ns_mask) {
+      // Either read contains an 'N' or we've reached the padding
+      const size_t unpadded_length = std::min<size_t>(64, length);
+
+      n_ambiguous += count_masked_avx512(ns_mask) - (64 - unpadded_length);
+
+      seq_1 += unpadded_length;
+      seq_2 += unpadded_length;
+      length -= unpadded_length;
+    } else {
+      seq_1 += 64;
+      seq_2 += 64;
+      length -= 64;
+    }
   }
 
   return (2 * n_mismatches) + n_ambiguous <= max_penalty;
