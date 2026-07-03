@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
-#include "version.hpp"  // declarations
-#include <string_view>  // for string_view
+#include "version.hpp" // declarations
+#include <string_view> // for string_view
 
 namespace adapterremoval::program {
+
+constexpr bool HAS_BUILD = std::string_view{ "PLACEHOLDER" } != "unknown";
 
 std::string_view
 name()
@@ -14,7 +16,11 @@ name()
 std::string_view
 long_version()
 {
-  return PROJECT_VERSION "-PLACEHOLDER";
+  if (HAS_BUILD) {
+    return PROJECT_VERSION "+PLACEHOLDER";
+  }
+
+  return PROJECT_VERSION;
 }
 
 std::string_view
@@ -38,7 +44,11 @@ short_name()
 std::string_view
 long_name()
 {
-  return PROJECT_NAME " " PROJECT_VERSION "-PLACEHOLDER";
+  if (HAS_BUILD) {
+    return PROJECT_NAME " " PROJECT_VERSION "+PLACEHOLDER";
+  }
+
+  return PROJECT_NAME " " PROJECT_VERSION;
 }
 
 } // namespace adapterremoval::program
