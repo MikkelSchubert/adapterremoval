@@ -103,7 +103,7 @@ sequence_aligner::update_index(alignment_info& alignment, const int max_offset)
 
 void
 sequence_aligner::update_flags(alignment_info& alignment,
-                               const bool paired_end) const
+                               const bool supports_merge) const
 {
   AR_REQUIRE(alignment.m_length >=
              alignment.m_n_ambiguous + alignment.m_n_mismatches);
@@ -123,7 +123,7 @@ sequence_aligner::update_flags(alignment_info& alignment,
     }
 
     if (alignment.m_n_mismatches <= mm_threshold) {
-      alignment.m_type = (paired_end && (n_aligned >= m_merge_threshold))
+      alignment.m_type = (supports_merge && (n_aligned >= m_merge_threshold))
                            ? alignment_type::mergeable
                            : alignment_type::good;
     }
@@ -421,7 +421,9 @@ sequence_aligner::align_paired_end(const fastq& read1,
   }
 
   update_index(alignment, max_adapter_offset);
-  update_flags(alignment, true);
+  // A PE alignment where one read is empty equates to a SE alignment, so
+  // merging is only permitted between two non-empty reads
+  update_flags(alignment, read1.length() > 0 && read2.length() > 0);
 
   return alignment;
 }

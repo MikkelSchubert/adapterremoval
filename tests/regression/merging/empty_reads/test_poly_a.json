@@ -1,0 +1,23 @@
+{
+  "arguments": [
+    "--merge",
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-format",
+    "sam",
+    "--out-prefix",
+    "out_poly_a",
+    "--out-discarded",
+    "out_poly_a.sam",
+    "--pre-trim-polyx",
+    "A"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": ["out_poly_a.sam"],
+    "ignore": ["out_poly_a.html", "out_poly_a.json"]
+  }
+}

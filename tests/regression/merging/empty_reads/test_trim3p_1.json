@@ -1,0 +1,24 @@
+{
+  "arguments": [
+    "--merge",
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-format",
+    "sam",
+    "--out-prefix",
+    "out_trim3p_1",
+    "--out-discarded",
+    "out_trim3p_1.sam",
+    "--pre-trim3p",
+    "50",
+    "0"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": ["out_trim3p_1.sam"],
+    "ignore": ["out_trim3p_1.html", "out_trim3p_1.json"]
+  }
+}
