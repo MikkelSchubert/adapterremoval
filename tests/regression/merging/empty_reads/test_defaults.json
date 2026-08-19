@@ -1,0 +1,21 @@
+{
+  "arguments": [
+    "--merge",
+    "--adapter1",
+    "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "--adapter2",
+    "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--out-format",
+    "sam",
+    "--out-prefix",
+    "out_defaults",
+    "--out-discarded",
+    "out_defaults.sam"
+  ],
+  "files": {
+    "input_1": ["input_1.fastq"],
+    "input_2": ["input_2.fastq"],
+    "output": ["out_defaults.sam"],
+    "ignore": ["out_defaults.html", "out_defaults.json"]
+  }
+}

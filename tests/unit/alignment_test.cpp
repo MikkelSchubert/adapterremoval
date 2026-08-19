@@ -1037,6 +1037,42 @@ TEST_CASE("can_merge threshold ignores Ns", "[alignment:flags]")
   }
 }
 
+TEST_CASE("mergeable requires non-empty sequences", "[alignment:flags]")
+{
+  const adapter_set adapters{ { "AGATCGGAAGAGCACACGTC",
+                                "AGATCGGAAGAGCGTCGTGT" } };
+  sequence_aligner aligner{ adapters, PARAMETERIZE_IS, 1.0 };
+  aligner.set_merge_threshold(11);
+
+  const fastq empty{ "empty", "" };
+  const fastq read1{ "read1", "CCTACAACTTCGCCGATAAAAGATCGGAAGAGCACACGTC" };
+  const fastq read2{ "read2", "ACACGACGCTCTTCCGATCTCCTACAACTTCGCCGATAAA" };
+
+  SECTION("reads are mergeable")
+  {
+    const auto result = aligner.align_paired_end(read1, read2, 0);
+    REQUIRE(result == ALN().offset(-20).length(60).is_good().can_merge());
+  }
+
+  SECTION("read1 must be non-empty")
+  {
+    const auto result = aligner.align_paired_end(empty, read2, 0);
+    REQUIRE(result == ALN().offset(-20).length(20).is_good());
+  }
+
+  SECTION("read2 must be non-empty")
+  {
+    const auto result = aligner.align_paired_end(read1, empty, 0);
+    REQUIRE(result == ALN().offset(20).length(20).is_good());
+  }
+
+  SECTION("reads must be non-empty")
+  {
+    const auto result = aligner.align_paired_end(empty, empty, 0);
+    REQUIRE(result == ALN().adapter_id(-1));
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Misc
 

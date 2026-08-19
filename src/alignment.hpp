@@ -272,8 +272,8 @@ private:
 
   /** Sets the user-facing adapter ID and prioritizes adapter sequences */
   void update_index(alignment_info& alignment, int max_offset);
-  /** Sets "is_good" and "can_merge" based on thresholds */
-  void update_flags(alignment_info& alignment, bool paired_end) const;
+  /** Sets alignment type ("bad", "good", etc.) based on thresholds */
+  void update_flags(alignment_info& alignment, bool supports_merge) const;
 
   //! SIMD instruction set to use for sequence comparisons
   const simd::compare_subsequences_func m_compare_func;
