@@ -28,6 +28,11 @@ jobs:
           persist-credentials: false
           ref: ${{ env.REF }}
 
+      - name: create tar.gz
+        shell: bash
+        run: |
+          git archive --format tar.gz --output "adapterremoval-${{ env.NAME }}-src.tar.gz" --prefix "adapterremoval-${{ env.NAME }}/" "${{ env.REF }}"
+
       - name: Read changelog
         id: changelog
         shell: bash
@@ -45,7 +50,7 @@ jobs:
           tag: ${{ env.REF }}
           release_name: "AdapterRemoval ${{ env.NAME }}"
           body: ${{ steps.changelog.outputs.TEXT }}
-          file: "examples" # must exist, but won't be uploaded since it's not a file as of v2.11.5
+          file: "adapterremoval-${{ env.NAME }}-src.tar.gz"
           overwrite: true
           draft: true
 
@@ -58,10 +63,13 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: linux-x86_64
+            format: tar.gz
           - os: macos-latest
             arch: macos-aarch64
+            format: tar.gz
           - os: windows-latest
             arch: windows-x86_64
+            format: zip
       # Do not auto-cancel other runners if one fails
       fail-fast: false
 
@@ -97,13 +105,14 @@ jobs:
             mingw-w64-ucrt-x86_64-python
             mingw-w64-ucrt-x86_64-python-fastjsonschema
             mingw-w64-ucrt-x86_64-python-sphinx
+            zip
 
       - if: ${{ matrix.os != 'windows-latest' }}
         name: setup, build, test, and bundle (unix)
         run: |
           bash scripts/setup-${{ matrix.os }}.sh --static
           bash scripts/build-common.sh STATIC=true DOCS=enabled
-          bash scripts/build-bundle.sh "build/install/" "${TARGET}"
+          bash scripts/build-bundle.sh "build/install/" "${TARGET}" "${{ matrix.format }}"
 
       - if: ${{ matrix.os == 'windows-latest' }}
         name: setup, build, test, and bundle (windows)
@@ -111,12 +120,12 @@ jobs:
         run: |
           bash scripts/setup-${{ matrix.os }}.sh --static
           bash scripts/build-common.sh STATIC=true DOCS=enabled
-          bash scripts/build-bundle.sh "build/install/" "${TARGET}"
+          bash scripts/build-bundle.sh "build/install/" "${TARGET}" "${{ matrix.format }}"
 
       - name: upload binaries to release
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
         with:
-          asset_name: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.tar.gz"
-          file: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.tar.gz"
+          asset_name: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.${{ matrix.format }}"
+          file: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.${{ matrix.format }}"
           release_id: ${{ needs.create_draft_release.outputs.release_id }}
           draft: true
