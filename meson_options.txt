@@ -8,12 +8,6 @@ option(
     description: 'Build static executable',
 )
 option(
-    'mimalloc',
-    type: 'feature',
-    value: 'disabled',
-    description: 'Require and link to mimalloc library',
-)
-option(
     'harden',
     type: 'boolean',
     value: true,
