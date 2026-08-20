@@ -1,5 +1,32 @@
 # Changelog
 
+## [3.0.2] - 2026-08-20
+
+This release contains a couple of bugfixes, a minor optimization, and other
+minor changes:
+
+### Fixed
+
+- Fixed AdapterRemoval attempting to merge reads that had been trimmed
+  completely due to `--pre-trim3p` or `--pre-trim-polyx`. This would result in a
+  assertion error when an empty mate 2 read was produced and `--merge` was used.
+- Fixed build hash in version not adhering to semver specifications; the hash is
+  now appended as `version+build` rather than `version-build`.
+- Fixed the fallback build name `-unknown` being used for non-git builds.
+- Fixed compilation with C++ libraries lacking the `_Exit` function.
+
+### Changed
+
+- Reduced the verbosity of SIMD auto-selection log messages.
+- Expanded installation instructions and added description of build flags.
+- Removed support for static builds using Alpine containers. Due to the
+  performance overhead, this approach was abandoned for the v3.0.0 release.
+
+### Performance
+
+- Added compiler hints resulting in a 50% increase in the throughput of detailed
+  statistics collection. The observed effect is smaller when using Clang.
+
 ## [3.0.1] - 2026-06-30
 
 This release contains a several bugfixes, as well as a number of optimizations.
@@ -973,6 +1000,7 @@ dramatic effects on the use of the program so please read these notes carefully
 [3.0.0-alpha2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha1...3.0.0-alpha2
 [3.0.0-alpha3]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0-alpha2...3.0.0-alpha3
 [3.0.1]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.0...3.0.1
+[3.0.2]: https://github.com/MikkelSchubert/adapterremoval/compare/3.0.1...3.0.2
 [fastp]: (https://github.com/OpenGene/fastp/)
 [fastqc]: (https://github.com/s-andrews/FastQC)
 [recommended illumina sequences]: https://emea.support.illumina.com/bulletins/2016/12/what-sequences-do-i-use-for-adapter-trimming.html
