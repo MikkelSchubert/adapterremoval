@@ -119,7 +119,7 @@ libcore = static_library(
     'utilities.cpp',
     config_inc,
     version_cpp,
-    dependencies: [libdeflate, libisal, libmimalloc, libthreads, libcppfs],
+    dependencies: [libdeflate, libisal, libthreads, libcppfs],
 )
 
 exe = executable(
@@ -143,6 +143,6 @@ exe = executable(
     html_template,
     config_inc,
     link_with: [libcore, libsimd],
-    dependencies: [libdeflate, libisal, libmimalloc, libthreads, libcppfs],
+    dependencies: [libdeflate, libisal, libthreads, libcppfs],
     install: true,
 )

@@ -102,20 +102,6 @@ The following options may be passed to ``make`` when building AdapterRemoval. Fo
 - ``UV=enabled`` / ``UV=disabled`` / ``UV=auto`` to select whether or not uv_ should be used to install optional requirements for running regression tests (fastjsonschema_). Defaults to ``auto``, which uses ``uv >= 0.5.17`` if it is available.
 - ``SANITIZE=true`` / ``SANITIZE=false`` to enable address and undefined behavior sanitation at runtime. This has a significant performance overhead. Defaults to ``false``.
 
-********************************
- Building a static Linux binary
-********************************
-
-A podman_/docker_ ``Containerfile`` is provided, which is used to generate the pre-compiled binaries mentioned above. To build this, either podman_ or docker_ are required.
-
-To build the container and the static binary, run
-
-.. code-block:: console
-
-    make static-container static
-
-The resulting executable and other files are saved to ``build/static/install``.
-
 .. _docker: https://www.docker.com/
 
 .. _fastjsonschema: https://github.com/horejsek/python-fastjsonschema

@@ -4,7 +4,7 @@
 ## Optional features; either set to 'true' to enable or 'false' to disable:
 ##   $ make DEBUG=true
 ## or set 'enabled', 'disabled', or 'auto' (enabled if requirements are met)
-##   $ make MIMALLOC=enabled
+##   $ make STATIC=enabled
 
 # Include coverage instrumentation in build
 COVERAGE := false
@@ -35,21 +35,7 @@ LTO := false
 LTO_MODE := thin
 
 # Generate statically linked binary
-# It is recommended to use the included Containerfile to build the static binary
 STATIC := false
-
-# Use/require mimalloc. Mainly intended for static builds, as the musl allocator
-# comes with a significant performance cost
-MIMALLOC := disabled
-
-###############################################################################
-# (Container for) building static binaries using Alpine
-
-# Podman is preferred (and the fallback if neither is found), since it is more
-# likely that the user can execute podman than docker, if both are present
-CONTAINER_RUNNER := $(firstword $(shell which podman docker) podman)
-
-CONTAINER_NAME := ar3static
 
 ###############################################################################
 
@@ -128,37 +114,8 @@ setup ${NINJAFILE}:
 		-Ddocs=${DOCS} \
 		-Duv=${UV} \
 		-Dharden=${HARDEN} \
-		-Dmimalloc=${MIMALLOC} \
 		-Dstatic=${STATIC} \
 		${MESON_OPTIONS}
-
-static:
-	mkdir -p "${BUILDDIR}"
-	# Compilation with sanitize flags fails with alpine, but support is
-	# left in to avoid giving the false impression that they were enabled
-	"${CONTAINER_RUNNER}" run --rm -t \
-		--mount "type=bind,src=${PWD}/,dst=/host/src/" \
-		--mount "type=bind,src=${BUILDDIR}/,dst=/host/out/" \
-		--entrypoint /usr/bin/make \
-		"${CONTAINER_NAME}" \
-		-C /host/src \
-		BUILDDIR=/host/out/static/build \
-		PREFIX=/host/out/static/install \
-		DEBUG=${DEBUG} \
-		COVERAGE=${COVERAGE} \
-		MANPAGE=${MANPAGE} \
-		DOCS=${DOCS} \
-		UV=${UV} \
-		SANITIZE=${SANITIZE} \
-		HARDEN=${HARDEN} \
-		STATIC=true \
-		MIMALLOC=enabled \
-		setup \
-		tests \
-		install
-
-static-container:
-	"${CONTAINER_RUNNER}" build -f "Containerfile" -t ${CONTAINER_NAME} "."
 
 unit-tests-executable: ${NINJAFILE}
 	meson compile -C "${BUILDDIR}" unit_tests
@@ -172,5 +129,5 @@ update-regression-tests: ${NINJAFILE}
 test tests: executables unit-tests regression-tests
 
 .PHONY: clean clean-coverage coverage-xml coverage docs executable \
-	executables install regression-tests setup static-container static test \
-	tests unit-tests unit-tests-executable update-regression-tests
+	executables install regression-tests setup test tests unit-tests \
+	unit-tests-executable update-regression-tests
