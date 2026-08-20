@@ -7,6 +7,7 @@
 #include "counts.hpp"     // for indexed_counts, rates
 #include "fastq.hpp"      // for ACGTN, fastq, ACGT
 #include "fastq_enc.hpp"  // for PHRED_OFFSET_MIN, PHRED_SCORE_MAX
+#include "pragmas.hpp"    // for AR_ASSUME
 #include "robin_hood.hpp" // for unordered_flat_map
 #include "utilities.hpp"  // for prng_seed
 #include <algorithm>      // for max, min
@@ -283,18 +284,25 @@ fastq_statistics::process(const fastq& read, size_t num_input_reads)
   m_number_of_input_reads += num_input_reads;
   m_number_of_output_reads++;
 
-  const auto sequence_len = read.length();
+  const std::string_view sequence = read.sequence();
+  const std::string_view qualities = read.qualities();
+  // SAFETY: This invariant is enforced by `fastq`
+  AR_ASSUME(sequence.length() == qualities.length());
+
+  const auto sequence_len = sequence.length();
   m_length_dist.resize_up_to(sequence_len + 1);
   m_length_dist.inc(sequence_len);
 
   if (std::generate_canonical<float, 32>(m_rng) <= m_sample_rate) {
+    m_number_of_sampled_reads++;
+
     m_nucleotide_pos.resize_up_to(sequence_len);
     m_quality_pos.resize_up_to(sequence_len);
 
-    m_number_of_sampled_reads++;
-
-    const std::string_view sequence = read.sequence();
-    const std::string_view qualities = read.qualities();
+    // Compiler hint; mainly benefits GCC
+    // SAFETY: These invariants is upheld by `indexed_counts::resize_up_to`
+    AR_ASSUME(m_nucleotide_pos.size() >= sequence_len);
+    AR_ASSUME(m_quality_pos.size() >= sequence_len);
 
     indexed_count<ACGTN> nucls;
     for (size_t i = 0; i < sequence_len; ++i) {
