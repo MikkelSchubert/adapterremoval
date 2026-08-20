@@ -125,7 +125,7 @@ jobs:
       - name: upload binaries to release
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
         with:
-          asset_name: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.tar.gz"
+          asset_name: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.${{ matrix.format }}"
           file: "adapterremoval-${{ env.NAME }}-${{ matrix.arch }}.${{ matrix.format }}"
           release_id: ${{ needs.create_draft_release.outputs.release_id }}
           draft: true
