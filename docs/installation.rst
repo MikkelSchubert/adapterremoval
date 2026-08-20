@@ -57,9 +57,9 @@ To compile AdapterRemoval, first download and unpack the newest release from Git
 
 .. code-block:: console
 
-    wget -O adapterremoval-3.0.1.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.1.tar.gz
-    tar xvzf adapterremoval-3.0.1.tar.gz
-    cd adapterremoval-3.0.1
+    wget -O adapterremoval-3.0.2.tar.gz https://github.com/MikkelSchubert/adapterremoval/archive/v3.0.2.tar.gz
+    tar xvzf adapterremoval-3.0.2.tar.gz
+    cd adapterremoval-3.0.2
     make setup
     make
 
