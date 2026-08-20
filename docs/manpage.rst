@@ -184,7 +184,7 @@ FASTQ processing options
 
 .. option:: --min-overlap length
 
-    The minimum amount of bases that must overlap, not counting ambiguous nucleotides (Ns), for a single-end or paired-end alignment to be considered valid. For paired-end mode, this is important when no adapters were specified or detected, to prevent trimming of short palindromes. Defaults to 1 in single-end mode, and `--merge-threshold` in paired-end mode.
+    The minimum amount of bases that must overlap, not counting ambiguous nucleotides (Ns), for a single-end or paired-end alignment to be considered valid. For paired-end mode, this is important when no adapters were specified or detected, to prevent trimming of short palindromes. Defaults to 1 in single-end mode, and ``--merge-threshold`` in paired-end mode.
 
 .. option:: --mismatch-rate rate
 
@@ -256,7 +256,7 @@ Quality trimming options
 
 .. option:: --pre-trim-polyx [nucleotides...]
 
-    Enable trimming of poly-X tails prior to read alignment and adapter trimming. Zero or more nucleotides (A, C, G, T) may be specified, separated by spaces, with zero nucleotides corresponding to all of A, C, G, and T. Defaults to no trimming.
+    Enable trimming of poly-X tails prior to read alignment and adapter trimming. Zero or more nucleotides (A, C, G, T) may be specified, separated by spaces, with zero nucleotides corresponding to all of A, C, G, and T. If set to ``auto``, AdapterRemoval automatically trims poly-Gs if read names indicate that a two-color Illumina platforms was used. If set to ``off``, no pre-trimming of poly-X tails is performed. Default is ``auto``.
 
 .. option:: --post-trim-polyx [nucleotides...]
 

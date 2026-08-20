@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 SKIP_LIST: set[tuple[Path, str]] = {
-    (Path("README.md"), "2.3.4"),  # Link to current stable version
+    (Path("docs/installation.rst"), "0.5.17"),  # uv version
 }
 
 # Captures subset of https://semver.org/, based on AdapterRemoval usage
