@@ -27,3 +27,12 @@
 #else
 #define AR_UNROLL(n) // no-op fallback
 #endif
+
+//! Compiler hint declaring that a condition is always true
+//! SAFETY: This causes undefined behavior if the condition is not always true
+#define AR_ASSUME(cond)                                                        \
+  do {                                                                         \
+    if (!(cond)) {                                                             \
+      __builtin_unreachable();                                                 \
+    }                                                                          \
+  } while (0)
