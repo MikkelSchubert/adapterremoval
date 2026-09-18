@@ -1267,13 +1267,13 @@ userconfig::userconfig()
   argparser.add("--log-colors", "X")
     .help("Enable/disable the use of colors when writing log messages. If set "
           "to auto, colors will only be enabled if STDERR is a terminal and "
-          "the NO_COLORS is environmental variable is not set")
+          "the NO_COLOR is environmental variable is not set")
     .bind_str(&log_color)
     .with_choices({ "auto", "always", "never" })
     .with_default("auto");
   argparser.add("--log-progress", "X")
     .help("Specify the type of progress reports used. If set to auto, then a "
-          "spinner will be used if STDERR is a terminal and the NO_COLORS "
+          "spinner will be used if STDERR is a terminal and the NO_COLOR "
           "environmental variable is not set, otherwise logging will be used")
     .bind_str(nullptr)
     .with_choices({ "auto", "log", "spin", "never" })
