@@ -361,11 +361,11 @@ Reporting options
 
 .. option:: --log-colors name
 
-    Enable/disable the use of colors when writing log messages. If set to auto, colors will only be enabled if STDERR is a terminal and the NO_COLORS environmental variable is not set. Possible values are auto, always, and never. Defaults to auto.
+    Enable/disable the use of colors when writing log messages. If set to auto, colors will only be enabled if STDERR is a terminal and the NO_COLOR environmental variable is not set. Possible values are auto, always, and never. Defaults to auto.
 
 .. option:: --log-progress name
 
-    Specify the type of progress report used. If set to ``auto``, then a spinner will be used if STDERR is a terminal and the NO_COLORS environmental variable is not set, otherwise a log line will be written for every 1 million records processed. Possible values are ``auto``, ``spin``, ``log``, and ``never``. Default is ``auto``.
+    Specify the type of progress report used. If set to ``auto``, then a spinner will be used if STDERR is a terminal and the NO_COLOR environmental variable is not set, otherwise a log line will be written for every 1 million records processed. Possible values are ``auto``, ``spin``, ``log``, and ``never``. Default is ``auto``.
 
 *******************************
  Window-based quality trimming
