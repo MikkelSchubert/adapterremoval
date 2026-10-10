@@ -18,7 +18,6 @@
 #include "userconfig.hpp"       // for userconfig
 #include "utilities.hpp"        // for dynamic_cast_unique
 #include <cstddef>              // for size_t
-#include <limits>               // for numeric_limits
 #include <memory>               // for unique_ptr, __shared_ptr_access, ...
 #include <string>               // for string, operator<<, char_traits
 #include <utility>              // for move
@@ -36,7 +35,9 @@ class reads_sink : public analytical_step
 {
 public:
   reads_sink()
-    : analytical_step(processing_order::unordered, "reads_sink")
+    : analytical_step(processing_order::unordered,
+                      "reads_sink",
+                      step_id::UNDEFINED)
   {
   }
 
@@ -58,7 +59,9 @@ public:
   explicit adapter_identification(const userconfig& config,
                                   statistics& stats,
                                   const size_t max_adapter_length)
-    : analytical_step(processing_order::unordered, "adapter_identification")
+    : analytical_step(processing_order::unordered,
+                      "adapter_identification",
+                      step_id::UNDEFINED)
     , m_config(config)
     , m_sink_id(stats.adapter_id)
   {
@@ -167,7 +170,7 @@ generate_reports(const userconfig& config)
                        .initialize();
 
   // Step 6: Identify adapters from pair-wise alignments and infer insert sizes
-  size_t step = std::numeric_limits<size_t>::max();
+  auto step = step_id::UNDEFINED;
   if (config.paired_ended_mode) {
     // Attempt to identify adapters through pair-wise alignments
     step = sch.add<adapter_identification>(config, stats, max_adapter_length);

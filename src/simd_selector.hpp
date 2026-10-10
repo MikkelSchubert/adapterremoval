@@ -20,7 +20,7 @@ public:
                          threadsafe_data<simd::instruction_set> is,
                          double mismatch_threshold,
                          uint32_t shift,
-                         size_t next_step);
+                         step_id next_step);
 
   chunk_vec process(chunk_ptr data) override;
 
@@ -30,8 +30,6 @@ protected:
   [[nodiscard]] clock::duration process_chunk(sequence_aligner& aligner,
                                               const fastq_chunk& chunk) const;
 
-  //! Next step in the pipeline
-  size_t m_next_step;
   //! Sample set. Required to obtain selected adapters
   threadsafe_data<sample_set> m_samples;
   //! Default or selected SIMD instruction set

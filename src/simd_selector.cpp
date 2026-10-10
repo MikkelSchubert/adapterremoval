@@ -31,11 +31,10 @@ constexpr std::chrono::milliseconds MAX_MS_PER_TEST{ 100 };
 
 simd_selector::simd_selector(threadsafe_data<sample_set> samples,
                              threadsafe_data<simd::instruction_set> is,
-                             double mismatch_threshold,
-                             uint32_t shift,
-                             size_t next_step)
-  : analytical_step(processing_order::ordered, "simd_selector")
-  , m_next_step(next_step)
+                             const double mismatch_threshold,
+                             const uint32_t shift,
+                             const step_id next_step)
+  : analytical_step(processing_order::ordered, "simd_selector", next_step)
   , m_samples(std::move(samples))
   , m_simd(std::move(is))
   , m_mismatch_threshold(mismatch_threshold)
@@ -114,9 +113,9 @@ simd_selector::process(chunk_ptr data)
       }
     }
 
-    chunks.emplace_back(m_next_step, std::move(chunk));
+    chunks.emplace_back(std::move(chunk));
   } else {
-    chunks.emplace_back(m_next_step, std::move(data));
+    chunks.emplace_back(std::move(data));
   }
 
   return chunks;

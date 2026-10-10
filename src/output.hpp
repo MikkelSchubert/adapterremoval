@@ -45,7 +45,7 @@ public:
   /** Sets the output file for a given read type. */
   void set_file(read_file rtype, output_file file);
   /** Sets the pipeline step for a given read type. */
-  void set_step(read_file rtype, size_t step);
+  void set_step(read_file rtype, step_id step);
 
   [[nodiscard]] size_t size() const { return m_output.size(); }
 
@@ -74,7 +74,7 @@ public:
   }
 
   /** Unique pipeline step indexed using `offset` */
-  [[nodiscard]] size_t step(size_t offset) const
+  [[nodiscard]] step_id step(size_t offset) const
   {
     return m_output.at(offset).step;
   }
@@ -87,7 +87,7 @@ private:
     //! Unique output filename; may be shared by multiple read types
     output_file file;
     //! The pipeline step responsible for processing/writing this output
-    size_t step = NO_OUTPUT;
+    step_id step = step_id::UNDEFINED;
   };
 
   std::vector<file_and_step> m_output{};
@@ -113,11 +113,11 @@ public:
   //! Filename for unidentified mate 1 reads (demultiplexing)
   output_file unidentified_1{ std::string{ DEV_NULL } };
   //! Pipeline step responsible for compressing/writing unidentified 1 reads
-  size_t unidentified_1_step = NO_OUTPUT;
+  step_id unidentified_1_step = step_id::UNDEFINED;
   //! Filename for unidentified mate 2 reads (demultiplexing)
   output_file unidentified_2{ std::string{ DEV_NULL } };
   //! Pipeline step responsible for compressing/writing unidentified 2 reads
-  size_t unidentified_2_step = NO_OUTPUT;
+  step_id unidentified_2_step = step_id::UNDEFINED;
 
   using sample_output_vec = std::vector<sample_output_files>;
 
@@ -189,10 +189,10 @@ class post_demux_steps
 {
 public:
   //! Step used to process unidentified reads
-  size_t unidentified = NO_OUTPUT;
+  step_id unidentified = step_id::UNDEFINED;
 
   /* Processing step for each sample. */
-  std::vector<size_t> samples{};
+  std::vector<step_id> samples{};
 };
 
 /** Helper class used to generate per file-type chunks for processed reads */

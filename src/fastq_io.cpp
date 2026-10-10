@@ -198,11 +198,10 @@ fastq_vec_cache s_fastq_vec_cache;
 } // namespace
 
 read_fastq::read_fastq(const userconfig& config,
-                       const size_t next_step,
+                       const step_id next_step,
                        const read_fastq::file_type mode)
-  : analytical_step(processing_order::ordered, "read_fastq")
+  : analytical_step(processing_order::ordered, "read_fastq", next_step)
   , m_reader(select_filenames(config, mode))
-  , m_next_step(next_step)
   , m_mode(mode)
   , m_head(config.head)
 {
@@ -211,7 +210,7 @@ read_fastq::read_fastq(const userconfig& config,
 void
 read_fastq::add_steps(scheduler& sch,
                       const userconfig& config,
-                      size_t next_step)
+                      step_id next_step)
 {
   const auto add_step = [&sch, &config](auto next, auto type) {
     return sch.add<read_fastq>(config, next, type);
@@ -272,7 +271,7 @@ read_fastq::process(chunk_ptr data)
   chunk->first = m_first;
   m_first = false;
 
-  chunks.emplace_back(m_next_step, std::move(chunk));
+  chunks.emplace_back(std::move(chunk));
   return chunks;
 }
 
@@ -341,10 +340,9 @@ read_fastq::release(std::vector<fastq>&& chunk)
 // Implementations for 'scan_fastq'
 
 scan_fastq::scan_fastq(const userconfig& config,
-                       const size_t next_step,
+                       const step_id next_step,
                        statistics& stats)
-  : analytical_step(processing_order::ordered, "scan_fastq")
-  , m_next_step(next_step)
+  : analytical_step(processing_order::ordered, "scan_fastq", next_step)
   , m_mate_separator(config.input_mate_separator)
   , m_mate_separator_identified(config.input_mate_separator)
   , m_pre_trim_poly_x(config.pre_trim_poly_x)
@@ -396,7 +394,7 @@ scan_fastq::process(chunk_ptr data)
   chunk->mate_separator = m_mate_separator;
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(chunk));
+  chunks.emplace_back(std::move(chunk));
   return chunks;
 }
 
@@ -445,12 +443,13 @@ post_process_fastq::stats_pair::stats_pair(double sample_rate,
 // Implementations for 'post_process_fastq'
 
 post_process_fastq::post_process_fastq(const userconfig& config,
-                                       size_t next_step,
+                                       const step_id next_step,
                                        statistics& stats)
-  : analytical_step(processing_order::unordered, "post_process_fastq")
+  : analytical_step(processing_order::unordered,
+                    "post_process_fastq",
+                    next_step)
   , m_statistics_1(stats.input_1)
   , m_statistics_2(stats.input_2)
-  , m_next_step(next_step)
   , m_encoding(config.io_encoding)
   , m_timer(std::make_unique<progress_timer>(config.log_progress))
 {
@@ -502,7 +501,7 @@ post_process_fastq::process(chunk_ptr data)
   }
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(chunk));
+  chunks.emplace_back(std::move(chunk));
 
   return chunks;
 }
@@ -525,9 +524,8 @@ post_process_fastq::finalize()
 
 split_fastq::split_fastq(const userconfig& config,
                          const output_file& file,
-                         size_t next_step)
-  : analytical_step(processing_order::ordered, "split_fastq")
-  , m_next_step(next_step)
+                         const step_id next_step)
+  : analytical_step(processing_order::ordered, "split_fastq", next_step)
   , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
 {
 }
@@ -570,7 +568,7 @@ split_fastq::process(chunk_ptr data)
         block->uncompressed_size = m_buffer.size();
         block->buffers.emplace_back(std::move(m_buffer));
 
-        chunks.emplace_back(m_next_step, std::move(block));
+        chunks.emplace_back(std::move(block));
 
         m_buffer = buffer();
         m_buffer.reserve(BGZF_BLOCK_SIZE);
@@ -591,7 +589,7 @@ split_fastq::process(chunk_ptr data)
     block->uncompressed_size = m_buffer.size();
     block->buffers.emplace_back(std::move(m_buffer));
 
-    chunks.emplace_back(m_next_step, std::move(block));
+    chunks.emplace_back(std::move(block));
   }
 
   return chunks;
@@ -750,12 +748,11 @@ libdeflate_deflate_block(buffer& input_buffer,
 
 gzip_split_fastq::gzip_split_fastq(const userconfig& config,
                                    const output_file& file,
-                                   size_t next_step)
-  : analytical_step(processing_order::unordered, "gzip_split_fastq")
+                                   const step_id next_step)
+  : analytical_step(processing_order::unordered, "gzip_split_fastq", next_step)
   , m_config(config)
   , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
   , m_format(file.format)
-  , m_next_step(next_step)
 {
 }
 
@@ -822,7 +819,7 @@ gzip_split_fastq::process(chunk_ptr data)
   std::swap(input_buffer, output_buffer);
 
   chunk_vec chunks;
-  chunks.emplace_back(m_next_step, std::move(chunk));
+  chunks.emplace_back(std::move(chunk));
 
   return chunks;
 }
@@ -832,7 +829,9 @@ gzip_split_fastq::process(chunk_ptr data)
 
 write_fastq::write_fastq(const userconfig& config, const output_file& file)
   // Allow disk IO and writing to STDOUT at the same time
-  : analytical_step(processing_order::ordered_io, "write_fastq")
+  : analytical_step(processing_order::ordered_io,
+                    "write_fastq",
+                    step_id::UNDEFINED)
   , m_output(file.name)
   , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
 {

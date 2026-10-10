@@ -9,10 +9,12 @@
 #include <functional>    // for greater
 #include <memory>        // for __shared_ptr_access, operator<, unique...
 #include <mutex>         // for mutex, unique_lock
+#include <ostream>       // for ostream
 #include <string>        // for string
 #include <system_error>  // for system_error
 #include <thread>        // for thread
 #include <utility>       // for move
+#include <variant>       // for variant
 #include <vector>        // for vector
 
 namespace adapterremoval {
@@ -35,9 +37,12 @@ analytical_chunk::~analytical_chunk() = default;
 ///////////////////////////////////////////////////////////////////////////////
 // analytical_step
 
-analytical_step::analytical_step(processing_order step_order, std::string name)
+analytical_step::analytical_step(processing_order step_order,
+                                 std::string name,
+                                 const step_id next_step)
   : m_step_order(step_order)
   , m_name(std::move(name))
+  , m_next_step(next_step)
 {
 }
 
@@ -121,6 +126,8 @@ public:
   /** Perform any final cleanup associated with the task; requires locking */
   void finalize() const { m_ptr->finalize(); }
 
+  [[nodiscard]] step_id next_step() const { return m_ptr->next_step(); }
+
   scheduler_step(const scheduler_step&) = delete;
   scheduler_step(scheduler_step&&) = delete;
   scheduler_step& operator=(const scheduler_step&) = delete;
@@ -134,21 +141,19 @@ private:
   //! Running counter of output; for (possibly) sparse output of ordered steps
   size_t m_last_chunk = 0;
   //! (Ordered) vector of chunks to be processed
-  std::vector<chunk_pair> m_queue{};
+  std::vector<data_chunk> m_queue{};
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 // scheduler
 
-size_t
+step_id
 scheduler::add_step(std::unique_ptr<analytical_step> step)
 {
   AR_REQUIRE(step);
 
-  const size_t step_id = m_steps.size();
   m_steps.push_back(std::make_shared<scheduler_step>(std::move(step)));
-
-  return step_id;
+  return step_id(m_steps.size() - 1);
 }
 
 bool
@@ -324,9 +329,23 @@ scheduler::run_calc_loop()
     }
 
     // Schedule each of the resulting blocks
-    for (auto& result : chunks) {
-      AR_REQUIRE(result.first < m_steps.size());
-      const step_ptr& recipient = m_steps.at(result.first);
+    for (auto&& output : chunks) {
+      step_id recipient_id = step->next_step();
+      chunk_ptr output_chunk;
+      if (auto* output_ptr = std::get_if<chunk_ptr>(&output)) {
+        AR_REQUIRE(recipient_id != step_id::UNDEFINED);
+        output_chunk = std::move(*output_ptr);
+      } else if (auto* output_pair = std::get_if<chunk_pair>(&output)) {
+        AR_REQUIRE(recipient_id == step_id::UNDEFINED);
+
+        recipient_id = output_pair->first;
+        output_chunk = std::move(output_pair->second);
+      } else {
+        AR_FAIL("unexpected variant");
+      }
+
+      AR_REQUIRE(recipient_id.get() < m_steps.size());
+      const step_ptr& recipient = m_steps.at(recipient_id.get());
 
       // Inherit reference count from source chunk
       auto next_id = chunk.first;
@@ -336,7 +355,7 @@ scheduler::run_calc_loop()
         next_id = recipient->new_chunk_id();
       }
 
-      if (recipient->push_chunk(next_id, std::move(result.second))) {
+      if (recipient->push_chunk(next_id, std::move(output_chunk))) {
         if (recipient->ordering() == processing_order::ordered_io) {
           m_queue_io.push(recipient);
         } else {
@@ -364,6 +383,16 @@ scheduler::run_calc_loop()
 
   m_condition_io.notify_all();
   m_condition_calc.notify_all();
+}
+
+std::ostream&
+operator<<(std::ostream& os, step_id step)
+{
+  if (step == step_id::UNDEFINED) {
+    return os << "step_id::UNDEFINED";
+  } else {
+    return os << "step_id{" << step.get() << "}";
+  }
 }
 
 } // namespace adapterremoval

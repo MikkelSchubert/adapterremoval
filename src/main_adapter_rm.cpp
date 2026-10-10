@@ -15,7 +15,6 @@
 #include "trimming.hpp"         // for pe_reads_processor, se_reads_processor
 #include "userconfig.hpp"       // for userconfig, output_files, DEV_NULL
 #include <cstddef>              // for size_t
-#include <limits>               // for numeric_limits
 
 namespace adapterremoval {
 
@@ -54,7 +53,7 @@ remove_adapter_sequences(const userconfig& config)
   }
 
   // Step 6: Parse and demultiplex reads based on single or double indices
-  size_t step = std::numeric_limits<size_t>::max();
+  auto step = step_id::UNDEFINED;
   if (config.is_demultiplexing_enabled()) {
     // Statistics and serialization of unidentified reads
     steps.unidentified =

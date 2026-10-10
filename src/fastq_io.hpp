@@ -50,13 +50,13 @@ class read_fastq : public analytical_step
 public:
   enum class file_type;
 
-  read_fastq(const userconfig& config, size_t next_step, file_type mode);
+  read_fastq(const userconfig& config, step_id next_step, file_type mode);
   ~read_fastq() override = default;
 
   /** Adds read_fastq step(s) to the scheduler depending on current input */
   static void add_steps(scheduler& sch,
                         const userconfig& config,
-                        size_t next_step);
+                        step_id next_step);
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
   chunk_vec process(chunk_ptr data) override;
@@ -82,8 +82,6 @@ private:
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_reader;
 
-  const size_t m_next_step;
-
   //! The kind of data read by the reader (SE, PE, interleaved)
   file_type m_mode;
   //! Used to track whether the first block has been read
@@ -101,7 +99,7 @@ private:
 class scan_fastq : public analytical_step
 {
 public:
-  scan_fastq(const userconfig& config, size_t next_step, statistics& stats);
+  scan_fastq(const userconfig& config, step_id next_step, statistics& stats);
   ~scan_fastq() override = default;
 
   /** Reads lines from the input file and saves them in an fastq_file_chunk. */
@@ -114,8 +112,6 @@ public:
 
 private:
   void detect_two_color(const std::vector<fastq>& reads);
-
-  const size_t m_next_step;
 
   //! Character used to join read-names with mate numbers, e.g. '/'
   char m_mate_separator = '\0';
@@ -146,7 +142,7 @@ class post_process_fastq : public analytical_step
 public:
   /** Constructor. */
   post_process_fastq(const userconfig& config,
-                     size_t next_step,
+                     step_id next_step,
                      statistics& stats);
 
   ~post_process_fastq() override;
@@ -178,8 +174,6 @@ private:
   fastq_stats_ptr m_statistics_1;
   //! Destination for statistics collected from raw mate 2 reads
   fastq_stats_ptr m_statistics_2;
-  //! The analytical step following this step
-  const size_t m_next_step;
   //! Encoding used to parse FASTQ reads.
   const fastq_encoding m_encoding;
 
@@ -198,7 +192,7 @@ public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
   split_fastq(const userconfig& config,
               const output_file& file,
-              size_t next_step);
+              step_id next_step);
 
   ~split_fastq() override = default;
 
@@ -211,8 +205,6 @@ public:
   split_fastq& operator=(split_fastq&&) = delete;
 
 private:
-  //! The analytical step following this step
-  const size_t m_next_step;
   //! Buffer used to store partial blocks
   buffer m_buffer{};
 
@@ -237,7 +229,7 @@ public:
   /** Constructor; 'next_step' sets the destination of compressed chunks. */
   gzip_split_fastq(const userconfig& config,
                    const output_file& file,
-                   size_t next_step);
+                   step_id next_step);
 
   ~gzip_split_fastq() override = default;
 
@@ -255,8 +247,6 @@ private:
   const bool m_isal_stream;
   //! Format of file being compressed
   const output_format m_format;
-  //! The analytical step following this step
-  const size_t m_next_step;
 };
 
 /**
