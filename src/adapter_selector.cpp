@@ -34,9 +34,8 @@ constexpr size_t ADAPTER_SELECT_N = 100'000;
 ////////////////////////////////////////////////////////////////////////////////
 // adapter_preselector
 
-adapter_preselector::adapter_preselector(size_t next_step)
-  : analytical_step(processing_order::ordered, "adapter_preselector")
-  , m_next_step(next_step)
+adapter_preselector::adapter_preselector(const step_id next_step)
+  : analytical_step(processing_order::ordered, "adapter_preselector", next_step)
 {
 }
 
@@ -46,7 +45,7 @@ adapter_preselector::process(chunk_ptr data)
 {
   chunk_vec chunks;
   if (m_done) {
-    chunks.emplace_back(m_next_step, std::move(data));
+    chunks.emplace_back(std::move(data));
   } else {
     auto chunk = std::make_unique<adapter_chunk>();
     chunk->data = dynamic_cast_unique<fastq_chunk>(data);
@@ -56,7 +55,7 @@ adapter_preselector::process(chunk_ptr data)
     m_done = (m_cached_reads >= ADAPTER_SELECT_N) || chunk->data->eof;
 
     chunk->last_adapter_selection_block = m_done;
-    chunks.emplace_back(m_next_step, std::move(chunk));
+    chunks.emplace_back(std::move(chunk));
   }
 
   return chunks;
@@ -73,10 +72,9 @@ adapter_preselector::finalize()
 adapter_selector::adapter_selector(const adapter_database& database,
                                    simd::instruction_set is,
                                    double mismatch_threshold,
-                                   size_t next_step,
+                                   step_id next_step,
                                    size_t max_threads)
-  : analytical_step(processing_order::unordered, "adapter_selector")
-  , m_next_step(next_step)
+  : analytical_step(processing_order::unordered, "adapter_selector", next_step)
 {
   m_selectors.emplace_back_n(max_threads, database, is, mismatch_threshold);
 }
@@ -107,9 +105,9 @@ adapter_selector::process(chunk_ptr data)
 
     m_selectors.release(std::move(selector));
 
-    chunks.emplace_back(m_next_step, std::move(chunk));
+    chunks.emplace_back(std::move(chunk));
   } else if (auto fq_chunk = dynamic_cast_unique<fastq_chunk>(data)) {
-    chunks.emplace_back(m_next_step, std::move(fq_chunk));
+    chunks.emplace_back(std::move(fq_chunk));
   } else {
     AR_FAIL("invalid data chunk");
   }
@@ -142,9 +140,8 @@ describe_best_match(const identified_adapter& match,
 adapter_finalizer::adapter_finalizer(adapter_database database,
                                      threadsafe_data<sample_set> samples,
                                      const adapter_fallback fallback,
-                                     const size_t next_step)
-  : analytical_step(processing_order::ordered, "adapter_finalizer")
-  , m_next_step(next_step)
+                                     const step_id next_step)
+  : analytical_step(processing_order::ordered, "adapter_finalizer", next_step)
   , m_fallback(fallback)
   , m_database(std::move(database))
   , m_samples(std::move(samples))
@@ -160,7 +157,7 @@ adapter_finalizer::process(chunk_ptr data)
     AR_REQUIRE(chunk->data);
 
     m_stats.merge(chunk->adapters);
-    m_cache.emplace_back(m_next_step, std::move(chunk->data));
+    m_cache.emplace_back(std::move(chunk->data));
 
     if (chunk->last_adapter_selection_block) {
       m_done = true;
@@ -228,7 +225,7 @@ adapter_finalizer::process(chunk_ptr data)
       std::swap(m_cache, chunks);
     }
   } else if (auto fq_chunk = dynamic_cast_unique<fastq_chunk>(data)) {
-    chunks.emplace_back(m_next_step, std::move(fq_chunk));
+    chunks.emplace_back(std::move(fq_chunk));
   } else {
     AR_FAIL("invalid data chunk");
   }

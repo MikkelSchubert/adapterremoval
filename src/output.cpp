@@ -31,13 +31,13 @@ get_buffer(output_chunk_ptr& chunk)
   return chunk->buffers.back();
 }
 
-size_t
+step_id
 add_write_step(scheduler& sch,
                const userconfig& config,
                const output_file& file)
 {
   AR_REQUIRE(file.name != DEV_NULL);
-  size_t step_id = sch.add<write_fastq>(config, file);
+  auto step = sch.add<write_fastq>(config, file);
 
   switch (file.format) {
     case output_format::fastq:
@@ -47,15 +47,15 @@ add_write_step(scheduler& sch,
     case output_format::sam_gzip:
     case output_format::bam:
     case output_format::ubam: {
-      step_id = sch.add<gzip_split_fastq>(config, file, step_id);
-      step_id = sch.add<split_fastq>(config, file, step_id);
+      step = sch.add<gzip_split_fastq>(config, file, step);
+      step = sch.add<split_fastq>(config, file, step);
       break;
     }
     default:
       AR_FAIL("invalid output format");
   }
 
-  return step_id;
+  return step;
 }
 
 } // namespace
@@ -87,7 +87,7 @@ sample_output_files::set_file(const read_file rtype, output_file file)
     }
 
     if (it == m_output.end()) {
-      m_output.push_back({ std::move(file), NO_OUTPUT });
+      m_output.push_back({ std::move(file), step_id::UNDEFINED });
       m_offsets.at(index) = m_output.size() - 1;
     } else {
       AR_REQUIRE(file == it->file);
@@ -98,13 +98,13 @@ sample_output_files::set_file(const read_file rtype, output_file file)
 }
 
 void
-sample_output_files::set_step(read_file rtype, size_t step)
+sample_output_files::set_step(read_file rtype, step_id step)
 {
   const auto index = static_cast<size_t>(rtype);
   const auto offset = m_offsets.at(index);
   AR_REQUIRE(offset != NO_OUTPUT);
 
-  AR_REQUIRE(m_output.at(offset).step == NO_OUTPUT);
+  AR_REQUIRE(m_output.at(offset).step == step_id::UNDEFINED);
   m_output.at(offset).step = step;
 }
 
@@ -174,12 +174,12 @@ output_files::file_extension(const output_format format)
 void
 output_files::add_write_steps(scheduler& sch, const userconfig& config)
 {
-  AR_REQUIRE(unidentified_1_step == NO_OUTPUT &&
-             unidentified_2_step == NO_OUTPUT);
+  AR_REQUIRE(unidentified_1_step == step_id::UNDEFINED &&
+             unidentified_2_step == step_id::UNDEFINED);
 
   for (auto& sample : m_samples) {
     for (auto& it : sample.m_output) {
-      AR_REQUIRE(it.step == NO_OUTPUT);
+      AR_REQUIRE(it.step == step_id::UNDEFINED);
       it.step = add_write_step(sch, config, it.file);
     }
   }
@@ -274,7 +274,7 @@ processed_reads::finalize(bool eof)
     auto& chunk = m_chunks.at(i);
     chunk->eof = eof;
 
-    chunks.emplace_back(m_map.step(i), std::move(chunk));
+    chunks.emplace_back(chunk_pair{ m_map.step(i), std::move(chunk) });
   }
 
   return chunks;
@@ -288,14 +288,14 @@ namespace {
 void
 flush_chunk(chunk_vec& output,
             fastq_chunk_ptr& ptr,
-            size_t step,
+            step_id step,
             const bool eof,
             const char mate_separator)
 {
   if (eof || ptr->reads() >= INPUT_READS) {
     ptr->eof = eof;
     ptr->mate_separator = mate_separator;
-    output.emplace_back(step, std::move(ptr));
+    output.emplace_back(chunk_pair{ step, std::move(ptr) });
     ptr = std::make_unique<fastq_chunk>();
   }
 }
@@ -309,7 +309,7 @@ demultiplexed_reads::demultiplexed_reads(const post_demux_steps& steps)
   m_cache.push_back(std::make_unique<fastq_chunk>());
 
   for (const auto next_step : m_steps.samples) {
-    AR_REQUIRE(next_step != NO_OUTPUT);
+    AR_REQUIRE(next_step != step_id::UNDEFINED);
 
     m_cache.push_back(std::make_unique<fastq_chunk>());
   }

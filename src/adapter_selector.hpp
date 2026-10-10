@@ -46,7 +46,7 @@ public:
 class adapter_preselector : public analytical_step
 {
 public:
-  explicit adapter_preselector(size_t next_step);
+  explicit adapter_preselector(step_id next_step);
   ~adapter_preselector() override = default;
 
   /** Cache chunks, select adapters, and/or forward the chunks as is */
@@ -61,8 +61,6 @@ public:
   adapter_preselector& operator=(adapter_preselector&&) = delete;
 
 private:
-  //! Next step in the pipeline, expected to be adapter_detector
-  const size_t m_next_step;
   //! Total number of cached reads
   size_t m_cached_reads = 0;
   //! Has selection been performed and should the step be bypassed
@@ -80,7 +78,7 @@ public:
   adapter_selector(const adapter_database& database,
                    simd::instruction_set is,
                    double mismatch_threshold,
-                   size_t next_step,
+                   step_id next_step,
                    size_t max_threads = 1);
   ~adapter_selector() override = default;
 
@@ -93,8 +91,6 @@ public:
   adapter_selector& operator=(adapter_selector&&) = delete;
 
 private:
-  //! Next step in the pipeline, either demultiplexing or trimming
-  const size_t m_next_step;
   //! Cached selectors to take advantage of frequency optimizations
   threadstate<adapter_detector> m_selectors{};
 };
@@ -111,7 +107,7 @@ public:
   adapter_finalizer(adapter_database database,
                     threadsafe_data<sample_set> samples,
                     adapter_fallback fallback,
-                    size_t next_step);
+                    step_id next_step);
   ~adapter_finalizer() override = default;
 
   /** Cache chunks, select adapters, and/or forward the chunks as is */
@@ -126,8 +122,6 @@ public:
   adapter_finalizer& operator=(adapter_finalizer&&) = delete;
 
 private:
-  //! Next step in the pipeline, either demultiplexing or trimming
-  const size_t m_next_step;
   //! Fallback strategy if no adapters could be identified
   const adapter_fallback m_fallback;
   //! Set of adapters to potentially detect

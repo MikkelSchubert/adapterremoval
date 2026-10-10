@@ -257,7 +257,9 @@ reads_processor::reads_processor(const userconfig& config,
                                  const sample_output_files& output,
                                  const size_t nth,
                                  trim_stats_ptr sink)
-  : analytical_step(processing_order::unordered, "reads_processor")
+  : analytical_step(processing_order::unordered,
+                    "reads_processor",
+                    step_id::UNDEFINED)
   , m_config(config)
   , m_output(output)
   , m_sample(nth)

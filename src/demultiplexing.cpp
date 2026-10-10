@@ -26,7 +26,9 @@ namespace adapterremoval {
 demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
                                      demux_stats_ptr stats)
-  : analytical_step(processing_order::ordered, "demultiplex_reads")
+  : analytical_step(processing_order::ordered,
+                    "demultiplex_reads",
+                    step_id::UNDEFINED)
   , m_samples(config.samples)
   , m_barcode_table(*m_samples.get_reader(),
                     config.barcode_mm,
@@ -166,7 +168,9 @@ process_demultiplexed::process_demultiplexed(const userconfig& config,
                                              const sample_output_files& output,
                                              const size_t sample,
                                              trim_stats_ptr sink)
-  : analytical_step(processing_order::unordered, "process_demultiplexed")
+  : analytical_step(processing_order::unordered,
+                    "process_demultiplexed",
+                    step_id::UNDEFINED)
   , m_config(config)
   , m_output(output)
   , m_sample(sample)
@@ -235,19 +239,21 @@ process_demultiplexed::finalize()
 process_unidentified::process_unidentified(const userconfig& config,
                                            const output_files& output,
                                            demux_stats_ptr stats)
-  : analytical_step(processing_order::unordered, "process_unidentified")
+  : analytical_step(processing_order::unordered,
+                    "process_unidentified",
+                    step_id::UNDEFINED)
   , m_config(config)
   , m_statistics(std::move(stats))
 {
   m_output.set_file(read_file::mate_1, output.unidentified_1);
   m_output.set_file(read_file::mate_2, output.unidentified_2);
 
-  if (output.unidentified_1_step != NO_OUTPUT) {
+  if (output.unidentified_1_step != step_id::UNDEFINED) {
     m_output.set_step(read_file::mate_1, output.unidentified_1_step);
   }
 
   if (output.unidentified_1_step != output.unidentified_2_step &&
-      output.unidentified_2_step != NO_OUTPUT) {
+      output.unidentified_2_step != step_id::UNDEFINED) {
     m_output.set_step(read_file::mate_2, output.unidentified_2_step);
   }
 

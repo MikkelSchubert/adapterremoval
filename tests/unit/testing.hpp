@@ -83,3 +83,13 @@ struct StringMaker<std::invalid_argument>
 };
 
 } // namespace Catch
+
+namespace adapterremoval {
+
+class step_id;
+
+/** Implemented in scheduler_test.cpp */
+step_id
+step_id_test_helper(size_t);
+
+} // namespace adapterremoval
