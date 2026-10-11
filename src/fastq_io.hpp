@@ -58,7 +58,9 @@ public:
                         const userconfig& config,
                         step_id next_step);
 
-  /** Reads lines from the input file and saves them in an fastq_file_chunk. */
+  /** Read mate 1 or interleaved reads from a file */
+  chunk_vec signal() override;
+  /** Read mate 2 reads from a file, completing a chunk created from `signal` */
   chunk_vec process(chunk_ptr data) override;
 
   /** Finalizer; checks that all input has been processed. */
