@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import errno
+import functools
 import gzip
 import json
 import math
@@ -144,6 +145,15 @@ def read_and_decompress_file(filename: Path) -> str:
         raise TestError(f"{filename} has .gz extension, but is not compressed")
 
     return value.decode("utf-8")
+
+
+@functools.lru_cache
+def device_exists(it: str) -> bool:
+    if it.startswith("/dev/") and not os.path.exists(it):
+        print_warn(f"Device {it!r} not found; skipping tests that require it")
+        return False
+
+    return True
 
 
 def escape_whitespace(line: str) -> str:
@@ -991,6 +1001,15 @@ class TestRunner:
         self._test_path = self.path / "test"
         self._exp_path = self.path / "expected"
 
+        self.skip = (
+            self._test.skip
+            or bool(
+                self._test.platforms and platform.system() not in self._test.platforms
+            )
+            or (self._test.pipe and not device_exists(self._test.pipe))
+            or not all(device_exists(it) for it in self._test.arguments)
+        )
+
     @property
     def description(self) -> str | None:
         return self._test.description
@@ -998,12 +1017,6 @@ class TestRunner:
     @property
     def spec_path(self) -> Path:
         return self._test.path
-
-    @property
-    def skip(self) -> bool:
-        return self._test.skip or bool(
-            self._test.platforms and platform.system() not in self._test.platforms
-        )
 
     @property
     def command(self) -> list[str | Path]:

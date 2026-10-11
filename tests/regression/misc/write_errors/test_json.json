@@ -1,8 +1,5 @@
 {
   "exhaustive": false,
-  "platforms": [
-    "Linux"
-  ],
   "arguments": [
     "--out-json",
     "/dev/full"
