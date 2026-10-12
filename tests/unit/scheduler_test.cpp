@@ -11,6 +11,11 @@
 
 namespace adapterremoval {
 
+#define PARAMETERIZE_ORDER                                                     \
+  GENERATE(processing_order::ordered,                                          \
+           processing_order::ordered_io,                                       \
+           processing_order::unordered)
+
 ////////////////////////////////////////////////////////////////////////////////
 // helper functions and classes
 
@@ -50,7 +55,7 @@ public:
 
   chunk_vec process(chunk_ptr data) override
   {
-    AR_REQUIRE(!!m_process);
+    AR_REQUIRE(!!m_process, name() + " does not have a process function()");
     chunk_vec vec;
     m_process(*this, vec, std::move(data));
     return vec;
@@ -58,7 +63,7 @@ public:
 
   chunk_vec signal() override
   {
-    AR_REQUIRE(!!m_signal);
+    AR_REQUIRE(!!m_signal, name() + " does not have a signal function()");
     chunk_vec vec;
     m_signal(*this, vec);
     return vec;
@@ -116,6 +121,109 @@ TEST_CASE("step_id undefined to string", "[step_id]")
   os << step_id::UNDEFINED;
 
   CHECK(os.str() == "step_id::UNDEFINED");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// scheduler: source step
+
+TEST_CASE("scheduler source step is last step", "[scheduler]")
+{
+  scheduler sch;
+
+  if (GENERATE(true, false)) {
+    sch.add<test_step>(PARAMETERIZE_ORDER, "dummy", step_id::UNDEFINED);
+  }
+
+  size_t signals_received = 0;
+  sch.add<test_step>(processing_order::ordered,
+                     "test",
+                     step_id::UNDEFINED,
+                     [&](auto&, auto& vec) {
+                       signals_received++;
+                       vec.emplace_back(scheduler_signal::suspend);
+                     });
+
+  REQUIRE(sch.run(1));
+  REQUIRE(signals_received == 1);
+}
+
+TEST_CASE("scheduler source step must not be io or unordered", "[scheduler]")
+{
+  scheduler sch;
+  sch.add<test_step>(
+    GENERATE(processing_order::ordered_io, processing_order::unordered),
+    "test",
+    step_id::UNDEFINED);
+
+  REQUIRE_THROWS_CONTAINS(sch.run(1),
+                          assert_failed,
+                          "source step must be ordered");
+}
+
+TEST_CASE("scheduler source step may be selected", "[scheduler]")
+{
+  scheduler sch;
+
+  size_t signals_received = 0;
+  const auto source =
+    sch.add<test_step>(processing_order::ordered,
+                       "source",
+                       step_id::UNDEFINED,
+                       [&](auto&, auto& vec) {
+                         signals_received++;
+                         vec.emplace_back(scheduler_signal::suspend);
+                       });
+  sch.add<test_step>(PARAMETERIZE_ORDER, "dummy", step_id::UNDEFINED);
+
+  sch.set_source_step(source);
+  REQUIRE(sch.run(1));
+  REQUIRE(signals_received == 1);
+  REQUIRE_THROWS_CONTAINS(sch.set_source_step(source),
+                          assert_failed,
+                          "pipeline has already been started");
+}
+
+TEST_CASE("scheduler source step may be reset", "[scheduler]")
+{
+  scheduler sch;
+
+  size_t signals_received = 0;
+  const auto source =
+    sch.add<test_step>(processing_order::ordered, "dummy", step_id::UNDEFINED);
+  sch.add<test_step>(processing_order::ordered,
+                     "source",
+                     step_id::UNDEFINED,
+                     [&](auto&, auto& vec) {
+                       signals_received++;
+                       vec.emplace_back(scheduler_signal::suspend);
+                     });
+
+  sch.set_source_step(source);
+  sch.set_source_step(step_id::UNDEFINED);
+  REQUIRE(sch.run(1));
+  REQUIRE(signals_received == 1);
+}
+
+TEST_CASE("scheduler source step may only be set to ordered steps",
+          "[scheduler]")
+{
+  scheduler sch;
+  const auto ordered =
+    sch.add<test_step>(processing_order::ordered, "dummy", step_id::UNDEFINED);
+  const auto ordered_io = sch.add<test_step>(processing_order::ordered_io,
+                                             "dummy",
+                                             step_id::UNDEFINED);
+  const auto unordered = sch.add<test_step>(processing_order::unordered,
+                                            "dummy",
+                                            step_id::UNDEFINED);
+
+  REQUIRE_NOTHROW(sch.set_source_step(ordered));
+  REQUIRE_THROWS_CONTAINS(sch.set_source_step(ordered_io),
+                          assert_failed,
+                          "source step must be ordered");
+  REQUIRE_THROWS_CONTAINS(sch.set_source_step(unordered),
+                          assert_failed,
+                          "source step must be ordered");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

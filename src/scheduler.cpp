@@ -254,15 +254,33 @@ scheduler::set_signal_target(const step_id src, step_id dst, read_mate read)
   m_steps.at(src.get())->set_signal_target(dst, read);
 }
 
+void
+scheduler::set_source_step(step_id step)
+{
+  AR_REQUIRE(!m_tasks_max, "pipeline has already been started");
+  if (step == step_id::UNDEFINED) {
+    m_source_step.reset();
+  } else {
+    m_source_step = m_steps.at(step.get());
+    AR_REQUIRE(m_source_step->ordering() == processing_order::ordered,
+               "source step must be ordered");
+  }
+}
+
 bool
 scheduler::run(int nthreads)
 {
   AR_REQUIRE(!m_steps.empty());
   AR_REQUIRE(nthreads >= 1);
   AR_REQUIRE(!m_tasks_max, "pipeline has already been started");
-  // The last step added is assumed to be the initial/producing step
-  AR_REQUIRE(m_steps.back()->ordering() == processing_order::ordered,
-             "source step must be ordered (non-IO)");
+
+  if (!m_source_step) {
+    // The last step added is defaults to being the initial/producing step
+    m_source_step = m_steps.back();
+  }
+
+  AR_REQUIRE(m_source_step->ordering() == processing_order::ordered,
+             "source step must be ordered");
 
   m_tasks_max = static_cast<size_t>(nthreads) * 3;
 
@@ -345,7 +363,7 @@ scheduler::run_io_loop()
     if (!m_queue_io.empty()) {
       step = m_queue_io.front();
       m_queue_io.pop();
-    } else if (m_tasks || !m_steps.back()->is_signalling_suspended()) {
+    } else if (m_tasks || !m_source_step->is_signalling_suspended()) {
       m_condition_io.wait(lock);
       continue;
     } else {
@@ -400,10 +418,10 @@ scheduler::run_calc_loop()
     } else if (can_signal_source()) {
       // If all (or no) tasks are running and IO is idle then read another chunk
       m_tasks++;
-      step = m_steps.back();
+      step = m_source_step;
       step->set_is_queued(true);
       step->push_signal();
-    } else if (m_tasks || !m_steps.back()->is_signalling_suspended()) {
+    } else if (m_tasks || !m_source_step->is_signalling_suspended()) {
       // There are either tasks running (which may produce new tasks) or tasks
       // that cannot yet be run due to IO already being active.
       m_condition_calc.wait(lock);
@@ -487,7 +505,7 @@ scheduler::run_calc_loop()
     m_tasks--;
 
     bool can_requeue_step = step->can_requeue_step();
-    if (!can_requeue_step && step == m_steps.back() && can_signal_source()) {
+    if (!can_requeue_step && step == m_source_step && can_signal_source()) {
       can_requeue_step = true;
       step->push_signal();
       m_tasks++;
@@ -514,10 +532,8 @@ scheduler::run_calc_loop()
 bool
 scheduler::can_signal_source() const
 {
-  const auto& source = m_steps.back();
-
-  return m_tasks < m_tasks_max && !source->is_queued() &&
-         !source->is_signalling_suspended();
+  return m_tasks < m_tasks_max && !m_source_step->is_queued() &&
+         !m_source_step->is_signalling_suspended();
 }
 
 std::ostream&
