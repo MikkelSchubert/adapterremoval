@@ -227,42 +227,25 @@ read_fastq::add_steps(scheduler& sch,
 }
 
 chunk_vec
-read_fastq::process(chunk_ptr data)
+read_fastq::signal()
 {
-  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
   AR_REQUIRE_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_mode != file_type::read_2);
 
   chunk_vec chunks;
-  if (m_mode == file_type::read_1 || m_mode == file_type::interleaved) {
-    // The scheduler only terminates when the first step stops returning chunks
-    if (m_eof) {
-      return chunks;
-    }
-
-    chunk = std::make_unique<fastq_chunk>();
-  } else {
-    AR_REQUIRE(!m_eof && chunk);
+  if (m_eof) {
+    chunks.emplace_back(scheduler_signal::suspend);
+    return chunks;
   }
 
-  auto& reads_1 = chunk->reads_1;
-  auto& reads_2 = chunk->reads_2;
+  auto chunk = std::make_unique<fastq_chunk>();
 
   if (m_mode == file_type::read_1) {
-    read_single_end(reads_1);
+    read_single_end(chunk->reads_1);
+  } else if (m_mode == file_type::interleaved) {
+    read_interleaved(chunk->reads_1, chunk->reads_2);
   } else {
-    if (m_mode == file_type::interleaved) {
-      read_interleaved(reads_1, reads_2);
-    } else if (m_mode == file_type::read_2) {
-      read_single_end(reads_2);
-    } else {
-      AR_FAIL("invalid file_type value");
-    }
-
-    if (chunk->reads_1.size() != chunk->reads_2.size()) {
-      throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
-                        "input files may be truncated. Please fix before "
-                        "continuing.");
-    }
+    AR_FAIL("invalid file_type value");
   }
 
   // Head must be checked after the first loop, to produce at least one chunk
@@ -271,6 +254,34 @@ read_fastq::process(chunk_ptr data)
   chunk->first = m_first;
   m_first = false;
 
+  if (m_eof) {
+    chunks.emplace_back(scheduler_signal::suspend);
+  }
+
+  chunks.emplace_back(std::move(chunk));
+  return chunks;
+}
+
+chunk_vec
+read_fastq::process(chunk_ptr data)
+{
+  auto chunk = dynamic_cast_unique<fastq_chunk>(data);
+  AR_REQUIRE(chunk);
+  AR_REQUIRE_SINGLE_THREAD(m_lock);
+  AR_REQUIRE(m_mode == file_type::read_2);
+
+  // The mate 2 reader only needs to track whether EOF was reached
+  AR_REQUIRE(!m_eof);
+  m_eof |= chunk->eof;
+
+  read_single_end(chunk->reads_2);
+  if (chunk->reads_1.size() != chunk->reads_2.size()) {
+    throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
+                      "input files may be truncated. Please fix before "
+                      "continuing.");
+  }
+
+  chunk_vec chunks;
   chunks.emplace_back(std::move(chunk));
   return chunks;
 }
