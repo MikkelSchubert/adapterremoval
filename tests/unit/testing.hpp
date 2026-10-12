@@ -21,6 +21,11 @@
 #define CHECK_THROWS_MESSAGE(expr, exceptionType, message)                     \
   CHECK_THROWS_MATCHES(expr, exceptionType, Catch::Message(message))
 
+#define REQUIRE_THROWS_CONTAINS(expr, exceptionType, message)                  \
+  REQUIRE_THROWS_MATCHES(expr,                                                 \
+                         exceptionType,                                        \
+                         Catch::ExceptionContainsMatcher(message))
+
 namespace Catch {
 
 /** This function needs to be declared before "catch.hpp" is included */
@@ -80,6 +85,26 @@ template<>
 struct StringMaker<std::invalid_argument>
 {
   static std::string convert(const std::invalid_argument& value);
+};
+
+/** Case-sensitive matcher for substrings in exception messages */
+class ExceptionContainsMatcher : public Catch::MatcherBase<std::exception>
+{
+public:
+  ExceptionContainsMatcher(const std::string& message)
+    : m_matcher(Catch::Contains(message))
+  {
+  }
+
+  bool match(const std::exception& ex) const override
+  {
+    return m_matcher.match(ex.what());
+  }
+
+protected:
+  std::string describe() const override { return m_matcher.describe(); }
+
+  Catch::StdString::ContainsMatcher m_matcher;
 };
 
 } // namespace Catch

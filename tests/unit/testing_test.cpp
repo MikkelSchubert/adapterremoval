@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
+#include "errors.hpp"  // for assert_failed
 #include "testing.hpp" // for declarations
 #include <array>       // for array
 #include <ostream>     // for ostream
@@ -68,4 +69,29 @@ TEST_CASE("StringMaker for pair", "[StringMaker]")
 
   REQUIRE(Catch::StringMaker<decltype(value)>::convert(value) ==
           "pair{ first=stringifier_test{ 17 }, second=3 }");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ExceptionContainsMatcher
+
+TEST_CASE("ExceptionContainsMatcher", "[ExceptionContainsMatcher]")
+{
+  using adapterremoval::assert_failed;
+  using Catch::ExceptionContainsMatcher;
+
+  auto throw_error = [](std::string message) { throw assert_failed(message); };
+
+  REQUIRE_THROWS_MATCHES(throw_error("exact message"),
+                         assert_failed,
+                         ExceptionContainsMatcher("exact message"));
+  REQUIRE_THROWS_MATCHES(throw_error("wrong message"),
+                         assert_failed,
+                         !ExceptionContainsMatcher("exact message"));
+
+  REQUIRE_THROWS_MATCHES(throw_error("this is a long message"),
+                         assert_failed,
+                         ExceptionContainsMatcher("long message"));
+  REQUIRE_THROWS_MATCHES(throw_error("this is a short message"),
+                         assert_failed,
+                         !ExceptionContainsMatcher("long message"));
 }
