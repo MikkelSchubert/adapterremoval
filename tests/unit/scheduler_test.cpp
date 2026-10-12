@@ -16,6 +16,13 @@ namespace adapterremoval {
            processing_order::ordered_io,                                       \
            processing_order::unordered)
 
+#define PARAMETERIZE_ORDERED                                                   \
+  GENERATE(processing_order::ordered, processing_order::ordered_io)
+
+//! Currently limited to a single thread due to Catch 2x not being threadsafe
+constexpr unsigned WORKER_THREADS = 1;
+constexpr unsigned IO_THREADS = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 // helper functions and classes
 
@@ -135,7 +142,7 @@ TEST_CASE("scheduler source step is last step", "[scheduler]")
   }
 
   size_t signals_received = 0;
-  sch.add<test_step>(processing_order::ordered,
+  sch.add<test_step>(PARAMETERIZE_ORDERED,
                      "test",
                      step_id::UNDEFINED,
                      [&](auto&, auto& vec) {
@@ -143,19 +150,16 @@ TEST_CASE("scheduler source step is last step", "[scheduler]")
                        vec.emplace_back(scheduler_signal::suspend);
                      });
 
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received == 1);
 }
 
-TEST_CASE("scheduler source step must not be io or unordered", "[scheduler]")
+TEST_CASE("scheduler source step must not be unordered", "[scheduler]")
 {
   scheduler sch;
-  sch.add<test_step>(
-    GENERATE(processing_order::ordered_io, processing_order::unordered),
-    "test",
-    step_id::UNDEFINED);
+  sch.add<test_step>(processing_order::unordered, "test", step_id::UNDEFINED);
 
-  REQUIRE_THROWS_CONTAINS(sch.run(1),
+  REQUIRE_THROWS_CONTAINS(sch.run(WORKER_THREADS, IO_THREADS),
                           assert_failed,
                           "source step must be ordered");
 }
@@ -166,7 +170,7 @@ TEST_CASE("scheduler source step may be selected", "[scheduler]")
 
   size_t signals_received = 0;
   const auto source =
-    sch.add<test_step>(processing_order::ordered,
+    sch.add<test_step>(PARAMETERIZE_ORDERED,
                        "source",
                        step_id::UNDEFINED,
                        [&](auto&, auto& vec) {
@@ -176,7 +180,7 @@ TEST_CASE("scheduler source step may be selected", "[scheduler]")
   sch.add<test_step>(PARAMETERIZE_ORDER, "dummy", step_id::UNDEFINED);
 
   sch.set_source_step(source);
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received == 1);
   REQUIRE_THROWS_CONTAINS(sch.set_source_step(source),
                           assert_failed,
@@ -200,7 +204,7 @@ TEST_CASE("scheduler source step may be reset", "[scheduler]")
 
   sch.set_source_step(source);
   sch.set_source_step(step_id::UNDEFINED);
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received == 1);
 }
 
@@ -218,9 +222,7 @@ TEST_CASE("scheduler source step may only be set to ordered steps",
                                             step_id::UNDEFINED);
 
   REQUIRE_NOTHROW(sch.set_source_step(ordered));
-  REQUIRE_THROWS_CONTAINS(sch.set_source_step(ordered_io),
-                          assert_failed,
-                          "source step must be ordered");
+  REQUIRE_NOTHROW(sch.set_source_step(ordered_io));
   REQUIRE_THROWS_CONTAINS(sch.set_source_step(unordered),
                           assert_failed,
                           "source step must be ordered");
@@ -235,7 +237,7 @@ TEST_CASE("initial step must not be unordered", "[scheduler]")
   sch.add<test_step>(processing_order::unordered,
                      "test_step",
                      step_id::UNDEFINED);
-  REQUIRE_THROWS_CONTAINS(sch.run(1),
+  REQUIRE_THROWS_CONTAINS(sch.run(WORKER_THREADS, IO_THREADS),
                           assert_failed,
                           "source step must be ordered");
 }
@@ -245,7 +247,7 @@ TEST_CASE("scheduler signals source until suspended", "[scheduler]")
   scheduler sch;
 
   size_t signals_received = 0;
-  sch.add<test_step>(processing_order::ordered,
+  sch.add<test_step>(PARAMETERIZE_ORDERED,
                      "test",
                      step_id::UNDEFINED,
                      [&](analytical_step&, chunk_vec& vec) {
@@ -254,7 +256,7 @@ TEST_CASE("scheduler signals source until suspended", "[scheduler]")
                        }
                      });
 
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received == 3);
 }
 
@@ -264,7 +266,7 @@ TEST_CASE("signals from downstream to source are filtered if suspended",
   scheduler sch;
   size_t chunks_received = 0;
   const auto step_2 =
-    sch.add<test_step>(processing_order::ordered,
+    sch.add<test_step>(PARAMETERIZE_ORDERED,
                        "dst",
                        step_id::UNDEFINED,
                        [&](analytical_step& step, chunk_vec& vec, chunk_ptr) {
@@ -274,7 +276,7 @@ TEST_CASE("signals from downstream to source are filtered if suspended",
 
   size_t signals_received = 0;
   const auto step_1 =
-    sch.add<test_step>(processing_order::ordered,
+    sch.add<test_step>(PARAMETERIZE_ORDERED,
                        "src",
                        step_2,
                        [&](analytical_step&, chunk_vec& vec) {
@@ -285,7 +287,7 @@ TEST_CASE("signals from downstream to source are filtered if suspended",
 
   sch.set_signal_target(step_2, step_1);
 
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received == 1);
   REQUIRE(chunks_received == 1);
 }
@@ -295,7 +297,7 @@ TEST_CASE("signals from downstream to non-source", "[scheduler]")
   scheduler sch;
   size_t chunks_received_3 = 0;
   const auto step_3 =
-    sch.add<test_step>(processing_order::ordered,
+    sch.add<test_step>(PARAMETERIZE_ORDERED,
                        "dst",
                        step_id::UNDEFINED,
                        [&](analytical_step& step, chunk_vec& vec, chunk_ptr) {
@@ -307,7 +309,7 @@ TEST_CASE("signals from downstream to non-source", "[scheduler]")
   size_t chunks_received_2 = 0;
   size_t signals_received_2 = 0;
   const auto step_2 = sch.add<test_step>(
-    processing_order::ordered,
+    PARAMETERIZE_ORDERED,
     "dst",
     step_3,
     [&](analytical_step&, chunk_vec& vec, chunk_ptr chunk) {
@@ -317,7 +319,7 @@ TEST_CASE("signals from downstream to non-source", "[scheduler]")
     [&](analytical_step&, chunk_vec&) { ++signals_received_2; });
 
   size_t signals_received_1 = 0;
-  sch.add<test_step>(processing_order::ordered,
+  sch.add<test_step>(PARAMETERIZE_ORDERED,
                      "src",
                      step_2,
                      [&](analytical_step&, chunk_vec& vec) {
@@ -329,7 +331,7 @@ TEST_CASE("signals from downstream to non-source", "[scheduler]")
 
   sch.set_signal_target(step_3, step_2);
 
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received_1 == 10);
   REQUIRE(signals_received_2 == 5);
   REQUIRE(chunks_received_2 == 10);
@@ -342,7 +344,7 @@ TEST_CASE("signals from downstream to non-source are filtered if suspended",
   scheduler sch;
   size_t chunks_received_3 = 0;
   const auto step_3 =
-    sch.add<test_step>(processing_order::ordered,
+    sch.add<test_step>(PARAMETERIZE_ORDERED,
                        "dst",
                        step_id::UNDEFINED,
                        [&](analytical_step& step, chunk_vec& vec, chunk_ptr) {
@@ -353,7 +355,7 @@ TEST_CASE("signals from downstream to non-source are filtered if suspended",
   size_t chunks_received_2 = 0;
   size_t signals_received_2 = 0;
   const auto step_2 = sch.add<test_step>(
-    processing_order::ordered,
+    PARAMETERIZE_ORDERED,
     "dst",
     step_3,
     [&](analytical_step&, chunk_vec& vec, chunk_ptr chunk) {
@@ -367,7 +369,7 @@ TEST_CASE("signals from downstream to non-source are filtered if suspended",
     });
 
   size_t signals_received_1 = 0;
-  sch.add<test_step>(processing_order::ordered,
+  sch.add<test_step>(PARAMETERIZE_ORDERED,
                      "src",
                      step_2,
                      [&](analytical_step&, chunk_vec& vec) {
@@ -379,7 +381,7 @@ TEST_CASE("signals from downstream to non-source are filtered if suspended",
 
   sch.set_signal_target(step_3, step_2);
 
-  REQUIRE(sch.run(1));
+  REQUIRE(sch.run(WORKER_THREADS, IO_THREADS));
   REQUIRE(signals_received_1 == 10);
   REQUIRE(signals_received_2 == 5);
   REQUIRE(chunks_received_2 == 10);

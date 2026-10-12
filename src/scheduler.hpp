@@ -321,8 +321,11 @@ public:
   /** Set the source step, if it is not the last step added to the pipeline */
   void set_source_step(step_id step);
 
-  /** Runs the pipeline with n threads; return false on error. */
-  bool run(int nthreads);
+  /**
+   * Runs the pipeline with at least one worker thread (compute and IO) and
+   * zero or more IO-only threads; return false on error.
+   **/
+  bool run(unsigned worker_threads, unsigned io_threads = 2);
 
   scheduler(const scheduler&) = delete;
   scheduler(scheduler&&) = delete;
@@ -335,16 +338,20 @@ private:
   using pipeline = std::vector<step_ptr>;
 
   step_id add_step(std::unique_ptr<analytical_step> step);
+  /** Adds analytical step to the appropriate queue for that step type */
+  void queue_pending_step(step_ptr step);
 
-  /** Wrapper function which calls do_run on the provided thread. */
-  static void run_wrapper(scheduler* /* sch */, threadtype /* thread_type */);
-  /** Work function for calculation heavy threads; invoked by each thread. */
-  void run_calc_loop();
-  /** Work function for IO threads; invoked by each thread. */
-  void run_io_loop();
+  /** Main thread loop; runs mixed and IO-only threads */
+  void main_loop(threadtype work_type);
 
   /** Returns true if a signal can be queued for the source step */
   [[nodiscard]] bool can_signal_source() const;
+
+  /** Returns true if it is worthwhile to wake a sleeping calc thread */
+  [[nodiscard]] bool can_wake_calc_thread() const;
+
+  /** Returns true if it is worthwhile to wake a sleeping IO thread */
+  [[nodiscard]] bool can_wake_io_thread() const;
 
   //! Analytical steps
   pipeline m_steps{};
@@ -355,6 +362,8 @@ private:
   std::condition_variable m_condition_io{};
   //! Condition used to signal the (potential) availability of calculation work
   std::condition_variable m_condition_calc{};
+  //! The number of IO threads waiting for a signal
+  size_t m_sleeping_io_threads = 0;
 
   //! The current number of running/queued tasks
   size_t m_tasks = 0;

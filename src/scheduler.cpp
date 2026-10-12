@@ -245,8 +245,7 @@ scheduler::add_step(std::unique_ptr<analytical_step> step)
 void
 scheduler::set_signal_target(const step_id src, step_id dst, read_mate read)
 {
-  AR_REQUIRE(src != step_id::UNDEFINED &&
-             m_steps.at(src.get())->ordering() == processing_order::ordered);
+  AR_REQUIRE(src != step_id::UNDEFINED && m_steps.at(src.get())->is_ordered());
   AR_REQUIRE(dst == step_id::UNDEFINED ||
              (dst != src && m_steps.at(dst.get())->is_ordered()));
   AR_REQUIRE(!m_tasks_max, "pipeline has already been started");
@@ -262,16 +261,15 @@ scheduler::set_source_step(step_id step)
     m_source_step.reset();
   } else {
     m_source_step = m_steps.at(step.get());
-    AR_REQUIRE(m_source_step->ordering() == processing_order::ordered,
-               "source step must be ordered");
+    AR_REQUIRE(m_source_step->is_ordered(), "source step must be ordered");
   }
 }
 
 bool
-scheduler::run(int nthreads)
+scheduler::run(unsigned worker_threads, unsigned io_threads)
 {
   AR_REQUIRE(!m_steps.empty());
-  AR_REQUIRE(nthreads >= 1);
+  AR_REQUIRE(worker_threads >= 1);
   AR_REQUIRE(!m_tasks_max, "pipeline has already been started");
 
   if (!m_source_step) {
@@ -279,21 +277,23 @@ scheduler::run(int nthreads)
     m_source_step = m_steps.back();
   }
 
-  AR_REQUIRE(m_source_step->ordering() == processing_order::ordered,
-             "source step must be ordered");
+  AR_REQUIRE(m_source_step->is_ordered(), "source step must be ordered");
 
-  m_tasks_max = static_cast<size_t>(nthreads) * 3;
+  m_tasks_max = static_cast<size_t>(worker_threads) * 3;
 
   std::vector<std::thread> threads;
+  const auto run_wrapper = [](scheduler* sch, threadtype type) {
+    sch->main_loop(type);
+  };
 
   try {
-    // CPU bound threads
-    for (int i = 0; i < nthreads - 1; ++i) {
+    // CPU bound threads. The current thread executes one of them
+    for (unsigned i = 0; i < worker_threads - 1; ++i) {
       threads.emplace_back(run_wrapper, this, threadtype::cpu);
     }
 
-    // IO only threads
-    for (int i = 0; i < 2; ++i) {
+    // IO only threads (optional)
+    for (unsigned i = 0; i < io_threads; ++i) {
       threads.emplace_back(run_wrapper, this, threadtype::io);
     }
   } catch (const std::system_error& error) {
@@ -302,7 +302,7 @@ scheduler::run(int nthreads)
   }
 
   // Run the main thread; the only calculation thread when "single-threaded"
-  run_wrapper(this, threadtype::cpu);
+  main_loop(threadtype::cpu);
 
   for (auto& thread : threads) {
     try {
@@ -335,107 +335,64 @@ scheduler::run(int nthreads)
 }
 
 void
-scheduler::run_wrapper(scheduler* sch, threadtype thread_type)
-{
-  switch (thread_type) {
-    case threadtype::cpu:
-      sch->run_calc_loop();
-      break;
-    case threadtype::io:
-      sch->run_io_loop();
-      break;
-    default:
-      AR_FAIL("unexpected threadtype value");
-  }
-
-  // Signal any waiting threads
-  sch->m_condition_calc.notify_all();
-  sch->m_condition_io.notify_all();
-}
-
-void
-scheduler::run_io_loop()
+scheduler::main_loop(threadtype work_type)
 {
   std::unique_lock lock{ m_queue_lock };
+  const bool may_signal_source =
+    work_type == threadtype::cpu ||
+    m_source_step->ordering() == processing_order::ordered_io;
 
   while (true) {
     step_ptr step;
-    if (!m_queue_io.empty()) {
-      step = m_queue_io.front();
-      m_queue_io.pop();
-    } else if (m_tasks || !m_source_step->is_signalling_suspended()) {
-      m_condition_io.wait(lock);
-      continue;
-    } else {
-      break;
-    }
-
-    const bool wake_thread = !m_queue_io.empty();
-    data_chunk chunk = step->pop_chunk();
-    AR_REQUIRE(chunk.second || !step->is_signalling_suspended());
-
-    lock.unlock();
-    if (wake_thread) {
-      m_condition_io.notify_one();
-    }
-
-    const chunk_vec chunks = step->process(std::move(chunk.second));
-    // Currently only (final) output steps
-    AR_REQUIRE(chunks.empty());
-    lock.lock();
-
-    // One less task in memory
-    step->set_is_queued(false);
-    m_tasks--;
-
-    // Indicate that the next chunk can be processed
-    if (step->can_requeue_step()) {
-      step->set_is_queued(true);
-      m_queue_io.push(step);
-    }
-
-    // Queue additional read tasks
-    if (!m_queue_calc.empty() || can_signal_source()) {
-      m_condition_calc.notify_one();
-    }
-  }
-
-  m_condition_io.notify_all();
-  m_condition_calc.notify_all();
-}
-
-void
-scheduler::run_calc_loop()
-{
-  std::unique_lock lock{ m_queue_lock };
-
-  while (true) {
-    step_ptr step;
-    if (!m_queue_calc.empty()) {
-      // Otherwise try do do some non-IO work
+    if (work_type == threadtype::cpu && !m_queue_calc.empty()) {
+      // Try to do some non-IO/mixed work
       step = m_queue_calc.front();
       m_queue_calc.pop();
-    } else if (can_signal_source()) {
+    } else if (!m_queue_io.empty() &&
+               (work_type == threadtype::io || m_sleeping_io_threads == 0)) {
+      // Otherwise try to do some IO work; worker threads are allowed to steal
+      // tasks from this queue if there are no available IO threads
+      step = m_queue_io.front();
+      m_queue_io.pop();
+    } else if (may_signal_source && can_signal_source()) {
       // If all (or no) tasks are running and IO is idle then read another chunk
       m_tasks++;
       step = m_source_step;
       step->set_is_queued(true);
       step->push_signal();
     } else if (m_tasks || !m_source_step->is_signalling_suspended()) {
-      // There are either tasks running (which may produce new tasks) or tasks
-      // that cannot yet be run due to IO already being active.
-      m_condition_calc.wait(lock);
+      // There are either tasks running (which may produce new tasks) and/or the
+      // pipeline may signal for the source to produce more work
+      if (work_type == threadtype::cpu) {
+        if (can_wake_io_thread()) {
+          m_condition_io.notify_one();
+        }
+
+        m_condition_calc.wait(lock);
+      } else {
+        if (can_wake_calc_thread()) {
+          m_condition_calc.notify_one();
+        }
+
+        m_sleeping_io_threads++;
+        m_condition_io.wait(lock);
+        m_sleeping_io_threads--;
+      }
       continue;
     } else {
       break;
     }
 
-    const bool wake_thread = !m_queue_calc.empty() || can_signal_source();
+    const bool wake_io = can_wake_io_thread();
+    const bool wake_calc = can_wake_calc_thread();
     data_chunk chunk = step->pop_chunk();
     AR_REQUIRE(chunk.second || !step->is_signalling_suspended());
 
     lock.unlock();
-    if (wake_thread) {
+    if (wake_io) {
+      m_condition_io.notify_one();
+    }
+    if (wake_calc) {
       m_condition_calc.notify_one();
     }
 
@@ -488,40 +445,22 @@ scheduler::run_calc_loop()
         continue;
       }
 
-      if (queue_step && !recipient->is_queued()) {
-        recipient->set_is_queued(true);
-        if (recipient->ordering() == processing_order::ordered_io) {
-          m_queue_io.push(recipient);
-        } else {
-          m_queue_calc.push(recipient);
-        }
-      }
-
       m_tasks++;
+      if (queue_step && !recipient->is_queued()) {
+        queue_pending_step(recipient);
+      }
     }
 
     // One less task in memory
     step->set_is_queued(false);
     m_tasks--;
 
-    bool can_requeue_step = step->can_requeue_step();
-    if (!can_requeue_step && step == m_source_step && can_signal_source()) {
-      can_requeue_step = true;
+    if (step->can_requeue_step()) {
+      queue_pending_step(step);
+    } else if (step == m_source_step && can_signal_source()) {
+      queue_pending_step(step);
       step->push_signal();
       m_tasks++;
-    }
-
-    if (can_requeue_step) {
-      step->set_is_queued(true);
-      if (step->ordering() == processing_order::ordered_io) {
-        m_queue_io.push(step);
-      } else {
-        m_queue_calc.push(step);
-      }
-    }
-
-    if (!m_queue_io.empty()) {
-      m_condition_io.notify_one();
     }
   }
 
@@ -534,6 +473,32 @@ scheduler::can_signal_source() const
 {
   return m_tasks < m_tasks_max && !m_source_step->is_queued() &&
          !m_source_step->is_signalling_suspended();
+}
+
+bool
+scheduler::can_wake_calc_thread() const
+{
+  return !m_queue_calc.empty() || can_signal_source() ||
+         (m_sleeping_io_threads == 0 && !m_queue_io.empty());
+}
+
+bool
+scheduler::can_wake_io_thread() const
+{
+  return !m_queue_io.empty() ||
+         (m_source_step->ordering() == processing_order::ordered_io &&
+          can_signal_source());
+}
+
+void
+scheduler::queue_pending_step(step_ptr step)
+{
+  step->set_is_queued(true);
+  if (step->ordering() == processing_order::ordered_io) {
+    m_queue_io.push(std::move(step));
+  } else {
+    m_queue_calc.push(std::move(step));
+  }
 }
 
 std::ostream&
