@@ -245,7 +245,8 @@ public:
 
   /**
    * Called once the pipeline has been run to completion; this function is
-   * called on analytical steps in reverse order of addition to the pipeline.
+   * called on analytical steps in the order in which they were added to the
+   * scheduler with `add`, regardless of which step is the source step.
    */
   virtual void finalize() {}
 
@@ -317,6 +318,9 @@ public:
                          step_id dst,
                          read_mate read = read_mate::_1);
 
+  /** Set the source step, if it is not the last step added to the pipeline */
+  void set_source_step(step_id step);
+
   /** Runs the pipeline with n threads; return false on error. */
   bool run(int nthreads);
 
@@ -344,6 +348,8 @@ private:
 
   //! Analytical steps
   pipeline m_steps{};
+  //! Initial step in the pipeline
+  step_ptr m_source_step{};
 
   //! Condition used to signal the (potential) availability of IO work
   std::condition_variable m_condition_io{};
