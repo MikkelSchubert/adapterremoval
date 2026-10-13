@@ -94,6 +94,7 @@ libcore = static_library(
     'alignment.cpp',
     'argparse.cpp',
     'barcode_table.cpp',
+    'buffer_reader.cpp',
     'debug.cpp',
     'errors.cpp',
     'fastq_enc.cpp',
