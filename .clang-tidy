@@ -20,6 +20,7 @@ Checks: "
     -readability-else-after-return,
     -readability-function-cognitive-complexity,
     -readability-identifier-length,
+    -readability-trailing-comma,
     -readability-implicit-bool-conversion,
     -readability-magic-numbers,
     -readability-redundant-member-init,
