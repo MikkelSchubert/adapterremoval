@@ -505,11 +505,11 @@ TEST_CASE("buffer_reader releases unconsumed buffers")
 
 TEST_CASE("buffer_reader remembers current line if release throws")
 {
+  bool threw = false;
   buffer_reader reader{ { "file1", "file2" } };
   reader.add("line 1"_buffer, true);
   reader.add("line 2\n"_buffer, true);
 
-  bool threw = false;
   reader.set_release_function([&threw](buffer&&) {
     if (!threw) {
       threw = true;
