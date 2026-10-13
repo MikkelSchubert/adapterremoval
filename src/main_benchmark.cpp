@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
 #include "alignment.hpp"         // for alignment_info, sequence_aligner
 #include "benchmarking.hpp"      // for benchmarker
+#include "buffer.hpp"            // for buffer
+#include "buffer_reader.hpp"     // for buffer_reader
 #include "debug.hpp"             // for AR_REQUIRE
 #include "fastq.hpp"             // for fastq
 #include "fastq_enc.hpp"         // for FASTQ_ENCODING_33
@@ -34,7 +36,7 @@ public:
   readlines_benchmarker(string_vec filenames_1,
                         string_vec filenames_2,
                         const size_t head)
-    : benchmarker("FASTQ reading", { "read" })
+    : benchmarker("line reading", { "read" })
     , m_filenames_1(std::move(filenames_1))
     , m_filenames_2(std::move(filenames_2))
     , m_head(head)
@@ -83,6 +85,132 @@ private:
   string_vec m_lines_2{};
 };
 
+/** Benchmarking line-reading from buffers */
+class buffer_reader_benchmarker : public benchmarker
+{
+public:
+  buffer_reader_benchmarker(const string_vec& lines_1,
+                            const string_vec& lines_2)
+    : benchmarker("buffer reader", { "readbuf" })
+    , m_lines_1(lines_1)
+    , m_lines_2(lines_2)
+  {
+  }
+
+protected:
+  void setup() override
+  {
+    lines_into_buffers(m_lines_1, m_buffers_1);
+    copy_buffers(m_buffers_1, m_working_buffers_1);
+    lines_into_buffers(m_lines_2, m_buffers_2);
+    copy_buffers(m_buffers_2, m_working_buffers_2);
+  }
+
+  void execute() override
+  {
+    parse_buffers(m_working_buffers_1);
+    parse_buffers(m_working_buffers_2);
+  }
+
+private:
+  void parse_buffers(std::vector<buffer>& src)
+  {
+    buffer_reader reader{ { "dummy" } };
+    reader.set_release_function(
+      [this](buffer&& buf) { m_cache.emplace_back(std::move(buf)); });
+
+    std::string dst;
+    for (auto&& buf : src) {
+      reader.add(std::move(buf), &buf == &src.back());
+
+      while (reader.getline(dst) == buffer_reader::result::complete) {
+        blackbox(dst);
+      }
+    }
+  }
+
+  /** Creates disposable copy of the input buffers */
+  void copy_buffers(const std::vector<buffer>& src, std::vector<buffer>& dst)
+  {
+    dst.clear();
+    dst.reserve(src.size());
+    for (const auto& buf : src) {
+      buffer copy;
+      acquire_buffer(copy, buf.size());
+      copy.append(buf);
+
+      dst.emplace_back(std::move(copy));
+    }
+  }
+
+  /** Convert previously read lines into fixed-sized buffers */
+  static void lines_into_buffers(const string_vec& lines,
+                                 std::vector<buffer>& dst,
+                                 const size_t buffersize = 0x20000)
+  {
+    if (lines.empty() || !dst.empty()) {
+      return;
+    }
+
+    buffer buf;
+    buf.reserve(buffersize);
+
+    for (const auto& line : lines) {
+      const char* start = line.data();
+      const char* end = start + line.size();
+
+      while (start < end) {
+        const size_t to_copy =
+          std::min<size_t>(buffersize - buf.size(), end - start);
+
+        buf.append(start, to_copy);
+        if (buf.size() >= buffersize) {
+          dst.emplace_back(std::move(buf));
+          buf.reserve(buffersize);
+        }
+
+        start += to_copy;
+      }
+
+      buf.append_u8('\n');
+    }
+
+    if (buf.size()) {
+      dst.emplace_back(std::move(buf));
+    }
+  }
+
+  /** Obtain a (second-hand) buffer with the specified capacity */
+  void acquire_buffer(buffer& buf, size_t capacity)
+  {
+    if (!m_cache.empty()) {
+      buf = std::move(m_cache.back());
+      m_cache.pop_back();
+    }
+
+    buf.reserve(capacity);
+    buf.resize(0);
+  }
+
+  // Reused buffers; used to eliminate overhead from malloc/free
+  std::vector<buffer> m_cache{};
+
+  //! Parsed lines from file 1
+  const string_vec& m_lines_1;
+  //! Parsed lines from file 2
+  const string_vec& m_lines_2;
+
+  //! Fixed size buffers derived from m_lines_1
+  std::vector<buffer> m_buffers_1{};
+  //! Fixed size buffers derived from m_lines_2
+  std::vector<buffer> m_buffers_2{};
+
+  //! Copy of buffers in m_buffers_1, to be consumed during benchmarking
+  std::vector<buffer> m_working_buffers_1{};
+  //! Copy of buffers in m_buffers_2, to be consumed during benchmarking
+  std::vector<buffer> m_working_buffers_2{};
+};
+
 /** Benchmarking of FASTQ parsing excluding file IO */
 class fastq_parser_benchmarker : public benchmarker
 {
@@ -91,7 +219,7 @@ public:
                            const string_vec& lines_2,
                            fastq_encoding encoding)
     : benchmarker("FASTQ parsing", { "parse" })
-    , m_encoding(encoding)
+    , m_encoding(std::move(encoding))
     , m_reader_1{ lines_1 }
     , m_reader_2{ lines_2 }
   {
@@ -513,10 +641,10 @@ private:
 string_vec
 supported_toggles()
 {
-  string_vec toggles = { "read",       "parse",      "revcompl",  "complexity",
-                         "trim",       "trim:basic", "trim:mott", "trim:window",
-                         "trim:polyx", "stats",      "align",     "align:se",
-                         "align:pe",   "simd" };
+  string_vec toggles = { "read",        "readbuf",    "parse",      "revcompl",
+                         "complexity",  "trim",       "trim:basic", "trim:mott",
+                         "trim:window", "trim:polyx", "stats",      "align",
+                         "align:se",    "align:pe",   "simd" };
 
   for (const auto is : simd::supported()) {
     toggles.push_back(std::string("simd:") + to_lower(simd::name(is)));
@@ -547,6 +675,9 @@ benchmark(const userconfig& config)
                                config.input_files_2,
                                head };
   lines.run_if_toggled(toggles);
+
+  buffer_reader_benchmarker buffers{ lines.lines_1(), lines.lines_2() };
+  buffers.run_if_toggled(toggles);
 
   fastq_parser_benchmarker records{ lines.lines_1(),
                                     lines.lines_2(),

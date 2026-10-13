@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
+#include "buffer_reader.hpp" // declarations
+#include "debug.hpp"         // for AR_REQUIRE
+#include "pragmas.hpp"       // for AR_UNLIKELY
+#include <cstring>           // for memchr
+#include <ostream>           // for ostream
+
+namespace adapterremoval {
+
+////////////////////////////////////////////////////////////////////////////////
+// buffer_reader
+
+buffer_reader::buffer_reader(std::vector<std::string> filenames)
+  : m_filenames(std::move(filenames))
+  , m_remaining_eof(m_filenames.remaining_filenames())
+{
+}
+
+buffer_reader::~buffer_reader()
+{
+  if (m_release) {
+    try {
+      for (auto& [buf, _] : m_buffers) {
+        if (buf.capacity()) {
+          m_release(std::move(buf));
+        }
+      }
+    } catch (...) { // NOLINT(bugprone-empty-catch)
+    }
+  }
+}
+
+void
+buffer_reader::add(buffer&& buf, bool eof)
+{
+  AR_REQUIRE(m_remaining_eof > 0);
+
+  if (buf.size() || eof) {
+    m_buffers.emplace_back(std::move(buf), eof);
+    if (!m_buffer_ptr) {
+      next_buffer();
+    }
+
+    if (eof) {
+      m_remaining_eof--;
+    }
+  } else if (m_release && buf.capacity()) {
+    m_release(std::move(buf));
+  }
+}
+
+buffer_reader::result
+buffer_reader::getline(std::string& dst)
+{
+  bool at_eof = false;
+  while (m_buffer_ptr && !at_eof) {
+    const auto len = m_buffer_end - m_buffer_ptr;
+    const auto* end = static_cast<const char*>(memchr(m_buffer_ptr, '\n', len));
+    if (end) {
+      // Excluding terminal \n
+      m_line.append(m_buffer_ptr, end - m_buffer_ptr);
+      // Excluding terminal \r; this may have been added in the loop prior to
+      // \n being found, if \n is the first character in the buffer. It is
+      // therefore easiest to check the final m_line.
+      if (AR_UNLIKELY(!m_line.empty() && m_line.back() == '\r')) {
+        m_line.pop_back();
+      }
+
+      m_buffer_ptr = end + 1;
+
+      dst.clear();
+      std::swap(m_line, dst);
+      m_filenames.inc_position();
+
+      return result::complete;
+    }
+
+    // Can potentially introduce a \r; this is handled above.
+    m_line.append(m_buffer_ptr, len);
+
+    if (m_release && m_buffers.front().first.capacity()) {
+      // `release` may throw, so let the next `getline()` call resume from here
+      m_buffer_ptr = &m_eof_char;
+      m_buffer_end = &m_eof_char;
+
+      m_release(std::move(m_buffers.front().first));
+    }
+
+    if (m_buffers.front().second) {
+      if (!m_line.empty()) {
+        m_filenames.inc_position();
+        at_eof = true;
+      }
+
+      m_filenames.next_file();
+    }
+
+    m_buffers.pop_front();
+    next_buffer();
+  }
+
+  if (m_line.empty()) {
+    return eof() ? result::eof : result::partial;
+  } else if (at_eof) {
+    dst.clear();
+    std::swap(dst, m_line);
+
+    return result::complete;
+  } else {
+    return result::partial;
+  }
+}
+
+void
+buffer_reader::next_buffer()
+{
+  if (m_buffers.empty()) {
+    m_buffer_ptr = nullptr;
+    m_buffer_end = nullptr;
+  } else {
+    const auto& buf = m_buffers.front();
+
+    if (buf.first.size() == 0) {
+      // The buffer may not have allocated, so use a known, valid address
+      m_buffer_ptr = &m_eof_char;
+      m_buffer_end = &m_eof_char;
+    } else {
+      m_buffer_ptr = reinterpret_cast<const char*>(buf.first.data());
+      m_buffer_end = m_buffer_ptr + buf.first.size();
+    }
+  }
+}
+
+std::ostream&
+operator<<(std::ostream& os, buffer_reader::result r)
+{
+  switch (r) { // GCOVR_EXCL_BR_LINE
+    case buffer_reader::result::complete:
+      return os << "buffer_reader::result::complete";
+    case buffer_reader::result::partial:
+      return os << "buffer_reader::result::partial";
+    case buffer_reader::result::eof:
+      return os << "buffer_reader::result::eof";
+    default:                                  // GCOVR_EXCL_LINE
+      AR_FAIL("invalid buffer_reader::read"); // GCOVR_EXCL_LINE
+  }
+}
+
+} // namespace adapterremoval

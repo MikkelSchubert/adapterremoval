@@ -10,6 +10,7 @@ unit_tests = executable(
     'argparse_test.cpp',
     'barcodes_test.cpp',
     'buffer_test.cpp',
+    'buffer_reader_test.cpp',
     'counts_test.cpp',
     'debug_test.cpp',
     'errors_test.cpp',
