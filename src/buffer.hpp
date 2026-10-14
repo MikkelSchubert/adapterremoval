@@ -149,19 +149,37 @@ public:
   /** Insert 16 bit integer into buffer in LE orientation at offset */
   void put_u16(size_t offset, uint16_t value)
   {
-    AR_REQUIRE(offset + 2 <= size());
+    AR_REQUIRE(offset <= size() && size() - offset >= 2);
     m_data[offset + 0] = value & 0xFFU;
     m_data[offset + 1] = (value >> 8U) & 0xFFU;
+  }
+
+  /** Returns 16 bit LE integer at the specified offset */
+  [[nodiscard]] uint16_t get_u16(size_t offset) const
+  {
+    AR_REQUIRE(offset <= size() && size() - offset >= 2);
+    return static_cast<uint16_t>(m_data[offset + 0]) |
+           (static_cast<uint16_t>(m_data[offset + 1]) << 8U);
   }
 
   /** Insert 32 bit integer into buffer in LE orientation at offset */
   void put_u32(size_t offset, uint32_t value)
   {
-    AR_REQUIRE(offset + 4 <= size());
+    AR_REQUIRE(offset <= size() && size() - offset >= 4);
     m_data[offset + 0] = value & 0xFFU;
     m_data[offset + 1] = (value >> 8U) & 0xFFU;
     m_data[offset + 2] = (value >> 16U) & 0xFFU;
     m_data[offset + 3] = (value >> 24U) & 0xFFU;
+  }
+
+  /** Returns 32 bit LE integer at the specified offset */
+  [[nodiscard]] uint32_t get_u32(size_t offset) const
+  {
+    AR_REQUIRE(offset <= size() && size() - offset >= 4);
+    return static_cast<uint32_t>(m_data[offset + 0]) |
+           (static_cast<uint32_t>(m_data[offset + 1]) << 8U) |
+           (static_cast<uint32_t>(m_data[offset + 2]) << 16U) |
+           (static_cast<uint32_t>(m_data[offset + 3]) << 24U);
   }
 
   /** Returns true if content, but not necessarily capacity, is the same */

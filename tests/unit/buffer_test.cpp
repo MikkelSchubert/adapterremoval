@@ -5,6 +5,7 @@
 #include "testing.hpp"  // for TEST_CASE, REQUIRE, ...
 #include <cstddef>      // for size_t
 #include <cstdint>      // int32_t
+#include <limits>       // for numeric_limits
 #include <ostream>      // for ostream
 #include <string>       // for string
 #include <string_view>  // for string_view
@@ -185,6 +186,15 @@ TEST_CASE("buffer move assignment clears source")
   REQUIRE(dst.data() == src_ptr);
 }
 
+TEST_CASE("buffer move assign to self is no-op")
+{
+  buffer src = "0123456789"_buffer;
+  auto& dst = src; // silence -Wself-move warning
+  dst = std::move(src);
+
+  REQUIRE(src == "0123456789"_buffer);
+}
+
 TEST_CASE("buffer append u8")
 {
   buffer buf;
@@ -198,6 +208,8 @@ TEST_CASE("buffer append u8")
   REQUIRE(buf.at(1) == 0xAD);
   REQUIRE(buf.at(2) == 0xBE);
   REQUIRE(buf.at(3) == 0xEF);
+
+  REQUIRE_THROWS_AS(buf.at(4), assert_failed);
 }
 
 TEST_CASE("buffer append u16 is le")
@@ -270,6 +282,55 @@ TEST_CASE("buffer put u16 is le")
   REQUIRE(buf.at(5) == 0xBE);
   REQUIRE(buf.at(6) == 0xFF);
   REQUIRE(buf.at(7) == 0xFF);
+
+  REQUIRE(buf.get_u16(2) == 0xDEAD);
+  REQUIRE(buf.get_u16(4) == 0xBEEF);
+}
+
+TEST_CASE("buffer put u16 past end throws")
+{
+  SECTION("empty buffer")
+  {
+    buffer buf;
+    REQUIRE_THROWS_AS(buf.put_u16(0, 12345), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u16(1, 12345), assert_failed);
+
+    constexpr auto max = std::numeric_limits<size_t>::max();
+    REQUIRE_THROWS_AS(buf.put_u16(max - 2, 12345), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u16(max - 1, 12345), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u16(max - 0, 12345), assert_failed);
+  }
+
+  SECTION("non-empty buffer")
+  {
+    buffer buf{ 10 };
+    REQUIRE_NOTHROW(buf.put_u16(8, 12345));
+    REQUIRE_THROWS_AS(buf.put_u16(9, 12345), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u16(10, 12345), assert_failed);
+  }
+}
+
+TEST_CASE("buffer get u16 past end throws")
+{
+  SECTION("empty buffer")
+  {
+    buffer buf;
+    REQUIRE_THROWS_AS(buf.get_u16(0), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u16(1), assert_failed);
+
+    constexpr auto max = std::numeric_limits<size_t>::max();
+    REQUIRE_THROWS_AS(buf.get_u16(max - 2), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u16(max - 1), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u16(max - 0), assert_failed);
+  }
+
+  SECTION("non-empty buffer")
+  {
+    const buffer buf = "0123456789"_buffer;
+    REQUIRE_NOTHROW(buf.get_u16(8));
+    REQUIRE_THROWS_AS(buf.get_u16(9), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u16(10), assert_failed);
+  }
 }
 
 TEST_CASE("buffer put u32 is le")
@@ -289,6 +350,66 @@ TEST_CASE("buffer put u32 is le")
   REQUIRE(buf.at(5) == 0xDE);
   REQUIRE(buf.at(6) == 0xFF);
   REQUIRE(buf.at(7) == 0xFF);
+
+  REQUIRE(buf.get_u32(2) == 0xDEADBEEF);
+}
+
+TEST_CASE("buffer put u32 past end throws")
+{
+  SECTION("empty buffer")
+  {
+    buffer buf;
+    REQUIRE_THROWS_AS(buf.put_u32(0, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(1, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(2, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(3, 0xDEADBEEF), assert_failed);
+
+    constexpr auto max = std::numeric_limits<size_t>::max();
+    REQUIRE_THROWS_AS(buf.put_u32(max - 4, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(max - 3, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(max - 2, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(max - 1, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(max - 0, 0xDEADBEEF), assert_failed);
+  }
+
+  SECTION("non-empty buffer")
+  {
+    buffer buf{ 10 };
+    REQUIRE_NOTHROW(buf.put_u32(6, 0xDEADBEEF));
+    REQUIRE_THROWS_AS(buf.put_u32(7, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(8, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(9, 0xDEADBEEF), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u32(10, 0xDEADBEEF), assert_failed);
+  }
+}
+
+TEST_CASE("buffer get u32 past end throws")
+{
+  SECTION("empty buffer")
+  {
+    buffer buf;
+    REQUIRE_THROWS_AS(buf.get_u32(0), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(1), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(2), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(3), assert_failed);
+
+    constexpr auto max = std::numeric_limits<size_t>::max();
+    REQUIRE_THROWS_AS(buf.get_u32(max - 4), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(max - 3), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(max - 2), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(max - 1), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(max - 0), assert_failed);
+  }
+
+  SECTION("non-empty buffer")
+  {
+    const buffer buf = "0123456789"_buffer;
+    REQUIRE_NOTHROW(buf.get_u32(6));
+    REQUIRE_THROWS_AS(buf.get_u32(7), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(8), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(9), assert_failed);
+    REQUIRE_THROWS_AS(buf.get_u32(10), assert_failed);
+  }
 }
 
 TEST_CASE("append buffer")
