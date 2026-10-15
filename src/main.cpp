@@ -91,6 +91,8 @@ main(int argc, char* argv[])
   std::set_terminate(&terminate_on_exception);
   std::ios_base::sync_with_stdio(false);
 
+  log::set_preamble(std::string{ program::long_name() });
+
   userconfig config;
 
   const std::vector<std::string> argvec(argv, argv + argc);

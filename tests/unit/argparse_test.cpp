@@ -220,14 +220,14 @@ TEST_CASE("uint with_minimum requires valid default")
 
   SECTION("fail")
   {
-    sink.with_minimum(0);
+    REQUIRE_NOTHROW(sink.with_minimum(0));
     REQUIRE_THROWS_AS(sink.with_minimum(1), assert_failed);
   }
 
   SECTION("pass")
   {
-    sink.with_default(101).with_minimum(100);
-    sink.with_default(100).with_minimum(100);
+    REQUIRE_NOTHROW(sink.with_default(101).with_minimum(100));
+    REQUIRE_NOTHROW(sink.with_default(100).with_minimum(100));
   }
 }
 
@@ -264,15 +264,15 @@ TEST_CASE("uint with_maximum requires valid default")
 
   SECTION("fail")
   {
-    sink.with_maximum(100);
+    REQUIRE_NOTHROW(sink.with_maximum(100));
     REQUIRE_THROWS_AS(sink.with_maximum(99), assert_failed);
   }
 
   SECTION("pass")
   {
-    sink.with_maximum(100);
-    sink.with_maximum(101);
-    sink.with_maximum(std::numeric_limits<uint32_t>::max());
+    REQUIRE_NOTHROW(sink.with_maximum(100));
+    REQUIRE_NOTHROW(sink.with_maximum(101));
+    REQUIRE_NOTHROW(sink.with_maximum(std::numeric_limits<uint32_t>::max()));
   }
 }
 

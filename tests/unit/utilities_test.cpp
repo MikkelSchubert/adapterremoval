@@ -162,6 +162,8 @@ TEST_CASE("underlying_value returns same type", "[underlying_value]")
     auto uvalue = underlying_value(my_enum{});
     static_assert(std::is_same_v<decltype(uvalue), unsigned long>);
   }
+
+  REQUIRE(true); // silence Catch2's `--warn NoAssertions`
 }
 
 ////////////////////////////////////////////////////////////////////////////////

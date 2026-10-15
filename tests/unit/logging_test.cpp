@@ -10,8 +10,6 @@ namespace adapterremoval {
 TEST_CASE("log capture timestamps")
 {
   log::set_timestamps(GENERATE(true, false));
-  // Force logging of preamble prior to tests
-  log::log_preamble();
 
   // timestamps disabled
   {
@@ -40,8 +38,6 @@ TEST_CASE("log capture timestamps")
 TEST_CASE("log capture colors")
 {
   log::set_colors(GENERATE(true, false));
-  // Force logging of preamble prior to tests
-  log::log_preamble();
 
   // colors enabled
   {
@@ -62,8 +58,6 @@ TEST_CASE("log capture colors")
 TEST_CASE("log capture levels")
 {
   log::set_level(log::level::debug);
-  // Force logging of preamble prior to tests
-  log::log_preamble();
 
   // default levels
   {
@@ -162,6 +156,25 @@ TEST_CASE("transient logging not allowed for log messages")
   REQUIRE_THROWS_AS(log::info().transient(), assert_failed);
   REQUIRE_THROWS_AS(log::warn().transient(), assert_failed);
   REQUIRE_THROWS_AS(log::error().transient(), assert_failed);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// logging: set preamble
+
+TEST_CASE("log premable is printed before first real message")
+{
+  log::set_timestamps(false);
+  log::set_preamble("some basic information");
+
+  const log::log_capture cap;
+  log::cerr() << "something non-standard\n";
+  log::info() << "a info message";
+  log::error() << "an error";
+
+  REQUIRE(cap.str() == "something non-standard\n"
+                       "[INFO] some basic information\n"
+                       "[INFO] a info message\n"
+                       "[ERROR] an error\n");
 }
 
 } // namespace adapterremoval

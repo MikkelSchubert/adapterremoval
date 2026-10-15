@@ -1908,9 +1908,11 @@ compare(simd::compare_subsequences_func func,
                            length,
                            length * 2);
 
-  AR_REQUIRE(result);
-
-  if (alignment != expected) {
+  // This comparison is performed a very large number of times; to avoid the
+  // reported number of assertions becoming meaningless, REQUIRE is only called
+  // if there's something to report
+  if (!result || alignment != expected) {
+    REQUIRE(result);
     REQUIRE(alignment == expected);
   }
 }
@@ -1936,6 +1938,8 @@ TEST_CASE("Brute-force validation", "[alignment::compare_subsequences]")
     for (size_t length = 1; length < reference.size(); ++length) {
       SECTION(stringify(length))
       {
+        REQUIRE(true); // silence Catch2's `--warn NoAssertions`
+
         std::string seq_1 = reference.substr(0, length);
         seq_1.resize(length + padding, 'N');
         std::string seq_2 = seq_1;

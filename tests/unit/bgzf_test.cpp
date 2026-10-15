@@ -22,13 +22,10 @@ TEST_CASE("bgzf_block_compress gzip compresses with BSIZE, ISIZE, CRC32")
 {
   buffer src;
 
-  SECTION("plain data")
-  {
+  // Plain data or worst case (incompressible) data
+  if (GENERATE(true, false)) {
     src = "AAAAAAAAABBBBBBBBBBBBCCCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEE"_buffer;
-  }
-
-  SECTION("worst-case random data")
-  {
+  } else {
     src = random_data_buffer(BGZF_MAX_INPUT_SIZE);
   }
 

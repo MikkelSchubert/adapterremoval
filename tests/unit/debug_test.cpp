@@ -13,6 +13,7 @@ namespace adapterremoval {
 TEST_CASE("assert on true value")
 {
   AR_REQUIRE(1 == 1);
+  REQUIRE(true); // silence Catch2's `--warn NoAssertions`
 }
 
 TEST_CASE("assert on false value")
@@ -35,6 +36,7 @@ TEST_CASE("assert on false value")
 TEST_CASE("assert on true value with message")
 {
   AR_REQUIRE(!false, "this is dummy message");
+  REQUIRE(true); // silence Catch2's `--warn NoAssertions`
 }
 
 TEST_CASE("assert on false value with message")
@@ -81,6 +83,8 @@ TEST_CASE("assert single thread")
   {
     AR_REQUIRE_SINGLE_THREAD(lock);
   }
+
+  REQUIRE(true); // silence Catch2's `--warn NoAssertions`
 }
 
 TEST_CASE("assert single thread failed")
