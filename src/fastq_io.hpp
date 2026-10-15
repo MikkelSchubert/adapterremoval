@@ -31,10 +31,6 @@ using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
 
 //! Number of reads to load every cycle
 constexpr size_t INPUT_READS = 1024;
-//! Size of chunks of when performing block compression
-constexpr size_t BGZF_BLOCK_SIZE = 0xff00;
-//! Maximum size of BGZF blocks including header and tail
-constexpr size_t BGZF_MAX_BLOCK_SIZE = 0x10000;
 //! Size of blocks to generate before writing to output
 constexpr size_t OUTPUT_BLOCK_SIZE = 4LLU * 64 * 1024;
 
@@ -244,11 +240,12 @@ public:
   gzip_split_fastq& operator=(gzip_split_fastq&&) = delete;
 
 private:
-  const userconfig& m_config;
   //! Set if streaming compression is carried out using isa-l
   const bool m_isal_stream;
   //! Format of file being compressed
   const output_format m_format;
+  //! Compression level
+  const unsigned m_compression_level;
 };
 
 /**

@@ -18,6 +18,11 @@
 #include <utility>          // for move
 #include <vector>           // for vector
 
+// Required due to 2.30 fixing issues when reading concatenated gzip files
+static_assert((ISAL_MAJOR_VERSION > 2 ||
+               (ISAL_MAJOR_VERSION == 2 && ISAL_MINOR_VERSION >= 30)),
+              "isa-l v2.30+ required");
+
 namespace adapterremoval {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,6 +151,9 @@ line_reader::line_reader(std::string filename)
 {
   refill_buffers();
 }
+
+// Out of line to ensure that std::unique_ptr has access to isa-l declarations
+line_reader::~line_reader() = default;
 
 bool
 line_reader::getline(std::string& dst)

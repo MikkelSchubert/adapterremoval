@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "fastq_io.hpp"          // declarations
+#include "bgzf.hpp"              // for BGZF_EOF, BGZF_MAX_BLOCK_SIZE, ...
+#include "buffer.hpp"            // for buffer
 #include "commontypes.hpp"       // for output_format
 #include "debug.hpp"             // for AR_REQUIRE, AR_REQUIRE_SINGLE_THREAD
+#include "deflate.hpp"           // for ISAL_COMPRESSION_LEVEL, crc32, ...
 #include "errors.hpp"            // for io_error, gzip_error, fastq_error
 #include "fastq.hpp"             // for fastq
 #include "fastq_enc.hpp"         // for MATE_SEPARATOR
@@ -20,9 +23,6 @@
 #include <algorithm>             // for max, min
 #include <cerrno>                // for errno
 #include <cstddef>               // for size_t
-#include <cstdint>               // for uint8_t
-#include <isa-l.h>               // IWYU pragma: keep
-#include <libdeflate.h>          // for libdeflate_alloc_compressor, ...
 #include <memory>                // for unique_ptr, make_unique, ...
 #include <mutex>                 // for mutex, recursive_lock, unique_lock
 #include <sstream>               // for basic_ostream, basic_ostringstream, ...
@@ -33,28 +33,10 @@
 
 namespace adapterremoval {
 
-// Default bgzip header, as described in the SAM spec. v1.6 section 4.1.
-// Includes 2 trailing placeholder bytes for total block size (BSIZE)
-constexpr std::string_view BGZF_HEADER = {
-  "\37\213\10\4\0\0\0\0\0\377\6\0\102\103\2\0\0\0",
-  18
-};
-
-// Eof of file marker for bgzip files; see SAM spec. v1.6 section 4.1.2
-constexpr std::string_view BGZF_EOF = {
-  "\37\213\10\4\0\0\0\0\0\377\6\0\102\103\2\0\33\0\3\0\0\0\0\0\0\0\0\0",
-  28,
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 // Helper function for isa-l
 
 namespace {
-
-//! The compression level used for block/stream compression with isa-l
-constexpr size_t ISAL_COMPRESSION_LEVEL = 1;
-//! The default buffer size for compression at level ISAL_COMPRESSION_LEVEL
-constexpr size_t ISAL_BUFFER_SIZE = ISAL_DEF_LVL1_SMALL;
 
 /**
  * ISA-l streaming is enabled only at compression level 1, since little
@@ -123,20 +105,6 @@ select_filenames(const userconfig& config, const read_fastq::file_type mode)
     default:
       AR_FAIL("invalid read_fastq::file_type value");
   }
-}
-
-/** Estimates an upper bound for the required capacity for gzip compression */
-constexpr size_t
-estimate_capacity(size_t input_size, bool eof)
-{
-  return input_size                    //
-         + BGZF_HEADER.size()          // Standard bgzip header
-         + 1                           // BFINAL | BTYPE
-         + 4                           // LEN + NLEN
-         + 4                           // CRC32
-         + 4                           // ISIZE
-         + (eof ? BGZF_EOF.size() : 0) // Standard bgzip tail
-    ;
 }
 
 class fastq_vec_cache
@@ -562,18 +530,17 @@ split_fastq::process(chunk_ptr data)
   chunk_vec chunks;
   for (const auto& src : chunk->buffers) {
     for (size_t src_offset = 0; src_offset < src.size();) {
-      const auto n =
-        std::min(src.size() - src_offset, BGZF_BLOCK_SIZE - m_buffer.size());
+      const auto n = std::min(src.size() - src_offset,
+                              BGZF_MAX_INPUT_SIZE - m_buffer.size());
       m_buffer.append(src.data() + src_offset, n);
 
       src_offset += n;
 
-      if (m_buffer.size() == BGZF_BLOCK_SIZE) {
+      if (m_buffer.size() == BGZF_MAX_INPUT_SIZE) {
         auto block = std::make_unique<output_chunk>();
 
         if (m_isal_stream) {
-          m_isal_crc32 =
-            libdeflate_crc32(m_isal_crc32, m_buffer.data(), m_buffer.size());
+          m_isal_crc32 = crc32(m_buffer, m_isal_crc32);
         }
 
         block->uncompressed_size = m_buffer.size();
@@ -582,7 +549,7 @@ split_fastq::process(chunk_ptr data)
         chunks.emplace_back(std::move(block));
 
         m_buffer = buffer();
-        m_buffer.reserve(BGZF_BLOCK_SIZE);
+        m_buffer.reserve(BGZF_MAX_INPUT_SIZE);
       }
     }
   }
@@ -592,8 +559,7 @@ split_fastq::process(chunk_ptr data)
     block->eof = true;
 
     if (m_isal_stream) {
-      m_isal_crc32 =
-        libdeflate_crc32(m_isal_crc32, m_buffer.data(), m_buffer.size());
+      m_isal_crc32 = crc32(m_buffer, m_isal_crc32);
     }
 
     block->crc32 = m_isal_crc32;
@@ -609,161 +575,14 @@ split_fastq::process(chunk_ptr data)
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'gzip_split_fastq'
 
-namespace {
-
-/** Free isa-l stream and associated level buffer */
-void
-free_isal_zstream(isal_zstream* stream)
-{
-  if (stream) {
-    delete[] stream->level_buf;
-    delete stream;
-  }
-}
-
-/**
- * Perform level 1 gzip compression using isa-l
- *
- * @param input_buffer Buffer containing data to be compressed
- * @param output_buffer Write output to this buffer. May contain existing data
- * @param output_offset Skip the first n bytes in the output buffer
- * @param eof Is this the end of stream or an independently compressed block?
- * @return the number of bytes written to output_buffer
- */
-size_t
-isal_deflate_block(buffer& input_buffer,
-                   buffer& output_buffer,
-                   const size_t output_offset,
-                   const bool eof)
-{
-  using compressor_ptr =
-    std::unique_ptr<isal_zstream, decltype(&free_isal_zstream)>;
-  compressor_ptr ptr{ nullptr, &free_isal_zstream };
-
-  static std::mutex s_lock;
-  static std::vector<compressor_ptr> s_cache;
-
-  {
-    const std::unique_lock locker{ s_lock };
-    if (!s_cache.empty()) {
-      ptr = std::move(s_cache.back());
-      s_cache.pop_back();
-    }
-  }
-
-  if (ptr) {
-    isal_deflate_reset(ptr.get());
-  } else {
-    ptr.reset(new isal_zstream());
-
-    isal_deflate_stateless_init(ptr.get());
-    ptr->flush = FULL_FLUSH;
-    ptr->level = ISAL_COMPRESSION_LEVEL;
-    ptr->level_buf_size = ISAL_BUFFER_SIZE;
-    ptr->level_buf = new uint8_t[ISAL_BUFFER_SIZE]();
-  }
-
-  ptr->end_of_stream = eof;
-  ptr->avail_in = input_buffer.size();
-  ptr->next_in = input_buffer.data();
-  ptr->next_out = output_buffer.data() + output_offset;
-  ptr->avail_out = output_buffer.size() - output_offset;
-
-  const auto ec = isal_deflate_stateless(ptr.get());
-  switch (ec) {
-    case COMP_OK:
-      break;
-    case INVALID_FLUSH:
-      throw gzip_error("isal_deflate_stateless: invalid flush");
-    case ISAL_INVALID_LEVEL:
-      throw gzip_error("isal_deflate_stateless: invalid level");
-    case ISAL_INVALID_LEVEL_BUF:
-      throw gzip_error("isal_deflate_stateless: invalid buffer size");
-    default: {
-      std::ostringstream os;
-      os << "isal_deflate_stateless: unknown error " << ec;
-
-      throw gzip_error(os.str());
-    }
-  }
-
-  // The easily compressible input should fit in a single output block
-  AR_REQUIRE(ptr->avail_in == 0);
-  const auto total_out = ptr->total_out;
-
-  const std::unique_lock locker{ s_lock };
-  s_cache.emplace_back(std::move(ptr));
-
-  return total_out;
-}
-
-/**
- * Perform gzip compression using libdeflate
- *
- * @param input_buffer Buffer containing data to be compressed
- * @param output_buffer Write output to this buffer. May NOT contain data
- * @param compression_level compression level must be constant across calls
- * @param eof Is this the end of stream or an independently compressed block?
- */
-void
-libdeflate_deflate_block(buffer& input_buffer,
-                         buffer& output_buffer,
-                         const unsigned compression_level,
-                         const bool eof)
-{
-  using compressor_ptr = std::unique_ptr<libdeflate_compressor,
-                                         decltype(&libdeflate_free_compressor)>;
-  compressor_ptr ptr{ nullptr, &libdeflate_free_compressor };
-
-  static std::mutex s_lock;
-  static std::vector<compressor_ptr> s_cache;
-
-  {
-    const std::unique_lock locker{ s_lock };
-    if (!s_cache.empty()) {
-      ptr = std::move(s_cache.back());
-      s_cache.pop_back();
-    }
-  }
-
-  if (!ptr) {
-    // Compression level is assumed to be constant per program invocation
-    ptr.reset(libdeflate_alloc_compressor(compression_level));
-    AR_REQUIRE(ptr);
-  }
-
-  const auto output_bound =
-    libdeflate_deflate_compress_bound(ptr.get(), input_buffer.size());
-
-  output_buffer.reserve(estimate_capacity(output_bound, eof));
-  output_buffer.append(BGZF_HEADER);
-  output_buffer.resize(output_buffer.capacity());
-
-  const auto output_size =
-    libdeflate_deflate_compress(ptr.get(),
-                                input_buffer.data(),
-                                input_buffer.size(),
-                                output_buffer.data() + BGZF_HEADER.size(),
-                                output_buffer.size() - BGZF_HEADER.size());
-
-  // The easily compressible input should fit in a single output block
-  AR_REQUIRE(output_size);
-  // Resize the buffer to the actually used size
-  output_buffer.resize(output_size + BGZF_HEADER.size());
-
-  const std::unique_lock locker{ s_lock };
-  s_cache.emplace_back(std::move(ptr));
-}
-
-} // namespace
-
 gzip_split_fastq::gzip_split_fastq(const userconfig& config,
                                    const output_file& file,
                                    const step_id next_step)
   : analytical_step(processing_order::unordered, "gzip_split_fastq", next_step)
-  , m_config(config)
   , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
   , m_format(file.format)
+  , m_compression_level(
+      m_format == output_format::ubam ? 0 : config.compression_level)
 {
 }
 
@@ -778,50 +597,13 @@ gzip_split_fastq::process(chunk_ptr data)
   buffer output_buffer;
 
   if (m_isal_stream) {
-    output_buffer.resize(estimate_capacity(input_buffer.size(), false));
-    const auto output_size =
-      isal_deflate_block(input_buffer, output_buffer, 0, chunk->eof);
-    output_buffer.resize(output_size);
+    output_buffer.resize(BGZF_MAX_BLOCK_SIZE);
+    deflate_block_isal_1(input_buffer, output_buffer, 0, chunk->eof);
   } else {
-    if (m_format == output_format::ubam || m_config.compression_level == 0) {
-      output_buffer.reserve(estimate_capacity(input_buffer.size(), chunk->eof));
-      output_buffer.append(BGZF_HEADER);
-      output_buffer.append_u8(1); // BFINAL=1, BTYPE=00; see RFC1951
-      output_buffer.append_u16(input_buffer.size());
-      output_buffer.append_u16(~input_buffer.size());
-      output_buffer.append(input_buffer);
-    } else if (m_config.compression_level == ISAL_COMPRESSION_LEVEL) {
-      output_buffer.reserve(estimate_capacity(input_buffer.size(), chunk->eof));
-      output_buffer.append(BGZF_HEADER);
-      output_buffer.resize(output_buffer.capacity());
-
-      const auto output_size = isal_deflate_block(input_buffer,
-                                                  output_buffer,
-                                                  BGZF_HEADER.size(),
-                                                  true);
-
-      // Resize the buffer to the actually used size
-      output_buffer.resize(output_size + BGZF_HEADER.size());
-    } else {
-      AR_REQUIRE(m_config.compression_level >= 2 &&
-                 m_config.compression_level <= 12);
-
-      libdeflate_deflate_block(input_buffer,
-                               output_buffer,
-                               m_config.compression_level,
-                               chunk->eof);
-    }
-
-    const auto input_crc32 =
-      libdeflate_crc32(0, input_buffer.data(), input_buffer.size());
-    output_buffer.append_u32(input_crc32);         // checksum of data
-    output_buffer.append_u32(input_buffer.size()); // size of data
-
-    AR_REQUIRE(output_buffer.size() <= BGZF_MAX_BLOCK_SIZE);
-    // Write the final block size; -1 to fit 65536 in 16 bit
-    output_buffer.put_u16(16, output_buffer.size() - 1);
+    bgzf_block_compress(input_buffer, output_buffer, m_compression_level);
 
     if (chunk->eof) {
+      // May cause a realloc, but only on the very last chunk, so doesn't matter
       output_buffer.append(BGZF_EOF);
     }
   }
@@ -847,29 +629,8 @@ write_fastq::write_fastq(const userconfig& config, const output_file& file)
   , m_isal_stream(is_isal_streaming_enabled(file, config.compression_level))
 {
   if (m_isal_stream) {
-    buffer level_buf(ISAL_BUFFER_SIZE);
-    buffer output_buf(OUTPUT_BLOCK_SIZE);
-
-    struct isal_zstream stream = {};
-    struct isal_gzip_header header = {};
-
-    isal_gzip_header_init(&header);
-    isal_deflate_init(&stream);
-    stream.avail_in = 0;
-    stream.flush = NO_FLUSH;
-    stream.level = ISAL_COMPRESSION_LEVEL;
-    stream.level_buf = level_buf.data();
-    stream.level_buf_size = level_buf.size();
-    stream.gzip_flag = IGZIP_GZIP_NO_HDR;
-    stream.next_out = output_buf.data();
-    stream.avail_out = output_buf.size();
-
-    const auto ret = isal_write_gzip_header(&stream, &header);
-    AR_REQUIRE(ret == 0, "buffer was not large enough for gzip header");
-
-    output_buf.resize(stream.total_out);
-
-    m_output.write(output_buf);
+    auto header = gzip_stream_header_isal();
+    m_output.write(header);
   }
 }
 
@@ -885,11 +646,8 @@ write_fastq::process(chunk_ptr data)
   m_uncompressed_bytes += chunk->uncompressed_size;
 
   if (m_eof && m_isal_stream) {
-    buffer trailer;
-    trailer.append_u32(chunk->crc32);
-    trailer.append_u32(m_uncompressed_bytes);
-
-    chunk->buffers.emplace_back(std::move(trailer));
+    auto tail = gzip_stream_tail_isal(chunk->crc32, m_uncompressed_bytes);
+    chunk->buffers.emplace_back(std::move(tail));
   }
 
   try {

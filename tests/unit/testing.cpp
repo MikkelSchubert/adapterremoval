@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
 #include "testing.hpp"  // declarations
+#include "buffer.hpp"   // for buffer
 #include "strutils.hpp" // for log_escape
 #include <cctype>       // for isprint
 #include <cstdint>      // for uint8_t
@@ -50,3 +51,22 @@ StringMaker<std::string>::convert(const std::string& str)
 }
 
 } // namespace Catch
+
+namespace adapterremoval {
+
+buffer
+random_data_buffer(size_t size)
+{
+  buffer buf;
+  buf.reserve(((size + 3) / 4) * 4);
+
+  static Catch::SimplePcg32 rng{ Catch::rngSeed() };
+  for (size_t i = 0; i < size; i += 4) {
+    buf.append_u32(rng());
+  }
+
+  buf.resize(size);
+  return buf;
+}
+
+} // namespace adapterremoval
