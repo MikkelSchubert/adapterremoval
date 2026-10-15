@@ -117,4 +117,10 @@ class step_id;
 step_id
 step_id_test_helper(size_t);
 
+class buffer;
+
+/** Returns buffer filled with `size` bytes of random data. Not thread-safe */
+buffer
+random_data_buffer(size_t size);
+
 } // namespace adapterremoval

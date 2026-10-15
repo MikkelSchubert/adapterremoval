@@ -6,7 +6,6 @@
 #include <array>            // for array
 #include <cstdio>           // for BUFSIZ
 #include <initializer_list> // for initializer_list
-#include <isa-l.h>          // for ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION
 #include <memory>           // for shared_ptr, unique_ptr
 #include <string>           // for string
 #include <string_view>      // for string_view
@@ -14,11 +13,6 @@
 
 struct inflate_state;
 struct isal_gzip_header;
-
-// Required due to 2.30 fixing issues when reading concatenated gzip files
-static_assert((ISAL_MAJOR_VERSION > 2 ||
-               (ISAL_MAJOR_VERSION == 2 && ISAL_MINOR_VERSION >= 30)),
-              "isa-l v2.30+ required");
 
 namespace adapterremoval {
 
@@ -83,7 +77,7 @@ public:
   /** Constructor; opens file and throws on errors. */
   explicit line_reader(std::string filename);
 
-  ~line_reader() override = default;
+  ~line_reader() override;
 
   /** Reads a line into dst, returning false on EOF. */
   bool getline(std::string& dst) override;
