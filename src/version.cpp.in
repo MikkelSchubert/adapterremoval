@@ -38,17 +38,17 @@ schema_version()
 std::string_view
 short_name()
 {
-  return PROJECT_NAME " " PROJECT_VERSION;
+  return PROJECT_NAME " v" PROJECT_VERSION;
 }
 
 std::string_view
 long_name()
 {
   if (HAS_BUILD) {
-    return PROJECT_NAME " " PROJECT_VERSION "+PLACEHOLDER";
+    return PROJECT_NAME " v" PROJECT_VERSION "+PLACEHOLDER";
   }
 
-  return PROJECT_NAME " " PROJECT_VERSION;
+  return PROJECT_NAME " v" PROJECT_VERSION;
 }
 
 } // namespace adapterremoval::program
