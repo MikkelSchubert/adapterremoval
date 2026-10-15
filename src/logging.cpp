@@ -37,7 +37,9 @@ bool g_log_colors = false;
 //! Indicates if the last message was transient
 bool g_log_transient = false;
 //! Indicates that the preamble has been logged
-bool g_preamble_logged = false;
+bool g_preamble_logged = true;
+//! Line containing optional preamble logged before next log message
+std::string g_preamble{};
 
 //! ANSI color codes: https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 enum class color
@@ -178,12 +180,20 @@ log_print_lines(std::ostream& out,
 ////////////////////////////////////////////////////////////////////////////////
 
 void
+set_preamble(std::string message)
+{
+  const std::unique_lock lock{ g_log_mutex };
+  g_preamble = std::move(message);
+  g_preamble_logged = g_preamble.empty();
+}
+
+void
 log_preamble()
 {
   const std::unique_lock lock{ g_log_mutex };
   if (!g_preamble_logged) {
     g_preamble_logged = true;
-    log::info() << program::long_name();
+    log::info() << g_preamble;
   }
 }
 

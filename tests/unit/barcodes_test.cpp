@@ -80,7 +80,7 @@ TEST_CASE("Partially overlapping PE barcodes are OK", "[barcodes::constructor]")
     "sample2 CGTG ACGT",
   };
 
-  const barcode_table table(samples, 0, 0, 0);
+  REQUIRE_NOTHROW(barcode_table{ samples, 0, 0, 0 });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

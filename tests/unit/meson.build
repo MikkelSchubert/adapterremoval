@@ -51,7 +51,9 @@ run_target(
     'run-unit-tests',
     command: [
         unit_tests,
-        '--use-colour', 'yes',
         '--order', 'rand',
+        '--rng-seed', 'time',
+        '--use-colour', 'yes',
+        '--warn', 'NoAssertions',
     ],
 )

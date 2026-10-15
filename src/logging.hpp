@@ -148,6 +148,10 @@ error()
   return log_stream(level::error);
 }
 
+/** Set message to be logged before the first log message */
+void
+set_preamble(std::string message);
+
 /** Logs preamble (version, etc.) if it has not already been logged */
 void
 log_preamble();
