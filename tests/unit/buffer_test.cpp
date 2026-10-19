@@ -264,6 +264,38 @@ TEST_CASE("buffer append_u32 with offset")
   REQUIRE(buf.at(0) == 0xFF);
 }
 
+TEST_CASE("buffer put u8")
+{
+  buffer buf;
+  buf.append("01234");
+  buf.put_u8(2, 'X');
+  buf.put_u8(4, 'Y');
+
+  REQUIRE(buf == "01X3Y"_buffer);
+}
+
+TEST_CASE("buffer put u8 past end throws")
+{
+  SECTION("empty buffer")
+  {
+    buffer buf;
+    REQUIRE_THROWS_AS(buf.put_u8(0, 123), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u8(1, 123), assert_failed);
+
+    constexpr auto max = std::numeric_limits<size_t>::max();
+    REQUIRE_THROWS_AS(buf.put_u8(max - 1, 123), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u8(max - 0, 123), assert_failed);
+  }
+
+  SECTION("non-empty buffer")
+  {
+    buffer buf{ 10 };
+    REQUIRE_NOTHROW(buf.put_u8(0, 123));
+    REQUIRE_NOTHROW(buf.put_u8(9, 123));
+    REQUIRE_THROWS_AS(buf.put_u8(10, 123), assert_failed);
+  }
+}
+
 TEST_CASE("buffer put u16 is le")
 {
   buffer buf;
@@ -450,6 +482,40 @@ TEST_CASE("buffer grows-curve is 64 * 1.5^n")
 
   REQUIRE(capacity ==
           std::vector<size_t>{ 0, 64, 96, 144, 216, 324, 486, 729, 1093 });
+}
+
+TEST_CASE("buffer at")
+{
+  buffer ncbuf;
+  ncbuf.append("01X3Y");
+
+  const buffer& cbuf = ncbuf;
+  REQUIRE(cbuf.at(0) == '0');
+  REQUIRE(cbuf.at(1) == '1');
+  REQUIRE(cbuf.at(2) == 'X');
+  REQUIRE(cbuf.at(3) == '3');
+  REQUIRE(cbuf.at(4) == 'Y');
+}
+
+TEST_CASE("buffer at past end throws")
+{
+  SECTION("empty buffer")
+  {
+    buffer buf;
+    REQUIRE_THROWS_AS(buf.put_u8(0, 123), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u8(1, 123), assert_failed);
+
+    constexpr auto max = std::numeric_limits<size_t>::max();
+    REQUIRE_THROWS_AS(buf.put_u8(max - 1, 123), assert_failed);
+    REQUIRE_THROWS_AS(buf.put_u8(max - 0, 123), assert_failed);
+  }
+
+  SECTION("non-empty buffer")
+  {
+    buffer buf{ 10 };
+    REQUIRE_NOTHROW(buf.put_u8(9, 123));
+    REQUIRE_THROWS_AS(buf.put_u8(10, 123), assert_failed);
+  }
 }
 
 } // namespace adapterremoval
