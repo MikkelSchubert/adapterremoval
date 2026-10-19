@@ -146,6 +146,13 @@ public:
   /** Append signed 32 bit integer to buffer in LE orientation */
   void append_i32(int32_t value) { append_u32(static_cast<uint32_t>(value)); }
 
+  /** Insert 8 bit integer into buffer */
+  void put_u8(size_t offset, uint8_t value)
+  {
+    AR_REQUIRE(offset < m_size);
+    m_data[offset] = value;
+  }
+
   /** Insert 16 bit integer into buffer in LE orientation at offset */
   void put_u16(size_t offset, uint16_t value)
   {
