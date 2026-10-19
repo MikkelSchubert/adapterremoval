@@ -62,6 +62,8 @@ deflate_block_isal_1(const buffer& src,
                      const size_t dst_offset,
                      const bool eof)
 {
+  AR_REQUIRE(dst_offset < dst.size());
+
   thread_local auto ptr = std::make_unique<isal_zstream>();
   thread_local buffer level_buf;
   if (level_buf.capacity()) {
@@ -126,6 +128,7 @@ deflate_block_libdeflate(const buffer& src,
                          const size_t dst_offset,
                          const unsigned compression_level)
 {
+  AR_REQUIRE(dst_offset < dst.size());
   AR_REQUIRE(compression_level <= MAX_COMPRESSION_LEVEL);
   thread_local std::array<compressor_wrapper, MAX_COMPRESSION_LEVEL + 1>
     compressors{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };

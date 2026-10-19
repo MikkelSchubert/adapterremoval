@@ -36,4 +36,21 @@ constexpr std::string_view BGZF_EOF = {
 void
 bgzf_block_compress(const buffer& src, buffer& dst, unsigned compression_level);
 
+/**
+ * Decompress BGZF block into `dst`, starting at `dst_offset`. `dst` is resized
+ * to fit both the existing content before `dst_offset` and newly uncompressed
+ * content of the BGZF block. Any content after `dst_offset` is overwritten. If
+ * this function throws, the size and content of the buffer is undefined.
+ */
+void
+bgzf_block_decompress(const buffer& src, buffer& dst, size_t dst_offset = 0);
+
+/**
+ * Returns the size of a BGZF block (1 to 65536), or 0 if the buffer does not
+ * start with a BGZF header including the size subfield. The buffer may contain
+ * a partial BGZF record, but must contain at least the first 18 bytes of the
+ * BGZF block */
+size_t
+bgzf_block_size(const buffer& src);
+
 } // namespace adapterremoval
