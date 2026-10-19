@@ -133,7 +133,7 @@ TEST_CASE("isal gzip stream with head and tail roundtrip")
   offset = comp.size();
   comp.resize(1024);
   deflate_block_isal_1("distract you for a second?"_buffer, comp, offset, true);
-  comp.append(gzip_stream_tail_isal(crc32(src), src.size()));
+  comp.append(gzip_stream_tail_isal(calculate_crc32(src), src.size()));
 
   decompressor_ptr decompressor{ libdeflate_alloc_decompressor(),
                                  libdeflate_free_decompressor };
@@ -275,6 +275,26 @@ TEST_CASE("deflate_block_uncompressed size is max 16 bit")
     auto src = random_data_buffer(0xFFFF + 1);
     REQUIRE_THROWS_AS(deflate_block_uncompressed(src, dst, 0), assert_failed);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// calculate_crc32
+
+TEST_CASE("calculate_crc32 on empty buffer")
+{
+  REQUIRE(calculate_crc32(buffer{}, 0) == 0);
+  REQUIRE(calculate_crc32(buffer{}, 0xDEADBEEF) == 0xDEADBEEF);
+}
+
+TEST_CASE("calculate_crc32 across buffers")
+{
+  uint32_t crc32 = 0;
+  crc32 = calculate_crc32("Lorem ipsum dolor sit amet, "_buffer, crc32);
+  crc32 = calculate_crc32(buffer{}, crc32);
+  crc32 = calculate_crc32("consectetur  adipiscing elit"_buffer, crc32);
+
+  REQUIRE(crc32 == calculate_crc32("Lorem ipsum dolor sit amet, "
+                                   "consectetur  adipiscing elit"_buffer));
 }
 
 } // namespace adapterremoval

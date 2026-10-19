@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
+// SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
 #include "bgzf.hpp"    // declarations
 #include "buffer.hpp"  // for buffer
 #include "debug.hpp"   // for AR_REQUIRE
-#include "deflate.hpp" // for crc32, deflate_block_uncompressed, ...
+#include "deflate.hpp" // for calculate_crc32, deflate_block_uncompressed, ...
 
 namespace adapterremoval {
 
@@ -34,8 +34,8 @@ bgzf_block_compress(const buffer& src,
       break;
   }
 
-  dst.append_u32(crc32(src)); // CRC32
-  dst.append_u32(src.size()); // ISIZE
+  dst.append_u32(calculate_crc32(src)); // CRC32
+  dst.append_u32(src.size());           // ISIZE
 
   AR_REQUIRE(dst.size() <= BGZF_MAX_BLOCK_SIZE);
 

@@ -165,8 +165,13 @@ deflate_block_uncompressed(const buffer& src,
 }
 
 uint32_t
-crc32(const buffer& buf, uint32_t initial)
+calculate_crc32(const buffer& buf, uint32_t initial)
 {
+  // libdeflate_crc32 returns 0 if buffer is NULL
+  if (buf.size() == 0) {
+    return initial;
+  }
+
   return libdeflate_crc32(initial, buf.data(), buf.size());
 }
 

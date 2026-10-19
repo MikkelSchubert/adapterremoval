@@ -540,7 +540,7 @@ split_fastq::process(chunk_ptr data)
         auto block = std::make_unique<output_chunk>();
 
         if (m_isal_stream) {
-          m_isal_crc32 = crc32(m_buffer, m_isal_crc32);
+          m_isal_crc32 = calculate_crc32(m_buffer, m_isal_crc32);
         }
 
         block->uncompressed_size = m_buffer.size();
@@ -559,7 +559,7 @@ split_fastq::process(chunk_ptr data)
     block->eof = true;
 
     if (m_isal_stream) {
-      m_isal_crc32 = crc32(m_buffer, m_isal_crc32);
+      m_isal_crc32 = calculate_crc32(m_buffer, m_isal_crc32);
     }
 
     block->crc32 = m_isal_crc32;

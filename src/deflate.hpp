@@ -65,6 +65,6 @@ deflate_block_uncompressed(const buffer& src, buffer& dst, size_t dst_offset);
 
 /** Calculates CRC32 checksum for the provided buffer */
 uint32_t
-crc32(const buffer& buf, uint32_t initial = 0);
+calculate_crc32(const buffer& buf, uint32_t initial = 0);
 
 } // namespace adapterremoval
