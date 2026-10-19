@@ -117,7 +117,7 @@ TEST_CASE("deflate_block_isal_1 offset must be inside output buffer")
   const auto src = "But for me, it was Tuesday"_buffer;
   const auto eof = GENERATE(true, false);
 
-  buffer dst{ GENERATE(0, 32) };
+  buffer dst{ GENERATE(0U, 32U) };
   const auto offset = dst.size() + GENERATE(0, 1);
   REQUIRE_THROWS_AS(deflate_block_isal_1(src, dst, offset, eof), assert_failed);
 }
@@ -222,7 +222,7 @@ TEST_CASE("deflate_block_libdeflate offset must be inside output buffer")
   const auto src = "But for me, it was Tuesday"_buffer;
   const auto compression_level = PARAMETERIZE_COMPRESSION;
 
-  buffer dst{ GENERATE(0, 32) };
+  buffer dst{ GENERATE(0U, 32U) };
   const auto offset = dst.size() + GENERATE(0, 1);
   REQUIRE_THROWS_AS(
     deflate_block_libdeflate(src, dst, offset, compression_level),
@@ -286,7 +286,7 @@ TEST_CASE("deflate_block_uncompressed offset must be inside output buffer")
 {
   const auto src = "But for me, it was Tuesday"_buffer;
 
-  buffer dst{ GENERATE(0, 32) };
+  buffer dst{ GENERATE(0U, 32U) };
   const auto offset = dst.size() + GENERATE(0, 1);
   REQUIRE_THROWS_AS(deflate_block_uncompressed(src, dst, offset),
                     assert_failed);
