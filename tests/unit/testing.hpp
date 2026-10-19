@@ -123,4 +123,8 @@ class buffer;
 buffer
 random_data_buffer(size_t size);
 
+/** Returns buffer with `size` bytes of FASTQ like text. Not thread-safe */
+buffer
+random_text_buffer(size_t size);
+
 } // namespace adapterremoval

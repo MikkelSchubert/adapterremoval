@@ -112,6 +112,16 @@ TEST_CASE("deflate_block_isal_1 must fit in output buffer")
   }
 }
 
+TEST_CASE("deflate_block_isal_1 offset must be inside output buffer")
+{
+  const auto src = "But for me, it was Tuesday"_buffer;
+  const auto eof = GENERATE(true, false);
+
+  buffer dst{ GENERATE(0U, 32U) };
+  const auto offset = dst.size() + GENERATE(0, 1);
+  REQUIRE_THROWS_AS(deflate_block_isal_1(src, dst, offset, eof), assert_failed);
+}
+
 TEST_CASE("deflate_block_isal_1 worst case for stream compression")
 {
   auto src = random_data_buffer(BGZF_MAX_INPUT_SIZE);
@@ -207,6 +217,18 @@ TEST_CASE("deflate_block_libdeflate must fit in output buffer")
   }
 }
 
+TEST_CASE("deflate_block_libdeflate offset must be inside output buffer")
+{
+  const auto src = "But for me, it was Tuesday"_buffer;
+  const auto compression_level = PARAMETERIZE_COMPRESSION;
+
+  buffer dst{ GENERATE(0U, 32U) };
+  const auto offset = dst.size() + GENERATE(0, 1);
+  REQUIRE_THROWS_AS(
+    deflate_block_libdeflate(src, dst, offset, compression_level),
+    assert_failed);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // deflate_block_uncompressed
 
@@ -258,6 +280,16 @@ TEST_CASE("deflate_block_uncompressed must fit in output buffer")
     REQUIRE_THROWS_AS(deflate_block_uncompressed(src, dst, GENERATE(1, 2)),
                       assert_failed);
   }
+}
+
+TEST_CASE("deflate_block_uncompressed offset must be inside output buffer")
+{
+  const auto src = "But for me, it was Tuesday"_buffer;
+
+  buffer dst{ GENERATE(0U, 32U) };
+  const auto offset = dst.size() + GENERATE(0, 1);
+  REQUIRE_THROWS_AS(deflate_block_uncompressed(src, dst, offset),
+                    assert_failed);
 }
 
 TEST_CASE("deflate_block_uncompressed size is max 16 bit")

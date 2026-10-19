@@ -69,4 +69,30 @@ random_data_buffer(size_t size)
   return buf;
 }
 
+buffer
+random_text_buffer(size_t size)
+{
+  // Generates values in the range [0; 3]
+  Catch::Generators::RandomIntegerGenerator rng{ 0, 3 };
+
+  buffer buf;
+  for (size_t i = 1; buf.size() < size; ++i) {
+    // FASTQ read with 150 bp of random DNA and 150 random quality scores
+    buf.append("@read");
+    buf.append(stringify(i));
+    buf.append("\n");
+    for (size_t j = 0; j < 150; ++j, rng.next()) {
+      buf.append_u8("ACGT"[rng.get()]);
+    }
+    buf.append("\n+\n");
+    for (size_t j = 0; j < 150; ++j, rng.next()) {
+      buf.append_u8("!;@I"[rng.get()]);
+    }
+    buf.append("\n");
+  }
+
+  buf.resize(size);
+  return buf;
+}
+
 } // namespace adapterremoval
