@@ -32,9 +32,9 @@ public:
   {
     //! Complete line read into buffer
     complete,
-    //! Partial line found, nothing was read; add more buffers to continue
+    //! Partial line (or nothing) was read; add more buffers to continue
     partial,
-    //! No more lines to be read, across all files
+    //! No more lines to be read, across all files; dst is cleared
     eof,
   };
 
@@ -52,10 +52,13 @@ public:
   void add(buffer&& buf, bool eof = false);
 
   /**
-   * If a full line is available, read it into `dst` and replace the current
-   * content, then return `complete`; if a full line is not available, leave
-   * `dst` unchanged and return `partial`; if there are no more lines to be
-   * read, leave `dst` unchanged and return `eof`.
+   * Reads a (partial) line into `dst`. Returns `complete` if a full line has
+   * been read, `partial` if only a partial line has been read, or `eof` if
+   * nothing has been read into `dst` and no further data is available.
+   *
+   * `dst` is cleared when starting a new line and appended to when resuming a
+   * partially read line. The caller should therefore pass the same `dst` until
+   * `getline` returns `complete` or `eof`. `dst` is also cleared if `eof`.
    */
   result getline(std::string& dst);
 
@@ -110,8 +113,8 @@ private:
   const char* m_buffer_ptr = nullptr;
   //! End position of current buffer (if any)
   const char* m_buffer_end = nullptr;
-  //! Current (partial) line being read
-  std::string m_line{};
+  //! The current size of the destination buffer
+  size_t m_read_len = std::string::npos;
 
   //! Tracks line numbers across one or more buffers
   joined_filenames m_filenames;

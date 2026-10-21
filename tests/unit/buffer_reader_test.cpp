@@ -60,7 +60,39 @@ TEST_CASE("buffer_reader spans empty buffers")
   REQUIRE_FALSE(reader.eof());
 
   REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-  REQUIRE(line == "line without newline"); // unchanged
+  REQUIRE(line.empty());
+  REQUIRE(reader.eof());
+}
+
+TEST_CASE("buffer_reader spans empty buffers, with partial")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add(""_buffer);
+  reader.add("line "_buffer);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line == "line ");
+  REQUIRE_FALSE(reader.eof());
+
+  reader.add(""_buffer);
+  reader.add("without "_buffer);
+  reader.add(""_buffer);
+  reader.add("newline"_buffer);
+
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line == "line without newline");
+
+  reader.add(""_buffer);
+  reader.add("\n"_buffer);
+  reader.add(""_buffer);
+  reader.add(""_buffer, true);
+
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line without newline");
+
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  REQUIRE(line.empty());
   REQUIRE(reader.eof());
 }
 
@@ -71,6 +103,22 @@ TEST_CASE("buffer_reader spans empty buffers for EOF")
   reader.add(""_buffer, true);
 
   std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line");
+  REQUIRE(reader.eof());
+}
+
+TEST_CASE("buffer_reader spans empty buffers for EOF, with partial")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add("line"_buffer);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line == "line");
+  REQUIRE_FALSE(reader.eof());
+
+  reader.add(""_buffer, true);
   REQUIRE(reader.getline(line) == buffer_reader::result::complete);
   REQUIRE(line == "line");
   REQUIRE(reader.eof());
@@ -87,7 +135,23 @@ TEST_CASE("buffer_reader spans empty buffers ending on EOF")
   REQUIRE(line == "line");
   REQUIRE_FALSE(reader.eof());
   REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-  REQUIRE(line == "line"); // unchanged
+  REQUIRE(line.empty());
+  REQUIRE(reader.eof());
+}
+
+TEST_CASE("buffer_reader spans empty buffers ending on EOF, with partial")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add("line\n"_buffer);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line");
+  REQUIRE_FALSE(reader.eof());
+
+  reader.add(""_buffer, true);
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  REQUIRE(line.empty());
   REQUIRE(reader.eof());
 }
 
@@ -107,7 +171,7 @@ TEST_CASE("buffer_reader does not span EOF")
   REQUIRE_FALSE(reader.eof());
 
   REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-  REQUIRE(line == "proper line"); // not changed
+  REQUIRE(line.empty());
   REQUIRE(reader.eof());
 }
 
@@ -132,7 +196,37 @@ TEST_CASE("buffer_reader spans multiple files with newline")
   REQUIRE_FALSE(reader.eof());
 
   REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-  REQUIRE(line == "line 4"); // unchanged
+  REQUIRE(line.empty());
+  REQUIRE(reader.eof());
+}
+
+TEST_CASE("buffer_reader spans multiple files with newline, with partial")
+{
+  buffer_reader reader{ { "file1", "file2" } };
+  reader.add("line 1\nline 2\n"_buffer, true);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 1");
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 2");
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line.empty());
+  REQUIRE_FALSE(reader.eof());
+
+  reader.add("line 3\nline 4\n"_buffer, true);
+
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 3");
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 4");
+  REQUIRE_FALSE(reader.eof());
+
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  REQUIRE(line.empty());
   REQUIRE(reader.eof());
 }
 
@@ -149,6 +243,33 @@ TEST_CASE("buffer_reader spans multiple files without newline")
   REQUIRE(reader.getline(line) == buffer_reader::result::complete);
   REQUIRE(line == "line 2");
   REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 3");
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 4");
+  REQUIRE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+}
+
+TEST_CASE("buffer_reader spans multiple files without newline, with partial")
+{
+  buffer_reader reader{ { "file1", "file2" } };
+  reader.add("line 1\nline 2"_buffer, true);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 1");
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "line 2");
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line.empty());
+  REQUIRE_FALSE(reader.eof());
+
+  reader.add("line 3\nline 4"_buffer, true);
+
   REQUIRE(reader.getline(line) == buffer_reader::result::complete);
   REQUIRE(line == "line 3");
   REQUIRE_FALSE(reader.eof());
@@ -185,7 +306,7 @@ TEST_CASE("buffer_reader returns empty lines, except trailing")
   REQUIRE(line == "3");
   REQUIRE(reader.getline(line) == buffer_reader::result::eof);
   REQUIRE(reader.position() == 6); // unchanged
-  REQUIRE(line == "3");            // unchanged
+  REQUIRE(line.empty());
 }
 
 TEST_CASE("buffer_reader trims carriage returns")
@@ -230,6 +351,38 @@ TEST_CASE("buffer_reader does not accept buffers after last EOF")
   }
   const auto eof = GENERATE(true, false);
   REQUIRE_THROWS_AS(reader.add(std::move(buf), eof), assert_failed);
+}
+
+TEST_CASE("buffer_reader asserts if destination is modified")
+{
+  buffer_reader reader{ { "filename" } };
+  reader.add("part 1"_buffer);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line == "part 1");
+
+  reader.add("|part 2"_buffer, true);
+
+  SECTION("reading again succeeds")
+  {
+    REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+    REQUIRE(line == "part 1|part 2");
+  }
+
+  SECTION("shorter dest fails")
+  {
+    line.pop_back();
+    REQUIRE_THROWS_AS(reader.getline(line), assert_failed);
+    REQUIRE(line == "part ");
+  }
+
+  SECTION("longer dest fails")
+  {
+    line.push_back('x');
+    REQUIRE_THROWS_AS(reader.getline(line), assert_failed);
+    REQUIRE(line == "part 1x");
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -520,7 +673,7 @@ TEST_CASE("buffer_reader remembers current line if release throws")
   std::string line;
   REQUIRE(reader.position() == 0);
   REQUIRE_THROWS_AS(reader.getline(line), fastq_error);
-  REQUIRE(line.empty());
+  REQUIRE(line == "line 1");
   REQUIRE(reader.position() == 0);
   REQUIRE(reader.getline(line) == buffer_reader::result::complete);
   REQUIRE(reader.position() == 1);

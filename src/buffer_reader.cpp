@@ -53,31 +53,40 @@ buffer_reader::add(buffer&& buf, bool eof)
 buffer_reader::result
 buffer_reader::getline(std::string& dst)
 {
+  // Clear the destination before anything is written to it; for simplicity this
+  // is done even if nothing ends up being written to it (cache empty or at eof)
+  if (m_read_len == std::string::npos) {
+    m_read_len = 0;
+    dst.clear();
+  } else {
+    AR_REQUIRE(m_read_len == dst.size());
+  }
+
   bool at_eof = false;
   while (m_buffer_ptr && !at_eof) {
     const auto len = m_buffer_end - m_buffer_ptr;
     const auto* end = static_cast<const char*>(memchr(m_buffer_ptr, '\n', len));
     if (end) {
       // Excluding terminal \n
-      m_line.append(m_buffer_ptr, end - m_buffer_ptr);
+      dst.append(m_buffer_ptr, end - m_buffer_ptr);
       // Excluding terminal \r; this may have been added in the loop prior to
       // \n being found, if \n is the first character in the buffer. It is
-      // therefore easiest to check the final m_line.
-      if (AR_UNLIKELY(!m_line.empty() && m_line.back() == '\r')) {
-        m_line.pop_back();
+      // therefore easiest to check the final string.
+      if (AR_UNLIKELY(!dst.empty() && dst.back() == '\r')) {
+        dst.pop_back();
       }
 
+      m_read_len = std::string::npos;
       m_buffer_ptr = end + 1;
 
-      dst.clear();
-      std::swap(m_line, dst);
       m_filenames.inc_position();
 
       return result::complete;
     }
 
     // Can potentially introduce a \r; this is handled above.
-    m_line.append(m_buffer_ptr, len);
+    dst.append(m_buffer_ptr, len);
+    m_read_len += len;
 
     if (m_release && m_buffers.front().first.capacity()) {
       // `release` may throw, so let the next `getline()` call resume from here
@@ -88,7 +97,7 @@ buffer_reader::getline(std::string& dst)
     }
 
     if (m_buffers.front().second) {
-      if (!m_line.empty()) {
+      if (m_read_len) {
         m_filenames.inc_position();
         at_eof = true;
       }
@@ -100,13 +109,11 @@ buffer_reader::getline(std::string& dst)
     next_buffer();
   }
 
-  if (m_line.empty()) {
-    return eof() ? result::eof : result::partial;
-  } else if (at_eof) {
-    dst.clear();
-    std::swap(dst, m_line);
-
+  if (at_eof) {
+    m_read_len = std::string::npos;
     return result::complete;
+  } else if (eof()) {
+    return result::eof;
   } else {
     return result::partial;
   }
