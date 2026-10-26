@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Mikkel Schubert <mikkelsch@gmail.com>
-#include "catch.hpp"
 #include "errors.hpp"    // for assertion_failed
+#include "strutils.hpp"  // for log_escape
 #include "testing.hpp"   // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp" // for threadsafe_data
 #include <atomic>        // for atomic_int
@@ -29,6 +29,21 @@ fallbackStringifier(const std::unique_ptr<int>& value)
   return ss.str();
 }
 
+template<>
+std::string
+fallbackStringifier(const std::unique_ptr<std::string>& value)
+{
+  ReusableStringStream ss;
+
+  if (value) {
+    ss << "unique_ptr({" << adapterremoval::log_escape(*value) << "})";
+  } else {
+    ss << "unique_ptr(null)";
+  }
+
+  return ss.str();
+}
+
 } // namespace Catch
 
 namespace adapterremoval {
@@ -41,6 +56,11 @@ TEST_CASE("unique_ptr fallback stringifier")
   REQUIRE(Catch::fallbackStringifier(std::make_unique<int>(123)) ==
           "unique_ptr({123})");
   REQUIRE(Catch::fallbackStringifier(std::unique_ptr<int>{}) ==
+          "unique_ptr(null)");
+
+  REQUIRE(Catch::fallbackStringifier(std::make_unique<std::string>("123")) ==
+          "unique_ptr({'123'})");
+  REQUIRE(Catch::fallbackStringifier(std::unique_ptr<std::string>{}) ==
           "unique_ptr(null)");
 }
 
@@ -165,7 +185,71 @@ TEST_CASE("threadsafe_data default construction")
   }
 }
 
+TEST_CASE("threadsafe_data with single argument")
+{
+  threadsafe_data<std::string> data{ "test data" };
+
+  {
+    auto reader = data.get_reader();
+    REQUIRE(*reader == "test data");
+  }
+
+  {
+    auto writer = data.get_writer();
+    REQUIRE(*writer == "test data");
+  }
+}
+
+TEST_CASE("threadsafe_data with multiple arguments")
+{
+  threadsafe_data<std::string> data{ 13, 'O' };
+
+  {
+    auto reader = data.get_reader();
+    REQUIRE(*reader == "OOOOOOOOOOOOO");
+  }
+
+  {
+    auto writer = data.get_writer();
+    REQUIRE(*writer == "OOOOOOOOOOOOO");
+  }
+}
+
 TEST_CASE("threadsafe_data are smart pointers")
+{
+  threadsafe_data<std::string> data_1{ "example" };
+  threadsafe_data<std::string> data_2{ data_1 };
+  threadsafe_data<std::string> data_3{ "other" };
+  data_3 = data_2;
+
+  {
+    auto reader_1 = data_1.get_reader();
+    REQUIRE(*reader_1 == "example");
+    REQUIRE(reader_1->size() == 7);
+    auto reader_2 = data_2.get_reader();
+    REQUIRE(*reader_2 == "example");
+    REQUIRE(reader_2->size() == 7);
+    auto reader_3 = data_3.get_reader();
+    REQUIRE(*reader_3 == "example");
+    REQUIRE(reader_3->size() == 7);
+  }
+
+  *data_2.get_writer() = "modified";
+
+  {
+    auto reader_1 = data_1.get_reader();
+    REQUIRE(*reader_1 == "modified");
+    REQUIRE(reader_1->size() == 8);
+    auto reader_2 = data_2.get_reader();
+    REQUIRE(*reader_2 == "modified");
+    REQUIRE(reader_2->size() == 8);
+    auto reader_3 = data_3.get_reader();
+    REQUIRE(*reader_3 == "modified");
+    REQUIRE(reader_3->size() == 8);
+  }
+}
+
+TEST_CASE("threadsafe_data are smart pointers from const")
 {
   const threadsafe_data<std::string> data_1{ "example" };
   threadsafe_data<std::string> data_2{ data_1 };
