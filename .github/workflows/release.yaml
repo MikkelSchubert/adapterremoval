@@ -92,7 +92,7 @@ jobs:
           ref: ${{ env.REF }}
 
       - if: ${{ matrix.os == 'windows-latest' }}
-        uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         with:
           msystem: ucrt64
           install: |
