@@ -502,7 +502,7 @@ TEST_CASE("reusable_objects::release asserts if capacity is too low",
   reusable_objects<buffer> rs{ "test", 64 };
 
   std::ignore = rs.acquire(64);
-  buffer buf{ GENERATE(1, 2, 62, 63) };
+  buffer buf{ GENERATE(as<size_t>{}, 1, 2, 62, 63) };
   REQUIRE_THROWS_AS(rs.release(std::move(buf)), assert_failed);
 }
 
@@ -512,7 +512,7 @@ TEST_CASE("reusable_objects::release permits equal or higher capacity",
   reusable_objects<buffer> rs{ "test", 64 };
 
   std::ignore = rs.acquire(64);
-  buffer buf{ GENERATE(64, 65, 66, 1024) };
+  buffer buf{ GENERATE(as<size_t>{}, 64, 65, 66, 1024) };
   REQUIRE_NOTHROW(rs.release(std::move(buf)));
 }
 
