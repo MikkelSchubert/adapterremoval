@@ -14,11 +14,14 @@ class sample_output_files;
 class userconfig;
 enum class read_type;
 
+using reusable_fastqs = reusable_objects<std::vector<fastq>>;
+
 class reads_processor : public analytical_step
 {
 public:
   reads_processor(const userconfig& config,
                   const sample_output_files& output,
+                  reusable_fastqs fastqs,
                   size_t nth,
                   trim_stats_ptr sink);
 
@@ -29,6 +32,7 @@ protected:
   const sample_output_files& m_output;
   const size_t m_sample;
 
+  reusable_fastqs m_fastqs;
   threadstate<trimming_statistics> m_stats{};
   trim_stats_ptr m_stats_sink;
 };
@@ -38,6 +42,7 @@ class se_reads_processor : public reads_processor
 public:
   se_reads_processor(const userconfig& config,
                      const sample_output_files& output,
+                     reusable_fastqs fastqs,
                      size_t nth,
                      trim_stats_ptr sink);
 
@@ -49,6 +54,7 @@ class pe_reads_processor : public reads_processor
 public:
   pe_reads_processor(const userconfig& config,
                      const sample_output_files& output,
+                     reusable_fastqs fastqs,
                      size_t nth,
                      trim_stats_ptr sink);
 

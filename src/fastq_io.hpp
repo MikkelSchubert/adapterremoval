@@ -28,6 +28,7 @@ enum class output_format;
 
 using fastq_stats_ptr = std::shared_ptr<fastq_statistics>;
 using duplication_stats_ptr = std::shared_ptr<duplication_statistics>;
+using reusable_fastqs = reusable_objects<std::vector<fastq>>;
 
 //! Number of reads to load every cycle
 constexpr size_t INPUT_READS = 1024;
@@ -46,12 +47,16 @@ class read_fastq : public analytical_step
 public:
   enum class file_type;
 
-  read_fastq(const userconfig& config, step_id next_step, file_type mode);
+  read_fastq(const userconfig& config,
+             reusable_fastqs fastqs,
+             step_id next_step,
+             file_type mode);
   ~read_fastq() override = default;
 
   /** Adds read_fastq step(s) to the scheduler depending on current input */
   static void add_steps(scheduler& sch,
                         const userconfig& config,
+                        reusable_fastqs fastqs,
                         step_id next_step);
 
   /** Read mate 1 or interleaved reads from a file */
@@ -61,9 +66,6 @@ public:
 
   /** Finalizer; checks that all input has been processed. */
   void finalize() override;
-
-  /** Release a vector of fastq objects for reuse */
-  static void release(std::vector<fastq>&& chunk);
 
   read_fastq(const read_fastq&) = delete;
   read_fastq(read_fastq&&) = delete;
@@ -79,6 +81,8 @@ private:
 
   //! The underlying file reader for mate 1 (and possibly mate 2) reads
   joined_line_readers m_reader;
+  //! Source/sink for reusable FASTQ reads, to reduce allocations
+  reusable_fastqs m_fastqs;
 
   //! The kind of data read by the reader (SE, PE, interleaved)
   file_type m_mode;

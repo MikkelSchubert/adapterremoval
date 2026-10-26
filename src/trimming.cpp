@@ -255,6 +255,7 @@ is_acceptable_read(const userconfig& config,
 
 reads_processor::reads_processor(const userconfig& config,
                                  const sample_output_files& output,
+                                 reusable_fastqs fastqs,
                                  const size_t nth,
                                  trim_stats_ptr sink)
   : analytical_step(processing_order::unordered,
@@ -263,6 +264,7 @@ reads_processor::reads_processor(const userconfig& config,
   , m_config(config)
   , m_output(output)
   , m_sample(nth)
+  , m_fastqs(std::move(fastqs))
   , m_stats_sink(std::move(sink))
 {
   AR_REQUIRE(m_stats_sink);
@@ -281,9 +283,10 @@ reads_processor::finalize()
 
 se_reads_processor::se_reads_processor(const userconfig& config,
                                        const sample_output_files& output,
+                                       reusable_fastqs fastqs,
                                        const size_t nth,
                                        trim_stats_ptr sink)
-  : reads_processor(config, output, nth, sink)
+  : reads_processor(config, output, std::move(fastqs), nth, sink)
 {
 }
 
@@ -371,7 +374,7 @@ se_reads_processor::process(chunk_ptr data)
 
   // avoid adding non-input chunks to the cache
   if (!m_config.is_demultiplexing_enabled()) {
-    read_fastq::release(std::move(chunk->reads_1));
+    m_fastqs.release(std::move(chunk->reads_1));
   }
 
   return chunks.finalize(chunk->eof);
@@ -416,9 +419,10 @@ add_pe_statistics(const trimming_statistics& stats,
 
 pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const sample_output_files& output,
+                                       reusable_fastqs fastqs,
                                        const size_t nth,
                                        trim_stats_ptr sink)
-  : reads_processor(config, output, nth, sink)
+  : reads_processor(config, output, std::move(fastqs), nth, sink)
 {
 }
 
@@ -620,8 +624,8 @@ pe_reads_processor::process(chunk_ptr data)
 
   // avoid adding non-input chunks to the cache
   if (!m_config.is_demultiplexing_enabled()) {
-    read_fastq::release(std::move(chunk->reads_1));
-    read_fastq::release(std::move(chunk->reads_2));
+    m_fastqs.release(std::move(chunk->reads_1));
+    m_fastqs.release(std::move(chunk->reads_2));
   }
 
   return chunks.finalize(chunk->eof);
