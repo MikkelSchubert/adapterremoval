@@ -7,6 +7,7 @@
 #include <memory>       // for shared_ptr
 #include <mutex>        // for unique_lock
 #include <shared_mutex> // for shared_lock, shared_mutex
+#include <type_traits>  // for decay_t, enable_if_t
 #include <vector>       // for vector
 
 namespace adapterremoval {
@@ -224,9 +225,15 @@ public:
   {
   }
 
-  /** Create thread-safe shared data */
-  explicit threadsafe_data(T value)
-    : m_inner(std::make_shared<inner>(std::move(value)))
+  /** Create thread-safe shared data; cannot be used with initializer lists */
+  template<class Arg,
+           class... Args,
+           // exclude self to avoid overlap with copy constructor
+           std::enable_if_t<!std::is_same_v<std::decay_t<Arg>, threadsafe_data>,
+                            bool> = true>
+  explicit threadsafe_data(Arg&& arg, Args&&... args)
+    : m_inner(std::make_shared<inner>(std::forward<Arg>(arg),
+                                      std::forward<Args>(args)...))
   {
   }
 
