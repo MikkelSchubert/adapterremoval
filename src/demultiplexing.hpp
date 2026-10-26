@@ -22,6 +22,7 @@ class userconfig;
 
 using demux_stats_ptr = std::shared_ptr<demux_statistics>;
 using trim_stats_ptr = std::shared_ptr<trimming_statistics>;
+using reusable_fastqs = reusable_objects<std::vector<fastq>>;
 
 /**
  * Base-class for demultiplexing of reads; responsible for building the
@@ -34,7 +35,8 @@ public:
   /** Setup demultiplexer; keeps reference to config object. */
   demultiplex_reads(const userconfig& config,
                     const post_demux_steps& steps,
-                    demux_stats_ptr stats);
+                    demux_stats_ptr stats,
+                    reusable_fastqs fastqs);
 
 protected:
   //! Set of samples to be demultiplexed
@@ -48,6 +50,8 @@ protected:
 
   //! Cache of reads used to buffer chunks for downstream processing
   demultiplexed_reads m_cache;
+  //! Source/sink for reusable FASTQ reads, to reduce allocations
+  reusable_fastqs m_fastqs;
 
   //! Sink for demultiplexing statistics; used by subclasses.
   demux_stats_ptr m_statistics{};
@@ -63,7 +67,8 @@ public:
   /** See demultiplex_reads::demultiplex_reads. */
   demultiplex_se_reads(const userconfig& config,
                        const post_demux_steps& steps,
-                       demux_stats_ptr stats);
+                       demux_stats_ptr stats,
+                       reusable_fastqs fastqs);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with
@@ -80,7 +85,8 @@ public:
   /** See demultiplex_reads::demultiplex_reads. */
   demultiplex_pe_reads(const userconfig& config,
                        const post_demux_steps& steps,
-                       demux_stats_ptr stats);
+                       demux_stats_ptr stats,
+                       reusable_fastqs fastqs);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with

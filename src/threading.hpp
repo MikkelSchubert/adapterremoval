@@ -7,6 +7,8 @@
 #include <memory>       // for shared_ptr
 #include <mutex>        // for unique_lock
 #include <shared_mutex> // for shared_lock, shared_mutex
+#include <string>       // for string
+#include <string_view>  // for string_view
 #include <type_traits>  // for decay_t, enable_if_t
 #include <vector>       // for vector
 
@@ -266,6 +268,115 @@ public:
 private:
   //! Shared pointer to inner data; shared_ptr is used to prevent use-after-free
   std::shared_ptr<inner> m_inner;
+};
+
+/** Called to log and validate the final `reusable_objects` state */
+void
+finalize_reusable_objects(std::string_view description,
+                          size_t n_allocated,
+                          size_t n_released,
+                          size_t n_acquired);
+
+/**
+ * Template for reusable objects. These must be default constructible, movable,
+ * and have a `reserve`, `resize`, and `capacity` function, and users must take
+ * care to clear any values that they might contain, before using them. This is
+ * intended to reduce the number of allocations made in hot paths, which would
+ * otherwise significantly impact overall throughput.
+ *
+ * CAPACITY specifies the default capacity for these objects; users should
+ * avoid exceeding this capacity, to avoid increasing the memory overhead.
+ *
+ * All objects must be returned to the cache, before `finalize` is called.
+ */
+template<typename T>
+class reusable_objects
+{
+public:
+  /** Create object cache with the given description used for logging */
+  reusable_objects(std::string_view description, size_t capacity)
+    : m_description(description)
+    , m_capacity(capacity)
+  {
+  }
+
+  /**
+   * Acquire object with the given size and (at least) the default capacity. May
+   * return a new object or a previously released object. `size` may not exceed
+   * the default capacity.
+   */
+  T acquire(const size_t size)
+  {
+    AR_REQUIRE(size <= m_capacity);
+    T value;
+
+    {
+      auto writer = m_state.get_writer();
+
+      writer->n_acquired++;
+      if (writer->objects.empty()) {
+        writer->n_allocated++;
+      } else {
+        value = std::move(writer->objects.back());
+        writer->objects.pop_back();
+      }
+    }
+
+    value.reserve(m_capacity);
+    value.resize(size);
+
+    return value;
+  }
+
+  /**
+   * Return value to the cache; verifies that capacity is unchanged. Returning
+   * an object with no capacity is a no-op.
+   */
+  void release(T&& value)
+  {
+    if (value.capacity()) {
+      AR_REQUIRE(value.capacity() >= m_capacity);
+
+      auto writer = m_state.get_writer();
+      // catch objects created elsewhere being released
+      AR_REQUIRE(writer->objects.size() < writer->n_allocated);
+      writer->objects.emplace_back(std::move(value));
+    }
+  }
+
+  /**
+   * Log various performance metrics about the cache and verifies that all
+   * allocated objects have been released.
+   */
+  void finalize() const
+  {
+    auto reader = m_state.get_reader();
+    finalize_reusable_objects(m_description,
+                              reader->n_allocated,
+                              reader->objects.size(),
+                              reader->n_acquired);
+  }
+
+private:
+  /** Internal state of the reusable object cache */
+  struct reusable_state
+  {
+    //! Reusable objects; order is undefined
+    std::vector<T> objects{};
+
+    //! The number of times `acquire()` has been called
+    size_t n_acquired = 0;
+    //! The number of times objects were allocated when `acquire()` was called
+    size_t n_allocated = 0;
+  };
+
+  //! Description of this cache
+  std::string m_description;
+  //! Default capacity for the reusable objects
+  size_t m_capacity;
+
+  //! Thread-safe wrapper around internal state; only member allowed to change
+  threadsafe_data<reusable_state> m_state{};
 };
 
 } // namespace adapterremoval

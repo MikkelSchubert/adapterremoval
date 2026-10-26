@@ -33,6 +33,8 @@ remove_adapter_sequences(const userconfig& config)
                        .demultiplexing(output.samples().size())
                        .initialize();
 
+  reusable_fastqs fastqs{ "std::vector<fastq>", INPUT_READS };
+
   post_demux_steps steps;
 
   // Step 7 - N: Trim and write (demultiplexed) reads
@@ -45,10 +47,10 @@ remove_adapter_sequences(const userconfig& config)
         sch.add<process_demultiplexed>(config, sample, nth, trim_stats));
     } else if (config.paired_ended_mode) {
       steps.samples.push_back(
-        sch.add<pe_reads_processor>(config, sample, nth, trim_stats));
+        sch.add<pe_reads_processor>(config, sample, fastqs, nth, trim_stats));
     } else {
       steps.samples.push_back(
-        sch.add<se_reads_processor>(config, sample, nth, trim_stats));
+        sch.add<se_reads_processor>(config, sample, fastqs, nth, trim_stats));
     }
   }
 
@@ -60,9 +62,15 @@ remove_adapter_sequences(const userconfig& config)
       sch.add<process_unidentified>(config, output, stats.demultiplexing);
 
     if (config.paired_ended_mode) {
-      step = sch.add<demultiplex_pe_reads>(config, steps, stats.demultiplexing);
+      step = sch.add<demultiplex_pe_reads>(config,
+                                           steps,
+                                           stats.demultiplexing,
+                                           fastqs);
     } else {
-      step = sch.add<demultiplex_se_reads>(config, steps, stats.demultiplexing);
+      step = sch.add<demultiplex_se_reads>(config,
+                                           steps,
+                                           stats.demultiplexing,
+                                           fastqs);
     }
   } else {
     AR_REQUIRE(steps.samples.size() == 1);
@@ -101,17 +109,18 @@ remove_adapter_sequences(const userconfig& config)
   step = sch.add<scan_fastq>(config, step, stats);
 
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, step);
+  read_fastq::add_steps(sch, config, fastqs, step);
 
-  if (!sch.run(config.max_threads)) {
+  if (!sch.run(config.max_threads) ||
+      !write_json_report(config, stats, output.settings_json) ||
+      !write_html_report(config, stats, output.settings_html)) {
     return 1;
   }
 
-  if (!write_json_report(config, stats, output.settings_json)) {
-    return 1;
-  }
+  // Validate that reusable objects were not leaked
+  fastqs.finalize();
 
-  return !write_html_report(config, stats, output.settings_html);
+  return 0;
 }
 
 } // namespace adapterremoval

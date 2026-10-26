@@ -14,7 +14,7 @@
 #include "sequence_sets.hpp"    // for adapter_set
 #include "simd_selector.hpp"    // for simd_selector
 #include "statistics.hpp"       // for trimming_statistics
-#include "threading.hpp"        // for threadstate
+#include "threading.hpp"        // for threadstate, reusable_objects
 #include "userconfig.hpp"       // for userconfig
 #include "utilities.hpp"        // for dynamic_cast_unique
 #include <cstddef>              // for size_t
@@ -34,10 +34,11 @@ constexpr size_t MAX_ADAPTER_LENGTH = 42;
 class reads_sink : public analytical_step
 {
 public:
-  reads_sink()
+  reads_sink(reusable_fastqs fastqs)
     : analytical_step(processing_order::unordered,
                       "reads_sink",
                       step_id::UNDEFINED)
+    , m_fastqs(std::move(fastqs))
   {
   }
 
@@ -46,23 +47,28 @@ public:
     auto chunk = dynamic_cast_unique<fastq_chunk>(data);
     AR_REQUIRE(chunk);
 
-    read_fastq::release(std::move(chunk->reads_1));
-    read_fastq::release(std::move(chunk->reads_2));
+    m_fastqs.release(std::move(chunk->reads_1));
+    m_fastqs.release(std::move(chunk->reads_2));
 
     return {};
   }
+
+private:
+  reusable_fastqs m_fastqs;
 };
 
 class adapter_identification : public analytical_step
 {
 public:
   explicit adapter_identification(const userconfig& config,
+                                  reusable_fastqs fastqs,
                                   statistics& stats,
                                   const size_t max_adapter_length)
     : analytical_step(processing_order::unordered,
                       "adapter_identification",
                       step_id::UNDEFINED)
     , m_config(config)
+    , m_fastqs(std::move(fastqs))
     , m_sink_id(stats.adapter_id)
   {
     AR_REQUIRE(!stats.trimming.empty());
@@ -127,8 +133,8 @@ public:
     m_stats_id.release(std::move(stats_id));
     m_stats_ins.release(std::move(stats_ins));
 
-    read_fastq::release(std::move(chunk->reads_1));
-    read_fastq::release(std::move(chunk->reads_2));
+    m_fastqs.release(std::move(chunk->reads_1));
+    m_fastqs.release(std::move(chunk->reads_2));
 
     return {};
   }
@@ -146,6 +152,7 @@ public:
 
 private:
   const userconfig& m_config;
+  reusable_fastqs m_fastqs;
 
   threadstate<adapter_id_statistics> m_stats_id{};
   threadstate<trimming_statistics> m_stats_ins{};
@@ -169,14 +176,19 @@ generate_reports(const userconfig& config)
                        .adapter_identification(max_adapter_length)
                        .initialize();
 
+  reusable_fastqs fastqs{ "std::vector<fastq>", INPUT_READS };
+
   // Step 6: Identify adapters from pair-wise alignments and infer insert sizes
   auto step = step_id::UNDEFINED;
   if (config.paired_ended_mode) {
     // Attempt to identify adapters through pair-wise alignments
-    step = sch.add<adapter_identification>(config, stats, max_adapter_length);
+    step = sch.add<adapter_identification>(config,
+                                           fastqs,
+                                           stats,
+                                           max_adapter_length);
   } else {
     // Discard all written reads
-    step = sch.add<reads_sink>();
+    step = sch.add<reads_sink>(fastqs);
   }
 
   // Step 5: Determine optional SIMD instruction set for alignments
@@ -211,18 +223,20 @@ generate_reports(const userconfig& config)
   step = sch.add<scan_fastq>(config, step, stats);
 
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, step);
-
-  if (!sch.run(config.max_threads)) {
-    return 1;
-  }
+  read_fastq::add_steps(sch, config, fastqs, step);
 
   const auto out_files = config.get_output_filenames();
-  if (!write_json_report(config, stats, out_files.settings_json)) {
+
+  if (!sch.run(config.max_threads) ||
+      !write_json_report(config, stats, out_files.settings_json) ||
+      !write_html_report(config, stats, out_files.settings_html)) {
     return 1;
   }
 
-  return !write_html_report(config, stats, out_files.settings_html);
+  // Validate that reusable objects were not leaked
+  fastqs.finalize();
+
+  return 0;
 }
 
 } // namespace adapterremoval

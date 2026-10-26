@@ -117,6 +117,7 @@ libcore = static_library(
     'simd.cpp',
     'strutils.cpp',
     'table_reader.cpp',
+    'threading.cpp',
     'timeutils.cpp',
     'trimming.cpp',
     'utilities.cpp',
