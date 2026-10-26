@@ -149,8 +149,8 @@ operator<<(std::ostream& os, buffer_reader::result r)
       return os << "buffer_reader::result::partial";
     case buffer_reader::result::eof:
       return os << "buffer_reader::result::eof";
-    default:                                  // GCOVR_EXCL_LINE
-      AR_FAIL("invalid buffer_reader::read"); // GCOVR_EXCL_LINE
+    default:                                    // GCOVR_EXCL_LINE
+      AR_FAIL("invalid buffer_reader::result"); // GCOVR_EXCL_LINE
   }
 }
 
