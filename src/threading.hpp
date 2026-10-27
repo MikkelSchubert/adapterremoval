@@ -8,7 +8,6 @@
 #include <mutex>        // for unique_lock
 #include <shared_mutex> // for shared_lock, shared_mutex
 #include <string>       // for string
-#include <string_view>  // for string_view
 #include <type_traits>  // for decay_t, enable_if_t
 #include <vector>       // for vector
 
@@ -272,7 +271,7 @@ private:
 
 /** Called to log and validate the final `reusable_objects` state */
 void
-finalize_reusable_objects(std::string_view description,
+finalize_reusable_objects(const std::string& description,
                           size_t n_allocated,
                           size_t n_released,
                           size_t n_acquired);
@@ -294,10 +293,11 @@ class reusable_objects
 {
 public:
   /** Create object cache with the given description used for logging */
-  reusable_objects(std::string_view description, size_t capacity)
-    : m_description(description)
-    , m_capacity(capacity)
+  reusable_objects(std::string description, size_t capacity)
+    : m_capacity(capacity)
+    , m_state(std::move(description))
   {
+    AR_REQUIRE(capacity > 0);
   }
 
   /**
@@ -351,16 +351,27 @@ public:
   void finalize() const
   {
     auto reader = m_state.get_reader();
-    finalize_reusable_objects(m_description,
+    finalize_reusable_objects(reader->description,
                               reader->n_allocated,
                               reader->objects.size(),
                               reader->n_acquired);
   }
 
+  /** Returns the default capacity for objects returned by this cache */
+  [[nodiscard]] size_t capacity() const noexcept { return m_capacity; }
+
 private:
   /** Internal state of the reusable object cache */
   struct reusable_state
   {
+    reusable_state(std::string desc)
+      : description(std::move(desc))
+    {
+    }
+
+    //! Description of this cache
+    std::string description;
+
     //! Reusable objects; order is undefined
     std::vector<T> objects{};
 
@@ -370,13 +381,11 @@ private:
     size_t n_allocated = 0;
   };
 
-  //! Description of this cache
-  std::string m_description;
   //! Default capacity for the reusable objects
   size_t m_capacity;
 
   //! Thread-safe wrapper around internal state; only member allowed to change
-  threadsafe_data<reusable_state> m_state{};
+  threadsafe_data<reusable_state> m_state;
 };
 
 } // namespace adapterremoval

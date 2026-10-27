@@ -448,6 +448,24 @@ TEST_CASE("writers can be moved")
 ////////////////////////////////////////////////////////////////////////////////
 // reusable_objects
 
+TEST_CASE("reusable_objects requires non-zero capacity", "[reusable_objects]")
+{
+  REQUIRE_THROWS_AS(reusable_objects<buffer>("test", 0), assert_failed);
+}
+
+TEST_CASE("reusable_objects reserves at least the default capacity",
+          "[reusable_objects]")
+{
+  const size_t capacity = GENERATE(1, 10, 64, 1024);
+
+  reusable_objects<buffer> rs{ "test", capacity };
+  REQUIRE(rs.capacity() == capacity);
+
+  auto buf = rs.acquire(0);
+  REQUIRE(buf.size() == 0);
+  REQUIRE(buf.capacity() >= capacity);
+}
+
 TEST_CASE("reusable_objects::acquire returns previously released object",
           "[reusable_objects]")
 {
