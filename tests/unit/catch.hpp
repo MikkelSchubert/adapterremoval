@@ -1,3 +1,5 @@
+// IWYU pragma: private, include "testing.hpp"
+
 /*
  *  Catch v2.13.10
  *  Generated: 2022-10-16 11:01:23.452308
@@ -17982,4 +17984,3 @@ using Catch::Detail::Approx;
 // end catch_reenable_warnings.h
 // end catch.hpp
 #endif // TWOBLUECUBES_SINGLE_INCLUDE_CATCH_HPP_INCLUDED
-
