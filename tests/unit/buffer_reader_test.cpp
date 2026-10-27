@@ -632,7 +632,7 @@ TEST_CASE("buffer_reader releases consumed buffers in order")
   REQUIRE(cache.back().data() == data_2);
 }
 
-TEST_CASE("buffer_reader releases unconsumed buffers")
+TEST_CASE("buffer_reader releases unconsumed buffers with capacity")
 {
   std::vector<buffer> cache{};
   const auto release = [&cache](buffer&& buf) {
@@ -649,6 +649,36 @@ TEST_CASE("buffer_reader releases unconsumed buffers")
     reader.set_release_function(release);
     reader.add(std::move(buf_1));
     reader.add(std::move(buf_2));
+
+    // EOF blocks are kept, even if empty, but should not be released
+    if (GENERATE(true, false)) {
+      reader.add(buffer{}, true);
+    }
+  }
+
+  REQUIRE(cache.size() == 2);
+  REQUIRE(cache.at(0).data() == data_1);
+  REQUIRE(cache.at(1).data() == data_2);
+}
+
+TEST_CASE("buffer_reader releases unconsumed, empty buffers with capacity")
+{
+  std::vector<buffer> cache{};
+  const auto release = [&cache](buffer&& buf) {
+    cache.emplace_back(std::move(buf));
+  };
+
+  auto buf_1 = "line 1\nline 2"_buffer;
+  const auto* data_1 = buf_1.data();
+  buffer buf_2;
+  buf_2.reserve(17);
+  const auto* data_2 = buf_2.data();
+
+  {
+    buffer_reader reader{ { "unnamed" } };
+    reader.set_release_function(release);
+    reader.add(std::move(buf_1));
+    reader.add(std::move(buf_2), true);
   }
 
   REQUIRE(cache.size() == 2);
@@ -681,6 +711,202 @@ TEST_CASE("buffer_reader remembers current line if release throws")
   REQUIRE(reader.getline(line) == buffer_reader::result::complete);
   REQUIRE(reader.position() == 2);
   REQUIRE(line == "line 2");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// buffer_reader::close
+
+TEST_CASE("buffer_reader close on empty reader results in EOF")
+{
+  buffer_reader reader{ { "file1" } };
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE_FALSE(reader.eof());
+  reader.close();
+  REQUIRE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+}
+
+TEST_CASE("buffer_reader close on non-empty reader results in EOF")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add("line 1\nline "_buffer);
+  reader.add("2\nline 3"_buffer);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE_FALSE(reader.eof());
+  REQUIRE(line == "line 1");
+  reader.close();
+  REQUIRE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  REQUIRE(line.empty());
+}
+
+TEST_CASE("buffer_reader closing at EOF is no-op")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add("test"_buffer, true);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+  REQUIRE(line == "test");
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  REQUIRE(reader.eof());
+  reader.close();
+  REQUIRE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+}
+
+TEST_CASE("buffer_reader adding to closed reader is not allowed")
+{
+  buffer_reader reader{ { "file1" } };
+  REQUIRE_FALSE(reader.eof());
+  reader.close();
+  REQUIRE(reader.eof());
+
+  REQUIRE_THROWS_AS(reader.add("test"_buffer, false), assert_failed);
+  REQUIRE_THROWS_AS(reader.add("test"_buffer, true), assert_failed);
+}
+
+TEST_CASE("buffer_reader closing terminates partial reads")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add("test"_buffer, false);
+
+  std::string line;
+  REQUIRE(reader.getline(line) == buffer_reader::result::partial);
+  REQUIRE(line == "test");
+  REQUIRE_FALSE(reader.eof());
+  reader.close();
+  REQUIRE(reader.eof());
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  REQUIRE(line.empty());
+}
+
+TEST_CASE("buffer_reader close releases remaining buffers with capacity")
+{
+  buffer_reader reader{ { "file1" } };
+  reader.add("line 1\nline "_buffer);
+  reader.add("2\nline 3"_buffer);
+  reader.add(buffer{}, GENERATE(true, false));
+
+  // Partially or entirely unconsumed buffers
+  if (GENERATE(true, false)) {
+    std::string line;
+    REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+    REQUIRE(line == "line 1");
+  }
+
+  std::vector<buffer> cache;
+  reader.set_release_function(
+    [&cache](buffer&& buf) { cache.emplace_back(std::move(buf)); });
+  REQUIRE_NOTHROW(reader.close());
+  REQUIRE(cache.size() == 2);
+  REQUIRE(cache.at(0) == "line 1\nline "_buffer);
+  REQUIRE(cache.at(1) == "2\nline 3"_buffer);
+}
+
+TEST_CASE("buffer_reader close releases empty buffers with capacity")
+{
+  buffer added_buf;
+  added_buf.reserve(17);
+  const auto* added_data = added_buf.data();
+
+  buffer_reader reader{ { "file1" } };
+  reader.add(std::move(added_buf), true);
+
+  std::vector<buffer> cache;
+  reader.set_release_function(
+    [&cache](buffer&& buf) { cache.emplace_back(std::move(buf)); });
+  REQUIRE_NOTHROW(reader.close());
+  REQUIRE(cache.size() == 1);
+  REQUIRE(cache.at(0).data() == added_data);
+}
+
+TEST_CASE("buffer_reader close releases nothing if empty")
+{
+  buffer_reader reader{ { "file1" } };
+
+  if (GENERATE(true, false)) {
+    reader.add("line 1\nline "_buffer);
+    reader.add("2\nline 3"_buffer, GENERATE(true, false));
+
+    std::string line;
+    REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+    REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+    REQUIRE(reader.getline(line) != buffer_reader::result::eof);
+  }
+
+  reader.set_release_function([](buffer&&) { FAIL("should not release"); });
+  REQUIRE_NOTHROW(reader.close());
+}
+
+TEST_CASE("buffer_reader close handles exceptions in release function")
+{
+  size_t nreleased = 0;
+  std::vector<buffer> cache;
+  {
+    buffer_reader reader{ { "file1" } };
+    reader.add("line 1\n"_buffer);
+    reader.add("line 2\n"_buffer);
+    reader.add("line 3\n"_buffer, true);
+
+    reader.set_release_function([&](buffer&& buf) {
+      REQUIRE(buf.capacity());
+      if (nreleased++ == 1) {
+        throw fastq_error("some error");
+      }
+
+      cache.emplace_back(std::move(buf));
+    });
+
+    REQUIRE_FALSE(reader.eof());
+    REQUIRE(reader.buffer_count() == 3);
+    REQUIRE_THROWS_AS(reader.close(), fastq_error);
+    REQUIRE(reader.buffer_count() == 2); // left for destructor
+    REQUIRE(reader.eof());
+    REQUIRE(cache.size() == 1);
+    REQUIRE(cache.at(0) == "line 1\n"_buffer);
+  }
+
+  REQUIRE(cache.size() == 3);
+  REQUIRE(cache.at(1) == "line 2\n"_buffer);
+  REQUIRE(cache.at(2) == "line 3\n"_buffer);
+}
+
+TEST_CASE("buffer_reader close handles exceptions after move in release")
+{
+  size_t nreleased = 0;
+  std::vector<buffer> cache;
+  {
+    buffer_reader reader{ { "file1" } };
+    reader.add("line 1\n"_buffer);
+    reader.add("line 2\n"_buffer);
+    reader.add("line 3\n"_buffer, true);
+
+    reader.set_release_function([&](buffer&& buf) {
+      REQUIRE(buf.capacity());
+      if (nreleased++ == 1) {
+        buffer b = std::move(buf);
+        throw fastq_error("some error");
+      }
+
+      cache.emplace_back(std::move(buf));
+    });
+
+    REQUIRE_FALSE(reader.eof());
+    REQUIRE(reader.buffer_count() == 3);
+    REQUIRE_THROWS_AS(reader.close(), fastq_error);
+    REQUIRE(reader.buffer_count() == 2); // left for destructor
+    REQUIRE(reader.eof());
+    REQUIRE(cache.size() == 1);
+    REQUIRE(cache.at(0) == "line 1\n"_buffer);
+  }
+
+  REQUIRE(cache.size() == 2);
+  REQUIRE(cache.at(1) == "line 3\n"_buffer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
