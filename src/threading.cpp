@@ -3,12 +3,12 @@
 #include "threading.hpp" // declarations
 #include "debug.hpp"     // for AR_REQUIRE
 #include "logging.hpp"   // for log
-#include <string_view>   // for string_view
+#include <string>        // for string
 
 namespace adapterremoval {
 
 void
-finalize_reusable_objects(const std::string_view description,
+finalize_reusable_objects(const std::string& description,
                           const size_t n_allocated,
                           const size_t n_released,
                           const size_t n_acquired)
