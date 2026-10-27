@@ -52,6 +52,13 @@ public:
   void add(buffer&& buf, bool eof = false);
 
   /**
+   * Closes the reader, discarding any remaining data, and marks the file as
+   * having reached EOF. It is an error to add additional buffers after calling
+   * `close`. Closing an already closed file is a no-op.
+   */
+  void close();
+
+  /**
    * Reads a (partial) line into `dst`. Returns `complete` if a full line has
    * been read, `partial` if only a partial line has been read, or `eof` if
    * nothing has been read into `dst` and no further data is available.
@@ -74,7 +81,7 @@ public:
    */
   [[nodiscard]] bool eof() const noexcept
   {
-    return m_filenames.remaining_filenames() == 0;
+    return m_closed || m_filenames.remaining_filenames() == 0;
   }
 
   /** Global number representing the current position across all read buffers */
@@ -120,6 +127,8 @@ private:
   joined_filenames m_filenames;
   //! The remaining number of buffers with EOFs set
   size_t m_remaining_eof = 0;
+  //! The reader has been closed
+  bool m_closed = false;
 
   //! Optional function to release buffer, e.g. back to shared cache
   std::function<void(buffer&&)> m_release{};

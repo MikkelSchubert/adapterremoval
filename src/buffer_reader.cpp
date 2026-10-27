@@ -4,6 +4,7 @@
 #include "debug.hpp"         // for AR_REQUIRE
 #include "pragmas.hpp"       // for AR_UNLIKELY
 #include <cstring>           // for memchr
+#include <deque>             // for deque
 #include <ostream>           // for ostream
 
 namespace adapterremoval {
@@ -47,6 +48,23 @@ buffer_reader::add(buffer&& buf, bool eof)
     }
   } else if (m_release && buf.capacity()) {
     m_release(std::move(buf));
+  }
+}
+
+void
+buffer_reader::close()
+{
+  m_read_len = std::string::npos;
+  m_remaining_eof = 0;
+  m_buffer_ptr = nullptr;
+  m_buffer_end = nullptr;
+  m_closed = true;
+
+  for (; !m_buffers.empty(); m_buffers.pop_front()) {
+    auto& buf = m_buffers.front().first;
+    if (buf.capacity() && m_release) {
+      m_release(std::move(buf));
+    }
   }
 }
 
