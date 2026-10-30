@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #include "linereader.hpp"   // declarations
 #include "debug.hpp"        // for AR_REQUIRE
+#include "deflate.hpp"      // for checked_isal_inflate
 #include "errors.hpp"       // for io_error
 #include "logging.hpp"      // for warn, log_stream
 #include "managed_io.hpp"   // for managed_writer
@@ -24,76 +25,6 @@ static_assert((ISAL_MAJOR_VERSION > 2 ||
               "isa-l v2.30+ required");
 
 namespace adapterremoval {
-
-///////////////////////////////////////////////////////////////////////////////
-// Helper functions
-
-namespace {
-
-[[noreturn]] void
-throw_gzip_error(const std::string_view filename,
-                 const std::string_view action,
-                 const std::string_view error,
-                 const std::string_view diagnosis = "file is likely corrupt")
-{
-  std::ostringstream stream;
-  stream << "Error while " << action << " " << shell_escape(filename) << ": "
-         << error << "; " << diagnosis;
-
-  throw gzip_error(stream.str());
-}
-
-void
-check_isal_return_code(int returncode,
-                       const std::string_view file,
-                       const std::string_view action)
-{
-  switch (returncode) {
-    case ISAL_DECOMP_OK:
-      return;
-
-    case ISAL_END_INPUT:
-      throw_gzip_error(file, action, "end of input reached");
-
-    case ISAL_OUT_OVERFLOW:
-      throw_gzip_error(file, action, "end of output reached");
-
-    case ISAL_NAME_OVERFLOW:
-      throw_gzip_error(file, action, "end of gzip name buffer reached");
-
-    case ISAL_COMMENT_OVERFLOW:
-      throw_gzip_error(file, action, "end of gzip comment buffer reached");
-
-    case ISAL_EXTRA_OVERFLOW:
-      throw_gzip_error(file, action, "end of extra buffer reached");
-
-    case ISAL_NEED_DICT:
-      throw_gzip_error(file, action, "stream needs dictionary to continue");
-
-    case ISAL_INVALID_BLOCK:
-      throw_gzip_error(file, action, "invalid deflate block found");
-
-    case ISAL_INVALID_SYMBOL:
-      throw_gzip_error(file, action, "invalid deflate symbol found");
-
-    case ISAL_INVALID_LOOKBACK:
-      throw_gzip_error(file, action, "invalid lookback distance found");
-
-    case ISAL_INVALID_WRAPPER:
-      throw_gzip_error(file, action, "invalid gzip/zlib wrapper found");
-
-    case ISAL_UNSUPPORTED_METHOD:
-      throw_gzip_error(file, action, "unsupported compression method");
-
-    case ISAL_INCORRECT_CHECKSUM:
-      throw_gzip_error(file, action, "incorrect checksum found");
-
-    default:
-      throw_gzip_error(file, action, "unknown error");
-  }
-}
-
-} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implementations for 'vec_reader'
@@ -126,28 +57,16 @@ vec_reader::getline(std::string& dst)
 
 line_reader::line_reader(FILE* handle)
   : m_reader(handle)
-  , m_gzip_stream(nullptr)
-  , m_gzip_header(nullptr)
-  , m_buffer(nullptr)
-  , m_buffer_ptr(nullptr)
-  , m_buffer_end(nullptr)
   , m_raw_buffer(std::make_shared<line_buffer>())
   , m_raw_buffer_end(m_raw_buffer->begin())
-  , m_eof(false)
 {
   refill_buffers();
 }
 
 line_reader::line_reader(std::string filename)
   : m_reader(std::move(filename))
-  , m_gzip_stream(nullptr)
-  , m_gzip_header(nullptr)
-  , m_buffer(nullptr)
-  , m_buffer_ptr(nullptr)
-  , m_buffer_end(nullptr)
   , m_raw_buffer(std::make_shared<line_buffer>())
   , m_raw_buffer_end(m_raw_buffer->begin())
-  , m_eof(false)
 {
   refill_buffers();
 }
@@ -246,18 +165,11 @@ line_reader::initialize_buffers_gzip()
   m_buffer_end = m_buffer->end();
 
   m_gzip_stream = std::make_unique<inflate_state>();
-  m_gzip_header = std::make_unique<isal_gzip_header>();
 
   isal_inflate_init(m_gzip_stream.get());
-  m_gzip_stream->crc_flag = ISAL_GZIP_NO_HDR_VER;
+  m_gzip_stream->crc_flag = ISAL_GZIP;
   m_gzip_stream->avail_in = m_raw_buffer_end - m_raw_buffer->data();
   m_gzip_stream->next_in = reinterpret_cast<uint8_t*>(m_raw_buffer->data());
-
-  isal_gzip_header_init(m_gzip_header.get());
-  auto result = isal_read_gzip_header(m_gzip_stream.get(), m_gzip_header.get());
-  check_isal_return_code(result,
-                         m_reader.filename(),
-                         "reading first gzip header from");
 }
 
 void
@@ -294,20 +206,10 @@ line_reader::refill_buffers_gzip()
     }
   }
 
-  check_isal_return_code(isal_inflate(m_gzip_stream.get()),
-                         m_reader.filename(),
-                         "decompressing");
+  checked_isal_inflate(m_gzip_stream.get(), m_eof, m_reader.filename());
 
   m_buffer_ptr = m_buffer->data();
   m_buffer_end = m_buffer_ptr + (m_buffer->size() - m_gzip_stream->avail_out);
-
-  if (m_eof && !m_gzip_stream->avail_in &&
-      m_gzip_stream->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
-    throw_gzip_error(m_reader.filename(),
-                     "decompressing",
-                     "unexpected end of file",
-                     "file is likely truncated!");
-  }
 }
 
 } // namespace adapterremoval

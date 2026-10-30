@@ -43,7 +43,10 @@ bgzf_block_compress(const buffer& src, buffer& dst, unsigned compression_level);
  * this function throws, the size and content of the buffer is undefined.
  */
 void
-bgzf_block_decompress(const buffer& src, buffer& dst, size_t dst_offset = 0);
+bgzf_block_decompress(const buffer& src,
+                      buffer& dst,
+                      size_t dst_offset = 0,
+                      std::string_view filename = {});
 
 /**
  * Returns the size of a BGZF block (1 to 65536), or 0 if the buffer does not

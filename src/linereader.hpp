@@ -4,7 +4,8 @@
 
 #include "managed_io.hpp"   // for managed_reader
 #include <array>            // for array
-#include <cstdio>           // for BUFSIZ
+#include <cstddef>          // for size_t
+#include <cstdio>           // for FILE
 #include <initializer_list> // for initializer_list
 #include <memory>           // for shared_ptr, unique_ptr
 #include <string>           // for string
@@ -12,12 +13,8 @@
 #include <vector>           // for vector
 
 struct inflate_state;
-struct isal_gzip_header;
 
 namespace adapterremoval {
-
-//! Buffer used for compressed and uncompressed line data
-using line_buffer = std::array<char, 10LLU * BUFSIZ>;
 
 /** Base-class for line reading; used by receivers. */
 class line_reader_base
@@ -72,6 +69,9 @@ private:
 class line_reader : public line_reader_base
 {
 public:
+  //! Buffer used for compressed and uncompressed line data
+  using line_buffer = std::array<char, 0x20000>;
+
   /** Creates a line handler from an existing handle */
   explicit line_reader(FILE* handle);
   /** Constructor; opens file and throws on errors. */
@@ -98,8 +98,7 @@ private:
   /** Points `m_buffer` and related pointers to `m_raw_buffer` */
   void refill_buffers_uncompressed();
 
-  std::unique_ptr<inflate_state> m_gzip_stream;
-  std::unique_ptr<isal_gzip_header> m_gzip_header;
+  std::unique_ptr<inflate_state> m_gzip_stream{};
 
   /** Returns true if the raw buffer contains gzip'd data. */
   [[nodiscard]] bool is_raw_buffer_gzip() const;
@@ -109,19 +108,19 @@ private:
   void refill_buffers_gzip();
 
   //! Pointer to buffer of decompressed data; may be equal to m_raw_buffer.
-  std::shared_ptr<line_buffer> m_buffer;
+  std::shared_ptr<line_buffer> m_buffer{};
   //! Pointer to current location in input buffer.
-  line_buffer::iterator m_buffer_ptr;
+  line_buffer::iterator m_buffer_ptr = nullptr;
   //! Pointer to end of current buffer.
-  line_buffer::iterator m_buffer_end;
+  line_buffer::iterator m_buffer_end = nullptr;
 
   //! Pointer to buffer of raw data.
-  std::shared_ptr<line_buffer> m_raw_buffer;
+  std::shared_ptr<line_buffer> m_raw_buffer{};
   //! Pointer to end of current raw buffer.
-  line_buffer::iterator m_raw_buffer_end;
+  line_buffer::iterator m_raw_buffer_end = nullptr;
 
   //! Indicates if a read across the EOF has been attempted.
-  bool m_eof;
+  bool m_eof = false;
 };
 
 } // namespace adapterremoval
