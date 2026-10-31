@@ -9,45 +9,8 @@
 #include <cstdint>      // for uint8_t
 #include <isa-l.h>      // for isal_inflate_init, isal_inflate_stateless, ...
 #include <memory>       // for make_unique
-#include <sstream>      // for ostringstream
-#include <string_view>  // for string_view
 
 namespace adapterremoval {
-
-namespace {
-
-[[noreturn]] void
-throw_isal_inflate_error(const std::string_view what,
-                         const int error,
-                         const inflate_state* state,
-                         const size_t isize)
-{
-  AR_REQUIRE(state);
-  std::ostringstream os;
-  os << "error " << what << ": ";
-
-  if (error == ISAL_END_INPUT) {
-    os << "BGZF block is truncated";
-  } else if (error == ISAL_OUT_OVERFLOW) {
-    os << "BGZF block has too small ISIZE; content is likely corrupt";
-  } else if (error == ISAL_INCORRECT_CHECKSUM) {
-    if (state->block_state != ISAL_BLOCK_FINISH) {
-      os << "incorrect header checksum; BGZF block is corrupt";
-    } else if (isize == state->total_out) {
-      os << "incorrect checksum; content is corrupt";
-    } else {
-      os << "BGZF block has too large ISIZE; content is likely corrupt";
-    }
-  } else {
-    // for most part, the exact error is not useful to the user
-    os << "invalid BGZF block";
-  }
-
-  os << " (error = " << error << ")";
-  throw gzip_error(os.str());
-}
-
-} // namespace
 
 void
 bgzf_block_compress(const buffer& src,
@@ -86,7 +49,10 @@ bgzf_block_compress(const buffer& src,
 }
 
 void
-bgzf_block_decompress(const buffer& src, buffer& dst, size_t dst_offset)
+bgzf_block_decompress(const buffer& src,
+                      buffer& dst,
+                      const size_t dst_offset,
+                      const std::string_view filename)
 {
   AR_REQUIRE(dst_offset <= dst.size());
   if (src.size() < BGZF_EOF.size()) {
@@ -116,14 +82,9 @@ bgzf_block_decompress(const buffer& src, buffer& dst, size_t dst_offset)
   state->avail_in = block_size;
   state->next_out = dst.data() + dst_offset;
   state->avail_out = dst.size() - dst_offset;
+  checked_isal_inflate_stateless(state.get(), isize, filename);
 
-  auto result = isal_inflate_stateless(state.get());
-  if (result != ISAL_DECOMP_OK) {
-    throw_isal_inflate_error("decompressing BGZF block",
-                             result,
-                             state.get(),
-                             isize);
-  } else if (state->avail_in) {
+  if (state->avail_in) {
     throw gzip_error("BGZF block contains " + stringify(state->avail_in) +
                      " bytes of trailing garbage");
   }

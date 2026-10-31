@@ -3,6 +3,7 @@
 #include "deflate.hpp"  // declarations
 #include "buffer.hpp"   // for buffer
 #include "debug.hpp"    // for AR_REQUIRE
+#include "errors.hpp"   // for gzip_error
 #include "strutils.hpp" // for stringify
 #include <array>        // for array
 #include <cstddef>      // for size_t
@@ -10,6 +11,7 @@
 #include <isa-l.h>      // IWYU pragma: keep
 #include <libdeflate.h> // for libdeflate_crc32
 #include <memory>       // for unique_ptr
+#include <sstream>      // for ostringstream
 
 namespace adapterremoval {
 
@@ -176,6 +178,97 @@ calculate_crc32(const buffer& buf, uint32_t initial)
   }
 
   return libdeflate_crc32(initial, buf.data(), buf.size());
+}
+
+namespace {
+
+[[noreturn]] void
+throw_isal_inflate_error(const inflate_state* state,
+                         const int error,
+                         const size_t* isize,
+                         const std::string_view filename)
+{
+  AR_REQUIRE(state);
+  std::ostringstream os;
+  if (!filename.empty()) {
+    os << "error while decompressing " << shell_escape(filename) << ": ";
+  }
+
+  switch (error) {
+    case ISAL_END_INPUT:
+      os << "file is truncated";
+      break;
+    case ISAL_OUT_OVERFLOW:
+      os << "content is larger than ISIZE";
+      break;
+    case ISAL_INCORRECT_CHECKSUM:
+      if (state->block_state != ISAL_BLOCK_FINISH) {
+        os << "incorrect header checksum";
+      } else if (isize) {
+        if (*isize == state->total_out) {
+          os << "incorrect content checksum";
+        } else {
+          os << "content is smaller than ISIZE";
+        }
+      } else {
+        // isa-l does not distinguish
+        os << "incorrect content checksum or ISIZE";
+      }
+      break;
+    case ISAL_INVALID_BLOCK:
+    case ISAL_INVALID_SYMBOL:
+    case ISAL_INVALID_LOOKBACK:
+      os << "invalid deflate block";
+      break;
+    default:
+      // for most part, the exact error is not useful to the user
+      os << "not a valid gzip file";
+  }
+
+  os << " (error-code = " << error << ")";
+  if (error != ISAL_END_INPUT) {
+    os << "; file is likely corrupt";
+  }
+
+  throw gzip_error(os.str());
+}
+
+} // namespace
+
+void
+checked_isal_inflate(inflate_state* state,
+                     const bool eof,
+                     const std::string_view filename)
+{
+  AR_REQUIRE(state);
+
+  const auto result = isal_inflate(state);
+  if (result != ISAL_DECOMP_OK) {
+    throw_isal_inflate_error(state, result, nullptr, filename);
+  } else if (eof && state->avail_in == 0 &&
+             state->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
+    std::ostringstream os;
+    if (!filename.empty()) {
+      os << "error while decompressing " << shell_escape(filename) << ": ";
+    }
+
+    os << "file is truncated";
+
+    throw gzip_error(os.str());
+  }
+}
+
+void
+checked_isal_inflate_stateless(inflate_state* state,
+                               const size_t isize,
+                               const std::string_view filename)
+{
+  AR_REQUIRE(state);
+
+  const auto result = isal_inflate_stateless(state);
+  if (result != ISAL_DECOMP_OK) {
+    throw_isal_inflate_error(state, result, &isize, filename);
+  }
 }
 
 } // namespace adapterremoval

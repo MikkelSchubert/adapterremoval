@@ -325,7 +325,7 @@ TEST_CASE("bgzf_block_decompress fails on CRC32 mismatch")
   compressed.put_u32(compressed.size() - 8, c32 + 1);
   REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(compressed, uncompressed),
                           gzip_error,
-                          "incorrect checksum; content is corrupt");
+                          "incorrect content checksum");
 }
 
 TEST_CASE("bgzf_block_decompress fails on HCRC mismatch")
@@ -379,7 +379,7 @@ TEST_CASE("bgzf_block_decompress fails on too small ISIZE")
   bgzf.put_u32(bgzf.size() - 4, data.size() - 1);
   REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
                           gzip_error,
-                          "BGZF block has too small ISIZE");
+                          "content is larger than ISIZE");
 }
 
 TEST_CASE("bgzf_block_decompress fails on too large ISIZE mismatch")
@@ -394,7 +394,7 @@ TEST_CASE("bgzf_block_decompress fails on too large ISIZE mismatch")
   bgzf.put_u32(bgzf.size() - 4, data.size() + 1);
   REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
                           gzip_error,
-                          "BGZF block has too large ISIZE");
+                          "content is smaller than ISIZE");
 }
 
 TEST_CASE("bgzf_block_decompress fails on end of input")
@@ -411,7 +411,7 @@ TEST_CASE("bgzf_block_decompress fails on end of input")
   buffer uncompressed;
   REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
                           gzip_error,
-                          "BGZF block is truncated");
+                          "file is truncated");
 }
 
 TEST_CASE("bgzf_block_decompress fails on too large isize")
@@ -458,9 +458,9 @@ TEST_CASE("bgzf_block_decompress fails on corrupt data")
   buffer bgzf;
   bgzf_block_compress(data, bgzf, PARAMETERIZE_COMPRESSION);
 
-  // flip a bit
+  // flip a few bits
   AR_REQUIRE(bgzf.size() >= 300);
-  bgzf.put_u8(200, bgzf.at(200) ^ 1);
+  bgzf.put_u8(200, bgzf.at(200) ^ 0xFF);
 
   buffer dst;
   // The exact error depends on compression level/method
@@ -480,7 +480,7 @@ TEST_CASE("bgzf_block_decompress fails on corrupt block type")
   // The exact error depends on compression level/method
   REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, dst),
                           gzip_error,
-                          "invalid BGZF block");
+                          "invalid deflate block");
 }
 
 TEST_CASE("bgzf_block_decompress fails on trailing data")

@@ -2,8 +2,11 @@
 // SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include <cstddef> // for size_t
-#include <cstdint> // for uint32_t
+#include <cstddef>     // for size_t
+#include <cstdint>     // for uint32_t
+#include <string_view> // for string_view
+
+struct inflate_state;
 
 namespace adapterremoval {
 
@@ -66,5 +69,17 @@ deflate_block_uncompressed(const buffer& src, buffer& dst, size_t dst_offset);
 /** Calculates CRC32 checksum for the provided buffer */
 uint32_t
 calculate_crc32(const buffer& buf, uint32_t initial = 0);
+
+/** Calls isal_inflate, throwing if any failures occur */
+void
+checked_isal_inflate(inflate_state* state,
+                     bool eof,
+                     std::string_view filename = {});
+
+/** Calls isal_inflate_stateless, throwing if any failures occur */
+void
+checked_isal_inflate_stateless(inflate_state* state,
+                               size_t isize,
+                               std::string_view filename = {});
 
 } // namespace adapterremoval
