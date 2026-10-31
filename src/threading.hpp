@@ -283,16 +283,17 @@ finalize_reusable_objects(const std::string& description,
  * intended to reduce the number of allocations made in hot paths, which would
  * otherwise significantly impact overall throughput.
  *
- * CAPACITY specifies the default capacity for these objects; users should
- * avoid exceeding this capacity, to avoid increasing the memory overhead.
- *
  * All objects must be returned to the cache, before `finalize` is called.
  */
 template<typename T>
 class reusable_objects
 {
 public:
-  /** Create object cache with the given description used for logging */
+  /**
+   * Create object cache with the given description used for logging. `capacity`
+   * specifies the default capacity for these objects; users should avoid
+   * exceeding this capacity, to avoid increasing the memory overhead.
+   */
   reusable_objects(std::string description, size_t capacity)
     : m_capacity(capacity)
     , m_state(std::move(description))
@@ -305,7 +306,7 @@ public:
    * return a new object or a previously released object. `size` may not exceed
    * the default capacity.
    */
-  T acquire(const size_t size)
+  [[nodiscard]] T acquire(const size_t size)
   {
     AR_REQUIRE(size <= m_capacity);
     T value;
@@ -327,6 +328,12 @@ public:
 
     return value;
   }
+
+  /**
+   * Acquire object with a size corresponding to the default capacity. May
+   * return a new object or a previously released object.
+   */
+  [[nodiscard]] T acquire() { return acquire(m_capacity); }
 
   /**
    * Return value to the cache; verifies that capacity is unchanged. Returning
