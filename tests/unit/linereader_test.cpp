@@ -74,10 +74,12 @@ temporary_file(const buffer& buf)
   FILE* handle = std::tmpfile();
   REQUIRE(handle);
 
-  const auto n = std::fwrite(buf.data(), 1, buf.size(), handle);
-  REQUIRE(n == buf.size());
+  if (buf.size()) {
+    const auto n = std::fwrite(buf.data(), 1, buf.size(), handle);
+    REQUIRE(n == buf.size());
 
-  REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
+    REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
+  }
 
   return handle;
 }
