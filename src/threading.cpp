@@ -22,7 +22,9 @@ finalize_reusable_objects(const std::string& description,
                          << ", allocations saved = "
                          << n_acquired - n_allocated;
 
-  AR_REQUIRE(n_allocated == n_released);
+  // too many objects being released is caught in `release()`
+  AR_REQUIRE(n_allocated == n_released,
+             "not all objects returned to " + description + " cache");
 }
 
 } // namespace adapterremoval

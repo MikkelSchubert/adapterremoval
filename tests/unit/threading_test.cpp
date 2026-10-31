@@ -489,6 +489,32 @@ TEST_CASE("reusable_objects::acquire returns object of requested size/capacity",
   REQUIRE(buf.capacity() == 64);
 }
 
+TEST_CASE("reusable_objects::acquire resizes previously released objects",
+          "[reusable_objects]")
+{
+  reusable_objects<buffer> rs{ "test", 64 };
+  auto buf = rs.acquire();
+  buf.resize(GENERATE(0, 1, 63, 64, 65));
+  const auto* data = buf.data();
+  rs.release(std::move(buf));
+
+  buf = rs.acquire();
+  REQUIRE(buf.data() == data);
+  REQUIRE(buf.size() == 64);
+  REQUIRE(buf.capacity() >= 64);
+}
+
+TEST_CASE("reusable_objects::acquire with no argument object of default size",
+          "[reusable_objects]")
+{
+  const size_t capacity = GENERATE(1, 2, 63, 64);
+  reusable_objects<buffer> rs{ "test", capacity };
+
+  auto buf = rs.acquire();
+  REQUIRE(buf.size() == capacity);
+  REQUIRE(buf.capacity() == capacity);
+}
+
 TEST_CASE("reusable_objects::acquire asserts if requested size is too big",
           "[reusable_objects]")
 {
@@ -646,7 +672,9 @@ TEST_CASE("reusable_objects::finalize logs error if any objects are missing",
     rs.release(std::move(it));
   }
 
-  REQUIRE_THROWS_AS(rs.finalize(), assert_failed);
+  REQUIRE_THROWS_CONTAINS(rs.finalize(),
+                          assert_failed,
+                          "not all objects returned to test cache");
   REQUIRE(cap.str() == "[ERROR] Cache statistics for test: objects created = "
                        "7, objects released = 6, allocations saved = 20\n");
 }
