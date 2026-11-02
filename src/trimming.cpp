@@ -16,8 +16,10 @@
 #include "userconfig.hpp"    // for userconfig
 #include "utilities.hpp"     // for dynamic_cast_unique
 #include <cstddef>           // for size_t
+#include <cstdint>           // for uint32_t
 #include <memory>            // for unique_ptr, __shared_ptr_access, make_unique
 #include <string>            // for string
+#include <string_view>       // for string_view
 #include <utility>           // for pair, move
 #include <vector>            // for vector
 
@@ -30,16 +32,14 @@ namespace {
 
 /** Trims poly-X tails from sequence prior to adapter trimming **/
 void
-pre_trim_poly_x_tail(const userconfig& config,
+pre_trim_poly_x_tail(const std::string_view nucleotides,
+                     const uint32_t trim_poly_x_threshold,
                      trimming_statistics& stats,
                      fastq& read)
 {
-  auto nucleotides = config.pre_trim_poly_x.get_reader();
-  AR_REQUIRE(*nucleotides != "auto");
-
-  if (!nucleotides->empty()) {
+  if (!nucleotides.empty()) {
     const auto result =
-      read.poly_x_trimming(*nucleotides, config.trim_poly_x_threshold);
+      read.poly_x_trimming(nucleotides, trim_poly_x_threshold);
 
     if (result.second) {
       stats.poly_x_pre_trimmed_reads.inc(result.first);
@@ -50,16 +50,14 @@ pre_trim_poly_x_tail(const userconfig& config,
 
 /** Trims poly-X tails from sequence after adapter trimming **/
 void
-post_trim_poly_x_tail(const userconfig& config,
+post_trim_poly_x_tail(const std::string_view nucleotides,
+                      const uint32_t trim_poly_x_threshold,
                       trimming_statistics& stats,
                       fastq& read)
 {
-  auto nucleotides = config.post_trim_poly_x.get_reader();
-  AR_REQUIRE(*nucleotides != "auto");
-
-  if (!nucleotides->empty()) {
+  if (!nucleotides.empty()) {
     const auto result =
-      read.poly_x_trimming(*nucleotides, config.trim_poly_x_threshold);
+      read.poly_x_trimming(nucleotides, trim_poly_x_threshold);
 
     if (result.second) {
       stats.poly_x_post_trimmed_reads.inc(result.first);
@@ -298,6 +296,12 @@ se_reads_processor::process(chunk_ptr data)
 
   const auto samples = m_config.samples.get_reader();
 
+  const auto pre_trim_poly_x = *m_config.pre_trim_poly_x.get_reader();
+  AR_REQUIRE(pre_trim_poly_x != "auto");
+  const auto post_trim_poly_x = *m_config.post_trim_poly_x.get_reader();
+  AR_REQUIRE(post_trim_poly_x != "auto");
+  const auto poly_x_threshold = m_config.trim_poly_x_threshold;
+
   processed_reads chunks{ m_output };
   chunks.set_sample(samples->at(m_sample));
   chunks.set_input_mate_separator(chunk->mate_separator);
@@ -333,7 +337,7 @@ se_reads_processor::process(chunk_ptr data)
     // Trim fixed number of bases from 5' and/or 3' termini
     pre_trim_read_termini(m_config, *stats, read, read_file::mate_1);
     // Trim poly-X tails for zero or more X
-    pre_trim_poly_x_tail(m_config, *stats, read);
+    pre_trim_poly_x_tail(pre_trim_poly_x, poly_x_threshold, *stats, read);
 
     const auto barcode = (barcode_it == barcode_end) ? 0 : *barcode_it++;
     const auto alignment =
@@ -354,7 +358,7 @@ se_reads_processor::process(chunk_ptr data)
     // Trim fixed number of bases from 5' and/or 3' termini
     post_trim_read_termini(m_config, *stats, read, read_file::mate_1);
     // Trim poly-X tails for zero or more X
-    post_trim_poly_x_tail(m_config, *stats, read);
+    post_trim_poly_x_tail(post_trim_poly_x, poly_x_threshold, *stats, read);
     // Sliding window trimming or single-base trimming of low quality bases
     post_trim_read_by_quality(m_config, *stats, read);
 
@@ -435,6 +439,12 @@ pe_reads_processor::process(chunk_ptr data)
   const auto samples = m_config.samples.get_reader();
   const auto& sample = samples->at(m_sample);
 
+  const auto pre_trim_poly_x = *m_config.pre_trim_poly_x.get_reader();
+  AR_REQUIRE(pre_trim_poly_x != "auto");
+  const auto post_trim_poly_x = *m_config.post_trim_poly_x.get_reader();
+  AR_REQUIRE(post_trim_poly_x != "auto");
+  const auto poly_x_threshold = m_config.trim_poly_x_threshold;
+
   processed_reads chunks{ m_output };
   chunks.set_sample(sample);
   chunks.set_input_mate_separator(chunk->mate_separator);
@@ -486,8 +496,8 @@ pe_reads_processor::process(chunk_ptr data)
     pre_trim_read_termini(m_config, *stats, read_2, read_file::mate_2);
 
     // Trim poly-X tails for zero or more X
-    pre_trim_poly_x_tail(m_config, *stats, read_1);
-    pre_trim_poly_x_tail(m_config, *stats, read_2);
+    pre_trim_poly_x_tail(pre_trim_poly_x, poly_x_threshold, *stats, read_1);
+    pre_trim_poly_x_tail(pre_trim_poly_x, poly_x_threshold, *stats, read_2);
 
     // Reverse complement to match the orientation of read_1
     read_2.reverse_complement();
@@ -573,8 +583,8 @@ pe_reads_processor::process(chunk_ptr data)
     post_trim_read_termini(m_config, *stats, read_2, read_file::mate_2);
 
     // Trim poly-X tails for zero or more X
-    post_trim_poly_x_tail(m_config, *stats, read_1);
-    post_trim_poly_x_tail(m_config, *stats, read_2);
+    post_trim_poly_x_tail(post_trim_poly_x, poly_x_threshold, *stats, read_1);
+    post_trim_poly_x_tail(post_trim_poly_x, poly_x_threshold, *stats, read_2);
 
     // Sliding window trimming or single-base trimming of low quality bases
     post_trim_read_by_quality(m_config, *stats, read_1);
