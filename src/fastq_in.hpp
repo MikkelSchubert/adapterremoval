@@ -2,19 +2,23 @@
 // SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "buffer.hpp"     // for buffer
-#include "debug.hpp"      // for AR_REQUIRE
-#include "managed_io.hpp" // for managed_reader
-#include "scheduler.hpp"  // for analytical_step, chunk_ptr, chunk_vec
-#include "threading.hpp"  // for reusable_objects
-#include <atomic>         // for atomic_bool
-#include <cstddef>        // for size_t
-#include <cstdint>        // for uint8_t
-#include <deque>          // for deque
-#include <iosfwd>         // for ostream
-#include <memory>         // for unique_ptr, shared_ptr
-#include <string>         // for string
-#include <vector>         // for vector
+#include "buffer.hpp"        // for buffer
+#include "buffer_reader.hpp" // for buffer_reader
+#include "debug.hpp"         // for AR_REQUIRE
+#include "fastq.hpp"         // for fastq
+#include "managed_io.hpp"    // for managed_reader
+#include "scheduler.hpp"     // for analytical_step, chunk_ptr, chunk_vec
+#include "threading.hpp"     // for reusable_objects
+#include <array>             // for array
+#include <atomic>            // for atomic_bool
+#include <cstddef>           // for size_t
+#include <cstdint>           // for uint8_t, uint64_t
+#include <deque>             // for deque
+#include <iosfwd>            // for ostream
+#include <limits>            // for numeric_limits
+#include <memory>            // for unique_ptr, shared_ptr
+#include <string>            // for string
+#include <vector>            // for vector
 
 struct inflate_state;
 
@@ -116,6 +120,25 @@ public:
 private:
   //! Cache used to release the buffer assigned to this chunk
   reusable_buffers buffers;
+};
+
+/** Describes the content of data derived from FASTQ files */
+enum class fastq_input_type
+{
+  //! File containing only mate 1 reads
+  mate_1,
+  //! File containing only mate 2 reads
+  mate_2,
+  //! File containing only interleaved mate 1 and 2 reads
+  interleaved,
+};
+
+/** FASTQ chunk that additionally tracks the file source */
+class fastq_parser_chunk : public fastq_chunk
+{
+public:
+  /** Was these reads read from file1 or file2 */
+  fastq_input_type type = fastq_input_type::mate_1;
 };
 
 /** Converts reader_chunk::type values to string for debug logging */
@@ -323,6 +346,82 @@ public:
 private:
   //! State shared between this step and other reader steps
   const reader_state_ptr m_state;
+};
+
+/** Parses FASTQ reads from decompressed buffers */
+class fastq_parser : public analytical_step
+{
+public:
+  fastq_parser(std::vector<std::string> filenames,
+               fastq_input_type type,
+               uint64_t head,
+               reader_state_ptr state,
+               step_id next_step);
+  ~fastq_parser() override;
+
+  /** Returns chunk or signals for more data */
+  [[nodiscard]] chunk_vec signal() override;
+
+  /** Reads lines from the input file and saves them in an fastq_parser_chunk */
+  [[nodiscard]] chunk_vec process(chunk_ptr data) override;
+
+  /** Finalizer; checks that all input has been processed. */
+  void finalize() override;
+
+  fastq_parser(const fastq_parser&) = delete;
+  fastq_parser(fastq_parser&&) = delete;
+  fastq_parser& operator=(const fastq_parser&) = delete;
+  fastq_parser& operator=(fastq_parser&&) = delete;
+
+private:
+  using result = buffer_reader::result;
+
+  /** Emits up to `m_pending_chunks` FASTQ chunks */
+  chunk_vec emit();
+
+  //! Attempt to parse a chunk of FASTQ reads
+  chunk_ptr parse_chunk();
+  /** Attempt to parse up to `to_parse` FASTQ records from a single source */
+  result read_single_end(uint64_t to_parse);
+  /** Attempt to parse up to `to_parse` FASTQ interleaved record pairs */
+  result read_interleaved(uint64_t to_parse);
+  //! Attempt to parse a FASTQ record from available buffers
+  buffer_reader::result parse_fastq(fastq& dst);
+
+  //! State shared between this step and other reader steps
+  const reader_state_ptr m_state;
+  //! The input being type parsed
+  const fastq_input_type m_type;
+
+  //! Line reader on sequence of decompressed blocks
+  buffer_reader m_reader;
+  //! Start position of current read
+  size_t m_position = 0;
+
+  //! Current chunks being built for mate 1 and mate 2 reads
+  std::array<std::vector<fastq>, 2> m_chunks{};
+  //! The mate for which the current fastq record is being parsed (0 or 1)
+  size_t m_chunk_mate = 0;
+  //! Current fastq record being parsed
+  size_t m_chunk_offset = 0;
+  //! Remaining number of reads to parse
+  uint64_t m_head = std::numeric_limits<uint64_t>::max();
+
+  enum class fastq_parse
+  {
+    header,
+    sequence,
+    separator,
+    qualities,
+  };
+
+  //! Current stage of FASTQ parsing
+  fastq_parse m_chunk_parse = fastq_parse::header;
+  //! Reused buffer for reading separator line
+  std::string m_separator{};
+
+  //! The number of chunks requested via `signal()` but not yet returned
+  size_t m_pending_chunks = 0;
 };
 
 } // namespace adapterremoval
