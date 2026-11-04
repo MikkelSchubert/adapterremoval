@@ -4,6 +4,7 @@
 #include "bgzf.hpp"          // for BGZF_HEADER, BGZF_MAX_BLOCK_SIZE, ...
 #include "buffer.hpp"        // for buffer
 #include "buffer_reader.hpp" // for buffer_reader
+#include "commontypes.hpp"   // for read_mate
 #include "debug.hpp"         // for AR_FAIL, AR_REQUIRE
 #include "deflate.hpp"       // for checked_isal_inflate, inflate_state
 #include "errors.hpp"        // for fastq_error, gzip_error
@@ -882,6 +883,154 @@ fastq_parser::parse_fastq(fastq& dst)
         AR_FAIL("invalid fastq_parse value"); // GCOVR_EXCL_LINE
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// fastq_source
+
+fastq_source::fastq_source(reader_state_ptr state_1,
+                           reader_state_ptr state_2,
+                           const step_id next_step)
+  : analytical_step(processing_order::ordered, "fastq_source", next_step)
+  , m_state_1(std::move(state_1))
+  , m_state_2(std::move(state_2))
+  , m_capacity(m_state_1 ? m_state_1->fastqs.capacity() : 0)
+{
+  AR_REQUIRE(m_state_1, "~b80bef5cfb52f770~");
+  AR_REQUIRE(m_state_1 != m_state_2, "~a202e7872d3196ac~");
+  AR_REQUIRE(!m_state_2 ||
+               (m_state_1->fastqs.capacity() == m_state_2->fastqs.capacity()),
+             "~b4c19603b9864dc5~");
+}
+
+fastq_source::~fastq_source() = default;
+
+chunk_vec
+fastq_source::process(chunk_ptr data)
+{
+  auto chunk = dynamic_cast_unique<fastq_parser_chunk>(data);
+  AR_REQUIRE(chunk, "~57885f33c3bd81e8~");
+  AR_REQUIRE(m_emitted_chunks < m_requested_chunks, "~e99a9768075c5401~");
+  AR_REQUIRE(!m_eof_emitted, "~0c59fee205f2822d~");
+
+  if (chunk->type != fastq_input_type::mate_2) {
+    AR_REQUIRE(chunk->type == fastq_input_type::interleaved ||
+                 chunk->reads_2.capacity() == 0,
+               "~896425048fcc8b67~");
+    AR_REQUIRE((chunk->reads_1.size() == m_capacity) ||
+                 (chunk->eof && chunk->reads_1.size() < m_capacity),
+               "~b9ed5c418b66d2d1~");
+  }
+
+  if (chunk->type != fastq_input_type::mate_1) {
+    AR_REQUIRE(chunk->type == fastq_input_type::interleaved ||
+                 chunk->reads_1.capacity() == 0,
+               "~65c9baffc77c7168~");
+    AR_REQUIRE((chunk->reads_2.size() == m_capacity) ||
+                 (chunk->eof && chunk->reads_2.size() < m_capacity),
+               "~226f53009d225eff~");
+  }
+
+  if (m_state_2) {
+    AR_REQUIRE(chunk->type != fastq_input_type::interleaved,
+               "~fc08efb2ce0f1222~");
+
+    if (m_cache.empty() || chunk->type == m_cache.front()->type) {
+      AR_REQUIRE(m_cache.size() < m_requested_chunks - m_emitted_chunks,
+                 "~dc5ae4cd07004e15~");
+      m_cache.emplace_back(std::move(chunk));
+    } else {
+      if (chunk->type == fastq_input_type::mate_1) {
+        chunk->reads_2 = std::move(m_cache.front()->reads_2);
+      } else {
+        chunk->reads_1 = std::move(m_cache.front()->reads_1);
+      }
+
+      if (chunk->reads_1.size() != chunk->reads_2.size() ||
+          chunk->eof != m_cache.front()->eof) {
+        throw fastq_error("Found unequal number of mate 1 and mate 2 reads; "
+                          "input files may be truncated. Please fix before "
+                          "continuing.");
+      }
+
+      m_cache.pop_front();
+    }
+  } else if (chunk->type == fastq_input_type::interleaved) {
+    AR_REQUIRE(chunk->reads_1.size() == chunk->reads_2.size(),
+               "~31eb2d253b3dd6cd~");
+  } else if (chunk->type == fastq_input_type::mate_2) {
+    AR_FAIL("~c62527b26be6b7dc~");
+  }
+
+  chunk_vec chunks;
+  if (chunk) {
+    m_emitted_chunks++;
+    m_eof_emitted = chunk->eof;
+    chunk->first = (m_emitted_chunks == 1);
+    chunks.emplace_back(std::move(chunk));
+  }
+
+  if (m_suspended) {
+    auto can_signal = can_signal_upstream();
+    if (can_signal.first || can_signal.second) {
+      chunks.emplace_back(scheduler_signal::resume);
+      m_suspended = false;
+    }
+  }
+
+  return chunks;
+}
+
+chunk_vec
+fastq_source::signal()
+{
+  AR_REQUIRE(!m_suspended, "~c22ba037ab9d2c3c~");
+
+  chunk_vec chunks;
+  auto can_signal = can_signal_upstream();
+  if (can_signal.first || can_signal.second) {
+    m_requested_chunks++;
+
+    if (can_signal.first) {
+      chunks.emplace_back(signal_target(read_mate::_1));
+    }
+
+    if (can_signal.second) {
+      chunks.emplace_back(signal_target(read_mate::_2));
+    }
+  }
+
+  if (chunks.empty()) {
+    chunks.emplace_back(scheduler_signal::suspend);
+    m_suspended = true;
+  }
+
+  return chunks;
+}
+
+std::pair<bool, bool>
+fastq_source::can_signal_upstream() const
+{
+  std::pair<bool, bool> can_signal;
+  // Prevent a slow reader from causing build-up of reads for either mate
+  // TODO: limit should be configurable, e.g. 2 * threads, with min value?
+  if (m_requested_chunks < m_emitted_chunks + MAX_OUTSTANDING_CHUNKS) {
+    // Each signal sent upstream should result in one FASTQ chunk until EOF, but
+    // additional signals are allowed as a guard against desynchronization
+    can_signal.first = m_state_1->is_parsing();
+    can_signal.second = m_state_2 && m_state_2->is_parsing();
+  }
+
+  return can_signal;
+}
+
+void
+fastq_source::finalize()
+{
+  AR_REQUIRE(!m_state_1->is_parsing(), "~2054659a9668ea62~");
+  AR_REQUIRE(!m_state_2 || !m_state_2->is_parsing(), "~197fbe47828be02b~");
+  AR_REQUIRE(m_cache.empty(), "~20fc12a3b1803c8c~");
+  AR_REQUIRE(m_eof_emitted, "~2341150d380155b0~");
 }
 
 } // namespace adapterremoval

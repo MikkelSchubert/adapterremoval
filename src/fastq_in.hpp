@@ -18,6 +18,7 @@
 #include <limits>            // for numeric_limits
 #include <memory>            // for unique_ptr, shared_ptr
 #include <string>            // for string
+#include <utility>           // for pair
 #include <vector>            // for vector
 
 struct inflate_state;
@@ -33,6 +34,9 @@ using reusable_buffers = reusable_objects<buffer>;
 using reusable_fastqs = reusable_objects<std::vector<fastq>>;
 
 using shared_filename = std::shared_ptr<const std::string>;
+
+//! Maximum in-flight chunks (per mate). TODO: Should be configurable
+constexpr size_t MAX_OUTSTANDING_CHUNKS = 32;
 
 /** State shared between all reader steps */
 struct reader_state
@@ -422,6 +426,53 @@ private:
 
   //! The number of chunks requested via `signal()` but not yet returned
   size_t m_pending_chunks = 0;
+};
+
+/** Source step for FASTQ reading; optionally joins reads from two sources */
+class fastq_source : public analytical_step
+{
+public:
+  fastq_source(reader_state_ptr state_1,
+               reader_state_ptr state_2,
+               step_id next_step);
+  ~fastq_source() override;
+
+  /** Combine file 1 and file 2 inputs into chunks */
+  [[nodiscard]] chunk_vec process(chunk_ptr data) override;
+  /** Request FASTQ chunks from FASTQ parsers */
+  [[nodiscard]] chunk_vec signal() override;
+
+  /** Verifies that readers are done and that there are no unhandled chunks */
+  void finalize() override;
+
+  fastq_source(const fastq_source&) = delete;
+  fastq_source(fastq_source&&) = delete;
+  fastq_source& operator=(const fastq_source&) = delete;
+  fastq_source& operator=(fastq_source&&) = delete;
+
+private:
+  /** Indicates if the node can signal upstream for additional FASTQ chunks */
+  [[nodiscard]] std::pair<bool, bool> can_signal_upstream() const;
+
+  //! The state of the mate 1/interleaved reads parser sub-pipeline
+  const reader_state_ptr m_state_1;
+  //! The state of the (optional) mate 2 reads parser sub-pipeline
+  const reader_state_ptr m_state_2;
+  //! The expected capacity of FASTQ buffers
+  const size_t m_capacity;
+
+  //! Cache of mate 1 or 2 chunks waiting for the other half of the paired reads
+  std::deque<std::unique_ptr<fastq_parser_chunk>> m_cache{};
+
+  //! The total number of chunks requested via `signal()`
+  size_t m_requested_chunks = 0;
+  //! The number of chunks emitted by this step via `process()`
+  size_t m_emitted_chunks = 0;
+
+  //! Tracks whether or not the step has suspended signalling
+  bool m_suspended = false;
+  //! Tracks whether or not the final chunk has been emitted
+  bool m_eof_emitted = false;
 };
 
 } // namespace adapterremoval
