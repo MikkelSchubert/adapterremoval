@@ -6,6 +6,7 @@
 #include "commontypes.hpp"      // for adapter_selection
 #include "debug.hpp"            // for AR_REQUIRE
 #include "fastq.hpp"            // for ACGTN, fastq, ACGT, ACGT:...
+#include "fastq_in.hpp"         // for add_input_steps
 #include "fastq_io.hpp"         // for read_fastq, read_chunk
 #include "main.hpp"             // declarations
 #include "output.hpp"           // for output_files
@@ -176,6 +177,7 @@ generate_reports(const userconfig& config)
                        .adapter_identification(max_adapter_length)
                        .initialize();
 
+  reusable_buffers buffers{ "buffer", INPUT_BLOCK_SIZE };
   reusable_fastqs fastqs{ "std::vector<fastq>", INPUT_READS };
 
   // Step 6: Identify adapters from pair-wise alignments and infer insert sizes
@@ -223,7 +225,11 @@ generate_reports(const userconfig& config)
   step = sch.add<scan_fastq>(config, step, stats);
 
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, fastqs, step);
+  if (config.new_input_pipeline) {
+    add_input_steps(sch, config, buffers, fastqs, step);
+  } else {
+    read_fastq::add_steps(sch, config, fastqs, step);
+  }
 
   const auto out_files = config.get_output_filenames();
 
@@ -234,6 +240,7 @@ generate_reports(const userconfig& config)
   }
 
   // Validate that reusable objects were not leaked
+  buffers.finalize();
   fastqs.finalize();
 
   return 0;

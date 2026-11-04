@@ -1328,6 +1328,10 @@ userconfig::userconfig()
             "trimming strategy is set with --quality-trimming")
       .deprecated();
   }
+
+  argparser.add("--old-input-pipeline")
+    .help("This flag is for development use only")
+    .deprecated();
 }
 
 // Must be implemented out of line for unique ptrs
@@ -1629,6 +1633,9 @@ userconfig::parse_args(const string_vec& argvec)
   if (!parse_counts(argparser, "--head", head)) {
     return argparse::parse_result::error;
   }
+
+  // TODO: Remove
+  new_input_pipeline = !argparser.is_set("--old-input-pipeline");
 
   if (!parse_counts(argparser, "--report-duplication", report_duplication)) {
     return argparse::parse_result::error;

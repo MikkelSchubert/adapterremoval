@@ -26,6 +26,7 @@ struct inflate_state;
 namespace adapterremoval {
 
 class reader_chunk;
+class userconfig;
 struct reader_state;
 
 using reader_chunk_ptr = std::unique_ptr<reader_chunk>;
@@ -35,6 +36,8 @@ using reusable_fastqs = reusable_objects<std::vector<fastq>>;
 
 using shared_filename = std::shared_ptr<const std::string>;
 
+//! Size of compressed and uncompressed data chunks (128 KB)
+constexpr size_t INPUT_BLOCK_SIZE = 0x20000;
 //! Maximum in-flight chunks (per mate). TODO: Should be configurable
 constexpr size_t MAX_OUTSTANDING_CHUNKS = 32;
 
@@ -475,5 +478,13 @@ private:
   //! Tracks whether or not the final chunk has been emitted
   bool m_eof_emitted = false;
 };
+
+/** Adds input sub-pipeline to scheduler */
+void
+add_input_steps(scheduler& sch,
+                const userconfig& config,
+                const reusable_buffers& buffers,
+                const reusable_fastqs& fastqs,
+                step_id next_step);
 
 } // namespace adapterremoval
