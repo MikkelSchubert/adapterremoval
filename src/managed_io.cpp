@@ -32,6 +32,10 @@ public:
     if (reader->m_file) {
       return;
     } else if (reader->filename() == DEV_STDIN) {
+#ifdef _WIN32
+      ::_setmode(::fileno(stdin), O_BINARY);
+#endif
+
       reader->m_file = stdin;
     } else {
       reader->m_file = io_manager::fopen(reader->filename(), "rb");
