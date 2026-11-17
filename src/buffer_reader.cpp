@@ -35,7 +35,7 @@ buffer_reader::~buffer_reader()
 void
 buffer_reader::add(buffer&& buf, bool eof)
 {
-  AR_REQUIRE(m_remaining_eof > 0);
+  AR_REQUIRE(m_remaining_eof > 0, "~56fbfd35ae9763fd~");
 
   if (buf.size() || eof) {
     m_buffers.emplace_back(std::move(buf), eof);
@@ -77,7 +77,7 @@ buffer_reader::getline(std::string& dst)
     m_read_len = 0;
     dst.clear();
   } else {
-    AR_REQUIRE(m_read_len == dst.size());
+    AR_REQUIRE(m_read_len == dst.size(), "~aa61cb376b122792~");
   }
 
   bool at_eof = false;
@@ -131,6 +131,7 @@ buffer_reader::getline(std::string& dst)
     m_read_len = std::string::npos;
     return result::complete;
   } else if (eof()) {
+    m_read_len = std::string::npos;
     return result::eof;
   } else {
     return result::partial;
