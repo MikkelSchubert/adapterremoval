@@ -47,6 +47,8 @@ public:
     return !(*this == other);
   }
 
+  friend step_id make_step_id_for_testing(size_t);
+
 private:
   /** Constructs step from a numerical ID; only done by `scheduler` */
   explicit constexpr step_id(size_t id)
@@ -58,7 +60,6 @@ private:
   size_t m_id;
 
   friend class scheduler;
-  friend step_id step_id_test_helper(size_t);
 };
 
 inline constexpr step_id step_id::UNDEFINED{ static_cast<size_t>(-1) };
@@ -75,6 +76,10 @@ enum class scheduler_signal
   //! The step emitting this signal will accept signals going forward
   resume,
 };
+
+/** Converts scheduler_signal to string for debug logging */
+std::ostream&
+operator<<(std::ostream&, scheduler_signal);
 
 /**
  * Base-class for data-chunks produced, processed and consumed by a pipeline.
@@ -178,6 +183,10 @@ enum class processing_order
   unordered
 };
 
+/** Converts processing_order to string for debug logging */
+std::ostream&
+operator<<(std::ostream&, processing_order);
+
 /**
  * Base class for analytical steps in a pipeline.
  *
@@ -235,13 +244,13 @@ public:
    * `signal()` to return it (if enough was processed) or to request more data
    * from upstream (if not).
    */
-  virtual chunk_vec signal();
+  [[nodiscard]] virtual chunk_vec signal();
 
   /**
    * Function called by pipeline to process data chunks. This function differs
    * only from `signal()` in that it receives a chunk produced from a prior step
    */
-  virtual chunk_vec process(chunk_ptr data);
+  [[nodiscard]] virtual chunk_vec process(chunk_ptr data);
 
   /**
    * Called once the pipeline has been run to completion; this function is
@@ -271,6 +280,15 @@ public:
   analytical_step& operator=(analytical_step&&) = delete;
 
 private:
+  void set_signal_target(step_id value, read_mate read)
+  {
+    if (read == read_mate::_1) {
+      m_signal_targets.first = value;
+    } else {
+      m_signal_targets.second = value;
+    }
+  }
+
   //! Stores the ordering of data chunks expected by the step
   const processing_order m_step_order;
   //! Human readable name for step; for debugging purposes
@@ -284,6 +302,9 @@ private:
   };
 
   friend class scheduler_step;
+  friend void set_signal_target_for_testing(analytical_step&,
+                                            step_id,
+                                            read_mate);
 };
 
 /**
@@ -377,5 +398,9 @@ private:
   //! Queue used for currently runnable steps involving only IO
   step_queue m_queue_io{};
 };
+
+/** Converts chunk_variant to string for debug logging */
+std::ostream&
+operator<<(std::ostream& os, const chunk_variant& variant);
 
 } // namespace adapterremoval

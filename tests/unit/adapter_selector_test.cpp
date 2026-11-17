@@ -8,11 +8,11 @@
 #include "fastq.hpp"            // for fastq
 #include "logging.hpp"          // for log_capture
 #include "scheduler.hpp"        // for chunk_ptr, chunk_vec, fastq_chunk, ...
+#include "scheduler_test.hpp"   // for STEP_PROCESS_TO_CHUNK, ...
 #include "sequence_sets.hpp"    // for sample_set
 #include "simd.hpp"             // for supported
 #include "testing.hpp"          // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp"        // for threadsafe_data
-#include "utilities.hpp"        // for dynamic_cast_unique
 #include <cstddef>              // for size_t
 #include <cstdint>              // for uintptr_t
 #include <memory>               // for make_shared, make_unique
@@ -30,7 +30,7 @@ namespace {
            adapter_fallback::none,                                             \
            adapter_fallback::abort)
 
-const step_id DEFAULT_NEXT_STEP = step_id_test_helper(12345);
+const step_id DEFAULT_NEXT_STEP = make_step_id_for_testing(12345);
 
 constexpr double DEFAULT_MISMATCH_THRESHOLD = 1.0 / 6.0;
 
@@ -63,12 +63,9 @@ TEST_CASE("process single, empty block")
   in_chunk->eof = eof;
 
   adapter_preselector step{ DEFAULT_NEXT_STEP };
-  auto out = step.process(std::move(in_chunk));
-  REQUIRE(out.size() == 1);
+  auto out_chunk =
+    STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(in_chunk));
 
-  auto raw_chunk = std::move(std::get<chunk_ptr>(out.front()));
-  auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-  REQUIRE(out_chunk.get());
   REQUIRE(out_chunk->data->reads_1.empty());
   REQUIRE(out_chunk->data->eof == eof);
   REQUIRE(out_chunk->last_adapter_selection_block == eof);
@@ -82,12 +79,9 @@ TEST_CASE("process single block")
   in_chunk->eof = eof;
 
   adapter_preselector step{ DEFAULT_NEXT_STEP };
-  auto out = step.process(std::move(in_chunk));
-  REQUIRE(out.size() == 1);
+  auto out_chunk =
+    STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(in_chunk));
 
-  auto raw_chunk = std::move(std::get<chunk_ptr>(out.front()));
-  auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-  REQUIRE(out_chunk.get());
   REQUIRE(out_chunk->data->eof == eof);
   REQUIRE(out_chunk->data->reads_1.size() == 100);
   REQUIRE(out_chunk->last_adapter_selection_block == eof);
@@ -116,20 +110,16 @@ TEST_CASE("adapter_preselector checks that selection is done")
     auto in_chunk = std::make_unique<fastq_chunk>();
     in_chunk->reads_1.resize(1000, tmpl);
     for (size_t i = 0; i < 99; ++i) {
-      auto out = step.process(std::move(in_chunk));
-      auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-      auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-      REQUIRE(out_chunk.get());
+      auto out_chunk =
+        STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(in_chunk));
       REQUIRE(!out_chunk->last_adapter_selection_block);
       REQUIRE(out_chunk->data.get());
       REQUIRE(out_chunk->data->reads() == 1000);
       in_chunk = std::move(out_chunk->data);
     }
 
-    auto out = step.process(std::move(in_chunk));
-    auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-    auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-    REQUIRE(out_chunk.get());
+    auto out_chunk =
+      STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(in_chunk));
     REQUIRE(out_chunk->last_adapter_selection_block);
 
     REQUIRE_NOTHROW(step.finalize());
@@ -144,18 +134,14 @@ TEST_CASE("adapter_preselector returns fastq chunks after selecting")
   in_chunk->reads_1.resize(1000,
                            fastq("read", "ACGTTGCTGATCAACTGGTACATATCAAG"));
   for (size_t i = 0; i < 100; ++i) {
-    auto out = step.process(std::move(in_chunk));
-    auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-    auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-    REQUIRE(out_chunk.get());
+    auto out_chunk =
+      STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(in_chunk));
     REQUIRE(out_chunk->data.get() == in_chunk_ptr);
     in_chunk = std::move(out_chunk->data);
   }
 
-  auto out = step.process(std::move(in_chunk));
-  auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-  auto out_chunk = dynamic_cast_unique<fastq_chunk>(raw_chunk);
-  REQUIRE(out_chunk.get());
+  auto out_chunk =
+    STEP_PROCESS_TO_CHUNK(fastq_chunk, step, std::move(in_chunk));
   REQUIRE(out_chunk.get() == in_chunk_ptr);
 
   REQUIRE_NOTHROW(step.finalize());
@@ -193,9 +179,8 @@ TEST_CASE("adapter selector returns fastq chunks as is")
   const auto* in_chunk_ptr = in_chunk.get();
   in_chunk->reads_1.resize(10, fastq("read", "ACGTTGCTGATCAACTGGTACATATCAAG"));
 
-  auto out = step.process(std::move(in_chunk));
-  auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-  auto out_chunk = dynamic_cast_unique<fastq_chunk>(raw_chunk);
+  auto out_chunk =
+    STEP_PROCESS_TO_CHUNK(fastq_chunk, step, std::move(in_chunk));
   REQUIRE(out_chunk.get() == in_chunk_ptr);
 }
 
@@ -221,12 +206,7 @@ TEST_CASE("adapter selector on SE data")
     fastq{ "read3", "ACGGACGTTTA" },
   };
 
-  auto out = step.process(std::move(chunk));
-  REQUIRE(out.size() == 1);
-  auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-  auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-  REQUIRE(out_chunk.get());
-
+  auto out_chunk = STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(chunk));
   REQUIRE(out_chunk->adapters.mate_1() ==
           hits_vec{ { 2, 16 }, {}, {}, { 1, 8 } });
   REQUIRE(out_chunk->adapters.mate_2().empty());
@@ -259,12 +239,7 @@ TEST_CASE("adapter selector on PE data")
     fastq{ "read2", "ACTACGTGTTT" },
   };
 
-  auto out = step.process(std::move(chunk));
-  REQUIRE(out.size() == 1);
-  auto raw_chunk = std::move(std::get<chunk_ptr>(out.at(0)));
-  auto out_chunk = dynamic_cast_unique<adapter_chunk>(raw_chunk);
-  REQUIRE(out_chunk.get());
-
+  auto out_chunk = STEP_PROCESS_TO_CHUNK(adapter_chunk, step, std::move(chunk));
   REQUIRE(out_chunk->adapters.mate_1() ==
           hits_vec{ { 2, 16 }, {}, {}, { 1, 8 } });
   REQUIRE(out_chunk->adapters.mate_2() == hits_vec{ {}, { 3, 24, 3 }, {}, {} });
@@ -332,11 +307,7 @@ TEST_CASE("post adapter-selection chunks are passed as is")
   data->reads_1 = reads;
 
   const auto before = reinterpret_cast<uintptr_t>(data.get());
-  auto chunks = step.process(std::move(data));
-
-  REQUIRE(chunks.size() == 1);
-  auto raw_chunk = std::move(std::get<chunk_ptr>(chunks.at(0)));
-  data = dynamic_cast_unique<fastq_chunk>(raw_chunk);
+  data = STEP_PROCESS_TO_CHUNK(fastq_chunk, step, std::move(data));
   const auto after = reinterpret_cast<uintptr_t>(data.get());
 
   REQUIRE(before == after);

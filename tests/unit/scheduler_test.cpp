@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
-#include "commontypes.hpp" // for read_mate
-#include "errors.hpp"      // for assert_failed
-#include "scheduler.hpp"   // for step_id
-#include "testing.hpp"     // for CHECK, CHECK_FALSE, TEST_CASE
-#include <functional>      // for function
-#include <memory>          // for make_unique
-#include <sstream>         // for ostringstream
-#include <utility>         // for move
+#include "scheduler_test.hpp" // declarations
+#include "commontypes.hpp"    // for read_mate
+#include "errors.hpp"         // for assert_failed
+#include "scheduler.hpp"      // for step_id
+#include "testing.hpp"        // for CHECK, CHECK_FALSE, TEST_CASE
+#include <functional>         // for function
+#include <memory>             // for make_unique
+#include <sstream>            // for ostringstream
+#include <utility>            // for move
 
 namespace adapterremoval {
 
@@ -27,9 +28,17 @@ constexpr unsigned IO_THREADS = 0;
 // helper functions and classes
 
 step_id
-step_id_test_helper(size_t i)
+make_step_id_for_testing(size_t i)
 {
   return step_id{ i };
+}
+
+void
+set_signal_target_for_testing(analytical_step& step,
+                              step_id target,
+                              read_mate mate)
+{
+  step.set_signal_target(target, mate);
 }
 
 namespace {
@@ -91,25 +100,25 @@ TEST_CASE("step_id equality", "[step_id]")
   CHECK(step_id::UNDEFINED == step_id::UNDEFINED);
   CHECK_FALSE(step_id::UNDEFINED != step_id::UNDEFINED);
 
-  CHECK_FALSE(step_id_test_helper(1) == step_id::UNDEFINED);
-  CHECK(step_id_test_helper(1) != step_id::UNDEFINED);
+  CHECK_FALSE(make_step_id_for_testing(1) == step_id::UNDEFINED);
+  CHECK(make_step_id_for_testing(1) != step_id::UNDEFINED);
 
-  CHECK_FALSE(step_id::UNDEFINED == step_id_test_helper(1));
-  CHECK(step_id::UNDEFINED != step_id_test_helper(1));
+  CHECK_FALSE(step_id::UNDEFINED == make_step_id_for_testing(1));
+  CHECK(step_id::UNDEFINED != make_step_id_for_testing(1));
 
-  CHECK_FALSE(step_id_test_helper(2) == step_id_test_helper(1));
-  CHECK(step_id_test_helper(2) != step_id_test_helper(1));
+  CHECK_FALSE(make_step_id_for_testing(2) == make_step_id_for_testing(1));
+  CHECK(make_step_id_for_testing(2) != make_step_id_for_testing(1));
 
-  const auto s = step_id_test_helper(1);
+  const auto s = make_step_id_for_testing(1);
   CHECK(s == s);
   CHECK_FALSE(s != s);
 }
 
 TEST_CASE("step_id get", "[step_id]")
 {
-  CHECK(step_id_test_helper(0).get() == 0);
-  CHECK(step_id_test_helper(12345).get() == 12345);
-  CHECK(step_id_test_helper(9223372036854775808LLU).get() ==
+  CHECK(make_step_id_for_testing(0).get() == 0);
+  CHECK(make_step_id_for_testing(12345).get() == 12345);
+  CHECK(make_step_id_for_testing(9223372036854775808LLU).get() ==
         9223372036854775808LLU);
   CHECK(step_id::UNDEFINED.get() == static_cast<size_t>(-1));
 }
@@ -117,7 +126,7 @@ TEST_CASE("step_id get", "[step_id]")
 TEST_CASE("step_id id to string", "[step_id]")
 {
   std::ostringstream os;
-  os << step_id_test_helper(12345);
+  os << make_step_id_for_testing(12345);
 
   CHECK(os.str() == "step_id{12345}");
 }
@@ -128,6 +137,21 @@ TEST_CASE("step_id undefined to string", "[step_id]")
   os << step_id::UNDEFINED;
 
   CHECK(os.str() == "step_id::UNDEFINED");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// processing_order
+
+TEST_CASE("processing_order to debug string")
+{
+  using Catch::fallbackStringifier;
+
+  CHECK(fallbackStringifier(processing_order::ordered) ==
+        "processing_order::ordered");
+  CHECK(fallbackStringifier(processing_order::ordered_io) ==
+        "processing_order::ordered_io");
+  CHECK(fallbackStringifier(processing_order::unordered) ==
+        "processing_order::unordered");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
