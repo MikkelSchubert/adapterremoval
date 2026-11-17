@@ -17,6 +17,7 @@ while test $# -gt 0; do
 	shift 1
 done
 
+sudo apt-get update
 sudo apt-get install -y \
 	build-essential \
 	libdeflate-dev \
@@ -52,4 +53,3 @@ else
 	sudo apt-get install -y \
 		libisal-dev
 fi
-
