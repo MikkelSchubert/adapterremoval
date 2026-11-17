@@ -1,4 +1,5 @@
 {
+  "exhaustive": false,
   "arguments": [
     "--out-prefix",
     "your_output"
