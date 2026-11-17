@@ -195,13 +195,10 @@ public:
   /** Set the signalling target for this step */
   void set_signal_target(step_id step, read_mate read)
   {
-    if (read == read_mate::_1) {
-      m_ptr->m_signal_targets.first = step;
-    } else {
-      m_ptr->m_signal_targets.second = step;
-    }
+    m_ptr->set_signal_target(step, read);
   }
 
+  /** Returns the signal target for mate 1 or mate 2 reads */
   [[nodiscard]] step_id get_signal_target(read_mate read) const
   {
     return m_ptr->signal_target(read);
@@ -509,6 +506,54 @@ operator<<(std::ostream& os, step_id step)
   } else {
     return os << "step_id{" << step.get() << "}";
   }
+}
+
+std::ostream&
+operator<<(std::ostream& os, scheduler_signal value)
+{
+  switch (value) {
+    case scheduler_signal::suspend:
+      return os << "scheduler_signal::suspend";
+    case scheduler_signal::resume:
+      return os << "scheduler_signal::resume";
+    default:                               // GCOVR_EXCL_LINE
+      AR_FAIL("invalid scheduler_signal"); // GCOVR_EXCL_LINE
+  }
+}
+
+std::ostream&
+operator<<(std::ostream& os, const processing_order order)
+{
+  switch (order) {
+    case processing_order::ordered:
+      return os << "processing_order::ordered";
+    case processing_order::ordered_io:
+      return os << "processing_order::ordered_io";
+    case processing_order::unordered:
+      return os << "processing_order::unordered";
+    default:                               // GCOVR_EXCL_LINE
+      AR_FAIL("invalid processing_order"); // GCOVR_EXCL_LINE
+  }
+}
+
+std::ostream&
+operator<<(std::ostream& os, const chunk_variant& variant)
+{
+  os << "chunk_variant{";
+  if (const auto* output_ptr = std::get_if<chunk_ptr>(&variant)) {
+    os << "chunk_ptr{" << output_ptr->get() << "}";
+  } else if (const auto* recipient_id_ptr = std::get_if<step_id>(&variant)) {
+    os << *recipient_id_ptr;
+  } else if (const auto* signal_ptr = std::get_if<scheduler_signal>(&variant)) {
+    os << *signal_ptr;
+  } else if (const auto* chunk = std::get_if<chunk_pair>(&variant)) {
+    os << "chunk_pair{" << chunk->first << ", chunk_ptr{" << chunk->second.get()
+       << "}}";
+  } else {
+    AR_FAIL("unexpected variant");
+  }
+
+  return os << "}";
 }
 
 } // namespace adapterremoval
