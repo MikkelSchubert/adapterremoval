@@ -149,7 +149,12 @@ def read_and_decompress_file(filename: Path) -> str:
 
 @functools.lru_cache
 def device_exists(it: str) -> bool:
-    if it.startswith("/dev/") and not os.path.exists(it):
+    if (
+        it.startswith("/dev/")
+        # These are handled specially and not actually opened
+        and it not in ("/dev/null", "/dev/stdin")
+        and not os.path.exists(it)
+    ):
         print_warn(f"Device {it!r} not found; skipping tests that require it")
         return False
 
@@ -770,7 +775,7 @@ class TestConfig(NamedTuple):
             variant=(),
             arguments=json_pop_tuple_of_str(data, ("arguments",), default=[]),
             skip=json_pop_bool(data, ("skip",), default=False),
-            exhaustive=json_pop_bool(data, ("exhaustive",), default=False),
+            exhaustive=json_pop_optional_bool(data, ("exhaustive",)),
             platforms=json_pop_tuple_of_str(data, ("platforms",), default=[]),
             return_code=json_pop_int(data, ("return_code",), default=0),
             pipe=json_pop_optional_str(data, ("pipe",)),
@@ -1192,7 +1197,10 @@ class TestRunner:
             actual = actual_lines[-1].strip()
             expected = expected_lines[-1].strip()
 
-            if expected in actual:
+            if expected.startswith("<REGEX>"):
+                if re.search(expected[7:], actual):
+                    expected_lines.pop()
+            elif expected in actual:
                 expected_lines.pop()
             actual_lines.pop()
 
