@@ -2,9 +2,8 @@
 // SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
 #include "buffer.hpp"        // for buffer
 #include "buffer_reader.hpp" // for buffer_reader
-#include "catch.hpp"
-#include "errors.hpp"  // for assert failed
-#include "testing.hpp" // for TEST_CASE, REQUIRE, CHECK, ...
+#include "errors.hpp"        // for assert failed
+#include "testing.hpp"       // for TEST_CASE, REQUIRE, CHECK, ...
 
 namespace adapterremoval {
 
@@ -350,7 +349,9 @@ TEST_CASE("buffer_reader does not accept buffers after last EOF")
     buf.append("content");
   }
   const auto eof = GENERATE(true, false);
-  REQUIRE_THROWS_AS(reader.add(std::move(buf), eof), assert_failed);
+  REQUIRE_THROWS_CONTAINS(reader.add(std::move(buf), eof),
+                          assert_failed,
+                          "~56fbfd35ae9763fd~");
 }
 
 TEST_CASE("buffer_reader asserts if destination is modified")
@@ -373,16 +374,49 @@ TEST_CASE("buffer_reader asserts if destination is modified")
   SECTION("shorter dest fails")
   {
     line.pop_back();
-    REQUIRE_THROWS_AS(reader.getline(line), assert_failed);
+    REQUIRE_THROWS_CONTAINS(reader.getline(line),
+                            assert_failed,
+                            "~aa61cb376b122792~");
     REQUIRE(line == "part ");
   }
 
   SECTION("longer dest fails")
   {
     line.push_back('x');
-    REQUIRE_THROWS_AS(reader.getline(line), assert_failed);
+    REQUIRE_THROWS_CONTAINS(reader.getline(line),
+                            assert_failed,
+                            "~aa61cb376b122792~");
     REQUIRE(line == "part 1x");
   }
+}
+
+TEST_CASE("buffer_reader keeps returning EOF")
+{
+  auto buf = "part 1"_buffer;
+  if (GENERATE(true, false)) {
+    buf.append_u8('\n');
+  }
+
+  buffer_reader reader{ { "filename" } };
+  reader.add(std::move(buf), true);
+
+  std::string line;
+  if (GENERATE(true, false)) {
+    REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+    REQUIRE(line == "part 1");
+  } else {
+    reader.close();
+  }
+
+  line = GENERATE("", "something else");
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  // NOLINTNEXTLINE(readability-container-size-empty)
+  REQUIRE(line == "");
+
+  line = GENERATE("", "another value");
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  // NOLINTNEXTLINE(readability-container-size-empty)
+  REQUIRE(line == "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -702,7 +736,7 @@ TEST_CASE("buffer_reader remembers current line if release throws")
 
   std::string line;
   REQUIRE(reader.position() == 0);
-  REQUIRE_THROWS_AS(reader.getline(line), fastq_error);
+  REQUIRE_THROWS_CONTAINS(reader.getline(line), fastq_error, "some error");
   REQUIRE(line == "line 1");
   REQUIRE(reader.position() == 0);
   REQUIRE(reader.getline(line) == buffer_reader::result::complete);
@@ -766,8 +800,12 @@ TEST_CASE("buffer_reader adding to closed reader is not allowed")
   reader.close();
   REQUIRE(reader.eof());
 
-  REQUIRE_THROWS_AS(reader.add("test"_buffer, false), assert_failed);
-  REQUIRE_THROWS_AS(reader.add("test"_buffer, true), assert_failed);
+  REQUIRE_THROWS_CONTAINS(reader.add("test"_buffer, false),
+                          assert_failed,
+                          "~56fbfd35ae9763fd~");
+  REQUIRE_THROWS_CONTAINS(reader.add("test"_buffer, true),
+                          assert_failed,
+                          "~56fbfd35ae9763fd~");
 }
 
 TEST_CASE("buffer_reader closing terminates partial reads")
@@ -864,7 +902,7 @@ TEST_CASE("buffer_reader close handles exceptions in release function")
 
     REQUIRE_FALSE(reader.eof());
     REQUIRE(reader.buffer_count() == 3);
-    REQUIRE_THROWS_AS(reader.close(), fastq_error);
+    REQUIRE_THROWS_CONTAINS(reader.close(), fastq_error, "some error");
     REQUIRE(reader.buffer_count() == 2); // left for destructor
     REQUIRE(reader.eof());
     REQUIRE(cache.size() == 1);
@@ -898,7 +936,7 @@ TEST_CASE("buffer_reader close handles exceptions after move in release")
 
     REQUIRE_FALSE(reader.eof());
     REQUIRE(reader.buffer_count() == 3);
-    REQUIRE_THROWS_AS(reader.close(), fastq_error);
+    REQUIRE_THROWS_CONTAINS(reader.close(), fastq_error, "some error");
     REQUIRE(reader.buffer_count() == 2); // left for destructor
     REQUIRE(reader.eof());
     REQUIRE(cache.size() == 1);
