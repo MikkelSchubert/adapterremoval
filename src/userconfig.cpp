@@ -390,12 +390,11 @@ check_input_and_output_filenames(const userconfig& config)
   }
 
   for (const auto& it : files) {
-    if (it.type == user_file::types::input) {
-      if (access(it.filename.c_str(), R_OK)) {
-        log::error() << "Cannot access input file " << log_escape(it.filename)
-                     << ": " << std::strerror(errno);
-        any_errors = true;
-      }
+    if (it.type == user_file::types::input && it.filename != DEV_STDIN &&
+        access(it.filename.c_str(), R_OK) != 0) {
+      log::error() << "Cannot access input file " << log_escape(it.filename)
+                   << ": " << std::strerror(errno);
+      any_errors = true;
     }
   }
 
