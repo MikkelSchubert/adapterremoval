@@ -554,9 +554,17 @@ def json_pop_int(data: JSON, path: tuple[str, ...], *, default: JSON) -> int:
     raise TestError(f"expected int at {path_to_s(path)}, found {value!r}")
 
 
-def json_pop_bool(data: JSON, path: tuple[str, ...], *, default: JSON) -> bool:
+def json_pop_bool(data: JSON, path: tuple[str, ...], *, default: bool) -> bool:
     value = json_pop_value(data, path, default)
     if isinstance(value, bool):
+        return value
+
+    raise TestError(f"expected bool at {path_to_s(path)}, found {value!r}")
+
+
+def json_pop_optional_bool(data: JSON, path: tuple[str, ...]) -> bool | None:
+    value = json_pop_value(data, path, None)
+    if isinstance(value, bool) or value is None:
         return value
 
     raise TestError(f"expected bool at {path_to_s(path)}, found {value!r}")
@@ -712,6 +720,7 @@ class TestConfig(NamedTuple):
     arguments: tuple[str, ...]
     return_code: int
     pipe: str | None
+    stdin: bool | None
     stdout: tuple[str, ...]
     stderr: tuple[str, ...]
     files: tuple[TestFile, ...]
@@ -765,6 +774,7 @@ class TestConfig(NamedTuple):
             platforms=json_pop_tuple_of_str(data, ("platforms",), default=[]),
             return_code=json_pop_int(data, ("return_code",), default=0),
             pipe=json_pop_optional_str(data, ("pipe",)),
+            stdin=json_pop_optional_bool(data, ("stdin",)),
             stdout=json_pop_tuple_of_str(data, ("stdout",), default=[]),
             stderr=json_pop_tuple_of_str(data, ("stderr",), default=[]),
             files=tuple(test_files),
@@ -772,6 +782,12 @@ class TestConfig(NamedTuple):
 
         if set(self.platforms) - {"Linux", "Darwin", "Windows"}:
             raise TestError(f"Unknown platforms: {self.platforms}")
+
+        if self.stdin:
+            if any(it.kind == "input_2" for it in self.files):
+                raise TestError("Cannot set 'stdin' if 'input_2' files are listed")
+            elif sum(it.kind == "input_1" for it in self.files) != 1:
+                raise TestError("Setting 'stdin' requires a single 'input_1' file")
 
         if data:
             raise TestError(f"Unexpected JSON values: {data}")
@@ -831,6 +847,10 @@ class TestConfig(NamedTuple):
             ):
                 raise NotImplementedError(it.kind)
 
+        if self.stdin:
+            input_1 = input_1 and ["-"]
+            input_2 = input_2 and ["-"]
+
         if input_1 and "--in-file1" not in command and "--file1" not in command:
             command += ["--in-file1", *input_1]
 
@@ -846,6 +866,23 @@ class TestConfig(NamedTuple):
         for item in self.files:
             if item.kind in keys:
                 yield item
+
+    def get_stdin_file(self) -> TestFile | None:
+        if self.stdin:
+            for it in self.files:
+                if it.kind == "input_1":
+                    return it
+
+            raise TestError(f"'input_1' not found for {quote(self.path)}")
+        else:
+            return None
+
+    def get_stdin_data(self, root: Path) -> bytes | None:
+        file = self.get_stdin_file()
+        if file is None:
+            return None
+
+        return (root / file.name).read_bytes()
 
 
 class TestMutator:
@@ -893,6 +930,7 @@ class TestMutator:
     ) -> Iterator[TestConfig]:
         yield test
 
+        original_input: list[TestFile] = []
         input_files: dict[str, list[list[str]]] = {}
         other_files: list[TestFile] = []
         for it in test.files:
@@ -905,9 +943,10 @@ class TestMutator:
                     lines.pop()
 
                 input_files.setdefault(it.kind, []).append(lines)
+                original_input.append(it)
             elif it.kind == "json":
-                if masked_stats is not None:
-                    other_files.append(masked_stats)
+                assert masked_stats is not None
+                other_files.append(masked_stats)
             else:
                 other_files.append(it)
 
@@ -936,13 +975,26 @@ class TestMutator:
                         )
                     )
 
-                yield test._replace(
+                test = test._replace(
                     variant=(*test.variant, "intl"),
                     files=tuple(other_files),
                     arguments=(*test.arguments, "--interleaved-input"),
                 )
+
+                yield test
+                if cls._can_mutate_to_stdin(test):
+                    yield test._replace(
+                        stdin=True,
+                        variant=test.variant + ("stdin",),
+                    )
             else:
                 print_warn("Could not interleave input files in", test.path)
+        elif cls._can_mutate_to_stdin(test):
+            yield test._replace(
+                stdin=True,
+                files=(*other_files, *original_input),
+                variant=test.variant + ("stdin",),
+            )
 
     @staticmethod
     def _lines_to_records(lines: list[str]) -> Iterator[list[str]]:
@@ -974,6 +1026,20 @@ class TestMutator:
             updated.append(it)
 
         return tuple(updated)
+
+    @staticmethod
+    def _can_mutate_to_stdin(test: TestConfig) -> bool:
+        args = test.arguments
+
+        return (
+            test.stdin is None
+            and "--in-file1" not in args
+            and "--file1" not in args
+            and "--in-file2" not in args
+            and "--file2" not in args
+            and not any(it.kind == "input_2" for it in test.files)
+            and sum(it.kind == "input_1" for it in test.files) == 1
+        )
 
 
 class TestRunner:
@@ -1042,22 +1108,9 @@ class TestRunner:
             # Write observed terminal output
             write_data(self._test_path / "_stdout.txt", stdout)
             write_data(self._test_path / "_stderr.txt", stderr)
-            command_s = cmd_to_s(self.command)
 
-            write_data(
-                self._test_path / "_run.sh",
-                f"#!/bin/bash\n\n{command_s}\n",
-            )
-
-            write_data(
-                self._test_path / "_gdb.sh",
-                "#!/bin/bash\n"
-                "gdb \\\n"
-                "  --eval-command='break std::terminate' \\\n"
-                "  --eval-command='run' \\\n"
-                f"  --cd={quote(self._test_path)} \\\n"
-                f"  --args {command_s}\n",
-            )
+            self._write_bash_command(self._test_path / "_run.sh")
+            self._write_gdb_command(self._test_path / "_gdb.sh")
 
             raise
 
@@ -1081,16 +1134,17 @@ class TestRunner:
                 filename = self._test_path / self._test.pipe
                 stdout_pipe = filename.open("wb")
 
+            stdin = self._test.get_stdin_data(self._test_path)
             proc = subprocess.Popen(
                 self.command,
-                stdin=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL if stdin is None else subprocess.PIPE,
                 stdout=stdout_pipe,
                 stderr=subprocess.PIPE,
                 close_fds=True,
                 cwd=self._test_path,
             )
 
-            stdout, stderr = proc.communicate(timeout=self.timeout)
+            stdout, stderr = proc.communicate(input=stdin, timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             raise TestError("Test took too long to run") from error
         finally:
@@ -1167,6 +1221,44 @@ class TestRunner:
                 observed=self._test_path / it.name,
             )
 
+    def _write_bash_command(self, filename: Path) -> None:
+        command: list[str] = [
+            "#!/bin/bash",
+            f"cd {quote(self._test_path)}",
+        ]
+
+        stdin = self._test.get_stdin_file()
+        if stdin is not None:
+            command.append(f"cat {quote(stdin.name)} | \\")
+
+        command.append(cmd_to_s(self.command))
+        command.append("")
+
+        write_data(filename, "\n".join(command))
+
+    def _write_gdb_command(self, filename: Path) -> None:
+        cmd = self._test.build_command(self.executable, valgrind=None)
+        args: list[str] = ["set args"]
+        args.extend(quote(it) for it in cmd[1:])
+
+        stdin = self._test.get_stdin_file()
+        if stdin is not None:
+            args.append(f"< <(cat {quote(stdin.name)})")
+
+        command: list[str] = [
+            "#!/bin/bash",
+            f"cd {quote(self._test_path)}",
+            'export SHELL="${BASH}"',
+            "gdb --quiet \\",
+            "  --eval-command='break std::terminate' \\",
+            f"  --eval-command={quote(' '.join(args))} \\",
+            "  --eval-command='run' \\",
+            f"  {quote(self.executable)}",
+            "",
+        ]
+
+        write_data(filename, "\n".join(command))
+
 
 class TestUpdater:
     def __init__(
@@ -1198,9 +1290,10 @@ class TestUpdater:
             self._update_files()
 
     def _run(self) -> None:
+        stdin = self._test.get_stdin_data(self.path)
         proc = subprocess.Popen(
             self.command,
-            stdin=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL if stdin is None else subprocess.PIPE,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             close_fds=True,
@@ -1208,7 +1301,7 @@ class TestUpdater:
         )
 
         try:
-            proc.wait(timeout=self.timeout)
+            proc.communicate(input=stdin, timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             proc.terminate()
             proc.wait()
