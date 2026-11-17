@@ -392,32 +392,31 @@ TEST_CASE("buffer_reader asserts if destination is modified")
 
 TEST_CASE("buffer_reader keeps returning EOF")
 {
+  auto buf = "part 1"_buffer;
+  if (GENERATE(true, false)) {
+    buf.append_u8('\n');
+  }
+
   buffer_reader reader{ { "filename" } };
-  reader.add("part 1"_buffer, true);
+  reader.add(std::move(buf), true);
 
   std::string line;
-  REQUIRE(reader.getline(line) == buffer_reader::result::complete);
-  REQUIRE(line == "part 1");
+  if (GENERATE(true, false)) {
+    REQUIRE(reader.getline(line) == buffer_reader::result::complete);
+    REQUIRE(line == "part 1");
+  } else {
+    reader.close();
+  }
+
+  line = GENERATE("", "something else");
   REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-  REQUIRE(line.empty());
+  // NOLINTNEXTLINE(readability-container-size-empty)
+  REQUIRE(line == "");
 
-  SECTION("accepts non-empty lines")
-  {
-    line = "something else";
-    REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-    REQUIRE(line.empty());
-    line = "another value";
-    REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-    REQUIRE(line.empty());
-  }
-
-  SECTION("accepts empty lines")
-  {
-    REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-    REQUIRE(line.empty());
-    REQUIRE(reader.getline(line) == buffer_reader::result::eof);
-    REQUIRE(line.empty());
-  }
+  line = GENERATE("", "another value");
+  REQUIRE(reader.getline(line) == buffer_reader::result::eof);
+  // NOLINTNEXTLINE(readability-container-size-empty)
+  REQUIRE(line == "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
