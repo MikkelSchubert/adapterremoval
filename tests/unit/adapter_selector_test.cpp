@@ -4,12 +4,12 @@
 #include "adapter_detector.hpp" // for adapter_detector
 #include "adapter_selector.hpp" // for adapter_chunk, adapter_finalizer, ...
 #include "commontypes.hpp"      // for adapter_fallback
-#include "errors.hpp"           // for assertion_failed
+#include "errors.hpp"           // for assert_failed, fatal_error
 #include "fastq.hpp"            // for fastq
 #include "logging.hpp"          // for log_capture
 #include "scheduler.hpp"        // for chunk_ptr, chunk_vec, fastq_chunk, ...
 #include "scheduler_test.hpp"   // for STEP_PROCESS_TO_CHUNK, ...
-#include "sequence_sets.hpp"    // for sample_set
+#include "sequence_sets.hpp"    // for adapter_set, sample_set
 #include "simd.hpp"             // for supported
 #include "testing.hpp"          // for TEST_CASE, REQUIRE, ...
 #include "threading.hpp"        // for threadsafe_data
