@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
-#include "bgzf.hpp"     // for BGZF_MAX_BLOCK_SIZE, BGZF_MAX_INPUT_SIZE, ...
-#include "buffer.hpp"   // for buffer
-#include "deflate.hpp"  // for MAX_COMPRESSION_LEVEL
-#include "errors.hpp"   // for assert_failed
-#include "testing.hpp"  // for TEST_CASE, REQUIRE, CHECK, ...
-#include <cstddef>      // for size_t
-#include <cstdint>      // uint8_t
-#include <libdeflate.h> // for libdeflate_crc32
-#include <limits>       // numeric_limits
-#include <memory>       // for unique_ptr
+#include "bgzf.hpp"      // for BGZF_MAX_BLOCK_SIZE, BGZF_MAX_INPUT_SIZE, ...
+#include "buffer.hpp"    // for buffer
+#include "deflate.hpp"   // for MAX_COMPRESSION_LEVEL
+#include "errors.hpp"    // for assert_failed
+#include "testing.hpp"   // for TEST_CASE, REQUIRE, CHECK, ...
+#include "testutils.hpp" // for random_data_buffer, random_text_buffer
+#include <cstddef>       // for size_t
+#include <cstdint>       // uint8_t
+#include <libdeflate.h>  // for libdeflate_crc32
+#include <limits>        // numeric_limits
+#include <memory>        // for unique_ptr
 
 #define PARAMETERIZE_COMPRESSION GENERATE(0, 1, 2, 3, 4, MAX_COMPRESSION_LEVEL)
 

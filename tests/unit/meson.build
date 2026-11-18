@@ -36,6 +36,7 @@ unit_tests = executable(
     'table_reader_test.cpp',
     'testing_test.cpp',
     'testing.cpp',
+    'testutils.cpp',
     'threading_test.cpp',
     'timeutils_test.cpp',
     'utilities_test.cpp',

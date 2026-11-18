@@ -1,88 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 Mikkel Schubert <mikkelsch@gmail.com>
-#include "buffer.hpp"       // for buffer
-#include "deflate.hpp"      // for calculate_crc32, deflate_block_isal_1, ...
-#include "errors.hpp"       // for io_error
-#include "linereader.hpp"   // declarations
-#include "logging.hpp"      // for log_capture
-#include "strutils.hpp"     // for split_lines, string_vec
-#include "testing.hpp"      // for TEST_CASE, REQUIRE, ...
-#include <cstdint>          // for uint32_t
-#include <cstdio>           // for fclose, fwrite, rewind, tmpfile, FILE, fread
-#include <initializer_list> // for initializer_list
-#include <isa-l.h>          // for ISAL_GZIP, inflate_state, isal_inflate_ini
-#include <libdeflate.h>     // for libdeflate_alloc_compressor, ...
-#include <memory>           // for make_unique, unique_ptr
-#include <string>           // for string
-#include <string_view>      // for string_view, ""sv
-#include <tuple>            // for tuple_size_v
-#include <vector>           // for vector
+#include "buffer.hpp"     // for buffer
+#include "deflate.hpp"    // for calculate_crc32, deflate_block_isal_1, ...
+#include "errors.hpp"     // for io_error
+#include "linereader.hpp" // declarations
+#include "logging.hpp"    // for log_capture
+#include "strutils.hpp"   // for split_lines, string_vec
+#include "testing.hpp"    // for TEST_CASE, REQUIRE, ...
+#include "testutils.hpp"  // for gzip_stream_into_buffer, random_data_buffer, ..
+#include <cstdio>         // for fclose, fwrite, rewind, tmpfile, FILE, fread
+#include <isa-l.h>        // for inflate_state, isal_inflate_init, ...
+#include <memory>         // for make_unique, unique_ptr
+#include <string>         // for string
+#include <string_view>    // for string_view, ""sv
+#include <vector>         // for vector
 
 using namespace std::string_view_literals;
 
 namespace adapterremoval {
 
 namespace {
-
-template<typename T>
-buffer
-gzip_data(const T& data)
-{
-  using compressor_ptr = std::unique_ptr<libdeflate_compressor,
-                                         decltype(&libdeflate_free_compressor)>;
-  thread_local compressor_ptr compressor{ libdeflate_alloc_compressor(4),
-                                          libdeflate_free_compressor };
-
-  buffer buf{ data.size() + 64 };
-  auto size = libdeflate_gzip_compress(compressor.get(),
-                                       data.data(),
-                                       data.size(),
-                                       buf.data(),
-                                       buf.size());
-  REQUIRE(size > 0);
-  buf.resize(size);
-
-  return buf;
-}
-
-buffer
-gzip_stream_strings(std::initializer_list<std::string_view> strings)
-{
-  size_t size = 0;
-  uint32_t crc32 = 0;
-  buffer buf = gzip_stream_header_isal();
-
-  for (const auto* it = strings.begin(); it != strings.end(); ++it) {
-    buffer src;
-    src.append(*it);
-    buffer dst{ it->size() + 64 };
-    deflate_block_isal_1(src, dst, 0, it + 1 == strings.end());
-    buf.append(dst);
-
-    size += it->size();
-    crc32 = calculate_crc32(src, crc32);
-  }
-
-  buf.append(gzip_stream_tail_isal(crc32, size));
-
-  return buf;
-}
-
-FILE*
-temporary_file(const buffer& buf)
-{
-  FILE* handle = std::tmpfile();
-  REQUIRE(handle);
-
-  if (buf.size()) {
-    const auto n = std::fwrite(buf.data(), 1, buf.size(), handle);
-    REQUIRE(n == buf.size());
-
-    REQUIRE(std::fseek(handle, 0, SEEK_SET) == 0);
-  }
-
-  return handle;
-}
 
 string_vec
 read_lines(line_reader& reader)
@@ -107,7 +44,7 @@ TEST_CASE("temporary_file/gzip_data returns gzipped file")
   const size_t data_size = 1024;
   const auto data = random_text_buffer(data_size);
 
-  const auto gzip = gzip_data(data);
+  const auto gzip = gzip_data_into_buffer(data);
   const auto gzip_size = gzip.size();
   FILE* handle = temporary_file(gzip);
 
@@ -155,7 +92,7 @@ TEST_CASE("line_reader on empty line returns single, empty line")
   buffer input;
   input.append(GENERATE("\n", "\r\n"));
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(input));
@@ -170,7 +107,7 @@ TEST_CASE("line_reader does not require trailing newline")
   input.append(GENERATE("", "\n"));
 
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(input));
@@ -187,7 +124,7 @@ TEST_CASE("line_reader does not require trailing newline (CRLF)")
   input.append(GENERATE("", "\r\n"));
 
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(input));
@@ -205,7 +142,7 @@ TEST_CASE("line_reader ignores trailing newline, but keep empty lines")
                  "\n"_buffer;
 
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(input));
@@ -225,7 +162,7 @@ TEST_CASE("line_reader ignores trailing newline, but keep empty lines (CRLF)")
                  "\r\n"_buffer;
 
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(input));
@@ -245,7 +182,7 @@ TEST_CASE("line_reader handles mixed LF/CRLF")
                  "\r\n"_buffer;
 
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(input));
@@ -264,7 +201,7 @@ TEST_CASE("line_reader handles gzipped file in blocks")
 
   buffer buf;
   for (const auto& it : input) {
-    buf.append(gzip_data(it));
+    gzip_and_append_data_to_buffer(buf, it);
   }
 
   line_reader reader(temporary_file(buf));
@@ -275,7 +212,7 @@ TEST_CASE("line_reader handles gzipped file in blocks")
 
 TEST_CASE("line_reader handles streamed gzipped file")
 {
-  buffer buf = gzip_stream_strings({
+  buffer buf = gzip_stream_into_buffer({
     "HnSw4nWJAsds32emFfQdwO6Z\n",
     "tiuSGNsadNZ\n",
     "pAehX8GBlmyOPR\n",
@@ -295,7 +232,7 @@ TEST_CASE("line_reader handles gzipped file in blocks, with partial lines")
 
   buffer buf;
   for (const auto& it : input) {
-    buf.append(gzip_data(it));
+    gzip_and_append_data_to_buffer(buf, it);
   }
 
   line_reader reader(temporary_file(buf));
@@ -305,7 +242,7 @@ TEST_CASE("line_reader handles gzipped file in blocks, with partial lines")
 
 TEST_CASE("line_reader handles streamed gzipped file with partial lines")
 {
-  buffer buf = gzip_stream_strings({
+  buffer buf = gzip_stream_into_buffer({
     "HnSw4nWJAsds32emFfQdwO6Z\n",
     "tiuSGNsadNZ",
     "pAehX8GBlmyOPR\n",
@@ -325,7 +262,7 @@ TEST_CASE("line_reader handles gzipped file with empty blocks")
 
   buffer buf;
   for (const auto& it : input) {
-    buf.append(gzip_data(it));
+    gzip_and_append_data_to_buffer(buf, it);
   }
 
   line_reader reader(temporary_file(buf));
@@ -337,7 +274,7 @@ TEST_CASE("line_reader handles gzipped file with empty blocks")
 TEST_CASE("line_reader handles gzipped file with trailing junk")
 {
   buffer buf;
-  buf.append(gzip_data("HnSw4nWJAsds32emFfQdwO6Z\n"_buffer));
+  gzip_and_append_data_to_buffer(buf, "HnSw4nWJAsds32emFfQdwO6Z\n"_buffer);
   buf.append("trailing junk");
   FILE* handle = temporary_file(buf);
 
@@ -352,8 +289,8 @@ TEST_CASE("line_reader handles gzipped file with trailing junk")
 TEST_CASE("line_reader handles multiple gzipped file with trailing junk")
 {
   buffer buf;
-  buf.append(gzip_data("HnSw4nWJAsds32emFfQdwO6Z\n"sv));
-  buf.append(gzip_data("tiuSGNsadNZpAehX8GBlmyOPR\n"sv));
+  gzip_and_append_data_to_buffer(buf, "HnSw4nWJAsds32emFfQdwO6Z\n"sv);
+  gzip_and_append_data_to_buffer(buf, "tiuSGNsadNZpAehX8GBlmyOPR\n"sv);
   buf.append("trailing junk");
   FILE* handle = temporary_file(buf);
 
@@ -369,7 +306,7 @@ TEST_CASE("line_reader handles multiple gzipped file with trailing junk")
 TEST_CASE("line_reader handles empty gzipped file with trailing junk")
 {
   buffer buf;
-  buf.append(gzip_data(buffer{}));
+  gzip_and_append_data_to_buffer(buf, buffer{});
   buf.append("trailing junk");
   FILE* handle = temporary_file(buf);
 
@@ -389,7 +326,7 @@ TEST_CASE("line reader always clears buffer")
   input.append(GENERATE("", "\n"));
 
   if (GENERATE(true, false)) {
-    input = gzip_data(input);
+    input = gzip_data_into_buffer(input);
   }
 
   line_reader reader(temporary_file(std::move(input)));
@@ -433,7 +370,7 @@ TEST_CASE("line_reader handles blocks ends/starts straddling buffers")
 
   // input_3 will start just after or partially overlapping the first raw buffer
   buffer input_3 = random_text_buffer(1024);
-  gzip.append(gzip_data(input_3));
+  gzip_and_append_data_to_buffer(gzip, input_3);
 
   line_reader reader(temporary_file(gzip));
 
@@ -459,7 +396,7 @@ TEST_CASE("line_reader handles blocks ends/starts straddling buffers")
 
 TEST_CASE("line_reader throws on truncated files")
 {
-  buffer data = gzip_data(random_text_buffer(1024));
+  buffer data = gzip_data_into_buffer(random_text_buffer(1024));
 
   data.resize(data.size() - GENERATE(1, 5, 9, 10));
   line_reader reader{ temporary_file(data) };
@@ -486,7 +423,7 @@ TEST_CASE("line_reader throws on truncated files (non-final)")
 
 TEST_CASE("line_reader throws on invalid gzip header")
 {
-  buffer data = gzip_data(random_data_buffer(1024));
+  buffer data = gzip_data_into_buffer(random_data_buffer(1024));
   data.put_u8(2, 0xFF); // CM
 
   line_reader reader{ temporary_file(data) };
@@ -498,7 +435,7 @@ TEST_CASE("line_reader throws on invalid gzip header")
 
 TEST_CASE("line_reader throws on invalid deflate header")
 {
-  buffer data = gzip_data(random_data_buffer(1024));
+  buffer data = gzip_data_into_buffer(random_data_buffer(1024));
   data.put_u8(10, 0xFF);
 
   line_reader reader{ temporary_file(data) };
@@ -510,7 +447,7 @@ TEST_CASE("line_reader throws on invalid deflate header")
 
 TEST_CASE("line_reader throws on corrupt files")
 {
-  buffer data = gzip_data(random_data_buffer(1024));
+  buffer data = gzip_data_into_buffer(random_data_buffer(1024));
   data.put_u8(data.size() - 32, data.at(data.size() - 32) ^ 0xFF);
 
   line_reader reader{ temporary_file(data) };
@@ -520,7 +457,7 @@ TEST_CASE("line_reader throws on corrupt files")
 
 TEST_CASE("line_reader throws on wrong isize/crc32")
 {
-  buffer data = gzip_data(random_data_buffer(1024));
+  buffer data = gzip_data_into_buffer(random_data_buffer(1024));
   const int offset = data.size() - GENERATE(4, 8); // isize (-4) or crc32 (-8)
   data.put_u32(offset, data.get_u32(offset) + GENERATE(-1, 1));
 
