@@ -152,7 +152,7 @@ def device_exists(it: str) -> bool:
     if (
         it.startswith("/dev/")
         # These are handled specially and not actually opened
-        and it not in ("/dev/null", "/dev/stdin")
+        and it not in ("/dev/null", "/dev/stdin", "/dev/stdout", "/dev/stderr")
         and not os.path.exists(it)
     ):
         print_warn(f"Device {it!r} not found; skipping tests that require it")
