@@ -1,0 +1,22 @@
+{
+  "description": "Adapter trimming of SE with extranous newlines between records",
+  "exhaustive": true,
+  "arguments": [
+    "--out-prefix",
+    "output"
+  ],
+  "files": {
+    "input_1": [
+      "input.fastq"
+    ],
+    "output": [
+      "output.r1.fastq.gz"
+    ],
+    "json": [
+      "output.json"
+    ],
+    "html": [
+      "output.html"
+    ]
+  }
+}
