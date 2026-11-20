@@ -5,7 +5,6 @@
 #include "commontypes.hpp"      // for read_mate
 #include "errors.hpp"           // for assert_failed
 #include "fastq.hpp"            // for fastq
-#include "logging.hpp"          // for log_capture
 #include "sequence.hpp"         // for dna_sequence
 #include "sequence_sets.hpp"    // for adapter_set
 #include "simd.hpp"             // for instruction_set
@@ -273,8 +272,6 @@ TEST_CASE("only unique adapters are collected")
 
 TEST_CASE("very short adapters are skipped")
 {
-  const log::log_capture cap;
-
   auto ad = simple_detector({
     { "ACGTGTT", "ACGGACGT" },
     { "ACGTGTTA", "ACGGAC" },
@@ -498,7 +495,6 @@ TEST_CASE("selection requires 10 hits")
   const std::vector<adapter_detection_stats::hit_stats> hits_9{ { 9 } };
   const std::vector<adapter_detection_stats::hit_stats> hits_10{ { 10 } };
 
-  const log::log_capture _;
   CHECK(ad.select_best({ 9, empty, empty }) == identified_adapter_pair{});
   CHECK(ad.select_best({ 10, empty, empty }) == identified_adapter_pair{});
 
@@ -537,7 +533,6 @@ TEST_CASE("selection requires 1/0.1 percent sequences")
                                      "AGATCGGAAGAGCACACGTCT"_dna,
                                      read_mate::_1 };
 
-  const log::log_capture _;
   // Common sequences require >= 1% hits
   REQUIRE(ad.select_best({ 10000, { { 99, 9900, 990 } } }) ==
           identified_adapter_pair{});
@@ -564,7 +559,6 @@ TEST_CASE("selection prefers the most aligned bases for same hits")
     { "AGATCGGAAGAGCGTCGTGTAGGGA", {} },
   });
 
-  const log::log_capture _;
   // Prefer sequence with the most hits
   REQUIRE(
     ad.select_best({ 100, { { 30, 400 }, { 10, 50 }, { 40, 300 } } }) ==

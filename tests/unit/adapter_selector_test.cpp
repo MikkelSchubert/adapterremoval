@@ -516,7 +516,6 @@ TEST_CASE("abort on insufficient matches if configured")
 
   chunks.emplace_back(std::move(chunk));
 
-  const log::log_capture cap;
   REQUIRE_THROWS_MESSAGE(
     test_finalizer_on_chunks(samples, chunks, adapter_fallback::abort),
     fatal_error,
@@ -528,7 +527,6 @@ TEST_CASE("abort on insufficient matches if configured")
 
 TEST_CASE("stats are merged across chunks")
 {
-  const log::log_capture _cap;
   std::vector<chunk_ptr> chunks;
 
   auto chunk_1 = std::make_unique<adapter_chunk>();
