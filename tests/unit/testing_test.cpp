@@ -95,3 +95,34 @@ TEST_CASE("ExceptionContainsMatcher", "[ExceptionContainsMatcher]")
                          assert_failed,
                          !ExceptionContainsMatcher("long message"));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// ExceptionStartsWithMatcher
+
+TEST_CASE("ExceptionStartsWithMatcher", "[ExceptionStartsWithMatcher]")
+{
+  using adapterremoval::assert_failed;
+  using Catch::ExceptionStartsWithMatcher;
+
+  auto throw_error = [](std::string message) { throw assert_failed(message); };
+
+  REQUIRE_THROWS_MATCHES(throw_error("message is exact"),
+                         assert_failed,
+                         ExceptionStartsWithMatcher("message is exact"));
+  REQUIRE_THROWS_MATCHES(throw_error("message is partial"),
+                         assert_failed,
+                         ExceptionStartsWithMatcher("message is"));
+  REQUIRE_THROWS_MATCHES(throw_error("message is empty"),
+                         assert_failed,
+                         ExceptionStartsWithMatcher(""));
+
+  REQUIRE_THROWS_MATCHES(throw_error("message is wrong"),
+                         assert_failed,
+                         !ExceptionStartsWithMatcher("message is exact"));
+  REQUIRE_THROWS_MATCHES(throw_error("message is at end"),
+                         assert_failed,
+                         !ExceptionStartsWithMatcher("at end"));
+  REQUIRE_THROWS_MATCHES(throw_error("message is inside"),
+                         assert_failed,
+                         !ExceptionStartsWithMatcher(" is "));
+}
