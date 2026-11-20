@@ -588,7 +588,6 @@ TEST_CASE("reusable_objects::release asserts if too many objects are returned",
 TEST_CASE("reusable_objects::finalize asserts if too few objects are returned",
           "[reusable_objects]")
 {
-  log::log_capture cap;
   reusable_objects<buffer> rs{ "test", 64 };
 
   const int storage_size = GENERATE(1, 2, 3);
