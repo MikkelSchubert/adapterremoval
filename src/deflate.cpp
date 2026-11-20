@@ -4,7 +4,7 @@
 #include "buffer.hpp"   // for buffer
 #include "debug.hpp"    // for AR_REQUIRE
 #include "errors.hpp"   // for gzip_error
-#include "strutils.hpp" // for stringify
+#include "strutils.hpp" // for stringify, log_escape
 #include <array>        // for array
 #include <cstddef>      // for size_t
 #include <cstdint>      // for uint8_t
@@ -64,7 +64,7 @@ deflate_block_isal_1(const buffer& src,
                      const size_t dst_offset,
                      const bool eof)
 {
-  AR_REQUIRE(dst_offset < dst.size());
+  AR_REQUIRE(dst_offset < dst.size(), "~b4c7eead893019a6~");
 
   thread_local auto ptr = std::make_unique<isal_zstream>();
   thread_local buffer level_buf;
@@ -130,8 +130,8 @@ deflate_block_libdeflate(const buffer& src,
                          const size_t dst_offset,
                          const unsigned compression_level)
 {
-  AR_REQUIRE(dst_offset < dst.size());
-  AR_REQUIRE(compression_level <= MAX_COMPRESSION_LEVEL);
+  AR_REQUIRE(dst_offset < dst.size(), "~14bf91174bef80b5~");
+  AR_REQUIRE(compression_level <= MAX_COMPRESSION_LEVEL, "~7acf5546ddc32ba7~");
   thread_local std::array<compressor_wrapper, MAX_COMPRESSION_LEVEL + 1>
     compressors{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 
@@ -143,7 +143,7 @@ deflate_block_libdeflate(const buffer& src,
                                                    dst.size() - dst_offset);
 
   // The easily compressible input should fit in a single output block
-  AR_REQUIRE(output_size); // GCOVR_EXCL_BR_LINE
+  AR_REQUIRE(output_size, "~90ec9180db72efa4~");
   // Resize the buffer to the actually used size
   dst.resize(dst_offset + output_size);
 }
@@ -156,10 +156,10 @@ deflate_block_uncompressed(const buffer& src,
                            buffer& dst,
                            const size_t dst_offset)
 {
-  AR_REQUIRE(src.size() <= 0xFFFF);
+  AR_REQUIRE(src.size() <= 0xFFFF, "~8c4967be494147cb~");
 
   const auto final_size = src.size() + 5 + dst_offset;
-  AR_REQUIRE(final_size <= dst.size());
+  AR_REQUIRE(final_size <= dst.size(), "~be70eb4c5e2663e0~");
 
   dst.resize(dst_offset);
   dst.append_u8(1); // BFINAL=1, BTYPE=00; see RFC1951
@@ -188,10 +188,10 @@ throw_isal_inflate_error(const inflate_state* state,
                          const size_t* isize,
                          const std::string_view filename)
 {
-  AR_REQUIRE(state);
+  AR_REQUIRE(state); // GCOVR_EXCL_BR_LINE
   std::ostringstream os;
   if (!filename.empty()) {
-    os << "error while decompressing " << shell_escape(filename) << ": ";
+    os << "error while decompressing " << log_escape(filename) << ": ";
   }
 
   switch (error) {
@@ -208,11 +208,11 @@ throw_isal_inflate_error(const inflate_state* state,
         if (*isize == state->total_out) {
           os << "incorrect content checksum";
         } else {
-          os << "content is smaller than ISIZE";
+          os << "size of content does not match ISIZE";
         }
       } else {
         // isa-l does not distinguish
-        os << "incorrect content checksum or ISIZE";
+        os << "incorrect ISIZE or content checksum";
       }
       break;
     case ISAL_INVALID_BLOCK:
@@ -233,6 +233,43 @@ throw_isal_inflate_error(const inflate_state* state,
   throw gzip_error(os.str());
 }
 
+/**
+ * Depending on buffer sizes, the value set for `next_in` and `next_out` may be
+ * nullptr. This class ensures that isa-l is always given a valid pointer for
+ * zero-sized reads/writes. Assumes that the corresponding `avail` value is 0.
+ */
+class ensure_not_null
+{
+public:
+  /** Set pointer to a valid, non-null value if null */
+  explicit ensure_not_null(uint8_t*& pointer)
+    : m_pointer(pointer)
+  {
+    if (m_pointer == nullptr) {
+      m_pointer = &m_dummy;
+    }
+  }
+
+  /** Sets the original pointer back to null, if `ensure_not_null` changed it */
+  ~ensure_not_null()
+  {
+    if (m_pointer == &m_dummy) {
+      m_pointer = nullptr;
+    }
+  }
+
+  ensure_not_null(ensure_not_null&&) = delete;
+  ensure_not_null(const ensure_not_null&) = delete;
+  ensure_not_null& operator=(ensure_not_null&&) = delete;
+  ensure_not_null& operator=(const ensure_not_null&) = delete;
+
+private:
+  //! Either `inflate_state::next_in` or `inflate_state::next_out`
+  uint8_t*& m_pointer;
+  //! Variable used only to source a valid pointer
+  uint8_t m_dummy{};
+};
+
 } // namespace
 
 void
@@ -240,7 +277,12 @@ checked_isal_inflate(inflate_state* state,
                      const bool eof,
                      const std::string_view filename)
 {
-  AR_REQUIRE(state);
+  AR_REQUIRE(state, "~a43067e9e983afc7~");
+  AR_REQUIRE(state->next_in || state->avail_in == 0, "~c573155ef8a7fd67~");
+  AR_REQUIRE(state->next_out || state->avail_out == 0, "~ea9fa8f9702f136f~");
+
+  ensure_not_null next_in{ state->next_in };
+  ensure_not_null next_out{ state->next_out };
 
   const auto result = isal_inflate(state);
   if (result != ISAL_DECOMP_OK) {
@@ -249,7 +291,7 @@ checked_isal_inflate(inflate_state* state,
              state->block_state != isal_block_state::ISAL_BLOCK_FINISH) {
     std::ostringstream os;
     if (!filename.empty()) {
-      os << "error while decompressing " << shell_escape(filename) << ": ";
+      os << "error while decompressing " << log_escape(filename) << ": ";
     }
 
     os << "file is truncated";
@@ -263,7 +305,12 @@ checked_isal_inflate_stateless(inflate_state* state,
                                const size_t isize,
                                const std::string_view filename)
 {
-  AR_REQUIRE(state);
+  AR_REQUIRE(state, "~b235c2b9f5f022a8~");
+  AR_REQUIRE(state->next_in || state->avail_in == 0, "~34d6fcc3d35446d7~");
+  AR_REQUIRE(state->next_out || state->avail_out == 0, "~044ddde4f5fc4b72~");
+
+  ensure_not_null next_in{ state->next_in };
+  ensure_not_null next_out{ state->next_out };
 
   const auto result = isal_inflate_stateless(state);
   if (result != ISAL_DECOMP_OK) {

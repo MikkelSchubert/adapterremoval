@@ -97,8 +97,10 @@ TEST_CASE("bgzf_block_compress rejects input larger than BGZF_MAX_INPUT_SIZE")
   auto src = random_text_buffer(BGZF_MAX_INPUT_SIZE + 1);
   buffer dst;
 
-  REQUIRE_THROWS_AS(bgzf_block_compress(src, dst, PARAMETERIZE_COMPRESSION),
-                    assert_failed);
+  REQUIRE_THROWS_CONTAINS(
+    bgzf_block_compress(src, dst, PARAMETERIZE_COMPRESSION),
+    assert_failed,
+    "~d5b6fb89f0613dec~");
 }
 
 TEST_CASE("bgzf_block_compress overwrites dst")
@@ -133,8 +135,10 @@ TEST_CASE("bgzf_block_compress rejects compression levels above max")
   auto src = "AAAAAAAAABBBBBBBBBBBBCCCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEE"_buffer;
   buffer dst;
 
-  REQUIRE_THROWS_AS(bgzf_block_compress(src, dst, MAX_COMPRESSION_LEVEL + 1),
-                    assert_failed);
+  REQUIRE_THROWS_CONTAINS(
+    bgzf_block_compress(src, dst, MAX_COMPRESSION_LEVEL + 1),
+    assert_failed,
+    "~7acf5546ddc32ba7~");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -275,6 +279,21 @@ TEST_CASE("bgzf_block_size returns size of bgzf_block_compress'd block")
 ////////////////////////////////////////////////////////////////////////////////
 // bgzf_block_decompress
 
+#define REQUIRE_DECOMPRESS_THROWS(src, dst, msg)                               \
+  SECTION("without filename")                                                  \
+  {                                                                            \
+    REQUIRE_THROWS_STARTS_WITH(bgzf_block_decompress(src, dst),                \
+                               gzip_error,                                     \
+                               msg);                                           \
+  }                                                                            \
+                                                                               \
+  SECTION("with filename")                                                     \
+  {                                                                            \
+    REQUIRE_THROWS_STARTS_WITH(bgzf_block_decompress(src, dst, 0, "abcd0123"), \
+                               gzip_error,                                     \
+                               "error while decompressing 'abcd0123': " msg);  \
+  }
+
 TEST_CASE("bgzf_block_decompress fails on too short buffer")
 {
   buffer buf;
@@ -285,9 +304,9 @@ TEST_CASE("bgzf_block_decompress fails on too short buffer")
   buf.resize(size);
 
   buffer dst;
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(buf, dst),
-                          gzip_error,
-                          "malformed BGZF block; block is too small");
+  REQUIRE_DECOMPRESS_THROWS(buf,
+                            dst,
+                            "malformed BGZF block: block is too small");
 }
 
 TEST_CASE("bgzf_block_decompress fails on non-bgzf buffer")
@@ -297,9 +316,7 @@ TEST_CASE("bgzf_block_decompress fails on non-bgzf buffer")
   buf.put_u8(12, '?');  // SI1
 
   buffer dst;
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(buf, dst),
-                          gzip_error,
-                          "not a BGZF block");
+  REQUIRE_DECOMPRESS_THROWS(buf, dst, "not a BGZF block");
 }
 
 TEST_CASE("bgzf_block_decompress fails on BSIZE mismatch")
@@ -309,9 +326,7 @@ TEST_CASE("bgzf_block_decompress fails on BSIZE mismatch")
   buf.put_u16(16, buf.size() + GENERATE(-2, 0));
 
   buffer dst;
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(buf, dst),
-                          gzip_error,
-                          "BGZF block has mismatching BSIZE");
+  REQUIRE_DECOMPRESS_THROWS(buf, dst, "BGZF block has mismatching BSIZE");
 }
 
 TEST_CASE("bgzf_block_decompress fails on CRC32 mismatch")
@@ -324,9 +339,9 @@ TEST_CASE("bgzf_block_decompress fails on CRC32 mismatch")
   buffer uncompressed;
   REQUIRE_NOTHROW(bgzf_block_decompress(compressed, uncompressed));
   compressed.put_u32(compressed.size() - 8, c32 + 1);
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(compressed, uncompressed),
-                          gzip_error,
-                          "incorrect content checksum");
+  REQUIRE_DECOMPRESS_THROWS(compressed,
+                            uncompressed,
+                            "incorrect content checksum");
 }
 
 TEST_CASE("bgzf_block_decompress fails on HCRC mismatch")
@@ -362,9 +377,7 @@ TEST_CASE("bgzf_block_decompress fails on HCRC mismatch")
   SECTION("mismatching HCRC")
   {
     bgzf.put_u8(BGZF_HEADER.size(), bgzf.at(BGZF_HEADER.size()) ^ 1);
-    REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, dst),
-                            gzip_error,
-                            "incorrect header checksum");
+    REQUIRE_DECOMPRESS_THROWS(bgzf, dst, "incorrect header checksum");
   }
 }
 
@@ -378,9 +391,7 @@ TEST_CASE("bgzf_block_decompress fails on too small ISIZE")
   REQUIRE_NOTHROW(bgzf_block_decompress(bgzf, uncompressed));
 
   bgzf.put_u32(bgzf.size() - 4, data.size() - 1);
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
-                          gzip_error,
-                          "content is larger than ISIZE");
+  REQUIRE_DECOMPRESS_THROWS(bgzf, uncompressed, "content is larger than ISIZE");
 }
 
 TEST_CASE("bgzf_block_decompress fails on too large ISIZE mismatch")
@@ -393,9 +404,9 @@ TEST_CASE("bgzf_block_decompress fails on too large ISIZE mismatch")
   REQUIRE_NOTHROW(bgzf_block_decompress(bgzf, uncompressed));
 
   bgzf.put_u32(bgzf.size() - 4, data.size() + 1);
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
-                          gzip_error,
-                          "content is smaller than ISIZE");
+  REQUIRE_DECOMPRESS_THROWS(bgzf,
+                            uncompressed,
+                            "size of content does not match ISIZE");
 }
 
 TEST_CASE("bgzf_block_decompress fails on end of input")
@@ -410,9 +421,7 @@ TEST_CASE("bgzf_block_decompress fails on end of input")
   bgzf.put_u16(16, bgzf.size() - 1);
 
   buffer uncompressed;
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
-                          gzip_error,
-                          "file is truncated");
+  REQUIRE_DECOMPRESS_THROWS(bgzf, uncompressed, "file is truncated");
 }
 
 TEST_CASE("bgzf_block_decompress fails on too large isize")
@@ -424,9 +433,7 @@ TEST_CASE("bgzf_block_decompress fails on too large isize")
   buffer uncompressed;
   REQUIRE_NOTHROW(bgzf_block_decompress(bgzf, uncompressed));
   bgzf.put_u32(bgzf.size() - 4, BGZF_MAX_BLOCK_SIZE + 1);
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, uncompressed),
-                          gzip_error,
-                          "BGZF block has invalid ISIZE");
+  REQUIRE_DECOMPRESS_THROWS(bgzf, uncompressed, "BGZF block has invalid ISIZE");
 }
 
 TEST_CASE("bgzf_block_decompress fails on non-final")
@@ -449,7 +456,7 @@ TEST_CASE("bgzf_block_decompress fails on non-final")
     REQUIRE(dst == data);
   } else {
     // The exact error depends on the (compressed) content
-    REQUIRE_THROWS_AS(bgzf_block_decompress(bgzf, dst), gzip_error);
+    REQUIRE_DECOMPRESS_THROWS(bgzf, dst, "");
   }
 }
 
@@ -465,7 +472,7 @@ TEST_CASE("bgzf_block_decompress fails on corrupt data")
 
   buffer dst;
   // The exact error depends on compression level/method
-  REQUIRE_THROWS_AS(bgzf_block_decompress(bgzf, dst), gzip_error);
+  REQUIRE_DECOMPRESS_THROWS(bgzf, dst, "");
 }
 
 TEST_CASE("bgzf_block_decompress fails on corrupt block type")
@@ -478,13 +485,10 @@ TEST_CASE("bgzf_block_decompress fails on corrupt block type")
   bgzf.put_u8(19, 0xFF);
 
   buffer dst;
-  // The exact error depends on compression level/method
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, dst),
-                          gzip_error,
-                          "invalid deflate block");
+  REQUIRE_DECOMPRESS_THROWS(bgzf, dst, "invalid deflate block");
 }
 
-TEST_CASE("bgzf_block_decompress fails on trailing data")
+TEST_CASE("bgzf_block_decompress fails on plausible trailing data")
 {
   buffer compressed;
   bgzf_block_compress(random_text_buffer(1024),
@@ -499,9 +503,48 @@ TEST_CASE("bgzf_block_decompress fails on trailing data")
   compressed.put_u16(16, compressed.size() - 1);
 
   buffer uncompressed;
-  REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(compressed, uncompressed),
-                          gzip_error,
-                          "BGZF block contains 12 bytes of trailing garbage");
+  REQUIRE_DECOMPRESS_THROWS(compressed,
+                            uncompressed,
+                            "BGZF block contains 12 bytes of trailing garbage");
+}
+
+TEST_CASE("bgzf_block_decompress fails on trailing garbage")
+{
+  buffer compressed{ 1024 };
+  bgzf_block_compress(random_text_buffer(1024),
+                      compressed,
+                      PARAMETERIZE_COMPRESSION);
+  compressed.append_u32(0xDEADBEEF);
+  compressed.append_u32(0xDEADBEEF);
+  compressed.append_u32(0); // dummy ISIZE
+  compressed.put_u16(16, compressed.size() - 1);
+
+  buffer uncompressed{ 1024 };
+
+  SECTION("final value smaller than ISIZE")
+  {
+    compressed.put_u32(compressed.size() - 4, GENERATE(0, 1, 1023));
+    REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(compressed, uncompressed),
+                            gzip_error,
+                            "content is larger than ISIZE");
+  }
+
+  SECTION("final value at least ISIZE")
+  {
+    compressed.put_u32(compressed.size() - 4,
+                       GENERATE(1025, 2048, BGZF_MAX_BLOCK_SIZE));
+    REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(compressed, uncompressed),
+                            gzip_error,
+                            "BGZF block contains 12 bytes of trailing garbage");
+  }
+
+  SECTION("final value greater than max allowed")
+  {
+    compressed.put_u32(compressed.size() - 4, BGZF_MAX_BLOCK_SIZE + 1);
+    REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(compressed, uncompressed),
+                            gzip_error,
+                            "BGZF block has invalid ISIZE");
+  }
 }
 
 TEST_CASE("bgzf_block_decompress may preserve existing data")
@@ -559,13 +602,17 @@ TEST_CASE("bgzf_block_decompress requires offset inside buffer")
 
   SECTION("past EOF for empty buffer")
   {
-    REQUIRE_THROWS_AS(bgzf_block_decompress(bgzf, dst, 1), assert_failed);
+    REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, dst, 1),
+                            assert_failed,
+                            "~cc152a3feeff7a53~");
   }
 
   SECTION("past EOF for non-empty buffer")
   {
     dst.append_u32(0xDEADBEEF);
-    REQUIRE_THROWS_AS(bgzf_block_decompress(bgzf, dst, 5), assert_failed);
+    REQUIRE_THROWS_CONTAINS(bgzf_block_decompress(bgzf, dst, 5),
+                            assert_failed,
+                            "~cc152a3feeff7a53~");
   }
 }
 

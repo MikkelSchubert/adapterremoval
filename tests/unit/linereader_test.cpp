@@ -350,23 +350,23 @@ TEST_CASE("line_reader handles blocks ends/starts straddling buffers")
 
   buffer gzip;
   gzip.append(header);
-  gzip.resize(buffer_size);
+  gzip.resize(buffer_size * 2);
   deflate_block_uncompressed(input_1, gzip, header.size());
   gzip.append(gzip_stream_tail_isal(calculate_crc32(input_1), input_1.size()));
 
-  const int shift = GENERATE(range(-8, 8));
+  const int shift = GENERATE(range(-16, 17));
   // remaining size - gzip header - deflate header - gzip tail - shift
   const size_t input_2_size =
-    buffer_size - gzip.size() - header.size() - 5 - 8 - shift;
+    buffer_size - gzip.size() - header.size() - 5 - 8 + shift;
   const buffer input_2 = random_text_buffer(input_2_size);
 
   gzip.append(header);
   size_t offset = gzip.size();
-  gzip.resize(buffer_size);
+  gzip.resize(buffer_size * 2);
   deflate_block_uncompressed(input_2, gzip, offset);
   gzip.append(gzip_stream_tail_isal(calculate_crc32(input_2), input_2.size()));
 
-  REQUIRE(gzip.size() == buffer_size - shift);
+  REQUIRE(gzip.size() == buffer_size + shift);
 
   // input_3 will start just after or partially overlapping the first raw buffer
   buffer input_3 = random_text_buffer(1024);
@@ -466,7 +466,7 @@ TEST_CASE("line_reader throws on wrong isize/crc32")
   // isa-l treats both CRC32/ISIZE mismatches as checksum errors
   REQUIRE_THROWS_CONTAINS(read_lines(reader),
                           gzip_error,
-                          "incorrect content checksum or ISIZE");
+                          "incorrect ISIZE or content checksum");
 }
 
 } // namespace adapterremoval

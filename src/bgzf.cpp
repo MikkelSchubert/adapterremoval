@@ -5,10 +5,11 @@
 #include "debug.hpp"    // for AR_REQUIRE
 #include "deflate.hpp"  // for calculate_crc32, deflate_block_uncompressed, ...
 #include "errors.hpp"   // for gzip_error
-#include "strutils.hpp" // for stringify
+#include "strutils.hpp" // for stringify, log_escape
 #include <cstdint>      // for uint8_t
 #include <isa-l.h>      // for isal_inflate_init, isal_inflate_stateless, ...
 #include <memory>       // for make_unique
+#include <sstream>      // for ostringstream
 
 namespace adapterremoval {
 
@@ -17,7 +18,7 @@ bgzf_block_compress(const buffer& src,
                     buffer& dst,
                     const unsigned compression_level)
 {
-  AR_REQUIRE(src.size() <= BGZF_MAX_INPUT_SIZE);
+  AR_REQUIRE(src.size() <= BGZF_MAX_INPUT_SIZE, "~d5b6fb89f0613dec~");
 
   dst.resize(0);
   dst.reserve(BGZF_MAX_BLOCK_SIZE);
@@ -48,27 +49,45 @@ bgzf_block_compress(const buffer& src,
   dst.put_u16(16, dst.size() - 1);
 }
 
+namespace {
+
+[[noreturn]] void
+throw_bgzf_error(std::string_view filename, std::string_view error)
+{
+  std::ostringstream os;
+  if (!filename.empty()) {
+    os << "error while decompressing " << log_escape(filename) << ": ";
+  }
+
+  os << error << "; file is likely corrupt";
+
+  throw gzip_error(os.str());
+}
+
+} // namespace
+
 void
 bgzf_block_decompress(const buffer& src,
                       buffer& dst,
                       const size_t dst_offset,
                       const std::string_view filename)
 {
-  AR_REQUIRE(dst_offset <= dst.size());
+  AR_REQUIRE(dst_offset <= dst.size(), "~cc152a3feeff7a53~");
   if (src.size() < BGZF_EOF.size()) {
-    throw gzip_error("malformed BGZF block; block is too small");
+    throw_bgzf_error(filename, "malformed BGZF block: block is too small");
   }
 
   const auto block_size = bgzf_block_size(src);
   if (block_size == 0) {
-    throw gzip_error("not a BGZF block");
+    throw_bgzf_error(filename, "not a BGZF block");
   } else if (src.size() != block_size) {
-    throw gzip_error("BGZF block has mismatching BSIZE");
+    throw_bgzf_error(filename, "BGZF block has mismatching BSIZE");
   }
 
   const auto isize = src.get_u32(block_size - 4);
   if (isize > BGZF_MAX_BLOCK_SIZE) {
-    throw gzip_error("BGZF block has invalid ISIZE = " + stringify(isize));
+    throw_bgzf_error(filename,
+                     "BGZF block has invalid ISIZE = " + stringify(isize));
   }
 
   dst.resize(isize + dst_offset);
@@ -85,8 +104,9 @@ bgzf_block_decompress(const buffer& src,
   checked_isal_inflate_stateless(state.get(), isize, filename);
 
   if (state->avail_in) {
-    throw gzip_error("BGZF block contains " + stringify(state->avail_in) +
-                     " bytes of trailing garbage");
+    throw_bgzf_error(filename,
+                     "BGZF block contains " + stringify(state->avail_in) +
+                       " bytes of trailing garbage");
   }
 }
 

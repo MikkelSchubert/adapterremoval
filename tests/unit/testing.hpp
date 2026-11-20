@@ -26,6 +26,11 @@
                          exceptionType,                                        \
                          Catch::ExceptionContainsMatcher(message))
 
+#define REQUIRE_THROWS_STARTS_WITH(expr, exceptionType, message)               \
+  REQUIRE_THROWS_MATCHES(expr,                                                 \
+                         exceptionType,                                        \
+                         Catch::ExceptionStartsWithMatcher(message))
+
 namespace Catch {
 
 /** This function needs to be declared before "catch.hpp" is included */
@@ -105,6 +110,26 @@ protected:
   std::string describe() const override { return m_matcher.describe(); }
 
   Catch::StdString::ContainsMatcher m_matcher;
+};
+
+/** Case-sensitive matcher for prefixes in exception messages */
+class ExceptionStartsWithMatcher : public Catch::MatcherBase<std::exception>
+{
+public:
+  ExceptionStartsWithMatcher(const std::string& message)
+    : m_matcher(Catch::StartsWith(message))
+  {
+  }
+
+  bool match(const std::exception& ex) const override
+  {
+    return m_matcher.match(ex.what());
+  }
+
+protected:
+  std::string describe() const override { return m_matcher.describe(); }
+
+  Catch::StdString::StartsWithMatcher m_matcher;
 };
 
 } // namespace Catch
