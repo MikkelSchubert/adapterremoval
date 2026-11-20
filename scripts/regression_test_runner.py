@@ -13,14 +13,18 @@ import math
 import multiprocessing
 import os
 import platform
+import random
 import re
 import shlex
 import shutil
 import signal
+import struct
 import subprocess
 import sys
 import tempfile
+import time
 import traceback
+import zlib
 from collections import deque
 from dataclasses import dataclass
 from io import BufferedWriter
@@ -137,12 +141,12 @@ def read_and_decompress_file(filename: Path) -> str:
 
     header = value[:2]
     if header == b"\x1f\x8b":
-        if not filename.suffix == ".gz":
+        if filename.suffix not in (".gz", ".bgz"):
             raise TestError(f"{filename} is gzipped, but lacks .gz extension")
 
         value = gzip.decompress(value)
-    elif filename.suffix == ".gz":
-        raise TestError(f"{filename} has .gz extension, but is not compressed")
+    elif filename.suffix in (".gz", ".bgz"):
+        raise TestError(f"{filename} has .gz/.bgz extension, but is not compressed")
 
     return value.decode("utf-8")
 
@@ -233,10 +237,37 @@ def pretty_error(prefix: str, message: str):
         prefix = " " * len(prefix)
 
 
-def write_data(path: Path, data: str) -> None:
-    open_ = gzip.open if path.suffix == ".gz" else open
-    with open_(path, "wt", newline="\n") as handle:
-        handle.write(data)
+def write_data(path: Path, data: str, rng: random.Random | None = None) -> None:
+    if path.suffix == ".gz":
+        with gzip.open(path, "wt", newline="\n") as handle:
+            handle.write(data)
+    elif path.suffix == ".bgz":
+        assert rng is not None
+        assert len(data) <= 0xFFFF
+        header = b"\37\213\10\4\0\0\0\0\0\377\6\0\102\103\2\0"
+        bgzf: list[bytes] = []
+
+        k = min(rng.randint(1, 3), max(len(data) - 1, 0))
+        positions = [0, *sorted(rng.sample(range(1, len(data)), k=k)), len(data)]
+        for start, end in zip(iter(positions), iter(positions[1:])):
+            fragment = data[start:end].encode()
+            cmpo = zlib.compressobj(level=4, wbits=-15)
+            deflate = cmpo.compress(fragment)
+            deflate += cmpo.flush()
+            bgzf.append(header)
+            bgzf.append(struct.pack("<H", len(header) + 2 + len(deflate) + 8 - 1))
+            bgzf.append(deflate)
+            bgzf.append(struct.pack("<L", zlib.crc32(fragment) & 0xFFFFFFFF))
+            bgzf.append(struct.pack("<L", len(fragment)))
+
+        # Standard end of file marker (see SAM spec. section 4.1.2)
+        bgzf.append(
+            b"\37\213\10\4\0\0\0\0\0\377\6\0\102\103\2\0\33\0\3\0\0\0\0\0\0\0\0\0"
+        )
+        path.write_bytes(b"".join(bgzf))
+    else:
+        with path.open("wt", newline="\n") as handle:
+            handle.write(data)
 
 
 def quote(path: Path | str) -> str:
@@ -917,15 +948,16 @@ class TestMutator:
         for it in cls._interleave_input(it, masked_stats):
             # Test without/with gzip compression of input files
             yield it
-            yield it._replace(
-                variant=it.variant + ("gz",),
-                arguments=it.arguments,
-                files=cls._compress_files(
-                    files=it.files,
-                    to_compress=_INPUT_FILES_FQ,
-                    masked_stats=masked_stats,
-                ),
-            )
+            for ext in ("gz", "bgz"):
+                yield it._replace(
+                    variant=it.variant + (ext,),
+                    files=cls._compress_files(
+                        files=it.files,
+                        to_compress=_INPUT_FILES_FQ,
+                        masked_stats=masked_stats,
+                        compressed_ext=ext,
+                    ),
+                )
 
     @classmethod
     def _interleave_input(
@@ -1013,6 +1045,7 @@ class TestMutator:
         files: tuple[TestFile, ...],
         to_compress: set[str],
         masked_stats: TestFile | None,
+        compressed_ext: str,
     ) -> tuple[TestFile, ...]:
         if not to_compress:
             return files
@@ -1024,7 +1057,11 @@ class TestMutator:
 
                 # Tests may manually specify gzip output
                 if not it.name.endswith(".gz"):
-                    it = TestTextFile(name=f"{it.name}.gz", kind=it.kind, text=it.text)
+                    it = TestTextFile(
+                        name=f"{it.name}.{compressed_ext}",
+                        kind=it.kind,
+                        text=it.text,
+                    )
             elif it.kind == "json" and masked_stats is not None:
                 it = masked_stats
 
@@ -1057,9 +1094,12 @@ class TestRunner:
         valgrind: str | None,
         keep_all: bool = False,
         timeout: float | None,
+        seed: int,
     ) -> None:
         self._test = test
 
+        # order independent test-specific seed
+        self.seed = f"{seed}|{test.path}|{'.'.join(test.variant)}"
         self.timeout = timeout
         self.keep_all = keep_all
         self.executable = executable
@@ -1126,10 +1166,11 @@ class TestRunner:
     def _setup(self, root: Path, keys: Iterable[str]) -> None:
         root.mkdir(parents=True)
 
+        rng = random.Random(self.seed)
         for it in self._test.get_files(keys):
             # Ignored files are not written in order to make diffing simpler
             if isinstance(it, (TestTextFile, TestJsonFile)):
-                write_data(root / it.name, it.text)
+                write_data(root / it.name, it.text, rng=rng)
 
     def _execute(self) -> tuple[int, str, str]:
         proc = None
@@ -1405,6 +1446,7 @@ def build_test_runners(args: Args, tests: list[TestConfig]) -> list[TestRunner]:
                 valgrind=args.valgrind,
                 keep_all=args.keep_all,
                 timeout=args.timeout,
+                seed=args.seed,
             )
 
             result.append(test)
@@ -1471,6 +1513,7 @@ class Args:
     verbose: bool
     use_colors: str
     timeout: float | None
+    seed: int
 
 
 def parse_args(argv: list[str]) -> Args:
@@ -1572,6 +1615,12 @@ def parse_args(argv: list[str]) -> Args:
         help="Timeout when running tests; defaults to 3 seconds if --vagrind is not "
         "used, otherwise no timeout",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=int(time.time() * 1000),
+        help="Seed value used for input generation (BGZF chunk sizes)",
+    )
 
     return Args(**vars(parser.parse_args(argv)))
 
@@ -1585,7 +1634,7 @@ def main(argv: list[str]) -> int:
     elif args.use_colors == "always":
         _COLORS_ENABLED = True
 
-    print(f"Testing executable {quote(args.executable)}")
+    print(f"Testing executable {quote(args.executable)} (seed = {args.seed})")
     if not args.executable.is_file():
         print_err("ERROR: Executable does not exist")
         return 1

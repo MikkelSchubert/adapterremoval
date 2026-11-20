@@ -11,6 +11,6 @@
     ]
   },
   "stderr": [
-    "<REGEX>\\[ERROR\\] Error reading FASTQ record from '(input_1.fastq|input_1.fastq.gz|/dev/stdin)' at lines 1-2: partial FASTQ record; cut off after sequence"
+    "<REGEX>\\[ERROR\\] Error reading FASTQ record from '.*' at lines 1-2: partial FASTQ record; cut off after sequence"
   ]
 }
