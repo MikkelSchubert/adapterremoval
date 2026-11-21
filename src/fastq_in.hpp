@@ -301,4 +301,28 @@ private:
   size_t m_pending_chunks = 0;
 };
 
+/** Decompresses BGZF chunks, and forwards other chunk-types as-is */
+class parallel_decompressor : public analytical_step
+{
+public:
+  parallel_decompressor(reader_state_ptr state, step_id next_step);
+  ~parallel_decompressor() override;
+
+  /**
+   * Decompresses BGZF chunks, forwarding text chunks as is; once parsing is
+   * done, both BGZF and text chunks are forwarded as is. Unknown chunks are
+   * not permitted.
+   */
+  [[nodiscard]] chunk_vec process(chunk_ptr data) override;
+
+  parallel_decompressor(const parallel_decompressor&) = delete;
+  parallel_decompressor(parallel_decompressor&&) = delete;
+  parallel_decompressor& operator=(const parallel_decompressor&) = delete;
+  parallel_decompressor& operator=(parallel_decompressor&&) = delete;
+
+private:
+  //! State shared between this step and other reader steps
+  const reader_state_ptr m_state;
+};
+
 } // namespace adapterremoval
