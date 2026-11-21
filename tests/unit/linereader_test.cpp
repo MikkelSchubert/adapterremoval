@@ -77,8 +77,9 @@ TEST_CASE("line_reader throws on null")
 TEST_CASE("line_reader throws on missing file")
 {
   // This file hopefully does not exist ...
-  REQUIRE_THROWS_WITH(line_reader("eb8d324f-bae2-4484-894a-883b6abacc6b"),
-                      Catch::Contains("failed to open file:"));
+  REQUIRE_THROWS_WITH(
+    line_reader("eb8d324f-bae2-4484-894a-883b6abacc6b"),
+    Catch::Contains("failed to open 'eb8d324f-bae2-4484-894a-883b6abacc6b':"));
 }
 
 TEST_CASE("line_reader on empty file returns no lines")

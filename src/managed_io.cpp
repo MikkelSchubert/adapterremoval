@@ -184,7 +184,7 @@ private:
       } else if (errno == EMFILE) {
         close_one();
       } else {
-        throw io_error("failed to open file", errno);
+        throw io_error("failed to open " + log_escape(filename), errno);
       }
     }
   }
