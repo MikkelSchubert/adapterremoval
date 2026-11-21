@@ -19,6 +19,7 @@ unit_tests = executable(
     'fastq_enc_test.cpp',
     'fastq_in' / 'block_reader_test.cpp',
     'fastq_in' / 'fastq_in_test.cpp',
+    'fastq_in' / 'serial_decompressor_test.cpp',
     'fastq_test.cpp',
     'joined_linereader_test.cpp',
     'json_test.cpp',

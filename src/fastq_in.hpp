@@ -3,14 +3,20 @@
 #pragma once
 
 #include "buffer.hpp"     // for buffer
+#include "debug.hpp"      // for AR_REQUIRE
 #include "managed_io.hpp" // for managed_reader
 #include "scheduler.hpp"  // for analytical_step, chunk_ptr, chunk_vec
 #include "threading.hpp"  // for reusable_objects
 #include <atomic>         // for atomic_bool
+#include <cstddef>        // for size_t
+#include <cstdint>        // for uint8_t
+#include <deque>          // for deque
 #include <iosfwd>         // for ostream
 #include <memory>         // for unique_ptr, shared_ptr
 #include <string>         // for string
 #include <vector>         // for vector
+
+struct inflate_state;
 
 namespace adapterremoval {
 
@@ -161,6 +167,138 @@ protected:
   std::unique_ptr<managed_reader> m_reader{};
   //! Reversed list of remaining files to read, including the current file
   std::vector<shared_filename> m_filenames{};
+};
+
+/** Decompresses plain Gzip, forwarding BGZF to parallel decompression */
+class serial_decompressor : public analytical_step
+{
+public:
+  serial_decompressor(reader_state_ptr state, step_id next_step);
+  ~serial_decompressor() override;
+
+  /** Emit decompressed chunk; signalling upstream if needed */
+  [[nodiscard]] chunk_vec signal() override;
+
+  /**
+   * Classifies raw (unknown) data chunks and returns up to `m_pending_chunks`
+   * chunks. Chunks may be decompressed (if gzip), forwarded as is (if not
+   * compressed), or forwarded for parallel decompression (if bgzf).
+   */
+  [[nodiscard]] chunk_vec process(chunk_ptr data) override;
+
+  /** Finalizer; checks that all input has been processed. */
+  void finalize() override;
+
+  serial_decompressor(const serial_decompressor&) = delete;
+  serial_decompressor(serial_decompressor&&) = delete;
+  serial_decompressor& operator=(const serial_decompressor&) = delete;
+  serial_decompressor& operator=(serial_decompressor&&) = delete;
+
+private:
+  /** Emits up to `m_pending_chunks` reader chunks */
+  chunk_vec emit();
+
+  /** Attempts to identify the next chunk type, returning true if successful */
+  bool identify_next_chunk();
+
+  /** Returns the next chunk, or nullptr if not enough data */
+  reader_chunk_ptr next_chunk();
+  /** Returns chunk of uncompressed data, or nullptr if not enough data */
+  reader_chunk_ptr next_text_chunk();
+  /** Returns chunk of decompressed gzip data, or nullptr if not enough data */
+  reader_chunk_ptr next_gzip_chunk();
+  /** Returns a BGZF block in a chunk, or nullptr if not enough data */
+  reader_chunk_ptr next_bgzf_chunk();
+
+  /**
+   * Copies a BGZF block into `m_chunk`, returning true if `m_chunk` contains a
+   * complete chunk or if EOF was reached in the process. Error handling is left
+   * to the BGZF decompression step in the case of EOF.
+   */
+  bool build_bgzf_block();
+
+  /** Warns if a run of BGZF blocks is not terminated by an EOF block */
+  void bgzf_require_eof_block(shared_filename filename);
+  /** Warns that a BGZF block BSIZE is smaller than BGZF_EOF */
+  void bgzf_warning_small_bsize(shared_filename filename, size_t bsize);
+  /** Warns that a BGZF block has an ISIZE larger than BGZF_MAX_BLOCK_SIZE */
+  void bgzf_warning_large_isize(shared_filename filename, size_t isize);
+
+  //! State shared between this step and other reader steps
+  const reader_state_ptr m_state;
+
+  /** Specifies the type of data currently being read */
+  enum class data_type
+  {
+    //! Data type is unknown and must be identified to proceed
+    unknown,
+    //! Data is not Gzip/BGZF and is therefore presumed to be text
+    text,
+    //! Data is a Gzip stream, but does not follow the BGZF specification
+    gzip,
+    //! Data is a BGZF compressed block
+    bgzf,
+    //! Either a gzip stream or a BGZF block has been read; may either be
+    //! followed by another gzip stream/BGZF block, or garbage (anything else)
+    after_gzip,
+    //! Trailing garbage after gzip files
+    garbage,
+  };
+
+  //! Type of data currently being processed
+  data_type m_data_type = data_type::unknown;
+  //! Size of the current BGZF block, if m_data_type == data_type::bgzf;
+  size_t m_bgzf_bsize = 0;
+  //! End of decompressed data in m_chunk, if m_data_type == data_type::gzip;
+  size_t m_gzip_offset = 0;
+  //! The current BGZF/uncompressed chunk being built, if any
+  buffer m_chunk{};
+  //! Reusable buffer for gathering BGZF/gzip headers
+  buffer m_header{};
+
+  //! Size of the last BGZF block, used to check for EOF block in BGZF streams
+  size_t m_last_bgzf_isize = 0;
+  //! Indicates filename for which the last missing EOF marker was logged
+  shared_filename m_bgzf_warned_for_eof{};
+  //! Indicates filename for which the BSIZE related warning was logged
+  shared_filename m_bgzf_warned_for_bsize{};
+  //! Indicates filename for which the ISIZE related warning was logged
+  shared_filename m_bgzf_warned_for_isize{};
+
+  /** Wrapper class that tracks consumption of a `reader_chunk` */
+  struct cached_chunk
+  {
+    cached_chunk(reader_chunk_ptr&& chunk_)
+      : chunk(std::move(chunk_))
+    {
+      AR_REQUIRE(chunk);
+    }
+
+    /** Returns pointer to remaining data */
+    [[nodiscard]] const uint8_t* avail_data() const
+    {
+      return chunk->data.data() + offset;
+    }
+
+    /** Returns length of remaining data */
+    [[nodiscard]] size_t avail() const { return chunk->data.size() - offset; }
+
+    /** Acts as if the original reader_chunk_ptr was dereferenced */
+    const reader_chunk* operator->() const { return chunk.get(); }
+
+    //! The underlying chunk
+    reader_chunk_ptr chunk;
+    //! Offset into the chunk's data, if it has already been partially processed
+    size_t offset = 0;
+  };
+
+  //! Unprocessed (possibly compressed) chunks
+  std::deque<cached_chunk> m_cache{};
+  // Inflater used for plain gzip files/chunks
+  std::unique_ptr<inflate_state> m_gzip_stream{};
+
+  //! The number of chunks requested via `signal()` but not yet returned
+  size_t m_pending_chunks = 0;
 };
 
 } // namespace adapterremoval
