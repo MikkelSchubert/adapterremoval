@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Mikkel Schubert <mikkelsch@gmail.com>
-#include "fastq_in.hpp"   // declarations
-#include "bgzf.hpp"       // for BGZF_HEADER, BGZF_MAX_BLOCK_SIZE, ...
-#include "buffer.hpp"     // for buffer
-#include "debug.hpp"      // for AR_FAIL, AR_REQUIRE
-#include "deflate.hpp"    // for checked_isal_inflate, inflate_state
-#include "errors.hpp"     // for fastq_error, gzip_error
-#include "logging.hpp"    // for info, warn
-#include "managed_io.hpp" // for managed_reader
-#include "scheduler.hpp"  // for analytical_chunk, analytical_step, ...
-#include "strutils.hpp"   // for log_escape
-#include "utilities.hpp"  // for dynamic_cast_unique
-#include <algorithm>      // for min
-#include <cstddef>        // for size_t
-#include <cstdint>        // for uint8_t
-#include <deque>          // for deque
-#include <isa-l.h>        // for inflate_state
-#include <memory>         // for make_shared, make_unique
+#include "fastq_in.hpp"      // declarations
+#include "bgzf.hpp"          // for BGZF_HEADER, BGZF_MAX_BLOCK_SIZE, ...
+#include "buffer.hpp"        // for buffer
+#include "buffer_reader.hpp" // for buffer_reader
+#include "debug.hpp"         // for AR_FAIL, AR_REQUIRE
+#include "deflate.hpp"       // for checked_isal_inflate, inflate_state
+#include "errors.hpp"        // for fastq_error, gzip_error
+#include "fastq.hpp"         // for fastq
+#include "logging.hpp"       // for info, warn
+#include "managed_io.hpp"    // for managed_reader
+#include "scheduler.hpp"     // for analytical_chunk, analytical_step, ...
+#include "strutils.hpp"      // for log_escape
+#include "utilities.hpp"     // for dynamic_cast_unique
+#include <algorithm>         // for min, reverse, swap
+#include <cstddef>           // for size_t
+#include <cstdint>           // for uint8_t
+#include <deque>             // for deque
+#include <isa-l.h>           // for inflate_state
+#include <memory>            // for make_shared, make_unique
+#include <sstream>           // for ostringstream
 
 namespace adapterremoval {
 
@@ -610,6 +613,275 @@ parallel_decompressor::process(chunk_ptr data)
   chunk_vec chunks;
   chunks.emplace_back(std::move(chunk));
   return chunks;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// fastq_parser
+
+fastq_parser::fastq_parser(std::vector<std::string> filenames,
+                           fastq_input_type type,
+                           uint64_t head,
+                           reader_state_ptr state,
+                           step_id next_step)
+  : analytical_step(processing_order::ordered, "fastq_parser", next_step)
+  , m_state(std::move(state))
+  , m_type(type)
+  , m_reader(std::move(filenames))
+  , m_chunk_mate(type == fastq_input_type::mate_2 ? 1 : 0)
+  , m_head(head)
+{
+  AR_REQUIRE(m_state, "~5a42dfdc29f8abdb~");
+
+  m_reader.set_release_function(
+    [this](buffer&& buf) mutable { m_state->buffers.release(std::move(buf)); });
+}
+
+fastq_parser::~fastq_parser() = default;
+
+chunk_vec
+fastq_parser::signal()
+{
+  chunk_vec chunks;
+  if (m_state->is_parsing()) {
+    m_pending_chunks++;
+
+    chunks = emit();
+  } else {
+    chunks.emplace_back(scheduler_signal::suspend);
+  }
+
+  return chunks;
+}
+
+chunk_vec
+fastq_parser::process(chunk_ptr data)
+{
+  auto chunk = dynamic_cast_unique<reader_chunk>(data);
+  AR_REQUIRE(chunk, "~8ed559b0c3086856~");
+
+  // BGZF chunks that have not been decompressed may arrive after parsing ended
+  if (!m_state->is_parsing()) {
+    return {};
+  }
+
+  AR_REQUIRE(chunk->data.capacity() && chunk->filename);
+  AR_REQUIRE(chunk->data_type == reader_chunk::type::text,
+             "~a12ddd10369e1b5c~");
+  m_reader.add(std::move(chunk->data), chunk->end_of_file);
+
+  return emit();
+}
+
+void
+fastq_parser::finalize()
+{
+  AR_REQUIRE(m_reader.eof() || m_state->is_parsing_at_head(),
+             "~1939d44ea0df7a34~");
+  // Release any pending buffers to `reusable_objects`
+  m_reader.close();
+}
+
+chunk_vec
+fastq_parser::emit()
+{
+  chunk_vec chunks;
+  while (m_pending_chunks && m_state->is_parsing()) {
+    if (auto output = parse_chunk()) {
+      chunks.emplace_back(std::move(output));
+      m_pending_chunks--;
+    } else if (chunks.empty()) {
+      chunks.emplace_back(signal_target());
+      break;
+    } else {
+      break;
+    }
+  }
+
+  return chunks;
+}
+
+chunk_ptr
+fastq_parser::parse_chunk()
+{
+  const auto to_parse = std::min<uint64_t>(m_head, m_state->fastqs.capacity());
+  fastq_parser::result end;
+  try {
+    if (m_type == fastq_input_type::interleaved) {
+      end = read_interleaved(to_parse);
+    } else {
+      end = read_single_end(to_parse);
+    }
+  } catch (const fastq_error& error) {
+    std::ostringstream stream;
+    stream << "Error reading FASTQ record from "
+           << m_reader.names(m_position, m_reader.position()) << ": "
+           << error.what();
+
+    throw fastq_error(stream.str());
+  }
+
+  std::unique_ptr<fastq_parser_chunk> chunk;
+  if (end != buffer_reader::result::partial) {
+    AR_REQUIRE(m_chunk_offset == to_parse || end == buffer_reader::result::eof);
+    // Check done here to avoid adding "Error reading..." prefix
+    if (m_type == fastq_input_type::interleaved && m_chunk_mate == 1) {
+      throw fastq_error("Found uneven number of interleaved reads; input files "
+                        "may be truncated. Please fix before continuing.");
+    }
+
+    chunk = std::make_unique<fastq_parser_chunk>();
+    chunk->type = m_type;
+
+    // The move must always be done, so acquired buffers can be released later
+    chunk->reads_1 = std::move(m_chunks.at(0));
+    chunk->reads_2 = std::move(m_chunks.at(1));
+
+    m_head -= m_chunk_offset;
+    m_chunk_offset = 0;
+
+    if (end == buffer_reader::result::eof) {
+      m_state->mark_parsing(reader_state::parsing::reached_eof);
+      chunk->eof = true;
+    } else if (m_head == 0) {
+      m_state->mark_parsing(reader_state::parsing::reached_head);
+      chunk->eof = true;
+    }
+  }
+
+  return chunk;
+}
+
+fastq_parser::result
+fastq_parser::read_single_end(const uint64_t to_parse)
+{
+  auto& dst = m_chunks.at(m_chunk_mate);
+  if (dst.empty()) {
+    dst = m_state->fastqs.acquire(to_parse);
+  }
+
+  auto end = fastq_parser::result::complete;
+  while (m_chunk_offset < to_parse) {
+    end = parse_fastq(dst.at(m_chunk_offset));
+
+    if (end == buffer_reader::result::complete) {
+      m_position = m_reader.position();
+      m_chunk_offset++;
+    } else {
+      break;
+    }
+  }
+
+  if (end != buffer_reader::result::partial) {
+    dst.resize(std::min(dst.size(), m_chunk_offset));
+  }
+
+  return end;
+}
+
+fastq_parser::result
+fastq_parser::read_interleaved(const uint64_t to_parse)
+{
+  if (m_chunks.front().empty()) {
+    m_chunks.at(0) = m_state->fastqs.acquire(to_parse);
+    m_chunks.at(1) = m_state->fastqs.acquire(to_parse);
+  }
+
+  AR_REQUIRE(m_chunk_mate <= 1);
+  auto end = fastq_parser::result::complete;
+  while (m_chunk_offset < to_parse) {
+    end = parse_fastq(m_chunks.at(m_chunk_mate).at(m_chunk_offset));
+
+    if (end == buffer_reader::result::complete) {
+      m_position = m_reader.position();
+      m_chunk_offset += m_chunk_mate; // inc after reading mate 2
+      m_chunk_mate ^= 1;
+    } else {
+      break;
+    }
+  }
+
+  if (end != buffer_reader::result::partial) {
+    m_chunks.at(0).resize(std::min(m_chunks.at(0).size(), m_chunk_offset));
+    m_chunks.at(1).resize(std::min(m_chunks.at(1).size(), m_chunk_offset));
+  }
+
+  return end;
+}
+
+buffer_reader::result
+fastq_parser::parse_fastq(fastq& dst)
+{
+  while (true) {
+    switch (m_chunk_parse) {
+      case fastq_parse::header: {
+        const auto result = m_reader.getline(dst.m_header);
+        if (result == buffer_reader::result::complete) {
+          if (dst.m_header.empty()) {
+            continue; // skip empty lines between records
+          } else if (dst.m_header.size() < 2 || dst.m_header.at(0) != '@') {
+            throw fastq_error("Malformed or empty FASTQ header");
+          }
+
+          m_chunk_parse = fastq_parse::sequence;
+          break;
+        } else {
+          return result;
+        }
+      }
+      case fastq_parse::sequence: {
+        switch (const auto result = m_reader.getline(dst.m_sequence)) {
+          case buffer_reader::result::complete:
+            if (dst.m_sequence.empty()) {
+              throw fastq_error("sequence is empty");
+            }
+
+            m_chunk_parse = fastq_parse::separator;
+            break;
+          case buffer_reader::result::eof:
+            throw fastq_error("partial FASTQ record; cut off after header");
+          case buffer_reader::result::partial:
+          default:
+            return result;
+        }
+        break;
+      }
+      case fastq_parse::separator: {
+        switch (const auto result = m_reader.getline(m_separator)) {
+          case buffer_reader::result::complete:
+            if (m_separator.empty() || m_separator.front() != '+') {
+              throw fastq_error("FASTQ record lacks separator character (+)");
+            }
+
+            m_chunk_parse = fastq_parse::qualities;
+            break;
+          case buffer_reader::result::eof:
+            throw fastq_error("partial FASTQ record; cut off after sequence");
+          case buffer_reader::result::partial:
+          default:
+            return result;
+        }
+        break;
+      }
+      case fastq_parse::qualities: {
+        switch (const auto result = m_reader.getline(dst.m_qualities)) {
+          case buffer_reader::result::complete:
+            if (dst.m_qualities.length() != dst.m_sequence.length()) {
+              throw fastq_error("sequence/quality lengths do not match");
+            }
+
+            m_chunk_parse = fastq_parse::header;
+            return buffer_reader::result::complete;
+          case buffer_reader::result::eof:
+            throw fastq_error("partial FASTQ record; cut off after separator");
+          case buffer_reader::result::partial:
+          default:
+            return result;
+        }
+      }
+      default:                                // GCOVR_EXCL_LINE
+        AR_FAIL("invalid fastq_parse value"); // GCOVR_EXCL_LINE
+    }
+  }
 }
 
 } // namespace adapterremoval

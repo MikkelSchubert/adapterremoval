@@ -237,6 +237,8 @@ private:
 
   //! Needs access to merge sequence/qualities to in-place
   friend class sequence_merger;
+  //! Needs access to build FASTQ objects incrementally
+  friend class fastq_parser;
 };
 
 using fastq_pair = std::pair<fastq, fastq>;
