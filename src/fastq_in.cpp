@@ -427,6 +427,7 @@ serial_decompressor::next_bgzf_chunk()
   AR_REQUIRE(m_bgzf_bsize >= BGZF_EOF.size());
   AR_REQUIRE(!m_cache.empty());
   if (m_chunk.capacity() == 0) {
+    // acquire empty buffer with at least the default capacity
     m_chunk = m_state->buffers.acquire(0);
   }
 
@@ -559,6 +560,56 @@ serial_decompressor::bgzf_warning_large_isize(shared_filename filename,
                 << " found in " << log_escape(*filename)
                 << "; will attempt to decompress as plain gzip";
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// parallel_decompressor
+
+parallel_decompressor::parallel_decompressor(reader_state_ptr state,
+                                             step_id next_step)
+  : analytical_step(processing_order::unordered,
+                    "parallel_decompressor",
+                    next_step)
+  , m_state(std::move(state))
+{
+  AR_REQUIRE(m_state, "~c4b40d0026ce83ec~");
+  AR_REQUIRE(m_state->buffers.capacity() >= BGZF_MAX_BLOCK_SIZE,
+             "~27c490c08fca8088~");
+}
+
+parallel_decompressor::~parallel_decompressor() = default;
+
+chunk_vec
+parallel_decompressor::process(chunk_ptr data)
+{
+  auto chunk = dynamic_cast_unique<reader_chunk>(data);
+  AR_REQUIRE(chunk, "~8a5ad2119fe9e996~");
+
+  AR_REQUIRE(chunk->data_type != reader_chunk::type::unknown,
+             "~aa2642c2b9c3b1d6~");
+  if (m_state->is_parsing() && chunk->data_type == reader_chunk::type::bgzf) {
+    AR_REQUIRE(chunk->filename, "~245a6e94975b7266~");
+    AR_REQUIRE(chunk->data.size() >= BGZF_EOF.size(), "~410943f18b07dde0~");
+
+    buffer buf = m_state->buffers.acquire();
+    try {
+      bgzf_block_decompress(chunk->data, buf, 0, *chunk->filename);
+    } catch (...) {
+      m_state->buffers.release(std::move(buf));
+      throw;
+    }
+
+    std::swap(chunk->data, buf);
+    m_state->buffers.release(std::move(buf));
+    chunk->data_type = reader_chunk::type::text;
+  }
+
+  // Chunks must always be forwarded, since unordered steps must produce one
+  // output per input, or produce no output at all. Otherwise downstream steps
+  // may wait for the missing chunk, if a later chunk had already arrived.
+  chunk_vec chunks;
+  chunks.emplace_back(std::move(chunk));
+  return chunks;
 }
 
 } // namespace adapterremoval
