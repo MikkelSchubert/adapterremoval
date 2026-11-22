@@ -27,7 +27,7 @@ namespace adapterremoval {
 demultiplex_reads::demultiplex_reads(const userconfig& config,
                                      const post_demux_steps& steps,
                                      demux_stats_ptr stats,
-                                     reusable_fastqs fastqs)
+                                     const reusable_fastqs& fastqs)
   : analytical_step(processing_order::ordered,
                     "demultiplex_reads",
                     step_id::UNDEFINED)
@@ -39,7 +39,7 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
   , m_config(config)
   , m_steps(steps)
   , m_cache(steps)
-  , m_fastqs(std::move(fastqs))
+  , m_fastqs(fastqs)
   , m_statistics(std::move(stats))
 {
   auto samples = m_samples.get_reader();
@@ -61,8 +61,8 @@ demultiplex_reads::demultiplex_reads(const userconfig& config,
 demultiplex_se_reads::demultiplex_se_reads(const userconfig& config,
                                            const post_demux_steps& steps,
                                            demux_stats_ptr stats,
-                                           reusable_fastqs fastqs)
-  : demultiplex_reads(config, steps, std::move(stats), std::move(fastqs))
+                                           const reusable_fastqs& fastqs)
+  : demultiplex_reads(config, steps, std::move(stats), fastqs)
 {
 }
 
@@ -111,8 +111,8 @@ demultiplex_se_reads::process(chunk_ptr data)
 demultiplex_pe_reads::demultiplex_pe_reads(const userconfig& config,
                                            const post_demux_steps& steps,
                                            demux_stats_ptr stats,
-                                           reusable_fastqs fastqs)
-  : demultiplex_reads(config, steps, std::move(stats), std::move(fastqs))
+                                           const reusable_fastqs& fastqs)
+  : demultiplex_reads(config, steps, std::move(stats), fastqs)
 {
 }
 

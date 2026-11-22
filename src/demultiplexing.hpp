@@ -36,7 +36,7 @@ public:
   demultiplex_reads(const userconfig& config,
                     const post_demux_steps& steps,
                     demux_stats_ptr stats,
-                    reusable_fastqs fastqs);
+                    const reusable_fastqs& fastqs);
 
 protected:
   //! Set of samples to be demultiplexed
@@ -68,7 +68,7 @@ public:
   demultiplex_se_reads(const userconfig& config,
                        const post_demux_steps& steps,
                        demux_stats_ptr stats,
-                       reusable_fastqs fastqs);
+                       const reusable_fastqs& fastqs);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with
@@ -86,7 +86,7 @@ public:
   demultiplex_pe_reads(const userconfig& config,
                        const post_demux_steps& steps,
                        demux_stats_ptr stats,
-                       reusable_fastqs fastqs);
+                       const reusable_fastqs& fastqs);
 
   /**
    * Processes a read chunk, and forwards chunks to downstream steps, with

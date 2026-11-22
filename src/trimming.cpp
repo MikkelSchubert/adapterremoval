@@ -253,7 +253,7 @@ is_acceptable_read(const userconfig& config,
 
 reads_processor::reads_processor(const userconfig& config,
                                  const sample_output_files& output,
-                                 reusable_fastqs fastqs,
+                                 const reusable_fastqs& fastqs,
                                  const size_t nth,
                                  trim_stats_ptr sink)
   : analytical_step(processing_order::unordered,
@@ -262,7 +262,7 @@ reads_processor::reads_processor(const userconfig& config,
   , m_config(config)
   , m_output(output)
   , m_sample(nth)
-  , m_fastqs(std::move(fastqs))
+  , m_fastqs(fastqs)
   , m_stats_sink(std::move(sink))
 {
   AR_REQUIRE(m_stats_sink);
@@ -281,10 +281,10 @@ reads_processor::finalize()
 
 se_reads_processor::se_reads_processor(const userconfig& config,
                                        const sample_output_files& output,
-                                       reusable_fastqs fastqs,
+                                       const reusable_fastqs& fastqs,
                                        const size_t nth,
                                        trim_stats_ptr sink)
-  : reads_processor(config, output, std::move(fastqs), nth, sink)
+  : reads_processor(config, output, fastqs, nth, sink)
 {
 }
 
@@ -423,10 +423,10 @@ add_pe_statistics(const trimming_statistics& stats,
 
 pe_reads_processor::pe_reads_processor(const userconfig& config,
                                        const sample_output_files& output,
-                                       reusable_fastqs fastqs,
+                                       const reusable_fastqs& fastqs,
                                        const size_t nth,
                                        trim_stats_ptr sink)
-  : reads_processor(config, output, std::move(fastqs), nth, sink)
+  : reads_processor(config, output, fastqs, nth, sink)
 {
 }
 

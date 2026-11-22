@@ -48,7 +48,7 @@ public:
   enum class file_type;
 
   read_fastq(const userconfig& config,
-             reusable_fastqs fastqs,
+             const reusable_fastqs& fastqs,
              step_id next_step,
              file_type mode);
   ~read_fastq() override = default;
@@ -56,7 +56,7 @@ public:
   /** Adds read_fastq step(s) to the scheduler depending on current input */
   static void add_steps(scheduler& sch,
                         const userconfig& config,
-                        reusable_fastqs fastqs,
+                        const reusable_fastqs& fastqs,
                         step_id next_step);
 
   /** Read mate 1 or interleaved reads from a file */
