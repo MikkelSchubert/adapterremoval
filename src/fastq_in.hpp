@@ -42,7 +42,8 @@ constexpr size_t MAX_OUTSTANDING_CHUNKS = 32;
 struct reader_state
 {
   /** Create shared state for mate 1, 2, or interleaved reads */
-  reader_state(reusable_buffers buffers_, reusable_fastqs fastqs_);
+  reader_state(const reusable_buffers& buffers_,
+               const reusable_fastqs& fastqs_);
 
   /** Default destructor defined out of line */
   ~reader_state();
@@ -95,7 +96,7 @@ class reader_chunk : public analytical_chunk
 {
 public:
   /** Creates reader chunk that automatically releases the associated buffer */
-  explicit reader_chunk(reusable_buffers buffers_);
+  explicit reader_chunk(const reusable_buffers& buffers_);
 
   /** Releases the buffer, if it has capacity */
   ~reader_chunk() override;

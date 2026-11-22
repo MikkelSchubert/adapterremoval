@@ -34,11 +34,11 @@ constexpr size_t MAX_ADAPTER_LENGTH = 42;
 class reads_sink : public analytical_step
 {
 public:
-  reads_sink(reusable_fastqs fastqs)
+  reads_sink(const reusable_fastqs& fastqs)
     : analytical_step(processing_order::unordered,
                       "reads_sink",
                       step_id::UNDEFINED)
-    , m_fastqs(std::move(fastqs))
+    , m_fastqs(fastqs)
   {
   }
 
@@ -61,14 +61,14 @@ class adapter_identification : public analytical_step
 {
 public:
   explicit adapter_identification(const userconfig& config,
-                                  reusable_fastqs fastqs,
+                                  const reusable_fastqs& fastqs,
                                   statistics& stats,
                                   const size_t max_adapter_length)
     : analytical_step(processing_order::unordered,
                       "adapter_identification",
                       step_id::UNDEFINED)
     , m_config(config)
-    , m_fastqs(std::move(fastqs))
+    , m_fastqs(fastqs)
     , m_sink_id(stats.adapter_id)
   {
     AR_REQUIRE(!stats.trimming.empty());

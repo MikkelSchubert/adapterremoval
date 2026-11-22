@@ -110,12 +110,12 @@ select_filenames(const userconfig& config, const read_fastq::file_type mode)
 } // namespace
 
 read_fastq::read_fastq(const userconfig& config,
-                       reusable_fastqs fastqs,
+                       const reusable_fastqs& fastqs,
                        const step_id next_step,
                        const read_fastq::file_type mode)
   : analytical_step(processing_order::ordered, "read_fastq", next_step)
   , m_reader(select_filenames(config, mode))
-  , m_fastqs(std::move(fastqs))
+  , m_fastqs(fastqs)
   , m_mode(mode)
   , m_head(config.head)
 {
@@ -124,7 +124,7 @@ read_fastq::read_fastq(const userconfig& config,
 void
 read_fastq::add_steps(scheduler& sch,
                       const userconfig& config,
-                      reusable_fastqs fastqs,
+                      const reusable_fastqs& fastqs,
                       step_id next_step)
 {
   const auto add_step = [&](auto next, auto type) {

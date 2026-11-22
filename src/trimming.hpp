@@ -21,7 +21,7 @@ class reads_processor : public analytical_step
 public:
   reads_processor(const userconfig& config,
                   const sample_output_files& output,
-                  reusable_fastqs fastqs,
+                  const reusable_fastqs& fastqs,
                   size_t nth,
                   trim_stats_ptr sink);
 
@@ -42,7 +42,7 @@ class se_reads_processor : public reads_processor
 public:
   se_reads_processor(const userconfig& config,
                      const sample_output_files& output,
-                     reusable_fastqs fastqs,
+                     const reusable_fastqs& fastqs,
                      size_t nth,
                      trim_stats_ptr sink);
 
@@ -54,7 +54,7 @@ class pe_reads_processor : public reads_processor
 public:
   pe_reads_processor(const userconfig& config,
                      const sample_output_files& output,
-                     reusable_fastqs fastqs,
+                     const reusable_fastqs& fastqs,
                      size_t nth,
                      trim_stats_ptr sink);
 

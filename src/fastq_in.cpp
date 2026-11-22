@@ -27,9 +27,10 @@ namespace adapterremoval {
 ////////////////////////////////////////////////////////////////////////////////
 // reader_state
 
-reader_state::reader_state(reusable_buffers buffers_, reusable_fastqs fastqs_)
-  : buffers(std::move(buffers_))
-  , fastqs(std::move(fastqs_))
+reader_state::reader_state(const reusable_buffers& buffers_,
+                           const reusable_fastqs& fastqs_)
+  : buffers(buffers_)
+  , fastqs(fastqs_)
 {
 }
 
@@ -47,8 +48,8 @@ reader_state::mark_parsing(parsing value)
 ////////////////////////////////////////////////////////////////////////////////
 // reader_chunk
 
-reader_chunk::reader_chunk(reusable_buffers buffers_)
-  : buffers(std::move(buffers_))
+reader_chunk::reader_chunk(const reusable_buffers& buffers_)
+  : buffers(buffers_)
 {
 }
 

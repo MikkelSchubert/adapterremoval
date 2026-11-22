@@ -286,21 +286,36 @@ TEST_CASE("threadsafe_data are smart pointers from const")
   }
 }
 
-TEST_CASE("threadsafe_data moves are checked")
+TEST_CASE("threadsafe_data readers are snapshots")
+{
+  threadsafe_data<std::string> data{ "original" };
+
+  auto reader_1 = data.get_reader();
+  REQUIRE(*reader_1 == "original");
+
+  *data.get_writer() = "modified";
+
+  REQUIRE(*reader_1 == "original");
+
+  auto reader_2 = data.get_reader();
+  REQUIRE(*reader_2 == "modified");
+}
+
+TEST_CASE("threadsafe_data moves are copies")
 {
   threadsafe_data<std::string> data_1{ "example" };
   const threadsafe_data<std::string> data_2{ std::move(data_1) };
   // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
   threadsafe_data<std::string> data_3{ data_1 };
 
-  REQUIRE_THROWS_AS(data_1.get_reader(), assert_failed);
-  REQUIRE_THROWS_AS(data_1.get_writer(), assert_failed);
+  REQUIRE(*data_1.get_reader() == "example");
+  REQUIRE_NOTHROW(data_1.get_writer()->push_back('!'));
 
-  REQUIRE_THROWS_AS(data_3.get_reader(), assert_failed);
-  REQUIRE_THROWS_AS(data_3.get_writer(), assert_failed);
+  REQUIRE(*data_2.get_reader() == "example!");
+
+  REQUIRE_NOTHROW(data_1.get_writer()->push_back('?'));
+  REQUIRE(*data_3.get_reader() == "example!?");
   // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
-
-  REQUIRE(*data_2.get_reader() == "example");
 }
 
 TEST_CASE("threadsafe_data readers are shared")
@@ -414,35 +429,19 @@ TEST_CASE("threadsafe_data writers are exclusive #3")
   REQUIRE(*data_2.get_reader() == "example!?");
 }
 
-TEST_CASE("readers can be moved")
+TEST_CASE("readers can be copied")
 {
   const threadsafe_data<std::string> data{ "example" };
   auto reader_1 = data.get_reader();
+  const decltype(reader_1) reader_2{ reader_1 };
+  auto reader_3 = reader_2;
 
-  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
-  const decltype(reader_1) reader_2{ std::move(reader_1) };
-  REQUIRE_THROWS_AS(*reader_1, assert_failed);
-  REQUIRE_THROWS_AS(reader_1->size(), assert_failed);
-  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
-
+  REQUIRE(*reader_1 == "example");
+  REQUIRE(reader_1->size() == 7);
   REQUIRE(*reader_2 == "example");
   REQUIRE(reader_2->size() == 7);
-}
-
-TEST_CASE("writers can be moved")
-{
-  threadsafe_data<std::string> data{ "example" };
-
-  auto writer_1 = data.get_writer();
-
-  // NOLINTBEGIN(bugprone-use-after-move,hicpp-invalid-access-moved)
-  decltype(writer_1) writer_2{ std::move(writer_1) };
-  REQUIRE_THROWS_AS(*writer_1, assert_failed);
-  REQUIRE_THROWS_AS(writer_1->size(), assert_failed);
-  // NOLINTEND(bugprone-use-after-move,hicpp-invalid-access-moved)
-
-  REQUIRE(*writer_2 == "example");
-  REQUIRE(writer_2->size() == 7);
+  REQUIRE(*reader_3 == "example");
+  REQUIRE(reader_3->size() == 7);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

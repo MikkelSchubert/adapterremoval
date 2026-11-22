@@ -2,14 +2,13 @@
 // SPDX-FileCopyrightText: 2015 Mikkel Schubert <mikkelsch@gmail.com>
 #pragma once
 
-#include "debug.hpp"    // for AR_REQUIRE, AR_FAIL
-#include <algorithm>    // for copy, max, copy_backward
-#include <memory>       // for shared_ptr
-#include <mutex>        // for unique_lock
-#include <shared_mutex> // for shared_lock, shared_mutex
-#include <string>       // for string
-#include <type_traits>  // for decay_t, enable_if_t
-#include <vector>       // for vector
+#include "debug.hpp"   // for AR_REQUIRE, AR_FAIL
+#include <algorithm>   // for copy, max, copy_backward
+#include <memory>      // for shared_ptr
+#include <mutex>       // for unique_lock, mutex
+#include <string>      // for string
+#include <type_traits> // for decay_t, enable_if_t
+#include <vector>      // for vector
 
 namespace adapterremoval {
 
@@ -100,30 +99,38 @@ private:
 
 /**
  * This class encapsulates data that must be updated in a threaded context; the
- * `reader` class provides shared read-only access, while the `writer` class
- * provides exclusive read/write access.
+ * `reader` class provides shared read-only access via snapshots, while the
+ * `writer` class provides exclusive read/write access.
  *
- * Any mutable (member) variables used by the wrapped data class must either be
- * atomic or guarded by their own mutexes.
+ * Any `mutable` (member) variables used by the wrapped data class must either
+ * be atomic or guarded by their own mutexes. Since writes work by creating a
+ * working copy of the inner data, copies should either be cheap or writes
+ * should be rare.
+ *
+ * A single thread may hold multiple readers, but it is undefined behavior for a
+ * thread to attempt to get a reader or a writer while already holding a writer.
  */
 template<typename T>
 class threadsafe_data
 {
+  using data_ptr = std::shared_ptr<T>;
+
   struct inner
   {
     template<class... Args>
     explicit inner(Args&&... args)
       : mutex()
-      , data(std::forward<Args>(args)...)
+      , data(std::make_shared<T>(std::forward<Args>(args)...))
     {
     }
 
     //! Mutable mutex to allow const access to the data
-    mutable std::shared_mutex mutex;
-    T data;
+    mutable std::mutex mutex;
+    //! Pointer to the actual data; may be swapped out by writers
+    data_ptr data;
   };
 
-  using data_ptr = std::shared_ptr<inner>;
+  using inner_ptr = std::shared_ptr<inner>;
 
 public:
   /** The `reader` class provides non-exclusive read access to the inner data */
@@ -131,46 +138,32 @@ public:
   class reader
   {
   public:
-    /** Default move constructor */
-    reader(reader&& ptr) = default;
-    /** Default move assignment operator */
-    reader& operator=(reader&& ptr) = default;
     /** Default destructor */
     ~reader() = default;
 
     /** Returns (shared) reference to the inner data */
-    const U& operator*() const
-    {
-      AR_REQUIRE(m_inner);
-      return m_inner->data;
-    }
+    const U& operator*() const { return *m_data; }
 
     /** Returns (shared) pointer to the inner data */
-    const U* operator->() const
-    {
-      AR_REQUIRE(m_inner);
-      return &m_inner->data;
-    }
+    const U* operator->() const { return m_data.get(); }
 
-    /** Copies are disallowed to prevent the creation of additional locks */
-    reader(const reader& ptr) = delete;
-    /** Copies are disallowed to prevent the creation of additional locks */
-    reader& operator=(const reader& ptr) = delete;
+    /** Copies are allowed, but refer to the snapshot data */
+    reader(const reader& ptr) = default;
+    /** Copies are allowed, but refer to the snapshot data */
+    reader& operator=(const reader& ptr) = default;
 
   private:
     friend class threadsafe_data;
 
-    /** Locks the mutex in ptr non-exclusively; ptr MUST be non-NULL  */
-    explicit reader(data_ptr ptr)
-      : m_inner(std::move(ptr))
-      , m_lock(m_inner->mutex)
+    /** Saves pointer to inner data; MUST be non-NULL  */
+    explicit reader(const inner_ptr& ptr)
     {
+      std::unique_lock<std::mutex> lock{ ptr->mutex };
+      m_data = ptr->data;
     }
 
-    //! Pointer to the inner data
-    data_ptr m_inner;
-    //! Non-exclusive lock of the mutex protecting the data
-    std::shared_lock<std::shared_mutex> m_lock;
+    //! Pointer to the data
+    data_ptr m_data{};
   };
 
   /** The `writer` class provides exclusive write access to the inner data */
@@ -178,46 +171,42 @@ public:
   class writer
   {
   public:
-    /** Default move constructor */
-    writer(writer&& ptr) = default;
-    /** Default move assignment operator */
-    writer& operator=(writer&& ptr) = default;
-    /** Default destructor */
-    ~writer() = default;
+    /** Replaces the inner data with the updated copy */
+    ~writer() { m_inner->data = std::move(m_data); }
 
     /** Returns exclusive reference to the inner data */
-    U& operator*()
-    {
-      AR_REQUIRE(m_inner);
-      return m_inner->data;
-    }
+    U& operator*() { return *m_data; }
 
     /** Returns exclusive pointer to the inner data */
-    U* operator->()
-    {
-      AR_REQUIRE(m_inner);
-      return &m_inner->data;
-    }
+    U* operator->() { return m_data.get(); }
 
     /** Copies are disallowed to prevent deadlocks */
     writer(const writer& ptr) = delete;
     /** Copies are disallowed to prevent deadlocks */
     writer& operator=(const writer& ptr) = delete;
+    /** Moves are disallowed to prevent creation of nullptr objects */
+    writer(writer&& ptr) = delete;
+    /** Moves are disallowed to prevent creation of nullptr objects */
+    writer& operator=(writer&& ptr) = delete;
 
   private:
     friend class threadsafe_data;
 
     /** Locks the mutex in ptr exclusively; ptr MUST be non-NULL  */
-    explicit writer(data_ptr ptr)
+    explicit writer(inner_ptr ptr)
       : m_inner(std::move(ptr))
       , m_lock(m_inner->mutex)
     {
+      // MUST be created after locking m_inner to avoid races
+      m_data = std::make_shared<T>(*m_inner->data);
     }
 
     //! Pointer to the inner data; shared to prevent dangling pointers
-    data_ptr m_inner;
+    inner_ptr m_inner;
+    //! Work copy of the actual data
+    data_ptr m_data{};
     //! Exclusive lock of the mutex protecting the data
-    std::unique_lock<std::shared_mutex> m_lock;
+    std::unique_lock<std::mutex> m_lock;
   };
 
   /** Create default initialized thread-safe shared data */
@@ -238,26 +227,30 @@ public:
   {
   }
 
-  /** Move and copy construction behaves like a shared_ptr */
+  /** Copy construction behaves like a shared_ptr */
   threadsafe_data(const threadsafe_data&) = default;
-  /** Move and copy construction behaves like a shared_ptr */
-  threadsafe_data& operator=(threadsafe_data&&) = default;
-  /** Move and copy construction behaves like a shared_ptr */
-  threadsafe_data(threadsafe_data&&) = default;
-  /** Move and copy construction behaves like a shared_ptr */
+  /** Copy assignment behaves like a shared_ptr */
   threadsafe_data& operator=(const threadsafe_data&) = default;
 
   /** Default destructor */
   ~threadsafe_data() = default;
 
-  /** Returns a smart pointer that provides shared (read) access */
+  /**
+   * Returns a smart pointer that provides read access to a snapshot of the
+   * data. This reader therefore does not reflect changes made via the
+   * `threadsafe_data` while it is held.
+   */
   [[nodiscard]] reader<T> get_reader() const
   {
     AR_REQUIRE(m_inner);
     return reader<T>{ m_inner };
   }
 
-  /** Returns a smart pointer that provides exclusive (write) access */
+  /**
+   * Returns a smart pointer that provides exclusive (write) access. Changes
+   * made via this writer are only reflected in readers created after this
+   * writer is released. Note that this creates a copy of the inner data.
+   */
   [[nodiscard]] writer<T> get_writer()
   {
     AR_REQUIRE(m_inner);
@@ -288,6 +281,8 @@ finalize_reusable_objects(const std::string& description,
 template<typename T>
 class reusable_objects
 {
+  struct reusable_state;
+
 public:
   /**
    * Create object cache with the given description used for logging. `capacity`
@@ -296,7 +291,7 @@ public:
    */
   reusable_objects(std::string description, size_t capacity)
     : m_capacity(capacity)
-    , m_state(std::move(description))
+    , m_state(std::make_shared<reusable_state>(std::move(description)))
   {
     AR_REQUIRE(capacity > 0);
   }
@@ -312,14 +307,14 @@ public:
     T value;
 
     {
-      auto writer = m_state.get_writer();
+      std::unique_lock lock{ m_state->mutex };
 
-      writer->n_acquired++;
-      if (writer->objects.empty()) {
-        writer->n_allocated++;
+      m_state->n_acquired++;
+      if (m_state->objects.empty()) {
+        m_state->n_allocated++;
       } else {
-        value = std::move(writer->objects.back());
-        writer->objects.pop_back();
+        value = std::move(m_state->objects.back());
+        m_state->objects.pop_back();
       }
     }
 
@@ -344,10 +339,10 @@ public:
     if (value.capacity()) {
       AR_REQUIRE(value.capacity() >= m_capacity);
 
-      auto writer = m_state.get_writer();
+      std::unique_lock lock{ m_state->mutex };
       // catch objects created elsewhere being released
-      AR_REQUIRE(writer->objects.size() < writer->n_allocated);
-      writer->objects.emplace_back(std::move(value));
+      AR_REQUIRE(m_state->objects.size() < m_state->n_allocated);
+      m_state->objects.emplace_back(std::move(value));
     }
   }
 
@@ -357,15 +352,20 @@ public:
    */
   void finalize() const
   {
-    auto reader = m_state.get_reader();
-    finalize_reusable_objects(reader->description,
-                              reader->n_allocated,
-                              reader->objects.size(),
-                              reader->n_acquired);
+    std::unique_lock lock{ m_state->mutex };
+    finalize_reusable_objects(m_state->description,
+                              m_state->n_allocated,
+                              m_state->objects.size(),
+                              m_state->n_acquired);
   }
 
   /** Returns the default capacity for objects returned by this cache */
   [[nodiscard]] size_t capacity() const noexcept { return m_capacity; }
+
+  /** Copy construction behaves like a shared_ptr */
+  reusable_objects(const reusable_objects& ptr) = default;
+  /** Copy assignment behaves like a shared_ptr */
+  reusable_objects& operator=(const reusable_objects& ptr) = default;
 
 private:
   /** Internal state of the reusable object cache */
@@ -376,6 +376,8 @@ private:
     {
     }
 
+    //! Mutex protecting non-const fields
+    std::mutex mutex{};
     //! Description of this cache
     std::string description;
 
@@ -391,8 +393,8 @@ private:
   //! Default capacity for the reusable objects
   size_t m_capacity;
 
-  //! Thread-safe wrapper around internal state; only member allowed to change
-  threadsafe_data<reusable_state> m_state;
+  //! Pointer to inner state
+  std::shared_ptr<reusable_state> m_state;
 };
 
 } // namespace adapterremoval
