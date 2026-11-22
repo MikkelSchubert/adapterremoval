@@ -5,6 +5,7 @@
 #include "commontypes.hpp"      // for adapter_selection
 #include "debug.hpp"            // for AR_REQUIRE
 #include "demultiplexing.hpp"   // for demultiplex_pe_reads, demultiplex_se_r...
+#include "fastq_in.hpp"         // for add_input_steps
 #include "fastq_io.hpp"         // for gzip_split_fastq, post_process_fastq
 #include "main.hpp"             // declarations
 #include "output.hpp"           // for outpuT_file, DEV_NULL
@@ -33,6 +34,7 @@ remove_adapter_sequences(const userconfig& config)
                        .demultiplexing(output.samples().size())
                        .initialize();
 
+  reusable_buffers buffers{ "buffer", INPUT_BLOCK_SIZE };
   reusable_fastqs fastqs{ "std::vector<fastq>", INPUT_READS };
 
   post_demux_steps steps;
@@ -109,7 +111,11 @@ remove_adapter_sequences(const userconfig& config)
   step = sch.add<scan_fastq>(config, step, stats);
 
   // Step 1: Read input file(s)
-  read_fastq::add_steps(sch, config, fastqs, step);
+  if (config.new_input_pipeline) {
+    add_input_steps(sch, config, buffers, fastqs, step);
+  } else {
+    read_fastq::add_steps(sch, config, fastqs, step);
+  }
 
   if (!sch.run(config.max_threads) ||
       !write_json_report(config, stats, output.settings_json) ||
@@ -118,6 +124,7 @@ remove_adapter_sequences(const userconfig& config)
   }
 
   // Validate that reusable objects were not leaked
+  buffers.finalize();
   fastqs.finalize();
 
   return 0;

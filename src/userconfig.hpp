@@ -87,6 +87,8 @@ public:
   bool interleaved_input = false;
   //! Set to true if --interleaved or --interleaved-output is set.
   bool interleaved_output = false;
+  //! Set to true if the new input pipeline is enabled
+  bool new_input_pipeline = true;
 
   //! Maximum of reads/read pairs to process
   uint64_t head = 0;

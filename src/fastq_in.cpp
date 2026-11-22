@@ -13,6 +13,7 @@
 #include "managed_io.hpp"    // for managed_reader
 #include "scheduler.hpp"     // for analytical_chunk, analytical_step, ...
 #include "strutils.hpp"      // for log_escape
+#include "userconfig.hpp"    // for userconfig
 #include "utilities.hpp"     // for dynamic_cast_unique
 #include <algorithm>         // for min, reverse, swap
 #include <cstddef>           // for size_t
@@ -1032,6 +1033,59 @@ fastq_source::finalize()
   AR_REQUIRE(!m_state_2 || !m_state_2->is_parsing(), "~197fbe47828be02b~");
   AR_REQUIRE(m_cache.empty(), "~20fc12a3b1803c8c~");
   AR_REQUIRE(m_eof_emitted, "~2341150d380155b0~");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void
+add_input_steps(scheduler& sch,
+                const userconfig& config,
+                const reusable_buffers& buffers,
+                const reusable_fastqs& fastqs,
+                step_id next_step)
+{
+  const auto& files_1 = config.input_files_1;
+  const auto& files_2 = config.input_files_2;
+  const bool two_inputs = config.paired_ended_mode && !config.interleaved_input;
+
+  reader_state_ptr state_1 = std::make_shared<reader_state>(buffers, fastqs);
+  reader_state_ptr state_2 = two_inputs
+                               ? std::make_shared<reader_state>(buffers, fastqs)
+                               : reader_state_ptr{};
+
+  next_step = sch.add<fastq_source>(state_1, state_2, next_step);
+  sch.set_source_step(next_step);
+
+  const auto file_1_type = config.interleaved_input
+                             ? fastq_input_type::interleaved
+                             : fastq_input_type::mate_1;
+  step_id parse_step = sch.add<fastq_parser>(files_1,
+                                             file_1_type,
+                                             config.head,
+                                             state_1,
+                                             next_step);
+
+  auto bgzf_step = sch.add<parallel_decompressor>(state_1, parse_step);
+  auto gzip_step = sch.add<serial_decompressor>(state_1, bgzf_step);
+  auto read_step = sch.add<block_reader>(files_1, state_1, gzip_step);
+  sch.set_signal_target(parse_step, gzip_step);
+  sch.set_signal_target(gzip_step, read_step);
+  sch.set_signal_target(next_step, parse_step, read_mate::_1);
+
+  if (two_inputs) {
+    parse_step = sch.add<fastq_parser>(files_2,
+                                       fastq_input_type::mate_2,
+                                       config.head,
+                                       state_2,
+                                       next_step);
+
+    bgzf_step = sch.add<parallel_decompressor>(state_2, parse_step);
+    gzip_step = sch.add<serial_decompressor>(state_2, bgzf_step);
+    read_step = sch.add<block_reader>(files_2, state_2, gzip_step);
+    sch.set_signal_target(parse_step, gzip_step);
+    sch.set_signal_target(gzip_step, read_step);
+    sch.set_signal_target(next_step, parse_step, read_mate::_2);
+  }
 }
 
 } // namespace adapterremoval
