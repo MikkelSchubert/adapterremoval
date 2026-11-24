@@ -123,4 +123,41 @@ private:
   bool m_eof = false;
 };
 
+/** Helper class for reading strings from memory that only borrows the input */
+class borrowed_vec_reader : public line_reader_base
+{
+public:
+  using iterator = std::vector<std::string>::const_iterator;
+
+  /** Constructs a reader from a set of lines without newlines */
+  explicit borrowed_vec_reader(iterator start, iterator end)
+    : m_it(start)
+    , m_start(start)
+    , m_end(end)
+  {
+  }
+
+  /** Reads a line into dst, returning false on EOF. */
+  bool getline(std::string& dst) override
+  {
+    if (m_it == m_end) {
+      return false;
+    }
+
+    dst = *m_it++;
+    return true;
+  }
+
+  /** Resets position in the reader */
+  void reset() { m_it = m_start; }
+
+private:
+  //! Current position in m_lines
+  iterator m_it;
+  //! Starting position in input
+  iterator m_start;
+  //! End of input
+  iterator m_end;
+};
+
 } // namespace adapterremoval

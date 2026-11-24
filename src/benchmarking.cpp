@@ -1,23 +1,27 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 Mikkel Schubert <mikkelsch@gmail.com>
-#include "benchmarking.hpp" // for benchmark_toggles, benchmarker
-#include "debug.hpp"        // for AR_REQUIRE
-#include "logging.hpp"      // for log
-#include "mathutils.hpp"    // for arithmetic_mean, standard_deviation
-#include "strutils.hpp"     // for to_lower, stringify
-#include <algorithm>        // for find, accumulate
-#include <array>            // for array
-#include <cmath>            // for round
-#include <cstddef>          // for size_t
-#include <cstdint>          // for uint64_t
-#include <iomanip>          // for fixed, setprecision
-#include <iostream>         // for cout
-#include <numeric>          // for accumulate
-#include <sstream>          // for ostringstream
-#include <string>           // for string
-#include <string_view>      // for string_view
-#include <utility>          // for move
-#include <vector>           // for vector
+#include "benchmarking.hpp"      // for benchmarker, benchmarker_input, ...
+#include "buffer.hpp"            // for buffer
+#include "debug.hpp"             // for AR_REQUIRE
+#include "fastq_in.hpp"          // for INPUT_BLOCK_SIZE
+#include "linereader_joined.hpp" // for joined_line_readers
+#include "logging.hpp"           // for cerr, error
+#include "mathutils.hpp"         // for arithmetic_mean, standard_deviation
+#include "strutils.hpp"          // for format_fraction, format_thousand_sep, ..
+#include <algorithm>             // for find, min, minmax_element, sort, ...
+#include <array>                 // for array
+#include <chrono>                // for steady_clock, time_point
+#include <cmath>                 // for round
+#include <cstddef>               // for size_t
+#include <cstdint>               // for uint64_t
+#include <iomanip>               // for setw
+#include <iostream>              // for cout, endl
+#include <limits>                // for numeric_limits
+#include <numeric>               // for accumulate
+#include <sstream>               // for ostringstream
+#include <string>                // for string
+#include <utility>               // for move
+#include <vector>                // for vector
 
 namespace adapterremoval {
 
@@ -36,87 +40,207 @@ constexpr uint64_t BENCHMARK_CUTOFF_TIME_NS = 10'000;
 //! Number of NS between terminal updates
 constexpr uint64_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
 
+using clock = std::chrono::steady_clock;
+using time_point = std::chrono::time_point<clock>;
+
 } // namespace
 
-benchmark_toggles::benchmark_toggles(std::vector<std::string> keys)
-  : m_toggles(std::move(keys))
-  , m_enabled(m_toggles.size(), false)
+////////////////////////////////////////////////////////////////////////////////
+// benchmarker_input
+
+benchmarker_input::benchmarker_input(
+  std::vector<std::string> filenames,
+  const fastq_encoding& encoding,
+  const uint64_t head,
+  const benchmarker_input_types::type required)
+  : m_head(head)
+  , m_filenames(std::move(filenames))
 {
+  AR_REQUIRE(head != std::numeric_limits<uint64_t>::max());
+  AR_REQUIRE(!(required & ~benchmarker_input_types::mask));
+
+  if (required) {
+    m_lines = read_lines();
+    m_lines_loaded = true;
+    m_head = std::min(m_head, (m_lines.size() + 3) / 4);
+  }
+
+  if (required & benchmarker_input_types::buffers) {
+    m_buffers = make_buffers();
+    m_buffers_loaded = true;
+  }
+
+  if (required & (benchmarker_input_types::unsafe_fastq |
+                  benchmarker_input_types::validated_fastq)) {
+    m_unsafe_fastqs = make_fastqs();
+    m_unsafe_fastq_loaded = true;
+  }
+
+  if ((required & benchmarker_input_types::lines) == 0) {
+    // lines are no longer needed beyond this point
+    m_lines_loaded = false;
+    m_lines = {};
+  }
+
+  if (required & benchmarker_input_types::validated_fastq) {
+    // are unsafe FASTQs needed beyond this point?
+    m_unsafe_fastq_loaded = required & benchmarker_input_types::unsafe_fastq;
+    m_validated_fastqs = validate_fastqs(encoding, !m_unsafe_fastq_loaded);
+    m_validated_fastq_loaded = true;
+  }
 }
 
-bool
-benchmark_toggles::update_toggles(const std::vector<std::string>& keys)
-{
-  bool any_errors = false;
-  m_defaults = keys.empty();
-  for (const auto& key : keys) {
-    const auto it =
-      std::find(m_toggles.begin(), m_toggles.end(), to_lower(key));
+benchmarker_input::~benchmarker_input() = default;
 
-    if (it == m_toggles.end()) {
-      log::error() << "Unknown benchmarking toggle '" << key << "'";
-      any_errors = true;
-    } else {
-      m_enabled.at(it - m_toggles.begin()) = true;
+const std::vector<std::string>&
+benchmarker_input::filenames() const
+{
+  return m_filenames;
+}
+
+const std::vector<std::string>&
+benchmarker_input::lines() const
+{
+  AR_REQUIRE(m_lines_loaded);
+  return m_lines;
+}
+
+const std::vector<buffer>&
+benchmarker_input::buffers() const
+{
+  AR_REQUIRE(m_buffers_loaded);
+  return m_buffers;
+}
+
+const std::vector<fastq>&
+benchmarker_input::unsafe_fastqs() const
+{
+  AR_REQUIRE(m_unsafe_fastq_loaded);
+  return m_unsafe_fastqs;
+}
+
+const std::vector<fastq>&
+benchmarker_input::validated_fastqs() const
+{
+  AR_REQUIRE(m_validated_fastq_loaded);
+  return m_validated_fastqs;
+}
+
+std::vector<std::string>
+benchmarker_input::read_lines()
+{
+  std::vector<std::string> lines;
+  if (!m_filenames.empty()) {
+    joined_line_readers reader(m_filenames);
+
+    // vector and strings are reused to match actual usage via `read_fastq`
+    while (lines.size() < m_head * 4) {
+      lines.emplace_back();
+      if (!reader.getline(lines.back())) {
+        lines.pop_back();
+        break;
+      }
     }
   }
 
-  if (any_errors) {
-    auto msg = log::error();
-    msg << "Valid toggles are " << join_text(m_toggles, ", ", ", and ");
+  return lines;
+}
+
+std::vector<buffer>
+benchmarker_input::make_buffers()
+{
+  std::vector<buffer> buffers;
+  if (m_lines.empty()) {
+    return buffers;
   }
 
-  return !any_errors;
+  buffer buf;
+  buf.reserve(INPUT_BLOCK_SIZE);
+
+  for (const auto& line : m_lines) {
+    const char* start = line.data();
+    const char* end = start + line.size();
+
+    while (start < end) {
+      const size_t to_copy =
+        std::min<size_t>(INPUT_BLOCK_SIZE - buf.size(), end - start);
+
+      buf.append(start, to_copy);
+      if (buf.size() == INPUT_BLOCK_SIZE) {
+        buffers.emplace_back(std::move(buf));
+        buf.reserve(INPUT_BLOCK_SIZE);
+      }
+
+      start += to_copy;
+    }
+
+    buf.append_u8('\n');
+    if (buf.size() == INPUT_BLOCK_SIZE) {
+      buffers.emplace_back(std::move(buf));
+      buf.reserve(INPUT_BLOCK_SIZE);
+    }
+  }
+
+  if (buf.size()) {
+    buffers.emplace_back(std::move(buf));
+  }
+
+  return buffers;
 }
 
-bool
-benchmark_toggles::is_set(std::string_view key) const
+std::vector<fastq>
+benchmarker_input::make_fastqs()
 {
-  const auto it = std::find(m_toggles.begin(), m_toggles.end(), to_lower(key));
+  std::vector<fastq> fastqs;
 
-  AR_REQUIRE(it != m_toggles.end());
-  return m_enabled.at(it - m_toggles.begin());
+  if (!m_lines.empty()) {
+    fastqs.reserve((m_lines.size() / 4) + 1);
+    borrowed_vec_reader reader{ m_lines.begin(), m_lines.end() };
+    while (fastqs.size() < (m_lines.size() / 4)) {
+      fastqs.emplace_back();
+      if (!fastqs.back().read_unsafe(reader)) {
+        fastqs.pop_back();
+        break;
+      }
+    }
+  }
+
+  return fastqs;
 }
 
-benchmarker::benchmarker(std::string desc, std::vector<std::string> toggles)
+std::vector<fastq>
+benchmarker_input::validate_fastqs(const fastq_encoding& encoding,
+                                   const bool consume)
+{
+  std::vector<fastq> result;
+  if (consume) {
+    result = std::move(m_unsafe_fastqs);
+  } else {
+    result = m_unsafe_fastqs;
+  }
+
+  for (auto& it : result) {
+    it.post_process(encoding);
+  }
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// benchmarker
+
+benchmarker::benchmarker(std::string desc,
+                         std::vector<std::string> toggles,
+                         benchmarker_input_types::type input)
   : m_description(std::move(desc))
   , m_toggles(std::move(toggles))
+  , m_input(input)
 {
 }
 
 void
-benchmarker::run_if_toggled(const benchmark_toggles& toggles)
-{
-  const auto s = enabled(toggles);
-  if (s != strategy::skip) {
-    run(s);
-  }
-}
-
-/** Called before `setup` to perform any per batch setup */
-void
-benchmarker::setup()
-{
-}
-
-strategy
-benchmarker::enabled(const benchmark_toggles& toggles) const
-{
-  if (toggles.defaults()) {
-    return strategy::benchmark;
-  }
-
-  for (const auto& toggle : m_toggles) {
-    if (toggles.is_set(toggle)) {
-      return strategy::benchmark;
-    }
-  }
-
-  return m_required ? strategy::passthrough : strategy::skip;
-}
-
-void
-benchmarker::run(const strategy s)
+benchmarker::run(const benchmarker_input& input_1,
+                 const benchmarker_input& input_2)
 {
   static bool header = false;
   if (!header) {
@@ -126,17 +250,12 @@ benchmarker::run(const strategy s)
     header = true;
   }
 
-  if (s != strategy::passthrough) {
-    log::cerr() << "\r\033[K" << std::setw(22) << m_description << " burn-in";
+  for (size_t i = 1; i <= BENCHMARK_BURN_IN; ++i) {
+    log::cerr().transient() << "\r\033[K" << std::setw(22) << m_description
+                            << " burn-in: " << i << " of " << BENCHMARK_BURN_IN;
 
-    for (size_t i = 1; i <= BENCHMARK_BURN_IN; ++i) {
-      setup();
-      execute();
-
-      log::cerr() << ".";
-    }
-  } else {
-    log::cerr() << "\r\033[K" << std::setw(22) << m_description << " (setup)";
+    setup(input_1, input_2);
+    execute(input_1, input_2);
   }
 
   size_t loops = 0;
@@ -146,9 +265,9 @@ benchmarker::run(const strategy s)
       std::accumulate(m_durations.begin(), m_durations.end(), uint64_t());
 
     do {
-      setup();
+      setup(input_1, input_2);
       const auto start = clock::now();
-      execute();
+      execute(input_1, input_2);
       const auto duration = (clock::now() - start).count();
 
       loops++;
@@ -160,19 +279,37 @@ benchmarker::run(const strategy s)
         log::cerr() << "\r\033[K" << summarize(loops);
         since_update %= BENCHMARK_UPDATE_INTERVAL;
       }
-    } while (s == strategy::benchmark &&
-             m_durations.size() < BENCHMARK_MAX_LOOPS &&
+    } while (m_durations.size() < BENCHMARK_MAX_LOOPS &&
              (m_durations.size() < BENCHMARK_MIN_LOOPS ||
               (elapsed < BENCHMARK_MIN_TIME_NS &&
                elapsed >= m_durations.size() * BENCHMARK_CUTOFF_TIME_NS)));
-  } while (s == strategy::benchmark && (loops < 2 * m_durations.size()) &&
-           grubbs_test_prune(m_durations));
+  } while ((loops < 2 * m_durations.size()) && grubbs_test_prune(m_durations));
 
   log::cerr() << "\r\033[K";
+  std::cout << summarize(loops) << std::endl;
+}
 
-  if (s != strategy::passthrough) {
-    std::cout << summarize(loops) << std::endl;
+bool
+benchmarker::enabled(const std::vector<std::string>& toggles) const
+{
+  // Run everything by default
+  if (toggles.empty()) {
+    return true;
   }
+
+  for (const auto& toggle : m_toggles) {
+    if (std::find(toggles.begin(), toggles.end(), toggle) != toggles.end()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void
+benchmarker::setup(const benchmarker_input& /* input_1 */,
+                   const benchmarker_input& /* input_2 */)
+{
 }
 
 std::string
@@ -214,6 +351,53 @@ benchmarker::summarize(size_t loops) const
   }
 
   return ss.str();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+std::vector<std::string>
+collect_toggles(const std::vector<std::unique_ptr<benchmarker>>& benchmarks)
+{
+  std::vector<std::string> toggles;
+  for (const auto& benchmark : benchmarks) {
+    const auto& values = benchmark->toggles();
+
+    toggles.insert(toggles.end(), values.begin(), values.end());
+  }
+
+  std::sort(toggles.begin(), toggles.end());
+  auto last = std::unique(toggles.begin(), toggles.end());
+  toggles.erase(last, toggles.end());
+
+  return toggles;
+}
+
+} // namespace
+
+bool
+validate_toggles(const std::vector<std::unique_ptr<benchmarker>>& benchmarks,
+                 const std::vector<std::string>& candidates)
+{
+  bool any_errors = false;
+
+  const auto toggles = collect_toggles(benchmarks);
+  for (const auto& toggle : candidates) {
+    const auto it = std::find(toggles.begin(), toggles.end(), toggle);
+
+    if (it == toggles.end()) {
+      log::error() << "Unknown benchmarking toggle " << log_escape(toggle);
+      any_errors = true;
+    }
+  }
+
+  if (any_errors) {
+    auto msg = log::error();
+    msg << "Valid toggles are " << join_text(toggles, ", ", ", and ");
+  }
+
+  return !any_errors;
 }
 
 } // namespace adapterremoval

@@ -673,7 +673,8 @@ userconfig::userconfig()
     .hidden()
 #endif
     .bind_vec(&benchmarks)
-    .with_min_values(0);
+    .with_min_values(0)
+    .with_preprocessor([](std::string& s) { s = to_lower(s); });
 
   //////////////////////////////////////////////////////////////////////////////
   argparser.add_header("INPUT FILES:");
