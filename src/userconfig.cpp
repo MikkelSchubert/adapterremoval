@@ -1633,6 +1633,16 @@ userconfig::parse_args(const string_vec& argvec)
   head = std::numeric_limits<uint64_t>::max();
   if (!parse_counts(argparser, "--head", head)) {
     return argparse::parse_result::error;
+  } else if (run_type == ar_command::benchmark) {
+    // Limit benchmarking to a reasonable data-set size by default
+    if (head == std::numeric_limits<uint64_t>::max()) {
+      log::warn() << "Defaulting to using at most 1,000,000 reads/read pairs "
+                     "for benchmarking";
+      head = 1'000'000;
+    } else if (head == 0) {
+      log::error() << "Cannot perform benchmarking with `--head 0`";
+      return argparse::parse_result::error;
+    }
   }
 
   // TODO: Remove

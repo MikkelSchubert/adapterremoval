@@ -160,6 +160,10 @@ log_preamble();
 void
 set_level(level l);
 
+/** Returns the current log level */
+level
+get_level();
+
 /** Enable/disable colors while logging (off by default) */
 void
 set_colors(bool enabled);

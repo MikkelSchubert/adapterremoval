@@ -205,6 +205,14 @@ set_level(level l)
   g_log_level = l;
 }
 
+level
+get_level()
+{
+  const std::unique_lock lock{ g_log_mutex };
+
+  return g_log_level;
+}
+
 void
 set_colors(bool enabled)
 {

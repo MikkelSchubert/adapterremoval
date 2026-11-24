@@ -8,9 +8,11 @@
 #include "fastq.hpp"         // for fastq
 #include "fastq_enc.hpp"     // fastq_encoding
 #include "fastq_in.hpp"      // for INPUT_BLOCK_SIZE, reusable_buffers, ...
-#include "linereader.hpp"
+#include "fastq_io.hpp"      // for INPUT_READS
+#include "linereader.hpp"    // for borrowed_vec_reader
 #include "logging.hpp"       // for error, info, warn
 #include "main.hpp"          // declarations
+#include "scheduler.hpp"     // for analytical_step, chunk_ptr, ..
 #include "sequence_sets.hpp" // for adapter_set
 #include "simd.hpp"          // for name, supported, instruction_set, ...
 #include "statistics.hpp"    // for fastq_statistics
@@ -18,24 +20,74 @@
 #include "userconfig.hpp"    // for userconfig
 #include "utilities.hpp"     // for blackbox
 #include <algorithm>         // for find
+#include <atomic>            // for atomic_uint64_t
 #include <cstddef>           // for size_t
 #include <cstdint>           // for uint64_t
 #include <limits>            // for numeric_limits
 #include <memory>            // for make_unique, unique_ptr
+#include <sstream>           // for ostringstream
 #include <string>            // for string
 #include <string_view>       // for string_view
+#include <tuple>             // for ignore
 #include <utility>           // for move
+#include <variant>           // for get_if
 #include <vector>            // for vector
 
 namespace adapterremoval {
 
 namespace {
 
-class readlines_benchmarker : public benchmarker
+std::string
+with_thread_count(std::string_view label, size_t threads)
+{
+  std::ostringstream os;
+  os << label << " (" << threads << " thread" << (threads == 1 ? ")" : "s)");
+
+  return os.str();
+}
+
+/** Temporarily turn off unimportant log messages, for testing analytical steps
+ * and other components that may write log messages */
+class mask_log_messages
+{
+public:
+  /** Set log level to that specified */
+  explicit mask_log_messages(log::level level = log::level::error)
+    : m_level(log::get_level())
+  {
+    log::set_level(std::max(m_level, level));
+  }
+
+  /** Restore previous log level */
+  ~mask_log_messages() { log::set_level(m_level); }
+
+private:
+  log::level m_level;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+/** Benchmarker for deprecated benchmarks */
+class deprecated_benchmarker : public benchmarker
+{
+public:
+  using benchmarker::benchmarker;
+
+  [[nodiscard]] bool enabled(const string_vec& toggles) const override
+  {
+    return !toggles.empty() && benchmarker::enabled(toggles);
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class readlines_benchmarker : public deprecated_benchmarker
 {
 public:
   readlines_benchmarker()
-    : benchmarker("line reading", { "read" }, benchmarker_input_types::nothing)
+    : deprecated_benchmarker("line reading",
+                             { "read:old" },
+                             benchmarker_input_types::nothing)
   {
   }
 
@@ -90,9 +142,7 @@ class buffer_reader_benchmarker : public benchmarker
 {
 public:
   buffer_reader_benchmarker()
-    : benchmarker("buffer reader",
-                  { "readbuf" },
-                  benchmarker_input_types::buffers)
+    : benchmarker("buffer reader", { "read" }, benchmarker_input_types::buffers)
     , m_buffers("buffers", INPUT_BLOCK_SIZE)
   {
   }
@@ -153,13 +203,14 @@ private:
   std::vector<buffer> m_working_buffers_2{};
 };
 
-/** Benchmarking of FASTQ parsing excluding file IO */
-class fastq_parser_benchmarker : public benchmarker
+/** Benchmarking of initial FASTQ parsing excluding file IO */
+class fastq_reader_benchmarker : public deprecated_benchmarker
 {
 public:
-  fastq_parser_benchmarker(fastq_encoding encoding)
-    : benchmarker("FASTQ parsing", { "parse" }, benchmarker_input_types::lines)
-    , m_encoding(std::move(encoding))
+  fastq_reader_benchmarker()
+    : deprecated_benchmarker("FASTQ parsing (old)",
+                             { "parse:old" },
+                             benchmarker_input_types::lines)
   {
   }
 
@@ -188,12 +239,12 @@ protected:
   {
     // FASTQ records are reused to match actual usage via `read_fastq`
     for (auto& record : m_records_1) {
-      AR_REQUIRE(record.read(*m_reader_1, m_encoding));
+      AR_REQUIRE(record.read_unsafe(*m_reader_1));
     }
 
     // FASTQ records are reused to match actual usage via `read_fastq`
     for (auto& record : m_records_2) {
-      AR_REQUIRE(record.read(*m_reader_2, m_encoding));
+      AR_REQUIRE(record.read_unsafe(*m_reader_2));
     }
 
     blackbox(m_records_1);
@@ -203,11 +254,267 @@ protected:
   }
 
 private:
-  const fastq_encoding m_encoding;
   std::unique_ptr<borrowed_vec_reader> m_reader_1{};
   std::unique_ptr<borrowed_vec_reader> m_reader_2{};
   std::vector<fastq> m_records_1{};
   std::vector<fastq> m_records_2{};
+};
+
+/** Benchmarking of FASTQ parsing excluding file IO */
+class fastq_parser_benchmarker : public benchmarker
+{
+public:
+  fastq_parser_benchmarker()
+    : benchmarker("FASTQ parser", { "parse" }, benchmarker_input_types::buffers)
+    , m_buffers("buffers", INPUT_BLOCK_SIZE)
+    , m_fastqs("fastqs", INPUT_READS)
+  {
+  }
+
+protected:
+  void setup(const benchmarker_input& input_1,
+             const benchmarker_input& input_2) override
+  {
+    copy_buffers(input_1.buffers(), m_working_buffers_1);
+    copy_buffers(input_2.buffers(), m_working_buffers_2);
+  }
+
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
+  {
+    size_t nreads = 0;
+    nreads += parse_fastq(m_working_buffers_1, fastq_input_type::mate_1);
+    nreads += parse_fastq(m_working_buffers_2, fastq_input_type::mate_2);
+
+    AR_REQUIRE(nreads == input_1.head() + input_2.head());
+    return nreads;
+  }
+
+private:
+  uint64_t parse_fastq(std::vector<buffer>& src, fastq_input_type type)
+  {
+    if (src.empty()) {
+      return 0;
+    }
+
+    auto state = std::make_shared<reader_state>(m_buffers, m_fastqs);
+
+    fastq_parser parser{ std::vector<std::string>{ "dummy filename" },
+                         type,
+                         std::numeric_limits<uint64_t>::max(),
+                         state,
+                         step_id::UNDEFINED };
+
+    // initial request so that `process` may return chunks
+    std::ignore = parser.signal();
+
+    uint64_t nreads = 0;
+    auto filename = std::make_shared<std::string>("dummy filename");
+    for (auto&& buf : src) {
+      auto chunk = std::make_unique<reader_chunk>(m_buffers);
+      chunk->filename = filename;
+      chunk->data_type = reader_chunk::type::text;
+      chunk->data = std::move(buf);
+      chunk->end_of_file = (&buf == &src.back());
+
+      bool signalled = false;
+      auto chunks = parser.process(std::move(chunk));
+      while (!chunks.empty() && !signalled) {
+        for (auto& out_chunk : chunks) {
+          if (auto* ptr = std::get_if<chunk_ptr>(&out_chunk)) {
+            auto output = dynamic_cast_unique<fastq_chunk>(*ptr);
+            AR_REQUIRE(output);
+            nreads += output->reads();
+            m_fastqs.release(std::move(output->reads_1));
+            m_fastqs.release(std::move(output->reads_2));
+          } else {
+            signalled = true;
+          }
+        }
+
+        chunks = parser.signal();
+      }
+    }
+
+    return nreads;
+  }
+
+  /** Creates disposable copy of the input buffers */
+  void copy_buffers(const std::vector<buffer>& src, std::vector<buffer>& dst)
+  {
+    dst.clear();
+    dst.reserve(src.size());
+    for (const auto& buf : src) {
+      buffer copy = m_buffers.acquire(0);
+      copy.append(buf);
+
+      dst.emplace_back(std::move(copy));
+    }
+  }
+
+  //! Copy of buffers in m_buffers_1, to be consumed during benchmarking
+  std::vector<buffer> m_working_buffers_1{};
+  //! Copy of buffers in m_buffers_2, to be consumed during benchmarking
+  std::vector<buffer> m_working_buffers_2{};
+
+  reusable_buffers m_buffers;
+  reusable_fastqs m_fastqs;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// fastq_post_process_benchmarker
+
+/** Class for benchmarking post-processing of FASTQ reads */
+class fastq_post_process_benchmarker : public benchmarker
+{
+public:
+  fastq_post_process_benchmarker(fastq_encoding encoding)
+    : benchmarker("FASTQ post-process",
+                  { "postproc" },
+                  benchmarker_input_types::unsafe_fastq)
+    , m_encoding(std::move(encoding))
+  {
+  }
+
+protected:
+  void setup(const benchmarker_input& input_1,
+             const benchmarker_input& input_2) override
+  {
+    m_records_1 = input_1.unsafe_fastqs();
+    m_records_2 = input_2.unsafe_fastqs();
+  }
+
+  uint64_t execute(const benchmarker_input& /* input_1 */,
+                   const benchmarker_input& /* input_2 */) override
+  {
+    post_process_reads(m_records_1);
+    post_process_reads(m_records_2);
+
+    return m_records_1.size() + m_records_2.size();
+  }
+
+private:
+  void post_process_reads(std::vector<fastq>& records)
+  {
+    for (auto& it : records) {
+      it.post_process(m_encoding);
+    }
+
+    blackbox(records);
+  }
+
+  fastq_encoding m_encoding;
+  std::vector<fastq> m_records_1{};
+  std::vector<fastq> m_records_2{};
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// fastq_old_benchmarker and fastq_in_benchmarker
+
+class benchmark_sink : public analytical_step
+{
+public:
+  benchmark_sink(reusable_fastqs fastqs,
+                 std::shared_ptr<std::atomic_uint64_t> nreads)
+    : analytical_step(processing_order::unordered,
+                      "benchmark_sink",
+                      step_id::UNDEFINED)
+    , m_fastqs(std::move(fastqs))
+    , m_nreads(std::move(nreads))
+  {
+    AR_REQUIRE(m_nreads);
+  }
+
+  chunk_vec process(chunk_ptr data) override
+  {
+    auto chunk = dynamic_cast_unique<fastq_chunk>(data);
+    AR_REQUIRE(chunk);
+
+    *m_nreads += chunk->reads();
+    m_fastqs.release(std::move(chunk->reads_1));
+    m_fastqs.release(std::move(chunk->reads_2));
+
+    return {};
+  }
+
+private:
+  reusable_fastqs m_fastqs;
+  std::shared_ptr<std::atomic_uint64_t> m_nreads;
+};
+
+class fastq_old_benchmarker : public deprecated_benchmarker
+{
+public:
+  fastq_old_benchmarker(const userconfig& config, const size_t threads)
+    : deprecated_benchmarker(with_thread_count("FASTQ old", threads),
+                             { "fastq_old", "fastq_old:" + stringify(threads) },
+                             benchmarker_input_types::nothing)
+    , m_config(config)
+    , m_threads(threads)
+  {
+  }
+
+protected:
+  uint64_t execute(const benchmarker_input& /* input_1 */,
+                   const benchmarker_input& /* input_2 */) override
+  {
+    reusable_fastqs fastqs{ "std::vector<fastq>", INPUT_READS };
+    auto nreads = std::make_shared<std::atomic_uint64_t>();
+
+    scheduler sch;
+    auto next_step = sch.add<benchmark_sink>(fastqs, nreads);
+
+    read_fastq::add_steps(sch, m_config, fastqs, next_step);
+
+    mask_log_messages _;
+    AR_REQUIRE(sch.run(m_threads));
+    fastqs.finalize();
+
+    return *nreads;
+  }
+
+private:
+  const userconfig& m_config;
+  size_t m_threads = 0;
+};
+
+class fastq_in_benchmarker : public benchmarker
+{
+public:
+  fastq_in_benchmarker(const userconfig& config, const size_t threads)
+    : benchmarker(with_thread_count("FASTQ in", threads),
+                  { "fastq_in", "fastq_in:" + stringify(threads) },
+                  benchmarker_input_types::nothing)
+    , m_config(config)
+    , m_threads(threads)
+  {
+  }
+
+protected:
+  uint64_t execute(const benchmarker_input& /* input_1 */,
+                   const benchmarker_input& /* input_2 */) override
+  {
+    reusable_buffers buffers{ "buffer", INPUT_BLOCK_SIZE };
+    reusable_fastqs fastqs{ "std::vector<fastq>", INPUT_READS };
+    auto nreads = std::make_shared<std::atomic_uint64_t>();
+
+    scheduler sch;
+    auto next_step = sch.add<benchmark_sink>(fastqs, nreads);
+
+    add_input_steps(sch, m_config, buffers, fastqs, next_step);
+
+    mask_log_messages _;
+    AR_REQUIRE(sch.run(m_threads));
+
+    fastqs.finalize();
+    buffers.finalize();
+
+    return *nreads;
+  }
+
+private:
+  const userconfig& m_config;
+  size_t m_threads = 0;
 };
 
 class reverse_complement_benchmarker : public benchmarker
@@ -429,6 +736,52 @@ private:
   }
 };
 
+/** Class for benchmarking duplication statistics */
+class fastq_duplication_benchmarker : public benchmarker
+{
+public:
+  fastq_duplication_benchmarker(uint64_t max_sequences)
+    : benchmarker("duplication stats",
+                  { "duplication" },
+                  benchmarker_input_types::validated_fastq)
+    , m_max_sequences(max_sequences != 0 ? max_sequences : 100'000)
+  {
+  }
+
+protected:
+  void setup(const benchmarker_input& /* input_1 */,
+             const benchmarker_input& input_2) override
+  {
+    m_stats_1 = std::make_unique<duplication_statistics>(m_max_sequences);
+    m_stats_2 = std::make_unique<duplication_statistics>(
+      input_2.filenames().empty() ? 0 : m_max_sequences);
+  }
+
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
+  {
+    gather_statistics(input_1.validated_fastqs(), *m_stats_1);
+    gather_statistics(input_2.validated_fastqs(), *m_stats_2);
+
+    return input_1.head() + input_2.head();
+  }
+
+private:
+  static void gather_statistics(const std::vector<fastq>& records,
+                                duplication_statistics& stats)
+  {
+    for (const auto& it : records) {
+      stats.process(it);
+    }
+
+    blackbox(stats);
+  }
+
+  const uint64_t m_max_sequences;
+  std::unique_ptr<duplication_statistics> m_stats_1{};
+  std::unique_ptr<duplication_statistics> m_stats_2{};
+};
+
 /** Base-class for benchmarking SE/PE alignments */
 class alignment_benchmarker : public benchmarker
 {
@@ -608,20 +961,24 @@ add(std::vector<std::unique_ptr<benchmarker>>& dst, Args&&... args)
 int
 benchmark(const userconfig& config)
 {
-  auto head = config.head;
-  // Limit benchmarking to a reasonable data-set size by default
-  if (config.head == std::numeric_limits<uint64_t>::max()) {
-    log::warn() << "Defaulting to reading at most 1,000,000 reads/mate pairs";
-    head = 1'000'000;
-  } else if (config.head == 0) {
-    log::error() << "Cannot perform benchmarking with 0 reads/mate pairs";
-    return 1;
-  }
-
   std::vector<std::unique_ptr<benchmarker>> benchmarks;
   add<readlines_benchmarker>(benchmarks);
   add<buffer_reader_benchmarker>(benchmarks);
-  add<fastq_parser_benchmarker>(benchmarks, config.io_encoding);
+  add<fastq_reader_benchmarker>(benchmarks);
+  add<fastq_parser_benchmarker>(benchmarks);
+  add<fastq_post_process_benchmarker>(benchmarks, config.io_encoding);
+
+  // Old reader used max two ordered steps, so doesn't scale beyond 2 threads
+  add<fastq_old_benchmarker>(benchmarks, config, 1);
+  add<fastq_old_benchmarker>(benchmarks, config, 2);
+
+  std::vector<size_t> threads{ 1, 2, 4, 8, config.max_threads };
+  std::sort(threads.begin(), threads.end());
+  auto last = std::unique(threads.begin(), threads.end());
+  for (auto it = threads.begin(); it != last; ++it) {
+    add<fastq_in_benchmarker>(benchmarks, config, *it);
+  }
+
   add<reverse_complement_benchmarker>(benchmarks);
   add<complexity_benchmarker>(benchmarks);
   add<basic_trimming_benchmarker>(benchmarks);
@@ -640,6 +997,7 @@ benchmark(const userconfig& config)
   }
 
   add<fastq_statistics_benchmarker>(benchmarks);
+  add<fastq_duplication_benchmarker>(benchmarks, config.report_duplication);
 
   // Benchmark the preferred algorithm if no algorithms were specified
   const auto instruction_sets = simd::supported();
@@ -679,8 +1037,14 @@ benchmark(const userconfig& config)
 
   auto encoding = config.io_encoding;
   log::info() << "Pre-loading input data";
-  benchmarker_input input_1{ config.input_files_1, encoding, head, input };
-  benchmarker_input input_2{ config.input_files_2, encoding, head, input };
+  benchmarker_input input_1{ config.input_files_1,
+                             encoding,
+                             config.head,
+                             input };
+  benchmarker_input input_2{ config.input_files_2,
+                             encoding,
+                             config.head,
+                             input };
 
   if (input_1.head() != input_2.head() && !input_2.filenames().empty()) {
     log::error() << "Mismatching PE input: --in-file1 has " << input_1.head()
