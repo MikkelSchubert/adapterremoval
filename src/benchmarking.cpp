@@ -62,7 +62,7 @@ benchmarker_input::benchmarker_input(
   if (required) {
     m_lines = read_lines();
     m_lines_loaded = true;
-    m_head = std::min(m_head, (m_lines.size() + 3) / 4);
+    m_head = std::min<uint64_t>(m_head, (m_lines.size() + 3) / 4);
   }
 
   if (required & benchmarker_input_types::buffers) {
