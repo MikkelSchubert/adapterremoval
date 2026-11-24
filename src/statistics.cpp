@@ -52,11 +52,25 @@ duplication_level(size_t count)
   }
 }
 
+/*** hasher that can be used with both std::string and std::string_view */
+struct string_hash
+{
+  // enables heterogeneous lookup:
+  // https://github.com/martinus/robin-hood-hashing/commit/b6e996e826f5728816152a8484c45970848556f8
+  using is_transparent = void;
+
+  size_t operator()(std::string_view sv) const noexcept
+  {
+    return robin_hood::hash_bytes(sv.data(), sv.size());
+  }
+};
+
 } // namespace
 
 class string_counts
 {
-  using map = robin_hood::unordered_flat_map<std::string, size_t>;
+  using map = robin_hood::
+    unordered_flat_map<std::string, size_t, string_hash, std::equal_to<>>;
 
 public:
   explicit string_counts(size_t max_unique_sequences)
@@ -65,16 +79,16 @@ public:
     m_counts.reserve(max_unique_sequences);
   }
 
-  void add(const std::string& key)
+  void add(std::string_view key)
   {
     m_counted++;
 
     const auto unique_seqs = m_counts.size();
-    if (unique_seqs >= m_max_unique_sequences) {
-      auto it = m_counts.find(key);
-      if (it != m_counts.end()) {
-        it->second++;
-      } else if (!m_counted_at_max_set) {
+    auto it = m_counts.find(key);
+    if (it != m_counts.end()) {
+      it->second++;
+    } else if (unique_seqs >= m_max_unique_sequences) {
+      if (!m_counted_at_max_set) {
         // Small difference from FastQC: Continue counting until the max unique
         // sequence count is exceeded, rather than until the max unique sequence
         // count is reached. For unique counts close to the max, this should
@@ -83,7 +97,9 @@ public:
         m_counted_at_max = m_counted;
       }
     } else {
-      m_counts[key]++;
+      // TODO: Use `ankerl::unordered_dense::map` to avoid this:
+      // using string_views ends up being faster even with this double lookup.
+      m_counts.emplace(key, 1);
     }
   }
 
@@ -136,10 +152,12 @@ void
 duplication_statistics::process(const fastq& read)
 {
   if (m_sequence_counts) {
+    std::string_view seq = read.sequence();
+
     if (read.length() > 75) {
-      m_sequence_counts->add(read.sequence().substr(0, 50));
+      m_sequence_counts->add(seq.substr(0, 50));
     } else {
-      m_sequence_counts->add(read.sequence());
+      m_sequence_counts->add(seq);
     }
   }
 }
