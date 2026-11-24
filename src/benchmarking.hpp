@@ -134,7 +134,7 @@ public:
     const std::vector<std::string>& toggles) const;
 
   /** Runs the benchmark with the specified input */
-  virtual void run(const benchmarker_input& input_1,
+  virtual bool run(const benchmarker_input& input_1,
                    const benchmarker_input& input_2);
 
   /** Returns the toggles recognized by this benchmarker */
@@ -156,15 +156,18 @@ protected:
   virtual void setup(const benchmarker_input& input_1,
                      const benchmarker_input& input_2);
   /**
-   * Carries out the actual work to be benchmarked. Each call is expected to
-   * carry out work on the same number of items to make runs comparable.
+   * Carries out the actual work to be benchmarked. The returned value should
+   * represent the number of units processed in terms of FASTQ records, and must
+   * not change between calls to the same instance. Returns true if the
+   * benchmark was run successfully, false if there was insufficient data to
+   * measure the running time.
    */
-  virtual void execute(const benchmarker_input& input_1,
-                       const benchmarker_input& input_2) = 0;
+  virtual uint64_t execute(const benchmarker_input& input_1,
+                           const benchmarker_input& input_2) = 0;
 
 private:
   /** Returns a summary of the current benchmarking results */
-  [[nodiscard]] std::string summarize(size_t loops) const;
+  [[nodiscard]] std::string summarize(uint64_t loops, uint64_t units) const;
 
   //! Short description of this benchmark
   const std::string m_description;

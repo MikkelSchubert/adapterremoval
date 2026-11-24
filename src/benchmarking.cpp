@@ -33,15 +33,16 @@ constexpr size_t BENCHMARK_BURN_IN = 1;
 constexpr size_t BENCHMARK_MIN_LOOPS = 10;
 //! Benchmarks must be repeated at most this number of times
 constexpr size_t BENCHMARK_MAX_LOOPS = 1000;
-//! Benchmarks must run for at this number of nano-seconds
+//! Benchmarks must run for at this number of nanoseconds
 constexpr uint64_t BENCHMARK_MIN_TIME_NS = 5'000'000'000;
-//! Benchmark loops shorter than this number of nano-seconds cannot be measured
+//! Benchmark loops shorter than this number of nanoseconds cannot be measured
 constexpr uint64_t BENCHMARK_CUTOFF_TIME_NS = 10'000;
-//! Number of NS between terminal updates
-constexpr uint64_t BENCHMARK_UPDATE_INTERVAL = 50'000'000;
+//! Number of nanoseconds between terminal updates
+constexpr uint64_t BENCHMARK_UPDATE_INTERVAL_NS = 50'000'000;
 
 using clock = std::chrono::steady_clock;
 using time_point = std::chrono::time_point<clock>;
+using resolution = std::chrono::nanoseconds;
 
 } // namespace
 
@@ -194,9 +195,9 @@ benchmarker_input::make_fastqs()
   std::vector<fastq> fastqs;
 
   if (!m_lines.empty()) {
-    fastqs.reserve((m_lines.size() / 4) + 1);
+    fastqs.reserve(m_head);
     borrowed_vec_reader reader{ m_lines.begin(), m_lines.end() };
-    while (fastqs.size() < (m_lines.size() / 4)) {
+    while (fastqs.size() < m_head) {
       fastqs.emplace_back();
       if (!fastqs.back().read_unsafe(reader)) {
         fastqs.pop_back();
@@ -238,24 +239,26 @@ benchmarker::benchmarker(std::string desc,
 {
 }
 
-void
+bool
 benchmarker::run(const benchmarker_input& input_1,
                  const benchmarker_input& input_2)
 {
   static bool header = false;
   if (!header) {
-    std::cout << "             Benchmark |       Min |      Mean |       Max | "
-                 "SD (%) | Loops | Outliers"
+    std::cout << "Benchmark (reads / sec) |      Min |     Mean |      Max "
+                 "| SD (%) | Loops | Outliers"
               << std::endl;
     header = true;
   }
 
+  static_assert(BENCHMARK_BURN_IN != 0); // units is assumed to be set below
+  uint64_t units = std::numeric_limits<uint64_t>::max();
   for (size_t i = 1; i <= BENCHMARK_BURN_IN; ++i) {
-    log::cerr().transient() << "\r\033[K" << std::setw(22) << m_description
+    log::cerr().transient() << "\r\033[K" << std::setw(23) << m_description
                             << " burn-in: " << i << " of " << BENCHMARK_BURN_IN;
 
     setup(input_1, input_2);
-    execute(input_1, input_2);
+    units = execute(input_1, input_2);
   }
 
   size_t loops = 0;
@@ -267,17 +270,19 @@ benchmarker::run(const benchmarker_input& input_1,
     do {
       setup(input_1, input_2);
       const auto start = clock::now();
-      execute(input_1, input_2);
-      const auto duration = (clock::now() - start).count();
+      const auto current_units = execute(input_1, input_2);
+      const uint64_t duration =
+        std::chrono::duration_cast<resolution>(clock::now() - start).count();
+      AR_REQUIRE(units == current_units);
 
       loops++;
       elapsed += duration;
       since_update += duration;
       m_durations.push_back(duration);
 
-      if (since_update >= BENCHMARK_UPDATE_INTERVAL) {
-        log::cerr() << "\r\033[K" << summarize(loops);
-        since_update %= BENCHMARK_UPDATE_INTERVAL;
+      if (since_update >= BENCHMARK_UPDATE_INTERVAL_NS) {
+        log::cerr() << "\r\033[K" << summarize(loops, units);
+        since_update %= BENCHMARK_UPDATE_INTERVAL_NS;
       }
     } while (m_durations.size() < BENCHMARK_MAX_LOOPS &&
              (m_durations.size() < BENCHMARK_MIN_LOOPS ||
@@ -285,8 +290,17 @@ benchmarker::run(const benchmarker_input& input_1,
                elapsed >= m_durations.size() * BENCHMARK_CUTOFF_TIME_NS)));
   } while ((loops < 2 * m_durations.size()) && grubbs_test_prune(m_durations));
 
+  if (arithmetic_mean(m_durations) < BENCHMARK_CUTOFF_TIME_NS) {
+    log::error() << "Benchmark " << log_escape(m_description)
+                 << " has a too short running time; increase `--head` or use a "
+                    "larger input file before running this benchmark";
+    return false;
+  }
+
   log::cerr() << "\r\033[K";
-  std::cout << summarize(loops) << std::endl;
+  std::cout << summarize(loops, units) << std::endl;
+
+  return true;
 }
 
 bool
@@ -313,9 +327,9 @@ benchmarker::setup(const benchmarker_input& /* input_1 */,
 }
 
 std::string
-benchmarker::summarize(size_t loops) const
+benchmarker::summarize(uint64_t loops, uint64_t units) const
 {
-  const std::array<size_t, 7> COLUMN_WIDTHS{ 22, 9, 9, 9, 6, 5, 8 };
+  const std::array<size_t, 7> COLUMN_WIDTHS{ 23, 8, 8, 8, 6, 5, 8 };
   std::array<std::string, COLUMN_WIDTHS.size()> values{
     m_description,
     "",
@@ -327,17 +341,21 @@ benchmarker::summarize(size_t loops) const
   };
 
   if (!m_durations.empty()) {
-    const auto min_max =
-      std::minmax_element(m_durations.begin(), m_durations.end());
-    const auto mean = arithmetic_mean(m_durations);
+    auto rates = m_durations;
+    for (auto& duration : rates) {
+      duration = (units * 1'000'000'000) / std::max<uint64_t>(1'000, duration);
+    }
 
-    values.at(1) = format_thousand_sep(*min_max.first / 1e3);
-    values.at(2) = format_thousand_sep(std::round(mean / 1e3));
-    values.at(3) = format_thousand_sep(*min_max.second / 1e3);
+    const auto min_max = std::minmax_element(rates.begin(), rates.end());
+    const auto mean = (units * 1e9) / arithmetic_mean(m_durations);
+
+    values.at(1) = format_rough_number(*min_max.first, 4);
+    values.at(2) = format_rough_number(std::round(mean), 4);
+    values.at(3) = format_rough_number(*min_max.second, 4);
 
     if (m_durations.size() > 1) {
-      const auto sd = standard_deviation(m_durations);
-      values.at(4) = format_fraction(100.0 * sd, mean);
+      const auto sd = standard_deviation(rates);
+      values.at(4) = format_fraction(100.0 * sd, arithmetic_mean(rates), 2);
     }
   }
 
