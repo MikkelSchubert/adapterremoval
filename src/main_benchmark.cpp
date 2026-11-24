@@ -40,14 +40,16 @@ public:
   }
 
 protected:
-  void execute(const benchmarker_input& input_1,
-               const benchmarker_input& input_2) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     read_lines(input_1, m_lines_1);
     read_lines(input_2, m_lines_2);
 
     blackbox(m_lines_1);
     blackbox(m_lines_2);
+
+    return ((m_lines_1.size() + 3) / 4) + ((m_lines_2.size() + 3) / 4);
   }
 
 private:
@@ -103,11 +105,13 @@ protected:
     copy_buffers(input_2.buffers(), m_working_buffers_2);
   }
 
-  void execute(const benchmarker_input& /* input_1 */,
-               const benchmarker_input& /* input_2 */) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     parse_buffers(m_working_buffers_1);
     parse_buffers(m_working_buffers_2);
+
+    return input_1.head() + input_2.head();
   }
 
 private:
@@ -179,8 +183,8 @@ protected:
     }
   }
 
-  void execute(const benchmarker_input& /* input_1 */,
-               const benchmarker_input& /* input_2 */) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     // FASTQ records are reused to match actual usage via `read_fastq`
     for (auto& record : m_records_1) {
@@ -194,6 +198,8 @@ protected:
 
     blackbox(m_records_1);
     blackbox(m_records_2);
+
+    return input_1.head() + input_2.head();
   }
 
 private:
@@ -226,8 +232,8 @@ protected:
     }
   }
 
-  void execute(const benchmarker_input& /* input_1 */,
-               const benchmarker_input& /* input_2 */) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     for (auto& it : m_records_1) {
       it.reverse_complement();
@@ -236,6 +242,8 @@ protected:
     for (auto& it : m_records_2) {
       it.reverse_complement();
     }
+
+    return input_1.head() + input_2.head();
   }
 
 private:
@@ -254,14 +262,16 @@ public:
   }
 
 protected:
-  void execute(const benchmarker_input& input_1,
-               const benchmarker_input& input_2) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     double total = 0.0;
     total += complexity(input_1.validated_fastqs());
     total += complexity(input_2.validated_fastqs());
 
     blackbox(total);
+
+    return input_1.head() + input_2.head();
   }
 
 private:
@@ -294,14 +304,16 @@ protected:
     m_trimmed_records_2 = input_2.validated_fastqs();
   }
 
-  void execute(const benchmarker_input& /* input_1 */,
-               const benchmarker_input& /* input_2 */) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     trim(m_trimmed_records_1);
     trim(m_trimmed_records_2);
 
     blackbox(m_trimmed_records_1);
     blackbox(m_trimmed_records_2);
+
+    return input_1.head() + input_2.head();
   }
 
   virtual void trim(std::vector<fastq>& reads) const = 0;
@@ -396,11 +408,13 @@ public:
   }
 
 protected:
-  void execute(const benchmarker_input& input_1,
-               const benchmarker_input& input_2) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     collect_statistics(input_1.validated_fastqs());
     collect_statistics(input_2.validated_fastqs());
+
+    return input_1.head() + input_2.head();
   }
 
 private:
@@ -492,8 +506,8 @@ public:
   }
 
 protected:
-  void execute(const benchmarker_input& input_1,
-               const benchmarker_input& /* input_2 */) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& /* input_2 */) override
   {
     alignment_info best;
 
@@ -507,6 +521,8 @@ protected:
     }
 
     blackbox(best);
+
+    return input_1.head();
   }
 
 private:
@@ -543,8 +559,8 @@ protected:
     }
   }
 
-  void execute(const benchmarker_input& input_1,
-               const benchmarker_input& /* input_2 */) override
+  uint64_t execute(const benchmarker_input& input_1,
+                   const benchmarker_input& input_2) override
   {
     const auto& mate_1 = input_1.validated_fastqs();
     const auto& mate_2 = m_mate_2_reversed;
@@ -567,6 +583,8 @@ protected:
     }
 
     blackbox(best);
+
+    return input_1.head() + input_2.head();
   }
 
 private:
@@ -670,13 +688,17 @@ benchmark(const userconfig& config)
     return 1;
   }
 
+  int returncode = 0;
   log::info() << "Running " << benchmarks.size() << " benchmark(s)";
   for (auto& benchmark : benchmarks) {
-    benchmark->run(input_1, input_2);
+    if (!benchmark->run(input_1, input_2)) {
+      returncode = 1;
+    }
+
     benchmark.reset(); // free any intermediate values
   }
 
-  return 0;
+  return returncode;
 }
 
 } // namespace adapterremoval
