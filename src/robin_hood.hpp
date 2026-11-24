@@ -2102,6 +2102,9 @@ public:
         n.destroy(*this);
         throwOverflowError();
         break;
+
+      default:
+        break;
     }
 
     return std::make_pair(
