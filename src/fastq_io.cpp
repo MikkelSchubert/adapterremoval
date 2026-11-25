@@ -21,7 +21,6 @@
 #include "userconfig.hpp"        // for userconfig
 #include "utilities.hpp"         // for prng_seed
 #include <algorithm>             // for max, min
-#include <cerrno>                // for errno
 #include <cstddef>               // for size_t
 #include <memory>                // for unique_ptr, make_unique, ...
 #include <mutex>                 // for mutex, recursive_lock, unique_lock
@@ -589,19 +588,12 @@ write_fastq::process(chunk_ptr data)
     chunk->buffers.emplace_back(std::move(tail));
   }
 
-  try {
-    m_output.write(chunk->buffers);
+  m_output.write(chunk->buffers);
 
-    // Close file to trigger any exceptions due to fclose, etc. This also forces
-    // creation of the file, if no non-empty buffers have been written.
-    if (m_eof) {
-      m_output.finalize();
-    }
-  } catch (const io_error&) {
-    std::ostringstream msg;
-    msg << "Error writing to FASTQ file " << log_escape(m_output.filename());
-
-    throw io_error(msg.str(), errno);
+  // Close file to trigger any exceptions due to fclose, etc. This also forces
+  // creation of the file, if no non-empty buffers have been written.
+  if (m_eof) {
+    m_output.finalize();
   }
 
   return {};

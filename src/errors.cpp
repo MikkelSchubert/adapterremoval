@@ -91,13 +91,9 @@ program_failure::program_failure(const std::string& message)
 {
 }
 
-io_error::io_error(const std::string& message)
-  : program_failure(message)
-{
-}
-
 io_error::io_error(const std::string& message, int error_number)
   : program_failure(format_io_error(message, error_number))
+  , m_error_number(error_number)
 {
 }
 

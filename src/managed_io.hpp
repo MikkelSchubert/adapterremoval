@@ -22,10 +22,10 @@ public:
    */
   explicit managed_reader(std::string filename);
 
-  /** Closes the handle if it has not been closed already */
+  /** Calls `close()` */
   ~managed_reader();
 
-  /** Closes the handle; no-op if the handle has been closed already */
+  /** Closes the handle, if open. Errors are logged as a warning, not thrown */
   void close();
 
   /** Returns the filename of the (previously opened) file */

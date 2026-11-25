@@ -55,14 +55,19 @@ protected:
 class io_error : public program_failure
 {
 public:
-  /** Produces an error without an associated error code */
-  explicit io_error(const std::string& message);
+  /**
+   * IO exception with an optional description of the underlying error code */
+  explicit io_error(const std::string& message, int error_number = 0);
 
-  /** Produces a combined error including a description of the error code */
-  explicit io_error(const std::string& message, int error_number);
+  /** Returns the underlying errno value, or 0 if not set */
+  [[nodiscard]] int error_number() const { return m_error_number; }
 
 protected:
   [[nodiscard]] std::string_view kind() const override { return "io_error"; }
+
+private:
+  //! The user supplied error number, if any
+  int m_error_number = 0;
 };
 
 /** Represents errors during GZip (de)compression. */

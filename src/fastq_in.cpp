@@ -163,7 +163,7 @@ block_reader::close_current_reader()
       m_state->mark_reading_finished();
     }
 
-    reader->close(); // called outside of destructor to allow exceptions
+    reader->close();
   }
 }
 
