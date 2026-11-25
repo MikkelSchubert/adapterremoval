@@ -184,7 +184,8 @@ private:
       } else if (errno == EMFILE) {
         close_one();
       } else {
-        throw io_error("failed to open " + log_escape(filename), errno);
+        const auto error_number = errno;
+        throw io_error("failed to open " + log_escape(filename), error_number);
       }
     }
   }
@@ -210,7 +211,10 @@ private:
       if (::fclose(writer->m_file) != 0) {
         writer->m_file = nullptr;
         writer->m_state = managed_writer::state::failed;
-        throw io_error("failed to close file", errno);
+
+        const auto error_number = errno;
+        throw io_error("error closing " + log_escape(writer->m_filename),
+                       error_number);
       }
       writer->m_file = nullptr;
     } else {
@@ -251,13 +255,7 @@ managed_reader::managed_reader(std::string filename)
 
 managed_reader::~managed_reader()
 {
-  if (m_file && ::fclose(m_file) != 0) {
-    const auto error_number = errno;
-
-    // this is a non-fatal error if there were no problems reading the file
-    log::warn() << format_io_error("error closing " + log_escape(m_filename),
-                                   error_number);
-  }
+  close();
 }
 
 void
@@ -265,14 +263,13 @@ managed_reader::close()
 {
   // This will also close non-regular files, such as STDIN. That is intentional
   // as only a single reader should be created per input file or stream
-  if (m_file) {
-    if (::fclose(m_file) != 0) {
-      m_file = nullptr;
-      throw io_error("error closing " + log_escape(m_filename), errno);
-    }
-
-    m_file = nullptr;
+  if (m_file && ::fclose(m_file) != 0) {
+    const auto error_number = errno;
+    log::warn() << format_io_error("error closing " + log_escape(m_filename),
+                                   error_number);
   }
+
+  m_file = nullptr;
 }
 
 size_t
@@ -281,7 +278,8 @@ managed_reader::read(void* buffer, size_t size)
   AR_REQUIRE(buffer);
   const auto nread = ::fread(buffer, 1, size, m_file);
   if (::ferror(m_file) != 0) {
-    throw io_error("error reading " + log_escape(m_filename), errno);
+    const auto error_number = errno;
+    throw io_error("error reading " + log_escape(m_filename), error_number);
   }
 
   return nread;
@@ -336,8 +334,9 @@ public:
       if (ret != size) {
         m_writer->m_state = managed_writer::state::failed;
 
+        const auto error_number = errno;
         throw io_error("error writing to " + log_escape(m_writer->m_filename),
-                       errno);
+                       error_number);
       }
     }
   }
@@ -380,7 +379,9 @@ managed_writer::~managed_writer()
   if (m_file && ::fclose(m_file) != 0) {
     // AdapterRemoval should already have aborted before getting to this point,
     // as handles should normally be closed, and pipeline errors triggers abort
-    AR_FAIL(format_io_error("error closing " + log_escape(m_filename), errno));
+    const auto error_number = errno;
+    AR_FAIL(
+      format_io_error("error closing " + log_escape(m_filename), error_number));
   }
 }
 
@@ -434,7 +435,8 @@ managed_writer::finalize()
       m_file = nullptr;
       m_state = managed_writer::state::failed;
 
-      throw io_error("failed to close file", errno);
+      const auto error_number = errno;
+      throw io_error("error closing " + log_escape(m_filename), error_number);
     }
 
     m_file = nullptr;
